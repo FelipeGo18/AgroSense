@@ -8,7 +8,7 @@ agentes: [web]
 subsistemas: [W1, W2, W3, W4, W6, W7, W8, W9]
 depende_de: []
 reglas: [R1, R5, R9, R10]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-15 · Identidad visual y prototipo del frontend
@@ -22,17 +22,17 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 ### HU-151 · Moodboard y dirección visual
 
 - **Historia:** Como equipo, quiero un moodboard con la dirección visual, para acordar el estilo antes de construir.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Página de Figma con referencias, paleta tentativa y ejemplos de paisaje
-  - [ ] Cada referencia dice qué se toma y qué no (inspiración, no copia)
-  - [ ] Dirección aprobada por el equipo
-- **Notas:** Concepto inicial «del satélite al lote» en `specs/05-frontend.md`.
+  - [x] Página de Figma con referencias, paleta tentativa y ejemplos de paisaje
+  - [x] Cada referencia dice qué se toma y qué no (inspiración, no copia)
+  - [x] Dirección aprobada por el equipo
+- **Notas:** Concepto inicial «del satélite al lote» en `specs/05-frontend.md`. Moodboard en el frame «HU-151 · Moodboard AgroSense» de Figma; imágenes y créditos en `design/moodboard/FUENTES.md`. Dirección aprobada el 10 de octubre de 2026.
 
 ### HU-152 · Tokens de diseño
 
 - **Historia:** Como desarrollador web, quiero tokens de color, tipografía, espaciado, radios y sombras, para que Figma y el código usen los mismos valores.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Tokens definidos en Figma y exportados a CSS o Tailwind
   - [ ] Colores del semáforo con su forma e icono; contraste de texto ≥ 4,5:1 comprobado
