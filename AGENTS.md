@@ -10,7 +10,7 @@ Un agente por rol del equipo. Cada uno vive en `.claude/agents/<nombre>.md`, con
 | `producto-agro` | Producto y agro | AG1–AG3, S4 | EP-00, EP-06, EP-13, HU-142 | Decidir alcance, fichas de cultivo, reglas de rotación, demo |
 | `datos` | Pipeline de datos | D1–D4 | EP-03, EP-04, EP-05, HU-143 | Ingesta, limpieza, indicadores, Parquet |
 | `motor-api` | Motor de decisión y API | M1–M7 | HU-012, EP-07, EP-08, HU-144, HU-146, motor de EP-11 | Semáforo, rotaciones, balance hídrico, endpoints |
-| `web` | Aplicación web | W1–W7 | HU-013, EP-09, EP-10, HU-141, HU-145, interfaz de EP-11 | Pantallas, gráficas, estados, accesibilidad |
+| `web` | Aplicación web | W1–W7 | HU-013, EP-09, EP-10, EP-15, HU-141, HU-145, interfaz de EP-11 | Identidad visual, 3D, animación, pantallas, gráficas, estados, accesibilidad |
 | `calidad` | Calidad y trazabilidad | S3 | EP-12 | Casos de referencia, manifiesto, reproducibilidad, revisión |
 | `plataforma` | Repositorio, CI y despliegue | S1, S2 | EP-02, integración del hito 1 | Arranque, GitHub Actions, Docker, URL pública |
 

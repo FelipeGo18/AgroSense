@@ -59,3 +59,12 @@
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-147 | Aviso de riego semanal | P1 | L | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-148 | Rotaciones ponderadas por área | P1 | S | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-149 | Guardar la finca en el dispositivo | P1 | S | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-151 | Moodboard y dirección visual | P0 | S | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-152 | Tokens de diseño | P0 | M | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-153 | Kit de componentes con estilo de juego | P0 | L | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-154 | Escena 3D del paisaje andino | P0 | L | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-155 | Descenso de cámara del satélite al lote | P0 | L | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-156 | Sistema de motion | P0 | M | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P0 | L | pendiente |
