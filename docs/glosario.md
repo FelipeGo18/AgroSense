@@ -34,6 +34,19 @@ Términos que aparecen en las specs, explicados en lenguaje sencillo.
 | Manifiesto (`manifest.json`) | Archivo que dice con qué versión de datos y reglas se produjo un resultado, y qué cobertura tiene. |
 | Lint / CI | Revisiones automáticas del código cada vez que alguien sube un cambio. |
 
+## Frontend
+
+| Término | Qué significa |
+|---|---|
+| Low-poly | Estilo 3D con pocas caras y facetas visibles, sin texturas realistas. Es liviano de dibujar. |
+| three.js / React Three Fiber | Biblioteca para dibujar 3D en el navegador, y su versión para usarla con componentes de React. |
+| GSAP | Biblioteca de animación web. ScrollTrigger ata animaciones al scroll. |
+| glTF | Formato liviano para modelos 3D en la web. |
+| Modo ligero | Versión 2D de la app, con la misma información, para celulares sencillos o con poca señal. |
+| Storyboard | Tabla toma por toma de una animación, escrita antes de construirla. |
+| Token de diseño | Valor con nombre (un color, un tamaño, una duración) que comparten Figma y el código. |
+| CC0 | Licencia que permite usar y modificar un recurso sin restricciones. |
+
 ## Datos y dominio
 
 | Término | Qué significa |

@@ -12,6 +12,8 @@ El orden lo marcan las dependencias: primero lo que desbloquea a los demás, lue
 
 EP-00 y EP-01 son las más importantes: un error en el contrato afecta a todos los demás.
 
+En paralelo, durante la fase 0, **EP-15 Identidad visual y prototipo del frontend** adelanta el estilo, las animaciones, los assets y un prototipo navegable en este repositorio, contra datos de ejemplo. No bloquea ni depende de las demás épicas.
+
 ## Fase 1: en paralelo, cada quien sobre el contrato
 
 | Frente | Épicas | Trabaja con |

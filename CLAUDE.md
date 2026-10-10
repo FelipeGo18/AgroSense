@@ -12,6 +12,8 @@ Proyecto para el **NASA Space Apps Challenge 2026** (reto «Cambio de rumbo: ada
 
 Solo hay especificaciones. **Todavía no hay código.** No inventes comandos, archivos ni módulos que no existan: si algo falta, créalo según la spec o pregunta.
 
+**Excepción de la fase 0: el frontend.** Identidad visual, animaciones, audio, assets 3D y un prototipo navegable se adelantan ahora en `web/` y en Figma (EP-15, `specs/05-frontend.md`). La app de la demo se construye en el evento en un repositorio nuevo. Todo lo de diseño y frontend (pantallas, HUs de web, estilo, stack de la web) se puede rediseñar; las reglas R1–R10 y el contrato de la API no.
+
 ## Cómo trabajamos: primero la spec
 
 Todo cambio parte de una historia de usuario (HU) escrita en `specs/epicas/`.
@@ -31,6 +33,7 @@ Mapa de documentos:
 | Tablas, endpoints, errores, JSON | `specs/02-contratos.md` |
 | Sistemas y subsistemas (D, AG, M, W, S) | `specs/03-sistemas.md` |
 | Stack y por qué | `specs/04-stack.md` |
+| Visión, estilo y stack del frontend | `specs/05-frontend.md` |
 | Épicas e historias de usuario | `specs/epicas/` y `specs/BACKLOG.md` |
 | Plantillas para escribir HUs | `specs/_plantilla-epica.md`, `specs/_plantilla-hu.md` |
 | Glosario, decisiones, plan de 48 h, riesgos | `docs/` |
@@ -49,7 +52,7 @@ Detalle en `docs/decisiones.md`.
 
 ## Stack
 
-Python 3.12 con `uv` · Polars · GeoPandas/Shapely · FastAPI + Pydantic v2 · pytest · Ruff. Web: React + TypeScript + Vite, Tailwind + shadcn/ui, TanStack Query, MSW, `openapi-typescript`, Recharts (P0), MapLibre (P1). Datos en Parquet con `manifest.json`. Una sola imagen Docker. Backlog en GitHub Projects. Detalle y alternativas descartadas en `specs/04-stack.md`.
+Python 3.12 con `uv` · Polars · GeoPandas/Shapely · FastAPI + Pydantic v2 · pytest · Ruff. Web: React + TypeScript + Vite, Tailwind + Radix con estilo propio, React Three Fiber + drei, GSAP + Lenis, Zustand, TanStack Query, MSW, `openapi-typescript`, gráficas en SVG propio, Howler.js. Datos en Parquet con `manifest.json`. Una sola imagen Docker. Backlog en GitHub Projects. Detalle y alternativas descartadas en `specs/04-stack.md`.
 
 ## Estructura prevista del repositorio
 

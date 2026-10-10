@@ -12,9 +12,11 @@ El criterio fue un solo lenguaje en el backend, contratos que generan tipos auto
 | Motor | Python puro; umbrales y pesos en YAML versionado | Se prueba sin servidor y cambia reglas sin tocar código | — |
 | API | FastAPI y Pydantic v2 | Genera el OpenAPI desde los modelos, y de ahí salen los tipos del frontend | — |
 | Pruebas | `pytest`, con `TestClient` de FastAPI | Casos de referencia del motor y del contrato | Pruebas end-to-end con navegador: no hay tiempo |
-| Frontend | React, TypeScript y Vite; Tailwind y shadcn/ui | Stack conocido por el equipo y componentes accesibles listos | — |
+| Frontend | React, TypeScript y Vite; Tailwind y primitivas de Radix con estilo propio | Stack conocido por el equipo; accesibilidad de Radix con la identidad visual de `05-frontend.md` | shadcn/ui tal cual: aspecto genérico |
+| 3D y animación | three.js con React Three Fiber y drei; GSAP (ScrollTrigger, SplitText, Flip) y Lenis; Zustand para el estado de escena | Estética low-poly y navegación narrativa con cámara (ver `05-frontend.md`) | — |
+| Audio | Howler.js, apagado por defecto | Ambiente y efectos de interfaz con control | — |
 | Datos en la web | TanStack Query, tipos con `openapi-typescript` y MSW para respuestas simuladas | La web trabaja contra el contrato desde la hora 0 | — |
-| Gráficas y mapa | Recharts (P0); MapLibre con GeoJSON propio y sin mapa base externo (P1) | El mapa no es imprescindible para la decisión; un buscador basta en el P0 | Mapa en el P0 |
-| Calidad de código | Ruff en Python; ESLint y Prettier en la web; GitHub Actions | Rápidos y con configuración mínima | — |
+| Gráficas y mapa | SVG propio animado con GSAP; la vista regional (HU-095) va en la escena 3D | Pocas gráficas y control total del estilo; un buscador basta para elegir municipio | Recharts: difícil de adaptar al estilo. MapLibre: solo si la escena 3D no alcanza |
+| Calidad de código | Ruff en Python; ESLint, Prettier y Vitest en la web; GitHub Actions | Rápidos y con configuración mínima | — |
 | Despliegue | Una imagen Docker: FastAPI sirve la API y el build de la web | Un solo servicio, sin CORS. Alojar en un servicio de contenedores con plan gratuito vigente | Web y API separadas: más piezas que pueden fallar |
 | Gestión | GitHub Projects: épicas como etiquetas, historias como issues | Vive junto al código | Jira, si el equipo ya lo usa |
