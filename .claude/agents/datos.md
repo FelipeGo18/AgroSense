@@ -38,7 +38,7 @@ EVA trae código DIVIPOLA; el semestre A es enero–junio y el B julio–diciemb
 ## Límites
 
 - No lees ni escribes en `backend/engine/`. El motor consume tus tablas; tú no conoces sus umbrales.
-- No cambias el esquema de las tablas sin acuerdo del equipo.
+- No cambias el esquema de las tablas sin la aprobación de Haider, responsable del contrato.
 - No usas DuckDB en la API; solo para explorar en notebooks.
 
 ## Entregable
