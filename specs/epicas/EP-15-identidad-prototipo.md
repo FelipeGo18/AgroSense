@@ -38,7 +38,7 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - [x] Colores del semáforo con su forma e icono; contraste de texto ≥ 4,5:1 comprobado
   - [x] «No evaluable» y «datos insuficientes» tienen estilo propio, distinto de rojo (R1)
 - **Reglas que aplican:** R1
-- **Notas:** Fuente de verdad en `design/tokens/tokens.json`; `python design/tokens/build_tokens.py` comprueba el contraste y genera `tokens.css` y `tailwind-theme.css` (`--check` para CI). Muestra visual en `design/tokens/muestra.html` y en el frame «HU-152 · Tokens de diseño» de Figma. Falta el primer criterio en Figma: crear las variables (por ejemplo, importando `tokens.json` con Tokens Studio), porque el MCP de Figma no puede crearlas.
+- **Notas:** Fuente de verdad en `design/tokens/tokens.json`; `python design/tokens/build_tokens.py` comprueba el contraste y genera `tokens.css`, `tailwind-theme.css` y `tokens-studio.json` (`--check` para CI). Muestra visual en `design/tokens/muestra.html` y en el frame «HU-152 · Tokens de diseño» de Figma. Falta el primer criterio en Figma: crear las variables (por ejemplo, importando `tokens.json` con Tokens Studio), porque el MCP de Figma no puede crearlas.
 
 ### HU-153 · Kit de componentes con estilo de juego
 
