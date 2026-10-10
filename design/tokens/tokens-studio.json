@@ -1,0 +1,352 @@
+{
+  "agrosense": {
+    "color": {
+      "paleta": {
+        "cielo": {
+          "$value": "#8FA9B8",
+          "$type": "color"
+        },
+        "niebla": {
+          "$value": "#DCE5EA",
+          "$type": "color"
+        },
+        "noche": {
+          "$value": "#1E2A3A",
+          "$type": "color"
+        },
+        "tierra": {
+          "$value": "#A8582B",
+          "$type": "color"
+        },
+        "trigo": {
+          "$value": "#E8B04B",
+          "$type": "color"
+        },
+        "calabaza": {
+          "$value": "#F0913A",
+          "$type": "color"
+        },
+        "oliva": {
+          "$value": "#6F8A3A",
+          "$type": "color"
+        },
+        "brote": {
+          "$value": "#9CC152",
+          "$type": "color"
+        },
+        "rojo": {
+          "$value": "#B83A2B",
+          "$type": "color"
+        }
+      },
+      "oscuro": {
+        "cielo": {
+          "$value": "#4A6576",
+          "$type": "color"
+        },
+        "tierra": {
+          "$value": "#924B24",
+          "$type": "color"
+        },
+        "trigo": {
+          "$value": "#7E570F",
+          "$type": "color"
+        },
+        "calabaza": {
+          "$value": "#92490B",
+          "$type": "color"
+        },
+        "oliva": {
+          "$value": "#55692B",
+          "$type": "color"
+        },
+        "brote": {
+          "$value": "#4F6624",
+          "$type": "color"
+        },
+        "rojo": {
+          "$value": "#A93226",
+          "$type": "color"
+        }
+      },
+      "superficie": {
+        "fondo": {
+          "$value": "#8FA9B8",
+          "$type": "color"
+        },
+        "panel": {
+          "$value": "#FFFFFF",
+          "$type": "color"
+        },
+        "panel-suave": {
+          "$value": "#DCE5EA",
+          "$type": "color"
+        },
+        "borde": {
+          "$value": "#B4C3CC",
+          "$type": "color"
+        }
+      },
+      "texto": {
+        "principal": {
+          "$value": "#1E2A3A",
+          "$type": "color"
+        },
+        "secundario": {
+          "$value": "#4A6576",
+          "$type": "color"
+        },
+        "sobre-oscuro": {
+          "$value": "#FFFFFF",
+          "$type": "color"
+        }
+      },
+      "accion": {
+        "primaria": {
+          "$value": "#55692B",
+          "$type": "color"
+        },
+        "primaria-borde": {
+          "$value": "#3A4A1D",
+          "$type": "color"
+        },
+        "secundaria": {
+          "$value": "#E8B04B",
+          "$type": "color"
+        },
+        "secundaria-borde": {
+          "$value": "#B8862E",
+          "$type": "color"
+        },
+        "foco": {
+          "$value": "#1E2A3A",
+          "$type": "color"
+        },
+        "foco-sobre-oscuro": {
+          "$value": "#FFFFFF",
+          "$type": "color"
+        }
+      },
+      "semaforo": {
+        "verde": {
+          "fondo": {
+            "$value": "#9CC152",
+            "$type": "color"
+          },
+          "texto": {
+            "$value": "#1E2A3A",
+            "$type": "color"
+          },
+          "borde": {
+            "$value": "#4F6624",
+            "$type": "color"
+          }
+        },
+        "amarillo": {
+          "fondo": {
+            "$value": "#E8B04B",
+            "$type": "color"
+          },
+          "texto": {
+            "$value": "#1E2A3A",
+            "$type": "color"
+          },
+          "borde": {
+            "$value": "#7E570F",
+            "$type": "color"
+          }
+        },
+        "rojo": {
+          "fondo": {
+            "$value": "#B83A2B",
+            "$type": "color"
+          },
+          "texto": {
+            "$value": "#FFFFFF",
+            "$type": "color"
+          },
+          "borde": {
+            "$value": "#7E251B",
+            "$type": "color"
+          }
+        },
+        "no-evaluable": {
+          "fondo": {
+            "$value": "#DCE5EA",
+            "$type": "color"
+          },
+          "texto": {
+            "$value": "#1E2A3A",
+            "$type": "color"
+          },
+          "borde": {
+            "$value": "#4A6576",
+            "$type": "color"
+          }
+        },
+        "datos-insuficientes": {
+          "fondo": {
+            "$value": "#FFFFFF",
+            "$type": "color"
+          },
+          "rayado": {
+            "$value": "#DCE5EA",
+            "$type": "color"
+          },
+          "texto": {
+            "$value": "#1E2A3A",
+            "$type": "color"
+          },
+          "borde": {
+            "$value": "#4A6576",
+            "$type": "color"
+          }
+        }
+      },
+      "rotulo": {
+        "ejemplo-fondo": {
+          "$value": "#F0913A",
+          "$type": "color"
+        },
+        "estimacion-fondo": {
+          "$value": "#DCE5EA",
+          "$type": "color"
+        }
+      }
+    },
+    "fuente": {
+      "familia": {
+        "titulos": {
+          "$value": "'Fredoka', 'Nunito', system-ui, sans-serif",
+          "$type": "fontFamilies"
+        },
+        "texto": {
+          "$value": "'Atkinson Hyperlegible', system-ui, sans-serif",
+          "$type": "fontFamilies"
+        }
+      },
+      "tamano": {
+        "xs": {
+          "$value": "14px",
+          "$type": "fontSizes"
+        },
+        "sm": {
+          "$value": "16px",
+          "$type": "fontSizes"
+        },
+        "base": {
+          "$value": "18px",
+          "$type": "fontSizes"
+        },
+        "lg": {
+          "$value": "22px",
+          "$type": "fontSizes"
+        },
+        "xl": {
+          "$value": "28px",
+          "$type": "fontSizes"
+        },
+        "2xl": {
+          "$value": "36px",
+          "$type": "fontSizes"
+        },
+        "3xl": {
+          "$value": "48px",
+          "$type": "fontSizes"
+        }
+      },
+      "peso": {
+        "normal": {
+          "$value": "400",
+          "$type": "fontWeights"
+        },
+        "negrita": {
+          "$value": "700",
+          "$type": "fontWeights"
+        },
+        "titulo": {
+          "$value": "600",
+          "$type": "fontWeights"
+        }
+      },
+      "interlineado": {
+        "ajustado": {
+          "$value": "1.15",
+          "$type": "lineHeights"
+        },
+        "normal": {
+          "$value": "1.5",
+          "$type": "lineHeights"
+        }
+      }
+    },
+    "espacio": {
+      "0": {
+        "$value": "0px",
+        "$type": "spacing"
+      },
+      "1": {
+        "$value": "4px",
+        "$type": "spacing"
+      },
+      "2": {
+        "$value": "8px",
+        "$type": "spacing"
+      },
+      "3": {
+        "$value": "12px",
+        "$type": "spacing"
+      },
+      "4": {
+        "$value": "16px",
+        "$type": "spacing"
+      },
+      "6": {
+        "$value": "24px",
+        "$type": "spacing"
+      },
+      "8": {
+        "$value": "32px",
+        "$type": "spacing"
+      },
+      "12": {
+        "$value": "48px",
+        "$type": "spacing"
+      },
+      "16": {
+        "$value": "64px",
+        "$type": "spacing"
+      },
+      "tactil-minimo": {
+        "$value": "44px",
+        "$type": "spacing"
+      }
+    },
+    "radio": {
+      "sm": {
+        "$value": "8px",
+        "$type": "borderRadius"
+      },
+      "md": {
+        "$value": "12px",
+        "$type": "borderRadius"
+      },
+      "lg": {
+        "$value": "16px",
+        "$type": "borderRadius"
+      },
+      "xl": {
+        "$value": "24px",
+        "$type": "borderRadius"
+      },
+      "pastilla": {
+        "$value": "999px",
+        "$type": "borderRadius"
+      },
+      "recto": {
+        "$value": "2px",
+        "$type": "borderRadius"
+      }
+    }
+  }
+}

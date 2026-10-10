@@ -16,6 +16,7 @@ DIR = Path(__file__).parent
 SOURCE = DIR / "tokens.json"
 OUT_CSS = DIR / "tokens.css"
 OUT_THEME = DIR / "tailwind-theme.css"
+OUT_STUDIO = DIR / "tokens-studio.json"
 
 MIN_RATIO = {"texto": 4.5, "grafico": 3.0}
 
@@ -114,6 +115,33 @@ def render(resolved):
     return css, theme
 
 
+# Grupo de tokens.json -> $type de Tokens Studio. Las sombras quedan fuera: están escritas como CSS.
+STUDIO_TYPES = {
+    "color": "color",
+    "fuente.familia": "fontFamilies",
+    "fuente.tamano": "fontSizes",
+    "fuente.peso": "fontWeights",
+    "fuente.interlineado": "lineHeights",
+    "espacio": "spacing",
+    "radio": "borderRadius",
+}
+
+
+def render_studio(resolved):
+    """JSON para importar en Tokens Studio y crear las variables de Figma."""
+    tree = {}
+    for name, value in resolved.items():
+        kind = next((t for g, t in STUDIO_TYPES.items() if name.startswith(g + ".")), None)
+        if kind is None or (kind == "color" and not HEX.match(str(value))):
+            continue
+        node = tree
+        *parents, leaf = name.split(".")
+        for part in parents:
+            node = node.setdefault(part, {})
+        node[leaf] = {"$value": value, "$type": kind}
+    return json.dumps({"agrosense": tree}, ensure_ascii=False, indent=2) + "\n"
+
+
 def main():
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
     resolved = resolve(flatten(data))
@@ -121,14 +149,15 @@ def main():
     print("\n".join(lines))
 
     css, theme = render(resolved)
+    outputs = ((OUT_CSS, css), (OUT_THEME, theme), (OUT_STUDIO, render_studio(resolved)))
     if "--check" in sys.argv:
-        stale = [p.name for p, text in ((OUT_CSS, css), (OUT_THEME, theme)) if not p.exists() or p.read_text(encoding="utf-8") != text]
+        stale = [p.name for p, text in outputs if not p.exists() or p.read_text(encoding="utf-8") != text]
         if stale:
-            failures.append(f"CSS desactualizado: {', '.join(stale)}. Ejecute build_tokens.py")
+            failures.append(f"Archivos desactualizados: {', '.join(stale)}. Ejecute build_tokens.py")
     else:
-        OUT_CSS.write_text(css, encoding="utf-8", newline="\n")
-        OUT_THEME.write_text(theme, encoding="utf-8", newline="\n")
-        print(f"Escritos {OUT_CSS.name} y {OUT_THEME.name}")
+        for path, text in outputs:
+            path.write_text(text, encoding="utf-8", newline="\n")
+        print("Escritos " + ", ".join(p.name for p, _ in outputs))
 
     if failures:
         print("\nFallas:\n" + "\n".join(failures), file=sys.stderr)
