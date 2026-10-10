@@ -2,7 +2,7 @@
 
 Cómo se ve, se siente y se construye la web de AgroSense. Complementa `03-sistemas.md` (qué hace cada subsistema W) y `04-stack.md` (resumen de tecnologías).
 
-> **Estado:** dirección inicial de la fase 0. Todo lo de este documento se puede ajustar mientras se prototipa; las reglas R1–R10 y el contrato de la API no.
+Se ajusta mientras se prototipa. Si un cambio toca las reglas R1–R10 o el contrato de la API, se registra en `docs/decisiones.md` y se refleja en `specs/01-reglas.md` y `specs/02-contratos.md`.
 
 ## Dónde se hace qué
 
@@ -31,8 +31,83 @@ Si una idea se reconoce como «una pieza del juego», se descarta.
 ### Concepto: del satélite al lote
 
 - **Paisaje con suelo y horizonte.** Un paisaje andino continuo: montañas, niebla en los valles y el mosaico de parcelas en ladera del altiplano. Nada flota.
-- **La navegación es un descenso.** La cámara baja del satélite (los datos de NASA) a la región, al municipio y a la finca. Cada nivel es una sección de la app; el scroll o los toques mueven la cámara.
-- **El paisaje acompaña al dato.** Las parcelas del cultivo consultado se resaltan; el cielo refleja el clima de la ventana (nubes, lluvia, sequía). El paisaje refuerza, nunca reemplaza, el resultado escrito.
+- **La navegación es un descenso.** La cámara baja del satélite (los datos de NASA) a la región, al municipio y a la finca. Cada nivel es una sección de la app; el scroll o los toques mueven la cámara. Quien vuelve con sesión no repite el descenso: entra directo al nivel de su finca.
+- **El paisaje acompaña al dato.** Las parcelas del cultivo consultado se resaltan. El paisaje refuerza, nunca reemplaza, el resultado escrito.
+- **El paisaje está vivo.** El cielo y la escena reflejan la condición aproximada de ahora en el municipio: día o noche, lluvia, nubes y viento (ver «Ambiente en vivo»).
+
+### Mascota: el satélite
+
+Un satélite pequeño, tecnológico y tierno. Es el guía: acompaña el descenso, señala lo importante y reacciona a lo que pasa (celebra un verde, se preocupa con un rojo, se encoge con «datos insuficientes» sin que parezca un riesgo). En el inicio presenta qué es AgroSense.
+
+- Representa el origen de los datos (observación desde el espacio) sin contar la historia de NASA.
+- Tiene una versión 3D para la escena y una 2D para el modo ligero, los estados y los íconos.
+- Sus expresiones refuerzan el resultado; nunca son la única forma de comunicarlo.
+- Es original: no se parece a ningún satélite ni personaje de marca existente.
+
+## Mapa de la web
+
+### Modelo
+
+**Usuario → zonas (municipios) → lotes → temporadas.** Un usuario con cuenta puede tener varios lotes en varias zonas. Cada temporada registra un cultivo, sus fechas y el diagnóstico que se vio al sembrar. Sin cuenta, hay una sola **finca temporal** en el dispositivo: área total y porcentaje por cultivo.
+
+### Partes
+
+| Parte | Quién | Qué hace el usuario | Qué ve |
+|---|---|---|---|
+| A. Inicio | Todos | Conoce AgroSense; elige consultar sin cuenta o entrar | La mascota presenta qué es AgroSense y las tres cosas que hace |
+| B. Descenso | Invitado y usuario nuevo | Busca su municipio (satélite) y lo ve entre sus vecinos (región). Con cuenta, al llegar al municipio marca su primer lote: nombre, área, cultivo y fecha de siembra | La cámara baja guiada por la mascota hasta el municipio o hasta el lote |
+| C. Consulta | Todos | Elige cultivo y semestre; para «qué sembrar después», sin cuenta elige a mano el cultivo anterior | Acción sugerida primero; luego semáforo, señales, razones, limitaciones y gráficas; ranking de rotaciones con desglose |
+| D. Mi finca | Con cuenta (inicio de quien vuelve); sin cuenta, la finca temporal | Con cuenta: recorre sus lotes, cambia de zona y abre un lote. Sin cuenta: registra área y porcentaje por cultivo | Paisaje con sus lotes, cada uno con su cultivo y etapa; sin cuenta, la finca temporal con su plan de agua |
+| D1. Lote · ahora | Con cuenta | Revisa su lote | Cultivo, etapa y días desde la siembra |
+| D2. Lote · próxima siembra | Con cuenta | Mueve sus prioridades (agua, suelo, ingreso y riesgo) | Diagnóstico de la siguiente ventana y qué sembrar después según el historial real del lote, con opciones excluidas a pedido |
+| D3. Lote · agua | Con cuenta | Revisa el plan | Calendario de riego del lote y total de la zona, con rangos y rótulo de estimación |
+| D4. Lote · historial y progreso | Con cuenta | Registra cosecha y nueva siembra | Línea de tiempo de temporadas, rotaciones válidas encadenadas e hitos |
+| E. Agregar lote o zona | Con cuenta | Agrega un lote en su zona o en otro municipio | Mini descenso desde la finca al nuevo municipio |
+| F. Cuenta | Con cuenta | Registro, sesión, consentimiento, perfil, preferencias, borrar cuenta | Vistas de cuenta |
+| Transversal | Todos | — | Panel «¿Cómo funciona y de dónde sale esto?» (cómo se decide el semáforo, fuentes y versión de los datos, HU-122), estados, rótulo de ejemplo, condición en vivo, modo ligero y sonido (P1) |
+
+### Sin cuenta y con cuenta
+
+| Función | Sin cuenta | Con cuenta |
+|---|---|---|
+| Diagnóstico de ventana | Sí | Sí |
+| Qué sembrar después | Sí, eligiendo a mano el cultivo anterior | Sí, con el historial real del lote |
+| Plan de agua | La finca temporal, que no sale del dispositivo | Todos sus lotes, guardados |
+| Varios lotes y zonas | No | Sí |
+| Historial y progreso | No | Sí |
+| Pasar a una cuenta | Al registrarse, la finca temporal se ofrece para guardar: un lote por cultivo, con su parte del área | — |
+
+### Progreso
+
+El progreso es la parte de «juego», y solo refleja hechos registrados y reglas con fuente (R5, R8): temporadas registradas, rotaciones que cumplen las reglas de filtro, e hitos como «primera rotación con leguminosa». No hay puntajes inventados de «salud del suelo». El lote cambia visualmente con su historial.
+
+### Flujos
+
+1. **Invitado:** inicio → consultar sin cuenta → descenso → consulta → finca temporal (opcional) → invitación a crear cuenta para guardar.
+2. **Usuario nuevo:** inicio → crear cuenta → descenso → primer lote → Mi finca.
+3. **Usuario que vuelve:** entra directo a Mi finca, en el nivel de finca, sin descenso.
+4. **Agregar lote:** Mi finca → mini descenso → nuevo lote.
+5. **Nueva temporada:** lote → registrar cosecha y siembra → el progreso se actualiza.
+
+### Navegación
+
+Una sola experiencia continua, con una URL por nivel y por lote, para que funcionen el botón atrás, los enlaces compartidos y los saltos directos a un caso en la demo.
+
+## Ambiente en vivo
+
+La escena refleja la condición aproximada de ahora en el municipio (decisión 7 de `docs/decisiones.md`). Es ambiente: nunca cambia un resultado.
+
+| Condición | Origen | En la escena |
+|---|---|---|
+| Día, atardecer, noche | Calculado en el navegador con la hora y la posición del municipio | Luz, color del cielo, estrellas, luces de las casas |
+| Lluvia | `GET /api/v1/conditions` (Open-Meteo, a partir de modelos) | Partículas de lluvia y charcos según intensidad |
+| Nubes | Mismo endpoint | Cobertura y sombra de nubes |
+| Viento | Mismo endpoint | Movimiento de cultivos, árboles y niebla según velocidad y dirección |
+| Temperatura | Mismo endpoint | Solo como dato en el rótulo |
+
+- Rótulo discreto: «Condición aproximada en <municipio> · <fuente> · <hora>».
+- Sin datos del proveedor: clima neutro y rótulo «sin condición en vivo». Nunca se inventa.
+- Con «reducir movimiento», los efectos quedan quietos; en modo ligero, la condición se muestra con un ícono.
 
 ## Principios de diseño
 
@@ -41,7 +116,7 @@ Si una idea se reconoce como «una pieza del juego», se descarta.
 3. **Las reglas también son de diseño:**
    - R1: «datos insuficientes» y «no evaluable» se ven distintos de «desfavorable» (forma, patrón y texto; nunca rojo). En el paisaje se representan como niebla o trazo punteado, no como daño.
    - R5: los datos de ejemplo llevan rótulo visible en pantalla.
-   - R9: la finca no sale del dispositivo.
+   - R9: sin cuenta, la finca no sale del dispositivo; con cuenta, se guarda solo tras el consentimiento y se puede borrar desde la app.
    - R10: todo resultado de riego lleva «Estimación con el clima de la zona. Verifique la humedad del suelo en su lote» y se muestra en rangos.
    - W2: el estado nunca depende solo del color.
 4. **Cada acción tiene respuesta.** Tocar, elegir y cambiar prioridades produce un cambio visible inmediato.
@@ -75,13 +150,41 @@ Fijar versiones exactas al crear `web/`.
 | Estado | Zustand (escena y cámara) y TanStack Query (API) | Zustand comparte estado entre DOM y canvas sin re-render de todo el árbol |
 | UI | Tailwind y primitivas de Radix con estilo propio | Accesibilidad de Radix sin el aspecto genérico de shadcn |
 | Gráficas | SVG propio animado con GSAP | Pocas gráficas (lluvia, área sembrada, calendario de agua) y control total del estilo |
-| Audio | Howler.js | Ambiente y efectos de interfaz con control de volumen y silencio |
+| Audio (P1) | Howler.js | Ambiente y efectos de interfaz con control de volumen y silencio |
+| Sesión | Cookie de sesión de la API (sin librería extra) | Registro e inicio de sesión con usuario y contraseña contra `/api/v1/auth` |
 | Datos | `openapi-typescript` y MSW | Igual que el resto del proyecto: tipos del contrato y respuestas simuladas |
 | Assets 3D | glTF comprimido con `gltf-transform` | Un solo formato liviano |
 | Diseño | Figma (conectado por el MCP TalkToFigma) | Moodboard, tokens, componentes y pantallas |
-| Calidad | ESLint, Prettier y Vitest | Configuración mínima |
+| Calidad | ESLint, Prettier y Vitest; las pruebas corren en Docker | Configuración mínima y el mismo entorno para todos |
 
 **Descartado por ahora:** Recharts (cuesta adaptarlo al estilo), MapLibre (el descenso 3D cubre la vista regional de HU-095; se retoma solo si la escena no alcanza), Next.js y Astro (no hay servidor Node en el despliegue).
+
+## Modo simulación
+
+Un modo para que quien desarrolla vea y pruebe cada caso sin depender de la API real, la base de datos ni el clima en vivo (subsistema S5, HU-014).
+
+| Variable | Dónde | Qué activa |
+|---|---|---|
+| `VITE_SIMULATION=true` | Web | MSW responde todos los endpoints (cálculo, cuentas y condiciones) y aparece el panel de simulación |
+| `AGROSENSE_SIMULATION=true` | Backend | Usuario simulado sin iniciar sesión y base de datos de ejemplo, para probar la integración real |
+
+**Panel de simulación** (flotante, se abre con un atajo de teclado):
+
+| Grupo | Controles |
+|---|---|
+| Resultado | Luz verde, amarilla, roja o no evaluable; mercado sin datos; señal con calidad `partial` |
+| Red | Respuesta lenta, error 422, error 500, sin conexión |
+| Usuario | Invitado; usuario nuevo sin lotes; usuario con 3 lotes en 2 zonas; usuario con historial largo |
+| Tiempo | Saltar temporadas para ver el progreso; fijar fecha y hora |
+| Clima en vivo | Día, atardecer o noche; lluvia, nubes y viento con intensidad; sin condición en vivo |
+| Escena | Modo ligero, «reducir movimiento», contador de fps, posición de cámara, repetir el descenso |
+| Mascota | Forzar cada expresión |
+
+**Reglas:**
+
+- Mientras está activo, una franja visible dice «Modo simulación · datos de ejemplo» (R5).
+- El build de producción no incluye MSW ni el panel; el CI falla si `VITE_SIMULATION` está activo en producción.
+- El backend se niega a arrancar si `AGROSENSE_SIMULATION` está activo junto con la configuración de producción.
 
 ## Assets y licencias
 
@@ -92,6 +195,7 @@ En el espíritu de R8, cada asset tiene autor, licencia y enlace en `web/public/
 | Quaternius LowPoly Crops | Cultivos en 5 etapas de crecimiento | CC0 | Viene en FBX/OBJ; se convierte a glTF |
 | Kenney Nature Kit | Árboles, rocas, terreno, plantas | CC0 | — |
 | Generados en código | Terreno, parcelas, cielo, efectos | Propios | Procedurales con three.js |
+| Mascota satélite | Modelo 3D y versión 2D | Propios | Diseño original del equipo (HU-171) |
 
 Solo se usan assets con licencia que permita uso y modificación. Si un asset se genera con un servicio de IA, se registra el servicio y sus términos.
 
@@ -109,14 +213,14 @@ Adaptado de las técnicas para animaciones con Claude Opus 5.5 que circulan en X
 
 | Skill | Uso | Estado |
 |---|---|---|
-| [`greensock/gsap-skills`](https://github.com/greensock/gsap-skills) | Oficial de GSAP: core, timeline, ScrollTrigger, plugins, React, rendimiento | Por instalar |
-| Una skill de React Three Fiber (candidatas: `anthemflynn/ccmp`, `Impertio-Studio/Three.js-Claude-Skill-Package`) | R3F, drei, rendimiento | Por evaluar |
+| [`greensock/gsap-skills`](https://github.com/greensock/gsap-skills) | Oficial de GSAP: core, timeline, ScrollTrigger, plugins, React, rendimiento | Elegida; se instala al crear `web/` |
+| `anthemflynn/ccmp` (skill `react-three-fiber`) | R3F, drei, física y postprocesado | Elegida; se instala al crear `web/` |
 | [`majidmanzarpour/threejs-game-skills`](https://github.com/majidmanzarpour/threejs-game-skills) | Ideas de UI de juego, QA y audio | Solo referencia (three.js sin R3F) |
-| `agrosense-motion` | El método de motion de esta página como skill del proyecto | Por crear |
+| `agrosense-motion` | El método de motion de esta página como skill del proyecto | Se crea en HU-156 |
 | `frontend-design`, `web-animations`, `ui-ux-pro-max` | Fundamentos de diseño y animación | Instaladas |
 
 Toda skill de terceros se lee antes de instalarla: son instrucciones que se ejecutan con los permisos de quien la usa.
 
-## Decisiones abiertas
+## Decisiones
 
-Ver `docs/decisiones-abiertas.md`: intro narrativa con scroll, audio en P0 o P1, tipografías y paleta definitivas.
+Las decisiones de frontend tomadas (estilo, inicio, navegación, audio, skills) están en `docs/registro-de-decisiones.md`. La paleta y las tipografías salen de HU-151 y HU-152.

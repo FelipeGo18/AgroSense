@@ -11,6 +11,7 @@
 | [EP-01](epicas/EP-01-contratos.md) | HU-011 | Esquema de las tablas publicadas | P0 | M | pendiente |
 | [EP-01](epicas/EP-01-contratos.md) | HU-012 | OpenAPI con ejemplos de cada estado | P0 | M | pendiente |
 | [EP-01](epicas/EP-01-contratos.md) | HU-013 | Respuestas simuladas (MSW) | P0 | S | pendiente |
+| [EP-01](epicas/EP-01-contratos.md) | HU-014 | Modo simulación para desarrolladores | P0 | M | pendiente |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-021 | Clonar y ejecutar con pocos comandos | P0 | S | pendiente |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-022 | Lint y pruebas automáticas en cada cambio | P0 | S | pendiente |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | Esqueleto desplegado en URL pública | P0 | M | pendiente |
@@ -68,3 +69,18 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | pendiente |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P0 | L | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-161 | Esquema de cuentas y migraciones | P0 | M | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-162 | Autenticación | P0 | L | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-163 | Consentimiento y tratamiento de datos | P0 | S | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | M | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-165 | Temporadas e historial del lote | P0 | M | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-166 | Borrar mi cuenta | P0 | S | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-167 | Progreso del lote | P0 | S | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-168 | Registro, sesión y paso de invitado a cuenta | P0 | M | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-169 | Mi finca con varios lotes y zonas | P0 | L | pendiente |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-171 | Diseño de la mascota satélite | P0 | M | pendiente |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-172 | Expresiones y animaciones de la mascota | P0 | M | pendiente |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-173 | Pantalla de inicio | P0 | M | pendiente |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-174 | Día y noche en la escena | P0 | S | pendiente |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-175 | Endpoint de condiciones actuales | P0 | S | pendiente |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-176 | Lluvia, nubes y viento en la escena | P0 | M | pendiente |

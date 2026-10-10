@@ -1,13 +1,13 @@
 ---
 id: EP-12
 titulo: "Calidad y trazabilidad"
-prioridad: "P0"
-fase: "En paralelo desde la hora 0"
-rol: "Producto y agro (con Datos)"
-agente: calidad
-subsistemas: "S3, D4"
-depende_de: "HU-011"
-reglas: "R4, R8"
+prioridad: P0
+fase: [Hora 0, Evento]
+rol: "Calidad, con Datos"
+agentes: [calidad, datos]
+subsistemas: [S3, D4]
+depende_de: [HU-011]
+reglas: [R4, R8]
 estado: pendiente
 ---
 
@@ -15,17 +15,7 @@ estado: pendiente
 
 **Resultado esperado:** El equipo puede demostrar que cada resultado es correcto, reproducible y trazable a sus fuentes.
 
-| Campo | Valor |
-|---|---|
-| Prioridad | P0 |
-| Fase | En paralelo desde la hora 0 |
-| Rol responsable | Producto y agro (con Datos) |
-| Agente sugerido | `calidad` (ver `.claude/agents/`) |
-| Subsistemas | S3, D4 (ver `specs/03-sistemas.md`) |
-| Depende de | HU-011 |
-| Reglas de diseño que aplican | R4, R8 (ver `specs/01-reglas.md`) |
-
-Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, `en curso`, `en revisión`, `hecha`.
+Empieza en la hora 0 con los casos de referencia y se cierra al final del evento.
 
 ## Historias de usuario
 
@@ -35,8 +25,7 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] De 5 a 8 combinaciones, incluidos verde, rojo y «no evaluable»
-  - [ ] Automatizados en pytest y corriendo en CI
-- **Notas:** —
+  - [ ] Automatizados en pytest y corriendo en Docker, en local y en CI
 
 ### HU-122 · Procedencia de cada dato
 
@@ -45,7 +34,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Manifiesto con versión, fuentes y cobertura
   - [ ] La web muestra fuentes y versión
-- **Notas:** —
 
 ### HU-123 · Reconstruir el dataset con un comando
 
@@ -54,4 +42,3 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Un comando regenera `data/published` desde la caché
   - [ ] El resultado coincide con el manifiesto
-- **Notas:** —

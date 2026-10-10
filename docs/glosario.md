@@ -42,10 +42,25 @@ Términos que aparecen en las specs, explicados en lenguaje sencillo.
 | three.js / React Three Fiber | Biblioteca para dibujar 3D en el navegador, y su versión para usarla con componentes de React. |
 | GSAP | Biblioteca de animación web. ScrollTrigger ata animaciones al scroll. |
 | glTF | Formato liviano para modelos 3D en la web. |
-| Modo ligero | Versión 2D de la app, con la misma información, para celulares sencillos o con poca señal. |
 | Storyboard | Tabla toma por toma de una animación, escrita antes de construirla. |
 | Token de diseño | Valor con nombre (un color, un tamaño, una duración) que comparten Figma y el código. |
 | CC0 | Licencia que permite usar y modificar un recurso sin restricciones. |
+| Modo simulación | Modo de desarrollo, activado con una variable de entorno, que usa datos y usuarios de ejemplo y permite forzar cada caso. |
+| Ambiente en vivo | Día, noche, lluvia y viento aproximados de ahora en la escena. No cambia ningún resultado. |
+| Modo ligero | Versión 2D de la app, con la misma información, para celulares sencillos o con poca señal. |
+
+## Cuentas
+
+| Término | Qué significa |
+|---|---|
+| Lote | Una parte de la finca con un cultivo por temporada. Un usuario con cuenta puede tener varios, en varias zonas. |
+| Zona | El municipio donde está un lote. |
+| Temporada | Un ciclo de un cultivo en un lote: qué se sembró, cuándo y cuándo se cosechó. |
+| Progreso | Lo que se deriva del historial de un lote: temporadas registradas, rotaciones válidas e hitos. |
+| Finca temporal | La finca de quien usa la app sin cuenta: área y porcentaje por cultivo, guardada solo en su dispositivo. |
+| Consentimiento | La aceptación del usuario de que se guarden sus datos, con la versión del texto que aceptó. |
+| Sesión | El tiempo en que un usuario queda conectado tras iniciar sesión. Vive en una cookie y en la tabla `sessions`; vence a los 30 días. |
+| Argon2 | Método para guardar contraseñas como un resumen irreversible: la contraseña nunca se guarda tal cual. |
 
 ## Datos y dominio
 

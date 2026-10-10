@@ -6,13 +6,13 @@ Copia esta plantilla a `specs/epicas/EP-XX-nombre-corto.md`. Una épica se defin
 ---
 id: EP-XX
 titulo: "Título orientado al resultado"
-prioridad: "P0"
-fase: "Fase 0 | Hora 0 | Evento"
-rol: "Datos | Motor y API | Web | Producto y agro | Plataforma"
-agente: nombre-del-agente
-subsistemas: "D#, AG#, M#, W#, S#"
-depende_de: "EP-## o HU-###"
-reglas: "R#, R#"
+prioridad: P0
+fase: [Evento]
+rol: "Rol responsable, con roles de apoyo"
+agentes: [nombre-del-agente]
+subsistemas: [M1, W2]
+depende_de: [EP-00, HU-011]
+reglas: [R1, R5]
 estado: pendiente
 ---
 
@@ -20,20 +20,29 @@ estado: pendiente
 
 **Resultado esperado:** una frase que describe qué puede hacer el equipo o el usuario cuando la épica está completa.
 
-| Campo | Valor |
-|---|---|
-| Prioridad | |
-| Fase | |
-| Rol responsable | |
-| Agente sugerido | |
-| Subsistemas | |
-| Depende de | |
-| Reglas de diseño que aplican | |
+Contexto opcional: condiciones, cómo arranca, qué se hace en cada fase.
 
 ## Historias de usuario
 
 (Una sección por HU, según `specs/_plantilla-hu.md`.)
 ```
+
+## Campos de la cabecera
+
+La cabecera (frontmatter) es la única fuente de estos datos: no se repiten en el cuerpo. GitHub la muestra como tabla.
+
+| Campo | Valores |
+|---|---|
+| `prioridad` | `P0` o `P1` |
+| `fase` | Lista con `Fase 0` (antes del evento), `Hora 0` (arranque del evento) y `Evento` |
+| `rol` | Rol responsable y, si hay, roles de apoyo |
+| `agentes` | Agentes de `.claude/agents/`, el principal primero |
+| `subsistemas` | Códigos de `specs/03-sistemas.md` |
+| `depende_de` | Épicas, HUs o hitos externos; `[]` si no depende de nada |
+| `reglas` | Reglas de `specs/01-reglas.md`; `[]` si ninguna aplica |
+| `estado` | `pendiente`, `en curso`, `en revisión` o `hecha` |
+
+Tamaños de HU: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona.
 
 ## Lista de verificación de una épica
 

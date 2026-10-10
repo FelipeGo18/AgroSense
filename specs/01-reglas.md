@@ -9,10 +9,10 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 | R3 | Las restricciones agronómicas filtran | Una rotación inválida se excluye y se registra el motivo. No se castiga con puntos. |
 | R4 | Resultados deterministas y versionados | Mismos datos, reglas y entrada producen el mismo resultado. Cada respuesta lleva la versión del dataset y de las reglas. |
 | R5 | Nada inventado | Los datos de ejemplo se marcan como ejemplo. Las explicaciones solo citan indicadores y reglas que el motor evaluó. |
-| R6 | El motor no conoce la web | El módulo de decisión no importa FastAPI ni lee archivos directamente. Recibe tablas y configuración. |
+| R6 | El motor no conoce la web | El módulo de decisión no importa FastAPI ni lee archivos ni la base de datos directamente. Recibe tablas, configuración y, cuando aplica, el historial del lote que le pasa la API. |
 | R7 | Una sola llave territorial | Todo se une por código DIVIPOLA del municipio. Los nombres no se usan como llave. |
 | R8 | Toda regla y dato tiene fuente | Cada fila de datos y cada regla agronómica apunta a una entrada de la tabla `sources`. |
-| R9 | Los datos de la finca no se guardan en el servidor | El servidor calcula y responde. Si se guardan, es solo en el dispositivo del usuario (P1). |
+| R9 | Los datos de la finca solo se guardan con cuenta y consentimiento | Los endpoints de cálculo (`/diagnostics`, `/rotations`, `/water-plans`, `/scenarios`) nunca guardan nada. Sin cuenta, los datos no salen del dispositivo. Con cuenta, se guardan los lotes y su historial con consentimiento registrado, solo los datos mínimos, y el usuario puede borrarlo todo. |
 | R10 | El riego es una estimación y se dice siempre | Se basa en el clima de la zona, no en mediciones del lote. Se muestran rangos y se pide verificar la humedad del suelo en campo. |
 
 ## Cómo se comprueba cada regla
@@ -24,10 +24,10 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 | R3 | Prueba: una secuencia que viola un `filter` no aparece en el ranking y su exclusión cita la regla. |
 | R4 | Prueba: dos ejecuciones iguales dan salida idéntica; toda respuesta trae `versions.dataset` y `versions.rules`. |
 | R5 | Revisión: ningún dato ficticio sin rótulo; cada razón de M4 mapea a un indicador o regla evaluados. |
-| R6 | Prueba o lint: `backend/engine/` no importa `fastapi` ni abre archivos. |
+| R6 | Prueba o lint: `backend/engine/` no importa `fastapi` ni `sqlalchemy` ni abre archivos. |
 | R7 | Prueba: las uniones usan `municipality_id`; unicidad de llaves en los Parquet. |
 | R8 | Validación: ninguna fila ni regla con `source_id` vacío o inexistente en `sources`. |
-| R9 | Revisión: `/water-plans` no persiste; ningún almacenamiento de finca en el servidor. |
+| R9 | Prueba: los endpoints de cálculo no escriben en la base de datos. Prueba: sin sesión, ningún endpoint de cuenta acepta escritura. Prueba: borrar la cuenta elimina usuario, sesiones, lotes y temporadas. Revisión: el registro guarda el consentimiento y su versión. |
 | R10 | Revisión: el rótulo de estimación aparece junto a todo resultado de riego; se muestran rangos. |
 
 ## Agregación inicial del semáforo

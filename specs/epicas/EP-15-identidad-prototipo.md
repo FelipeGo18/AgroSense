@@ -1,33 +1,21 @@
 ---
 id: EP-15
 titulo: "Identidad visual y prototipo del frontend"
-prioridad: "P0"
-fase: "Fase 0"
+prioridad: P0
+fase: [Fase 0]
 rol: "Web"
-agente: web
-subsistemas: "W1–W7"
-depende_de: "Ninguna (usa datos de ejemplo)"
-reglas: "R1, R5, R9, R10"
-estado: en curso
+agentes: [web]
+subsistemas: [W1, W2, W3, W4, W6, W7, W8, W9]
+depende_de: []
+reglas: [R1, R5, R9, R10]
+estado: pendiente
 ---
 
 # EP-15 · Identidad visual y prototipo del frontend
 
 **Resultado esperado:** El equipo llega al evento con la identidad visual, el sistema de animación, los assets y un prototipo navegable decididos y probados, para construir la demo sin improvisar el diseño.
 
-| Campo | Valor |
-|---|---|
-| Prioridad | P0 |
-| Fase | Fase 0 |
-| Rol responsable | Web |
-| Agente sugerido | `web` (ver `.claude/agents/`) |
-| Subsistemas | W1–W7 (ver `specs/03-sistemas.md`) |
-| Depende de | Ninguna (usa datos de ejemplo) |
-| Reglas de diseño que aplican | R1, R5, R9, R10 (ver `specs/01-reglas.md`) |
-
 Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `web/` de este repositorio; la app del evento va en un repositorio nuevo (ver HU-004).
-
-Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, `en curso`, `en revisión`, `hecha`.
 
 ## Historias de usuario
 
@@ -39,7 +27,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] Página de Figma con referencias, paleta tentativa y ejemplos de paisaje
   - [ ] Cada referencia dice qué se toma y qué no (inspiración, no copia)
   - [ ] Dirección aprobada por el equipo
-- **Reglas que aplican:** —
 - **Notas:** Concepto inicial «del satélite al lote» en `specs/05-frontend.md`.
 
 ### HU-152 · Tokens de diseño
@@ -80,8 +67,8 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Cuatro niveles (satélite, región, municipio, finca) navegables con scroll y con toques
   - [ ] Storyboard escrito antes de animar
+  - [ ] La mascota satélite guía el recorrido (HU-172)
   - [ ] Con `prefers-reduced-motion`, los niveles cambian sin recorrido de cámara
-- **Reglas que aplican:** —
 
 ### HU-156 · Sistema de motion
 
@@ -92,7 +79,7 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] Patrones de entrada, salida, respuesta al toque y cambio de estado
   - [ ] Animaciones deterministas (función del tiempo de la línea de tiempo)
   - [ ] Revisión por un crítico distinto de quien construyó
-- **Reglas que aplican:** —
+  - [ ] Skill del proyecto `agrosense-motion` creada con este método
 
 ### HU-157 · Audio de ambiente e interfaz
 
@@ -102,8 +89,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] Apagado por defecto, con control visible y volumen
   - [ ] La app se entiende igual sin sonido
   - [ ] Licencia de cada sonido registrada
-- **Reglas que aplican:** —
-- **Notas:** P0 o P1 por decidir (ver `docs/decisiones-abiertas.md`).
 
 ### HU-158 · Modo ligero y movimiento reducido
 
@@ -113,14 +98,14 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] Sin WebGL o con fps bajo, pasa sola a una versión 2D con la misma información
   - [ ] Interruptor manual de modo ligero
   - [ ] Cumple el JS inicial y el LCP de `specs/05-frontend.md`
-- **Reglas que aplican:** —
 
 ### HU-159 · Prototipo navegable con datos de ejemplo
 
 - **Historia:** Como equipo, quiero un prototipo navegable de diagnóstico, rotaciones y finca, para probar el estilo con el flujo real.
 - **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Recorre contexto, diagnóstico, rotaciones y plan de agua con respuestas simuladas del contrato
+  - [ ] Recorre inicio, descenso, consulta y Mi finca con respuestas simuladas del contrato (modo simulación, HU-014)
+  - [ ] Funciona como invitado y como usuario simulado con varios lotes
   - [ ] Muestra los cuatro estados del semáforo, «datos insuficientes» y error
   - [ ] Datos de ejemplo rotulados en pantalla; rótulo de estimación en el riego; la finca no sale del dispositivo
   - [ ] Usable a 360 px

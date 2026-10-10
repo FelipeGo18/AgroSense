@@ -1,31 +1,19 @@
 ---
 id: EP-02
 titulo: "Base del proyecto desplegada"
-prioridad: "P0"
-fase: "Hora 0"
-rol: "Plataforma (o Motor y API si son 4 personas)"
-agente: plataforma
-subsistemas: "S1, S2"
-depende_de: "Ninguna"
-reglas: "—"
+prioridad: P0
+fase: [Hora 0]
+rol: "Plataforma (Motor y API si el equipo es de 4)"
+agentes: [plataforma]
+subsistemas: [S1, S2]
+depende_de: []
+reglas: []
 estado: pendiente
 ---
 
 # EP-02 · Base del proyecto desplegada
 
 **Resultado esperado:** Cualquier integrante arranca el proyecto en minutos, y la URL pública existe desde las primeras horas.
-
-| Campo | Valor |
-|---|---|
-| Prioridad | P0 |
-| Fase | Hora 0 |
-| Rol responsable | Plataforma (o Motor y API si son 4 personas) |
-| Agente sugerido | `plataforma` (ver `.claude/agents/`) |
-| Subsistemas | S1, S2 (ver `specs/03-sistemas.md`) |
-| Depende de | Ninguna |
-| Reglas de diseño que aplican | — (ver `specs/01-reglas.md`) |
-
-Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, `en curso`, `en revisión`, `hecha`.
 
 ## Historias de usuario
 
@@ -36,15 +24,14 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] README de arranque probado por otra persona
   - [ ] Estructura del repositorio acordada
-- **Notas:** —
 
 ### HU-022 · Lint y pruebas automáticas en cada cambio
 
 - **Historia:** Como equipo, quiero lint y pruebas automáticas en cada cambio, para detectar roturas temprano.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] GitHub Actions corre Ruff, pytest y el build web
-- **Notas:** —
+  - [ ] GitHub Actions corre Ruff, pytest, Vitest y el build web dentro de Docker Compose
+  - [ ] Las mismas pruebas corren en local con un solo comando de Docker
 
 ### HU-023 · Esqueleto desplegado en URL pública
 
@@ -53,4 +40,4 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Un contenedor sirve API y web en una URL pública
   - [ ] `/api/v1/version` responde
-- **Notas:** —
+  - [ ] Docker Compose levanta la app y PostgreSQL con volumen persistente; credenciales en variables de entorno, ningún secreto en el repositorio
