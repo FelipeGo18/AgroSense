@@ -1,0 +1,48 @@
+@import "tailwindcss";
+/* Tokens de HU-152, generados por design/tokens/build_tokens.py */
+@import "../../../design/tokens/tailwind-theme.css";
+
+@layer base {
+  html {
+    background: var(--color-superficie-fondo);
+    color: var(--color-texto-principal);
+    font-family: var(--font-texto);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+  }
+  h1, h2, h3 {
+    font-family: var(--font-titulos);
+    font-weight: var(--font-weight-titulo);
+    line-height: var(--leading-ajustado);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accion-foco);
+    outline-offset: 3px;
+  }
+}
+
+/* Piezas del diorama (Plate.tsx): contorno de foco y hundimiento al presionar. */
+@layer components {
+  .plate-ring {
+    opacity: 0;
+  }
+  :focus-visible > .plate .plate-ring {
+    opacity: 1;
+  }
+  .plate-button .plate-face,
+  .plate-button .plate-content {
+    transition: transform 70ms ease-out;
+  }
+  .plate-button:active:not(:disabled) .plate-face {
+    transform: translateY(5px);
+  }
+  .plate-button:active:not(:disabled) .plate-content {
+    transform: translateY(5px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .plate-button .plate-face,
+    .plate-button .plate-content {
+      transition: none;
+    }
+  }
+}

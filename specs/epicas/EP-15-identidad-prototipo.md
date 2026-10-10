@@ -38,17 +38,18 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - [x] Colores del semáforo con su forma e icono; contraste de texto ≥ 4,5:1 comprobado
   - [x] «No evaluable» y «datos insuficientes» tienen estilo propio, distinto de rojo (R1)
 - **Reglas que aplican:** R1
-- **Notas:** Fuente de verdad en `design/tokens/tokens.json`; `python design/tokens/build_tokens.py` comprueba el contraste y genera `tokens.css`, `tailwind-theme.css` y `tokens-studio.json` (`--check` para CI). Muestra visual en `design/tokens/muestra.html` y en el frame «HU-152 · Tokens de diseño» de Figma. Sin variables de Figma: Tokens Studio exige plan de pago para crearlas y el MCP de Figma no puede; `tokens-studio.json` queda listo por si se retoma.
+- **Notas:** Fuente de verdad en `design/tokens/tokens.json`; `python design/tokens/build_tokens.py` comprueba el contraste y genera `tokens.css`, `tailwind-theme.css` y `tokens-studio.json` (`--check` para CI). Lámina visual en `design/tokens/tokens.svg` (la genera `design/kit/tokens_sheet.py`) y en el frame «HU-152 · Tokens de diseño» de Figma. Con HU-153 los tokens pasaron de radios y sombras a bisel, canto, facetas y trazos. Sin variables de Figma: Tokens Studio exige plan de pago para crearlas y el MCP de Figma no puede; `tokens-studio.json` queda listo por si se retoma.
 
 ### HU-153 · Kit de componentes con estilo de juego
 
 - **Historia:** Como desarrollador web, quiero componentes base con estilo de juego y accesibles, para armar pantallas rápido.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Botón, selector con autocompletado, control de prioridad, tarjeta de señal, insignia de semáforo, rótulo de ejemplo y rótulo de estimación
-  - [ ] Cada componente en Figma y en código, con estados de foco, deshabilitado y carga
-  - [ ] Objetivos táctiles ≥ 44 px y navegación por teclado
+  - [x] Botón, selector con autocompletado, control de prioridad, tarjeta de señal, insignia de semáforo, rótulo de ejemplo y rótulo de estimación
+  - [x] Cada componente en Figma y en código, con estados de foco, deshabilitado y carga
+  - [x] Objetivos táctiles ≥ 44 px y navegación por teclado
 - **Reglas que aplican:** R1, R5, R10
+- **Notas:** Estilo «diorama low-poly»: esquinas biseladas, caras trianguladas con luz desde la izquierda y canto inferior en lugar de sombra; el semáforo y las tarjetas son letreros clavados con estaca; la prioridad se elige tocando semillas (0 a 5), no con un deslizador. Diseño primero en Figma (frame «HU-153 · Kit de componentes»), generado desde `design/kit/` (`build_kit_svg.py`, `sheet.py`). Código en `web/src/components/` sobre la pieza base `Plate.tsx`; muestra en `npm --prefix web run dev`; pruebas con `npm --prefix web test`. La insignia de semáforo y los rótulos no son interactivos: no tienen foco ni estado deshabilitado.
 
 ### HU-154 · Escena 3D del paisaje andino
 

@@ -21,6 +21,9 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Paleta y semáforo | Paleta del moodboard más un rojo (#B83A2B); variantes oscuras para texto; botón principal en oliva oscuro con texto blanco; tonos claros siempre con texto noche (HU-152, `design/tokens/tokens.json`) | 10 oct 2026 |
 | Tipografía | Fredoka 600 para títulos y Atkinson Hyperlegible para texto, 18 px corriente y 14 px mínimo (HU-152) | 10 oct 2026 |
 | Variables de Figma | No se crean: los tokens viven en `design/tokens/tokens.json` y en Figma como frame de muestras con nombre (Tokens Studio es de pago) | 10 oct 2026 |
+| Lenguaje visual de los componentes | Diorama low-poly: esquinas biseladas, caras trianguladas y canto en lugar de sombra; nada con esquinas redondas. Descartados «instrumento de campo» y «cuaderno de campo» (HU-153) | 10 oct 2026 |
+| Orden de trabajo del frontend | Cada pieza se diseña y aprueba primero en Figma; el código va después | 10 oct 2026 |
+| Control de prioridad | Cinco semillas y un «0» que se tocan, en lugar de un deslizador (se retira Radix Slider) | 10 oct 2026 |
 | Rotaciones y finca | Se unen en Mi finca, por lote | 10 oct 2026 |
 | Audio | P1 (HU-157) | 10 oct 2026 |
 | «Acerca de» | Sin sección aparte: el panel «¿Cómo funciona y de dónde sale esto?» cubre fuentes, versión y cómo se decide | 10 oct 2026 |
