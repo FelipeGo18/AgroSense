@@ -9,6 +9,7 @@ Aquí vive **qué** se construye y **por qué**. El código implementa lo que di
 | `02-contratos.md` | Tablas Parquet, endpoints, errores, JSON de ejemplo |
 | `03-sistemas.md` | Sistemas y subsistemas (D, AG, M, W, S) y sus límites |
 | `04-stack.md` | Tecnologías elegidas, por qué y alternativas descartadas |
+| `05-frontend.md` | Visión, estilo, accesibilidad, rendimiento, stack y método de motion de la web |
 | `BACKLOG.md` | Índice de todas las HUs con prioridad, tamaño y estado |
 | `epicas/` | Una épica por archivo, con sus historias de usuario |
 | `_plantilla-epica.md`, `_plantilla-hu.md` | Plantillas para escribir nuevas épicas y HUs |

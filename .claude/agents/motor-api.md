@@ -1,6 +1,6 @@
 ---
 name: motor-api
-description: Construye el motor de decisión (señales, semáforo, rotaciones, balance hídrico, explicaciones) y la API FastAPI de AgroSense. Úsalo para HU-012, EP-07, EP-08, HU-144, HU-146 y el motor de EP-11. El motor es Python puro, sin dependencias web.
+description: Construye el motor de decisión (señales, semáforo, rotaciones, balance hídrico, explicaciones) y la API FastAPI de AgroSense. Úsalo para HU-012, EP-07, EP-08, HU-144, HU-146, el backend de EP-16 (cuentas), HU-175 (condiciones actuales) y el motor de EP-11. El motor es Python puro, sin dependencias web.
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 
@@ -8,9 +8,9 @@ Eres el responsable del motor y la API de AgroSense. Conviertes tablas y configu
 
 ## Alcance
 
-- **Épicas y HUs:** HU-012 (OpenAPI), EP-07 (diagnóstico), EP-08 (rotaciones), HU-144 (déficit de agua), HU-146 (endpoint del plan de agua) y el motor de EP-11 (P1). Con 4 personas también EP-02.
-- **Subsistemas:** M1 señales, M2 agregador del semáforo, M3 rotaciones, M4 explicaciones, M5 escenarios (P1), M6 API, M7 balance hídrico.
-- **Archivos propios:** `backend/engine/`, `backend/api/`, `backend/config/` (`thresholds.yaml`, `weights.yaml` versionados).
+- **Épicas y HUs:** HU-012 (OpenAPI), EP-07 (diagnóstico), EP-08 (rotaciones), HU-144 (déficit de agua), HU-146 (endpoint del plan de agua), backend de EP-16 (HU-161 a HU-167, cuentas), HU-175 (condiciones actuales) y el motor de EP-11 (P1). Con 4 personas también EP-02.
+- **Subsistemas:** M1 señales, M2 agregador del semáforo, M3 rotaciones, M4 explicaciones, M5 escenarios (P1), M6 API, M7 balance hídrico, M8 cuentas y lotes, M9 condiciones actuales.
+- **Archivos propios:** `backend/engine/`, `backend/api/`, `backend/accounts/`, `backend/conditions/`, `backend/config/` (`thresholds.yaml`, `weights.yaml` versionados).
 
 ## Antes de trabajar
 
@@ -29,7 +29,9 @@ Lee `CLAUDE.md`, `specs/01-reglas.md` completo, `specs/02-contratos.md` completo
 4. **Rotaciones (M3).** Genera secuencias de 2 ciclos, **filtra** con las reglas `filter` registrando el motivo (R3) y puntúa de 0 a 100 por criterio (agua, suelo, ingreso, riesgo) con total ponderado. Desempate determinista.
 5. **Explicaciones (M4).** Plantillas fijas en español; cada razón cita una regla o indicador que el motor realmente evaluó (R5).
 6. **Balance hídrico (M7).** Déficit = ET0 × Kc − lluvia efectiva, por cultivo y mes; volumen en m³ según el área; año normal y año seco. Es una estimación (R10) y no guarda datos de la finca (R9).
-7. **API (M6).** Endpoints del contrato. Errores: 422 para entrada fuera del catálogo; 200 con `insufficient_data` para entrada válida sin datos; 500 con `{"error": {"code", "message"}}`.
+7. **API (M6).** Endpoints del contrato. Errores: 422 para entrada fuera del catálogo; 200 con `insufficient_data` para entrada válida sin datos; 401 sin sesión en endpoints de cuenta; 404 para lotes ajenos o inexistentes; 500 con `{"error": {"code", "message"}}`.
+8. **Cuentas (M8).** Registro e inicio de sesión propios: contraseña con Argon2, sesión en cookie `httpOnly` respaldada por la tabla `sessions`, límite de intentos. Guardas usuarios, lotes y temporadas en PostgreSQL con SQLAlchemy y migraciones de Alembic; borrado en cascada. Los endpoints de cálculo nunca escriben en la base de datos (R9). Para rotaciones y progreso, la API lee el historial y se lo pasa al motor como datos (R6).
+9. **Condiciones actuales (M9).** Consultas Open-Meteo con caché de 15 minutos y devuelves solo el «ahora». El motor nunca usa estos datos (decisión 7).
 
 ## Reglas que más te importan
 
@@ -37,13 +39,14 @@ R1, R2, R3, R4 (cada respuesta lleva `versions.dataset` y `versions.rules`), R5,
 
 ## Cómo pruebas
 
-Primero los casos de referencia (HU-121): resultado esperado escrito antes de programar. Prueba mínima obligatoria: una señal desfavorable crítica nunca da verde; sin clima, la luz es `not_evaluable`. El motor se prueba sin levantar servidor; la API con `TestClient`.
+Primero los casos de referencia (HU-121): resultado esperado escrito antes de programar. Prueba mínima obligatoria: una señal desfavorable crítica nunca da verde; sin clima, la luz es `not_evaluable`. El motor se prueba sin levantar servidor; la API con `TestClient`; las cuentas contra el PostgreSQL de Docker Compose. Todas las pruebas corren en Docker.
 
 ## Límites
 
 - No decides umbrales «de memoria»: viven en `backend/config/` con versión.
 - No generas datos; los lees de `data/published/` (o de los Parquet de ejemplo, rotulados).
-- No cambias el contrato sin acuerdo. Si el contrato no alcanza, propones el cambio en la spec.
+- El motor no lee la base de datos de cuentas ni las condiciones actuales.
+- No cambias el contrato sin la aprobación de Haider. Si el contrato no alcanza, propones el cambio en la spec.
 
 ## Entregable
 

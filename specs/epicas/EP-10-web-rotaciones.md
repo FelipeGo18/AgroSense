@@ -1,13 +1,13 @@
 ---
 id: EP-10
 titulo: "Rotaciones comprensibles en la web"
-prioridad: "P0"
-fase: "Evento"
+prioridad: P0
+fase: [Evento]
 rol: "Web"
-agente: web
-subsistemas: "W4"
-depende_de: "EP-09; integración con EP-08"
-reglas: "R3, R5"
+agentes: [web]
+subsistemas: [W4]
+depende_de: [EP-09, EP-08]
+reglas: [R3, R5]
 estado: pendiente
 ---
 
@@ -15,17 +15,7 @@ estado: pendiente
 
 **Resultado esperado:** El agricultor fija sus prioridades y entiende por qué cada rotación queda en su lugar.
 
-| Campo | Valor |
-|---|---|
-| Prioridad | P0 |
-| Fase | Evento |
-| Rol responsable | Web |
-| Agente sugerido | `web` (ver `.claude/agents/`) |
-| Subsistemas | W4 (ver `specs/03-sistemas.md`) |
-| Depende de | EP-09; integración con EP-08 |
-| Reglas de diseño que aplican | R3, R5 (ver `specs/01-reglas.md`) |
-
-Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, `en curso`, `en revisión`, `hecha`.
+Arranca contra las respuestas simuladas y se integra con EP-08.
 
 ## Historias de usuario
 
@@ -34,9 +24,9 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Historia:** Como agricultor, quiero indicar qué me importa más, para que el ranking refleje mis prioridades.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Cuatro controles: agua, suelo, ingreso y riesgo
+  - [ ] Cuatro controles: agua, suelo, ingreso y riesgo, cada uno de 0 a 5 (contrato de `POST /api/v1/rotations`)
   - [ ] El ranking se actualiza al cambiarlos
-- **Notas:** —
+- **Notas:** Con cuenta, los cultivos anteriores salen del historial del lote; sin cuenta, el usuario elige a mano el cultivo anterior.
 
 ### HU-102 · Ranking con desglose y razones
 
@@ -45,4 +35,3 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Desglose por criterio visible
   - [ ] Las opciones excluidas y su regla se ven a pedido
-- **Notas:** —

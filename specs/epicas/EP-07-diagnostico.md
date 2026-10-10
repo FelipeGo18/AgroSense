@@ -1,13 +1,13 @@
 ---
 id: EP-07
 titulo: "Diagnóstico de la ventana explicable"
-prioridad: "P0"
-fase: "Evento"
+prioridad: P0
+fase: [Evento]
 rol: "Motor y API"
-agente: motor-api
-subsistemas: "M1, M2, M4, M6"
-depende_de: "HU-011, HU-012 (datos de ejemplo), luego EP-03 y EP-04"
-reglas: "R1, R2, R4, R5, R6"
+agentes: [motor-api]
+subsistemas: [M1, M2, M4, M6]
+depende_de: [HU-011, HU-012, EP-03, EP-04]
+reglas: [R1, R2, R4, R5, R6]
 estado: pendiente
 ---
 
@@ -15,17 +15,7 @@ estado: pendiente
 
 **Resultado esperado:** Dado un municipio, un cultivo y un semestre, el sistema responde un semáforo con señales, razones, acción y limitaciones.
 
-| Campo | Valor |
-|---|---|
-| Prioridad | P0 |
-| Fase | Evento |
-| Rol responsable | Motor y API |
-| Agente sugerido | `motor-api` (ver `.claude/agents/`) |
-| Subsistemas | M1, M2, M4, M6 (ver `specs/03-sistemas.md`) |
-| Depende de | HU-011, HU-012 (datos de ejemplo), luego EP-03 y EP-04 |
-| Reglas de diseño que aplican | R1, R2, R4, R5, R6 (ver `specs/01-reglas.md`) |
-
-Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, `en curso`, `en revisión`, `hecha`.
+Arranca con los datos de ejemplo de HU-011 y HU-012, y pasa a los datos reales de EP-03 y EP-04 en la integración.
 
 ## Historias de usuario
 
@@ -36,7 +26,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Señal con estado, nivel, indicadores y razones
   - [ ] Umbrales leídos de la configuración
-- **Notas:** —
 
 ### HU-072 · Señal de oferta
 
@@ -45,7 +34,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Nivel según la variación del área sembrada
   - [ ] Con poca siembra y sin mercado, la razón dice «posible oportunidad, sin confirmar precio»
-- **Notas:** —
 
 ### HU-073 · Señal de mercado sin datos
 
@@ -54,7 +42,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Sin datos: `insufficient_data`, nivel nulo y razón explícita
   - [ ] Con EP-05: nivel según el índice estacional
-- **Notas:** —
 
 ### HU-074 · Semáforo global y acción sugerida
 
@@ -64,7 +51,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] Implementa las reglas de agregación del contrato
   - [ ] Prueba: una señal desfavorable crítica nunca da verde
   - [ ] Prueba: sin clima, la luz es `not_evaluable`
-- **Notas:** —
 
 ### HU-075 · Umbrales y pesos versionados
 
@@ -73,7 +59,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Archivos YAML con número de versión
   - [ ] La respuesta incluye la versión del dataset y de las reglas
-- **Notas:** —
 
 ### HU-076 · Endpoint de diagnóstico con errores claros
 
@@ -82,4 +67,3 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] 422 para entradas fuera del catálogo
   - [ ] 200 con `insufficient_data` para entradas válidas sin datos
-- **Notas:** —

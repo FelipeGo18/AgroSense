@@ -1,31 +1,19 @@
 ---
 id: EP-00
 titulo: "Alcance piloto decidido con datos reales"
-prioridad: "P0"
-fase: "Fase 0"
-rol: "Producto y agro (con Datos)"
-agente: producto-agro
-subsistemas: "D1, AG1"
-depende_de: "Enunciado del 28 de octubre"
-reglas: "R7, R8"
+prioridad: P0
+fase: [Fase 0]
+rol: "Producto y agro, con Datos"
+agentes: [producto-agro, datos]
+subsistemas: [D1, AG1]
+depende_de: [Enunciado del 28 de octubre]
+reglas: [R7, R8]
 estado: pendiente
 ---
 
 # EP-00 · Alcance piloto decidido con datos reales
 
 **Resultado esperado:** Región, cultivos, periodos y fuentes elegidos con base en la cobertura real comprobada.
-
-| Campo | Valor |
-|---|---|
-| Prioridad | P0 |
-| Fase | Fase 0 |
-| Rol responsable | Producto y agro (con Datos) |
-| Agente sugerido | `producto-agro` (ver `.claude/agents/`) |
-| Subsistemas | D1, AG1 (ver `specs/03-sistemas.md`) |
-| Depende de | Enunciado del 28 de octubre |
-| Reglas de diseño que aplican | R7, R8 (ver `specs/01-reglas.md`) |
-
-Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, `en curso`, `en revisión`, `hecha`.
 
 ## Historias de usuario
 
@@ -37,7 +25,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] Tabla de cobertura por municipio y semestre desde 2019
   - [ ] Región elegida con justificación escrita
   - [ ] Lista de municipios habilitados
-- **Notas:** —
 
 ### HU-002 · Confirmar los datasets NASA del enunciado
 
@@ -46,7 +33,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Variables, resolución, periodo y forma de acceso documentados
   - [ ] Descarga de prueba para un municipio
-- **Notas:** —
 
 ### HU-003 · Verificar SIPSA y decidir si entra al P0
 
@@ -55,7 +41,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Decisión «entra» o «no entra» documentada
   - [ ] Si entra, mapeo de producto SIPSA a `crop_id`
-- **Notas:** —
 
 ### HU-004 · Confirmar qué se puede preparar antes del evento
 
@@ -64,4 +49,3 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Regla citada con enlace
   - [ ] Plan ajustado si cambia lo permitido
-- **Notas:** —

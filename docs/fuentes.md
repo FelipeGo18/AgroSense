@@ -13,6 +13,8 @@ Todo dato y toda regla del proyecto debe apuntar a una entrada de la tabla `sour
 | UPRA zonificación de aptitud | Aptitud por cultivo. El mapa de papa es de 2020 y cubre solo Diacol Capiro industrial. | Uso limitado; citar con sus límites |
 | SoilGrids | Propiedades del suelo (P1). | Sin verificar |
 | DANE (límites municipales) | Códigos DIVIPOLA, nombres y centroides. | Por descargar |
+| Open-Meteo (condiciones actuales) | Lluvia, nubes, viento y temperatura actuales por punto, de modelos con resolución de 15 minutos. Solo para el ambiente de la escena (decisión 7). | Elegida; licencia, atribución y límites de uso se verifican en HU-175 |
+| NASA GIBS (imágenes satelitales casi en tiempo real) | Posible imagen del día para el nivel «satélite» de la escena (P1). | Sin verificar |
 
 ## Referencia
 

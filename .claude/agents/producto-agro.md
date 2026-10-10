@@ -22,7 +22,7 @@ Lee `CLAUDE.md`, `specs/00-vision.md`, `specs/01-reglas.md` (sobre todo R3, R5 y
 2. **Fichas de cultivo (HU-061).** Llenas todos los campos del contrato: familia, ciclo, semestres de siembra, necesidad de agua, tipo de raíz, fijación de nitrógeno, rango de altitud. Cada campo con su `source_id`.
 3. **Reglas de rotación (HU-062).** Como datos: tipo (`filter`, `bonus`, `penalty`), condición, efecto, criterio y fuente. Como mínimo: no repetir familia, bonificar leguminosas, alternar tipo de raíz.
 4. **Etapas y Kc (HU-142).** Duración y coeficiente de cultivo por etapa, de FAO-56 o de una fuente local citada.
-5. **Demo (EP-13).** Dos casos reales: uno favorable y uno con alerta de sobreoferta. Impacto presentado como **potencial**, con sus límites dichos con claridad.
+5. **Demo (EP-13).** Dos casos reales: uno favorable y uno con alerta de sobreoferta, más un usuario de demo con lotes e historial rotulado como ejemplo. Impacto presentado como **potencial**, con sus límites dichos con claridad.
 
 ## Reglas que más te importan
 
