@@ -212,6 +212,16 @@
           "$value": "#DCE5EA",
           "$type": "color"
         }
+      },
+      "estaca": {
+        "luz": {
+          "$value": "#A8582B",
+          "$type": "color"
+        },
+        "sombra": {
+          "$value": "#924B24",
+          "$type": "color"
+        }
       }
     },
     "fuente": {
@@ -322,30 +332,52 @@
         "$type": "spacing"
       }
     },
-    "radio": {
+    "bisel": {
+      "recto": {
+        "$value": "0px",
+        "$type": "dimension"
+      },
       "sm": {
         "$value": "8px",
-        "$type": "borderRadius"
+        "$type": "dimension"
       },
       "md": {
-        "$value": "12px",
-        "$type": "borderRadius"
+        "$value": "10px",
+        "$type": "dimension"
       },
       "lg": {
+        "$value": "12px",
+        "$type": "dimension"
+      },
+      "tarjeta": {
         "$value": "16px",
-        "$type": "borderRadius"
+        "$type": "dimension"
       },
-      "xl": {
+      "panel": {
         "$value": "24px",
-        "$type": "borderRadius"
+        "$type": "dimension"
       },
-      "pastilla": {
-        "$value": "999px",
-        "$type": "borderRadius"
+      "octagono": {
+        "$value": "26px",
+        "$type": "dimension"
+      }
+    },
+    "canto": {
+      "boton": {
+        "$value": "6px",
+        "$type": "dimension"
       },
-      "recto": {
-        "$value": "2px",
-        "$type": "borderRadius"
+      "boton-hundido": {
+        "$value": "1px",
+        "$type": "dimension"
+      },
+      "lista": {
+        "$value": "6px",
+        "$type": "dimension"
+      },
+      "panel": {
+        "$value": "8px",
+        "$type": "dimension"
       }
     }
   }

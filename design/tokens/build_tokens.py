@@ -28,8 +28,10 @@ PREFIXES = {
     "fuente.peso": "font-weight",
     "fuente.interlineado": "leading",
     "espacio": "spacing",
-    "radio": "radius",
-    "sombra": "shadow",
+    "bisel": "bisel",
+    "canto": "canto",
+    "faceta": "faceta",
+    "trazo": "trazo",
 }
 
 REF = re.compile(r"^\{([^}]+)\}$")
@@ -115,7 +117,7 @@ def render(resolved):
     return css, theme
 
 
-# Grupo de tokens.json -> $type de Tokens Studio. Las sombras quedan fuera: están escritas como CSS.
+# Grupo de tokens.json -> $type de Tokens Studio. Facetas y trazos quedan fuera: no son medidas simples.
 STUDIO_TYPES = {
     "color": "color",
     "fuente.familia": "fontFamilies",
@@ -123,7 +125,8 @@ STUDIO_TYPES = {
     "fuente.peso": "fontWeights",
     "fuente.interlineado": "lineHeights",
     "espacio": "spacing",
-    "radio": "borderRadius",
+    "bisel": "dimension",
+    "canto": "dimension",
 }
 
 

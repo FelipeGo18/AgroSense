@@ -62,7 +62,7 @@
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-149 | Guardar la finca en el dispositivo | P1 | S | pendiente |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-151 | Moodboard y dirección visual | P0 | S | hecha |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-152 | Tokens de diseño | P0 | M | hecha |
-| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-153 | Kit de componentes con estilo de juego | P0 | L | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-153 | Kit de componentes con estilo de juego | P0 | L | hecha |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-154 | Escena 3D del paisaje andino | P0 | L | pendiente |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-155 | Descenso de cámara del satélite al lote | P0 | L | pendiente |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-156 | Sistema de motion | P0 | M | pendiente |

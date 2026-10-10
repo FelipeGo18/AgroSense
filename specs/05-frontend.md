@@ -148,7 +148,7 @@ Fijar versiones exactas al crear `web/`.
 | Animación | GSAP (ScrollTrigger, SplitText, Flip) con `@gsap/react` | Línea de tiempo precisa para cámara, scroll y UI; GSAP es gratuito con todos sus plugins |
 | Scroll | Lenis | Scroll suave que se integra con R3F y ScrollTrigger |
 | Estado | Zustand (escena y cámara) y TanStack Query (API) | Zustand comparte estado entre DOM y canvas sin re-render de todo el árbol |
-| UI | Tailwind y primitivas de Radix con estilo propio | Accesibilidad de Radix sin el aspecto genérico de shadcn |
+| UI | Tailwind y componentes propios en estilo diorama low-poly (`web/src/components/`, pieza base `Plate`); primitivas de Radix solo donde hagan falta (diálogos, menús) | Control total de la silueta biselada; Radix aporta accesibilidad en lo complejo |
 | Gráficas | SVG propio animado con GSAP | Pocas gráficas (lluvia, área sembrada, calendario de agua) y control total del estilo |
 | Audio (P1) | Howler.js | Ambiente y efectos de interfaz con control de volumen y silencio |
 | Sesión | Cookie de sesión de la API (sin librería extra) | Registro e inicio de sesión con usuario y contraseña contra `/api/v1/auth` |
