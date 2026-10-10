@@ -1,31 +1,21 @@
 ---
 id: EP-14
 titulo: "Finca y plan de agua"
-prioridad: "P0"
-fase: "Evento"
-rol: "Web, Motor y API, Datos y Producto y agro"
-agente: motor-api
-subsistemas: "AG1, D3, M7, W7"
-depende_de: "EP-04, EP-06"
-reglas: "R9, R10"
+prioridad: P0
+fase: [Fase 0, Evento]
+rol: "Motor y API, con Web, Datos y Producto y agro"
+agentes: [motor-api, web, datos, producto-agro]
+subsistemas: [AG1, D3, M7, W7]
+depende_de: [EP-04, EP-06]
+reglas: [R9, R10]
 estado: pendiente
 ---
 
 # EP-14 · Finca y plan de agua
 
-**Resultado esperado:** El agricultor registra su finca con el porcentaje del terreno de cada cultivo y ve cuánta agua necesitará cada uno y en qué meses o semanas es probable que tenga que regar. El P0 da las semanas típicas de déficit con el clima histórico; saber el día exacto exige medir la humedad del lote o tener pronóstico, por eso el aviso semanal queda en P1.
+**Resultado esperado:** El agricultor registra su finca (sin cuenta, como finca temporal en su dispositivo con el porcentaje del terreno de cada cultivo; con cuenta, como lotes de EP-16) y ve cuánta agua necesitará cada uno y en qué meses o semanas es probable que tenga que regar. El P0 da las semanas típicas de déficit con el clima histórico; saber el día exacto exige medir la humedad del lote o tener pronóstico, por eso el aviso semanal queda en P1.
 
-| Campo | Valor |
-|---|---|
-| Prioridad | P0 |
-| Fase | Evento |
-| Rol responsable | Web, Motor y API, Datos y Producto y agro |
-| Agente sugerido | `motor-api` (ver `.claude/agents/`) |
-| Subsistemas | AG1, D3, M7, W7 (ver `specs/03-sistemas.md`) |
-| Depende de | EP-04, EP-06 |
-| Reglas de diseño que aplican | R9, R10 (ver `specs/01-reglas.md`) |
-
-Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, `en curso`, `en revisión`, `hecha`.
+HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
 
 ## Historias de usuario
 
@@ -36,8 +26,7 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Área en hectáreas; solo cultivos del catálogo
   - [ ] Los porcentajes suman como máximo 100 %; el resto se muestra como descanso
-  - [ ] Los datos no se guardan en el servidor
-- **Notas:** —
+  - [ ] Sin cuenta, los datos no salen del dispositivo; con cuenta, se guardan como lotes (EP-16)
 
 ### HU-142 · Etapas de cada cultivo con Kc
 
@@ -56,7 +45,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] ET0 por Hargreaves con temperatura máxima y mínima, método documentado
   - [ ] Año seco definido como un percentil bajo de la serie
   - [ ] Comprobación manual en un municipio
-- **Notas:** —
 
 ### HU-144 · Déficit de agua por cultivo y etapa
 
@@ -66,7 +54,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] Déficit = ET0 × Kc menos lluvia efectiva, por cultivo y mes
   - [ ] Volumen en m³ según el área de cada cultivo
   - [ ] Año normal y año seco; misma entrada, mismo resultado
-- **Notas:** —
 
 ### HU-145 · Calendario de riego de la finca
 
@@ -76,7 +63,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
   - [ ] Meses de déficit resaltados por cultivo, con rangos
   - [ ] Volumen total de la finca
   - [ ] Rótulo: «Estimación con el clima de la zona. Verifique la humedad del suelo en su lote»
-- **Notas:** —
 
 ### HU-146 · Endpoint del plan de agua
 
@@ -85,7 +71,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] 422 si los porcentajes pasan de 100 o el cultivo no existe
   - [ ] No persiste los datos de la finca
-- **Notas:** —
 
 ### HU-147 · Aviso de riego semanal
 
@@ -94,7 +79,6 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Criterios de aceptación:**
   - [ ] Usa los últimos datos disponibles de NASA y muestra su fecha
   - [ ] Dice explícitamente que no es un pronóstico
-- **Notas:** —
 
 ### HU-148 · Rotaciones ponderadas por área
 
@@ -102,13 +86,11 @@ Tamaños: S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona. Estados: `pendiente`, 
 - **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Los criterios de agua e ingreso se ponderan por área
-- **Notas:** —
 
 ### HU-149 · Guardar la finca en el dispositivo
 
-- **Historia:** Como agricultor, quiero guardar mi finca en este dispositivo, para no escribirla cada vez.
+- **Historia:** Como agricultor sin cuenta, quiero guardar mi finca en este dispositivo, para no escribirla cada vez.
 - **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Se guarda solo en el navegador y se puede borrar
   - [ ] La página funciona aunque el navegador no permita guardar
-- **Notas:** —

@@ -12,9 +12,11 @@ Copia este bloque dentro del archivo de su épica (`specs/epicas/EP-XX-*.md`) y 
   - [ ] Criterio comprobable 2
   - [ ] Criterio de borde (sin datos, entrada inválida, límite) cuando aplique
 - **Reglas que aplican:** R# (ver `specs/01-reglas.md`)
-- **Contrato que toca:** tablas o endpoints de `specs/02-contratos.md`, si aplica
+- **Contrato que toca:** tablas o endpoints de `specs/02-contratos.md`
 - **Notas:** supuestos por confirmar, dependencias entre HUs, enlaces a fuentes
 ```
+
+Las tres últimas líneas van solo si tienen contenido: no se escribe «—».
 
 ## Lista de verificación antes de aceptar una HU
 
