@@ -1,0 +1,23 @@
+# Datos crudos y cachés (no van a git)
+data/raw/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+web/dist/
+
+# Entorno y secretos
+.env
+.env.*
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
