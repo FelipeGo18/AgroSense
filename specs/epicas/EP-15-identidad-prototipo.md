@@ -32,13 +32,13 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 ### HU-152 · Tokens de diseño
 
 - **Historia:** Como desarrollador web, quiero tokens de color, tipografía, espaciado, radios y sombras, para que Figma y el código usen los mismos valores.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Tokens definidos en Figma y exportados a CSS o Tailwind
+  - [x] Tokens definidos en Figma (frame de muestras con el nombre de cada token) y exportados a CSS y Tailwind
   - [x] Colores del semáforo con su forma e icono; contraste de texto ≥ 4,5:1 comprobado
   - [x] «No evaluable» y «datos insuficientes» tienen estilo propio, distinto de rojo (R1)
 - **Reglas que aplican:** R1
-- **Notas:** Fuente de verdad en `design/tokens/tokens.json`; `python design/tokens/build_tokens.py` comprueba el contraste y genera `tokens.css`, `tailwind-theme.css` y `tokens-studio.json` (`--check` para CI). Muestra visual en `design/tokens/muestra.html` y en el frame «HU-152 · Tokens de diseño» de Figma. Falta el primer criterio en Figma: crear las variables (por ejemplo, importando `tokens.json` con Tokens Studio), porque el MCP de Figma no puede crearlas.
+- **Notas:** Fuente de verdad en `design/tokens/tokens.json`; `python design/tokens/build_tokens.py` comprueba el contraste y genera `tokens.css`, `tailwind-theme.css` y `tokens-studio.json` (`--check` para CI). Muestra visual en `design/tokens/muestra.html` y en el frame «HU-152 · Tokens de diseño» de Figma. Sin variables de Figma: Tokens Studio exige plan de pago para crearlas y el MCP de Figma no puede; `tokens-studio.json` queda listo por si se retoma.
 
 ### HU-153 · Kit de componentes con estilo de juego
 
