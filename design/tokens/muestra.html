@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokens AgroSense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@600&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: var(--spacing-8);
+    background: var(--color-superficie-fondo);
+    color: var(--color-texto-principal);
+    font: var(--font-weight-normal) var(--text-base)/var(--leading-normal) var(--font-texto);
+  }
+  h1, h2 { font-family: var(--font-titulos); font-weight: var(--font-weight-titulo); line-height: var(--leading-ajustado); margin: 0 0 var(--spacing-4); }
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-xl); }
+  .sub { color: var(--color-texto-secundario); margin: 0 0 var(--spacing-6); }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spacing-6); max-width: 1500px; }
+  .panel { background: var(--color-superficie-panel); border-radius: var(--radius-xl); box-shadow: var(--shadow-panel); padding: var(--spacing-6); }
+  .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-3); }
+  .sw { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-superficie-borde); }
+  .sw .c { height: 56px; display: flex; align-items: flex-end; padding: var(--spacing-2); font-weight: 700; font-size: var(--text-sm); }
+  .sw .d { height: 32px; display: flex; align-items: center; padding: 0 var(--spacing-2); color: #fff; font-size: var(--text-xs); }
+  .sw .n { padding: var(--spacing-2); font-size: var(--text-xs); color: var(--color-texto-secundario); }
+  .stack { display: flex; flex-direction: column; gap: var(--spacing-3); align-items: flex-start; }
+  .badge {
+    display: inline-flex; align-items: center; gap: var(--spacing-2);
+    min-height: var(--spacing-tactil-minimo); padding: 0 var(--spacing-4);
+    font-weight: 700; border: 3px solid transparent;
+  }
+  .ico { font-size: 1.1em; width: 1.2em; text-align: center; }
+  .ring { width: 0.9em; height: 0.9em; border: 2.5px dashed currentColor; border-radius: 50%; }
+  .verde { background: var(--color-semaforo-verde-fondo); color: var(--color-semaforo-verde-texto); border-color: var(--color-semaforo-verde-borde); border-radius: var(--radius-pastilla); }
+  .amarillo { background: var(--color-semaforo-amarillo-fondo); color: var(--color-semaforo-amarillo-texto); border-color: var(--color-semaforo-amarillo-borde); border-radius: var(--radius-md); }
+  .rojo { background: var(--color-semaforo-rojo-fondo); color: var(--color-semaforo-rojo-texto); border-color: var(--color-semaforo-rojo-borde); border-radius: var(--radius-recto); }
+  .noeval { background: var(--color-semaforo-no-evaluable-fondo); color: var(--color-semaforo-no-evaluable-texto); border: 3px dashed var(--color-semaforo-no-evaluable-borde); border-radius: var(--radius-md); }
+  .insuf {
+    color: var(--color-semaforo-datos-insuficientes-texto);
+    border: 3px dotted var(--color-semaforo-datos-insuficientes-borde); border-radius: var(--radius-md);
+    background: repeating-linear-gradient(135deg, var(--color-semaforo-datos-insuficientes-fondo) 0 8px, var(--color-semaforo-datos-insuficientes-rayado) 8px 14px);
+  }
+  .btn {
+    font: 700 var(--text-base) var(--font-texto); min-height: 52px; padding: 0 var(--spacing-6);
+    border: 0; border-radius: var(--radius-lg); cursor: pointer;
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn.primario { background: var(--color-accion-primaria); color: var(--color-texto-sobre-oscuro); box-shadow: var(--shadow-boton); }
+  .btn.secundario { background: var(--color-accion-secundaria); color: var(--color-texto-principal); box-shadow: 0 4px 0 var(--color-accion-secundaria-borde); }
+  .btn:active { transform: translateY(3px); box-shadow: var(--shadow-boton-presionado); }
+  .btn.foco { outline: 3px solid var(--color-accion-foco); outline-offset: 3px; }
+  .row { display: flex; gap: var(--spacing-4); flex-wrap: wrap; align-items: center; margin-bottom: var(--spacing-4); }
+  .rotulo { display: inline-flex; gap: var(--spacing-2); align-items: center; padding: var(--spacing-1) var(--spacing-3); border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: 700; }
+  .ejemplo { background: var(--color-rotulo-ejemplo-fondo); }
+  .estimacion { background: var(--color-rotulo-estimacion-fondo); font-weight: 400; }
+  .tipo p { margin: 0 0 var(--spacing-2); }
+  .num { font-variant-numeric: tabular-nums; }
+  .scale { display: flex; gap: var(--spacing-3); align-items: flex-end; flex-wrap: wrap; }
+  .scale div { background: var(--color-paleta-oliva); }
+  .radii { display: flex; gap: var(--spacing-3); }
+  .radii div { width: 64px; height: 64px; background: var(--color-superficie-panel-suave); border: 2px solid var(--color-texto-secundario); font-size: var(--text-xs); display: flex; align-items: center; justify-content: center; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>Tokens de diseño · AgroSense</h1>
+  <p class="sub">HU-152 · Generado desde <code>design/tokens/tokens.json</code>. Contraste de texto ≥ 4,5:1 comprobado por <code>build_tokens.py</code>.</p>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Paleta</h2>
+      <div class="swatches" id="sw"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Semáforo: forma, color y texto</h2>
+      <div class="stack">
+        <span class="badge verde"><span class="ico" aria-hidden="true">●</span>Verde · Buen momento</span>
+        <span class="badge amarillo"><span class="ico" aria-hidden="true">▲</span>Amarillo · Con cuidado</span>
+        <span class="badge rojo"><span class="ico" aria-hidden="true">■</span>Rojo · Mejor no ahora</span>
+        <span class="badge noeval"><span class="ico ring" aria-hidden="true"></span>No evaluable · Faltan datos</span>
+        <span class="badge insuf"><span class="ico" aria-hidden="true">?</span>Datos insuficientes (señal)</span>
+      </div>
+      <p class="sub" style="margin-top:16px">«No evaluable» y «datos insuficientes» usan borde a trazos o punteado y bruma, nunca rojo (R1).</p>
+    </section>
+
+    <section class="panel">
+      <h2>Botones y rótulos</h2>
+      <div class="row">
+        <button class="btn primario">Ver diagnóstico</button>
+        <button class="btn secundario">Cambiar cultivo</button>
+        <button class="btn primario foco">Con foco</button>
+      </div>
+      <div class="row">
+        <span class="rotulo ejemplo">EJEMPLO · datos ficticios</span>
+        <span class="rotulo estimacion">≈ Estimación con el clima de la zona. Verifique la humedad del suelo en su lote</span>
+      </div>
+      <p class="sub">Objetivo táctil mínimo: 44 px. Botón con repisa inferior de 4 px que baja al presionar.</p>
+    </section>
+
+    <section class="panel tipo">
+      <h2>Tipografía</h2>
+      <p style="font:600 var(--text-3xl)/1.1 var(--font-titulos)">Fredoka 48 · Títulos</p>
+      <p style="font:600 var(--text-xl)/1.15 var(--font-titulos)">Fredoka 28 · ¿Siembro papa en semestre B?</p>
+      <p style="font-size:var(--text-lg)">Atkinson Hyperlegible 22 · Subtítulos y acciones</p>
+      <p>Atkinson Hyperlegible 18 · Texto corriente. La lluvia del semestre estuvo un 18 % por debajo de lo normal.</p>
+      <p style="font-size:var(--text-sm)" class="num">Cifras tabulares: 1.234,5 mm · 987,0 mm · 111,1 ha</p>
+      <p style="font-size:var(--text-xs)">14 px · mínimo, solo créditos y notas</p>
+    </section>
+
+    <section class="panel">
+      <h2>Espaciado (base 4 px)</h2>
+      <div class="scale" id="sp"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Radios y sombras</h2>
+      <div class="radii">
+        <div style="border-radius:var(--radius-recto)">2</div>
+        <div style="border-radius:var(--radius-sm)">8</div>
+        <div style="border-radius:var(--radius-md)">12</div>
+        <div style="border-radius:var(--radius-lg)">16</div>
+        <div style="border-radius:var(--radius-xl)">24</div>
+        <div style="border-radius:var(--radius-pastilla)">píldora</div>
+      </div>
+      <div class="row" style="margin-top:24px">
+        <div style="width:120px;height:64px;border-radius:12px;background:#fff;box-shadow:var(--shadow-panel);display:flex;align-items:center;justify-content:center;font-size:14px">panel</div>
+        <div style="width:120px;height:64px;border-radius:12px;background:#fff;box-shadow:var(--shadow-flotante);display:flex;align-items:center;justify-content:center;font-size:14px">flotante</div>
+      </div>
+    </section>
+  </div>
+
+<script>
+  const css = getComputedStyle(document.documentElement);
+  const names = ["cielo", "niebla", "noche", "tierra", "trigo", "calabaza", "oliva", "brote", "rojo"];
+  const textOn = { noche: "#fff", tierra: "#fff", rojo: "#fff" };
+  document.getElementById("sw").innerHTML = names.map(n => {
+    const base = css.getPropertyValue(`--color-paleta-${n}`).trim();
+    const dark = css.getPropertyValue(`--color-oscuro-${n}`).trim();
+    return `<div class="sw"><div class="c" style="background:${base};color:${textOn[n] || "var(--color-paleta-noche)"}">${n}</div>`
+      + (dark ? `<div class="d" style="background:${dark}">oscuro ${dark}</div>` : "")
+      + `<div class="n">${base}</div></div>`;
+  }).join("");
+  document.getElementById("sp").innerHTML = ["1", "2", "3", "4", "6", "8", "12", "16"].map(k => {
+    const v = css.getPropertyValue(`--spacing-${k}`).trim();
+    return `<div style="width:${v};height:${v}" title="${v}"></div><span style="font-size:14px;margin-right:8px">${v}</span>`;
+  }).join("");
+</script>
+</body>
+</html>
