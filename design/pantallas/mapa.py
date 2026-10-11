@@ -18,7 +18,7 @@ PARTS = (
     ("B · Descenso", "Invitado y usuario nuevo", [("Buscar mi municipio", 2, DONE), ("Dibujar mi lote en el mapa", 2, DONE)]),
     ("C · Consulta", "Todos", [("Elegir cultivo y semestre", 3, DONE), ("Resultado del diagnóstico", 3, DONE), ("Las cinco señales y gráficas", 3, DONE),
                                ("Qué sembrar después", 4, DONE)]),
-    ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 7, NEXT), ("Lote vivo y paso del tiempo", 7, NEXT), ("Lote · calendario", 7, NEXT),
+    ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 7, DONE), ("Lote vivo y paso del tiempo", 7, DONE), ("Lote · calendario", 7, NEXT),
                                     ("Lote · próxima siembra", 7, NEXT), ("Lote · agua", 7, NEXT), ("Lote · historial y progreso", 8, TODO),
                                     ("Finca temporal (sin cuenta)", 8, TODO)]),
     ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 8, TODO), ("Registrar cosecha y siembra", 8, TODO)]),
