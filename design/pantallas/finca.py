@@ -5,8 +5,10 @@ Lote vivo (HU-187): el diorama del lote como cubos de tierra juntos, uno o más 
 con una casita y un perro acostado detrás y el clima de ahora. Se recorre arrastrando y acercando; tocar un cultivo lo
 elige. La línea de tiempo (HU-186) es la del cultivo elegido: real hasta el último dato de temperatura y estimada con
 un año normal después; los demás cultivos avanzan a la misma fecha.
-Datos: GET /lots, GET /lots/{id} (current_seasons), GET /seasons/{id}/growth, POST /water-plans (riego probable) y
-POST /calendar (meses con riesgo de helada). Los nombres y las cifras son de muestra.
+Datos: GET /lots, GET /lots/{id} (current_seasons), GET /seasons/{id}/growth, POST /water-plans (falta de agua
+estimada: sin riego, «la lluvia no alcanza»; con riego, «riego probable») y POST /calendar (meses con riesgo de
+helada). El clima de ahora es ambiente (Open-Meteo): se rotula como condición aproximada, con su fuente y su hora.
+Los nombres y las cifras son de muestra.
 
     python design/pantallas/finca.py     # escribe svg/finca-*.svg
 """
@@ -35,10 +37,10 @@ def ha(v):
 # Lotes de muestra en Samacá (coordenadas del mundo del mapa de lote.py). Cada parte: cultivo (None si está libre),
 # etapa de hoy y del 20 de diciembre, día desde la siembra, área y los cubos que ocupa en el diorama.
 LOTS = (
-    dict(key="el-alto", name="El Alto", irrigated=False, area_pts=[(842, 498), (968, 482), (1004, 590), (936, 652), (850, 628)], alerts=("riego",), parts=(
+    dict(key="el-alto", name="El Alto", irrigated=False, area_pts=[(842, 498), (968, 482), (1004, 590), (936, 652), (850, 628)], alerts=("agua",), parts=(
         dict(crop="papa", stage=3, sim=5, day=70, area=1.26, cells=((0, 0), (1, 0), (2, 0))),
         dict(crop="haba", stage=2, sim=4, day=40, area=0.42, cells=((0, 1),)),
-        dict(crop="cebolla", stage=2, sim=4, day=57, area=0.42, cells=((1, 1),)),
+        dict(crop="cebolla", stage=2, sim=4, day=56, area=0.42, cells=((1, 1),)),
         dict(crop=None, area=0.41, cells=((2, 1),)))),
     dict(key="la-vega", name="La Vega", irrigated=True, area_pts=[(1022, 628), (1142, 610), (1166, 716), (1040, 738)], alerts=(), parts=(
         dict(crop="maiz", stage=2, sim=4, day=41, area=1.66, cells=((0, 0),)),)),
@@ -54,6 +56,18 @@ DELETED = dict(name="La Loma", area=0.86, deleted="3 oct", until="2 nov")
 
 def irrigation_label(lot):
     return {True: "Con riego", False: "Sin riego", None: "Riego sin definir"}[lot["irrigated"]]
+
+
+def water_alert(lot, form="short"):
+    """Aviso de falta de agua de un lote. El texto sale de `irrigated`, como en agua.py: sin riego la lluvia no alcanza
+    (el cultivo pasaría sed) y no se habla de riego; con riego, es riego probable. Siempre es una estimación (R10)."""
+    base = "Riego probable" if lot["irrigated"] else "La lluvia no alcanza"
+    return {"short": base, "chip": f"{base} · estimación", "long": f"{base} este mes · estimación"}[form]
+
+
+# El clima de ahora es ambiente (decisión 7): condición aproximada, con su fuente y la hora de la lectura.
+LIVE = "Condición aproximada en Samacá: nublado · 13 °C · Open-Meteo · 10:40"
+LIVE_SHORT = "Ahora: nublado · 13 °C · Open-Meteo 10:40"
 
 
 def stage_name(part, sim=False):
@@ -149,8 +163,8 @@ def lot_row(x, y, w, lot, selected=False):
         body += stage_bar(tx, 70, w - tx - 16, p["stage"])
     ax = tx
     for a in lot["alerts"]:
-        body += drop(ax + 8, h - 14, 0.8) if a == "riego" else flake(ax + 8, h - 15, 0.8)
-        short = "Riego probable" if a == "riego" else "Riesgo de helada"
+        body += drop(ax + 8, h - 14, 0.8) if a == "agua" else flake(ax + 8, h - 15, 0.8)
+        short = water_alert(lot) if a == "agua" else "Riesgo de helada"
         body.append(text(ax + 20, h - 9, short, 13, 700, D["cielo"]))
         ax += width_of(short, 13, True) + 34
     return [group(f"lote-{lot['key']}", body, x, y)], h
@@ -181,7 +195,7 @@ def lot_on_map(lot, s, selected=False, compact=False):
         ay = -30
     ax = w / 2 - 16
     for a in lot["alerts"]:
-        tag += drop(ax, ay, 0.9, P["cielo"]) if a == "riego" else flake(ax, ay, 0.9, P["cielo"] if selected else D["cielo"])
+        tag += drop(ax, ay, 0.9, P["cielo"]) if a == "agua" else flake(ax, ay, 0.9, P["cielo"] if selected else D["cielo"])
         ax -= 22
     out.append(f'<g transform="translate({cx:g} {cy:g}) scale({1 / s:g})">{"".join(tag)}</g>')
     return out
@@ -192,10 +206,11 @@ def zone_select(x, y, w):
 
 
 def map_legend(x, y):
-    rows = (("riego", "Riego probable: estimación con el clima de la zona"), ("helada", "Riesgo de helada: meses con heladas en el histórico"))
+    """La gota sirve para lotes con y sin riego: «falta de agua»; cada lote dice después si es riego probable o no alcanza."""
+    rows = (("agua", "Falta de agua: estimación con el clima de la zona"), ("helada", "Riesgo de helada: meses con heladas en el histórico"))
     body = [poly(chamfer(0, 0, 404, 76, 10), WHITE, BORDE, 1.5)]
     for i, (k, label) in enumerate(rows):
-        body += drop(18, 25 + i * 28, 0.8) if k == "riego" else flake(18, 24 + i * 28, 0.8)
+        body += drop(18, 25 + i * 28, 0.8) if k == "agua" else flake(18, 24 + i * 28, 0.8)
         body.append(text(34, 29 + i * 28, label, 13))
     return [group("leyenda", body, x, y)]
 
@@ -257,8 +272,7 @@ def mis_lotes_mobile():
         drawn += lot_on_map(lot, zoom * 1.35, compact=True)
     mh = 380
     b = map_view(w, mh + 30, center, zoom, drawn, "recorte-mis-lotes-m")
-    b += topbar(w)
-    b += [group("controles", tool_button(0, 0, G["ubicar"], name="mi-ubicacion"), w - 60, 86)]
+    b += topbar(w)  # sin «mi ubicación»: ninguna spec pide geolocalización
     b += attribution(w - 8, mh - 2)
     pad, fw = 16, w - 32
     s = [poly(chamfer(0, 0, w, 1400, 20), WHITE), poly(chamfer(w / 2 - 28, 10, 56, 6, 3), BORDE)]
@@ -268,7 +282,7 @@ def mis_lotes_mobile():
     s += rows
     s += button(pad, yy + 6, fw, "Agregar lote")
     yy += 84
-    s += paragraph(pad, yy, ["Riego probable: estimación con el clima de", "la zona. Riesgo de helada: meses con", "heladas en el histórico del municipio."], 13, 19, fill=SEC)
+    s += paragraph(pad, yy, ["Falta de agua: estimación con el clima de la", "zona. Riesgo de helada: meses con heladas", "en el histórico del municipio."], 13, 19, fill=SEC)
     b += [group("hoja", s, 0, mh)]
     return frame((w, mh + yy + 80), b)
 
@@ -345,7 +359,7 @@ def parts_card(x, y, w, sim=False):
         body.append(text(100, ry + 23, ha(p["area"]), fs, fill=SEC))
         if p["crop"]:
             body.append(text(w - 22, ry + 23, stage_name(p, sim), fs, 700 if on else 400, anchor="end"))
-        elif sim:  # en la simulación no se registra nada
+        elif sim:  # al adelantar el tiempo no se registra nada
             body.append(text(w - 22, ry + 23, "Sin siembra", fs, fill=SEC, anchor="end"))
         else:
             body += link(w - 22, ry + 23, "Registrar siembra", fs, anchor="end")
@@ -355,7 +369,7 @@ def parts_card(x, y, w, sim=False):
 def crop_card(x, y, w, sim=False):
     st = PAPA_PART["sim"] if sim else PAPA_PART["stage"]
     h = 172
-    body = [text(18, 34, "CULTIVO ELEGIDO" if not sim else "EN LA SIMULACIÓN", 13, 700, SEC),
+    body = [text(18, 34, "CULTIVO ELEGIDO" if not sim else "ADELANTANDO EL TIEMPO", 13, 700, SEC),
             text(18, 64, f"Papa · {cv.STAGES['anual'][st].lower()}", 21, 600, font=FONT_TITLE)]
     body += stage_bar(18, 76, w - 36, st, 8)
     if sim:
@@ -368,6 +382,7 @@ def crop_card(x, y, w, sim=False):
 
 
 def soil_card(x, y, w):
+    """El suelo estimado del lote. «Ver suelo» (agua.py, proxima.py) trae aquí, a la pestaña «Ahora»."""
     narrow = w < 400
     h = 300 if narrow else 172
     soil = muestra.SOIL_ALTO
@@ -388,15 +403,6 @@ def soil_card(x, y, w):
                 body.append(text(cx, 126, r, 13, fill=SEC))
         body.append(text(24, 154, "Mapa global de 250 m (SoilGrids), mediana del polígono del lote; el mismo para todas sus partes. Para decidir, haga un análisis de suelo.", 13, fill=SEC))
     return card(x, y, w, h, "tarjeta-suelo") + [group("suelo", body, x, y)], h
-
-
-def crop_tooltip(x, y):
-    """Lo que sale al tocar un cultivo en el diorama: queda elegido."""
-    w, h = 270, 84
-    body = [poly(chamfer(0, 0, w, h, 10), WHITE, P["noche"], 2), poly([(w / 2 - 9, h - 1), (w / 2 + 9, h - 1), (w / 2, h + 11)], P["noche"]),
-            text(16, 30, "Papa · floración · día 70", 17, 700), text(16, 54, "1,26 ha · estimada con la", 14, fill=SEC),
-            text(16, 72, "temperatura acumulada de Samacá", 14, fill=SEC)]
-    return [group("al-tocar-el-cultivo", body, x, y)]
 
 
 def diorama_controls(x, y):
@@ -455,11 +461,12 @@ def lote_vivo_desktop(sim=False):
     if sim:
         body = escena.scene(sw, sh, "dia", (), "normal", (), **common)
     else:
-        body = escena.scene(sw, sh, "dia", ("nublado",), "seco", (("Riego probable este mes · estimación", "riego"), ("Ahora en Samacá: nublado · 13 °C", "vivo")), **common)
+        body = escena.scene(sw, sh, "dia", ("nublado",), "seco", ((water_alert(ALTO, "long"), "riego"), (LIVE, "vivo")), **common)
     b.append(f'<g id="lote-vivo" transform="translate({sx} {sy})">{escena.framed(body, sw, sh, "recorte-lote-vivo" + ("-sim" if sim else ""))}</g>')
     b += diorama_controls(sx + sw - 68, sy + 20)
     if sim:
-        banner = [poly(chamfer(0, 0, 600, 64, 12), P["noche"]), text(20, 28, "Simulación · 20 de diciembre de 2026", 17, 700, WHITE),
+        # «Adelantó el tiempo», no «simulación»: ese nombre es del modo de desarrollo con respuestas simuladas.
+        banner = [poly(chamfer(0, 0, 600, 64, 12), P["noche"]), text(20, 28, "Adelantó el tiempo · 20 de diciembre de 2026", 17, 700, WHITE),
                   text(20, 50, "Estimación con un año normal, no es pronóstico. Sin clima en vivo.", 14, fill=P["niebla"])]
         b.append(group("aviso-simulacion", banner, sx + 20, sy + 20))
         b += button(sx + sw - 200, sy + sh - 76, 180, "Volver a hoy", "secondary")
@@ -506,8 +513,8 @@ def plan_2d(w, h):
     chip = lambda x, y, label, icon: [group("aviso", [poly(chamfer(0, 0, len(label) * 7.2 + 44, 30, 8), WHITE, BORDE, 1.5), *icon, text(34, 20, label, 13, 700)], x, y)]  # noqa: E731
     out += chip(16, 16, "Modo ligero · imagen fija", [poly(chamfer(10, 8, 14, 14, 3), P["niebla"], P["noche"], 1.5)])
     cloud = [f'<path d="M10 20 a5 5 0 0 1 3 -9 a6 6 0 0 1 11 2 a4 4 0 0 1 0 7 z" fill="{P["niebla"]}" stroke="{P["noche"]}" stroke-width="1.5"/>']
-    out += chip(16, h - 84, "Ahora en Samacá: nublado · 13 °C", cloud)
-    out += chip(16, h - 46, "Riego probable este mes · estimación", drop(17, 15, 0.8))
+    out += chip(16, h - 84, LIVE_SHORT, cloud)
+    out += chip(16, h - 46, water_alert(ALTO, "long"), drop(17, 15, 0.8))
     return out
 
 
@@ -523,7 +530,7 @@ def lote_vivo_mobile(view=(-30, 30, 1.45), name="m", light=False):
     if light:
         body = plan_2d(sw, sh)
     else:
-        body = escena.scene(sw, sh, "dia", ("nublado",), "seco", (("Riego probable · estimación", "riego"), ("Ahora: nublado · 13 °C", "vivo")),
+        body = escena.scene(sw, sh, "dia", ("nublado",), "seco", ((water_alert(ALTO, "chip"), "riego"), (LIVE_SHORT, "vivo")),
                             crop=None, layout=layout_of(ALTO), selected="papa", tags=alto_tags(), farm=True, lot_k=0.62, lot_y=0.56, seed=6,
                             view=view)
     b.append(f'<g id="lote-vivo" transform="translate(0 292)"><defs><clipPath id="recorte-lote-vivo-{name}"><rect width="{sw}" height="{sh}"/></clipPath></defs>'

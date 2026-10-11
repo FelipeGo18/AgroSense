@@ -3,11 +3,16 @@
 Rediseño: sin semestres. La primera siembra empieza en `sowing_date` y cada cultivo de la secuencia se evalúa en su
 propia ventana; una opción que no se da en la zona se excluye con su motivo (R3). Estas prioridades se llaman
 «¿Qué busca en la rotación?», para no confundirlas con «¿Qué le importa al elegir la fecha?» (las seis señales).
+Estas pantallas son de la consulta, sin cuenta: barra del invitado y la misma fecha de la consulta (2 de agosto de
+2027). «Próxima siembra» (proxima.py) reutiliza las opciones con la fecha del lote: por eso las ventanas de cada
+opción dependen de quién las pide (`options(context)`).
 
 EP-10 (HU-101, HU-102) sobre EP-08 y el suelo de EP-18 (HU-184). El puntaje total se calcula aquí igual que en el
 motor: promedio de los criterios ponderado por las prioridades (0 a 5). Las cifras son de muestra.
 Cada control lleva a algo definido: las semillas cambian el orden; «Cambiar» vuelve a elegir el cultivo anterior;
-«Ver diagnóstico» consulta POST /diagnostics; «Ver calendario» abre HU-180; «Ver por qué» despliega las excluidas.
+«Ver diagnóstico» consulta POST /diagnostics; «Ver calendario» abre HU-180; «Ver por qué» despliega las excluidas;
+«Ver suelo» abre el detalle de la señal de suelo (consulta-03; con cuenta, la tarjeta de suelo del lote en «Ahora»);
+«¿Por qué descansar el lote?» y «¿Cómo se arma este orden?» abren «¿Cómo funciona?» (transversal-01).
 
     python design/pantallas/rotaciones.py     # escribe svg/rotaciones-*.svg
 """
@@ -18,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402,F401
+import muestra  # noqa: E402
 from build_kit_svg import priority_row  # noqa: E402
 from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, frame, group, inner, link,  # noqa: E402
                 paragraph, poly, scene, text, topbar)
@@ -25,21 +31,33 @@ from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, butto
 PRIORITIES = (("water", "Agua", 3, "Que gaste poca agua"), ("soil", "Suelo", 5, "Que recupere el suelo"),
               ("income", "Ingreso", 2, "Que deje ingreso pronto"), ("risk", "Riesgo", 4, "Que el clima la favorezca"))
 
-SOWING = "15 de enero de 2027"  # `sowing_date` de la primera siembra
-OPTIONS = (  # secuencia de dos ciclos, puntaje por criterio (0 a 100), razones con su regla y la ventana de cada ciclo
+# Quién pide las opciones: la consulta sin cuenta (estas pantallas) o «Próxima siembra» de un lote (proxima.py).
+# Cada una tiene su `sowing_date` de la primera siembra, y de ella salen las ventanas de cada ciclo.
+CONSULTA, LOTE = "consulta", "lote"
+SOWING = {CONSULTA: muestra.QUERY["sowing_long"], LOTE: "15 de enero de 2027"}
+_OPTIONS = (  # secuencia de dos ciclos, puntaje por criterio (0 a 100) y razones con su regla
     ("Arveja", "Papa", {"water": 70, "soil": 90, "income": 75, "risk": 80},
      ["Leguminosa: fija nitrógeno para la papa que sigue.", "Raíz distinta a la de la papa: alterna la profundidad."],
-     "Reglas: bonificar leguminosas · alternar la raíz", "Arveja 15 ene – may 2027 · papa desde jun 2027"),
+     "Reglas: bonificar leguminosas · alternar la raíz"),
+    # El carbono orgánico de la muestra es «medio» y el contrato solo bonifica con carbono bajo: la razón es la regla del cultivo exigente.
     ("Avena con vicia", "Papa", {"water": 85, "soil": 100, "income": 20, "risk": 85},
-     ["Abono verde: el carbono orgánico de su zona es medio.", "No deja cosecha esta temporada."],
-     "Regla: abono verde si el carbono orgánico es bajo o medio", "Avena 15 ene – abr 2027 · papa desde may 2027"),
+     ["Abono verde: devuelve materia orgánica tras la papa, un cultivo exigente.", "No deja cosecha esta temporada."],
+     "Regla: abono verde tras un cultivo exigente"),
     ("Haba", "Maíz", {"water": 60, "soil": 80, "income": 70, "risk": 60},
-     ["Leguminosa y luego un cereal de otra familia.", "El maíz de julio pasa por meses con más heladas."],
-     "Reglas: bonificar leguminosas · no repetir familia", "Haba 15 ene – jun 2027 · maíz desde jul 2027"),
+     ["Leguminosa y luego un cereal de otra familia."],
+     "Reglas: bonificar leguminosas · no repetir familia"),
     ("Descanso", "Papa", {"water": 100, "soil": 70, "income": 0, "risk": 90},
      ["El lote descansa una temporada y corta el ciclo de plagas.", "No deja ingreso esta temporada."],
-     "Regla: no repetir la familia del cultivo", "Descanso ene – jun 2027 · papa desde jul 2027"),
+     "Regla: no repetir la familia del cultivo"),
 )
+# Lo que depende de la fecha de la primera siembra: la ventana de cada ciclo y la razón de clima del maíz.
+WHEN = {
+    CONSULTA: {"Arveja": "Arveja 2 ago – dic 2027 · papa desde ene 2028", "Avena con vicia": "Avena 2 ago – nov 2027 · papa desde ene 2028",
+               "Haba": "Haba 2 ago 2027 – ene 2028 · maíz desde feb 2028", "Descanso": "Descanso ago 2027 – ene 2028 · papa desde feb 2028"},
+    LOTE: {"Arveja": "Arveja 15 ene – may 2027 · papa desde jun 2027", "Avena con vicia": "Avena 15 ene – abr 2027 · papa desde may 2027",
+           "Haba": "Haba 15 ene – jun 2027 · maíz desde jul 2027", "Descanso": "Descanso ene – jun 2027 · papa desde jul 2027"},
+}
+MAIZE_NOTE = {CONSULTA: "El maíz de febrero arranca en meses de poca lluvia.", LOTE: "El maíz de julio pasa por meses con más heladas."}
 
 EXCLUDED = (
     ("Papa → Papa", "Misma familia que el cultivo anterior (solanáceas): repite plagas y enfermedades.", "Regla: no repetir la familia · catálogo de rotación"),
@@ -65,7 +83,14 @@ def total(scores):
     return round(sum(scores[k] * weights[k] for k in weights) / sum(weights.values()))
 
 
-RANKED = sorted(OPTIONS, key=lambda o: (-total(o[2]), o[0]))  # desempate determinista por nombre
+def options(context):
+    """Las opciones con la ventana de cada ciclo para la fecha de quien las pide (CONSULTA o LOTE)."""
+    return tuple((first, second, scores, reasons + ([MAIZE_NOTE[context]] if second == "Maíz" else []), rule, WHEN[context][first])
+                 for first, second, scores, reasons, rule in _OPTIONS)
+
+
+def ranked(context):
+    return sorted(options(context), key=lambda o: (-total(o[2]), o[0]))  # desempate determinista por nombre
 
 
 # ---------- Piezas ----------
@@ -121,6 +146,7 @@ def option_card(x, y, w, h, rank, opt, mobile):
         if not mobile:
             body += link(300, ry + 28, "Ver calendario", 15)
     else:
+        # «¿Por qué descansar el lote?» abre «¿Cómo funciona?», en las reglas de rotación
         body += link(24, ry + 24, "Ver calendario" if first != "Descanso" else "¿Por qué descansar el lote?", 15)
     return [group(f"opcion-{rank}", body, x, y)]
 
@@ -161,7 +187,7 @@ def rotations(mobile=False, opened=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
     header_h = 520 if mobile else 440
     b = scene("a5-municipio", w, header_h, "recorte-rotaciones" + ("-m" if mobile else "") + ("-e" if opened else ""), 0.12)
-    b += topbar(w, "Consultar", None if mobile else "Rosa")
+    b += topbar(w, "Consultar")  # sin cuenta: barra del invitado
     if mobile:
         x, y, cw, pad = 12, 92, 366, 22
     else:
@@ -180,12 +206,12 @@ def rotations(mobile=False, opened=False):
     c += link(pad + ctx_w - 16, cy0 + 22, "Cambiar", 14, anchor="end")
     c += [poly(chamfer(pad, cy0 + 64, ctx_w, 52, 10), P["niebla"]), text(pad + 18, cy0 + 86, "Suelo estimado de Samacá", 13, fill=SEC),
           text(pad + 18, cy0 + 106, "pH 5,2 a 5,8 · carbono medio" if mobile else "pH 5,2 a 5,8 · carbono orgánico medio", 16, 700)]
-    c += link(pad + ctx_w - 16, cy0 + 86, "Ver suelo", 14, anchor="end")
+    c += link(pad + ctx_w - 16, cy0 + 86, "Ver suelo", 14, anchor="end")  # sin cuenta: el detalle de la señal de suelo (consulta-03)
     c += [poly(chamfer(pad, cy0 + 128, ctx_w, 52, 10), P["niebla"]), text(pad + 18, cy0 + 150, "Primera siembra", 13, fill=SEC),
-          text(pad + 18, cy0 + 170, SOWING, 16, 700)]
+          text(pad + 18, cy0 + 170, SOWING[CONSULTA], 16, 700)]
     c += link(pad + ctx_w - 16, cy0 + 150, "Cambiar", 14, anchor="end")
     c += paragraph(pad, cy0 + 208, ["Cada cultivo se evalúa en su propia ventana.", "Con cuenta, se usan el historial y el suelo", "de su lote dibujado."] if mobile else
-                   ["Cada cultivo se evalúa en su propia ventana. Con cuenta, se usan el historial y el suelo de su lote dibujado."], 14, 20, fill=SEC)
+                   ["Cada cultivo se evalúa en su propia ventana.", "Con cuenta, se usan el historial y el suelo de su lote dibujado."], 14, 20, fill=SEC)
     if mobile:
         pp_y = cy0 + 290
         c += priorities_panel(pad, pp_y, fw, True)
@@ -204,19 +230,19 @@ def rotations(mobile=False, opened=False):
     gy = 130 if mobile else 116
     if mobile:
         ow, oh = 350, 440
-        for i, opt in enumerate(RANKED):
+        for i, opt in enumerate(ranked(CONSULTA)):
             s += option_card(pad2, gy + i * (oh + 20), ow, oh, i + 1, opt, True)
         ey = gy + 4 * (oh + 20) + 10
     else:
         ow, oh = (w - 2 * pad2 - 24) / 2, 360
-        for i, opt in enumerate(RANKED):
+        for i, opt in enumerate(ranked(CONSULTA)):
             s += option_card(pad2 + (i % 2) * (ow + 24), gy + (i // 2) * (oh + 28), ow, oh, i + 1, opt, False)
         ey = gy + 2 * (oh + 28) + 10
     box, bh = excluded_box(pad2, ey, w - 2 * pad2, opened, mobile)
     s += box
     vy = ey + bh + 44
-    s.append(text(pad2, vy, "Datos 2026.11.0 · Reglas 1.0.0 · Cifras de muestra", 15, fill=SEC))
-    s += link(pad2 if mobile else w - pad2, vy + (30 if mobile else 0), "¿Cómo se arma este orden?", 15, anchor="start" if mobile else "end")
+    s.append(text(pad2, vy, f"{muestra.VERSIONS} · Cifras de muestra", 15, fill=SEC))
+    s += link(pad2 if mobile else w - pad2, vy + (30 if mobile else 0), "¿Cómo se arma este orden?", 15, anchor="start" if mobile else "end")  # abre «¿Cómo funciona?»
     h = top + vy + 70
     b = [f'<rect y="{header_h}" width="{w}" height="{h - header_h}" fill="{P["niebla"]}"/>'] + b + [group("ranking", s, 0, top)]
     foot, fh = ui.footer(w, h, mobile, above=P["niebla"])
@@ -235,5 +261,5 @@ if __name__ == "__main__":
     for name, draw in SCREENS.items():
         (out / f"{name}.svg").write_text(draw(), encoding="utf-8", newline="\n")
         print(name)
-    for o in RANKED:
+    for o in ranked(CONSULTA):
         print(f"  {o[0]} -> {o[1]}: {total(o[2])}")

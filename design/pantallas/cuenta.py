@@ -15,12 +15,14 @@ import ui  # noqa: E402
 import muestra  # noqa: E402
 from senales import priorities_panel  # noqa: E402
 from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, checkbox, field, frame, group, link,
-                mascot, paragraph, poly, scene, text, toggle, topbar)  # noqa: E402
+                mascot, p1_tag, paragraph, poly, scene, text, toggle, topbar, width_of)  # noqa: E402
 
+# El enlace abre la página de la política de tratamiento de datos (pendiente de diseño: mapa.py, parte J).
 POLICY = "Leer la política de tratamiento de datos"
 POLICY_SHORT = "Leer la política de datos"
 # Contenido de muestra de los diseños: una agricultora de Samacá.
 NAME, USER, SINCE, LOTS, SEASONS = muestra.NAME, muestra.USERNAME, muestra.ACCOUNT_SINCE, muestra.N_LOTS, muestra.N_SEASONS
+ACCEPTED = muestra.CONSENT_ACCEPTED  # la versión 3 no se pudo aceptar antes de existir: la fecha no es la de creación de la cuenta
 
 
 def sign(x, y, w, label):
@@ -77,7 +79,7 @@ def login(mobile=False, error=False):
 
 def register(mobile=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
-    h = 1430 if mobile else 1180  # el consentimiento versión 3 es más largo
+    h = 1454 if mobile else 1200  # el consentimiento versión 3 es más largo
     b = scene("a6-vereda", w, h, "recorte-registro" + ("-m" if mobile else ""))
     b += topbar(w)
     if mobile:
@@ -97,14 +99,15 @@ def register(mobile=False):
                hint="Elija una que recuerde: no se puede recuperar." if mobile else "Elija una que recuerde: por ahora no se puede recuperar.", name="campo-contrasena")
     # Consentimiento (HU-163): qué se guarda y para qué, en lenguaje claro. Sin aceptar no se crea la cuenta.
     # Versión 2: ubicación de los lotes, acceso de soporte y registro de actividad por 180 días.
-    # Versión 3: si el lote tiene riego y las siembras como totales sin nombre, con al menos 5 cuentas (HU-200).
-    rows = (["Acepto que AgroSense guarde", "mi usuario, mi nombre, mis lotes", "con su ubicación en el mapa, si", "tienen riego y lo que siembro,",
-             "para mostrarme mi finca. Soporte", "puede ver mis lotes para", "ayudarme, y se registra la", "actividad de mi cuenta durante", "180 días.",
-             "Lo que siembro se suma, sin mi", "nombre, a los totales de su", "municipio, solo si hay al menos", "5 cuentas.",
+    # Versión 3: si el lote tiene riego, las prioridades y las siembras como totales sin nombre, con al menos 5 cuentas (HU-200).
+    # Todo el texto va en primera persona: lo dice quien acepta.
+    rows = (["Acepto que AgroSense guarde", "mi usuario, mi nombre y mis", "prioridades, mis lotes con su", "ubicación en el mapa, si tienen", "riego y lo que siembro, para",
+             "mostrarme mi finca. Soporte", "puede ver mis lotes para", "ayudarme, y se registra la", "actividad de mi cuenta durante", "180 días.",
+             "Lo que siembro se suma, sin mi", "nombre, a los totales de mi", "municipio, solo si hay al menos", "5 cuentas.",
              "No se guarda correo, celular,", "documento ni dirección.", "Puedo borrar todo cuando quiera."] if mobile else
-            ["Acepto que AgroSense guarde mi usuario, mi nombre,", "mis lotes con su ubicación en el mapa, si tienen riego", "y lo que siembro, para mostrarme mi finca.",
+            ["Acepto que AgroSense guarde mi usuario, mi nombre", "y mis prioridades, mis lotes con su ubicación en el", "mapa, si tienen riego y lo que siembro, para", "mostrarme mi finca.",
              "Soporte puede ver mis lotes para ayudarme, y se", "registra la actividad de mi cuenta durante 180 días.",
-             "Lo que siembro se suma, sin mi nombre, a los totales", "de su municipio, solo si hay al menos 5 cuentas.",
+             "Lo que siembro se suma, sin mi nombre, a los totales", "de mi municipio, solo si hay al menos 5 cuentas.",
              "No se guarda correo, celular, documento ni dirección.", "Puedo borrar todo cuando quiera."])
     ch = 40 + len(rows) * 23 + 38
     consent = [poly(chamfer(0, 0, fw, ch, 12), P["niebla"])] + checkbox(16, 16) + paragraph(62, 36, rows, 15 if mobile else 16, 23)
@@ -126,8 +129,9 @@ def row(y, label, value, w, editable=False):
     return out
 
 
-def pref(y, title, note, on, w):
-    return [text(0, y, title, 18, 700), text(0, y + 24, note, 15, fill=SEC)] + toggle(w - 64, y - 20, on)
+def pref(y, title, note, on, w, p1=False):
+    """Una preferencia del dispositivo con su interruptor. `p1`: rótulo para el equipo (el sonido es P1)."""
+    return [text(0, y, title, 18, 700), text(0, y + 24, note, 15, fill=SEC)] + toggle(w - 64, y - 20, on) + (p1_tag(width_of(title, 18, True) + 12, y - 18) if p1 else [])
 
 
 def profile_cards(cw, mobile, editing=False):
@@ -150,11 +154,11 @@ def profile_cards(cw, mobile, editing=False):
     stored_rows = (["Su usuario, su nombre y sus", "prioridades.", f"Sus {LOTS} lotes, con su ubicación", "en el mapa y si tienen riego, y", f"sus {SEASONS} temporadas.",
                     "Sus sesiones abiertas y la actividad", "de su cuenta (180 días).", "Sus siembras cuentan, sin su nombre,", "en los totales del municipio.",
                     "No guardamos correo, celular,", "documento ni dirección.", "",
-                    "Aceptó el tratamiento de datos", f"(versión {muestra.CONSENT_VERSION}) el {SINCE}."] if mobile else
+                    "Aceptó el tratamiento de datos", f"(versión {muestra.CONSENT_VERSION}) el {ACCEPTED}."] if mobile else
                    ["Su usuario, su nombre y sus prioridades.", f"Sus {LOTS} lotes, con su ubicación en el mapa y si tienen riego,", f"y sus {SEASONS} temporadas de siembra.",
                     "Sus sesiones abiertas y la actividad de su cuenta (180 días).",
                     "Sus siembras cuentan, sin su nombre, en los totales del municipio.", "No guardamos correo, celular, documento ni dirección.", "",
-                    f"Aceptó el tratamiento de datos (versión {muestra.CONSENT_VERSION})", f"el {SINCE}."])
+                    f"Aceptó el tratamiento de datos (versión {muestra.CONSENT_VERSION})", f"el {ACCEPTED}."])
     stored = [title("Lo que guardamos de usted")] + paragraph(pad, 92, stored_rows, 16 if mobile else 18, 26)
     stored += link(pad, 92 + len(stored_rows) * 26 + 12, POLICY_SHORT if mobile else POLICY, 16)
     stored += link(pad if mobile else cw - pad, 92 + len(stored_rows) * 26 + (48 if mobile else 12), "Ver mi actividad", 16, anchor="start" if mobile else "end")
@@ -162,7 +166,7 @@ def profile_cards(cw, mobile, editing=False):
     for i, (t, note, on) in enumerate((("Modo ligero", "Sin escena 3D ni animaciones pesadas.", False),
                                        ("Reducir movimiento", "Sigue la configuración de su equipo.", True),
                                        ("Sonido", "Ambiente y efectos. Empieza apagado.", False))):
-        prefs.append(group("preferencia", pref(104 + i * 76, t, note.replace("animaciones pesadas", "animaciones") if mobile else note, on, fw), pad, 0))
+        prefs.append(group("preferencia", pref(104 + i * 76, t, note.replace("animaciones pesadas", "animaciones") if mobile else note, on, fw, p1=t == "Sonido"), pad, 0))
     session = [title("Sesión y contraseña"), text(pad, 92, f"Entró como {USER}.", 18)]
     if mobile:
         session += button(pad, 116, fw, "Cambiar contraseña", "secondary") + button(pad, 188, fw, "Cerrar sesión", "secondary")

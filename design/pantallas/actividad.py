@@ -3,8 +3,9 @@
 GET /me/activity: los eventos de `activity_log` del usuario y las acciones de soporte sobre sus datos, del más
 reciente al más antiguo, de a 50 («Ver más antiguos» pide la página siguiente con `before`). Cada evento dice quién
 (usted o soporte), qué, cuándo y su resultado (`ok`, `denied`, `failed`) con forma y texto, nunca solo color. Nunca
-muestra valores de los campos, el polígono ni el usuario de un intento fallido: solo qué campos cambiaron. Se guarda
-180 días. Los nombres y las fechas son de muestra.
+muestra valores de los campos, el polígono ni el usuario de un intento fallido: solo qué campos cambiaron. Como un
+intento de entrada fallido no guarda de quién fue, tampoco aparece aquí. Se guarda 180 días. Los eventos son los
+mismos que ve el administrador en la bitácora (admin.py) y los reportes de transversal.py. Nombres y fechas de muestra.
 
     python design/pantallas/actividad.py     # escribe svg/cuenta-08-mi-actividad-*.svg
 """
@@ -24,10 +25,12 @@ OUTCOME = {OK: ("Hecho", D["oliva"], "#E9F2D8"), DENIED: ("Rechazado", D["rojo"]
 EVENTS = (
     ("Hoy", "10:42", "Usted", "Editó el lote El Alto", "Cambió: riego", OK),
     ("Hoy", "10:30", "Usted", "Entró a su cuenta", None, OK),
-    ("10 oct", "18:05", "Usted", "Intentó entrar", "Usuario o contraseña incorrectos", FAILED),
+    ("10 oct", "17:50", "Usted", "Cerró sesión", None, OK),  # `auth.logout`. Un intento fallido no guarda de quién fue: no puede salir aquí
     ("9 oct", "16:20", "Soporte", "Vio sus lotes para resolver su reporte", "Reporte del 9 de octubre", OK),
     ("8 oct", "07:55", "Usted", "Intentó cambiar la contraseña", "La contraseña actual no era correcta", DENIED),
     ("3 oct", "09:12", "Usted", "Borró el lote La Loma", "Se puede restaurar hasta el 2 nov", OK),
+    ("3 oct", "09:05", "Usted", "Borró una siembra de fríjol en El Alto", "Se puede restaurar hasta el 2 nov", OK),
+    ("1 sep", "07:15", "Usted", "Registró la siembra de haba en El Alto", None, OK),
     ("16 ago", "11:03", "Usted", "Registró la siembra de cebolla en El Alto", None, OK),
     ("2 ago", "08:40", "Usted", "Registró la siembra de papa en El Alto", None, OK),
 )

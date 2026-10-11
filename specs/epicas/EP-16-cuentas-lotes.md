@@ -27,10 +27,11 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] `PATCH /api/v1/me` y `POST /api/v1/me/password` del contrato
+  - [ ] `PATCH /api/v1/me` acepta `priorities`: un entero de 0 a 5 por señal; nulo vuelve a los pesos de AgroSense; fuera de rango o todas en 0, 422
   - [ ] 409 si el usuario nuevo ya existe; 403 si la contraseña actual es incorrecta; 422 si la nueva es corta o igual a la actual
   - [ ] Cambiar la contraseña exige la actual y cierra las demás sesiones del usuario; los intentos fallidos cuentan para el límite de 429
   - [ ] En la web, Mi cuenta permite editar nombre y usuario en el sitio y cambiar la contraseña en su propia vista, con estados de guardado y error
-  - [ ] No se pide ni se guarda ningún dato nuevo (R9)
+  - [ ] No se pide ningún dato personal nuevo: las prioridades son preferencias, no datos de la finca (R9)
 - **Reglas que aplican:** R9
 - **Notas:** Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`).
 
@@ -48,12 +49,12 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] `GET /me/activity` y la pantalla «Mi actividad» en Mi cuenta, con el estado de cada evento (`ok`, `denied`, `failed`)
   - [ ] El `request_id` de cada evento coincide con el de la terminal (HU-177)
 - **Reglas que aplican:** R9
-- **Notas:** Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento versión 2 lo menciona (HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria.
+- **Notas:** Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento lo menciona desde la versión 2 (vigente: 3, HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria.
 
 ### HU-170 · Roles: agricultor, administrador y desarrollador
 
 - **Historia:** Como equipo, queremos tres roles con permisos distintos, para operar la web y probarla sin mezclar datos inventados con los del agricultor.
-- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente (documentado)
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Columna `role` (`farmer`, `admin`, `developer`) y `blocked_at` en `users`, con migración
   - [ ] Endpoints de `admin` y `dev` del contrato; `403` si el rol no alcanza
@@ -63,9 +64,12 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Bitácora del administrador (`GET /admin/activity`) con filtros por usuario, acción, estado y fechas
   - [ ] La API no arranca en producción si hay usuarios `developer` o la simulación está activa
   - [ ] Un usuario bloqueado no entra y pierde sus sesiones abiertas
+  - [ ] Tabla `usage_daily` con migración, según el contrato: `day`, `endpoint`, `municipality_id`, `crop_id` y `count`
+  - [ ] Cada endpoint de cálculo (`/diagnostics`, `/rotations`, `/calendar`, `/water-plans` y `/scenarios`) suma 1 a su fila, con el `crop_id` que fija el contrato; si la base de datos falla, la consulta responde igual
+  - [ ] Prueba: `usage_daily` no tiene ninguna columna que identifique a una persona ni datos de la finca, y no se puede unir con `activity_log` (R9)
   - [ ] Las métricas son agregadas: consultas por día y municipios y cultivos más consultados salen de `usage_daily` (contador anónimo); lotes y siembras, de las cuentas. Un grupo con menos de 5 va en «Otros». El consentimiento (desde la versión 2) avisa que soporte puede ver los lotes (R9)
 - **Reglas que aplican:** R5, R9
-- **Notas:** Definido el 10 de octubre de 2026; por ahora solo documentado. Falta decidir el resto de funciones del administrador y si su panel va en esta web. El modo desarrollador amplía HU-014. Revisión de seguridad obligatoria.
+- **Notas:** Definido el 10 de octubre de 2026. El contador `usage_daily` entra con esta HU (P1): en el P0 los endpoints de cálculo no escriben nada en la base de datos. Falta decidir el resto de funciones del administrador y si su panel va en esta web (supuesto: en `/admin`, solo en escritorio, `specs/05-frontend.md`). El modo desarrollador amplía HU-014. Revisión de seguridad obligatoria.
 
 ### HU-161 · Esquema de cuentas y migraciones
 
@@ -100,10 +104,10 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Texto corto en español claro de qué se guarda y para qué, enlazado a la política de tratamiento de datos (Ley 1581 de 2012)
   - [ ] Sin aceptar, no se crea la cuenta
   - [ ] Se guarda `consent_version` y `consent_at`
-  - [ ] La versión vigente es la **3**. Dice que se guarda la ubicación (polígono) de cada lote (HU-164), que soporte puede ver los lotes (HU-170), que se registra la actividad de la cuenta durante 180 días (HU-178) y, nuevo en la versión 3, si el lote tiene riego (`irrigated`, HU-164) y que lo que siembra se suma sin su nombre a los totales de siembras de su municipio, solo con al menos 5 cuentas (HU-200)
+  - [ ] La versión vigente es la **3**. Dice que se guarda la ubicación (polígono) de cada lote (HU-164), que soporte puede ver los lotes (HU-170), que se registra la actividad de la cuenta durante 180 días (HU-178) y, nuevo en la versión 3, si el lote tiene riego (`irrigated`, HU-164), que se guardan sus prioridades (`priorities`, HU-160) y que lo que siembra se suma sin su nombre a los totales de siembras de su municipio, solo con al menos 5 cuentas (HU-200)
   - [ ] El registro envía `consent_version = 3` y la API guarda esa versión
 - **Reglas que aplican:** R9
-- **Notas:** La versión 2 sumó el polígono, el soporte y la actividad (10 de octubre de 2026). La versión 3 suma el riego; aprobada por Felipe el 11 de octubre de 2026. Las siembras como totales anónimos de oferta (HU-200, P1) entran en la versión 3 (`specs/01-reglas.md`, «Varias fuentes»). Por decidir: qué pasa con una cuenta que aceptó una versión anterior (por ejemplo, pedir que acepte la nueva al iniciar sesión). Mientras no haya usuarios reales, la 3 es la primera versión en producción. Supuesto por confirmar: la API responde 422 si `consent_version` no es la vigente (el contrato solo dice 422 sin `consent_accepted`). Revisión del texto legal por confirmar con la región: la Ley 1581 de 2012 es de Colombia (decisión 11).
+- **Notas:** La versión 2 sumó el polígono, el soporte y la actividad (10 de octubre de 2026). La versión 3 suma el riego y las prioridades guardadas en el perfil; aprobada por Felipe el 11 de octubre de 2026. Las siembras como totales anónimos de oferta (HU-200, P1) entran en la versión 3 (`specs/01-reglas.md`, «Varias fuentes»). Por decidir: qué pasa con una cuenta que aceptó una versión anterior (por ejemplo, pedir que acepte la nueva al iniciar sesión). Mientras no haya usuarios reales, la 3 es la primera versión en producción. Supuesto por confirmar: la API responde 422 si `consent_version` no es la vigente (el contrato solo dice 422 sin `consent_accepted`). Revisión del texto legal por confirmar con la región: la Ley 1581 de 2012 es de Colombia (decisión 11).
 
 ### HU-164 · Lotes del usuario
 
@@ -111,6 +115,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Endpoints de `lots` del contrato, con `geometry` (polígono GeoJSON) y restauración durante 30 días
+  - [ ] Restaurar un lote restaura también las temporadas que se borraron con él; pasados los 30 días, o si el lote no está borrado, responde 404
   - [ ] El lote guarda `irrigated` (si tiene riego): el formulario pregunta «¿Este lote tiene riego?» con «Sí», «No» y «Todavía no sé»; sin respuesta queda nulo y se puede cambiar después con `PATCH`
   - [ ] Con `lot_id`, el diagnóstico y el calendario toman `irrigated` del lote; con `irrigated` nulo, se evalúa como sin riego y la limitación lo dice
   - [ ] En la web, un mapa base de OpenStreetMap centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola. La capa satelital entra solo si se aprueba su licencia
@@ -133,14 +138,14 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Al registrar una siembra, la web pregunta «¿Qué había antes en este terreno?» y deja elegir **una o varias** temporadas cosechadas del lote, o ninguna («Nada: es la primera siembra aquí»). Se guardan en `follows_season_ids`
   - [ ] **Dividir:** una temporada cosechada puede tener varias sucesoras. Ejemplo: al cosechar una papa de 1 ha, se siembran 0,5 ha de fresa y 0,5 ha de ajo, las dos con la papa en `follows_season_ids`
   - [ ] **Juntar:** una temporada puede venir de varias. Ejemplo: después de cosechar la fresa y el ajo, se siembra 1 ha de arveja con las dos en `follows_season_ids`
-  - [ ] Validaciones (422): cada temporada de `follows_season_ids` es del mismo lote, está cosechada y su `harvest_date` es igual o anterior a la `sowing_date` de la nueva; la suma de `area_ha` de las sucesoras de una temporada no pasa de su `area_ha`
-  - [ ] Cada temporada guarda el diagnóstico visto al sembrar (`diagnosis_light`, `diagnosis_action`, `diagnosis_irrigated`) con `dataset_version` y `rules_version`: es el diagnóstico de la ventana que empieza en su `sowing_date`
+  - [ ] Validaciones (422): cada temporada de `follows_season_ids` es del mismo lote, está cosechada y su `harvest_date` es igual o anterior a la `sowing_date` de la nueva; el área de una temporada no pasa de la suma de las áreas de las que viene más el área libre del lote, y la suma de las temporadas en curso nunca pasa del área del lote
+  - [ ] Cada temporada guarda el diagnóstico visto al sembrar (`diagnosis_light`, `diagnosis_light_default`, `diagnosis_action`, `diagnosis_weights`, `diagnosis_irrigated`) con `dataset_version` y `rules_version`: es el diagnóstico de la ventana que empieza en su `sowing_date`
   - [ ] `diagnosis_action` acepta solo `sow`, `other_window`, `rotate` y `review_data`; si el agricultor no consultó el diagnóstico, esos campos van nulos
   - [ ] Las rotaciones de una temporada nueva reciben los cultivos de todas las temporadas de las que viene su terreno
   - [ ] El historial del lote (`GET /lots/{lot_id}/seasons`) incluye las temporadas borradas hace menos de 30 días (HU-204)
 - **Reglas que aplican:** R4, R9
 - **Contrato que toca:** `seasons` (con `follows_season_ids`), `POST /api/v1/lots/{lot_id}/seasons`, `PATCH /api/v1/seasons/{season_id}`, tabla de errores
-- **Notas:** Las partes son de área, no se dibujan en el mapa; el suelo es el mismo para todo el lote. Decidido el 11 de octubre de 2026 y ampliado el mismo día: el agricultor divide su lote como quiera; una temporada puede venir de varias y tener varias sucesoras (`follows_season_ids`, antes `follows_season_id` singular). Ejemplo de uso: hoy siembra papa en la mitad; en un mes divide la otra mitad en fresa y ajo; al cosechar la papa, reparte ese terreno. Pasa de M a L. **Error del contrato a corregir:** al juntar dos temporadas de 1 ha en una de 2 ha, la sucesora mide 2 ha y pasa del área de cada anterior, así que la validación actual daría 422 en un caso válido. Propuesta para Haider o Felipe: validar que el área de una temporada no pase de la suma de las áreas de las que viene más el área libre del lote, y que la suma de las sucesoras de una temporada que solo vienen de ella no pase de su área. Por decidir también: si una sucesora puede ocupar parte del terreno anterior más terreno libre (por ejemplo, 1,5 ha después de una papa de 1 ha); qué diagnóstico se guarda en `diagnosis_light` cuando las dos luces difieren y si hay que guardar los pesos con que se vio (R4); el orden de `previous_crop_ids` cuando hay varias anteriores cosechadas el mismo día.
+- **Notas:** Las partes son de área, no se dibujan en el mapa; el suelo es el mismo para todo el lote. Decidido el 11 de octubre de 2026 y ampliado el mismo día: el agricultor divide su lote como quiera; una temporada puede venir de varias y tener varias sucesoras (`follows_season_ids`, antes `follows_season_id` singular). Ejemplo de uso: hoy siembra papa en la mitad; en un mes divide la otra mitad en fresa y ajo; al cosechar la papa, reparte ese terreno. Pasa de M a L. La regla de áreas es una sola (`specs/02-contratos.md`): el área de una temporada no pasa de la suma de las áreas de las que viene más el área libre del lote, y la suma de las temporadas en curso nunca pasa del área del lote; eso basta para que un terreno no se reparta dos veces. Por eso juntar dos temporadas de 1 ha en una de 2 ha es válido, y una sucesora puede ocupar el terreno anterior más terreno libre (por ejemplo, 1,5 ha después de una papa de 1 ha, si hay 0,5 ha libres). Cada temporada guarda las dos luces (`diagnosis_light`, con los pesos con que se vio, y `diagnosis_light_default`, con los de AgroSense) y esos pesos (`diagnosis_weights`) (R4). Por decidir: el orden de `previous_crop_ids` cuando hay varias anteriores cosechadas el mismo día.
 
 ### HU-204 · Historial con lo borrado y «Restaurar»
 
@@ -151,11 +156,11 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] En la web, las borradas se ven aparte, con el rótulo «Borrada · se puede restaurar hasta <fecha>» y el botón «Restaurar», que llama a `POST /api/v1/seasons/{season_id}/restore`
   - [ ] Al restaurar, la temporada vuelve al historial y al progreso, y queda el evento `season.restored` en `activity_log`
   - [ ] Restaurar valida lo mismo que crear: si la temporada restaurada hace pasar las temporadas en curso del área del lote, o sus `follows_season_ids` ya no son válidas, responde 422 y la web dice por qué
-  - [ ] Restaurar después de 30 días responde 404
+  - [ ] Restaurar después de 30 días, o algo que no está borrado, responde 404
   - [ ] Cada botón tiene una acción definida
 - **Reglas que aplican:** R9
 - **Contrato que toca:** `GET /api/v1/lots/{lot_id}/seasons`, `POST /api/v1/seasons/{season_id}/restore`, `activity_log`
-- **Notas:** Decidido el 11 de octubre de 2026 (antes «cómo se listan los borrados» estaba por decidir). Supuestos por confirmar: el 422 al restaurar y el 404 pasados 30 días (el contrato no fija esos códigos). Los lotes borrados vienen en `GET /lots` con `restorable_until` y se restauran desde «Borrados hace poco» en Mi finca (HU-164).
+- **Notas:** Decidido el 11 de octubre de 2026 (antes «cómo se listan los borrados» estaba por decidir). El contrato fija los códigos (`POST /api/v1/seasons/{season_id}/restore`): restaurar vuelve a validar el área y las temporadas de las que viene (422 si ya no cabe); pasados los 30 días, o si no está borrada, 404; lo borrado no cuenta en el área libre ni en el progreso. Los lotes borrados vienen en `GET /lots` con `restorable_until` y se restauran desde «Borrados hace poco» en Mi finca (HU-164).
 
 ### HU-166 · Borrar mi cuenta
 
@@ -181,7 +186,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Prueba: un terreno dividido en dos sucesoras da dos relaciones; dos temporadas juntadas en una dan dos relaciones hacia la misma
 - **Reglas que aplican:** R3, R5, R8
 - **Contrato que toca:** `GET /api/v1/lots/{lot_id}/progress`
-- **Notas:** `violated_rule_ids` reemplaza a la regla única por par; cambió el 11 de octubre de 2026 con `follows_season_ids`. Supuesto por confirmar: que las temporadas borradas no cuenten en el progreso (el contrato no lo dice).
+- **Notas:** `violated_rule_ids` reemplaza a la regla única por par; cambió el 11 de octubre de 2026 con `follows_season_ids`. Lo borrado no cuenta en el área libre ni en el progreso (`specs/02-contratos.md`, `POST /api/v1/seasons/{season_id}/restore`).
 
 ### HU-168 · Registro, sesión y paso de invitado a cuenta
 
@@ -204,7 +209,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Tocar un cultivo lo elige: la línea de tiempo y la tarjeta del cultivo pasan a ese cultivo
   - [ ] Línea de tiempo del cultivo elegido que se arrastra y se reproduce, de la siembra a la cosecha estimada (HU-186); los demás cultivos del lote avanzan a la misma fecha; todo punto estimado con un año normal (lo que va después del último dato de temperatura, `thermal_data_until`) lleva «Estimación con un año normal, no es pronóstico»
   - [ ] Clima de ahora en la escena (HU-175): día, atardecer, noche, nubes, lluvia, viento y escarcha si la mínima de ahora baja de 2 °C. Nunca cambia un resultado (decisión 7); sin datos en vivo, clima neutro rotulado
-  - [ ] Si el plan de agua marca déficit este mes, el suelo se ve seco con el aviso «Riego probable este mes · estimación» (R10)
+  - [ ] Si el plan de agua marca déficit este mes, el suelo se ve seco con un aviso que depende del riego del lote (`irrigated`): con riego, «Riego probable este mes · estimación»; sin riego o sin definir, «La lluvia no alcanza este mes · estimación» (R10)
   - [ ] Tocar el cultivo muestra su etapa, los días desde la siembra y el método (temperatura o calendario)
   - [ ] El ambiente está animado: el viento pasa en ráfagas y las matas se inclinan en ola, la lluvia cae en bucle y salpica, las nubes derivan, las estrellas titilan, la escarcha brilla y se derrite al salir el sol, y de día, sin lluvia ni viento fuerte, de vez en cuando cruza una mariposa
   - [ ] Con movimiento reducido o en modo ligero, la escena es estática: la imagen fija del estado de ahora, con la misma información y los mismos rótulos

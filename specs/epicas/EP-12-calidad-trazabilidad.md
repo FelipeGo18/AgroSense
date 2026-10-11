@@ -40,8 +40,9 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [ ] Automatizados en pytest y corriendo en Docker, en local y en CI
 - **Casos de las cuentas** (contra el PostgreSQL de Compose):
   - [ ] Dividir: una temporada cosechada de 1 ha con dos sucesoras de 0,5 ha cada una se acepta, y el progreso da dos relaciones
-  - [ ] Juntar: dos temporadas cosechadas de 0,5 ha con una sucesora de 1 ha se acepta, y el progreso da dos relaciones hacia la misma (depende de la corrección del contrato señalada en HU-165)
-  - [ ] Sucesoras que pasan del área: una temporada de 1 ha con sucesoras que suman 1,2 ha responde 422
+  - [ ] Juntar: dos temporadas cosechadas de 0,5 ha con una sucesora de 1 ha se acepta, y el progreso da dos relaciones hacia la misma
+  - [ ] Área que no cabe: en un lote de 1 ha, las sucesoras de una temporada cosechada de 1 ha que suman 1,2 ha responden 422, porque las temporadas en curso pasarían del área del lote
+  - [ ] Terreno anterior más terreno libre: después de una temporada cosechada de 1 ha, una sucesora de 1,5 ha se acepta si hay 0,5 ha libres en el lote
   - [ ] `follows_season_ids` con una temporada de otro lote, sin cosechar o cosechada después de la nueva siembra responde 422
   - [ ] Restaurar: una temporada borrada aparece en el historial con `restorable_until` y vuelve al restaurarla (HU-204)
 - **Reglas que aplican:** R1, R2, R3, R4, R9
@@ -55,8 +56,10 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [ ] Manifiesto con versión, fuentes y cobertura
   - [ ] Cada entrada de `sources` dice qué cubre (`coverage`: país o región)
   - [ ] `sources.yaml` dice, por región, qué fuente calcula cada señal; la validación falla si una señal de la región no tiene fuente asignada o la fuente no existe en `sources` (R8)
+  - [ ] `GET /api/v1/version` responde `dataset_version`, `rules_version`, `created_at`, `region`, `default_weights` (los pesos por defecto de `weights.yaml`, para mostrarlos antes de consultar) y `sources` (lista con `source_id`, `name`, `institution`, `url`, `coverage` y `license`), según el contrato
   - [ ] La web muestra fuentes, versión y los pesos por defecto con su porqué (HU-198)
-- **Reglas que aplican:** R7, R8
+- **Reglas que aplican:** R4, R7, R8
+- **Contrato que toca:** `GET /api/v1/version`, `manifest.json`, `sources`
 - **Notas:** Decisión 11: un indicador puede tener varias fuentes; se muestran juntas y nunca se mezclan.
 
 ### HU-123 · Reconstruir el dataset con un comando

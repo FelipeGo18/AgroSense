@@ -12,7 +12,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 | R6 | El motor no conoce la web | El módulo de decisión no importa FastAPI ni lee archivos ni la base de datos directamente. Recibe tablas, configuración y, cuando aplica, el historial y el suelo del lote que le pasa la API. |
 | R7 | Una sola llave territorial | Todo se une por el código oficial de la unidad territorial de la región (en Colombia, el código DIVIPOLA del municipio, `municipality_id`). Los nombres no se usan como llave. La región todavía no está confirmada: el modelo no supone Colombia fuera de los adaptadores de cada fuente. |
 | R8 | Toda regla y dato tiene fuente, y puede tener varias | Cada fila de datos y cada regla agronómica apunta a una entrada de la tabla `sources`. |
-| R9 | Los datos de la finca solo se guardan con cuenta y consentimiento | Los endpoints de cálculo (`/diagnostics`, `/rotations`, `/water-plans`, `/calendar`, `/scenarios`) no guardan los datos de la finca ni quién consultó: solo suman 1 a un contador anónimo de uso (`usage_daily`: día, tipo de consulta, municipio y cultivo), sin usuario, sesión, IP, hora, fecha de siembra, prioridades ni área. Sin cuenta, los datos de la finca se envían solo para calcular y no se guardan en el servidor ni en sus logs. Con cuenta, se guardan los lotes y su historial con consentimiento registrado, solo los datos mínimos, y el usuario puede borrarlo todo. |
+| R9 | Los datos de la finca solo se guardan con cuenta y consentimiento | Los endpoints de cálculo (`/diagnostics`, `/rotations`, `/water-plans`, `/calendar`, `/scenarios`) no guardan los datos de la finca ni quién consultó. En el P0 no escriben nada en la base de datos. Desde HU-170 (P1) suman 1 al contador anónimo `usage_daily` (día, tipo de consulta, municipio y cultivo; sin usuario, sesión, IP, hora, fecha de siembra, prioridades ni área). Sin cuenta, los datos de la finca se envían solo para calcular y no se guardan en el servidor ni en sus logs. Con cuenta, se guardan los lotes y su historial con consentimiento registrado, solo los datos mínimos, y el usuario puede borrarlo todo. |
 | R10 | El riego y el suelo son estimaciones y se dice siempre | El riego se basa en el clima de la zona, no en mediciones del lote: se muestran rangos y se pide verificar la humedad del suelo en campo. El suelo sale de un mapa global de 250 m (SoilGrids): se muestra con su rango de incertidumbre y se recomienda un análisis de suelo del lote. |
 
 ## Cómo se comprueba cada regla
@@ -27,7 +27,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 | R6 | Prueba o lint: `backend/engine/` no importa `fastapi` ni `sqlalchemy` ni abre archivos. |
 | R7 | Prueba: las uniones usan `municipality_id`; unicidad de llaves en los Parquet. Revisión: ninguna regla del motor depende de una fuente o un código propios de un país. |
 | R8 | Validación: ninguna fila ni regla con `source_id` vacío o inexistente en `sources`. |
-| R9 | Prueba: los endpoints de cálculo solo escriben en `usage_daily`, y esa tabla no tiene ninguna columna que identifique a una persona ni datos de la finca. Prueba: sin sesión, ningún endpoint de cuenta acepta escritura. Prueba: borrar la cuenta elimina usuario, sesiones, lotes, temporadas, tickets y sus eventos de `activity_log`. Revisión: el registro guarda el consentimiento y su versión. |
+| R9 | Prueba: los endpoints de cálculo no escriben en la base de datos, salvo el contador `usage_daily` cuando existe (HU-170), que no tiene ninguna columna que identifique a una persona ni datos de la finca. Prueba: sin sesión, ningún endpoint de cuenta acepta escritura. Prueba: borrar la cuenta elimina usuario, sesiones, lotes, temporadas, tickets y sus eventos de `activity_log`. Revisión: el registro guarda el consentimiento y su versión. |
 | R10 | Revisión: el rótulo de estimación aparece junto a todo resultado de riego y de suelo; se muestran rangos. Prueba: la señal de suelo nunca es crítica. |
 
 ## La ventana de siembra
@@ -45,6 +45,8 @@ Antes de evaluar ventanas, el motor comprueba que el cultivo se puede dar en ese
 - Un cultivo **no es apto** si la altitud del municipio queda fuera de `altitude_min_m`–`altitude_max_m` de su ficha. Ejemplo: papa en un municipio de la costa.
 - Si no es apto, la luz es `red`, la acción es `rotate` («este cultivo no se da en su zona: elija otro»), la razón cita el dato de la ficha y su fuente, y **no se evalúan ventanas**.
 - Si la ficha no tiene ese rango con fuente, la aptitud es `insufficient_data`: no bloquea y se agrega a las limitaciones (R1, R8).
+- La aptitud se decide **solo por la altitud**. Solo la altitud fuera del rango absoluto da `not_suitable`.
+- `suitability.score` es una nota informativa de 0 a 100 con la curva de altitud: 100 dentro del rango óptimo (`altitude_opt_min_m`–`altitude_opt_max_m`) y 0 fuera del absoluto. No es una señal: no entra al semáforo ni al orden de las ventanas.
 
 ## Señales de una ventana
 
@@ -81,12 +83,14 @@ Qué mide cada curva:
 
 | Señal | Variable | Límites |
 |---|---|---|
-| `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia en la ventana, con la retención del suelo | Ficha (`rain_*`) |
+| `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia en la ventana, con la retención del suelo | `thresholds.yaml` |
 | `frost` | Porcentaje de años con helada en las semanas sensibles | `thresholds.yaml` |
 | `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_*`, `heat_max_c`) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
 | `supply` | Variación del área sembrada | `thresholds.yaml` |
 | `market` | Índice estacional de precio en el mes de cosecha | `thresholds.yaml` |
+
+Los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana.
 
 Sin la textura del suelo, el agua se calcula sin retención y se agrega a las limitaciones.
 

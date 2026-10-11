@@ -21,8 +21,8 @@ from calendario import crop_chips, mode_toggle, tag  # noqa: E402
 from finca import lot_header, lot_tabs  # noqa: E402
 from ui import BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, card, chamfer, field, frame, group, link, paragraph, poly, text, topbar  # noqa: E402
 
-FULL = {"Oct": "octubre", "Nov": "noviembre", "Dic": "diciembre", "Ene": "enero", "Feb": "febrero", "Mar": "marzo", "Abr": "abril",
-        "May": "mayo", "Jun": "junio", "Jul": "julio", "Ago": "agosto", "Sep": "septiembre"}
+FULL = {"Ene": "enero", "Feb": "febrero", "Mar": "marzo", "Abr": "abril", "May": "mayo", "Jun": "junio", "Jul": "julio", "Ago": "agosto",
+        "Sep": "septiembre", "Oct": "octubre", "Nov": "noviembre", "Dic": "diciembre"}
 LEVEL_FILL = {"favorable": P["brote"], "moderado": P["trigo"], "desfavorable": P["rojo"]}
 
 
@@ -47,7 +47,7 @@ def year_chart(x, y, w, h, chrono, compact=False):
         out.append(poly(chamfer(bx, h - bh, bw, bh, 3), fill, P["calabaza"] if best else (P["rojo"] if win["high_risk"] else P["noche"]), 2.5 if best else 1.2))
         out.append(text(bx + bw / 2, h - bh - 6, str(win["limiting_score"]), 11 if compact else 12, 700, anchor="middle"))
         out.append(text(bx + bw / 2, h + 18, win["month"], 11 if compact else 12, 700 if best else 400, P["noche"] if best else SEC, anchor="middle"))
-        if win["month"] in ("Oct", "Ene") and not compact:
+        if (i == 0 or win["month"] == "Ene") and not compact:  # el año, en la primera ventana y donde cambia
             out.append(text(bx + bw / 2, h + 34, str(win["year"]), 11, fill=SEC, anchor="middle"))
         if best:
             out += [poly([(bx + bw / 2 - 9, h + 26 + (12 if compact else 18)), (bx + bw / 2 + 9, h + 26 + (12 if compact else 18)), (bx + bw / 2, h + 18 + (12 if compact else 18))], P["calabaza"])]
@@ -122,11 +122,13 @@ def ordered_list(x, y, w, ranked, compact=False):
 
 
 def best_banner(x, y, w, crop_label, ranked, compact=False):
-    best = sorted([r for r in ranked if not r["high_risk"]][:3], key=lambda r: (r["year"], list(FULL).index(r["month"])))
-    names = ", ".join(f"{FULL[b['month']]}" for b in best[:-1]) + f" y {FULL[best[-1]['month']]}"
+    best = sorted([r for r in ranked if not r["high_risk"]][:3], key=lambda r: m.WINDOW_MONTHS.index((r["month"], r["year"])))
+    same_year = len({b["year"] for b in best}) == 1  # el año se dice una vez si las tres caen en el mismo
+    label = lambda b: FULL[b["month"]] + ("" if same_year else f" de {b['year']}")  # noqa: E731
+    names = ", ".join(label(b) for b in best[:-1]) + f" y {label(best[-1])}" + (f" de {best[0]['year']}" if same_year else "")
     body = [poly(chamfer(0, 0, w, 84 if compact else 70, 12), "#E9F2D8", D["oliva"], 2)]
     body += [text(18, 28, f"Mejores fechas para sembrar {crop_label}", 14 if compact else 15, 700),
-             text(18, 54, names[0].upper() + names[1:] + " de 2027", 18 if compact else 21, 600, font=FONT_TITLE)]
+             text(18, 54, names[0].upper() + names[1:], 18 if compact else 21, 600, font=FONT_TITLE)]
     if compact:
         body.append(text(18, 74, "Según la historia de la zona", 12, fill=SEC))
     else:
@@ -206,19 +208,23 @@ def plan_mobile():
 
 
 def week_row(x, y, w, wk, i, compact=False):
+    """Una semana del mes abierto. El factor que más limita y el promedio salen del mismo cálculo que las ventanas
+    (muestra.window_summary), con los pesos de la consulta: la nota que se lee es la de la señal que se nombra.
+    Cada semana abre su diagnóstico (POST /diagnostics con esa fecha de siembra)."""
     scores = wk["scores"]
-    counted = {k: v for k, v in scores.items() if v is not None}
-    lim = min(counted, key=lambda k: counted[k])
-    h = 150 if compact else 84
+    lim, lim_score, weighted = m.window_summary(scores)
+    h = 196 if compact else 84
     body = [poly(chamfer(0, 0, w, h, 10), "#FFF6EA" if i == 0 else WHITE, P["calabaza"] if i == 0 else BORDE, 2.5 if i == 0 else 1.2)]
     body += [text(18, 32, f"Semana del {wk['label']}", 17, 700), text(18, 54, f"Cosecha estimada {wk['harvest']}", 13, fill=SEC)]
     if compact:
-        body += [text(18, 80, f"Limita: {m.SIGNAL_NAME[lim].lower()} · {counted[lim]}/100", 14, 700)] + mini_scores(18, 124, scores, 54)
+        body += [text(18, 80, f"Limita: {m.SIGNAL_NAME[lim].lower()} · {lim_score}/100", 14, 700), text(18, 100, f"Promedio con los pesos: {weighted}/100", 13, fill=SEC)]
+        body += mini_scores(18, 140, scores, 54)
+        body += link(18, h - 16, "Ver el diagnóstico de esta semana", 14)
     else:
-        body += [text(330, 34, f"Lo que más limita: {m.SIGNAL_NAME[lim].lower()} · {counted[lim]}/100", 15, 700)] + sg.score_bar(330, 50, 200, counted[lim], 10, show_number=False)
+        body += [text(330, 34, f"Lo que más limita: {m.SIGNAL_NAME[lim].lower()} · {lim_score}/100", 15, 700)] + sg.score_bar(330, 50, 200, lim_score, 10, show_number=False)
         body += mini_scores(600, 50, scores)
-        if i == 0:
-            body += link(w - 18, 70, "Ver el diagnóstico de esta semana", 14, anchor="end")
+        body += [text(w - 18, 34, f"Promedio con los pesos: {weighted}/100", 13, fill=SEC, anchor="end")]
+        body += link(w - 18, 70, "Ver el diagnóstico de esta semana", 14, anchor="end")
     return [group(f"semana-{i + 1}", body, x, y)], h
 
 
@@ -237,9 +243,11 @@ def weeks(mobile=False):
         b += [text(pad, 190, "Agosto de 2027, semana por semana", 36, 600, font=FONT_TITLE),
               text(pad, 222, "Papa · parte libre de El Alto (0,41 ha) · sin riego · pesos de AgroSense", 16, fill=SEC)]
         y = 250
-    note = (["Las semanas afinan dentro de un mes: el", "dato por semana es más variable que el", "del mes. Mientras más tarde siembre en", "agosto, más se acerca el llenado a las", "heladas de enero."] if mobile else
-            ["Las semanas afinan dentro de un mes: el dato por semana es más variable que el del mes.",
-             "Mientras más tarde siembre en agosto, más se acerca el llenado de la papa a las heladas de enero."])
+    # La nota dice lo mismo que las filas: la oferta limita igual todas las semanas; lo que cambia entre ellas es el clima.
+    note = (["Las semanas afinan dentro de un mes: el", "dato por semana es más variable. Lo que", "más limita en agosto es la oferta, igual", "en todas (EVA la da por semestre). Cambia",
+             "el clima: mientras más tarde siembre, más", "se acerca el llenado a las heladas de", "enero."] if mobile else
+            ["Las semanas afinan dentro de un mes; el dato por semana es más variable. Lo que más limita en agosto es la oferta, igual en todas (EVA la da por semestre).",
+             "Lo que cambia es el clima: mientras más tarde siembre en agosto, más se acerca el llenado de la papa a las heladas de enero."])
     nh = 24 + len(note) * 21
     b += [poly(chamfer(pad, y, fw, nh, 10), "#E6F0F5", D["cielo"], 1.5)] + paragraph(pad + 16, y + 28, note, 14, 21)
     y += nh + 24

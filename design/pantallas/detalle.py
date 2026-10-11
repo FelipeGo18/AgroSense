@@ -17,7 +17,8 @@ import ui  # noqa: E402,F401
 import muestra as m  # noqa: E402
 import senales as sg  # noqa: E402
 from consulta import bars, frost_chart, ph_scale  # noqa: E402
-from ui import BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, chamfer, frame, group, link, paragraph, poly, shade, text, topbar  # noqa: E402
+from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, chamfer, frame, group, link, p1_tag, paragraph, poly, shade, text,  # noqa: E402
+                topbar, width_of)
 
 
 def water_chart(x, y, w, h, short=False):
@@ -39,7 +40,8 @@ def water_chart(x, y, w, h, short=False):
     ny = h - h * m.WATER_YEARS[0][2] / vmax
     out += [f'<line x1="0" y1="{ny:.1f}" x2="{w}" y2="{ny:.1f}" stroke="{P["noche"]}" stroke-width="2" stroke-dasharray="8 5"/>',
             text(w, ny - 8, "Lo que necesita: 430 mm", 13, 700, anchor="end")]
-    out += [poly(chamfer(0, h + 34, 16, 14, 2), WHITE, D["cielo"], 1.5, "4 3"), text(24, h + 46, "Años en que la lluvia no alcanzó: 3 de 10", 12, fill=SEC)]
+    short_years = sum(1 for _, rain, need in m.WATER_YEARS if rain < need)  # el mismo dato de la razón «en 7 de los últimos 10 años»
+    out += [poly(chamfer(0, h + 34, 16, 14, 2), WHITE, D["cielo"], 1.5, "4 3"), text(24, h + 46, f"Años en que la lluvia no alcanzó: {short_years} de {n}", 12, fill=SEC)]
     return [group("grafica-agua", out, x, y)]
 
 
@@ -63,17 +65,25 @@ def heat_chart(x, y, w, h):
 
 
 def sources_box(x, y, w):
-    """Las fuentes de la oferta juntas, para contrastar; nunca mezcladas (decisión 11)."""
+    """Las fuentes de la oferta juntas, para contrastar; nunca mezcladas (decisión 11).
+    Las siembras registradas en AgroSense son P1 (HU-200): van rotuladas para el equipo."""
     a = m.AGROSENSE_SUPPLY
-    rows = (("EVA (estadística oficial)", "+35 % de área en 2025 B, preliminar", "Calcula la señal"),
-            ("Siembras en AgroSense", f"{a['ha']} ha en curso, {a['accounts']} cuentas, al {a['date']}", "Para contrastar"))
-    out = [poly(chamfer(0, 0, w, 24 + len(rows) * 46, 10), "#F2F5F7", BORDE, 1.5), text(16, 22, "Fuentes de la oferta", 13, 700, SEC)]
-    for i, (src, val, use) in enumerate(rows):
-        ry = 48 + i * 46
-        out += [text(16, ry, src, 14, 700), text(16, ry + 18, val, 13, fill=SEC)]
-        out += [poly(chamfer(w - 136, ry - 16, 120, 24, 5), D["oliva"] if i == 0 else WHITE, None if i == 0 else BORDE, 0 if i == 0 else 1.5),
-                text(w - 76, ry + 1, use, 12, 700, WHITE if i == 0 else P["noche"], anchor="middle")]
-    return [group("fuentes-oferta", out, x, y)]
+    narrow = w < 420
+    count = [f"{a['ha']} ha en curso, {a['accounts']} cuentas,", f"al {a['date']}"] if narrow else [f"{a['ha']} ha en curso, {a['accounts']} cuentas, al {a['date']}"]
+    rows = (("EVA (estadística oficial)", ["+35 % de área en 2025 B, preliminar"], "Usada para la luz", False),
+            ("Siembras en AgroSense", count, "Para contrastar", True))
+    out, ry = [text(16, 22, "Fuentes de la oferta", 13, 700, SEC)], 48
+    for i, (src, val, use, p1) in enumerate(rows):
+        out += [text(16, ry, src, 14, 700)] + paragraph(16, ry + 18, val, 13, 16, fill=SEC)
+        # en angosto el nombre y la píldora no caben en una línea: la píldora baja, con su rótulo P1 al lado
+        px, py = (16, ry + 12 + len(val) * 16) if narrow else (w - 148, ry - 16)
+        out += [poly(chamfer(px, py, 132, 24, 5), D["oliva"] if i == 0 else WHITE, None if i == 0 else BORDE, 0 if i == 0 else 1.5),
+                text(px + 66, py + 17, use, 12, 700, WHITE if i == 0 else P["noche"], anchor="middle")]
+        if p1:
+            out += p1_tag(px + 140, py) if narrow else p1_tag(16 + width_of(src, 14, True) + 10, ry - 17)
+        ry = py + 24 + 26 if narrow else ry + 46
+    bh = ry - (12 if narrow else 16)
+    return [group("fuentes-oferta", [poly(chamfer(0, 0, w, bh, 10), "#F2F5F7", BORDE, 1.5)] + out, x, y)]
 
 
 def detail_panel(x, y, w, h, key, sub, body_fn):
@@ -101,18 +111,21 @@ def signals(mobile=False):
     pad = 16 if mobile else 96
     pw = w - 2 * pad if mobile else (w - 2 * pad - 24) / 2
     ph = 640 if mobile else 560
-    b = topbar(w, "Consultar", None if mobile else m.NAME)
+    b = topbar(w, "Consultar")  # la consulta es sin cuenta: barra del invitado, como en diagnostico.py
+    q = m.QUERY
     hy = 120 if mobile else 140
     head = link(0, 0, "← Volver al resultado", 16)
     head += [text(0, 48, "Las seis señales", 30 if mobile else 40, 600, font=FONT_TITLE)]
-    head += paragraph(0, 82, ["Papa · siembra 2 ago 2027 · Samacá.", "Historia de la zona; no es pronóstico."] if mobile else
-                      ["Papa · siembra el 2 de agosto de 2027, cosecha estimada el 27 de diciembre · Samacá. Historia de la zona; no es un pronóstico."], 16, 22, fill=SEC)
+    harvest = q["harvest_long"].rsplit(" de ", 1)[0]
+    head += paragraph(0, 82, [f"{q['crop']} · siembra {q['sowing']} · Samacá.", "Historia de la zona; no es pronóstico."] if mobile else
+                      [f"{q['crop']} · siembra el {q['sowing_long']}, cosecha estimada el {harvest} · Samacá. Historia de la zona; no es un pronóstico."], 16, 22, fill=SEC)
     b.append(group("encabezado", head, pad, hy))
     gw = lambda wp: wp - 100  # noqa: E731
 
     def water(wp):
         out = water_chart(64, 250, gw(wp), 130, short=wp < 500)
-        out += paragraph(24, 448, ["Su suelo (franco arcillosa) guarda agua:", "entra en el cálculo."] if wp < 500 else ["Su suelo (franco arcillosa) guarda agua: entra en el cálculo."], 13, 18, fill=SEC)
+        out += paragraph(24, 448, ["El suelo estimado de la zona (franco", "arcillosa) guarda agua: entra en el cálculo."] if wp < 500 else
+                         ["El suelo estimado de la zona (franco arcillosa) guarda agua: entra en el cálculo."], 13, 18, fill=SEC)
         return out
 
     def frost(wp):
@@ -144,30 +157,35 @@ def signals(mobile=False):
         ("frost", ["Sembrando en agosto, heló en el llenado", f"(diciembre) {m.FROST[11]} de cada 100 años. Etapas", "sensibles: toda la papa en campo. NASA POWER."], frost),
         ("heat", ["De agosto a diciembre, la máxima rara vez", "pasa de 22 °C; la papa aguanta hasta", "28 °C. Fuente: NASA POWER; ficha: EcoCrop."], heat),
         ("soil", ["El pH estimado cae en el rango de la papa.", "Fuente: SoilGrids (ISRIC), celdas de 250 m.", "Un análisis de suelo es más preciso."], soil),
-        ("supply", ["En 2025 B (último dato, preliminar) se", "sembró 35 % más que en los tres semestres", "B anteriores. Calcula: EVA."], supply),
+        ("supply", ["En 2025 B (último dato, preliminar) se", "sembró 35 % más que en los tres semestres", "B anteriores. Usada para la luz: EVA."], supply),
         ("market", ["Sin datos de precios para Samacá.", "Fuente prevista: SIPSA (DANE)."], market),
     )
     gy = hy + (150 if mobile else 140)
+    my = gy
     for i, (k, sub, fn) in enumerate(items):
-        px, py = (pad, gy + i * (ph + 24)) if mobile else (pad + (i % 2) * (pw + 24), gy + (i // 2) * (ph + 24))
-        b += detail_panel(px, py, pw, ph, k, sub, fn)
+        if mobile:  # una columna; la oferta es más alta: sus fuentes van apiladas
+            hh = ph + (64 if k == "supply" else 0)
+            b += detail_panel(pad, my, pw, hh, k, sub, fn)
+            my += hh + 24
+        else:
+            b += detail_panel(pad + (i % 2) * (pw + 24), gy + (i // 2) * (ph + 24), pw, ph, k, sub, fn)
     # Cómo salió la luz, paso a paso (R2), con los pesos usados (R4)
-    rx, ry = (pad, gy + 6 * (ph + 24)) if mobile else (pad, gy + 3 * (ph + 24))
+    rx, ry = (pad, my) if mobile else (pad, gy + 3 * (ph + 24))
     rw = pw if mobile else w - 2 * pad
-    steps = (("0", "La papa se da en Samacá:", "aptitud 92/100."), ("1", "Agua y oferta tienen datos:", "se puede evaluar."),
-             ("2", "Ninguna señal crítica y una sola", "desfavorable (oferta): no es rojo."), ("3", "Hay una desfavorable:", "no es verde."),
-             ("4", "Queda amarillo. Como la oferta no", "cambia con la fecha: mejor otro cultivo."))
-    r = [poly(chamfer(0, 8, rw, 0, 18), BORDE)]
+    steps = (("0", "La papa se da en Samacá:", [f"aptitud {m.SUITABILITY['score']}/100."]), ("1", "Agua y oferta tienen datos:", ["se puede evaluar."]),
+             ("2", "Ninguna señal crítica y una sola", ["desfavorable (oferta): no es rojo."]), ("3", "Hay una desfavorable:", ["no es verde."]),
+             ("4", "Queda amarillo.", ["La oferta es lo que más limita", "en esta fecha: mire otro cultivo", "u otra fecha."]))
+    weights = " · ".join(f"{m.SIGNAL_NAME[k].lower()} {m.DEFAULT_WEIGHTS[k]}" for k in m.SIGNAL_ORDER)
     body = [text(24, 50, "Cómo salió el amarillo", 26, 600, font=FONT_TITLE),
-            text(24, 76, "Con los pesos de AgroSense: agua 3 · heladas 3 · calor 3 · suelo 2 · oferta 3 · mercado 2", 13, fill=SEC) if not mobile else
+            text(24, 76, f"Con los pesos de AgroSense: {weights}", 13, fill=SEC) if not mobile else
             text(24, 76, "Con los pesos de AgroSense.", 13, fill=SEC)]
     cols = 1 if mobile else 3
     colw = (rw - 48) / cols
-    for i, (n, a, c2) in enumerate(steps):
+    for i, (n, a, more) in enumerate(steps):
         cx, cy = 24 + (i % cols) * colw, 120 + (i // cols) * 74
         body += [poly(chamfer(cx, cy - 22, 36, 36, 6), P["trigo"] if i == 4 else P["niebla"]), text(cx + 18, cy + 2, n, 18, 700, anchor="middle"),
-                 text(cx + 52, cy - 2, a, 15, 700), text(cx + 52, cy + 18, c2, 14, fill=SEC)]
-    rh = 120 + ((len(steps) + cols - 1) // cols) * 74 + 40
+                 text(cx + 52, cy - 2, a, 15, 700)] + paragraph(cx + 52, cy + 18, more, 14, 18, fill=SEC)
+    rh = 120 + ((len(steps) + cols - 1) // cols) * 74 + 40 + 18 * (len(steps[-1][2]) - 1)  # el último paso tiene más líneas
     body += link(24, rh - 26, "Ver todas las reglas del semáforo", 15)
     r = [poly(chamfer(0, 8, rw, rh, 18), BORDE), poly(chamfer(0, 0, rw, rh, 18), WHITE)] + body
     b.append(group("como-se-decidio", r, rx, ry))

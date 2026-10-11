@@ -28,7 +28,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 - **Criterios de aceptación:**
   - [ ] Descarga con caché y reintentos
   - [ ] Fuente y fecha registradas
-  - [ ] Días faltantes contados en `valid_days`
+  - [ ] Días faltantes o incompletos marcados en `quality` (`climate_day`); nunca se rellenan (R1)
   - [ ] Publica `climate_day` (mínima y máxima diarias corregidas por altitud) para la etapa del cultivo (HU-150)
 
 ### HU-042 · Lluvia mensual y su normal
@@ -84,7 +84,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 - **Historia:** Como motor, quiero el riesgo de helada, la temperatura máxima, la lluvia y la ET0 normales por semana del año en cada municipio, para comparar ventanas de siembra dentro de un mismo mes.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] `climate_risk_week` por `municipality_id` y `week` (1 a 52) con `frost_freq_pct`, `tmax_p90_c`, `precip_normal_mm`, `precip_dry_mm`, `et0_normal_mm`, `years`, `quality` y `source_id`, según el contrato
+  - [ ] `climate_risk_week` por `municipality_id` y `week` (1 a 52; los días 365 y 366 van a la semana 52) con `frost_freq_pct`, `tmax_p90_c`, `precip_normal_mm`, `precip_dry_mm`, `et0_normal_mm`, `years`, `quality` y `source_id`, según el contrato
   - [ ] Cada valor se suaviza con las semanas vecinas; el método y el ancho del suavizado quedan documentados y viven en la configuración del pipeline
   - [ ] Mismas temperaturas corregidas por altitud y mismo umbral de helada que HU-045
   - [ ] Unicidad de la llave: 52 filas por municipio (R7)
@@ -92,7 +92,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Con pocos años válidos, `quality = partial`; nunca se rellena una semana sin datos (R1)
 - **Reglas que aplican:** R1, R7, R8
 - **Contrato que toca:** `climate_risk_week`
-- **Notas:** El dato semanal es más ruidoso que el mensual: por eso se suaviza y se presenta como orientación (`docs/riesgos.md`). Supuestos por confirmar: a qué semana van los días 365 y 366; qué es exactamente «un año con helada» en una semana suavizada. Depende de HU-041 y HU-044; la ET0 usa el método de HU-143. Lo usan HU-077, HU-190 y HU-192. Las columnas del P1 las agrega HU-046. Agregada el 11 de octubre de 2026.
+- **Notas:** El dato semanal es más ruidoso que el mensual: por eso se suaviza y se presenta como orientación (`docs/riesgos.md`). Los días 365 y 366 van a la semana 52 (`specs/02-contratos.md`, `climate_risk_week`). Supuesto por confirmar: qué es exactamente «un año con helada» en una semana suavizada. Depende de HU-041 y HU-044; la ET0 usa el método de HU-143. Lo usan HU-077, HU-190 y HU-192. Las columnas del P1 las agrega HU-046. Agregada el 11 de octubre de 2026.
 
 ### HU-046 · Aguaceros, ventanas secas y gota por mes
 

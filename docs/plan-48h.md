@@ -2,7 +2,7 @@
 
 ## Capacidad del equipo
 
-El punto más crítico de viabilidad es la capacidad. Según `specs/BACKLOG.md` (10 de octubre de 2026), el P0 suma unas 302 horas-persona. Sin lo que ya se hace en la fase 0 (EP-00, EP-06, EP-15, HU-142 y HU-171: 74 horas), el P0 del evento suma unas **228 horas-persona**: 164 del núcleo (diagnóstico con sus señales, suelo, calendario, rotaciones, plan de agua, logs, calidad y entrega), 48 de cuentas (EP-16, con lotes en el mapa, trazabilidad y perfil) y 16 del inicio y el paisaje vivo (EP-17). Con un 15 % de integración y coordinación son cerca de **262 horas**. Subió desde 196 horas por el suelo, las heladas, el calendario, el mapa del lote y la trazabilidad. Con descanso, comidas y reuniones, cada persona rinde unas **28 horas útiles**.
+El punto más crítico de viabilidad es la capacidad. Según `specs/BACKLOG.md` (11 de octubre de 2026), el P0 son **99 HU** (37 S, 51 M y 11 L): unas **366 horas-persona** con los tamaños del repositorio (S ≈ 2 h, M ≈ 4 h, L ≈ 8 h). El 10 de octubre eran unas 302; subió por las ventanas de siembra, las prioridades, el método FAO, las varias fuentes y los lotes divisibles (decisiones 9 a 11). Sin lo que se hace en la fase 0 (EP-00, EP-06, EP-15, HU-142 y HU-171: 80 horas), el P0 del evento suma unas **286 horas-persona**; con un 15 % de integración y coordinación son cerca de **329 horas**. Con descanso, comidas y reuniones, cada persona rinde unas **28 horas útiles**. El P0 no cabe en el evento sin adelantar más en la fase 0 o recortar: **qué se recorta se decide con el equipo.**
 
 | Equipo | Horas útiles | ¿Cabe el P0 sin preparar nada antes? |
 |---|---|---|
@@ -12,12 +12,12 @@ El punto más crítico de viabilidad es la capacidad. Según `specs/BACKLOG.md` 
 
 Space Apps permite equipos de hasta 6 personas. Lo que hace caber el P0 es lo que se prepara en la fase 0, y eso depende de HU-004:
 
-- **Si los términos permiten llevar código preparado:** llegan hechos el frontend base de EP-15 (escena, componentes, modo simulación) y, si se adelantan, los datos (EP-03, EP-04, HU-143 y HU-181, unas 30 horas). Aun así quedan unas 228 horas con integración, más de las 168 de 6 personas: **hay que adelantar más en la fase 0 o recortar. Pendiente de decidir con el equipo.**
+- **Si los términos permiten llevar código preparado:** llegan hechos el frontend base de EP-15 (escena, componentes, modo simulación) y, si se adelantan, los datos (EP-03, EP-04, HU-143 y HU-181, unas 34 horas). Aun así quedan unas 295 horas con integración, más de las 168 de 6 personas: **hay que adelantar más en la fase 0 o recortar. El recorte se decide con el equipo.**
 - **Si no lo permiten:** se llevan diseños, guías y assets; en el evento se construye primero la versión 2D (modo ligero) y la escena 3D solo si sobra tiempo, porque el 3D es una mejora (`specs/05-frontend.md`). El orden de recorte se aplica desde el inicio.
 
 **Las estimaciones son gruesas: hay que recalcularlas con el equipo real.**
 
-> Estas cifras son del 10 de octubre de 2026. No incluyen el cambio a ventanas de siembra del 11 de octubre (decisión 9), que agregó HU-190 a HU-195 y amplió otras, ni el cambio del mismo día a prioridades, método FAO, varias fuentes y lotes divisibles (decisiones 10 y 11), que agregó HU-196 a HU-204 (siete P0 y dos P1) y pasó HU-074, HU-121 y HU-165 de M a L. No se recalcularon.
+> Cifras recalculadas el 11 de octubre de 2026 con `specs/BACKLOG.md`, después del cambio a ventanas de siembra (decisión 9, HU-190 a HU-195) y a prioridades, método FAO, varias fuentes y lotes divisibles (decisiones 10 y 11, HU-196 a HU-204; HU-074, HU-121 y HU-165 pasaron de M a L). Son la suma de los tamaños, no una medición.
 
 ## Plan de las 48 horas
 
@@ -59,7 +59,8 @@ Space Apps permite equipos de hasta 6 personas. Lo que hace caber el P0 es lo qu
 | Rol | Épicas | Con 5 o 6 personas |
 |---|---|---|
 | Datos | EP-03 (HU-031, HU-032; HU-201 en P1), EP-04 (con HU-042, HU-044, HU-045 y HU-193), EP-05, HU-143, HU-181, HU-122, HU-123 | — |
-| Motor y API | HU-012, HU-144, HU-150 y HU-186 (antes del diagnóstico), EP-07 (con HU-077, HU-078, HU-190 a HU-192, HU-196 y HU-197; HU-195 en P1), EP-08, HU-146, HU-179, HU-182 a HU-184, backend de EP-16 (HU-161 a HU-167, HU-178, HU-204), HU-175, motor de EP-11; en P1, HU-200 | Con 4 personas también se encarga de EP-02 |
+| Motor y API | HU-012, HU-144, HU-150 y HU-186 (antes del diagnóstico), EP-07 (con HU-077, HU-078, HU-190 a HU-192, HU-196 y HU-197; HU-195 en P1), EP-08, HU-146, HU-179, HU-182 a HU-184, backend de EP-16 (HU-160 a HU-167, HU-178, HU-204), HU-175, motor de EP-11; en P1, HU-200 | Con 4 personas también se encarga de EP-02 |
 | Web | HU-013, HU-014, EP-09 (con HU-194, HU-202 y HU-203), EP-10, EP-15 (fase 0), EP-17 (salvo HU-175), web de EP-16 (HU-168, HU-169 y la vista de HU-204), HU-141, HU-145, HU-180, HU-185, interfaz de EP-11 | Una sexta persona se suma aquí |
-| Producto y agro | EP-00, EP-06 (con HU-063, HU-198 y HU-199, en la fase 0), HU-142, HU-121, EP-13 | — |
+| Producto y agro | EP-00, EP-06 (con HU-063, HU-198 y HU-199, en la fase 0), HU-142, EP-13 | — |
+| Calidad | EP-12: HU-121 (casos de referencia) y revisión cruzada; HU-122 y HU-123 con Datos | Quién lo asume se decide con el equipo |
 | Plataforma e integración | EP-02, integración del hito 1, apoyo a Datos | Quinta persona |

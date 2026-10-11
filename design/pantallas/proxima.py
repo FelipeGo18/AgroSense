@@ -1,8 +1,10 @@
 """Pantalla final «Lote · próxima siembra» (D2, tanda 7c; rediseño, tanda 6). Escritorio y móvil.
 
-Rediseño: el terreno se elige en el lote (uno o varios, para juntarlos), su historial sale de la red de siembras con
-fechas y no con semestres, y el diagnóstico es el de la ventana que empieza cuando se libera el terreno, con las seis
-señales y las dos luces. Las prioridades de aquí son las de la rotación («¿Qué busca en la rotación?»).
+Rediseño: primero se dice qué había antes en el terreno (una o varias siembras cosechadas o por cosecharse pronto;
+marcar varias junta terrenos: `follows_season_ids`). Su historial sale de la red de siembras con fechas y no con
+semestres, y el diagnóstico es el de la ventana de la primera siembra (15 de enero de 2027; la papa se cosecha el 28
+de diciembre), con las seis señales y las dos luces. Las prioridades de aquí son las de la rotación («¿Qué busca en
+la rotación?»). Las opciones son las de rotaciones.py con las fechas del lote (`ranked(LOTE)`).
 
 Qué sembrar después en una parte del lote, con su historial real (el historial de ese terreno: todas las temporadas de las que viene,
 `follows_season_ids`) y el suelo estimado del lote: POST /rotations con `lot_id`. Arriba, el diagnóstico de la
@@ -19,14 +21,19 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402,F401
+import muestra  # noqa: E402
 from build_kit_svg import STATUS, icon  # noqa: E402
 from calendario import level_mark, tag, wrap_lines  # noqa: E402
 from finca import lot_header, lot_tabs  # noqa: E402
-from rotaciones import RANKED, excluded_box, option_card, priorities_panel  # noqa: E402
+from rotaciones import LOTE, SOWING, excluded_box, option_card, priorities_panel, ranked  # noqa: E402
+from senales import ACTION_TEXT, LIGHT_TEXT  # noqa: E402
 from ui import BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, frame, group, link, paragraph, poly, text, topbar, width_of  # noqa: E402
 
-PARTS = (("Donde está la papa", "1,26 ha · se libera el 28 dic", True), ("Terreno libre", "0,41 ha · listo para sembrar", False),
-         ("Donde está el haba", "0,42 ha · en curso", False), ("Donde está la cebolla", "0,42 ha · en curso", False))
+# «¿Qué había antes en este terreno?» (`follows_season_ids`): lo ya cosechado o por cosecharse pronto. El haba y la
+# cebolla siguen en curso y no se ofrecen. Marcar varias junta terrenos; «Nada» deja la lista vacía.
+PARTS = (("Papa", "1,26 ha · se cosecha el 28 dic", True), ("Papa criolla", "0,41 ha · libre desde el 15 jun", False),
+         ("Nada: es la primera siembra aquí", "Tierra del lote que no había sembrado", False))
+RANKED = ranked(LOTE)
 # El historial del terreno sale de la red (historial.py): papa ← maíz ← arveja (que juntó papa y maíz).
 HISTORY = (("ago 2025", "Arveja", False), ("ene 2026", "Maíz", False), ("ago 2026", "Papa", True))
 SIGNALS = (("Agua", "favorable", 84), ("Heladas", "moderado", 62), ("Calor", "favorable", 96), ("Suelo del lote", "favorable", 78),
@@ -34,7 +41,7 @@ SIGNALS = (("Agua", "favorable", 84), ("Heladas", "moderado", 62), ("Calor", "fa
 
 
 def part_chips(x, y, w, mobile=False):
-    """El terreno que se va a sembrar: uno o varios (se juntan); cada uno trae su historial."""
+    """Casillas de lo que había antes en el terreno: una o varias (se juntan); cada una trae su historial."""
     out, cx, cy = [], 0, 0
     for name, sub, on in PARTS:
         cw = max(width_of(name, 15, True), width_of(sub, 12)) + 30
@@ -47,7 +54,7 @@ def part_chips(x, y, w, mobile=False):
             out.append(f'<polyline points="{cx + cw - 25},{cy + 25} {cx + cw - 21},{cy + 29} {cx + cw - 14},{cy + 21}" fill="none" stroke="{D["oliva"]}" stroke-width="3" stroke-linecap="round"/>')
         out += [text(cx + 15, cy + 22, name, 15, 700, WHITE if on else P["noche"]), text(cx + 15, cy + 40, sub, 12, fill="#E3EECF" if on else SEC)]
         cx += cw + 8
-    return [group("elegir-parte", out, x, y)], cy + 50
+    return [group("antes-en-este-terreno", out, x, y)], cy + 50
 
 
 def history_card(x, y, w, mobile=False):
@@ -65,7 +72,7 @@ def history_card(x, y, w, mobile=False):
             body.append(text(cx - 13, 92, "→", 18, 700, SEC, anchor="middle"))
     yy = 144
     body += [text(24, yy, "Suelo estimado del lote", 13, fill=SEC), text(24, yy + 22, "pH 5,0 a 5,9 · carbono orgánico medio", 16, 700)]
-    body += link(w - 24, yy, "Ver suelo", 14, anchor="end")
+    body += link(w - 24, yy, "Ver suelo", 14, anchor="end")  # lleva a la tarjeta de suelo del lote, en la pestaña «Ahora»
     body += paragraph(24, yy + 48, wrap_lines(["Se usan las tres últimas siembras de este terreno, de todas las que vino, y el suelo de su polígono. Es una estimación de 250 m (SoilGrids)."], int((w - 48) / 7)), 13, 19, fill=SEC)
     h = yy + 48 + (38 if not mobile else 58) + 16
     return card(x, y, w, h, "tarjeta-historial") + [group("historial", body, x, y)], h
@@ -75,9 +82,14 @@ def diagnosis_card(x, y, w, mobile=False):
     """Diagnóstico de la siguiente ventana para la mejor opción del orden."""
     body = [text(24, 40, "DIAGNÓSTICO DE LA MEJOR OPCIÓN", 14, 700, SEC),
             text(24, 74, "Arveja sembrada el 15 ene 2027" if mobile else "Arveja · sembrando el 15 de enero de 2027", 22 if not mobile else 19, 600, font=FONT_TITLE)]
-    body += level_mark(46, 112, "favorable", 26) + [text(78, 108, "Verde: sembrar", 20, 700),
-                                                    text(78, 130, "Igual con sus prioridades y con el criterio de AgroSense." if not mobile else "Igual con las dos prioridades.", 14, fill=SEC)]
-    sx, sy = 24, 156
+    body += level_mark(46, 112, "favorable", 26)
+    if mobile:  # la luz y la acción en dos líneas; la nota debajo, a todo el ancho
+        body += [text(78, 106, LIGHT_TEXT["verde"], 20, 700), text(78, 128, ACTION_TEXT["sow"], 15, 700),
+                 text(24, 158, "Igual con sus prioridades y con AgroSense.", 14, fill=SEC)]
+    else:
+        body += [text(78, 108, f"{LIGHT_TEXT['verde']} · {ACTION_TEXT['sow']}", 20, 700),
+                 text(78, 130, "Igual con sus prioridades y con el criterio de AgroSense.", 14, fill=SEC)]
+    sx, sy = 24, 176 if mobile else 156
     for name, lv, score in SIGNALS:
         label = f"{name}: sin datos" if lv is None else f"{name} {score}"
         cw = width_of(label, 13, True) + 44
@@ -135,15 +147,15 @@ def p1_cards(x, y, w, mobile=False):
 def desktop():
     w = 1440
     b = [f'<rect width="{w}" height="3200" fill="{P["niebla"]}"/>']
-    b += topbar(w, active="Mi finca", user="Rosa")
+    b += topbar(w, active="Mi finca", user=muestra.NAME)
     b += lot_header(48, 140)
     b += lot_tabs(48, 212, "Próxima siembra")
-    b += [text(48, 300, "¿Qué terreno va a sembrar?", 18, 700), text(300, 300, "Puede elegir varios para juntarlos en uno.", 15, fill=SEC)]
+    b += [text(48, 300, "¿Qué había antes en este terreno?", 18, 700), text(392, 300, "Marque una o varias; si junta terrenos, márquelos todos.", 15, fill=SEC)]
     chips, ch = part_chips(48, 314, w - 96)
     b += chips
     y = 314 + ch + 30
     b.append(text(48, y + 30, "¿Qué sembrar después de la papa?", 34, 600, font=FONT_TITLE))
-    b.append(text(48, y + 58, "Primera siembra desde el 15 de enero de 2027, cuando se libera el terreno · cada opción en su propia ventana · historial real y suelo del lote", 16, fill=SEC))
+    b.append(text(48, y + 58, f"Primera siembra desde el {SOWING[LOTE]} · cada opción en su propia ventana · historial real y suelo del lote", 16, fill=SEC))
     b += link(w - 48, y + 30, "Cambiar la fecha", 15, anchor="end")
     y += 84
     lw = 660
@@ -171,8 +183,8 @@ def desktop():
     p1, p1h = p1_cards(48, y, w - 96)
     b += p1
     y += p1h + 44
-    b.append(text(48, y, "Datos 2026.11.0 · Reglas 1.0.0 · Cifras de muestra", 15, fill=SEC))
-    b += link(w - 48, y, "¿Cómo se arma este orden?", 15, anchor="end")
+    b.append(text(48, y, f"{muestra.VERSIONS} · Cifras de muestra", 15, fill=SEC))
+    b += link(w - 48, y, "¿Cómo se arma este orden?", 15, anchor="end")  # abre «¿Cómo funciona?»
     return ui.long_page((w, y + 60), b, P["niebla"])
 
 
@@ -183,12 +195,12 @@ def mobile():
     tabs = lot_tabs(-230, 0, "Próxima siembra")
     b.append(f'<defs><clipPath id="recorte-pestanas-prox"><rect x="0" y="200" width="{w}" height="60"/></clipPath></defs>'
              f'<g clip-path="url(#recorte-pestanas-prox)"><g transform="translate({pad} 210)">{"".join(tabs)}</g></g>')
-    b += [text(pad, 290, "¿Qué terreno va a sembrar?", 17, 700), text(pad, 312, "Puede elegir varios para juntarlos.", 13, fill=SEC)]
-    chips, ch = part_chips(pad, 326, fw, True)
+    b += [text(pad, 290, "¿Qué había antes en este terreno?", 17, 700)] + paragraph(pad, 312, ["Marque una o varias; si junta terrenos,", "márquelos todos."], 13, 18, fill=SEC)
+    chips, ch = part_chips(pad, 344, fw, True)
     b += chips
-    y = 326 + ch + 24
+    y = 344 + ch + 24
     b += [text(pad, y + 26, "¿Qué sembrar después", 25, 600, font=FONT_TITLE), text(pad, y + 56, "de la papa?", 25, 600, font=FONT_TITLE),
-          text(pad, y + 82, "Primera siembra: 15 de enero de 2027", 14, fill=SEC)]
+          text(pad, y + 82, f"Primera siembra: {SOWING[LOTE]}", 14, fill=SEC)]
     b += link(w - pad, y + 82, "Cambiar", 14, anchor="end")
     y += 104
     hc, hh = history_card(pad, y, fw, True)
@@ -212,8 +224,8 @@ def mobile():
     p1, p1h = p1_cards(pad, y, fw, True)
     b += p1
     y += p1h + 40
-    b.append(text(pad, y, "Datos 2026.11.0 · Reglas 1.0.0 · Cifras de muestra", 13, fill=SEC))
-    b += link(pad, y + 30, "¿Cómo se arma este orden?", 15)
+    b.append(text(pad, y, f"{muestra.VERSIONS} · Cifras de muestra", 13, fill=SEC))
+    b += link(pad, y + 30, "¿Cómo se arma este orden?", 15)  # abre «¿Cómo funciona?»
     return ui.long_page((w, y + 80), b, P["niebla"])
 
 

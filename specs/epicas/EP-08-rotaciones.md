@@ -58,5 +58,5 @@ La secuencia empieza en `sowing_date`, la fecha en que se sembraría su primer c
   - [ ] Cumple el OpenAPI: recibe `municipality_id`, `sowing_date`, `previous_crop_ids`, `priorities` y `lot_id`
   - [ ] Prioridades fuera de rango o todas en 0 responden 422; `sowing_date` con formato inválido responde 422
   - [ ] La respuesta trae las opciones excluidas con su motivo, incluidas las que no son aptas para la zona
-  - [ ] No guarda nada (R9)
+  - [ ] No guarda los datos de la finca ni quién consultó (R9)
 - **Contrato que toca:** `POST /api/v1/rotations`

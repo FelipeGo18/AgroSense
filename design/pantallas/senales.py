@@ -3,7 +3,7 @@
 Las usan la consulta, el calendario, las rotaciones y la próxima siembra:
 - íconos de las seis señales (agua y calor son nuevos);
 - barra de calificación de 0 a 100 con sus tres franjas; sin calificación no hay barra (R1);
-- tarjeta de señal con su nota, «Lo que más limita» y «No cuenta para su luz»;
+- tarjeta de señal con su nota, «Lo que más limita» y «No cuenta para la luz con sus prioridades»;
 - bloque de dos luces (con sus prioridades y con el criterio de AgroSense);
 - resumen plegado de prioridades y panel de los seis pesos con semillas;
 - aptitud del cultivo con su nota y cinco semillas, y el letrero «No se da en su zona»;
@@ -21,7 +21,9 @@ from build_kit_svg import seed, shade  # noqa: E402
 from consulta import kind as _kind, light, mist, tag  # noqa: E402,F401
 from ui import BORDE, D, FONT_TITLE, P, SEC, WHITE, button, chamfer, group, link, paragraph, poly, text, width_of  # noqa: E402
 
-LIGHT_TEXT = {"verde": "Puede sembrar", "amarillo": "Con cuidado", "rojo": "Alto riesgo", "no-evaluable": "No se puede evaluar"}
+# Un solo juego de nombres de luz para todas las pantallas. «Alto riesgo» es solo el rótulo de una ventana `high_risk`,
+# y «Sembrar» es una acción (ACTION_TEXT), no el nombre de una luz.
+LIGHT_TEXT = {"verde": "Luz verde", "amarillo": "Luz amarilla", "rojo": "Luz roja", "no-evaluable": "No evaluable"}
 ACTION_TEXT = {"sow": "Sembrar en esta fecha", "rotate": "Mejor otro cultivo en esta fecha", "other_window": "Mejor otra fecha", "review_data": "Revisar los datos"}
 BAND = (("desfavorable", 0, 40, "#F6D9D4"), ("moderado", 40, 70, "#F8E7C2"), ("favorable", 70, 100, "#DCEBC2"))
 FILL = {"favorable": P["brote"], "moderado": P["trigo"], "desfavorable": P["rojo"]}
@@ -113,7 +115,8 @@ def signal_card(x, y, w, h, key, weights, limiting=None, compact=False, signals=
         body += [poly(chamfer(18, ry - 18, 150, 24, 5), P["calabaza"]), text(30, ry - 1, "Lo que más limita", 13, 700)]
         ry += 22
     if not counts and status != "no-aplica":
-        body += [poly(chamfer(18, ry - 18, 196, 24, 5), WHITE, D["cielo"], 1.5), text(30, ry - 1, f"No cuenta para su luz (peso 0)", 12, 700, D["cielo"])]
+        off = "No cuenta para la luz con sus prioridades"
+        body += [poly(chamfer(18, ry - 18, width_of(off, 12, True) + 24, 24, 5), WHITE, D["cielo"], 1.5), text(30, ry - 1, off, 12, 700, D["cielo"])]
         ry += 22
     body += paragraph(18, ry + 6, case["reasons"], 14 if compact else 15, 20)
     body += link(18, h - 18, "Ver detalle", 14)
@@ -123,21 +126,24 @@ def signal_card(x, y, w, h, key, weights, limiting=None, compact=False, signals=
 # ---------- Dos luces ----------
 
 def light_block(x, y, w, result, title, primary=True):
-    """Una luz con su acción. La principal va más grande. En anchos angostos, la acción baja a otra línea."""
+    """Una luz con su acción. La principal va más grande. En anchos angostos, la acción baja a otra línea.
+    Sin luz («no evaluable») no hay factor que limite: `limiting` llega nulo y esa línea no se dibuja."""
     narrow = w < 420
     sc = (0.46 if primary else 0.34) * (0.7 if narrow else 1)
     body = light(result["light"], 0, 0, sc)
     tx = 340 * sc + 14
     big = 22 if primary else 17
-    limit = f"Lo que más limita: {muestra.SIGNAL_NAME[result['limiting']].lower()}"
+    limit = f"Lo que más limita: {muestra.SIGNAL_NAME[result['limiting']].lower()}" if result["limiting"] else None
     body.append(text(tx, 16, title.upper(), 12, 700, SEC))
     if narrow:
         body += [text(tx, 40, LIGHT_TEXT[result["light"]], big - 2, 600, font=FONT_TITLE),
-                 text(0, 74 if primary else 66, ACTION_TEXT[result["action"]], 16, 700),
-                 text(0, 94 if primary else 86, limit, 13, fill=SEC)]
+                 text(0, 74 if primary else 66, ACTION_TEXT[result["action"]], 16, 700)]
+        if limit:
+            body.append(text(0, 94 if primary else 86, limit, 13, fill=SEC))
     else:
-        body += [text(tx, 48 if primary else 38, f"{LIGHT_TEXT[result['light']]} · {ACTION_TEXT[result['action']]}", big, 600, font=FONT_TITLE),
-                 text(tx, 72 if primary else 58, limit, 14, fill=SEC)]
+        body.append(text(tx, 48 if primary else 38, f"{LIGHT_TEXT[result['light']]} · {ACTION_TEXT[result['action']]}", big, 600, font=FONT_TITLE))
+        if limit:
+            body.append(text(tx, 72 if primary else 58, limit, 14, fill=SEC))
     return [group("luz-" + ("agricultor" if primary else "agrosense"), body, x, y)]
 
 
@@ -250,8 +256,10 @@ def alternatives(x, y, w, items, compact=False):
 
 # ---------- Mejores fechas ----------
 
-def best_windows(x, y, w, crop, windows, compact=False):
-    """Hasta tres ventanas de los próximos doce meses, sin las de alto riesgo (`best_windows`). Puede no haber ninguna."""
+def best_windows(x, y, w, crop, windows, compact=False, own=False):
+    """Hasta tres ventanas de los próximos doce meses, sin las de alto riesgo (`best_windows`). Puede no haber ninguna.
+    `own`: el promedio se calculó con las prioridades del agricultor; si no, con los pesos por defecto, y se dice."""
+    basis = "Con sus prioridades" if own else "Con el criterio de AgroSense"
     out = [text(0, 0, "Mejores fechas, próximos 12 meses" if compact else "Mejores fechas en los próximos doce meses", 20 if compact else 22, 600, font=FONT_TITLE)]
     out += paragraph(0, 26, ["Según la historia de la zona. No es un", "pronóstico: usted decide."] if compact else
                      ["Ordenadas por lo que más limita cada fecha. Según la historia de la zona; no es un pronóstico: usted decide."], 14, 20, fill=SEC)
@@ -274,7 +282,7 @@ def best_windows(x, y, w, crop, windows, compact=False):
         body = [poly(chamfer(0, 6, cw, ch, 12), BORDE), poly(chamfer(0, 0, cw, ch, 12), WHITE, P["calabaza"] if i == 0 else None, 2.5 if i == 0 else 0)]
         body += [text(18, 30, f"Siembra {it['sowing']}", 18, 700), text(18, 52, f"Cosecha estimada {it['harvest']}", 13, fill=SEC)]
         body += [text(18, 86, f"{it['limiting_score']}/100", 24, 600, font=FONT_TITLE), text(90, 86, f"limita: {it['limiting'].lower()}", 14, fill=SEC)]
-        body += [text(18, 112, f"Con sus prioridades: {it['weighted']}/100", 13, fill=SEC)]
+        body += [text(18, 112, f"{basis}: {it['weighted']}/100", 13, fill=SEC)]
         body += link(18, ch - 18, "Ver el diagnóstico de esta fecha", 14)
         out.append(group(f"fecha-{i + 1}", body, cx, cy))
     rows = (len(windows) + cols - 1) // cols

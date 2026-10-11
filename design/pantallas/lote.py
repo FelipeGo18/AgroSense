@@ -148,8 +148,6 @@ def tool_button(x, y, glyph, active=False, size=48, name="control"):
 G = {
     "mas": ['<path d="M24 14v20M14 24h20" stroke="INK" stroke-width="3.5" stroke-linecap="round"/>'],
     "menos": ['<path d="M14 24h20" stroke="INK" stroke-width="3.5" stroke-linecap="round"/>'],
-    "ubicar": ['<circle cx="24" cy="24" r="8" fill="none" stroke="INK" stroke-width="3"/><circle cx="24" cy="24" r="3" fill="INK"/>'
-               '<path d="M24 9v6M24 33v6M9 24h6M33 24h6" stroke="INK" stroke-width="3" stroke-linecap="round"/>'],
     "dibujar": ['<path d="M12 34 L18 14 L36 18 L32 34 Z" fill="none" stroke="INK" stroke-width="2.5" stroke-linejoin="round"/>'
                 '<path d="M12 30 l4 4 -4 4 -4 -4z M18 10 l4 4 -4 4 -4 -4z M36 14 l4 4 -4 4 -4 -4z" fill="INK"/>'],
     "mover": ['<path d="M24 10v28M10 24h28M24 10l-5 5M24 10l5 5M24 38l-5-5M24 38l5-5M10 24l5-5M10 24l5 5M38 24l-5-5M38 24l-5 5" '
@@ -161,8 +159,8 @@ G = {
 
 
 def zoom_controls(x, y):
-    return [group("controles-mapa", tool_button(0, 0, G["mas"], name="acercar") + tool_button(0, 58, G["menos"], name="alejar")
-                  + tool_button(0, 132, G["ubicar"], name="mi-ubicacion"), x, y)]
+    """Acercar y alejar. No hay «mi ubicación»: ninguna spec pide geolocalización (ningún control sin función)."""
+    return [group("controles-mapa", tool_button(0, 0, G["mas"], name="acercar") + tool_button(0, 58, G["menos"], name="alejar"), x, y)]
 
 
 def draw_toolbar(x, y, mode, mobile=False):
@@ -210,14 +208,18 @@ def options(x, y, w, labels, on, size=18):
 
 
 IRRIGATION = ("Sí", "No", "Todavía no sé")
+SOWN_ON = "2 de agosto de 2026"  # la papa de El Alto; el mismo formato en escritorio y en móvil
+# HU-164: sin dibujo, el área se escribe. El enlace cambia el panel al campo «Área (ha)» y guarda el lote sin polígono
+# (pantalla pendiente de diseño: «Lote sin dibujar», mapa.py).
+NO_DRAWING = "Escribir el área a mano"
 
 
 def irrigation_question(x, y, w, on=1, compact=False):
     """«¿Este lote tiene riego?» (`irrigated`: verdadero, falso o nulo). Devuelve las piezas y el alto."""
     out = [text(0, 0, "¿Este lote tiene riego?", 18, 700)]
     out += options(0, 16, w, IRRIGATION, on, 16)
-    rows = (["Con riego, la falta de lluvia no se cuenta como", "riesgo; le decimos cuánto regar. Puede", "cambiarlo después."] if compact else
-            ["Con riego, la falta de lluvia no se cuenta como riesgo;", "le decimos cuánto regar. Puede cambiarlo después."])
+    rows = (["Con riego, la falta de lluvia no se cuenta como", "riesgo; le mostramos una estimación, en rangos,", "de cuánto riego haría falta. Puede cambiarlo", "después."] if compact else
+            ["Con riego, la falta de lluvia no se cuenta como riesgo;", "le mostramos una estimación, en rangos, de cuánto", "riego haría falta. Puede cambiarlo después."])
     out += paragraph(0, 88, rows, 14, 20, fill=SEC)
     return [group("pregunta-riego", out, x, y)], 88 + 20 * len(rows)
 
@@ -252,7 +254,7 @@ def alert(x, y, w, rows, title):
 # ---------- Pantallas ----------
 
 def desktop(error=False):
-    w, h = DESKTOP[0], DESKTOP[1] + (190 if error else 140)
+    w, h = DESKTOP[0], DESKTOP[1] + (314 if error else 264)
     zoom = 1.5
     shape = LOT_OUT if error else LOT_OK
     center = (sum(x for x, _ in shape) / 5 - 200 / zoom, sum(y for _, y in shape) / 5 + 30 / zoom)  # deja libre la columna del panel
@@ -284,12 +286,11 @@ def desktop(error=False):
     top += rh + 26
     c.append(text(pad, top + 112, "¿Ya sembró algo en este lote?", 18, 700))
     c += [group("opciones", choice(pad, top + 128, fw, "Sí", "Todavía no"))]
-    half = (fw - 16) / 2
-    c += field(pad, top + 210, half, "Cultivo", "Papa", trailing="▾", name="campo-cultivo")
-    c += field(pad + half + 16, top + 210, half, "Sembrado el", "15/03/2026", trailing="▾", name="campo-fecha")
-    c += button(pad, top + 300, fw, "Guardar lote", "disabled" if error else "primary")
-    c += link(pad, top + 386, "Lo dibujo después")
-    ch = top + 410
+    c += field(pad, top + 210, fw, "Cultivo", "Papa", trailing="▾", name="campo-cultivo")
+    c += field(pad, top + 314, fw, "Sembrado el", SOWN_ON, trailing="▾", name="campo-fecha")
+    c += button(pad, top + 404, fw, "Guardar lote", "disabled" if error else "primary")
+    c += link(pad, top + 490, NO_DRAWING)
+    ch = top + 514
     b += card(x, y, cw, ch) + [group("panel", c, x, y)]
     if not error:
         b += mascot(372, 96, 0.42, "guia")
@@ -344,10 +345,10 @@ def mobile_closed():
     s.append(text(pad, 384 + d, "¿Ya sembró algo en este lote?", 18, 700))
     s += [group("opciones", choice(pad, 400 + d, fw, "Sí", "Todavía no"))]
     s += field(pad, 486 + d, fw, "Cultivo", "Papa", trailing="▾", name="campo-cultivo")
-    s += field(pad, 590 + d, fw, "Sembrado el", "15 de marzo de 2026", trailing="▾", name="campo-fecha")
+    s += field(pad, 590 + d, fw, "Sembrado el", SOWN_ON, trailing="▾", name="campo-fecha")
     s += paragraph(pad, 694 + d, ["Con la fecha estimamos la etapa del cultivo", "con la temperatura de la zona."], 15, 22, fill=SEC)
     s += button(pad, 742 + d, fw, "Guardar lote")
-    s += link(pad, 836 + d, "Lo dibujo después")
+    s += link(pad, 836 + d, NO_DRAWING)
     h = mh + 870 + d
     b += [group("hoja", s, 0, mh)]
     return frame((w, h), b)

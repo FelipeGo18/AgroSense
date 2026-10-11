@@ -55,12 +55,13 @@ estado: pendiente
   - [ ] Solo totales: nunca un lote, un usuario, un polígono ni un área individual
   - [ ] Aparece en `signals.supply.sources` con `source_id` `agrosense`, su valor y `used = false`, salvo que `sources.yaml` diga otra cosa para la región; nunca se mezcla con la fuente oficial (R1, R8)
   - [ ] La API le pasa el total al motor; el motor no lee la base de datos (R6)
+  - [ ] Los totales se toman de un corte diario versionado, para que el mismo cálculo dé el mismo resultado (R4)
   - [ ] La razón dice la fecha del corte y que son siembras registradas por usuarios, no una estadística oficial
-  - [ ] Los endpoints de cálculo siguen sin escribir nada (R9)
+  - [ ] Los endpoints de cálculo siguen sin guardar los datos de la finca ni quién consultó (R9): leer los totales no escribe nada
   - [ ] Prueba: con 4 cuentas no aparece; con 5, aparece el total y ningún dato individual
 - **Reglas que aplican:** R1, R4, R5, R6, R8, R9
 - **Contrato que toca:** `signals.supply.sources`; `seasons`, `lots`, `users`; entrada `agrosense` en `sources`
-- **Notas:** Decisión 11. **Por qué P1:** (1) en la demo no habrá 5 cuentas reales por municipio y cultivo, así que la fuente no aparecería nunca; (2) es un dato vivo de PostgreSQL y no del dataset versionado, así que dos consultas iguales pueden dar valores distintos (R4) y hace falta decidir cómo se versiona el corte; (3) usar las siembras de un agricultor para mostrar totales a otros es un uso nuevo de sus datos y el consentimiento debe decirlo (HU-163). Por decidir: si eso entra en la versión 3 del consentimiento o en una versión 4; cómo se fija el corte para que el resultado sea reproducible. La hace el rol Motor y API (está en esta épica porque es un dato de oferta).
+- **Notas:** Decisión 11. **Por qué P1:** (1) en la demo no habrá 5 cuentas reales por municipio y cultivo, así que la fuente no aparecería nunca; (2) es un dato vivo de PostgreSQL y no del dataset versionado: por eso se toma de un corte diario versionado, para que el mismo cálculo dé el mismo resultado (R4); (3) usar las siembras de un agricultor para mostrar totales a otros es un uso nuevo de sus datos: el consentimiento versión 3 lo dice (HU-163). Las dos cosas están decididas en `specs/01-reglas.md` («Varias fuentes, ninguna única verdad»). La hace el rol Motor y API (está en esta épica porque es un dato de oferta).
 
 ### HU-201 · Fuentes de contraste para la oferta
 
@@ -74,4 +75,4 @@ estado: pendiente
   - [ ] Revisión: cada fuente nueva tiene licencia que permite su uso
 - **Reglas que aplican:** R1, R5, R7, R8
 - **Contrato que toca:** `sources`, `signals.supply.sources`
-- **Notas:** Decisión 11. **Bloqueada por el contrato:** la llave de `supply_semester` no incluye la fuente y FAOSTAT no es municipal ni semestral; hace falta una tabla o una columna para los valores de contraste. Lo deciden Haider o Felipe. Las fuentes se eligen cuando se confirme la región (HU-002).
+- **Notas:** Decisión 11. La llave de `supply_semester` ya incluye la fuente (`source_id`, `specs/02-contratos.md`). Queda abierto solo dónde van los valores que no son municipales, como los de FAOSTAT: lo deciden Haider o Felipe. Las fuentes se eligen cuando se confirme la región (HU-002).

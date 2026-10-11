@@ -69,14 +69,14 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 ## 6. Calcular no es guardar
 
-**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, el calendario, las rotaciones y el plan de agua no guardan nada; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/me/password`, `/lots`, `/seasons`) escriben en la base de datos. Los de cálculo no guardan los datos de la finca: solo suman 1 a un contador anónimo de uso (día, tipo de consulta, municipio y cultivo) para las métricas, sin nada que diga quién consultó; con `lot_id` pueden leer el polígono de un lote propio para calcular su suelo.
+**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, el calendario, las rotaciones y el plan de agua no guardan los datos de la finca ni quién consultó; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/me/password`, `/lots`, `/seasons`) guardan datos de una persona. En el P0 los de cálculo no escriben nada en la base de datos. Desde HU-170 (P1) suman 1 a un contador anónimo de uso (`usage_daily`: día, tipo de consulta, municipio y cultivo) para las métricas, sin nada que diga quién consultó; con `lot_id` pueden leer el polígono de un lote propio para calcular su suelo.
 
-- **Sin cuenta:** se puede consultar; los datos de la finca se envían solo para calcular y no se guardan en el servidor ni en sus logs. La consulta solo se cuenta, sin datos de quien consulta.
-- **Métricas:** el servidor sí persiste lo necesario para saber cómo se usa la app: un contador por día, tipo de consulta, municipio y cultivo (`usage_daily`). Decidido el 11 de octubre de 2026.
-- **Con cuenta:** se guardan los lotes y su historial, con consentimiento registrado. El usuario puede borrar todo.
+- **Sin cuenta:** se puede consultar; los datos de la finca se envían solo para calcular y no se guardan en el servidor ni en sus logs. Cuando exista el contador (P1), la consulta solo se cuenta, sin datos de quien consulta.
+- **Métricas (P1, HU-170):** para saber cómo se usa la app, el servidor lleva un contador por día, tipo de consulta, municipio y cultivo (`usage_daily`), sin usuario, sesión, IP, hora, fecha de siembra, prioridades ni área. En el P0 no existe: los endpoints de cálculo no escriben nada. Decidido el 11 de octubre de 2026.
+- **Con cuenta:** se guardan los lotes, su historial y las prioridades del agricultor (en su perfil), con consentimiento registrado. El usuario puede borrar todo.
 - **Sin servicios externos:** PostgreSQL propio en Docker y autenticación propia con usuario y contraseña. No se pide correo ni celular. Si la base de datos falla, el modo sin cuenta sigue funcionando.
 
-**Analogía:** la calculadora de una ferretería y el cuaderno de fiado. La calculadora la usa cualquiera y no anota nada; el cuaderno solo existe si el cliente abrió su cuenta, y la puede cerrar cuando quiera.
+**Analogía:** la calculadora de una ferretería y el cuaderno de fiado. La calculadora la usa cualquiera y no anota de quién es la cuenta: solo cuenta cuántas veces se usó; el cuaderno solo existe si el cliente abrió su cuenta, y la puede cerrar cuando quiera.
 
 **Por qué:** el valor de «qué sembrar después» crece con el historial real del lote, y el progreso de un agricultor que vuelve necesita memoria. Separar cálculo y cuentas mantiene puro el motor (R6) y deja el cálculo igual de reproducible (R4).
 
@@ -103,7 +103,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 **Qué es:** el semáforo no tiene una sola señal de «clima»: tiene señales independientes, y las heladas y el suelo son dos de ellas. No son avisos aparte: son parte de la pregunta «¿conviene sembrar este cultivo aquí, en esta fecha?». Desde la decisión 9 las señales del P0 son seis: agua, heladas, calor, suelo, oferta y mercado.
 
 - **Heladas:** frecuencia histórica de heladas en las semanas en que el cultivo está en una etapa sensible, con la temperatura de NASA POWER corregida por la altitud del municipio. Pueden ser críticas: una helada frecuente en la floración da rojo aunque el agua alcance.
-- **Suelo:** pH de SoilGrids, del municipio o del lote dibujado. Nunca es crítico, porque es una estimación de 250 m; solo cuenta para rojo junto con otra señal desfavorable. La textura y el carbono orgánico se muestran y alimentan las rotaciones.
+- **Suelo:** pH de SoilGrids, del municipio o del lote dibujado. Nunca es crítico, porque es una estimación de 250 m; solo cuenta para rojo junto con otra señal desfavorable. La textura entra en el balance de agua (decisión 10) y el carbono orgánico alimenta las rotaciones; los dos se muestran.
 - **El mismo cálculo en todas partes:** el diagnóstico de una fecha y la ventana de esa fecha en el calendario dan las mismas señales, y el suelo del lote es el mismo en el diagnóstico, en las rotaciones y en la ficha del lote.
 
 **Por qué:** el reto («Field Shift») pide usar información local del suelo y rotaciones que mejoren la salud del suelo, y las heladas son el riesgo climático más dañino del altiplano. Ponerlas como avisos aparte del semáforo dejaría dos respuestas que se pueden contradecir.
@@ -114,7 +114,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Qué es:** la decisión se evalúa sobre una **ventana de siembra**: una fecha de siembra más lo que dura ese cultivo en campo, de la siembra a la cosecha estimada. Las ventanas se comparan por mes y, dentro de un mes, por semana.
 
-- **Primero, la aptitud.** Antes de mirar fechas, el motor comprueba que el cultivo se da en ese municipio: la altitud debe caer en el rango de su ficha. Si no (papa en la costa), la respuesta lo dice con su razón y no evalúa ventanas. Es un filtro, no una señal.
+- **Primero, la aptitud.** Antes de mirar fechas, el motor comprueba que el cultivo se da en ese municipio: la altitud debe caer en el rango de su ficha. Si no (papa en la costa), la respuesta lo dice con su razón y no evalúa ventanas. Es un filtro, no una señal, y se decide solo por la altitud; trae una nota informativa de 0 a 100 que no entra al semáforo ni al orden.
 - **Seis señales por ventana.** Agua, heladas, calor, suelo, oferta y mercado. Cada una se mide contra lo que ese cultivo necesita o aguanta: un cultivo que pide poca agua rara vez sale mal en agua. En el P1 se suman exceso de lluvia, enfermedades por clima y clima de cosecha.
 - **El riego cuenta.** El agricultor dice si tiene riego. Con riego, la falta de lluvia no es un riesgo: la señal de agua informa cuánto riego haría falta.
 - **Un orden para comparar.** Las ventanas se ordenan primero por el factor que más limita y después por un balance de 0 a 100, ponderado por las prioridades del agricultor (de 0 a 5 por señal); el método está en la decisión 10. Una ventana con una señal crítica desfavorable es de **alto riesgo**: el balance no la rescata, va después de las demás y nunca entra entre las mejores.
@@ -140,7 +140,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 **Qué es:** cada señal de una ventana se califica de 0 a 100 y el agricultor puede decir cuánto le importa cada una. El método sigue el de la FAO para evaluar la aptitud de tierras para cultivos:
 
 - **Calificación por curva.** Cada señal recibe de 0 a 100 con una curva por cultivo, al estilo del modelo EcoCrop de la FAO: 100 dentro del rango óptimo del cultivo, 0 fuera de sus límites absolutos y una recta entre ambos. Los límites salen de la ficha del cultivo, con fuente. El nivel sale de la calificación (70 a 100 favorable, 40 a 69 moderado, 0 a 39 desfavorable).
-- **Primero lo que más limita.** Las ventanas se ordenan por su peor factor (la «ley del mínimo»): una ventana vale lo que vale la señal más baja entre las que cuentan. Solo entre ventanas con un factor limitante parecido decide el promedio ponderado por las prioridades.
+- **Primero lo que más limita.** Las ventanas se ordenan por su peor factor (la «ley del mínimo»): una ventana vale lo que vale la señal más baja entre las que cuentan. Solo entre ventanas con un factor limitante parecido (en la misma decena) decide el promedio ponderado por las prioridades.
 - **Prioridades del agricultor.** Cada señal tiene un peso de 0 a 5. AgroSense propone pesos por defecto (`weights.yaml`, con quién los definió y por qué) y el agricultor los cambia al consultar. Peso 0: la señal se muestra, pero no cambia la luz. Peso 4 o 5: un resultado moderado cuenta como desfavorable.
 - **El riesgo grave no se negocia.** Agua, heladas o calor críticos cuentan siempre, aunque el agricultor les ponga peso 0. Una ventana de alto riesgo nunca sube por un buen promedio.
 - **Dos luces cuando no coinciden.** Si los pesos del agricultor dan otra luz que los de AgroSense, se muestran las dos: «Con el criterio de AgroSense: amarillo · Con sus prioridades: verde».
@@ -182,7 +182,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Lo que no cambia:** sin datos no hay señal (decisión 5): si la fuente que calcula la señal no tiene dato, la señal es «datos insuficientes» aunque otra fuente sí tenga.
 
-**Lo que exige:** `sources` con `coverage`; `sources.yaml` por región; un lugar en el contrato para los valores de contraste (por decidir); y, para usar las siembras de AgroSense, que el consentimiento lo diga.
+**Lo que exige:** `sources` con `coverage`; `sources.yaml` por región; la fuente en la llave de `supply_semester`; un lugar en el contrato para los valores de contraste que no son municipales, como los de FAOSTAT (por decidir); y, para usar las siembras de AgroSense, el consentimiento versión 3, que ya lo dice, y un corte diario versionado.
 
 **Reglas asociadas:** R1, R5, R7, R8 y R9. Aprobada por Felipe el 11 de octubre de 2026.
 

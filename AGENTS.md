@@ -7,12 +7,12 @@ Un agente por rol del equipo. Cada uno vive en `.claude/agents/<nombre>.md`, con
 | Agente | Rol | Subsistemas | Épicas y HUs | Úsalo cuando |
 |---|---|---|---|---|
 | `especificador` | Escribe y mantiene las specs | — | Todas (solo specs) | Hay que crear, afinar o validar épicas y HUs |
-| `producto-agro` | Producto y agro | AG1–AG3, S4 | EP-00, EP-06 (con HU-063), EP-13, HU-142 | Decidir alcance, fichas de cultivo, reglas de rotación, demo |
-| `datos` | Pipeline de datos | D1–D4 | EP-03, EP-04 (con HU-044 a HU-046), EP-05, HU-143, HU-181 | Ingesta, limpieza, indicadores, Parquet |
+| `producto-agro` | Producto y agro | AG1–AG3, S4 | EP-00, EP-06 (con HU-063, HU-198 y HU-199), EP-13, HU-142 | Decidir alcance, fichas de cultivo, reglas de rotación, demo |
+| `datos` | Pipeline de datos | D1–D4 | EP-03, EP-04 (con HU-044 a HU-046 y HU-193), EP-05, HU-143, HU-181 | Ingesta, limpieza, indicadores, Parquet |
 | `motor-api` | Motor de decisión y API | M1–M10 | HU-012, EP-07, EP-08, HU-144, HU-146, HU-150, HU-179, HU-186, HU-190 a HU-192, HU-196, HU-197, HU-200 (P1), HU-204, HU-182 a HU-184, backend de EP-16, HU-175, motor de EP-11 | Semáforo, rotaciones, balance hídrico, cuentas, condiciones actuales, endpoints |
-| `web` | Aplicación web | W1–W9, S5 | HU-013, HU-014, EP-09, EP-10, EP-15, EP-17, web de EP-16, HU-141, HU-145, HU-180, HU-185, interfaz de EP-11 | Identidad visual, mascota, 3D, animación, pantallas, cuenta, modo simulación, accesibilidad |
+| `web` | Aplicación web | W1–W9, S5 | HU-013, HU-014, EP-09 (con HU-202 y HU-203), EP-10, EP-15, EP-17, web de EP-16 (con HU-187 y la vista de HU-204), HU-141, HU-145, HU-180, HU-185, interfaz de EP-11 | Identidad visual, mascota, 3D, animación, pantallas, cuenta, modo simulación, accesibilidad |
 | `calidad` | Calidad y trazabilidad | S3 | EP-12 | Casos de referencia, manifiesto, reproducibilidad, revisión |
-| `plataforma` | Repositorio, CI y despliegue | S1, S2 | EP-02, integración del hito 1 | Arranque, GitHub Actions, Docker, URL pública |
+| `plataforma` | Repositorio, CI y despliegue | S1, S2 | EP-02 (con HU-177), integración del hito 1 | Arranque, GitHub Actions, Docker, URL pública |
 
 ## Cómo se invoca
 

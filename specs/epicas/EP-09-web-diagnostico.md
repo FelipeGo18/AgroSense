@@ -30,7 +30,7 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
   - [ ] Pregunta «¿Tiene riego?» con «Sí», «No» y «No sé» (`irrigated` verdadero, falso o nulo); con un lote, el valor sale del lote
   - [ ] Validación inmediata en pantalla
 - **Contrato que toca:** cuerpo de `POST /api/v1/diagnostics`
-- **Notas:** El municipio se busca en el nivel «satélite» del descenso (`specs/05-frontend.md`). Supuesto por confirmar con el contrato: qué fecha se envía cuando el agricultor elige solo el mes.
+- **Notas:** El municipio se busca en el nivel «satélite» del descenso (`specs/05-frontend.md`). Cuando el agricultor elige solo el mes, la web envía el día 1 de ese mes; si elige una semana, su lunes. El mes en curso se acepta aunque su día 1 ya haya pasado (`specs/02-contratos.md`, «Fechas» de `/calendar`).
 
 ### HU-092 · Semáforo con señales, razones y limitaciones
 
@@ -55,14 +55,16 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 - **Historia:** Como agricultor, quiero que la pantalla me diga cuando mi cultivo no se da en mi zona y, cuando la fecha no conviene, cuáles ventanas han sido mejores, para saber qué hacer en lugar de quedarme con un «no».
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Con `suitability.level = not_suitable`: la pantalla dice «Este cultivo no se da en su zona», muestra la razón con el dato de la ficha y su fuente, y ofrece «Elegir otro cultivo» y «Ver qué sembrar» (rotaciones). No dibuja señales ni ventanas
+  - [ ] Con `suitability.level = not_suitable`: la pantalla dice «Este cultivo no se da en su zona» y muestra la nota de aptitud de 0 a 100 (`suitability.score`), la escala de cinco semillas, la razón con el dato de la ficha y su fuente, y las alternativas cuando vienen (HU-203); ofrece «Elegir otro cultivo» y «Ver qué sembrar» (rotaciones). No dibuja semáforo, señales ni ventanas
+  - [ ] La nota de aptitud (`suitability.score`) se muestra con su número y en la escala de cinco semillas. Es informativa: no es una señal ni cambia la luz; solo la altitud fuera del rango absoluto da «no se da en su zona»
+  - [ ] Sin nota (`score` nulo), no se dibujan semillas en cero (R1)
   - [ ] Con `suitability.level = insufficient_data`: el resultado se muestra normal y la limitación lo dice; no se pinta como riesgo (R1)
   - [ ] Con acción `other_window`: lista de `best_windows` con fecha de siembra, cosecha estimada, la nota del factor que más limita (número principal) y el promedio con sus prioridades (secundario); tocar una consulta el diagnóstico de esa fecha
   - [ ] Con `other_window` y `best_windows` vacío: mensaje «En los próximos doce meses no hay una ventana sin riesgo alto» y enlace a rotaciones
   - [ ] Las ventanas llevan el rótulo «Según la historia de la zona. No es un pronóstico»
   - [ ] Cada botón tiene una acción o una navegación definida
 - **Reglas que aplican:** R1, R3, R5
-- **Contrato que toca:** `suitability` y `best_windows` de la respuesta de diagnóstico
+- **Contrato que toca:** `suitability` (con `score`), `alternatives` y `best_windows` de la respuesta de diagnóstico
 - **Notas:** El orden completo de las ventanas, con prioridades y detalle por semanas, está en la lectura «Planear una siembra» del calendario (HU-180). Los cultivos alternativos de la acción `rotate` son HU-203. Agregada el 11 de octubre de 2026.
 
 ### HU-202 · Ajustar mis prioridades al consultar
@@ -71,7 +73,7 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Seis controles, uno por señal (agua, heladas, calor, suelo, oferta y mercado), de 0 a 5, con el control de prioridad del kit (cinco semillas y un «0»)
-  - [ ] Empiezan en los pesos por defecto de AgroSense, tomados de `weights` de una respuesta sin `priorities`; un botón «Volver al criterio de AgroSense» los restablece
+  - [ ] Empiezan en los pesos por defecto de AgroSense, tomados de `default_weights` de `GET /api/v1/version`, antes de consultar; un botón «Volver al criterio de AgroSense» los restablece
   - [ ] Al cambiar uno, la web vuelve a pedir el diagnóstico con `priorities`
   - [ ] Con todos en 0, la web no envía la petición y pide subir al menos uno
   - [ ] Junto a los controles, un texto corto: «0: no cambia la luz, salvo un riesgo grave de clima. 4 o 5: un resultado medio cuenta como desfavorable»
@@ -79,8 +81,8 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
   - [ ] Con cuenta, las prioridades se guardan en el perfil (`PATCH /me`, `priorities`); sin cuenta, en el navegador. Siempre se puede volver al criterio de AgroSense
   - [ ] Cada control tiene una función; nada decorativo
 - **Reglas que aplican:** R2, R9
-- **Contrato que toca:** `priorities` del cuerpo de `POST /api/v1/diagnostics` y de `POST /api/v1/calendar`; `weights` de la respuesta
-- **Notas:** Decisión 10. Son distintas de las cuatro prioridades de las rotaciones (HU-101). Supuestos por confirmar: si las prioridades se recuerdan en el dispositivo entre visitas o, con cuenta, en el perfil (el contrato no tiene dónde guardarlas); si los controles están a la vista o en un panel «Mis prioridades».
+- **Contrato que toca:** `priorities` del cuerpo de `POST /api/v1/diagnostics` y de `POST /api/v1/calendar`; `weights` de la respuesta; `default_weights` de `GET /api/v1/version`; `priorities` de `PATCH /api/v1/me`
+- **Notas:** Decisión 10. Son distintas de las cuatro prioridades de las rotaciones (HU-101). Las prioridades se recuerdan: con cuenta, en el perfil (`users.priorities`, `PATCH /me`); sin cuenta, en el navegador. Los controles van en un resumen plegado, «Criterio de AgroSense · Ajustar» (`specs/05-frontend.md`, «Dónde se ajustan»).
 
 ### HU-203 · Dos luces y cultivos alternativos
 
@@ -97,7 +99,7 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
   - [ ] Cada botón tiene una acción o una navegación definida
 - **Reglas que aplican:** R1, R2, R5
 - **Contrato que toca:** `overall`, `overall_default`, `weights`, `signals.*.counts` y `alternatives` de la respuesta de diagnóstico
-- **Notas:** Decisión 10. Depende de HU-074 y HU-197 (o de sus respuestas simuladas). Supuesto por confirmar: si las alternativas se muestran cuando solo `overall_default` pide rotar.
+- **Notas:** Decisión 10. Depende de HU-074 y HU-197 (o de sus respuestas simuladas). Las alternativas se muestran si cualquiera de las dos luces da `rotate`, también cuando el cultivo consultado no es apto (`specs/01-reglas.md`, «Agregación del semáforo»).
 
 ### HU-093 · Gráficas de agua y área sembrada
 

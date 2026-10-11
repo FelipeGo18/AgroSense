@@ -39,7 +39,7 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
   - [ ] La API calcula el suelo del lote como mediana de las celdas de `soil_grid` que toca el polígono; sin polígono, usa `soil_municipality`, y lo dice en `basis`
   - [ ] `soil` en la respuesta de `GET /lots/{lot_id}`
   - [ ] El suelo del lote no se guarda en la base de datos
-  - [ ] `lot_id` opcional en `/diagnostics` y `/rotations`: un lote ajeno responde 404
+  - [ ] `lot_id` opcional en `/diagnostics`, `/rotations` y `/calendar`: usan el suelo del lote; sin sesión responde 401 y un lote ajeno, 404. `/water-plans` no recibe `lot_id` y usa siempre el suelo del municipio, también con cuenta
 - **Reglas que aplican:** R6, R9, R10
 - **Notas:** Depende de HU-164 (polígono del lote) y HU-181. Si se recorta, queda el suelo del municipio (HU-183).
 
