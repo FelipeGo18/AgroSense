@@ -51,8 +51,8 @@ TOTALS = month_totals()
 
 
 def note_r9(x, y, w, mobile=False):
-    rows = (["Sin cuenta, su finca se envía solo para", "calcular: no se guarda en el servidor ni", "en este dispositivo."] if mobile else
-            ["Sin cuenta, su finca se envía solo para calcular: no se guarda en el servidor ni en este dispositivo."])
+    rows = (["Sin cuenta, su finca se envía solo para", "calcular: no se guarda en el servidor ni", "en este dispositivo. Solo contamos la", "consulta, sin datos suyos."] if mobile else
+            ["Sin cuenta, su finca se envía solo para calcular: no se guarda en el servidor ni en este dispositivo.", "Solo contamos la consulta por municipio y cultivo, sin datos suyos."])
     h = 26 + len(rows) * 21 + 8
     body = [poly(chamfer(0, 0, w, h, 10), "#EEF2E4"), poly([(16, 14), (30, 14), (30, 30), (23, 36), (16, 30)], D["oliva"])]
     body += paragraph(44, 28, rows, 14, 21)

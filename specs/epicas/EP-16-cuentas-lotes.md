@@ -63,7 +63,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Bitácora del administrador (`GET /admin/activity`) con filtros por usuario, acción, estado y fechas
   - [ ] La API no arranca en producción si hay usuarios `developer` o la simulación está activa
   - [ ] Un usuario bloqueado no entra y pierde sus sesiones abiertas
-  - [ ] Las métricas son agregadas; el consentimiento (desde la versión 2) avisa que soporte puede ver los lotes (R9)
+  - [ ] Las métricas son agregadas: consultas por día y municipios y cultivos más consultados salen de `usage_daily` (contador anónimo); lotes y siembras, de las cuentas. Un grupo con menos de 5 va en «Otros». El consentimiento (desde la versión 2) avisa que soporte puede ver los lotes (R9)
 - **Reglas que aplican:** R5, R9
 - **Notas:** Definido el 10 de octubre de 2026; por ahora solo documentado. Falta decidir el resto de funciones del administrador y si su panel va en esta web. El modo desarrollador amplía HU-014. Revisión de seguridad obligatoria.
 

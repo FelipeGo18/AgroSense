@@ -28,7 +28,7 @@ PARTS = (
                              ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 8, DONE), ("Guardar la finca temporal", 8, DONE)]),
     ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale?", 9, DONE), ("Estados: carga, vacío, error", 9, DONE),
                                   ("Menú en móvil", 9, DONE), ("Modo ligero del lote", 9, DONE), ("Reportar un problema (P1)", 9, DONE)]),
-    ("H · Administrador", "Rol admin · P1", [("Usuarios", 10, TODO), ("Ficha del agricultor", 10, TODO), ("Tickets", 10, TODO), ("Bitácora", 10, TODO), ("Métricas", 10, TODO)]),
+    ("H · Administrador", "Rol admin · P1", [("Usuarios", 10, DONE), ("Ficha del agricultor", 10, DONE), ("Tickets", 10, DONE), ("Bitácora", 10, DONE), ("Métricas", 10, DONE)]),
     ("I · Catálogo visual", "Para Mi finca", [("Cultivos 1 · piloto", 5, DONE), ("Cultivos 2 · árboles frutales", 5, DONE), ("Cultivos 3 · musáceas y vides", 5, DONE),
                                               ("Cultivos 4 · raíces y hojas", 5, DONE), ("Cultivos 5 · más hortalizas", 5, DONE), ("Cultivos 6 · frutas andinas", 5, DONE),
                                               ("Cultivos 7 · permanentes", 5, DONE), ("Cultivos 8 · aromáticas y más", 5, DONE), ("Estados del ambiente", 6, DONE)]),
@@ -63,8 +63,8 @@ def sheet():
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
         bottom = max(bottom, y)
-    order = ["Orden: tandas 1 a 9 (hechas) y rediseño por ventanas de siembra, del 1 al 7 (hecho)",
-             "→ 10 Administrador (P1). «Revisar»: hecha, pero depende de algo por confirmar (Buscar mi municipio: la región, hasta el 28 de octubre).",
+    order = ["Orden: tandas 1 a 10 (hechas) y rediseño por ventanas de siembra, del 1 al 7 (hecho). El administrador es P1 y solo de escritorio.",
+             "«Revisar»: hecha, pero depende de algo por confirmar (Buscar mi municipio: la región.",
              "Seis señales por ventana de siembra: agua, heladas, calor, suelo, oferta y mercado. El lote vivo usa el catálogo de cultivos y el clima de ahora.",
              "Nombres y cifras de muestra."]
     for i, line in enumerate(order):

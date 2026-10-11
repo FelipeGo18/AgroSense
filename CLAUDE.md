@@ -47,7 +47,7 @@ Mapa de documentos:
 - **Datos precalculados:** el pipeline corre antes de la demo y publica Parquet versionado. Para calcular, la API solo lee y aplica reglas.
 - **Reglas, no predicción:** no hay modelo de aprendizaje automático. Se entrega riesgo histórico explicable, no rendimiento ni precio futuro.
 - **Sin datos no hay señal:** si falta una fuente, la señal es `insufficient_data` con nivel nulo. Nunca se rellena ni se sustituye en silencio.
-- **Calcular no es guardar:** hay cuentas con lotes y temporadas en PostgreSQL propio (en Docker), con autenticación propia, pero los endpoints de cálculo no guardan nada. Sin cuenta, los datos se envían solo para calcular y no se guardan.
+- **Calcular no es guardar:** hay cuentas con lotes y temporadas en PostgreSQL propio (en Docker), con autenticación propia, pero los endpoints de cálculo no guardan los datos de la finca: solo suman 1 a un contador anónimo de uso (día, tipo, municipio y cultivo) para las métricas. Sin cuenta, los datos de la finca se envían solo para calcular y no se guardan.
 - **El agricultor pondera; el riesgo grave no se negocia:** cada señal se califica de 0 a 100 con una curva por cultivo (estilo EcoCrop de la FAO); el agricultor pone un peso de 0 a 5 por señal; agua, heladas o calor críticos cuentan siempre; si las luces difieren se muestran las dos. La decisión final es del agricultor.
 - **Varias fuentes, ninguna única verdad:** las fuentes de un indicador se muestran juntas y nunca se mezclan; `sources.yaml` dice cuál calcula cada señal por región. La región es un supuesto hasta el enunciado del 28 de octubre.
 - **El clima en vivo es ambiente:** la escena refleja día, noche, lluvia y viento aproximados de ahora (Open-Meteo); nunca entra al motor ni cambia un resultado.

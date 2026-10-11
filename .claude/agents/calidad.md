@@ -30,7 +30,7 @@ Lee `CLAUDE.md`, `specs/01-reglas.md` completo y `specs/02-contratos.md`.
    - Una rotación que viola una regla `filter` no aparece en el ranking y registra el motivo.
    - Misma entrada, mismo resultado (determinismo, R4).
    - Entrada fuera del catálogo responde 422; entrada válida sin datos responde 200 con `insufficient_data`.
-   - Los endpoints de cálculo no escriben en la base de datos; sin sesión, los de cuenta responden 401; un lote ajeno responde 404; borrar la cuenta borra sesiones, lotes y temporadas; las contraseñas solo se guardan como hash; el límite de intentos responde 429 (R9).
+   - Los endpoints de cálculo solo escriben en el contador anónimo `usage_daily` (sin nada que identifique a una persona); sin sesión, los de cuenta responden 401; un lote ajeno responde 404; borrar la cuenta borra sesiones, lotes y temporadas; las contraseñas solo se guardan como hash; el límite de intentos responde 429 (R9).
    - Las condiciones actuales nunca cambian un diagnóstico (decisión 7).
 3. **Contrato.** Verificas que las respuestas reales coinciden con el OpenAPI y que los Parquet cumplen llaves, tipos y unidades (unicidad de llaves incluida).
 4. **Trazabilidad (HU-122, HU-123).** El manifiesto lista versión, fuentes y cobertura, y la web los muestra. Un comando regenera `data/published` desde la caché y el resultado coincide con el manifiesto.
