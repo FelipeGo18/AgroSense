@@ -23,7 +23,10 @@ estado: pendiente
 - **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Cambios de lluvia y área en rangos validados
+  - [ ] El escenario se evalúa sobre la misma ventana de siembra del caso base (`sowing_date` e `irrigated`): un cambio de lluvia entra por el balance hídrico y mueve la señal `water`; un cambio de área mueve `supply`
+  - [ ] La aptitud del cultivo en la zona no cambia con el escenario
   - [ ] El dataset publicado no se modifica
+- **Notas:** El cuerpo de `POST /api/v1/scenarios` no está en el contrato: lo definen Haider o Felipe antes de empezar esta épica.
 
 ### HU-112 · Endpoint de escenarios
 

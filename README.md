@@ -1,6 +1,6 @@
 # AgroSense · Siembra Segura
 
-Herramienta web para agricultores colombianos: diagnostica si un semestre es buena ventana de siembra, recomienda rotaciones de cultivos y estima el plan de agua de la finca, con datos abiertos (NASA POWER, EVA/UPRA, SIPSA) y reglas explicables. Se puede usar sin cuenta; con cuenta, el agricultor guarda sus lotes, su historial y su progreso. Proyecto del **NASA Space Apps Challenge 2026** (Kode Group).
+Herramienta web para agricultores colombianos: dice si un cultivo se da en la zona y cuándo conviene sembrarlo, recomienda rotaciones de cultivos y estima el plan de agua de la finca, con datos abiertos (NASA POWER, SoilGrids, EVA/UPRA, SIPSA) y reglas explicables. Se puede usar sin cuenta; con cuenta, el agricultor guarda sus lotes, su historial y su progreso. Proyecto del **NASA Space Apps Challenge 2026** (equipo RealE4Life).
 
 > **Estado:** fase de especificación. Todavía no hay código del producto; las specs son la fuente de verdad. En la fase 0 se adelanta la identidad visual y un prototipo del frontend en `web/` (EP-15).
 

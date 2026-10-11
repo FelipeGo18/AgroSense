@@ -15,6 +15,8 @@ estado: pendiente
 
 **Resultado esperado:** Región, cultivos, periodos y fuentes elegidos con base en la cobertura real comprobada.
 
+**La región es un supuesto (decisión 11).** El reto aún no dice qué datos ni qué región. Colombia, y dentro de ella el altiplano de Cundinamarca o Boyacá, es la región piloto supuesta. El P0 sigue con ella hasta que el enunciado del 28 de octubre (HU-002) la confirme o la cambie. Mientras tanto, lo propio de Colombia (EVA, DIVIPOLA, SIPSA, IDEAM, UPRA, IGAC, Ley 1581) vive en los adaptadores de cada fuente y en `sources.yaml`, no en el modelo (R7).
+
 ## Historias de usuario
 
 ### HU-001 · Comparar la cobertura de EVA y elegir región
@@ -33,6 +35,8 @@ estado: pendiente
 - **Criterios de aceptación:**
   - [ ] Variables, resolución, periodo y forma de acceso documentados
   - [ ] Descarga de prueba para un municipio
+  - [ ] Dice si el enunciado fija una región o unos datos. Si no es compatible con la región piloto supuesta, se registra en `docs/registro-de-decisiones.md` y se lista qué adaptadores y entradas de `sources.yaml` hay que cambiar
+- **Notas:** El enunciado completo sale el 28 de octubre. Hasta entonces la región es un supuesto (decisión 11).
 
 ### HU-003 · Verificar SIPSA y decidir si entra al P0
 

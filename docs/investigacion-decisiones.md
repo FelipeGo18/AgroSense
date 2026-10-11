@@ -2,7 +2,7 @@
 
 10 de octubre de 2026. Sirve de base para decidir qué más entra en AgroSense, además de qué sembrar y cuándo regar.
 
-> **Las secciones 1 a 4 describen el estado previo a la decisión.** Lo que se decidió está en la sección 5 y ya está en las specs (EP-18, HU-044, HU-045, HU-077, HU-179, HU-180, `specs/01-reglas.md`). Donde la tabla dice «P1 alto» o «P0, pero cambia el contrato», manda la sección 5.
+> **Las secciones 1 a 4 describen el estado previo a la decisión.** Lo que se decidió está en las secciones 5, 5b y 5c y ya está en las specs (EP-18, HU-044, HU-045, HU-077, HU-179, HU-180, `specs/01-reglas.md`). Donde la tabla dice «P1 alto» o «P0, pero cambia el contrato», mandan las secciones 5 y 5b. El 11 de octubre de 2026 la decisión pasó a evaluarse por ventana de siembra (sección 5b y decisión 9 de `docs/decisiones.md`).
 
 ## 1. Qué pide el reto, según la página oficial
 
@@ -39,9 +39,9 @@ Las decisiones se ordenan así a lo largo del ciclo:
 
 | Momento | Decisión | ¿AgroSense la apoya hoy? |
 |---|---|---|
-| Antes de sembrar | Qué cultivo y en qué semestre | Sí: diagnóstico (EP-07) |
+| Antes de sembrar | Qué cultivo y en qué época del año | Sí: diagnóstico (EP-07) |
 | Antes de sembrar | Qué sembrar después en el mismo lote | Sí: rotaciones (EP-08), pero sin datos de suelo |
-| Antes de sembrar | En qué **mes** sembrar, dentro del semestre | No |
+| Antes de sembrar | En qué **mes** sembrar | No |
 | Antes de sembrar | Si el suelo necesita encalado, materia orgánica o descanso | No |
 | Antes de sembrar | Si asegurar la cosecha | No |
 | Preparación | Cuándo entrar a preparar el terreno (días secos para labores) | No |
@@ -61,13 +61,13 @@ Criterios: el dato es abierto y tiene fuente (R8); el cálculo es una regla expl
 | 1 | **Suelo del lote** | pH, carbono orgánico, textura (arena, limo, arcilla) y nitrógeno a 0–30 cm, en el polígono del lote, con su intervalo de incertidumbre. Reglas: cultivos que no toleran ese pH se filtran o se avisan; que la textura ajuste el plan de agua es un supuesto sin HU todavía | SoilGrids de ISRIC, 250 m, CC BY 4.0 ([ISRIC](https://docs.isric.org/globaldata/soilgrids/)). Si se puede, contrastar con los estudios de suelos del IGAC | Rotaciones (filtro y criterio «suelo»), ficha del lote | **P0.** Es lo que el reto pide de forma explícita, y el polígono del lote (HU-164) ya lo permite |
 | 2 | **Rotaciones que cuidan el suelo** | Incluir en el catálogo descanso, abonos verdes y leguminosas (arveja, haba, avena con vicia), con sus reglas de rotación y fuente. Ya hay rotaciones evaluadas por Agrosavia en Tibaitatá: papa-avena-arveja ([Redalyc](https://www.redalyc.org/journal/6538/653871546014/653871546014.pdf)) | Catálogo agronómico con fuentes | EP-06 y EP-08 | **P0.** Ajusta el catálogo, no la arquitectura |
 | 3 | **Riesgo de heladas por mes** | Porcentaje de años con al menos un día de mínima ≤ 2 °C, por mes, corregido por altitud con la diferencia entre la altura del municipio y la de la celda de NASA (gradiente térmico, con fuente) | NASA POWER `T2M_MIN`; altitud (HU-044); criterio de la UPRA | Señal en el diagnóstico y en el calendario del lote | **P0, pero cambia el contrato y quizá el semáforo** (ver punto 5) |
-| 4 | **Mejor mes para sembrar** | Para el cultivo y el municipio: meses del semestre en los que, históricamente, la lluvia del primer mes de la etapa inicial cubre su necesidad de agua y el riesgo de helada es bajo | NASA POWER (lluvia y temperatura), Kc y etapas (HU-142) | Diagnóstico: de «el semestre» a «el mes dentro del semestre» | P1 alto. Reutiliza el balance hídrico de EP-14 |
+| 4 | **Mejor mes para sembrar** | Para el cultivo y el municipio: meses en los que, históricamente, la lluvia del primer mes de la etapa inicial cubre su necesidad de agua y el riesgo de helada es bajo | NASA POWER (lluvia y temperatura), Kc y etapas (HU-142) | Diagnóstico: de una época amplia del año al mes de siembra | P1 alto. Reutiliza el balance hídrico de EP-14. Reemplazado el 11 de octubre por el orden de ventanas (sección 5b) |
 | 5 | **Riesgo de gota en papa** | Días por mes con humedad relativa ≥ 90 % y temperatura en el rango favorable para el hongo, según una regla con fuente | NASA POWER `RH2M`, `T2M` | Calendario del lote: «meses de vigilar la gota» | P1. La humedad de NASA POWER es de celda de unos 50 km: se dice como orientación |
 | 6 | **Cuándo fertilizar** | Frecuencia histórica de aguaceros (por ejemplo, más de 20 mm en un día, umbral por definir con fuente) por mes y etapa. Mensaje: «evite abonar en semanas de aguaceros frecuentes». **Nunca la dosis**, que exige análisis de suelo | NASA POWER `PRECTOTCORR` | Calendario del lote | P1 |
 | 7 | **Días para labores y para cosechar** | Probabilidad por mes de tener 3 días seguidos con menos de 5 mm, para preparar el terreno, cosechar o secar | NASA POWER (lluvia diaria) | Calendario del lote | P1 |
 | 8 | **Cuándo vender** | Índice estacional de precio por mes, histórico | SIPSA (DANE) | Señal de mercado que ya existe en el P1 | P1, como ya estaba. Nunca precio futuro |
 | 9 | **Si asegurar la cosecha** | Frecuencia histórica en la zona de los riesgos que cubre el seguro (helada, sequía, exceso de lluvia), más el enlace oficial al Incentivo al Seguro Agropecuario. No recomienda un producto | NASA POWER y la información de Finagro | Ficha del lote | P1, pequeño |
-| 10 | **Años de El Niño y La Niña** | Cómo fue la lluvia del semestre en los años El Niño y La Niña del pasado, frente a los neutros. Mostrar la fase actual exige citar el boletín oficial y no hacerlo pasar por nuestro pronóstico | NASA POWER e índice ONI de la NOAA | Diagnóstico | P1. **Necesita una decisión** sobre la regla «nunca pronóstico» |
+| 10 | **Años de El Niño y La Niña** | Cómo fue la lluvia de los meses de la ventana en los años El Niño y La Niña del pasado, frente a los neutros. Mostrar la fase actual exige citar el boletín oficial y no hacerlo pasar por nuestro pronóstico | NASA POWER e índice ONI de la NOAA | Diagnóstico | P1. **Necesita una decisión** sobre la regla «nunca pronóstico» |
 | 11 | **Cómo va el cultivo** | Verdor del lote (NDVI) a 30 m en el polígono, frente a su propia historia | NASA HLS | Lote · ahora | P1, ya es HU-043 |
 | 12 | **Humedad del suelo** | Humedad superficial y de raíces, para ajustar el aviso de riego | NASA SMAP L4 a 9 km ([NSIDC](https://nsidc.org/data/spl4smgp/versions/2)), disponible en AppEEARS. Por verificar: NASA POWER también publica humedad del suelo (`GWETTOP`, `GWETROOT`) con la misma API que ya usamos | Plan y aviso de agua | P1, ya está en HU-043 y HU-147 |
 
@@ -85,10 +85,33 @@ Criterios: el dato es abierto y tiene fuente (R8); el cálculo es una regla expl
 ## 5. Qué se decidió (10 de octubre de 2026)
 
 1. **El suelo entra al P0** (EP-18): SoilGrids por municipio y por lote dibujado, en el diagnóstico, en las rotaciones y en la ficha del lote.
-2. **Las heladas y el suelo son señales del semáforo, no avisos aparte** (decisión 8 de `docs/decisiones.md`). El semáforo pasa de tres a cinco señales: lluvia, heladas, suelo, oferta y mercado. El suelo nunca es crítico porque es una estimación. Hay una tabla explícita de acciones por luz (`specs/01-reglas.md`).
-3. **Calendario del cultivo** (HU-179 y HU-180): mes a mes, mejores meses de siembra y riesgo de helada. La señal de heladas usa ese mismo cálculo. En P1 se suman aguaceros, ventanas secas y gota (HU-046).
+2. **Las heladas y el suelo son señales del semáforo, no avisos aparte** (decisión 8 de `docs/decisiones.md`). El semáforo suma esas dos señales a las que ya tenía. El suelo nunca es crítico porque es una estimación. Hay una tabla explícita de acciones por luz (`specs/01-reglas.md`). La lista de señales cambió al día siguiente: ver la sección 5b.
+3. **Calendario del cultivo** (HU-179 y HU-180): mes a mes, cuándo sembrar y el riesgo de helada. En P1 se suman aguaceros, ventanas secas y gota (HU-046). Cómo se elige cuándo sembrar y de qué depende la señal de heladas cambió al día siguiente: ver la sección 5b.
 4. **Temperaturas corregidas por altitud** (HU-044 pasa a P0), para que la etapa del cultivo, la ET0 y las heladas usen la misma temperatura.
 5. **Sigue abierto:** El Niño y La Niña (punto 10) y el seguro (punto 9) quedan en P1 sin decidir. El P0 creció a unas 262 horas con integración: hay que decidir qué más se adelanta en la fase 0 o qué se recorta (`docs/plan-48h.md`).
+
+## 5b. Qué cambió el 11 de octubre de 2026: ventanas de siembra
+
+Aprobado por Felipe. Explicación en la decisión 9 de `docs/decisiones.md`; reglas en `specs/01-reglas.md`.
+
+1. **La decisión se evalúa por ventana de siembra**: una fecha de siembra más lo que dura el cultivo. Las ventanas se comparan por mes y por semana. Responde a lo que dicen los estudios de la sección 2: el cambio más común con información agroclimática es la **fecha de siembra**.
+2. **Aptitud del cultivo en la zona**, antes de todo: la altitud del municipio frente al rango de la ficha. Es un filtro (R3).
+3. **Seis señales en el P0**: agua, heladas, calor, suelo, oferta y mercado. El agua reemplaza a la señal que solo miraba la lluvia y sale del balance hídrico de EP-14; el calor es nueva. En el P1: exceso de lluvia, enfermedades por clima (la gota, punto 5 de la sección 3) y clima de cosecha (punto 7).
+4. **El riego cuenta**: los lotes guardan si tienen riego, y con riego la falta de lluvia no es un riesgo.
+5. **Orden de las ventanas**: un orden con las prioridades del agricultor reemplaza al «mejor mes» del punto 4 de la sección 3. Una ventana con una señal crítica es de alto riesgo y no se compensa. El mismo día el orden pasó a ir primero por el factor que más limita y después por el balance (sección 5c).
+6. **La señal de heladas** ya no depende del calendario: evalúa las semanas de la ventana en que el cultivo está en una etapa sensible. Es el calendario el que reutiliza las señales.
+7. **Sigue siendo historia de la zona, no pronóstico.** El semestre solo queda en la oferta de EVA, que se publica así.
+8. **Por confirmar con fuente (R8):** la temperatura máxima que aguanta cada cultivo y su rango de altitud. Sin fuente, el calor y la aptitud quedan en «datos insuficientes» (`docs/riesgos.md`).
+
+## 5c. Qué cambió después, el mismo 11 de octubre: prioridades y fuentes
+
+Aprobado por Felipe. Explicación en las decisiones 10 y 11 de `docs/decisiones.md`. Corrige lo que en las secciones anteriores dice que el orden de ventanas es solo un balance:
+
+1. **Método de la FAO:** cada señal se califica de 0 a 100 con una curva por cultivo al estilo EcoCrop; las ventanas se ordenan primero por el factor que más limita y después por el promedio ponderado.
+2. **Las prioridades del agricultor** ya no son solo de las rotaciones (punto 1 de la sección 1): también hay un peso de 0 a 5 por señal en el diagnóstico y en el calendario. El riesgo grave de clima cuenta siempre.
+3. **La oferta y el mercado cambian el semáforo**, y con «rotar» se sugieren cultivos alternativos.
+4. **La textura del suelo** entra en el balance de agua.
+5. **Varias fuentes, ninguna única verdad**, y la región es un supuesto hasta el 28 de octubre.
 
 ## 6. Fuentes
 
