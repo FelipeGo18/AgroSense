@@ -110,7 +110,7 @@ def block(cx, cy, rows, ridged=False, cut=None, top=None):
     return out
 
 
-def field(cx, cy, rows, cols, plant, s, seed=1, jitter=0.03, basin=False):
+def field(cx, cy, rows, cols, plant, s, seed=1, jitter=0.03, basin=False, stage_at=None):
     """Plantas en filas, dibujadas de atrás hacia adelante para que se tapen bien."""
     rnd = random.Random(seed)
     spots = []
@@ -118,15 +118,15 @@ def field(cx, cy, rows, cols, plant, s, seed=1, jitter=0.03, basin=False):
         for c in range(cols):
             u = (c + 0.5) / cols + rnd.uniform(-jitter, jitter)
             v = (r + 0.5) / rows + rnd.uniform(-jitter, jitter)
-            spots.append(at(cx, cy, u, v) + (rnd.randint(0, 999),))
+            spots.append(at(cx, cy, u, v) + (rnd.randint(0, 999), stage_at(u, v) if stage_at else s))
     out = []
     rx = A * RIM / cols * 0.55
-    for x, y, sd in sorted(spots, key=lambda p: p[1]):
+    for x, y, sd, st in sorted(spots, key=lambda p: p[1]):
         if basin:  # plateo: círculo de tierra limpia alrededor del árbol
             out.append(f'<ellipse cx="{x:.1f}" cy="{y:.1f}" rx="{rx * 0.95:.1f}" ry="{rx * 0.48:.1f}" fill="{SOIL_TOP}"/>')
-        if s > 1:  # sombra de contacto: la planta pesa sobre la tierra
+        if st > 1:  # sombra de contacto: la planta pesa sobre la tierra
             out.append(f'<ellipse cx="{x + 2:.1f}" cy="{y + 1.5:.1f}" rx="{rx:.1f}" ry="{rx * 0.45:.1f}" fill="#000" fill-opacity="0.22"/>')
-        out += plant(x, y, s, sd)
+        out += plant(x, y, st, sd)
     return out
 
 
@@ -916,16 +916,6 @@ def cana_panelera(x, y, s, sd):
     return out
 
 
-def cana_cut(cx, cy):
-    """Atados de caña cortada sobre el lote."""
-    out = []
-    for u, v in ((0.3, 0.35), (0.65, 0.6)):
-        x, y = at(cx, cy, u, v)
-        for j in range(5):
-            out.append(f'<line x1="{x - 18:.1f}" y1="{y - j * 1.6:.1f}" x2="{x + 18:.1f}" y2="{y - 9 - j * 1.6:.1f}" stroke="{("#B8A05A", "#A89048", "#C9B06A")[j % 3]}" stroke-width="2.4" stroke-linecap="round"/>')
-    return out
-
-
 def palma(x, y, s, sd):
     """Palma de aceite: tronco con bases de hojas, corona de frondas largas que se arquean y racimos de negro a rojo naranja."""
     rnd = random.Random(sd)
@@ -1003,6 +993,119 @@ def rosa(x, y, s, sd):
     return out
 
 
+# ---------- Lote 8a: aromáticas y medicinales ----------
+
+def daisy(x, y, r, petal, center, n=8):
+    """Flor tipo margarita vista de frente y un poco de lado."""
+    out = []
+    for i in range(n):
+        a = 2 * math.pi * i / n
+        out.append(f'<ellipse cx="{x + math.cos(a) * r * 0.6:.1f}" cy="{y + math.sin(a) * r * 0.42:.1f}" rx="{r * 0.42:.1f}" ry="{r * 0.24:.1f}" '
+                   f'fill="{petal}" transform="rotate({math.degrees(a):.0f} {x + math.cos(a) * r * 0.6:.1f} {y + math.sin(a) * r * 0.42:.1f})"/>')
+    out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r * 0.36:.1f}" fill="{center}"/>')
+    return out
+
+
+def cut_marks(x, y):
+    return [f'<line x1="{x - 7:.1f}" y1="{y + 2:.1f}" x2="{x + 7:.1f}" y2="{y + 2:.1f}" stroke="{P["noche"]}" stroke-width="0.9" stroke-dasharray="2.5 2"/>']
+
+
+def menta(x, y, s, sd):
+    """Hierbabuena y menta: tallos cuadrados con hojas opuestas aserradas, verde vivo; espiga lila; se corta y rebrota."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - 6:.1f}" stroke="#6E8A4A" stroke-width="1.2"/>'] + leaf(x, y - 6, 30, 4, 3, "#6FB04A") + leaf(x, y - 6, 150, 4, 3, "#5FA34A")
+    k = (0, 0.5, 0.8, 1.0, 1.0, 0.45)[s]
+    out = []
+    for i in range(5):
+        sx = x + rnd.uniform(-6, 6) * k
+        h = (10 + rnd.uniform(0, 6)) * k
+        out.append(f'<line x1="{sx:.1f}" y1="{y:.1f}" x2="{sx:.1f}" y2="{y - h:.1f}" stroke="#6E8A4A" stroke-width="1"/>')
+        for t in (0.35, 0.65, 0.95):
+            for d in (25, 155):
+                out += leaf(sx, y - h * t, d, 4.6 * k + 1, 3.4 * k + 0.6, ("#5FA34A", "#6FB04A", "#7DBB55")[i % 3])
+        if s == 3:
+            out += [poly([(sx - 1.2, y - h), (sx + 1.2, y - h), (sx, y - h - 5)], "#B9A0E0")]
+    if s == 5:
+        out += cut_marks(x, y)
+    return out
+
+
+def calendula(x, y, s, sd):
+    """Mata ramificada de hojas lanceoladas; flores naranja intenso tipo margarita."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return leaf(x, y - 1, 60, 5, 3, "#7DBB55") + leaf(x, y - 1, 120, 5, 3, "#6FB04A")
+    k = (0, 0.5, 0.8, 1.0, 1.0, 1.0)[s]
+    out = []
+    for i, ang in enumerate((30, 60, 90, 120, 150, 45, 135)):
+        out += leaf(x, y - 2, ang, 11 * k, 4 * k, ("#6FB04A", "#7DBB55", "#5FA34A")[i % 3])
+    if s >= 3:
+        for _ in range((4, 5, 2)[s - 3]):  # botones, flores abiertas y, al cosechar, las que quedan
+            fx, fy = x + rnd.uniform(-8, 8), y - rnd.uniform(9, 15)
+            out.append(f'<line x1="{x:.1f}" y1="{y - 3:.1f}" x2="{fx:.1f}" y2="{fy:.1f}" stroke="#5E8A3A" stroke-width="0.8"/>')
+            out += gem(fx, fy, 1.8, "#9CC152") + [f'<circle cx="{fx:.1f}" cy="{fy - 1:.1f}" r="0.9" fill="#F28C28"/>'] if s == 3 else daisy(fx, fy, 3.2, "#F28C28", "#C9661A")
+    if s == 5:
+        out += cut_marks(x, y - 12)
+    return out
+
+
+def manzanilla(x, y, s, sd):
+    """Follaje muy fino y plumoso; muchas florecitas blancas con centro amarillo que cubren el lote."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return blob(x, y - 2, 2.8, "#8DBA4F", sd)
+    k = (0, 0.5, 0.8, 1.0, 1.0, 1.0)[s]
+    out = []
+    for i in range(7):
+        a = math.radians(30 + i * 20)
+        out += blade(x, y, math.degrees(a), 10 * k, 1.6, ("#8DBA4F", "#7DAE45", "#9CC85A")[i % 3])
+    if s >= 3:
+        for _ in range((5, 7, 2)[s - 3]):
+            fx, fy = x + rnd.uniform(-7, 7), y - rnd.uniform(7, 13)
+            out += [f'<circle cx="{fx:.1f}" cy="{fy:.1f}" r="1.3" fill="#E8E0A0"/>'] if s == 3 else daisy(fx, fy, 2.4, "#FFFFFF", "#F2C232")
+    if s == 5:
+        out += cut_marks(x, y)
+    return out
+
+
+def poleo(x, y, s, sd):
+    """Rastrera baja y aromática de hoja pequeña; flores lila en verticilos sobre tallos cortos."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return blob(x, y - 1, 2.6, "#6FA03C", sd)
+    k = (0, 0.5, 0.8, 1.0, 1.0, 0.5)[s]
+    out = []
+    for i in range(9):
+        out += blob(x + rnd.uniform(-8, 8) * k, y - rnd.uniform(0, 5) * k, 3.2 * k + 0.6, ("#4E8F3A", "#5FA34A", "#6FA03C")[i % 3], sd + i, ry=2.2 * k + 0.5)
+    if s == 3 or s == 4:
+        for _ in range(4):
+            fx = x + rnd.uniform(-7, 7)
+            out.append(f'<line x1="{fx:.1f}" y1="{y - 2:.1f}" x2="{fx:.1f}" y2="{y - 10:.1f}" stroke="#5E8A3A" stroke-width="0.8"/>')
+            for j in range(3):
+                out.append(f'<circle cx="{fx:.1f}" cy="{y - 5 - j * 2.6:.1f}" r="1.3" fill="#B49AD8"/>')
+    if s == 5:
+        out += cut_marks(x, y)
+    return out
+
+
+def ruda(x, y, s, sd):
+    """Mata gris azulada de hojas redondeadas y lobuladas; flores amarillas pequeñas en lo alto."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return blob(x, y - 2, 3, "#8FAFA0", sd)
+    k = (0, 0.5, 0.8, 1.0, 1.0, 0.5)[s]
+    out = []
+    for i in range(8):
+        out += blob(x + rnd.uniform(-7, 7) * k, y - rnd.uniform(3, 15) * k, 3.4 * k + 0.6, ("#7FA090", "#8FAFA0", "#6E9080")[i % 3], sd + i, ry=2.8 * k + 0.5)
+    if 3 <= s <= 4:
+        for _ in range(5):
+            out.append(f'<circle cx="{x + rnd.uniform(-6, 6):.1f}" cy="{y - rnd.uniform(14, 18):.1f}" r="1.5" fill="#E8C93A"/>')
+    if s == 5:
+        out += cut_marks(x, y)
+    return out
+
+
 # ---------- Catálogo ----------
 
 STAGES = {
@@ -1014,6 +1117,8 @@ STAGES = {
     "hoja": ("Siembra", "Emergencia", "Hojas", "Roseta", "Cabeza", "Cosecha"),
     "cana": ("Esqueje", "Brotación", "Macollamiento", "Crecimiento", "Maduración", "Corte"),
     "flor": ("Esqueje", "Brotación", "Tallos", "Botón", "Apertura", "Corte"),
+    "aromatica": ("Esqueje", "Enraizamiento", "Crecimiento", "Floración", "Plena hoja", "Corte"),
+    "aromatica_flor": ("Siembra", "Emergencia", "Crecimiento", "Botón", "Floración", "Cosecha de flor"),
 }
 
 # (clave, nombre, arquetipo, etapas, planta, filas, columnas, ¿caballones?, extras por etapa, ¿piloto?, nota)
@@ -1076,18 +1181,57 @@ CROPS = (
      "Arbustos cónicos en hileras; hojas brillantes en pisos; flor blanca y cerezas que pasan de verde a rojo en las ramas"),
     ("cacao", "Cacao", "tree_fruit", "perenne", scaled(cacao, 1.75), 2, 2, False, {"orchard": True}, False,
      "Árbol de hoja grande; las mazorcas acanaladas brotan del tronco y pasan de verde a amarillo y rojo"),
-    ("cana_panelera", "Caña panelera", "tall_grass", "cana", scaled(cana_panelera, 1.15), 3, 4, False, {5: ("ground", cana_cut)}, False,
+    ("cana_panelera", "Caña panelera", "tall_grass", "cana", scaled(cana_panelera, 1.15), 3, 4, False, {"harvest_cut": ("#B8A05A", "#6E7E34", 34)}, False,
      "Macollas de tallos altos con nudos y hojas largas; la flecha blanca anuncia la madurez; al final, tallos cortados para el trapiche"),
     ("palma", "Palma de aceite", "palm", "perenne", scaled(palma, 1.6), 2, 2, False, {"orchard": True}, False,
      "Tronco con bases de hojas y corona de frondas largas; racimos que pasan de negro a rojo naranja"),
     ("rosa", "Rosa de corte", "flower", "flor", scaled(rosa, 1.25), 4, 6, False,
-     {"all": ("invernadero", invernadero), "front": invernadero_front, "transplant": True}, False,
+     {"all": ("invernadero", invernadero), "front": invernadero_front, "transplant": True, "harvest_cut": ("#C0283A", "#4E7A2E")}, False,
      "Rosal en invernadero: tallos rectos de hoja oscura, botón y rosa roja abierta; se corta el tallo y rebrota"),
+    ("menta", "Hierbabuena y menta", "herb", "aromatica", scaled(menta, 1.4), 5, 7, False, {"transplant": True, "harvest_cut": ("#5FA34A", "#C9A86A")}, False,
+     "Tallos cuadrados con hojas opuestas aserradas, verde vivo; espiga lila; se corta y rebrota"),
+    ("calendula", "Caléndula", "herb", "aromatica_flor", scaled(calendula, 1.35), 4, 6, False, {}, False,
+     "Mata ramificada de hoja lanceolada; flores naranja intenso que se cosechan una a una"),
+    ("manzanilla", "Manzanilla", "herb", "aromatica_flor", scaled(manzanilla, 1.35), 5, 7, False, {}, False,
+     "Follaje fino y plumoso; muchas florecitas blancas de centro amarillo cubren el lote"),
+    ("poleo", "Poleo", "herb", "aromatica", scaled(poleo, 1.45), 5, 7, False, {"transplant": True, "harvest_cut": ("#4E8F3A", "#C9A86A")}, False,
+     "Rastrera baja de hoja pequeña; flores lila en verticilos; se corta y rebrota"),
+    ("ruda", "Ruda", "herb", "aromatica", scaled(ruda, 1.4), 4, 6, False, {"transplant": True, "harvest_cut": ("#7FA090", "#C9A86A")}, False,
+     "Mata gris azulada de hojas redondeadas y lobuladas; flores amarillas pequeñas en lo alto"),
 )
+
+
+def bundle(x, y, color, tie="#C9A86A", n=7, length=16):
+    """Atado recién cortado sobre la tierra: tallos juntos y amarrados."""
+    out = [f'<ellipse cx="{x + 2:.1f}" cy="{y + 2:.1f}" rx="{length * 0.6:.1f}" ry="3" fill="#000" fill-opacity="0.2"/>']
+    for j in range(n):
+        dy = (j - n / 2) * 1.1
+        out.append(f'<line x1="{x - length / 2:.1f}" y1="{y + dy + 2:.1f}" x2="{x + length / 2:.1f}" y2="{y + dy - 3:.1f}" stroke="{shade(color, (j % 3 - 1) * 0.08)}" stroke-width="2.2" stroke-linecap="round"/>')
+    out.append(f'<line x1="{x:.1f}" y1="{y - 5:.1f}" x2="{x + 0.6:.1f}" y2="{y + 4:.1f}" stroke="{tie}" stroke-width="1.6"/>')
+    return out
+
+
+def harvest_in_progress(cx, cy, crop):
+    """Etapa «Corte»: la mitad del lote aún sin cortar, la otra mitad cortada y atados al frente."""
+    key, _, _, _, plant, rows, cols, ridged, extras, *_ = crop
+    out = block(cx, cy, rows, ridged=ridged)
+    if "all" in extras:
+        out += extras["all"][1](cx, cy, rows, 5)
+    out += field(cx, cy, rows, cols, plant, 5, seed=sum(map(ord, key)), stage_at=lambda u, v: 4 if u < 0.5 else 5)
+    color, tie, *size = extras["harvest_cut"]
+    length = size[0] if size else 16
+    for u, v in ((0.72, 0.86), (0.88, 0.7)):
+        x, y = at(cx, cy, u, v)
+        out += bundle(x, y + 4, color, tie, n=8 if length > 20 else 7, length=length)
+    if "front" in extras:
+        out += extras["front"](cx, cy)
+    return out
 
 
 def stage_cell(crop, s, cx, cy):
     key, _, _, _, plant, rows, cols, ridged, extras, *_ = crop
+    if s == 5 and extras.get("harvest_cut"):
+        return harvest_in_progress(cx, cy, crop)
     if extras.get("orchard"):  # huerto: pasto entre los árboles y plateo en cada uno
         out = block(cx, cy, 0, top=shade(GRASS, -0.08))
         return out + field(cx, cy, rows, cols, plant, s, seed=sum(map(ord, key)), jitter=0.0, basin=True)
