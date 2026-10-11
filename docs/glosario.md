@@ -78,7 +78,14 @@ Términos que aparecen en las specs, explicados en lenguaje sencillo.
 | Déficit de agua | ET0 × Kc menos lluvia efectiva. Es lo que falta por aportar con riego. |
 | NDVI | Índice de satélite que indica qué tan verde y sana está la vegetación. (P1) |
 | Semáforo | Verde, amarillo, rojo o no evaluable para una ventana de siembra. |
-| Señal | Cada una de las tres evaluaciones que alimentan el semáforo: clima, oferta, mercado. |
+| Señal | Cada una de las cinco evaluaciones que alimentan el semáforo: lluvia, heladas, suelo, oferta y mercado. |
+| Helada | Una noche en que la temperatura mínima a 2 m baja de 2 °C (criterio de amenaza de la UPRA con datos del IDEAM). Cerca del suelo hace más frío y la planta se daña. |
+| Calendario del cultivo | Los 12 meses de un cultivo en un municipio: cuándo conviene sembrar y cuándo hay riesgo de helada. |
+| SoilGrids | Mapa mundial de propiedades del suelo de ISRIC, con celdas de 250 m. Es una estimación, con su rango de incertidumbre. |
+| pH | Qué tan ácido o alcalino es el suelo. Cada cultivo tolera un rango. |
+| Carbono orgánico | La materia orgánica del suelo. Si es baja, conviene rotar con abonos verdes, descanso o leguminosas. |
+| Abono verde | Un cultivo que no se cosecha: se incorpora al suelo para devolverle materia orgánica y nitrógeno. |
+| Corrección por altitud | Ajuste de la temperatura de NASA POWER, que viene de una celda de unos 50 km, a la altura real del municipio. |
 | Sobreoferta | Cuando se siembra tanto de un cultivo en una zona que puede saturar el mercado. |
 | Rotación | Secuencia de cultivos en el mismo lote a lo largo del tiempo. |
 | Ventana de siembra | Un semestre (A o B) para un cultivo en un municipio. |

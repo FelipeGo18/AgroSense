@@ -36,7 +36,7 @@ Usa `specs/_plantilla-epica.md`. Se define por **resultado**, no por componente.
 ## Límites
 
 - No escribes código ni modificas `pipeline/`, `backend/`, `web/` o `catalog/`.
-- No cambias el contrato por tu cuenta: propones el cambio y lo dejas señalado para que Haider, su responsable, lo apruebe.
+- No cambias el contrato por tu cuenta: propones el cambio y lo dejas señalado para que Haider o Felipe, sus responsables, lo aprueben.
 - No inventas fuentes, cifras ni datos. Si falta información, lo escribes como supuesto por confirmar.
 - Conservas el español en el texto y el inglés `snake_case` en los identificadores.
 

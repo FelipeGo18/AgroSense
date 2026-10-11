@@ -5,15 +5,15 @@ prioridad: P0
 fase: [Fase 0, Evento]
 rol: "Motor y API, con Web, Datos y Producto y agro"
 agentes: [motor-api, web, datos, producto-agro]
-subsistemas: [AG1, D3, M7, W7]
+subsistemas: [AG1, D3, M1, M7, W7]
 depende_de: [EP-04, EP-06]
-reglas: [R9, R10]
+reglas: [R1, R2, R4, R6, R9, R10]
 estado: pendiente
 ---
 
 # EP-14 · Finca y plan de agua
 
-**Resultado esperado:** El agricultor registra su finca (sin cuenta, como finca temporal en su dispositivo con el porcentaje del terreno de cada cultivo; con cuenta, como lotes de EP-16) y ve cuánta agua necesitará cada uno y en qué meses o semanas es probable que tenga que regar. El P0 da las semanas típicas de déficit con el clima histórico; saber el día exacto exige medir la humedad del lote o tener pronóstico, por eso el aviso semanal queda en P1.
+**Resultado esperado:** El agricultor ve, mes a mes, cuándo conviene sembrar cada cultivo y cuándo hay riesgo de helada (calendario). Además, registra su finca (sin cuenta, como finca temporal en su dispositivo con el porcentaje del terreno de cada cultivo; con cuenta, como lotes de EP-16) y ve cuánta agua necesitará cada uno y en qué meses o semanas es probable que tenga que regar. El P0 da las semanas típicas de déficit con el clima histórico; saber el día exacto exige medir la humedad del lote o tener pronóstico, por eso el aviso semanal queda en P1.
 
 HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
 
@@ -85,6 +85,29 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
 - **Criterios de aceptación:**
   - [ ] 422 si los porcentajes pasan de 100 o el cultivo no existe
   - [ ] No persiste los datos de la finca
+
+### HU-179 · Calendario del cultivo
+
+- **Historia:** Como agricultor, quiero ver mes a mes cuándo conviene sembrar mi cultivo y cuándo hay riesgo de helada en mi zona, para elegir el mes de siembra y no solo el semestre.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] `POST /api/v1/calendar` según el contrato, con `sowing` y `frost` por mes y `best_sowing_months`
+  - [ ] `sowing` combina el balance de agua de la etapa inicial (M7) y el riesgo de helada en las etapas sensibles; nunca promedia (R2)
+  - [ ] Misma entrada, misma salida; trae `versions` (R4); no guarda nada (R9)
+  - [ ] La señal `frost` del diagnóstico (HU-077) sale de este mismo cálculo
+- **Reglas que aplican:** R1, R2, R4, R6, R9
+- **Notas:** Los bloques `fertilizing`, `field_work` y `blight` llegan en P1 con HU-046.
+
+### HU-180 · Vista del calendario
+
+- **Historia:** Como agricultor, quiero ver el calendario de mi cultivo de un vistazo, junto con los meses de riego de mi lote, para planear el año.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Doce meses con los mejores meses de siembra y el riesgo de helada, con forma y texto, no solo color
+  - [ ] Con temporada en curso, suma los meses de riego del plan de agua (HU-145) sin repetir el cálculo
+  - [ ] Disponible sin cuenta desde la consulta y con cuenta en cada lote
+  - [ ] Cada control tiene una función; nada decorativo
+- **Reglas que aplican:** R1, R5, R10
 
 ### HU-147 · Aviso de riego semanal
 

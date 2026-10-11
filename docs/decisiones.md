@@ -56,7 +56,7 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 **Qué es:** si una fuente no tiene información para el caso (por ejemplo, SIPSA no cubre la zona), la señal sale como «datos insuficientes». No se inventa un valor, no se usa el promedio de otra zona sin avisar y no se reemplaza por otra señal. Por eso cada señal tiene dos campos separados:
 
-- **Estado:** ¿hay datos? (`available` o `insufficient_data`)
+- **Estado:** ¿hay datos? (`available`, `insufficient_data` o `not_applicable` cuando la señal no aplica, por ejemplo heladas en un cultivo que no las sufre)
 - **Nivel:** ¿qué tan bueno o malo es? (`favorable`, `moderate`, `unfavorable`). Sin datos, el nivel queda vacío.
 
 **Por qué:** «no sabemos» y «está mal» son cosas distintas. Mostrar la falta de datos como rojo haría creer que hay riesgo; rellenarla haría parecer sólida una recomendación que no lo es.
@@ -67,7 +67,7 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 ## 6. Calcular no es guardar
 
-**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, las rotaciones y el plan de agua no guardan nada; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/me/password`, `/lots`, `/seasons`) leen y escriben en la base de datos.
+**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, las rotaciones y el plan de agua no guardan nada; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/me/password`, `/lots`, `/seasons`) escriben en la base de datos. Los de cálculo nunca escriben; con `lot_id` pueden leer el polígono de un lote propio para calcular su suelo.
 
 - **Sin cuenta:** se puede consultar, pero nada sale del dispositivo.
 - **Con cuenta:** se guardan los lotes y su historial, con consentimiento registrado. El usuario puede borrar todo.
@@ -94,6 +94,18 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 **Por qué:** hace que la app se sienta viva y conectada al campo real, sin mezclar el «ahora» con una decisión que se basa en historial (decisión 4). Si el servicio en vivo se cae, nada del resultado cambia.
 
 **Regla asociada:** R5 (se muestra la fuente y la hora de la condición) y R8.
+
+## 8. Suelo y heladas dentro del diagnóstico
+
+**Qué es:** el semáforo deja de tener una sola señal de «clima» y pasa a cinco señales independientes: lluvia, heladas, suelo, oferta y mercado. Las heladas y el suelo no son avisos aparte: son parte de la pregunta «¿es buen semestre para sembrar este cultivo aquí?».
+
+- **Heladas:** frecuencia histórica de heladas en las etapas sensibles del cultivo, con la temperatura de NASA POWER corregida por la altitud del municipio. Pueden ser críticas: una helada frecuente en la floración da rojo aunque llueva bien.
+- **Suelo:** pH y textura de SoilGrids, del municipio o del lote dibujado. Nunca es crítico, porque es una estimación de 250 m; solo cuenta para rojo junto con otra señal desfavorable.
+- **El mismo cálculo en todas partes:** la señal de heladas usa el calendario del cultivo, y el suelo del lote es el mismo en el diagnóstico, en las rotaciones y en la ficha del lote.
+
+**Por qué:** el reto («Field Shift») pide usar información local del suelo y rotaciones que mejoren la salud del suelo, y las heladas son el riesgo climático más dañino del altiplano. Ponerlas como avisos aparte del semáforo dejaría dos respuestas que se pueden contradecir.
+
+**Reglas asociadas:** R1, R2, R3 y R10.
 
 ## Cómo se conectan
 

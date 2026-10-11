@@ -34,6 +34,22 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Reglas que aplican:** R9
 - **Notas:** Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`).
 
+### HU-178 · Trazabilidad de lo que hacen agricultores y administradores
+
+- **Historia:** Como agricultor, quiero ver qué se hizo con mi cuenta y mis lotes, y como equipo queremos saber quién hizo qué y cuándo, para confiar en la app y resolver tickets.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Tabla `activity_log` con migración, según «Trazabilidad» del contrato
+  - [ ] Cada endpoint de cuenta escribe su evento en la misma transacción que el cambio; los intentos `denied` y `failed` también quedan
+  - [ ] Prueba: ningún endpoint de cálculo escribe en `activity_log` (R9)
+  - [ ] Prueba: ningún evento guarda contraseñas, tokens, el polígono ni valores de campos
+  - [ ] El usuario de la API no puede modificar ni borrar eventos; la limpieza de 180 días corre con otro rol
+  - [ ] Borrar la cuenta borra los eventos del agricultor y anonimiza las acciones de administradores sobre sus datos
+  - [ ] `GET /me/activity` y la pantalla «Mi actividad» en Mi cuenta, con el estado de cada evento (`ok`, `denied`, `failed`)
+  - [ ] El `request_id` de cada evento coincide con el de la terminal (HU-177)
+- **Reglas que aplican:** R9
+- **Notas:** Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento versión 2 lo menciona (HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria.
+
 ### HU-170 · Roles: agricultor, administrador y desarrollador
 
 - **Historia:** Como equipo, queremos tres roles con permisos distintos, para operar la web y probarla sin mezclar datos inventados con los del agricultor.
@@ -42,8 +58,9 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Columna `role` (`farmer`, `admin`, `developer`) y `blocked_at` en `users`, con migración
   - [ ] Endpoints de `admin` y `dev` del contrato; `403` si el rol no alcanza
   - [ ] El agricultor nunca recibe datos simulados; las respuestas simuladas llevan `simulated: true` (R5)
-  - [ ] El administrador ve a cada agricultor con sus lotes, temporadas y tickets, y puede borrar y restaurar lotes y temporadas con motivo; toda acción queda en `admin_actions`
+  - [ ] El administrador ve a cada agricultor con sus lotes, temporadas y tickets, y puede borrar y restaurar lotes y temporadas con motivo; toda acción queda en `activity_log` (HU-178)
   - [ ] El agricultor reporta un problema con un ticket y ve en Mi cuenta las acciones de soporte sobre sus datos
+  - [ ] Bitácora del administrador (`GET /admin/activity`) con filtros por usuario, acción, estado y fechas
   - [ ] La API no arranca en producción si hay usuarios `developer` o la simulación está activa
   - [ ] Un usuario bloqueado no entra y pierde sus sesiones abiertas
   - [ ] Las métricas son agregadas; el consentimiento (versión 2) avisa que soporte puede ver los lotes (R9)
@@ -57,7 +74,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Criterios de aceptación:**
   - [ ] Tablas y columnas del contrato, con migraciones de Alembic
   - [ ] PostgreSQL en Docker Compose con volumen persistente
-  - [ ] Borrar un usuario borra en cascada sus sesiones, lotes y temporadas
+  - [ ] Borrar un usuario borra en cascada sus sesiones, lotes, temporadas, tickets y sus eventos de `activity_log`
   - [ ] `municipality_id` y `crop_id` se validan contra el catálogo publicado
 - **Reglas que aplican:** R7, R9
 - **Contrato que toca:** base de datos de cuentas de `specs/02-contratos.md`
@@ -83,6 +100,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Texto corto en español claro de qué se guarda y para qué, enlazado a la política de tratamiento de datos (Ley 1581 de 2012)
   - [ ] Sin aceptar, no se crea la cuenta
   - [ ] Se guarda `consent_version` y `consent_at`
+  - [ ] La versión 2 dice que se guarda la ubicación (polígono) de cada lote (HU-164), que soporte puede ver los lotes (HU-170) y que se registra la actividad de la cuenta durante 180 días (HU-178)
 - **Reglas que aplican:** R9
 
 ### HU-164 · Lotes del usuario
@@ -91,12 +109,12 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Endpoints de `lots` del contrato, con `geometry` (polígono GeoJSON) y restauración durante 30 días
-  - [ ] En la web, un mapa con imagen satelital centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola
+  - [ ] En la web, un mapa base de OpenStreetMap centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola. La capa satelital entra solo si se aprueba su licencia
   - [ ] El polígono debe ser válido y caer dentro de su municipio (422 si no), y se ve el límite municipal mientras se dibuja
   - [ ] Si no puede o no quiere dibujar, escribe el área a mano y el lote queda sin ubicación; puede dibujarlo después
   - [ ] Un usuario no ve ni modifica lotes ajenos (404)
 - **Reglas que aplican:** R7, R9
-- **Notas:** La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026.
+- **Notas:** Con el polígono, la ficha del lote muestra su suelo estimado (HU-182). La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026.
 
 ### HU-165 · Temporadas e historial del lote
 
@@ -113,7 +131,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Historia:** Como agricultor, quiero borrar mi cuenta y todo lo que registré, para tener control de mis datos.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] `DELETE /api/v1/me` borra usuario, sesiones, lotes y temporadas
+  - [ ] `DELETE /api/v1/me` borra usuario, sesiones, lotes, temporadas, tickets y sus eventos de `activity_log` (las acciones de administradores sobre sus datos quedan anonimizadas)
   - [ ] Confirmación clara en la web antes de borrar
   - [ ] Prueba automática del borrado en cascada
 - **Reglas que aplican:** R9

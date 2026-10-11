@@ -34,7 +34,7 @@ estado: pendiente
 - **Criterios de aceptación:**
   - [ ] OpenAPI generado de los modelos Pydantic
   - [ ] Tipos TypeScript generados
-  - [ ] Ejemplos de `available`, `insufficient_data` y error 422
+  - [ ] Ejemplos de `available`, `insufficient_data`, `not_applicable` y error 422
   - [ ] Incluye los endpoints de cuenta (con ejemplos de 401 y 404) y el de condiciones actuales
 
 ### HU-013 · Respuestas simuladas (MSW)

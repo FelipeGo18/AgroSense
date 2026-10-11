@@ -9,9 +9,9 @@ Los códigos (D1, AG1, M1, W1, S1…) se usan en las épicas y en las HUs.
 
 | Código | Subsistema | Responsabilidad | Entrega | No debe |
 |---|---|---|---|---|
-| D1 | Ingesta | Un adaptador por fuente (NASA, EVA, SIPSA, límites DANE) que descarga y guarda la copia cruda con fuente, fecha y periodo | Archivos crudos en caché y registro en la tabla de fuentes | Mezclar fuentes ni calcular indicadores |
+| D1 | Ingesta | Un adaptador por fuente (NASA, EVA, SIPSA, SoilGrids, elevación, límites DANE) que descarga y guarda la copia cruda con fuente, fecha y periodo | Archivos crudos en caché y registro en la tabla de fuentes | Mezclar fuentes ni calcular indicadores |
 | D2 | Validación y normalización | Revisar columnas, tipos, rangos, duplicados y cobertura; asignar DIVIPOLA, semestre y unidades comunes | Tablas limpias, filas rechazadas y reporte de calidad | Rellenar huecos sin marcarlos |
-| D3 | Indicadores | Calcular anomalía y tendencia de lluvia, evapotranspiración de referencia mensual, variación de área sembrada e índice estacional de precio | Tablas por granularidad según el contrato | Decidir el semáforo ni aplicar umbrales |
+| D3 | Indicadores | Corregir la temperatura por altitud; calcular anomalía y tendencia de lluvia, evapotranspiración de referencia mensual, frecuencia de heladas por mes, suelo por municipio, variación de área sembrada e índice estacional de precio | Tablas por granularidad según el contrato | Decidir el semáforo ni aplicar umbrales |
 | D4 | Publicación | Escribir Parquet y el manifiesto con versión, cobertura y fuentes | Dataset versionado que lee la API | Recalcularse cuando el usuario consulta |
 
 
@@ -19,7 +19,7 @@ Los códigos (D1, AG1, M1, W1, S1…) se usan en las épicas y en las HUs.
 
 | Código | Subsistema | Responsabilidad | Entrega | No debe |
 |---|---|---|---|---|
-| AG1 | Fichas de cultivo | Familia, ciclo, semestres de siembra, necesidad de agua, raíz, fijación de nitrógeno, rango de altitud, y etapas con su coeficiente de cultivo (Kc) | Archivo de cultivos validado contra su esquema | Recomendar cultivos |
+| AG1 | Fichas de cultivo | Tipo (cultivo, abono verde o descanso), familia, ciclo, semestres de siembra, necesidad de agua, raíz, fijación de nitrógeno, rango de altitud y de pH, y etapas con su coeficiente de cultivo (Kc), grados-día y sensibilidad a la helada | Archivo de cultivos validado contra su esquema | Recomendar cultivos |
 | AG2 | Reglas de rotación | Declarar reglas como datos: tipo (filtro, bonificación o penalización), condición, efecto y criterio | Archivo de reglas versionado | Generar secuencias; eso lo hace el motor (M3) |
 | AG3 | Evidencia | Registrar la fuente de cada campo y regla, con sus límites de uso | Entradas en la tabla de fuentes | Aceptar reglas sin fuente |
 
@@ -28,9 +28,9 @@ Los códigos (D1, AG1, M1, W1, S1…) se usan en las épicas y en las HUs.
 
 | Código | Subsistema | Responsabilidad | Entrega | No debe |
 |---|---|---|---|---|
-| M1 | Señales | Evaluar clima, oferta y mercado de una ventana con umbrales de configuración | Por señal: estado, nivel, indicadores usados y razones | Dar nivel a una señal sin datos |
+| M1 | Señales | Evaluar lluvia, heladas, suelo, oferta y mercado de una ventana con umbrales de configuración, y el calendario mensual del cultivo | Por señal: estado, nivel, indicadores usados y razones | Dar nivel a una señal sin datos |
 | M2 | Agregador del semáforo | Combinar señales con reglas explícitas y elegir una acción | Luz global, acción y limitaciones | Promediar señales |
-| M3 | Rotaciones | Generar secuencias, filtrarlas con AG2 y puntuarlas según las prioridades | Ranking con desglose por criterio y motivos de exclusión | Puntuar secuencias inválidas |
+| M3 | Rotaciones | Generar secuencias, filtrarlas con AG2 y con el suelo, y puntuarlas según las prioridades | Ranking con desglose por criterio y motivos de exclusión | Puntuar secuencias inválidas |
 | M4 | Explicaciones | Convertir señales, reglas y puntajes en razones con plantillas fijas | Texto en español ligado a indicadores y reglas | Mencionar causas no evaluadas |
 | M5 | Escenarios P1 | Aplicar un cambio en memoria a los indicadores y reejecutar M1 a M3 | Resultado del escenario y diferencias con el caso base | Modificar el dataset ni presentarse como pronóstico |
 | M6 | API | Validar entradas, llamar al motor, serializar y responder errores uniformes | Endpoints del contrato OpenAPI | Contener lógica de decisión |
@@ -49,7 +49,7 @@ Los códigos (D1, AG1, M1, W1, S1…) se usan en las épicas y en las HUs.
 | W4 | Rotaciones | Prioridades del usuario y ranking con desglose y razones | Vista de recomendación | Ocultar por qué se excluyó una opción |
 | W5 | Escenarios P1 | Controles de escenario y comparación con el caso base | Vista comparativa | Presentar el escenario como predicción |
 | W6 | Estados | Carga, vacío, sin cobertura, error y datos de ejemplo | Componentes comunes | Mostrar datos ficticios sin rotularlos |
-| W7 | Mi finca | Con cuenta: los lotes del usuario por zona y, por lote, estado actual, próxima siembra, qué sembrar después, plan de agua e historial. Sin cuenta: una finca temporal en el dispositivo con su plan de agua | Vista de finca, calendario de agua y progreso | Enviar datos a guardar sin cuenta (R9) |
+| W7 | Mi finca | Con cuenta: los lotes del usuario por zona y, por lote, estado actual con su suelo, calendario, próxima siembra, qué sembrar después, plan de agua e historial. Sin cuenta: una finca temporal en el dispositivo con su plan de agua | Vista de finca, calendario de agua y progreso | Enviar datos a guardar sin cuenta (R9) |
 | W8 | Inicio y mascota | Presentar qué es AgroSense con la mascota satélite y llevar a consultar sin cuenta o a entrar | Pantalla de inicio y personaje animado | Prometer más de lo que la app hace |
 | W9 | Cuenta y sesión | Registro, inicio y cierre de sesión con usuario y contraseña, consentimiento, perfil, preferencias y borrado de la cuenta | Vistas de cuenta | Pedir datos que no se usan |
 

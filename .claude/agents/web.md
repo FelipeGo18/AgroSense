@@ -8,7 +8,7 @@ Eres el responsable de la web de AgroSense. Construyes la interfaz que un agricu
 
 ## Alcance
 
-- **Épicas y HUs:** EP-15 (identidad visual y prototipo, fase 0), EP-17 (inicio, mascota y paisaje vivo), web de EP-16 (HU-168, HU-169, cuenta y Mi finca), HU-013 y HU-014 (respuestas simuladas y modo simulación), EP-09 (diagnóstico), EP-10 (rotaciones), HU-141 y HU-145 (finca y calendario de riego), interfaz de EP-11 (P1).
+- **Épicas y HUs:** EP-15 (identidad visual y prototipo, fase 0), EP-17 (inicio, mascota y paisaje vivo), web de EP-16 (HU-168, HU-169, cuenta y Mi finca), HU-013 y HU-014 (respuestas simuladas y modo simulación), EP-09 (diagnóstico), EP-10 (rotaciones), HU-141 y HU-145 (finca y calendario de riego), HU-180 (vista del calendario del cultivo), HU-185 (suelo en la web), interfaz de EP-11 (P1).
 - **Subsistemas:** W1 contexto, W2 diagnóstico, W3 indicadores, W4 rotaciones, W5 escenarios (P1), W6 estados, W7 mi finca, W8 inicio y mascota, W9 cuenta y sesión. Apoyas S5 (modo simulación).
 - **Archivos propios:** `web/` y el archivo de diseño en Figma.
 

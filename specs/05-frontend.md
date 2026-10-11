@@ -58,10 +58,11 @@ Una semilla germinando que es un satélite, dibujada como caricatura de los año
 | Parte | Quién | Qué hace el usuario | Qué ve |
 |---|---|---|---|
 | A. Inicio | Todos | Conoce AgroSense; elige consultar sin cuenta o entrar | La mascota presenta qué es AgroSense y las tres cosas que hace |
-| B. Descenso | Invitado y usuario nuevo | Busca su municipio (satélite) y lo ve entre sus vecinos (región). Con cuenta, al llegar al municipio marca su primer lote: nombre, área, cultivo y fecha de siembra | La cámara baja guiada por la mascota hasta el municipio o hasta el lote |
-| C. Consulta | Todos | Elige cultivo y semestre; para «qué sembrar después», sin cuenta elige a mano el cultivo anterior | Acción sugerida primero; luego semáforo, señales, razones, limitaciones y gráficas; ranking de rotaciones con desglose |
+| B. Descenso | Invitado y usuario nuevo | Busca su municipio (satélite) y lo ve entre sus vecinos (región). Con cuenta, al llegar al municipio dibuja su primer lote en el mapa real y le pone nombre, cultivo y fecha de siembra (HU-164) | La cámara baja guiada por la mascota hasta el municipio o hasta el lote |
+| C. Consulta | Todos | Elige cultivo y semestre; para «qué sembrar después», sin cuenta elige a mano el cultivo anterior | Acción sugerida primero; luego semáforo, las cinco señales (lluvia, heladas, suelo, oferta y mercado), razones, limitaciones y gráficas; ranking de rotaciones con desglose |
 | D. Mi finca | Con cuenta (inicio de quien vuelve); sin cuenta, la finca temporal | Con cuenta: recorre sus lotes, cambia de zona y abre un lote. Sin cuenta: registra área y porcentaje por cultivo | Paisaje con sus lotes, cada uno con su cultivo y etapa; sin cuenta, la finca temporal con su plan de agua |
-| D1. Lote · ahora | Con cuenta | Revisa su lote | Cultivo, etapa y días desde la siembra |
+| D1. Lote · ahora | Con cuenta | Revisa su lote | Cultivo, etapa y días desde la siembra; su suelo estimado (pH, carbono orgánico, textura) con rango y rótulo de estimación |
+| D1b. Lote · calendario | Con cuenta; sin cuenta, desde la consulta | Elige un cultivo | Los 12 meses: mejores meses de siembra, riesgo de helada y, si hay temporada en curso, los meses de riego del plan de agua |
 | D2. Lote · próxima siembra | Con cuenta | Mueve sus prioridades (agua, suelo, ingreso y riesgo) | Diagnóstico de la siguiente ventana y qué sembrar después según el historial real del lote, con opciones excluidas a pedido |
 | D3. Lote · agua | Con cuenta | Revisa el plan | Calendario de riego del lote y total de la zona, con rangos y rótulo de estimación |
 | D4. Lote · historial y progreso | Con cuenta | Registra cosecha y nueva siembra | Línea de tiempo de temporadas, rotaciones válidas encadenadas e hitos |
@@ -82,7 +83,7 @@ Una semilla germinando que es un satélite, dibujada como caricatura de los año
 
 ### Progreso
 
-El progreso es la parte de «juego», y solo refleja hechos registrados y reglas con fuente (R5, R8): temporadas registradas, rotaciones que cumplen las reglas de filtro, e hitos como «primera rotación con leguminosa». No hay puntajes inventados de «salud del suelo». El lote cambia visualmente con su historial.
+El progreso es la parte de «juego», y solo refleja hechos registrados y reglas con fuente (R5, R8): temporadas registradas, rotaciones que cumplen las reglas de filtro, e hitos como «primera rotación con leguminosa». No hay puntajes inventados de «salud del suelo»: el suelo que se muestra es el estimado por SoilGrids, con su rango. El lote cambia visualmente con su historial.
 
 ### Flujos
 
@@ -120,7 +121,9 @@ La escena refleja la condición aproximada de ahora en el municipio (decisión 7
    - R1: «datos insuficientes» y «no evaluable» se ven distintos de «desfavorable» (forma, patrón y texto; nunca rojo). En el paisaje se representan como niebla o trazo punteado, no como daño.
    - R5: los datos de ejemplo llevan rótulo visible en pantalla.
    - R9: sin cuenta, la finca no sale del dispositivo; con cuenta, se guarda solo tras el consentimiento y se puede borrar desde la app.
-   - R10: todo resultado de riego lleva «Estimación con el clima de la zona. Verifique la humedad del suelo en su lote» y se muestra en rangos.
+   - R10: todo resultado de riego lleva «Estimación con el clima de la zona. Verifique la humedad del suelo en su lote» y se muestra en rangos. El suelo lleva «Estimación de un mapa global de 250 m. Un análisis de suelo de su lote es más preciso» y se muestra con su rango.
+   - `not_applicable` (por ejemplo, heladas en un cultivo que no las sufre) se muestra como «No aplica», distinto de «datos insuficientes» y de «desfavorable».
+   - Ningún botón o control sin función: cada uno lleva a una acción, un endpoint o una navegación definida.
    - W2: el estado nunca depende solo del color.
 4. **Cada acción tiene respuesta.** Tocar, elegir y cambiar prioridades produce un cambio visible inmediato.
 5. **Español claro, sin jerga.** La jerga técnica vive en el glosario y en el detalle a pedido.
@@ -178,7 +181,7 @@ Un modo para que quien desarrolla vea y pruebe cada caso sin depender de la API 
 
 | Grupo | Controles |
 |---|---|
-| Resultado | Luz verde, amarilla, roja o no evaluable; mercado sin datos; señal con calidad `partial` |
+| Resultado | Luz verde, amarilla, roja o no evaluable; roja por helada crítica; mercado sin datos; suelo sin datos; heladas «no aplica»; señal con calidad `partial` |
 | Red | Respuesta lenta, error 422, error 500, sin conexión |
 | Usuario | Invitado; usuario nuevo sin lotes; usuario con 3 lotes en 2 zonas; usuario con historial largo |
 | Tiempo | Saltar temporadas para ver el progreso; fijar fecha y hora |

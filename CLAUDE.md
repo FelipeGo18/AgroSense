@@ -2,9 +2,9 @@
 
 Herramienta web para agricultores colombianos que responde tres preguntas con datos abiertos y reglas explicables:
 
-1. **Diagnóstico de ventana:** ¿es buen semestre para sembrar este cultivo en este municipio? (semáforo con razones).
-2. **Rotaciones:** ¿qué sembrar después? (ranking de secuencias agronómicamente válidas).
-3. **Finca y plan de agua:** ¿cuánta agua necesitará cada cultivo y en qué meses es probable regar? (estimación).
+1. **Diagnóstico de ventana:** ¿es buen semestre para sembrar este cultivo en este municipio? (semáforo con cinco señales: lluvia, heladas, suelo, oferta y mercado).
+2. **Rotaciones:** ¿qué sembrar después? (ranking de secuencias agronómicamente válidas, con el suelo de la zona o del lote y abonos verdes).
+3. **Finca, calendario y plan de agua:** ¿en qué mes conviene sembrar, cuándo hay riesgo de helada, cuánta agua necesitará cada cultivo y en qué meses es probable regar? (estimación).
 
 Proyecto para el **NASA Space Apps Challenge 2026** (reto «Cambio de rumbo: adaptando las granjas con datos de la NASA»). Equipo: Kode Group. Hackatón: 14 y 15 de noviembre de 2026. Fase 0 (preparación): 10 de octubre al 13 de noviembre.
 
@@ -121,11 +121,12 @@ docker compose run --rm web npm test          # Vitest
 - Guardar datos de la finca sin cuenta ni consentimiento, o desde un endpoint de cálculo (R9).
 - Añadir una regla agronómica o un dato sin fuente (R8).
 - Mostrar datos ficticios sin rotularlos como ejemplo (R5).
-- Decir que el riego es una medición del lote (R10).
+- Decir que el riego o el suelo son una medición del lote (R10).
+- Dibujar un botón o control sin función.
 
 ## Qué se puede recortar y qué no
 
-Orden de recorte si hay retraso en la hora 34 (detalle en `docs/plan-48h.md`): todo el P1; lluvia, nubes y viento en la escena (queda solo día y noche); progreso del lote; reducir HU-093 a una sola gráfica; plan de agua solo con año normal; explicaciones con una razón por opción; pruebas de CI a mano; como último recurso, las cuentas (la demo queda en modo sin cuenta). **Nunca se recorta:** los estados «datos insuficientes» y «no evaluable», los casos de referencia del motor, el consentimiento y el borrado de la cuenta si hay cuentas, el despliegue y el video de respaldo, y las citas de fuentes en la entrega.
+Orden de recorte si hay retraso en la hora 34 (detalle en `docs/plan-48h.md`): todo el P1; lluvia, nubes y viento en la escena (queda solo día y noche); progreso del lote; suelo por lote (queda el del municipio); vista del calendario (las heladas siguen en el diagnóstico); reducir HU-093 a una sola gráfica; plan de agua solo con año normal; explicaciones con una razón por opción; pruebas de CI a mano; como último recurso, las cuentas (la demo queda en modo sin cuenta). **Nunca se recorta:** los estados «datos insuficientes», «no evaluable» y «no aplica», el suelo de la zona y las heladas en el diagnóstico y las rotaciones, los casos de referencia del motor, el consentimiento y el borrado de la cuenta si hay cuentas, el despliegue y el video de respaldo, y las citas de fuentes en la entrega.
 
 ## Agentes
 

@@ -17,4 +17,7 @@
 | Fuga o mal uso de datos de los usuarios | Daño a los agricultores y al proyecto | Datos mínimos, consentimiento, borrado de la cuenta, contraseñas con Argon2, sesiones revocables, límite de intentos, revisión de seguridad de HU-162 y HU-164, política de tratamiento (Ley 1581 de 2012) |
 | Falla la base de datos durante la demo | No se puede entrar a Mi finca | El modo sin cuenta sigue funcionando; usuario de demo en el video de respaldo |
 | Open-Meteo falla o limita las consultas | La escena no muestra el clima de ahora | Caché de 15 minutos; clima neutro rotulado; nunca afecta un resultado |
+| El suelo de SoilGrids no coincide con el del lote | Recomendación de cultivo equivocada por pH | R10: rango e incertidumbre visibles, la señal de suelo nunca es crítica, la exclusión solo ocurre si todo el intervalo queda fuera y se recomienda un análisis de suelo |
+| La temperatura de NASA POWER no representa la altura del municipio | Heladas sub- o sobreestimadas | Corrección por altitud con gradiente con fuente (HU-044) y comprobación contra estaciones del IDEAM |
+| El P0 crece con suelo, heladas y calendario | Menos margen en el evento | Datos de suelo y heladas en la fase 0 si HU-004 lo permite; orden de recorte actualizado en `docs/plan-48h.md` |
 | Muchos pequeños productores no tienen riego | El calendario de riego no les sirve tal cual | El mismo déficit se presenta como riesgo de estrés hídrico, que sirve para elegir cultivo o fecha de siembra |

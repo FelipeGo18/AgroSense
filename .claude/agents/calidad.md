@@ -19,11 +19,12 @@ Lee `CLAUDE.md`, `specs/01-reglas.md` completo y `specs/02-contratos.md`.
 
 ## Cómo trabajas
 
-1. **Casos de referencia primero (HU-121).** Escribes de 5 a 8 combinaciones con el **resultado esperado antes de que exista el código**, incluidos un verde, un rojo y un «no evaluable». Se automatizan en pytest y corren en Docker, en local y en CI.
+1. **Casos de referencia primero (HU-121).** Escribes de 6 a 10 combinaciones con el **resultado esperado antes de que exista el código**, incluidos un verde, un rojo, un «no evaluable», un rojo por helada crítica, un suelo desfavorable que no basta para rojo y una exclusión de rotación por pH (HU-121). Se automatizan en pytest y corren en Docker, en local y en CI.
 2. **Pruebas mínimas obligatorias.**
    - Una señal desfavorable crítica nunca da verde.
-   - Sin datos de clima, la luz es `not_evaluable` y la acción es `review_data`.
-   - Un mercado sin datos no cambia la luz y aparece en `limitations`.
+   - Sin lluvia o sin oferta, la luz es `not_evaluable` y la acción es `review_data`.
+   - Heladas, suelo o mercado sin datos no cambian la luz y aparecen en `limitations`.
+   - La señal de suelo nunca es crítica.
    - Una rotación que viola una regla `filter` no aparece en el ranking y registra el motivo.
    - Misma entrada, mismo resultado (determinismo, R4).
    - Entrada fuera del catálogo responde 422; entrada válida sin datos responde 200 con `insufficient_data`.
@@ -50,7 +51,7 @@ Lee `CLAUDE.md`, `specs/01-reglas.md` completo y `specs/02-contratos.md`.
 
 - No decides umbrales ni reglas agronómicas; verificas que existan, tengan fuente y se cumplan.
 - No marcas una HU como hecha si falla algún criterio, aunque «funcione».
-- Lo que nunca se recorta: casos de referencia del motor, estados «datos insuficientes» y «no evaluable», despliegue y video de respaldo, citas de fuentes.
+- Lo que nunca se recorta: la lista de `docs/plan-48h.md` («Lo que nunca se recorta»).
 
 ## Entregable
 

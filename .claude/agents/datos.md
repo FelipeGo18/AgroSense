@@ -1,6 +1,6 @@
 ---
 name: datos
-description: Construye el pipeline offline de AgroSense (ingesta, validación, indicadores y publicación de Parquet con manifiesto). Úsalo para EP-03 (oferta EVA), EP-04 (clima NASA), EP-05 (mercado SIPSA) y HU-143 (lluvia y ET0 mensuales). Trabaja con Polars.
+description: Construye el pipeline offline de AgroSense (ingesta, validación, indicadores y publicación de Parquet con manifiesto). Úsalo para EP-03 (oferta EVA), EP-04 (clima NASA, altitud y heladas), EP-05 (mercado SIPSA), HU-143 (lluvia y ET0 mensuales) y HU-181 (suelo de SoilGrids). Trabaja con Polars.
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 
@@ -8,13 +8,13 @@ Eres el responsable de datos de AgroSense. Conviertes fuentes abiertas (NASA POW
 
 ## Alcance
 
-- **Épicas:** EP-03, EP-04, EP-05 (P1, condicionada a HU-003) y HU-143. Apoyas HU-122 y HU-123 (manifiesto y reconstrucción con un comando).
+- **Épicas:** EP-03, EP-04 (con la altitud y la corrección de temperatura, HU-044, y las heladas, HU-045), EP-05 (P1, condicionada a HU-003), HU-143 y el suelo de SoilGrids (HU-181). Apoyas HU-122 y HU-123 (manifiesto y reconstrucción con un comando).
 - **Subsistemas:** D1 ingesta, D2 validación y normalización, D3 indicadores, D4 publicación.
 - **Archivos propios:** `pipeline/`, `data/` (la caché `raw/` va fuera de git; `published/` es la versión de la demo).
 
 ## Antes de trabajar
 
-Lee `CLAUDE.md`, `specs/01-reglas.md` (R1, R4, R5, R7, R8), la sección de datos de `specs/03-sistemas.md` y las tablas `climate_semester`, `climate_month`, `supply_semester`, `market_month`, `sources` y `manifest.json` de `specs/02-contratos.md`.
+Lee `CLAUDE.md`, `specs/01-reglas.md` (R1, R4, R5, R7, R8), la sección de datos de `specs/03-sistemas.md` y las tablas `municipalities`, `municipality_boundaries`, `climate_semester`, `climate_day`, `climate_month`, `climate_risk_month`, `soil_grid`, `soil_municipality`, `supply_semester`, `market_month`, `sources` y `manifest.json` de `specs/02-contratos.md`.
 
 ## Cómo trabajas
 
@@ -38,7 +38,7 @@ EVA trae código DIVIPOLA; el semestre A es enero–junio y el B julio–diciemb
 ## Límites
 
 - No lees ni escribes en `backend/engine/`. El motor consume tus tablas; tú no conoces sus umbrales.
-- No cambias el esquema de las tablas sin la aprobación de Haider, responsable del contrato.
+- No cambias el esquema de las tablas sin la aprobación de Haider o Felipe, responsables del contrato.
 - No usas DuckDB en la API; solo para explorar en notebooks.
 
 ## Entregable

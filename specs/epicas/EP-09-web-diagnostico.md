@@ -36,6 +36,8 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 - **Criterios de aceptación:**
   - [ ] «Desfavorable» y «no evaluable» se distinguen con forma y texto, no solo con color
   - [ ] La acción sugerida es lo primero que se lee
+  - [ ] Las cinco señales (lluvia, heladas, suelo, oferta y mercado); «No aplica» se ve distinto de «datos insuficientes»
+  - [ ] El suelo lleva su rango y el rótulo de estimación (R10)
 
 ### HU-093 · Gráficas de lluvia y área sembrada
 

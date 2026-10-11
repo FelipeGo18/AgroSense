@@ -24,7 +24,7 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
 - **Historia:** Como equipo, quiero casos de referencia con resultado esperado escrito antes de programar, para saber si el motor acierta.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] De 5 a 8 combinaciones, incluidos verde, rojo y «no evaluable»
+  - [ ] De 6 a 10 combinaciones, incluidos verde, rojo y «no evaluable», un rojo por helada crítica, un suelo desfavorable que no basta para rojo y una exclusión de rotación por pH
   - [ ] Automatizados en pytest y corriendo en Docker, en local y en CI
 
 ### HU-122 · Procedencia de cada dato
