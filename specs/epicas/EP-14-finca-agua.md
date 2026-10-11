@@ -109,6 +109,18 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
   - [ ] Cada control tiene una función; nada decorativo
 - **Reglas que aplican:** R1, R5, R10
 
+### HU-186 · Línea de tiempo del cultivo
+
+- **Historia:** Como agricultor, quiero mover el tiempo y ver cómo crece mi cultivo, desde la siembra hasta la cosecha, para entender en qué va y qué viene.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] `climate_normal_doy` publicada por el pipeline, con fuente
+  - [ ] `GET /api/v1/lots/{lot_id}/growth` según el contrato: `observed` hasta `thermal_data_until`, `normal_year` después
+  - [ ] Misma entrada, misma salida; trae `versions` (R4)
+  - [ ] Sin temperatura o sin grados-día con fuente: duración por calendario y se dice (R1)
+- **Reglas que aplican:** R1, R4, R5, R6
+- **Notas:** Reutiliza el cálculo de HU-150. Lo que viene después de hoy es una estimación con un año normal, nunca un pronóstico (decisión 4). Decidido el 11 de octubre de 2026.
+
 ### HU-147 · Aviso de riego semanal
 
 - **Historia:** Como agricultor, quiero un aviso de riego para esta semana con la lluvia más reciente, para decidir con datos actuales.
