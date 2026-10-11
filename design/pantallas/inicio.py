@@ -14,13 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ui  # noqa: E402,F401  (agrega design/kit y design/mascota al camino de importación)
 from build_kit_svg import PIECES  # noqa: E402
 
+from consulta import kind, light, tag  # noqa: E402
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "globo"))
 from build_globo import globe, space  # noqa: E402
-from sheet import ridges  # noqa: E402
 from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, field, frame, group, link,  # noqa: E402
                 logo, mascot, paragraph, poly, scene, svg, text, topbar)
 
-CREAM = "#FFF6E0"
 
 
 # ---------- Piezas propias del descenso ----------
@@ -121,6 +121,62 @@ def questions(y0, w, mobile):
     return b
 
 
+PREVIEW = (  # el mismo caso del resultado amarillo de la tanda 3 (consulta.py), rotulado como ejemplo (R5)
+    ("lluvia", "Lluvia", "favorable", "6 % sobre lo normal"),
+    ("heladas", "Heladas", "moderado", "Heló 2 de cada 10 años al florecer"),
+    ("suelo", "Suelo", "favorable", "pH apto para la papa (estimado)"),
+    ("oferta", "Oferta", "desfavorable", "+35 % de área sembrada"),
+    ("mercado", "Mercado", "insuficiente", "Sin datos de precios"),
+)
+
+
+def example_label(x, y):
+    """Rótulo de ejemplo del kit: estos datos no son reales (R5)."""
+    return [group("rotulo-ejemplo", [poly([(14, 0), (118, 0), (118, 32), (14, 32), (0, 16)], P["calabaza"], D["calabaza"], 2),
+                                      f'<circle cx="14" cy="16" r="4" fill="{WHITE}" stroke="{D["calabaza"]}" stroke-width="2"/>',
+                                      text(68, 22, "Ejemplo", 15, 700, anchor="middle")], x, y)]
+
+
+def preview(y0, w, mobile):
+    """Así se ve una consulta: un resultado de muestra con la acción primero y las cinco señales."""
+    h = 1240 if mobile else 660
+    b = [f'<rect y="{y0}" width="{w}" height="{h}" fill="#E9F0E1"/>']
+    pad = 20 if mobile else 96
+    b.append(text(pad, y0 + (80 if mobile else 100), "Así se ve una consulta", 30 if mobile else 44, 600, font=FONT_TITLE))
+    b += paragraph(pad, y0 + (118 if mobile else 144), ["Papa en Samacá, semestre B.", "Cifras de muestra."] if mobile else
+                   ["Papa en Samacá, semestre B. Primero lo que conviene hacer; después, por qué. Cifras de muestra."], 16 if mobile else 20, 24, fill=SEC)
+    cw = w - 2 * pad
+    cy = y0 + (180 if mobile else 190)
+    c = example_label(24 if mobile else 32, 24)
+    c += light("amarillo", 24 if mobile else 32, 76, 0.5)
+    if mobile:
+        c += [text(24, 170, "Mejor espere", 28, 600, font=FONT_TITLE), text(24, 204, "otro semestre", 28, 600, font=FONT_TITLE)]
+        c += paragraph(24, 238, ["Se está sembrando mucha más papa", "que antes en Samacá. La lluvia y el", "suelo están bien."], 16, 23)
+        ry, row_w, row_h = 330, cw - 48, 104
+    else:
+        c += [text(32, 190, "Mejor espere otro semestre", 36, 600, font=FONT_TITLE)]
+        c += paragraph(32, 228, ["Se está sembrando mucha más papa que antes", "en Samacá. La lluvia y el suelo están bien."], 18, 26)
+        c += button(32, 310, 340, "Pruébelo con su municipio")
+        ry, row_w, row_h = 30, 560, 64
+    rx = 24 if mobile else cw - 32 - row_w
+    for i, (k, name, status, reason) in enumerate(PREVIEW):
+        yy = ry + i * row_h
+        row = [poly(chamfer(0, 0, row_w, row_h - 10, 10), "#F5F8F2" if status != "insuficiente" else WHITE, BORDE if status != "insuficiente" else D["cielo"],
+                    1.5, None if status != "insuficiente" else "3 5")]
+        row += [f'<g transform="translate(10 6) scale(0.95)">{"".join(kind(k, 0, 0))}</g>', text(66, 26, name, 18, 700), text(66, 46, reason, 14, fill=SEC)]
+        tw = 150 if mobile else 168
+        row += tag(row_w - tw - 12, (row_h - 10) / 2 - 17, status, tw, 34) if not mobile else tag(66, 56, status, tw, 28)
+        c.append(group(f"vista-{k}", row, rx, yy))
+    if mobile:
+        by = ry + 5 * row_h + 10
+        c += button(24, by, cw - 48, "Pruébelo con su municipio")
+        ch = by + 90
+    else:
+        ch = 380
+    b += card(pad, cy, cw, ch, "ejemplo-de-consulta") + [group("ejemplo-de-consulta-contenido", c, pad, cy)]
+    return b
+
+
 def piece_icon(piece):
     """Pieza del kit en pequeño, como ícono de cada pregunta."""
     if piece == "rotulo-estimacion":  # gota facetada, como la del rótulo de estimación
@@ -137,8 +193,8 @@ def seed_svg(seed):
 
 
 def sources(y0, w, mobile):
-    h = 1300 if mobile else 700
-    b = [f'<rect y="{y0}" width="{w}" height="{h}" fill="{P["cielo"]}"/>'] + [f'<g transform="translate(0 {y0 + h - 130})">{"".join(ridges(w, 0, 130))}</g>']
+    h = 1180 if mobile else 560
+    b = [f'<rect y="{y0}" width="{w}" height="{h}" fill="{P["cielo"]}"/>']
     pad = 20 if mobile else 96
     b.append(text(pad, y0 + 90, "De dónde salen los datos", 30 if mobile else 44, 600, font=FONT_TITLE))
     b += paragraph(pad, y0 + 132, ["Datos abiertos y reglas que se pueden leer.", "Cada respuesta dice de dónde sale."] if mobile else
@@ -160,32 +216,19 @@ def sources(y0, w, mobile):
     return b
 
 
-def footer(y0, w, mobile):
-    h = 300 if mobile else 220
-    b = [f'<rect y="{y0}" width="{w}" height="{h}" fill="{P["noche"]}"/>']
-    pad = 20 if mobile else 96
-    b.append(f'<g transform="translate(0 {y0})">{"".join(logo(pad, 40, WHITE))}</g>')
-    lines = (["Hecho para el NASA Space Apps Challenge 2026", "por Kode Group."], ["Fuentes y versión de los datos", "Política de tratamiento de datos"])
-    if mobile:
-        b += paragraph(pad, y0 + 124, lines[0], 15, 22, fill=WHITE)
-        b += [text(pad, y0 + 196, lines[1][0], 15, 700, CREAM), text(pad, y0 + 226, lines[1][1], 15, 700, CREAM)]
-    else:
-        b += paragraph(pad, y0 + 130, lines[0], 16, 24, fill=WHITE)
-        b += [text(w - pad, y0 + 74, lines[1][0], 16, 700, CREAM, anchor="end"), text(w - pad, y0 + 104, lines[1][1], 16, 700, CREAM, anchor="end")]
-    return b
-
-
 def landing(mobile=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
     hero_h = 844 if mobile else 900
     q_h = 1220 if mobile else 560
-    s_h = 1300 if mobile else 700
-    f_h = 300 if mobile else 220
-    h = hero_h + q_h + s_h + f_h
+    p_h = 1240 if mobile else 660
+    s_h = 1180 if mobile else 560
+    foot, f_h = ui.footer(w, 0, mobile, above=P["cielo"])
+    h = hero_h + q_h + p_h + s_h + f_h
     b = hero(w, hero_h, mobile)
     b += questions(hero_h, w, mobile)
-    b += sources(hero_h + q_h, w, mobile)
-    b += footer(hero_h + q_h + s_h, w, mobile)
+    b += preview(hero_h + q_h, w, mobile)
+    b += sources(hero_h + q_h + p_h, w, mobile)
+    b.append(f'<g transform="translate(0 {hero_h + q_h + p_h + s_h})">{"".join(foot)}</g>')
     return svg(w, h, [f'<rect width="{w}" height="{h}" fill="{P["cielo"]}"/>'] + b)
 
 

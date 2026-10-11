@@ -157,3 +157,110 @@ def topbar(w, active=None, user=None):
 def frame(size, body, bg=None):
     w, h = size
     return svg(w, h, [f'<rect width="{w}" height="{h}" fill="{bg or P["cielo"]}"/>'] + body)
+
+
+# ---------- Pie de página: los cerros del paisaje y la tierra donde se lee el contenido ----------
+
+EARTH, EARTH_INK, EARTH_SOFT = "#3B2A20", "#F6EEDF", "#CDBBA3"
+TEAM = "RealE4Life"
+SITE = "agrosense.app"  # dominio por confirmar
+SOCIAL = (("github", "GitHub"), ("instagram", "Instagram"), ("linkedin", "LinkedIn"), ("youtube", "YouTube"))
+
+
+def social_icon(kind_, x, y, s=44):
+    """Botón de red social con el logo original de la marca (marcas.py); cada uno abre el perfil del equipo."""
+    from marcas import BRANDS
+
+    vb, d = BRANDS[kind_]
+    _, _, vw, vh = (float(v) for v in vb.split())
+    body = [poly(chamfer(0, 4, s, s, 9), shade(EARTH, -0.35)), poly(chamfer(0, 0, s, s, 9), "#FFFFFF")]
+
+    def glyph(size, fill, cx=s / 2, cy=s / 2):
+        k = size / max(vw, vh)
+        return f'<path transform="translate({cx - vw * k / 2:.2f} {cy - vh * k / 2:.2f}) scale({k:.4f})" d="{d}" fill="{fill}"/>'
+
+    if kind_ == "github":
+        body.append(glyph(30, "#181717"))
+    elif kind_ == "instagram":  # cuadro con el degradado oficial y el glifo en blanco
+        gid = "ig-degradado"
+        body.append(f'<defs><radialGradient id="{gid}" cx="0.3" cy="1.07" r="1.3"><stop offset="0" stop-color="#FDF497"/><stop offset="0.05" stop-color="#FDF497"/>'
+                    f'<stop offset="0.45" stop-color="#FD5949"/><stop offset="0.6" stop-color="#D6249F"/><stop offset="0.9" stop-color="#285AEB"/></radialGradient></defs>')
+        body.append(f'<rect x="{s / 2 - 15}" y="{s / 2 - 15}" width="30" height="30" rx="8" fill="url(#{gid})"/>')
+        body.append(glyph(21, "#FFFFFF"))
+    elif kind_ == "linkedin":  # cuadro azul oficial con «in» en blanco
+        body.append(f'<rect x="{s / 2 - 15}" y="{s / 2 - 15}" width="30" height="30" rx="5" fill="#0A66C2"/>')
+        body.append(glyph(18, "#FFFFFF", cy=s / 2 + 1))
+    elif kind_ == "youtube":  # botón rojo con el triángulo blanco
+        body.append(f'<rect x="{s / 2 - 6}" y="{s / 2 - 6}" width="12" height="12" fill="#FFFFFF"/>')
+        body.append(glyph(32, "#FF0000"))
+    return [group(f"red-{kind_}", body, x, y)]
+
+
+def earth_band(w, y, h):
+    """Tierra facetada low-poly: tiras de triángulos en tonos muy cercanos, para que el texto se lea."""
+    out = [f'<rect x="0" y="{y}" width="{w}" height="{h}" fill="{EARTH}"/>']
+    n = max(6, int(w / 120))
+    step = w / n
+    tones = (0.04, -0.03, 0.02, -0.05, 0.05, -0.02)
+    for i in range(n):
+        x0, x1 = i * step, (i + 1) * step
+        mid = x0 + step * (0.4 + 0.2 * (i % 3) / 2)
+        out.append(poly([(x0, y), (x1, y), (mid, y + h * 0.55)], shade(EARTH, tones[i % 6])))
+        out.append(poly([(mid, y + h * 0.55), (x1, y + h), (x0, y + h)], shade(EARTH, tones[(i + 3) % 6])))
+    return out
+
+
+def footer(w, y0, mobile=False, above=None):
+    """Pie de página común. `above` es el color de la sección de arriba: se ve detrás de los cerros."""
+    from sheet import ridges
+
+    hills = 96 if mobile else 130
+    body_h = 640 if mobile else 330
+    h = hills + body_h
+    pad = 20 if mobile else 96
+    out = [f'<rect x="0" y="0" width="{w}" height="{hills}" fill="{above or P["cielo"]}"/>', "".join(ridges(w, 0, hills))]
+    out += earth_band(w, hills, body_h)
+    y = hills + (48 if mobile else 64)
+    # marca y frase
+    out += logo(pad, y - 34, EARTH_INK)
+    out += paragraph(pad, y + 30, ["Datos de la NASA y reglas que se", "pueden leer, para sembrar mejor."], 16, 24, fill=EARTH_SOFT)
+    cols = (("Explorar", ("Consultar", "Mi finca", "Cómo funciona")),
+            ("Datos y cuenta", ("Fuentes y versión de los datos", "Política de tratamiento de datos", "Reportar un problema")))
+    if mobile:
+        cy = y + 104
+        for title, items in cols:
+            out.append(text(pad, cy, title.upper(), 13, 700, EARTH_SOFT))
+            for i, it in enumerate(items):
+                out += _footer_link(pad, cy + 32 + i * 30, it)
+            cy += 32 + len(items) * 30 + 20
+        out.append(text(pad, cy, "SÍGANOS", 13, 700, EARTH_SOFT))
+        for i, (k, _) in enumerate(SOCIAL):
+            out += social_icon(k, pad + i * 56, cy + 16)
+        cy += 92
+    else:
+        for ci, (title, items) in enumerate(cols):
+            cx = 520 + ci * 300
+            out.append(text(cx, y - 14, title.upper(), 13, 700, EARTH_SOFT))
+            for i, it in enumerate(items):
+                out += _footer_link(cx, y + 20 + i * 32, it)
+        sx = w - pad - (4 * 56 - 12)
+        out.append(text(sx, y - 14, "SÍGANOS", 13, 700, EARTH_SOFT))
+        for i, (k, _) in enumerate(SOCIAL):
+            out += social_icon(k, sx + i * 56, y + 2)
+        out += _footer_link(sx, y + 92, SITE + " ↗")
+        cy = hills + body_h - 74
+    # línea final: derechos reservados
+    line_y = cy if mobile else cy
+    out.append(f'<rect x="{pad}" y="{line_y}" width="{w - 2 * pad}" height="1" fill="{EARTH_SOFT}" fill-opacity="0.35"/>')
+    if mobile:
+        out += _footer_link(pad, line_y + 36, SITE + " ↗")
+        out += paragraph(pad, line_y + 76, [f"© 2026 {TEAM}. Todos los derechos reservados.", "Hecho para el NASA Space Apps Challenge 2026."], 13, 22, fill=EARTH_SOFT)
+    else:
+        out.append(text(pad, line_y + 40, f"© 2026 {TEAM}. Todos los derechos reservados.", 14, fill=EARTH_SOFT))
+        out.append(text(w - pad, line_y + 40, "Hecho para el NASA Space Apps Challenge 2026", 14, fill=EARTH_SOFT, anchor="end"))
+    return [group("pie", out, 0, y0)], h
+
+
+def _footer_link(x, y, label):
+    wd = width_of(label, 16, True)
+    return [text(x, y, label, 16, 700, EARTH_INK), f'<rect x="{x:g}" y="{y + 5:g}" width="{wd:g}" height="2" fill="{P["trigo"]}"/>']

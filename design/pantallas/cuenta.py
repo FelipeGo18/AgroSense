@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import ui  # noqa: E402
 from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, checkbox, field, frame, group, link,
                 mascot, paragraph, poly, scene, text, toggle, topbar)  # noqa: E402
 
@@ -196,8 +197,10 @@ def profile(mobile=False, dialog=False, editing=False):
     b += mascot(240 if mobile else 1090, 96 if mobile else 96, 0.5 if mobile else 0.7, "reposo")
     for x, y, cw, ch, name, body in places:
         b += card(x, y, cw, ch, c=16) + [group(name, body, x, y)]
+    foot, fh = ui.footer(w, h, mobile, above=P["niebla"])
+    b += foot
     if dialog:
-        b.append(f'<rect id="velo" width="{w}" height="{h}" fill="{P["noche"]}" fill-opacity="0.62"/>')
+        b.append(f'<rect id="velo" width="{w}" height="{h + fh}" fill="{P["noche"]}" fill-opacity="0.62"/>')
         dx, dy, dw = (w - 620) / 2, 250, 620
         d = [text(40, 70, "¿Borrar su cuenta?", 36, 600, font=FONT_TITLE)]
         d += paragraph(40, 116, ["Se va a borrar todo esto, para siempre:"], 18)
@@ -206,7 +209,7 @@ def profile(mobile=False, dialog=False, editing=False):
         d.append(text(40, 268, "No se puede deshacer.", 18, 700))
         d += button(40, 300, 250, "No, volver") + button(330, 300, 250, "Sí, borrar todo", "danger")
         b += card(dx, dy, dw, 400, "dialogo") + [group("dialogo-contenido", d, dx, dy)]
-    return svg_frame(w, h, b)
+    return svg_frame(w, h + fh, b)
 
 
 def change_password(mobile=False, error=False):

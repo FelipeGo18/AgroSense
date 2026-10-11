@@ -13,6 +13,20 @@ Se ajusta mientras se prototipa. Si un cambio toca las reglas R1–R10 o el cont
 
 El prototipo sirve para decidir y ensayar el estilo. Qué se puede reutilizar en el evento depende de los términos de Space Apps 2026 (HU-004): hasta confirmarlo, se asume que el código se reescribe y que lo reutilizable son decisiones, diseños en Figma, guías y assets con licencia.
 
+### Diseño: los generadores son la fuente y Figma es la vitrina
+
+Cada pantalla, lámina y pieza del kit se dibuja con código en `design/` (`design/pantallas/*.py`, `design/kit/`, `design/mascota/`, `design/paisaje/`, `design/globo/`). Ese código genera un SVG, que se revisa en el navegador (`design/pantallas/ver.html`) y se envía a Figma con `design/kit/send_to_figma.ts` y el complemento local. Figma es donde el equipo ve, comenta y aprueba.
+
+Reglas:
+
+1. **Un cambio de diseño se hace en el generador**, no a mano en Figma. Luego se regenera el SVG y se reenvía. Así el cambio queda en git y no se pierde al regenerar.
+2. **Si alguien edita una pantalla directamente en Figma**, avisa en el canal del equipo y el cambio se pasa al generador antes de volver a enviar esa pantalla. Si no, la próxima regeneración lo pisa.
+3. **Lo que solo es acomodo en Figma** no necesita pasar a git: mover o agrandar secciones, ordenar marcos, renombrar capas, comentar. Lo guarda el historial de versiones de Figma.
+4. **Las piezas compartidas viven en un solo lugar**: barra superior, pie de página, botones, campos, tarjetas y estados en `design/pantallas/ui.py`; tokens en `design/tokens/`; logos de redes en `design/pantallas/marcas.py`. Ninguna pantalla los copia.
+5. **Se commitean los generadores y los SVG que producen**, junto con la spec o el doc que el cambio afecte. Los archivos pesados que se pueden volver a bajar (por ejemplo, la imagen Blue Marble) quedan fuera de git, y el generador dice cómo obtenerlos.
+6. **Cualquier archivo de Figma sirve de destino**: en otra cuenta o en otro archivo se abre el complemento local, se toma su canal y se reenvían los SVG.
+7. **Los generadores no son parte de la app.** Son la referencia exacta de medidas, colores, textos y estados para programar la web.
+
 ## Visión
 
 La web parece un juego, pero es una herramienta real: cada pantalla responde una pregunta del agricultor con datos y reglas explicables. El juego aporta la sensación (tacto, ritmo, satisfacción de ver un resultado), no la mecánica.
@@ -68,6 +82,7 @@ Una semilla germinando que es un satélite, dibujada como caricatura de los año
 | D4. Lote · historial y progreso | Con cuenta | Registra cosecha y nueva siembra | Línea de tiempo de temporadas, rotaciones válidas encadenadas e hitos |
 | E. Agregar lote o zona | Con cuenta | Agrega un lote en su zona o en otro municipio | Mini descenso desde la finca al nuevo municipio |
 | F. Cuenta | Con cuenta | Registro, sesión, consentimiento, perfil, preferencias, borrar cuenta | Vistas de cuenta |
+| Pie de página | Todos | Navega, abre las fuentes, la política o reporta un problema; sigue al equipo | Los cerros del paisaje y una franja de tierra facetada con marca, «Explorar», «Datos y cuenta», redes del equipo (GitHub, Instagram, LinkedIn, YouTube), enlace al sitio y «© 2026 RealE4Life. Todos los derechos reservados.». Va en las vistas largas (portada, resultado, señales, rotaciones, Mi cuenta); no en los pasos de una sola tarea (entrar, crear cuenta, buscar municipio, dibujar el lote, elegir cultivo). Faltan las URL de las redes y el dominio |
 | Transversal | Todos | — | Panel «¿Cómo funciona y de dónde sale esto?» (cómo se decide el semáforo, fuentes y versión de los datos, HU-122), estados, rótulo de ejemplo, condición en vivo, modo ligero y sonido (P1) |
 
 ### Sin cuenta y con cuenta

@@ -298,7 +298,8 @@ def result(variant="amarillo", mobile=False):
     h = top + sec_h
     b = [f'<rect y="{header_h}" width="{w}" height="{h - header_h}" fill="{P["niebla"]}"/>'] + b
     b.append(group("senales", s, 0, top))
-    return frame((w, h), b)
+    foot, fh = ui.footer(w, h, mobile, above=P["niebla"])
+    return frame((w, h + fh), b + foot)
 
 
 # ---------- Gráficas ----------
@@ -478,7 +479,8 @@ def signals(mobile=False):
     r += link(24, ph - 24, "Ver todas las reglas del semáforo", 15)
     b.append(group("como-se-decidio", r, rx, ry))
     h = ry + ph + 80
-    return frame((w, h), b, P["niebla"])
+    foot, fh = ui.footer(w, h, mobile, above=P["niebla"])
+    return frame((w, h + fh), b + foot, P["niebla"])
 
 
 SCREENS = {
