@@ -115,7 +115,7 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] `climate_normal_doy` publicada por el pipeline, con fuente
-  - [ ] `GET /api/v1/lots/{lot_id}/growth` según el contrato: `observed` hasta `thermal_data_until`, `normal_year` después
+  - [ ] `GET /api/v1/seasons/{season_id}/growth` según el contrato: `observed` hasta `thermal_data_until`, `normal_year` después
   - [ ] Misma entrada, misma salida; trae `versions` (R4)
   - [ ] Sin temperatura o sin grados-día con fuente: duración por calendario y se dice (R1)
 - **Reglas que aplican:** R1, R4, R5, R6

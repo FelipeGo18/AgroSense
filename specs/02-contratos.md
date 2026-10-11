@@ -44,7 +44,7 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, apa
 | `users` | `user_id` (UUID) | `username` (único), `password_hash`, `display_name`, `role` (`farmer` por defecto; ver «Roles»), `blocked_at` (nulo si no está bloqueado), `consent_version`, `consent_at`, `created_at`, `updated_at` | Sin correo, celular, documento de identidad ni dirección. La contraseña se guarda solo como hash Argon2 |
 | `sessions` | `session_id` (UUID) | `user_id`, `token_hash`, `created_at`, `expires_at` | Una fila por sesión abierta. Se guarda el hash del token, nunca el token. Vence a los 30 días |
 | `lots` | `lot_id` (UUID) | `user_id`, `municipality_id`, `name`, `geometry` (polígono GeoJSON en WGS84, dibujado en el mapa; nulo si el usuario aún no lo dibuja), `area_ha`, `deleted_at`, `created_at`, `updated_at` | Un usuario tiene uno o varios lotes; la «zona» es el municipio (R7). Con polígono, `area_ha` se calcula de él y el polígono debe caer dentro de su municipio |
-| `seasons` | `season_id` (UUID) | `lot_id`, `crop_id`, `sowing_date`, `harvest_date` (nula si sigue en curso), `diagnosis_light`, `diagnosis_action`, `dataset_version`, `rules_version`, `deleted_at`, `created_at` | Una temporada por cultivo y ciclo en el lote. Guarda el diagnóstico que se vio al sembrar, con sus versiones (R4) |
+| `seasons` | `season_id` (UUID) | `lot_id`, `crop_id`, `area_ha` (la parte del lote que ocupa), `follows_season_id` (la temporada que había antes en esa parte; nula si es la primera), `sowing_date`, `harvest_date` (nula si sigue en curso), `diagnosis_light`, `diagnosis_action`, `dataset_version`, `rules_version`, `deleted_at`, `created_at` | Una temporada por cultivo y ciclo en una parte del lote. Un lote grande puede tener varios cultivos a la vez, cada uno en su parte. Guarda el diagnóstico que se vio al sembrar, con sus versiones (R4) |
 
 - Borrar un usuario borra en cascada, y para siempre, sus sesiones, lotes, temporadas y tickets (R9).
 - Borrar un lote o una temporada es reversible: se marca `deleted_at` y se puede restaurar durante 30 días; después se borra para siempre. El agricultor y el administrador pueden restaurar.
@@ -53,7 +53,8 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, apa
 - El suelo de un lote **no se guarda**: la API lo calcula al vuelo como la mediana de las celdas de `soil_grid` que toca su polígono. Un lote sin polígono usa `soil_municipality`.
 - `support_tickets` (P1): `ticket_id`, `user_id`, `lot_id` (opcional), `message`, `status` (`open`, `in_progress`, `closed`), `created_at`, `closed_at`.
 - `crop_id` y `municipality_id` deben existir en el catálogo publicado; si no, 422.
-- Un lote tiene como máximo una temporada en curso (`harvest_date` nula). Crear otra sin cerrar la anterior, o con `sowing_date` anterior a la cosecha previa, responde 422.
+- Un lote puede tener varias temporadas en curso a la vez, cada una en una parte del lote. Las partes son de área, no de forma: no se dibujan. La suma de `area_ha` de las temporadas en curso no puede pasar del `area_ha` del lote; si pasa, 422. Sin `area_ha`, la temporada ocupa todo lo que queda libre.
+- `follows_season_id`, si viene, es una temporada cosechada del mismo lote, que ninguna otra sigue todavía, con `harvest_date` igual o anterior a `sowing_date`; si no, 422. Así cada parte del lote tiene su propia cadena de temporadas, que es su historial para las rotaciones y el progreso.
 - El **progreso** no se guarda: la API lee las temporadas del lote y le pide al motor que evalúe las reglas de filtro sobre ese historial (temporadas registradas, rotaciones que cumplen las reglas, hitos).
 
 ### Trazabilidad: `activity_log` (HU-178)
@@ -166,7 +167,7 @@ Endpoints de cuenta (requieren sesión, salvo `register` y `login`):
 | `POST /api/v1/me/password` | Cambiar la contraseña con `current_password` y `new_password`. Cierra las demás sesiones del usuario; la actual sigue abierta | P0 |
 | `DELETE /api/v1/me` | Borrar la cuenta con sus sesiones, lotes y temporadas | P0 |
 | `GET /api/v1/lots` · `POST /api/v1/lots` | Listar y crear lotes | P0 |
-| `GET`, `PATCH`, `DELETE /api/v1/lots/{lot_id}` | Ver, editar y borrar un lote. `GET` trae la temporada en curso con su etapa estimada (ver «Cuerpos de cuenta»). `DELETE` es reversible durante 30 días | P0 |
+| `GET`, `PATCH`, `DELETE /api/v1/lots/{lot_id}` | Ver, editar y borrar un lote. `GET` trae las temporadas en curso, cada una con su parte del área y su etapa estimada (ver «Cuerpos de cuenta»). `DELETE` es reversible durante 30 días | P0 |
 | `POST /api/v1/lots/{lot_id}/restore` | Restaurar un lote borrado hace menos de 30 días | P0 |
 | `GET /api/v1/catalogs/municipalities/{municipality_id}/boundary` | Límite del municipio en GeoJSON, para centrar el mapa y validar el dibujo en la web | P0 |
 | `GET /api/v1/me/activity?before=&limit=` | Mi actividad: los eventos de `activity_log` del usuario y las acciones de soporte sobre sus datos, del más reciente al más antiguo, paginados (`limit` hasta 50). Ver «Trazabilidad» | P0 |
@@ -174,7 +175,7 @@ Endpoints de cuenta (requieren sesión, salvo `register` y `login`):
 | `GET /api/v1/lots/{lot_id}/seasons` · `POST /api/v1/lots/{lot_id}/seasons` | Historial del lote y nueva temporada | P0 |
 | `PATCH /api/v1/seasons/{season_id}` | Registrar la cosecha o corregir una temporada | P0 |
 | `GET /api/v1/lots/{lot_id}/progress` | Progreso derivado del historial | P0 |
-| `GET /api/v1/lots/{lot_id}/growth` | Línea de tiempo del cultivo en curso, de la siembra a la cosecha estimada, para simular el paso del tiempo (ver «Cuerpos de cuenta») | P0 |
+| `GET /api/v1/seasons/{season_id}/growth` | Línea de tiempo de un cultivo en curso, de la siembra a la cosecha estimada, para simular el paso del tiempo (ver «Cuerpos de cuenta») | P0 |
 
 **Cómo viaja la credencial:** el usuario y la contraseña solo se envían una vez, en `/auth/register` y `/auth/login`, siempre por HTTPS. La API responde con un token de sesión aleatorio de 256 bits; en la base de datos se guarda solo su hash. De ahí en adelante cada petición lleva únicamente ese token, nunca la contraseña. El token viaja en una cookie `httpOnly` (el JavaScript de la página no lo puede leer), `Secure` (solo por HTTPS) y `SameSite=Lax`; además, la API rechaza las peticiones que cambian datos si su cabecera `Origin` no es la de la web (protección contra CSRF). Como la API y la web comparten origen, no hace falta CORS. Contraseña de al menos 8 caracteres. Tras 5 intentos fallidos de inicio de sesión en 15 minutos, responde 429; los intentos fallidos de cambiar la contraseña cuentan igual. Recuperar la contraseña queda en P1, porque no se guarda correo ni celular. Un usuario solo ve y modifica sus propios lotes: pedir uno ajeno responde 404.
 
@@ -221,7 +222,7 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 
 | Situación | Respuesta |
 |---|---|
-| Entrada inválida (municipio o cultivo fuera del catálogo, diagnóstico de un cultivo con `kind` distinto de `crop`, prioridades fuera de rango, porcentajes de finca que pasan de 100, registro sin consentimiento, temporada en curso duplicada, nombre vacío, contraseña nueva de menos de 8 caracteres o igual a la actual) | `422` |
+| Entrada inválida (municipio o cultivo fuera del catálogo, diagnóstico de un cultivo con `kind` distinto de `crop`, prioridades fuera de rango, porcentajes de finca que pasan de 100, registro sin consentimiento, temporadas en curso que pasan del área del lote, `follows_season_id` inválido, nombre vacío, contraseña nueva de menos de 8 caracteres o igual a la actual) | `422` |
 | Endpoint de cuenta sin sesión válida, usuario y contraseña incorrectos, o `lot_id` en `/diagnostics` o `/rotations` sin sesión | `401` |
 | Contraseña actual incorrecta al cambiarla | `403` (la sesión sigue abierta) |
 | Rol sin permiso para el endpoint, o cuenta bloqueada al iniciar sesión | `403` |
@@ -269,7 +270,7 @@ Sin datos para una serie, la serie viene vacía con `status = insufficient_data`
 }
 ```
 
-`previous_crop_ids` lleva de 1 a 3 cultivos del catálogo (de cualquier `kind`), el más reciente primero. `lot_id` es opcional y exige sesión, igual que en el diagnóstico. Con el suelo (del lote o del municipio): un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` se excluye por regla (R3); el carbono orgánico bajo bonifica abonos verdes, descanso y leguminosas en el criterio «suelo», con reglas de `rotation_rules` con fuente. Cada prioridad es un entero de 0 a 5; fuera de rango, o todas en 0, responde 422. La respuesta trae el ranking con el puntaje de 0 a 100 por criterio, el total ponderado, de 2 a 4 razones por opción, las opciones excluidas con la regla que las excluyó, y `versions`.
+`previous_crop_ids` lleva de 1 a 3 cultivos del catálogo (de cualquier `kind`), el más reciente primero. `lot_id` es opcional y exige sesión, igual que en el diagnóstico. Con cuenta, la web arma `previous_crop_ids` con la cadena de temporadas de la parte del lote que se va a sembrar (`follows_season_id`). Con el suelo (del lote o del municipio): un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` se excluye por regla (R3); el carbono orgánico bajo bonifica abonos verdes, descanso y leguminosas en el criterio «suelo», con reglas de `rotation_rules` con fuente. Cada prioridad es un entero de 0 a 5; fuera de rango, o todas en 0, responde 422. La respuesta trae el ranking con el puntaje de 0 a 100 por criterio, el total ponderado, de 2 a 4 razones por opción, las opciones excluidas con la regla que las excluyó, y `versions`.
 
 ### Cuerpo de `POST /api/v1/water-plans`
 
@@ -284,7 +285,7 @@ Sin datos para una serie, la serie viene vacía con `status = insufficient_data`
 }
 ```
 
-La suma de `area_pct` no puede pasar de 100. Lo que falta es terreno en descanso o sin sembrar. Con cuenta, solo entran los lotes con una temporada en curso. La respuesta trae, por cultivo y por finca, el déficit mensual y el volumen en m³ para año normal y año seco, con rangos y el rótulo de estimación (R10). **Este endpoint no guarda nada (R9)**, aunque el usuario tenga cuenta.
+La suma de `area_pct` no puede pasar de 100. Lo que falta es terreno en descanso o sin sembrar. Con cuenta, entran las temporadas en curso de cada lote, cada una con su `area_ha`. La respuesta trae, por cultivo y por finca, el déficit mensual y el volumen en m³ para año normal y año seco, con rangos y el rótulo de estimación (R10). **Este endpoint no guarda nada (R9)**, aunque el usuario tenga cuenta.
 
 ### Cuerpo y respuesta de `POST /api/v1/calendar`
 
@@ -305,10 +306,10 @@ Más `best_sowing_months` (de 1 a 3 meses) y `versions`. No guarda nada (R9). El
 - `PATCH /api/v1/me`: `display_name` (1 a 40 caracteres) y `username` (3 a 30 caracteres: letras minúsculas sin tilde, números, punto y guion bajo), ambos opcionales. Cambiar el usuario no cierra la sesión. El consentimiento no se edita aquí: para retirarlo se borra la cuenta.
 - `POST /api/v1/me/password`: `current_password` y `new_password` (al menos 8 caracteres y distinta de la actual). Responde `204`.
 - `POST /api/v1/lots` y `PATCH /api/v1/lots/{lot_id}`: `name`, `municipality_id` y `geometry` (polígono GeoJSON). Sin `geometry`, `area_ha` (mayor que cero) es obligatoria; con `geometry`, `area_ha` la calcula la API y se ignora la enviada.
-- Respuesta de `GET /api/v1/lots/{lot_id}`: el lote, `soil` (las propiedades de `soil_grid` como mediana del polígono, con `basis`: `lot` o `municipality`, y `cells`) y `current_season` (nula si no hay temporada en curso) con `crop_id`, `sowing_date`, `days_since_sowing`, `stage`, `stage_progress_pct`, `stage_method` (`thermal_time` si se usó la temperatura acumulada del municipio, `calendar` si se usó la duración por días porque faltan datos de temperatura o grados-día con fuente), `thermal_data_until` (fecha del último dato de temperatura usado; nula con `calendar`) y `versions`. Es una estimación con el clima del municipio, no una observación del lote (HU-150).
-- Respuesta de `GET /api/v1/lots/{lot_id}/growth`: `points` (uno por semana, de la siembra a la cosecha estimada) con `date`, `stage`, `stage_progress_pct`, `gdd_accumulated` y `basis`: `observed` mientras hay temperatura real (`climate_day`, hasta `thermal_data_until`) y `normal_year` después (`climate_normal_doy`). Más `today`, `harvest_estimate` (fecha, siempre con `basis`) y `versions`. Lo `normal_year` es una estimación con un año normal, **no un pronóstico**: la web lo rotula así. Sin temperatura con fuente o sin grados-día del cultivo, se usa la duración por calendario y se dice (R1). No guarda nada.
-- `POST /api/v1/lots/{lot_id}/seasons`: `crop_id`, `sowing_date` y el diagnóstico que vio el usuario al sembrar (`diagnosis_light`, `diagnosis_action`, `dataset_version`, `rules_version`), que la web toma de la respuesta de `/diagnostics`. Si no consultó el diagnóstico, esos campos van nulos.
-- `PATCH /api/v1/seasons/{season_id}`: `harvest_date` o correcciones de `crop_id` y `sowing_date`.
+- Respuesta de `GET /api/v1/lots/{lot_id}`: el lote, `soil` (las propiedades de `soil_grid` como mediana del polígono, con `basis`: `lot` o `municipality`, y `cells`) y `current_seasons` (lista, vacía si no hay temporadas en curso; de mayor a menor área) con `season_id`, `crop_id`, `area_ha`, `follows_season_id`, `sowing_date`, `days_since_sowing`, `stage`, `stage_progress_pct`, `stage_method` (`thermal_time` si se usó la temperatura acumulada del municipio, `calendar` si se usó la duración por días porque faltan datos de temperatura o grados-día con fuente), `thermal_data_until` (fecha del último dato de temperatura usado; nula con `calendar`) y `versions`. Es una estimación con el clima del municipio, no una observación del lote (HU-150).
+- Respuesta de `GET /api/v1/seasons/{season_id}/growth`: `points` (uno por semana, de la siembra a la cosecha estimada) con `date`, `stage`, `stage_progress_pct`, `gdd_accumulated` y `basis`: `observed` mientras hay temperatura real (`climate_day`, hasta `thermal_data_until`) y `normal_year` después (`climate_normal_doy`). Más `today`, `harvest_estimate` (fecha, siempre con `basis`) y `versions`. Lo `normal_year` es una estimación con un año normal, **no un pronóstico**: la web lo rotula así. Sin temperatura con fuente o sin grados-día del cultivo, se usa la duración por calendario y se dice (R1). No guarda nada.
+- `POST /api/v1/lots/{lot_id}/seasons`: `crop_id`, `sowing_date`, `area_ha` (opcional: sin ella ocupa lo que queda libre del lote), `follows_season_id` (opcional: qué había antes en esa parte) y el diagnóstico que vio el usuario al sembrar (`diagnosis_light`, `diagnosis_action`, `dataset_version`, `rules_version`), que la web toma de la respuesta de `/diagnostics`. Si no consultó el diagnóstico, esos campos van nulos.
+- `PATCH /api/v1/seasons/{season_id}`: `harvest_date` o correcciones de `crop_id`, `sowing_date`, `area_ha` y `follows_season_id`, con las mismas validaciones.
 - Respuesta de `GET /api/v1/lots/{lot_id}/progress`: `seasons_count`, `valid_rotations_count` y `milestones` (cada uno con `milestone_id`, `achieved_at` y `basis`: la regla de `rotation_rules` o el hecho registrado que lo produce), más `versions`.
 
 ### Respuesta de diagnóstico

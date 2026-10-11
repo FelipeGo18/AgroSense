@@ -118,13 +118,16 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 
 ### HU-165 · Temporadas e historial del lote
 
-- **Historia:** Como agricultor, quiero registrar qué sembré y cuándo coseché, para que las recomendaciones usen mi historial.
+- **Historia:** Como agricultor, quiero registrar qué sembré, en qué parte del lote y cuándo coseché, para que las recomendaciones usen mi historial aunque tenga varios cultivos en un mismo lote.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Endpoints de `seasons` del contrato
+  - [ ] Un lote puede tener varios cultivos a la vez, cada uno en una parte de su área (`area_ha`); la suma no pasa del área del lote (422)
+  - [ ] Al registrar una siembra, la web pregunta «¿Qué había antes en esta parte?» y guarda `follows_season_id`; cada parte tiene su cadena de temporadas
   - [ ] Cada temporada guarda el diagnóstico visto al sembrar con `dataset_version` y `rules_version`
-  - [ ] Las rotaciones del lote reciben los cultivos de sus temporadas anteriores
+  - [ ] Las rotaciones de una parte del lote reciben los cultivos de su cadena de temporadas
 - **Reglas que aplican:** R4, R9
+- **Notas:** Las partes son de área, no se dibujan en el mapa; el suelo es el mismo para todo el lote. Decidido el 11 de octubre de 2026.
 
 ### HU-166 · Borrar mi cuenta
 
@@ -152,17 +155,20 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Vistas de registro, inicio de sesión y perfil con el estilo de `specs/05-frontend.md`
-  - [ ] Al registrarse, la finca temporal del dispositivo se ofrece para guardar como lotes, uno por cultivo con su parte del área
+  - [ ] Al registrarse, la finca temporal del dispositivo se ofrece para guardar como un lote con una temporada por cultivo, cada una con su parte del área
   - [ ] Quien vuelve con sesión entra directo a Mi finca, sin descenso
 - **Reglas que aplican:** R9
 
 ### HU-187 · El lote vivo
 
-- **Historia:** Como agricultor, quiero ver mi lote con su cultivo creciendo, el clima de ahora y si es probable que haya que regar, para sentir mi finca en la app y entenderla de un vistazo.
+- **Historia:** Como agricultor, quiero ver mi lote con sus cultivos creciendo, el clima de ahora y si es probable que haya que regar, para sentir mi finca en la app y entenderla de un vistazo.
 - **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Diorama low-poly del lote con su cultivo según su arquetipo (`crops.archetype`) y su etapa (HU-150)
-  - [ ] Línea de tiempo que se arrastra y se reproduce, de la siembra a la cosecha estimada (HU-186); lo de después de hoy lleva «Estimación con un año normal, no es pronóstico»
+  - [ ] Diorama low-poly del lote: cubos de tierra juntos, y cada cultivo en curso ocupa tantos cubos como su parte del área (al menos uno), cada uno con su arquetipo (`crops.archetype`) y su etapa (HU-150); la parte libre se ve como tierra en descanso
+  - [ ] Alrededor del lote, la finca hecha de bloques: terreno de pasto, camino de tierra entre las camas, cerca de madera con faroles y portón, casa con techo escalonado, porche y materas, huerta de flores, árbol y un perro acostado. Es ambiente: no muestra ningún dato ni tiene controles
+  - [ ] El diorama se puede recorrer: arrastrar para moverse, pellizcar o la rueda para acercarse, y botón para volver a encuadrar; en móvil, el gesto con un dedo mueve la escena y no la página
+  - [ ] Tocar un cultivo lo elige: la línea de tiempo y la tarjeta del cultivo pasan a ese cultivo
+  - [ ] Línea de tiempo del cultivo elegido que se arrastra y se reproduce, de la siembra a la cosecha estimada (HU-186); los demás cultivos del lote avanzan a la misma fecha; lo de después de hoy lleva «Estimación con un año normal, no es pronóstico»
   - [ ] Clima de ahora en la escena (HU-175): día, atardecer, noche, nubes, lluvia, viento y escarcha si la mínima de ahora baja de 2 °C. Nunca cambia un resultado (decisión 7); sin datos en vivo, clima neutro rotulado
   - [ ] Si el plan de agua marca déficit este mes, el suelo se ve seco con el aviso «Riego probable este mes · estimación» (R10)
   - [ ] Tocar el cultivo muestra su etapa, los días desde la siembra y el método (temperatura o calendario)
@@ -177,7 +183,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Historia:** Como agricultor, quiero ver todos mis lotes en el paisaje y cambiar de zona, para manejar mi finca completa.
 - **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Los lotes del usuario en el mapa real con sus polígonos (HU-164), cada uno con su cultivo y etapa; al abrir uno, el lote vivo (HU-187)
+  - [ ] Los lotes del usuario en el mapa real con sus polígonos (HU-164), cada uno con sus cultivos y etapas; al abrir uno, el lote vivo (HU-187)
   - [ ] Selector de zona si hay lotes en varios municipios
   - [ ] Detalle de lote con ahora, próxima siembra, agua e historial
   - [ ] Agregar lote con mini descenso al municipio elegido
