@@ -837,6 +837,172 @@ def arandano(x, y, s, sd):
     return out
 
 
+# ---------- Lote 7: permanentes y especiales ----------
+
+def cafe(x, y, s, sd):
+    """Arbusto cónico en hileras; hojas brillantes en pisos; flor blanca y cerezas de verde a rojo a lo largo de las ramas."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return leaf(x, y - 2, 60, 6, 4, "#2F6B2E") + leaf(x, y - 2, 120, 6, 4, "#3F7F33")
+    k = (0, 0.45, 0.75, 1.0, 1.0, 1.0)[s]
+    h = 34 * k
+    out = [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - h:.1f}" stroke="#6B4A2E" stroke-width="1.6"/>']
+    tiers = max(2, int(5 * k))
+    branches = []
+    for t in range(tiers):  # pisos: ramas más largas abajo, el arbusto es un cono
+        ty = y - 4 - t * h / tiers
+        w = (14 - t * 2.4) * k + 3
+        for d in (-1, 1):
+            out.append(f'<line x1="{x:.1f}" y1="{ty:.1f}" x2="{x + d * w:.1f}" y2="{ty + 2:.1f}" stroke="#6B4A2E" stroke-width="0.8"/>')
+            for j in range(3):
+                bx = x + d * w * (0.35 + 0.3 * j)
+                out += leaf(bx, ty + 1, 90 + d * 50, 5.5 * k + 1, 3.6 * k + 0.6, ("#1F5A2A", "#2F6B2E", "#3F7F33")[(t + j) % 3])
+                branches.append((bx, ty + 2))
+    if s == 3:
+        for bx, by in rnd.sample(branches, min(8, len(branches))):
+            out.append(f'<circle cx="{bx:.1f}" cy="{by:.1f}" r="1.3" fill="#FFFFFF"/>')
+    if s >= 4:
+        for bx, by in rnd.sample(branches, min(10, len(branches))):
+            col = "#7FA83A" if s == 4 else rnd.choice(("#C0392B", "#D8322E", "#A52A2A"))
+            out += [f'<circle cx="{bx - 1:.1f}" cy="{by:.1f}" r="1.3" fill="{col}"/>', f'<circle cx="{bx + 1:.1f}" cy="{by + 0.4:.1f}" r="1.3" fill="{shade(col, 0.1)}"/>']
+    return out
+
+
+def cacao(x, y, s, sd):
+    """Árbol de sombra con hojas grandes; las mazorcas acanaladas brotan del tronco y de las ramas gruesas."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - 10:.1f}" stroke="#6B4A2E" stroke-width="1.6"/>'] + leaf(x, y - 10, 50, 7, 4, "#5FA34A") + leaf(x, y - 10, 130, 7, 4, "#8A6A3A")
+    k = (0, 0.45, 0.75, 1.0, 1.0, 1.0)[s]
+    th = 18 * k
+    out = [poly([(x - 2.4 * k, y), (x + 2.4 * k, y), (x + 1.8 * k, y - th), (x - 1.8 * k, y - th)], "#6B4A2E"),
+           poly([(x, y), (x + 2.4 * k, y), (x + 1.8 * k, y - th), (x, y - th)], "#56391F")]
+    for i, (dx, dy, r) in enumerate(sorted(((-12, -4, 9), (12, -4, 9), (0, -10, 11), (-6, 2, 8), (7, 2, 8)), key=lambda l: l[1])):
+        out += blob(x + dx * k, y - th - 6 * k + dy * k, r * k, ("#2E5E2A", "#3F7F33", "#4E8F3A", "#8A6A3A")[i % 4] if i != 3 else "#7A5A2E", sd + i, light=0.18)
+    if s == 3:
+        for _ in range(6):
+            out.append(f'<circle cx="{x + rnd.uniform(-2.5, 2.5) * k:.1f}" cy="{y - rnd.uniform(2, th):.1f}" r="0.9" fill="#F4E4F0"/>')  # flor en el tronco
+    if s >= 4:
+        for j in range(4):
+            px, py = x + (-3.4 if j % 2 else 3.4) * k, y - 3 - j * th / 4.5
+            col = "#7FA83A" if s == 4 else ("#E8A23A", "#D9552A", "#C9A82A")[j % 3]
+            out += [poly([(px, py - 4), (px + 2.2, py - 1.5), (px + 2.2, py + 2), (px, py + 4), (px - 2.2, py + 2), (px - 2.2, py - 1.5)], col),
+                    f'<line x1="{px:.1f}" y1="{py - 4:.1f}" x2="{px:.1f}" y2="{py + 4:.1f}" stroke="{shade(col, -0.3)}" stroke-width="0.6"/>']
+    return out
+
+
+def cana_panelera(x, y, s, sd):
+    """Macolla densa de tallos altos con nudos y hojas largas; la flecha blanca en la maduración; al final, tallos cortados."""
+    rnd = random.Random(sd)
+    if s == 0:  # esqueje acostado en el surco
+        return [poly([(x - 9, y), (x + 9, y - 3), (x + 9, y), (x - 9, y + 3)], "#B8A05A")]
+    if s == 5:  # corte: tocones y un atado de cañas
+        out = []
+        for dx in (-4, 0, 4):
+            out.append(poly([(x + dx - 1.4, y), (x + dx + 1.4, y), (x + dx + 1.4, y - 5), (x + dx - 1.4, y - 4)], "#B8A05A"))
+        return out
+    h = (0, 14, 34, 56, 62)[s]
+    out = []
+    for i, dx in enumerate((-6, -3, 0, 3, 6)):
+        hh = h * (0.85 + 0.15 * ((i * 3) % 5) / 4)
+        out += [f'<line x1="{x + dx * 0.5:.1f}" y1="{y:.1f}" x2="{x + dx:.1f}" y2="{y - hh:.1f}" stroke="#9AAE4A" stroke-width="2.2"/>']
+        for j in range(1, int(hh // 12) + 1):
+            ny = y - j * 12
+            out.append(f'<circle cx="{x + dx * (0.5 + 0.5 * j * 12 / hh):.1f}" cy="{ny:.1f}" r="1" fill="#6E7E34"/>')
+        out += blade(x + dx, y - hh * 0.75, 40 if dx >= 0 else 140, 20 * (h / 62) + 4, 3.5, ("#5FA34A", "#6FB04A", "#4E8F3A")[i % 3], bend=0.4)
+        out += blade(x + dx, y - hh, 70 if dx >= 0 else 110, 14 * (h / 62) + 3, 3, ("#6FB04A", "#7DBB55")[i % 2], bend=0.3)
+        if s == 4 and i % 2 == 0:
+            out += [poly([(x + dx - 1.4, y - hh), (x + dx, y - hh - 12), (x + dx + 1.4, y - hh)], "#EDE6D6")]  # flecha
+    return out
+
+
+def cana_cut(cx, cy):
+    """Atados de caña cortada sobre el lote."""
+    out = []
+    for u, v in ((0.3, 0.35), (0.65, 0.6)):
+        x, y = at(cx, cy, u, v)
+        for j in range(5):
+            out.append(f'<line x1="{x - 18:.1f}" y1="{y - j * 1.6:.1f}" x2="{x + 18:.1f}" y2="{y - 9 - j * 1.6:.1f}" stroke="{("#B8A05A", "#A89048", "#C9B06A")[j % 3]}" stroke-width="2.4" stroke-linecap="round"/>')
+    return out
+
+
+def palma(x, y, s, sd):
+    """Palma de aceite: tronco con bases de hojas, corona de frondas largas que se arquean y racimos de negro a rojo naranja."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return [blade(x, y, a, 9, 2.5, "#5FA34A")[0] for a in (60, 90, 120)]
+    k = (0, 0.4, 0.7, 1.0, 1.0, 1.0)[s]
+    th = 26 * k
+    out = [poly([(x - 3.2 * k, y), (x + 3.2 * k, y), (x + 2.6 * k, y - th), (x - 2.6 * k, y - th)], "#7A6A4A")]
+    for j in range(int(th // 4)):  # bases de hojas: textura en rombos
+        yy = y - 2 - j * 4
+        out.append(poly([(x - 2.4 * k, yy), (x, yy - 2.5), (x + 2.4 * k, yy), (x, yy + 1)], "#665838"))
+    top = (x, y - th)
+    for i, ang in enumerate((10, 40, 70, 95, 120, 150, 175, 60, 115)):  # frondas pinnadas
+        length = (22 + rnd.uniform(-2, 3)) * k + 4
+        a = math.radians(ang)
+        tip = (top[0] + length * math.cos(a), top[1] - length * math.sin(a) * 0.5 + length * 0.28)
+        out.append(f'<path d="M{top[0]:.1f} {top[1]:.1f} Q{(top[0] + tip[0]) / 2:.1f} {min(top[1], tip[1]) - 6 * k:.1f} {tip[0]:.1f} {tip[1]:.1f}" stroke="#4E7A2E" stroke-width="1.2" fill="none"/>')
+        for t in (0.3, 0.5, 0.7, 0.9):
+            px = top[0] + (tip[0] - top[0]) * t
+            py = top[1] + (tip[1] - top[1]) * t - 6 * k * (1 - abs(0.5 - t) * 2) * 0.6
+            for d in (-1, 1):
+                out += leaf(px, py, ang + d * 70, 5 * k + 1, 1.8, ("#3F7F33", "#4E8F3A", "#5FA34A")[i % 3], shade_side=False)
+    if s >= 4:
+        for d in (-1, 1):
+            bx, by = x + d * 4 * k, y - th + 3
+            col = "#3A2A2A" if s == 4 else "#E0562A"
+            for dx, dy in ((0, 0), (1.6, 1), (-1.6, 1), (0, 2), (1, -1.4), (-1, -1.4)):
+                out.append(f'<circle cx="{bx + dx:.1f}" cy="{by + dy:.1f}" r="1.5" fill="{shade(col, 0.15 if dx > 0 else 0)}"/>')
+    elif s == 3:
+        out += [poly([(x - 2, y - th + 2), (x + 2, y - th + 2), (x, y - th + 7)], "#C9A86A")]  # inflorescencia
+    return out
+
+
+def invernadero(cx, cy, rows, s):
+    """Invernadero: postes y techo a dos aguas de plástico translúcido (se dibuja delante de las plantas)."""
+    H, R = 46, 62
+    N, E, S, W = (at(cx, cy, u, v) for u, v in ((0, 0), (1, 0), (1, 1), (0, 1)))
+    out = []
+    for px, py in (N, E, W):
+        out.append(f'<line x1="{px:.1f}" y1="{py:.1f}" x2="{px:.1f}" y2="{py - H:.1f}" stroke="#E8E8E0" stroke-width="2"/>')
+    return out
+
+
+def invernadero_front(cx, cy):
+    H, R = 46, 62
+    N, E, S, W = (at(cx, cy, u, v) for u, v in ((0, 0), (1, 0), (1, 1), (0, 1)))
+    mid0 = ((N[0] + W[0]) / 2, (N[1] + W[1]) / 2 - R)
+    mid1 = ((E[0] + S[0]) / 2, (E[1] + S[1]) / 2 - R)
+    roof = [poly([(N[0], N[1] - H), mid0, mid1, (E[0], E[1] - H)], "#FFFFFF", "#D8D8D0", 1.2),
+            poly([(W[0], W[1] - H), mid0, mid1, (S[0], S[1] - H)], "#FFFFFF", "#D8D8D0", 1.2)]
+    roof = [r.replace('fill="#FFFFFF"', 'fill="#FFFFFF" fill-opacity="0.28"') for r in roof]
+    return roof + [f'<line x1="{S[0]:.1f}" y1="{S[1]:.1f}" x2="{S[0]:.1f}" y2="{S[1] - H:.1f}" stroke="#E8E8E0" stroke-width="2"/>',
+                   f'<line x1="{mid0[0]:.1f}" y1="{mid0[1]:.1f}" x2="{mid1[0]:.1f}" y2="{mid1[1]:.1f}" stroke="#D8D8D0" stroke-width="1.5"/>']
+
+
+def rosa(x, y, s, sd):
+    """Rosal de corte: tallos rectos con hojas compuestas oscuras; botón y rosa roja abierta; al final, tallos cortados."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - 7:.1f}" stroke="#4E7A2E" stroke-width="1.6"/>']
+    if s == 5:
+        return [f'<line x1="{x + d:.1f}" y1="{y:.1f}" x2="{x + d:.1f}" y2="{y - 8:.1f}" stroke="#4E7A2E" stroke-width="1.4"/>' for d in (-2, 2)] + blob(x, y - 6, 4, "#2F6B2E", sd)
+    h = (0, 10, 24, 32, 34)[s]
+    out = []
+    for d in (-2.5, 0, 2.5):
+        out.append(f'<line x1="{x + d:.1f}" y1="{y:.1f}" x2="{x + d * 1.4:.1f}" y2="{y - h:.1f}" stroke="#4E7A2E" stroke-width="1.3"/>')
+        for t in (0.3, 0.55, 0.8):
+            out += leaf(x + d * 1.2, y - h * t, 30 if d >= 0 else 150, 5, 3.4, ("#1F5A2A", "#2F6B2E")[int(t * 10) % 2])
+        if s == 3:
+            out += [poly([(x + d * 1.4 - 1.4, y - h), (x + d * 1.4 + 1.4, y - h), (x + d * 1.4, y - h - 4)], "#B02A3A")]
+        if s == 4:
+            cx0, cy0 = x + d * 1.4, y - h - 2
+            out += [f'<circle cx="{cx0:.1f}" cy="{cy0:.1f}" r="3.2" fill="#C0283A"/>', f'<circle cx="{cx0:.1f}" cy="{cy0:.1f}" r="1.8" fill="#9A1E2E"/>',
+                    f'<circle cx="{cx0 - 0.8:.1f}" cy="{cy0 - 0.8:.1f}" r="0.8" fill="#E04A5A"/>']
+    return out
+
+
 # ---------- Catálogo ----------
 
 STAGES = {
@@ -846,6 +1012,8 @@ STAGES = {
     "musa": ("Hijuelo", "Joven", "Crecimiento", "Bellota", "Racimo verde", "Cosecha"),
     "estaca": ("Estaca", "Brotación", "Hojas", "Crecimiento", "Engrose", "Cosecha"),
     "hoja": ("Siembra", "Emergencia", "Hojas", "Roseta", "Cabeza", "Cosecha"),
+    "cana": ("Esqueje", "Brotación", "Macollamiento", "Crecimiento", "Maduración", "Corte"),
+    "flor": ("Esqueje", "Brotación", "Tallos", "Botón", "Apertura", "Corte"),
 }
 
 # (clave, nombre, arquetipo, etapas, planta, filas, columnas, ¿caballones?, extras por etapa, ¿piloto?, nota)
@@ -904,6 +1072,17 @@ CROPS = (
      "Arbusto de hoja aterciopelada; el fruto naranja crece dentro de un capuchón que pasa de verde a pajizo"),
     ("arandano", "Arándano", "shrub", "perenne", scaled(arandano, 1.35), 3, 4, False, {"transplant": True}, False,
      "Arbusto de hoja pequeña y ramas rojizas; flor en campanita; bayas azules con polvo claro"),
+    ("cafe", "Café", "shrub", "perenne", scaled(cafe, 1.25), 3, 5, False, {"transplant": True}, False,
+     "Arbustos cónicos en hileras; hojas brillantes en pisos; flor blanca y cerezas que pasan de verde a rojo en las ramas"),
+    ("cacao", "Cacao", "tree_fruit", "perenne", scaled(cacao, 1.75), 2, 2, False, {"orchard": True}, False,
+     "Árbol de hoja grande; las mazorcas acanaladas brotan del tronco y pasan de verde a amarillo y rojo"),
+    ("cana_panelera", "Caña panelera", "tall_grass", "cana", scaled(cana_panelera, 1.15), 3, 4, False, {5: ("ground", cana_cut)}, False,
+     "Macollas de tallos altos con nudos y hojas largas; la flecha blanca anuncia la madurez; al final, tallos cortados para el trapiche"),
+    ("palma", "Palma de aceite", "palm", "perenne", scaled(palma, 1.6), 2, 2, False, {"orchard": True}, False,
+     "Tronco con bases de hojas y corona de frondas largas; racimos que pasan de negro a rojo naranja"),
+    ("rosa", "Rosa de corte", "flower", "flor", scaled(rosa, 1.25), 4, 6, False,
+     {"all": ("invernadero", invernadero), "front": invernadero_front, "transplant": True}, False,
+     "Rosal en invernadero: tallos rectos de hoja oscura, botón y rosa roja abierta; se corta el tallo y rebrota"),
 )
 
 
@@ -915,7 +1094,7 @@ def stage_cell(crop, s, cx, cy):
     out = block(cx, cy, rows, ridged=ridged, cut=extras[4][1] if s == 4 and 4 in extras and extras[4][0] == "cut" else None)
     if extras.get("beds"):
         out += beds(cx, cy, rows)
-    structure = "all" in extras and extras["all"][0] in ("emparrado", "espaldera")
+    structure = "all" in extras and extras["all"][0] in ("emparrado", "espaldera", "invernadero")
     if extras.get("transplant") or structure:  # se trasplanta: la etapa 1 ya es una plántula
         if "all" in extras:
             out += extras["all"][1](cx, cy, rows, s)
