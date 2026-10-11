@@ -16,7 +16,7 @@ NAME, USERNAME = "Rosa", "rosa.samaca"
 TOWN, TOWN_SHORT = "Samacá, Boyacá", "Samacá"
 TODAY_TEXT = "11 de octubre de 2026"
 ACCOUNT_SINCE = "20 de enero de 2025"
-CONSENT_VERSION = 2
+CONSENT_VERSION = 3
 N_LOTS = 4          # El Alto, La Vega, El Bajo y Potrero (finca.py)
 N_SEASONS = 14      # 12 de El Alto (historial.py) + maíz de La Vega + arveja de El Bajo
 

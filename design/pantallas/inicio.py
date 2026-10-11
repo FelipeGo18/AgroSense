@@ -14,7 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ui  # noqa: E402,F401  (agrega design/kit y design/mascota al camino de importación)
 from build_kit_svg import PIECES  # noqa: E402
 
-from consulta import kind, light, tag  # noqa: E402
+from consulta import light, tag  # noqa: E402
+from senales import KEY_TO_KIND, kind  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "globo"))
 from build_globo import globe, space  # noqa: E402
@@ -60,15 +61,15 @@ def dropdown(x, y, w, rows, active=0):
 # ---------- Portada ----------
 
 QUESTIONS = (
-    ("¿Siembro este semestre?", ["Un semáforo con sus razones: lluvia,", "heladas, suelo, oferta y mercado."], "semaforo-verde", "germinada"),
+    ("¿Cuándo conviene sembrar?", ["Un semáforo por fecha con seis señales:", "agua, heladas, calor, suelo, oferta y mercado."], "semaforo-verde", "germinada"),
     ("¿Qué siembro después?", ["Rotaciones que cuidan el suelo, ordenadas", "según lo que a usted le importa."], "prioridad-3", "frijol"),
-    ("¿Cuánta agua va a necesitar?", ["Mes a mes: cuándo sembrar, riesgo de", "helada y riego estimado en rangos."], "rotulo-estimacion", "maiz"),
+    ("¿Cuánta agua va a necesitar?", ["Mes a mes: heladas y calor a vigilar,", "y el agua que faltaría, en rangos."], "rotulo-estimacion", "maiz"),
 )
 
 SOURCES = (
-    ("Clima", "NASA POWER", ["Lluvia, temperatura y heladas", "de su municipio, desde 1981."]),
+    ("Clima", "NASA POWER", ["Lluvia, temperatura, heladas y", "calor de su municipio, desde 1981."]),
     ("Suelo", "SoilGrids · ISRIC", ["pH, materia orgánica y textura,", "estimados en celdas de 250 m."]),
-    ("Oferta", "Evaluaciones Agropecuarias (EVA)", ["Cuánto se sembró y se cosechó", "de cada cultivo, por municipio."]),
+    ("Oferta", "Evaluaciones Agropecuarias (EVA)", ["Cuánto se sembró de cada cultivo,", "por municipio, junto a otras fuentes."]),
     ("Mercado", "SIPSA · DANE", ["Precios mayoristas,", "cuando hay datos de la zona."]),
 )
 
@@ -88,14 +89,14 @@ def hero(w, h, mobile):
     b += topbar(w)
     if mobile:
         b.append(text(20, 170, "AgroSense", 58, 600, WHITE, FONT_TITLE))
-        b += paragraph(20, 220, ["¿Es buen semestre para sembrar?", "Se lo decimos con datos del", "satélite y reglas que se pueden", "explicar."], 22, 31, fill=WHITE)
+        b += paragraph(20, 220, ["¿Cuándo conviene sembrar?", "Se lo mostramos con datos del", "satélite y reglas que se pueden", "explicar. Usted decide."], 22, 31, fill=WHITE)
         b += button(20, 362, 350, "Consultar sin cuenta") + button(20, 434, 350, "Entrar", "secondary")
         b += mascot(292, 498, 0.4, "vuelo")
         b.append(text(195, h - 30, "Baje para empezar el descenso ↓", 16, 700, WHITE, anchor="middle"))
         b.append(text(195, h - 10, CREDITO_GLOBO, 11, fill="#C9D6E0", anchor="middle"))
     else:
         b.append(text(96, 300, "AgroSense", 120, 600, WHITE, FONT_TITLE))
-        b += paragraph(100, 372, ["¿Es buen semestre para sembrar?", "Se lo decimos con datos del satélite", "y reglas que se pueden explicar."], 30, 42, fill=WHITE)
+        b += paragraph(100, 372, ["¿Cuándo conviene sembrar?", "Se lo mostramos con datos del satélite", "y reglas que se pueden explicar. Usted decide."], 30, 42, fill=WHITE)
         b += button(100, 520, 300, "Consultar sin cuenta") + button(424, 520, 180, "Entrar", "secondary")
         b += mascot(700, 110, 0.8, "vuelo")
         b.append(text(560, h - 36, "Baje para empezar el descenso ↓", 18, 700, WHITE, anchor="middle"))
@@ -109,7 +110,7 @@ def questions(y0, w, mobile):
     b.append(text(pad, y0 + (80 if mobile else 110), "Tres preguntas," if mobile else "Tres preguntas, tres respuestas claras", 30 if mobile else 44, 600, font=FONT_TITLE))
     if mobile:
         b.append(text(pad, y0 + 118, "tres respuestas claras", 30, 600, font=FONT_TITLE))
-    b.append(text(pad, y0 + (158 if mobile else 156), "Para cada cultivo y cada semestre, en su municipio.", 16 if mobile else 20, fill=SEC))
+    b.append(text(pad, y0 + (158 if mobile else 156), "Para cada cultivo y cada fecha de siembra, en su municipio.", 16 if mobile else 20, fill=SEC))
     cw = 350 if mobile else 400
     for i, (title, rows, piece, seed) in enumerate(QUESTIONS):
         cx, cy = (pad, y0 + 200 + i * 330) if mobile else (pad + i * (cw + 24), y0 + 210)
@@ -121,12 +122,13 @@ def questions(y0, w, mobile):
     return b
 
 
-PREVIEW = (  # el mismo caso del resultado amarillo de la tanda 3 (consulta.py), rotulado como ejemplo (R5)
-    ("lluvia", "Lluvia", "favorable", "Favorable en 7 de 10 semestres B"),
-    ("heladas", "Heladas", "moderado", "Heló 12 de cada 100 años en el llenado"),
-    ("suelo", "Suelo", "favorable", "pH apto para la papa (estimado)"),
-    ("oferta", "Oferta", "desfavorable", "+35 % de área sembrada en 2025 B"),
-    ("mercado", "Mercado", "insuficiente", "Sin datos de precios"),
+PREVIEW = (  # el mismo caso del resultado amarillo (diagnostico.py, muestra.SIGNALS_CASE), rotulado como ejemplo (R5)
+    ("water", "Agua", "favorable", "86/100 · alcanzó en 7 de 10 años"),
+    ("frost", "Heladas", "moderado", "58/100 · heló 12 de cada 100 años"),
+    ("heat", "Calor", "favorable", "94/100 · aguanta hasta 28 °C"),
+    ("soil", "Suelo", "favorable", "80/100 · pH apto (estimado)"),
+    ("supply", "Oferta", "desfavorable", "30/100 · +35 % de área sembrada"),
+    ("market", "Mercado", "insuficiente", "Sin datos de precios"),
 )
 
 
@@ -138,24 +140,24 @@ def example_label(x, y):
 
 
 def preview(y0, w, mobile):
-    """Así se ve una consulta: un resultado de muestra con la acción primero y las cinco señales."""
-    h = 1240 if mobile else 660
+    """Así se ve una consulta: un resultado de muestra con la acción primero y las seis señales."""
+    h = 1320 if mobile else 720
     b = [f'<rect y="{y0}" width="{w}" height="{h}" fill="#E9F0E1"/>']
     pad = 20 if mobile else 96
     b.append(text(pad, y0 + (80 if mobile else 100), "Así se ve una consulta", 30 if mobile else 44, 600, font=FONT_TITLE))
-    b += paragraph(pad, y0 + (118 if mobile else 144), ["Papa en Samacá, semestre B.", "Cifras de muestra."] if mobile else
-                   ["Papa en Samacá, semestre B. Primero lo que conviene hacer; después, por qué. Cifras de muestra."], 16 if mobile else 20, 24, fill=SEC)
+    b += paragraph(pad, y0 + (118 if mobile else 144), ["Papa en Samacá, sembrando el 2 de agosto", "de 2027. Cifras de muestra."] if mobile else
+                   ["Papa en Samacá, sembrando el 2 de agosto de 2027. Primero lo que conviene hacer; después, por qué. Cifras de muestra."], 16 if mobile else 20, 24, fill=SEC)
     cw = w - 2 * pad
     cy = y0 + (180 if mobile else 190)
     c = example_label(24 if mobile else 32, 24)
     c += light("amarillo", 24 if mobile else 32, 76, 0.5)
     if mobile:
-        c += [text(24, 170, "Mejor espere", 28, 600, font=FONT_TITLE), text(24, 204, "otro semestre", 28, 600, font=FONT_TITLE)]
-        c += paragraph(24, 238, ["Se está sembrando mucha más papa", "que antes en Samacá. La lluvia y el", "suelo están bien."], 16, 23)
+        c += [text(24, 170, "Mejor otro cultivo", 28, 600, font=FONT_TITLE), text(24, 204, "en esta fecha", 28, 600, font=FONT_TITLE)]
+        c += paragraph(24, 238, ["Se está sembrando mucha más papa", "que antes en Samacá. El clima de", "esta fecha sí le sirve."], 16, 23)
         ry, row_w, row_h = 330, cw - 48, 104
     else:
-        c += [text(32, 190, "Mejor espere otro semestre", 36, 600, font=FONT_TITLE)]
-        c += paragraph(32, 228, ["Se está sembrando mucha más papa que antes", "en Samacá. La lluvia y el suelo están bien."], 18, 26)
+        c += [text(32, 190, "Mejor otro cultivo en esta fecha", 34, 600, font=FONT_TITLE)]
+        c += paragraph(32, 228, ["Se está sembrando mucha más papa que antes", "en Samacá. El clima de esta fecha sí le sirve:", "agua y calor bien, heladas moderadas."], 18, 26)
         c += button(32, 310, 340, "Pruébelo con su municipio")
         ry, row_w, row_h = 30, 560, 64
     rx = 24 if mobile else cw - 32 - row_w
@@ -163,16 +165,16 @@ def preview(y0, w, mobile):
         yy = ry + i * row_h
         row = [poly(chamfer(0, 0, row_w, row_h - 10, 10), "#F5F8F2" if status != "insuficiente" else WHITE, BORDE if status != "insuficiente" else D["cielo"],
                     1.5, None if status != "insuficiente" else "3 5")]
-        row += [f'<g transform="translate(10 6) scale(0.95)">{"".join(kind(k, 0, 0))}</g>', text(66, 26, name, 18, 700), text(66, 46, reason, 14, fill=SEC)]
+        row += [f'<g transform="translate(10 6) scale(0.95)">{"".join(kind(KEY_TO_KIND[k], 0, 0))}</g>', text(66, 26, name, 18, 700), text(66, 46, reason, 14, fill=SEC)]
         tw = 150 if mobile else 168
         row += tag(row_w - tw - 12, (row_h - 10) / 2 - 17, status, tw, 34) if not mobile else tag(66, 56, status, tw, 28)
         c.append(group(f"vista-{k}", row, rx, yy))
     if mobile:
-        by = ry + 5 * row_h + 10
+        by = ry + len(PREVIEW) * row_h + 10
         c += button(24, by, cw - 48, "Pruébelo con su municipio")
         ch = by + 90
     else:
-        ch = 380
+        ch = 440
     b += card(pad, cy, cw, ch, "ejemplo-de-consulta") + [group("ejemplo-de-consulta-contenido", c, pad, cy)]
     return b
 
@@ -220,7 +222,7 @@ def landing(mobile=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
     hero_h = 844 if mobile else 900
     q_h = 1220 if mobile else 560
-    p_h = 1240 if mobile else 660
+    p_h = 1320 if mobile else 720
     s_h = 1180 if mobile else 560
     foot, f_h = ui.footer(w, 0, mobile, above=P["cielo"])
     h = hero_h + q_h + p_h + s_h + f_h
