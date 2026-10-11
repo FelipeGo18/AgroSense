@@ -7,7 +7,7 @@ rol: "Plataforma (Motor y API si el equipo es de 4)"
 agentes: [plataforma]
 subsistemas: [S1, S2]
 depende_de: []
-reglas: []
+reglas: [R4, R9]
 estado: pendiente
 ---
 

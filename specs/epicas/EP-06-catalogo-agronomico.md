@@ -26,7 +26,7 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
 - **Historia:** Como motor, quiero una ficha por cultivo con lo que necesita y lo que aguanta, para saber si se da en una zona y evaluar sus ventanas de siembra.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Todos los campos del contrato llenos; los que el contrato permite nulos (`altitude_min_m`, `altitude_max_m`, `heat_max_c`, pH, `base_temp_c`, `gdd`) quedan nulos solo si no hay fuente, y se anota por qué
+  - [ ] Todos los campos del contrato llenos; los que el contrato permite nulos (`altitude_min_m`, `altitude_max_m`, `heat_max_c`, los límites de las curvas `temp_*`, `rain_*` y `altitude_opt_*`, pH, `base_temp_c`, `gdd`) quedan nulos solo si no hay fuente, y se anota por qué
   - [ ] `altitude_min_m` y `altitude_max_m` (rango en que se da el cultivo) con fuente: de ahí sale la aptitud en la zona (HU-191)
   - [ ] `heat_max_c` (temperatura máxima que aguanta) con fuente: de ahí sale la señal de calor (HU-190)
   - [ ] La ficha no tiene ningún campo de épocas de siembra
@@ -41,7 +41,7 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
 - **Historia:** Como motor, quiero el rango óptimo y los límites absolutos de temperatura, lluvia y altitud de cada cultivo, con fuente, para calificar cada señal de 0 a 100 con una curva por cultivo.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Por cultivo: temperatura óptima (mínima y máxima) y absoluta (mínima y máxima), lluvia óptima y absoluta, y altitud óptima y absoluta, en las columnas que fije el contrato
+  - [ ] Por cultivo: temperatura óptima (mínima y máxima) y absoluta (mínima y máxima), lluvia óptima y absoluta, y altitud óptima y absoluta, en las columnas de `crops` del contrato (`temp_min_c`, `temp_opt_min_c`, `temp_opt_max_c`, `rain_min_mm`, `rain_opt_min_mm`, `rain_opt_max_mm`, `rain_max_mm`, `altitude_opt_min_m` y `altitude_opt_max_m`; los absolutos de altitud y de calor son `altitude_min_m`, `altitude_max_m` y `heat_max_c`, de HU-061)
   - [ ] Cada valor con su fuente en `sources` (R8). La candidata es FAO EcoCrop, **por confirmar**: se verifica el acceso, la licencia, la especie o variedad que describe y la unidad de cada campo antes de usarla
   - [ ] Si hay una fuente local (por ejemplo, fichas técnicas de Agrosavia) que difiere de EcoCrop, se anotan las dos en las notas de la ficha y se dice cuál se usa y por qué
   - [ ] Sin fuente, el campo queda nulo y la señal que lo necesita queda en «datos insuficientes» (R1); nunca un valor «típico»
@@ -49,7 +49,7 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
   - [ ] Revisión cruzada por otro integrante
 - **Reglas que aplican:** R1, R8
 - **Contrato que toca:** tabla `crops`
-- **Notas:** Decisión 10. **Bloqueada por el contrato:** `crops` solo tiene `altitude_min_m`, `altitude_max_m`, `heat_max_c` y el pH; falta el óptimo de temperatura y de altitud y los límites de lluvia. Haider o Felipe deben agregar esas columnas (nombres propuestos en el reporte de esta tanda). Por confirmar: si los límites de lluvia de EcoCrop son anuales; si lo son, no describen una ventana y la señal de agua sigue saliendo del balance hídrico (HU-196). Por confirmar también si la altitud óptima se usa en alguna señal o solo la absoluta en la aptitud.
+- **Notas:** Decisión 10. Las columnas ya están en el contrato (`specs/02-contratos.md`, tabla `crops`). Los `rain_*` son la lluvia anual que pide el cultivo: sirven de referencia y de contraste y no entran a la curva de una ventana; la señal de agua sale del balance hídrico, con cortes en `thresholds.yaml` (`specs/01-reglas.md`, «Cómo se califica cada señal»). El rango óptimo de altitud se usa para la nota informativa de aptitud (`suitability.score`, HU-191); la aptitud se decide solo con el rango absoluto (`specs/01-reglas.md`, «Aptitud del cultivo en la zona»).
 
 ### HU-198 · Pesos por defecto con su porqué
 

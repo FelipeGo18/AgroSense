@@ -18,12 +18,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402,F401
 from calendario import tag, wrap_lines  # noqa: E402
-from finca import drop, lot_header, lot_tabs  # noqa: E402
+from finca import ALTO, drop, lot_header, lot_tabs  # noqa: E402
 from ui import BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, card, chamfer, frame, group, link, paragraph, poly, text, topbar  # noqa: E402
 
 MONTHS = ("Ago", "Sep", "Oct", "Nov", "Dic", "Ene")
 TODAY = 2  # octubre
-IRRIGATED = False  # El Alto no tiene riego (finca.py)
+IRRIGATED = bool(ALTO["irrigated"])  # El Alto no tiene riego (finca.py)
 TEXTURE = "franco arcillosa"  # suelo de la zona (SoilGrids), estimación
 NEED = "pasaría sed" if not IRRIGATED else "riego probable"
 # cultivo, área (ha), meses en que está en el lote, déficit en mm por mes (mín, máx) en un año normal
@@ -76,7 +76,7 @@ def lot_strip(x, y, w, mobile=False):
     body += [f'<rect x="{tx + 20}" y="{ty + 12}" width="1.5" height="{52}" fill="{BORDE}"/>'] if not mobile else [f'<rect x="20" y="{ty}" width="{w - 40}" height="1.5" fill="{BORDE}"/>']
     sx = tx + (40 if not mobile else 20)
     body += [text(sx, ty + 30, "Textura del suelo de la zona · estimación", 13, fill=SEC), text(sx, ty + 54, f"{TEXTURE[0].upper() + TEXTURE[1:]}: guarda agua entre lluvias" if not mobile else TEXTURE[0].upper() + TEXTURE[1:], 17, 700)]
-    body += link(w - 20, ty + 30, "Ver suelo", 14, anchor="end")
+    body += link(w - 20, ty + 30, "Ver suelo", 14, anchor="end")  # lleva a la tarjeta de suelo del lote, en la pestaña «Ahora» (finca.soil_card)
     return [group("riego-y-suelo", body, x, y)], h
 
 

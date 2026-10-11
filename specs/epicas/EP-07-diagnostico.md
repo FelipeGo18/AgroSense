@@ -7,7 +7,7 @@ rol: "Motor y API"
 agentes: [motor-api]
 subsistemas: [M1, M2, M4, M6, M7, M10]
 depende_de: [HU-011, HU-012, EP-03, EP-04, HU-061, HU-063, HU-142, HU-143, HU-144, HU-150, HU-186, HU-181, HU-198, HU-199]
-reglas: [R1, R2, R3, R4, R5, R6, R8, R10]
+reglas: [R1, R2, R3, R4, R5, R6, R8, R9, R10]
 estado: pendiente
 ---
 
@@ -34,14 +34,15 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Usa el balance hídrico de M7 (HU-144) por etapa del cultivo (HU-142) sobre los meses de la ventana, con `climate_month`: no hay un segundo cálculo de agua
   - [ ] El balance tiene en cuenta cuánta agua retiene el suelo según su textura (HU-144): del lote si viene `lot_id` con polígono, si no del municipio. Prueba: la misma ventana con un suelo arenoso da un déficit mayor o igual que con uno arcilloso
   - [ ] Sin riego (`irrigated = false`): `score` sale de la curva de HU-196 y el nivel, de la calificación; grado crítico en `thresholds.yaml`
-  - [ ] Con riego (`irrigated = true`): nunca es `unfavorable` ni crítica por falta de lluvia; la razón dice cuánto riego haría falta, como rango y con el rótulo de estimación (R10)
+  - [ ] Con riego (`irrigated = true`): el nivel es `favorable`; nunca es `unfavorable` ni crítica por falta de lluvia; la razón dice cuánto riego haría falta, como rango y con el rótulo de estimación (R10)
   - [ ] `irrigated` nulo se trata como sin riego y se agrega a las limitaciones
+  - [ ] Sin la textura del suelo, el balance se calcula sin retención y se agrega a las limitaciones; la señal no queda en `insufficient_data` por eso
   - [ ] La razón dice siempre el periodo que se evaluó (por ejemplo, «en 7 de los últimos 10 años»): es historia, no pronóstico (R5, decisión 4)
   - [ ] Sin `climate_month` para el municipio o sin etapas con Kc para el cultivo: `insufficient_data`, nivel y `score` nulos (R1)
   - [ ] Caso de referencia: la misma ventana con déficit alto da `unfavorable` sin riego y no da `unfavorable` con riego
 - **Reglas que aplican:** R1, R2, R4, R5, R6, R10
 - **Contrato que toca:** `signals.water` de la respuesta de diagnóstico; `climate_month`, `crop_stages`, `soil_grid`, `soil_municipality`
-- **Notas:** Reemplaza a la señal anterior, que solo miraba la lluvia frente a lo normal; cambió el 11 de octubre de 2026. El mismo día sumó la textura del suelo (decisión 10). Depende de HU-142, HU-143, HU-144 y HU-196. Supuestos por confirmar: qué nivel toma la señal con riego cuando el déficit es alto (`favorable` o `moderate`); la regla de agregación lo trata como `favorable`. Qué pasa si no hay textura del suelo: ver la nota de HU-144.
+- **Notas:** Reemplaza a la señal anterior, que solo miraba la lluvia frente a lo normal; cambió el 11 de octubre de 2026. El mismo día sumó la textura del suelo (decisión 10). Depende de HU-142, HU-143, HU-144 y HU-196. Con riego, `water` es `favorable` aunque el déficit sea alto, y la razón dice cuánto riego haría falta (`specs/01-reglas.md`, «Agregación del semáforo»). Sin la textura del suelo, el agua se calcula sin retención y se agrega a las limitaciones (`specs/01-reglas.md`, «Cómo se califica cada señal»).
 
 ### HU-072 · Señal de oferta
 
@@ -77,13 +78,13 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Una sola función de curva: 100 dentro del rango óptimo, 0 fuera de los límites absolutos y una recta entre ambos (`specs/01-reglas.md`, «Cómo se califica cada señal»)
   - [ ] El nivel sale de la calificación con los cortes de `thresholds.yaml` (hoy 70 a 100 `favorable`, 40 a 69 `moderate`, 0 a 39 `unfavorable`)
   - [ ] Una señal es crítica cuando su calificación baja del umbral crítico de esa señal en `thresholds.yaml`; `soil` no tiene umbral crítico (R10)
-  - [ ] Los límites que dependen del cultivo salen de su ficha con fuente (HU-061, HU-063, HU-199); los que no dependen del cultivo (por ejemplo, la variación del área sembrada) viven en `thresholds.yaml`
+  - [ ] Los límites que dependen del cultivo salen de su ficha con fuente (HU-061, HU-063, HU-199); los que no dependen del cultivo (por ejemplo, el porcentaje de la necesidad de agua que cubre la lluvia o la variación del área sembrada) viven en `thresholds.yaml`
   - [ ] Sin el límite de la ficha con fuente, o sin el dato de la zona: `insufficient_data`, nivel y `score` nulos (R1, R8). Nunca se usa un límite «típico»
   - [ ] Pruebas: un valor dentro del óptimo da 100; un valor en el límite absoluto o fuera da 0; el punto medio entre el óptimo y el límite da 50; mismo valor, misma calificación (R4)
   - [ ] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `score` y `level` de cada señal en `/diagnostics` y en las ventanas de `/calendar`; `crops`; `thresholds.yaml`
-- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Supuestos por confirmar, uno por señal: `water` califica la parte de la necesidad que cubre la lluvia en la ventana (cortes en `thresholds.yaml`, porque los límites de lluvia de EcoCrop, si son anuales, no describen una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha; `frost` califica `frost_freq_pct` en las semanas sensibles (cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. **Hueco del contrato:** `crops` no tiene el óptimo de temperatura ni los límites de lluvia (ver HU-199).
+- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha (`temp_*`, `heat_max_c`); `frost` califica `frost_freq_pct` en las semanas sensibles (cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
 
 ### HU-074 · Semáforo con prioridades, dos luces y acción
 
@@ -97,35 +98,36 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Peso 0: la señal se muestra con `counts = false` y no cambia la luz, salvo un riesgo grave de clima (`water`, `frost` o `heat` críticos), que siempre cuenta
   - [ ] Peso 4 o 5: un `moderate` en esa señal cuenta como `unfavorable` para la luz
   - [ ] La acción usa `other_window` y `rotate` según la tabla: en amarillo, `rotate` si `soil`, `supply` o `market` son `unfavorable`; en rojo, `other_window` si todas las desfavorables son de clima (`water`, `frost`, `heat`) y `rotate` si alguna es `soil`, `supply` o `market`
-  - [ ] Con `other_window`, la respuesta trae `best_windows` (HU-192): de 0 a 3 ventanas de los próximos doce meses, ninguna de alto riesgo. En cualquier otra acción, `best_windows` no viene
+  - [ ] Con `other_window`, en `overall` o en `overall_default`, la respuesta trae `best_windows` (HU-192): de 0 a 3 ventanas de los próximos doce meses, ninguna de alto riesgo. Si ninguna de las dos acciones es `other_window`, `best_windows` no viene
   - [ ] Con `rotate` en `overall` o en `overall_default`, la respuesta trae el campo `alternatives`; lo llena HU-197, que va después de esta HU
   - [ ] `limiting_signal` es la señal con la calificación más baja entre las que cuentan (HU-192)
   - [ ] `high_risk` es verdadero cuando alguna señal que cuenta es `unfavorable` y crítica
   - [ ] Prueba: una señal desfavorable crítica nunca da verde
   - [ ] Prueba: con la oferta desfavorable y peso 0 en `supply`, `overall` puede dar verde mientras `overall_default` da amarillo
   - [ ] Prueba: una helada crítica con peso 0 en `frost` sigue dando rojo
-  - [ ] Prueba: sin `water` o sin `supply`, la luz es `not_evaluable` y la acción `review_data`
+  - [ ] Prueba: si `water` u `supply` cuentan y no están disponibles, la luz es `not_evaluable` y la acción `review_data`; con peso 0 en la que falta, la luz no queda en `not_evaluable`
+  - [ ] Prueba: con peso 0 en `water` y sin que sea crítica, la regla 3 no exige `water` `favorable`: la luz es `green` si ninguna señal que cuenta es `unfavorable`
   - [ ] Prueba: `frost`, `heat`, `soil` o `market` sin datos no cambian la luz y aparecen en las limitaciones; `not_applicable` tampoco la cambia
 - **Reglas que aplican:** R1, R2, R3, R4, R5
 - **Contrato que toca:** `overall`, `overall_default`, `weights`, `limiting_signal`, `counts`, `best_windows`, `alternatives` y `limitations` de la respuesta de diagnóstico
-- **Notas:** El 11 de octubre de 2026 las señales pasaron a seis por ventana de siembra y la acción `other_window` reemplazó a la anterior (decisión 9). El mismo día entraron las prioridades del agricultor y las dos luces (decisión 10): la HU pasó de M a L. Las señales del P1 (HU-195) entran a las mismas reglas cuando existan. Supuestos por confirmar: (1) la tabla de acciones mira solo las señales que cuentan, y un `moderate` con peso 4 o 5 cuenta como `unfavorable` también para elegir la acción; (2) qué pasa con la regla 1 si el agricultor pone peso 0 en `supply` y no hay datos de oferta (la regla no lo excluye: sigue siendo `not_evaluable`); (3) con peso 0 en `water`, la regla 3 sigue pidiendo `water` `favorable` para dar verde.
+- **Notas:** El 11 de octubre de 2026 las señales pasaron a seis por ventana de siembra y la acción `other_window` reemplazó a la anterior (decisión 9). El mismo día entraron las prioridades del agricultor y las dos luces (decisión 10): la HU pasó de M a L. Las señales del P1 (HU-195) entran a las mismas reglas cuando existan. Los casos con peso 0 siguen `specs/01-reglas.md` («Agregación del semáforo»): las reglas 1 y 3 solo miran `water` y `supply` cuando cuentan, y la tabla de acciones mira solo las señales que cuentan con los pesos de esa luz.
 
 ### HU-197 · Cultivos alternativos con mejor oferta
 
 - **Historia:** Como agricultor, quiero que, cuando conviene cambiar de cultivo, la app me sugiera cultivos que en esa misma ventana salen bien en clima y tienen mejor oferta, para tener por dónde empezar.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Solo se calcula cuando la acción es `rotate` en `overall` o en `overall_default`
-  - [ ] Candidatos: cultivos del catálogo con `kind = crop`, distintos del consultado y con aptitud `suitable` para la zona (HU-191). Nunca uno `not_suitable`
+  - [ ] Se calcula cuando la acción es `rotate` en `overall` o en `overall_default` (cualquiera de las dos luces), también cuando el cultivo consultado no es apto
+  - [ ] Candidatos: cultivos del catálogo con `kind = crop`, distintos del consultado y que no sean `not_suitable` para la zona (HU-191). Uno con aptitud `insufficient_data` puede aparecer, con esa limitación; uno no apto, nunca
   - [ ] Cada candidato se evalúa en su propia ventana desde la misma `sowing_date`, con el mismo cálculo de señales del diagnóstico
   - [ ] Entra solo si sale bien en clima: `water`, `frost` y `heat` sin ningún `unfavorable` ni crítico, y `water` disponible
-  - [ ] Entra solo si su oferta es mejor: `supply` disponible y con calificación mayor que la del cultivo consultado
-  - [ ] Hasta tres, en orden determinista (R4); cada uno con `crop_id` y razones que citan las señales evaluadas (R5)
+  - [ ] Entra solo si su oferta es mejor: `supply` disponible y con calificación mayor que la del cultivo consultado (con el cultivo consultado no apto, ver la nota)
+  - [ ] Hasta tres, ordenados igual que las ventanas: primero el factor que más limita y después las prioridades (HU-192), en orden determinista (R4); cada uno con `crop_id` y razones que citan las señales evaluadas (R5)
   - [ ] Sin candidatos que cumplan, `alternatives` viene como lista vacía
   - [ ] Caso de referencia: un cultivo apto con helada crítica en esa ventana nunca aparece como alternativa, aunque su oferta sea la mejor
 - **Reglas que aplican:** R1, R2, R3, R4, R5, R6
 - **Contrato que toca:** `alternatives` de la respuesta de diagnóstico
-- **Notas:** Decisión 10. Es una sugerencia informativa: no revisa las reglas de rotación con el historial del lote (eso es EP-08). Depende de HU-074 (la acción), HU-191, HU-196 y de las señales de clima y oferta. Supuestos por confirmar: el orden (propuesta: mayor calificación de oferta, luego mayor factor limitante, luego `crop_id`); qué hacer con un candidato de aptitud `insufficient_data` (propuesta: no entra); qué responder cuando el cultivo consultado no es apto, porque no hay oferta suya con qué comparar (propuesta: cultivos aptos que salen bien en clima, sin exigir la comparación de oferta); si la web muestra alternativas cuando solo `overall_default` es `rotate`.
+- **Notas:** Decisión 10. Es una sugerencia informativa: no revisa las reglas de rotación con el historial del lote (eso es EP-08). Depende de HU-074 (la acción), HU-191, HU-196 y de las señales de clima y oferta. El orden, los candidatos con aptitud `insufficient_data` y cuándo se muestran están en `specs/01-reglas.md` («Agregación del semáforo»). Único punto abierto: con el cultivo consultado no apto no hay oferta suya con qué comparar: por definir qué significa "mejor oferta" en ese caso.
 
 ### HU-077 · Señal de heladas
 
@@ -149,7 +151,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Señal `heat` con `status`, `level`, `critical`, `score`, `counts`, `indicators` (`tmax_p90_c`) y `reasons`, según el contrato
-  - [ ] Compara `tmax_p90_c` de las semanas de la ventana (`climate_risk_week`) con los límites de temperatura de la ficha (`heat_max_c` y, cuando exista, el óptimo de HU-199) mediante la curva de HU-196
+  - [ ] Compara `tmax_p90_c` de las semanas de la ventana (`climate_risk_week`) con los límites de temperatura de la ficha (`heat_max_c` y el óptimo, `temp_opt_min_c`–`temp_opt_max_c`, de HU-199) mediante la curva de HU-196
   - [ ] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C»)
   - [ ] Grado crítico en `thresholds.yaml`. Un calor crítico cuenta siempre, aunque el agricultor le ponga peso 0
   - [ ] Sin `heat_max_c` con fuente o sin `tmax_p90_c`: `insufficient_data`, nivel y `score` nulos y a las limitaciones; no cambia la luz (R1, R8)
@@ -169,12 +171,14 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Fuera del rango: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y la razón cita el dato de la ficha y su fuente. No se evalúa ninguna ventana
   - [ ] Dentro del rango, incluidos los dos límites: `suitable`, y la razón dice la altitud del municipio y el rango del cultivo
   - [ ] Si la ficha no tiene el rango con fuente, o el municipio no tiene `altitude_m`: `insufficient_data`; no bloquea y se agrega a las limitaciones (R1, R8)
-  - [ ] Es un filtro, no una señal: no se califica ni entra al orden de las ventanas (R3)
+  - [ ] Es un filtro: no es una señal ni entra al orden; trae un `score` informativo (R3)
+  - [ ] `suitability.score`: nota informativa de 0 a 100 con la curva de altitud (la función de HU-196): 100 dentro del rango óptimo (`altitude_opt_min_m`–`altitude_opt_max_m`) y 0 fuera del absoluto. No entra al semáforo ni al orden de las ventanas
+  - [ ] La aptitud se decide solo por la altitud: solo fuera del rango absoluto es `not_suitable`; una nota baja dentro del rango sigue siendo `suitable`
   - [ ] El calendario (HU-179), las rotaciones (HU-081) y las alternativas (HU-197) usan esta misma función
   - [ ] Caso de referencia: un cultivo de clima frío en un municipio a nivel del mar da `not_suitable` sin ventanas
 - **Reglas que aplican:** R1, R3, R4, R5, R8
-- **Contrato que toca:** `suitability` en las respuestas de `/diagnostics` y `/calendar`; `crops.altitude_min_m`, `crops.altitude_max_m`, `municipalities.altitude_m`
-- **Notas:** Depende de HU-044 (altitud del municipio) y HU-061 (rango de altitud con fuente). Agregada el 11 de octubre de 2026.
+- **Contrato que toca:** `suitability` (con `score`) en las respuestas de `/diagnostics` y `/calendar`; `crops.altitude_min_m`, `crops.altitude_max_m`, `crops.altitude_opt_min_m`, `crops.altitude_opt_max_m`, `municipalities.altitude_m`
+- **Notas:** Depende de HU-044 (altitud del municipio), HU-061 (rango de altitud con fuente) y HU-199 (rango óptimo de altitud, para la nota). Agregada el 11 de octubre de 2026.
 
 ### HU-192 · Orden de las ventanas por factor limitante y prioridades
 
@@ -195,7 +199,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Caso de referencia: una ventana con una señal en 15 y el promedio más alto queda detrás de una con todas sus señales en 60 o más
 - **Reglas que aplican:** R1, R2, R4, R5, R6
 - **Contrato que toca:** `windows` y `best_windows` de `/calendar`; `best_windows` y `limiting_signal` de `/diagnostics`
-- **Notas:** Método de la FAO para aptitud de cultivos (decisión 10). El orden sirve para comparar ventanas; no decide el semáforo (R2). Es historia de la zona, no un pronóstico. Depende de las señales (HU-071, HU-077, HU-190, HU-183, HU-072, HU-073), de HU-191 y de HU-196. **Hueco del contrato:** las ventanas de `/calendar` no tienen un campo para el factor limitante ni dicen qué pesos se usaron. Supuestos por confirmar: cómo se agrupan las ventanas «parecidas», porque comparar de a pares «dentro de 10 puntos» no es transitivo (propuesta: ordenar por el factor limitante redondeado hacia abajo a la decena y, dentro de la misma decena, por `balance`); qué vale `balance` si ninguna señal califica. Agregada el 11 de octubre de 2026 y cambiada el mismo día al método de factor limitante.
+- **Notas:** Método de la FAO para aptitud de cultivos (decisión 10). El orden sirve para comparar ventanas; no decide el semáforo (R2). Es historia de la zona, no un pronóstico. Depende de las señales (HU-071, HU-077, HU-190, HU-183, HU-072, HU-073), de HU-191 y de HU-196. Las ventanas de `/calendar` ya traen el factor limitante (`limiting_signal`, `limiting_score`) y `weighted_score`, y la respuesta dice los pesos (`weights`, `weights_basis`) (`specs/02-contratos.md`). Ventanas «parecidas» son las que tienen el factor limitante en la misma decena; dentro de la decena ordena `weighted_score` (`specs/01-reglas.md`, «Orden de las ventanas»). Supuesto por confirmar: qué vale `weighted_score` si ninguna señal califica. Agregada el 11 de octubre de 2026 y cambiada el mismo día al método de factor limitante.
 
 ### HU-075 · Umbrales y pesos versionados
 
@@ -216,12 +220,12 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] `POST /api/v1/diagnostics` recibe `municipality_id`, `crop_id`, `sowing_date`, `irrigated`, `priorities` y `lot_id`, según el contrato
-  - [ ] 422 para entradas fuera del catálogo, un cultivo con `kind` distinto de `crop`, un `sowing_date` con formato inválido, o `priorities` con un peso fuera de 0 a 5 o todos en 0
+  - [ ] 422 para entradas fuera del catálogo, un cultivo con `kind` distinto de `crop`, un `sowing_date` con formato inválido, anterior a hoy o a más de doce meses, o `priorities` con un peso fuera de 0 a 5 o todos en 0
   - [ ] Sin `priorities`, usa los pesos por defecto y `overall` coincide con `overall_default`
   - [ ] 200 con `insufficient_data` para entradas válidas sin datos
   - [ ] 200 con `suitability.level = not_suitable`, luz `red` y acción `rotate` para un cultivo que no es apto; no es un error
   - [ ] Con `lot_id`, el suelo y `irrigated` se toman del lote; 401 con `lot_id` y sin sesión; 404 con un lote ajeno
-  - [ ] No guarda nada, tampoco las prioridades (R9)
+  - [ ] No guarda los datos de la finca ni quién consultó, tampoco las prioridades (R9)
 - **Reglas que aplican:** R1, R3, R4, R9
 - **Contrato que toca:** `POST /api/v1/diagnostics` y la tabla de errores
 
@@ -241,10 +245,11 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Señales `excess_rain`, `disease` y `harvest_weather` con la misma forma que las del P0 (con `score` de HU-196 y `counts`), desde `heavy_rain_days_mean`, `blight_days_mean` y `dry_window_freq_pct` (HU-046)
-  - [ ] `excess_rain` puede ser crítica; `disease` y `harvest_weather` no
+  - [ ] `excess_rain` puede ser crítica y, crítica, cuenta siempre como riesgo grave de clima, también con peso 0; `disease` y `harvest_weather` no
+  - [ ] Cuando existan, las tres tienen peso de 0 a 5, como las del P0
   - [ ] `disease` solo existe para un cultivo con una regla publicada y con fuente (por ejemplo, la gota de la papa); no cubre plagas en general
   - [ ] Una señal que todavía no existe no aparece en la respuesta: no se devuelve vacía ni inventada (R5)
   - [ ] Sin datos nunca cambian la luz (regla 5 del semáforo)
 - **Reglas que aplican:** R1, R2, R5, R8
 - **Contrato que toca:** `signals` de la respuesta de diagnóstico y de las ventanas de `/calendar`
-- **Notas:** Depende de HU-046. Umbrales por confirmar con fuente. Supuestos por confirmar: si estas señales entran a `priorities` y a `weights.yaml` (el contrato solo lista las seis del P0), y si `excess_rain` crítico cuenta como riesgo grave de clima con peso 0 (la regla solo nombra `water`, `frost` y `heat`). Agregada el 11 de octubre de 2026.
+- **Notas:** Depende de HU-046. Umbrales por confirmar con fuente. Las señales del P1 también tienen peso y `excess_rain` crítico cuenta como riesgo grave de clima (`specs/01-reglas.md`, «Agregación del semáforo»); `priorities` y `weights.yaml` suman sus pesos cuando existan. Agregada el 11 de octubre de 2026.

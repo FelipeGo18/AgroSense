@@ -4,6 +4,8 @@ EP-09 (HU-091, HU-092, HU-202, HU-203) sobre `specs/01-reglas.md`: aptitud del c
 de 0 a 100, las prioridades del agricultor (seis pesos de 0 a 5) y, cuando sus prioridades dan otra luz que las de
 AgroSense, las dos luces. Con «Mejor otro cultivo en esta fecha», los cultivos alternativos. Todo es informativo:
 la decisión es del agricultor. Los datos salen de muestra.py; son de muestra.
+La consulta es sin cuenta: la barra superior es la del invitado, el riego se pregunta a mano y el suelo es el del
+municipio. Con cuenta y lote, el mismo resultado se abre desde «Próxima siembra» (proxima.py).
 
     python design/pantallas/diagnostico.py     # escribe svg/consulta-01-elegir-*, consulta-02-resultado-*, consulta-05-prioridades-*
 """
@@ -20,9 +22,9 @@ from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, butto
                 paragraph, poly, scene, text, topbar, width_of)
 
 CROPS = ("Papa", "Arveja", "Haba", "Maíz", "Zanahoria", "Cebolla")
-MONTHS = (("Oct", "2026"), ("Nov", ""), ("Dic", ""), ("Ene", "2027"), ("Feb", ""), ("Mar", ""), ("Abr", ""), ("May", ""), ("Jun", ""),
-          ("Jul", ""), ("Ago", ""), ("Sep", ""))
-CHOSEN_MONTH = 10  # agosto de 2027
+# Los doce meses que se pueden elegir empiezan en el mes siguiente a hoy (muestra.WINDOW_MONTHS): nunca uno que ya pasó.
+MONTHS = tuple((mon, str(yr) if i == 0 or mon == "Ene" else "") for i, (mon, yr) in enumerate(m.WINDOW_MONTHS))
+CHOSEN_MONTH = m.WINDOW_MONTHS.index(("Ago", 2027))
 
 
 def wrap(t, n):
@@ -63,7 +65,7 @@ def choose(mobile=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
     h = 1560 if mobile else 1300
     b = scene("a5-municipio", w, h, "recorte-elegir" + ("-m" if mobile else ""), 0.1)
-    b += topbar(w, "Consultar", None if mobile else m.NAME)
+    b += topbar(w, "Consultar")
     x, y, cw, pad = (12, 92, 366, 20) if mobile else (96, 120, 700, 36)
     fw = cw - 2 * pad
     c = [text(pad, 50, "CONSULTA", 15, 700, SEC), text(pad, 92, "¿Qué quiere sembrar?", 28 if mobile else 38, 600, font=FONT_TITLE)]
@@ -76,7 +78,7 @@ def choose(mobile=False):
     for i, crop in enumerate(CROPS):
         c += chip(pad + (i % cols) * (chw + 10), 210 + (i // cols) * (chh + 10), chw, chh, crop, crop == "Papa")
     yy = 210 + ((len(CROPS) + cols - 1) // cols) * (chh + 10) + 6
-    c += link(pad, yy + 16, "Ver todos los cultivos", 15)
+    c += link(pad, yy + 16, "Ver todos los cultivos", 15)  # abre el selector de cultivo con el catálogo completo (GET /crops)
     # cuándo sembrar
     yy += 56
     c += [text(pad, yy, "¿Cuándo quiere sembrar?", 18, 700), text(pad, yy + 22, "Un mes de los próximos doce y, si quiere, la semana.", 14, fill=SEC)]
@@ -113,7 +115,7 @@ def choose(mobile=False):
 # Texto de cada caso: razones de la acción, botones y limitaciones. Los datos salen de muestra.CASES.
 TEXTS = {
     "amarillo": dict(
-        reasons=["En 2025 B, el último dato, se sembró 35 % más papa que antes en Samacá: con mucha oferta, el precio suele bajar.",
+        reasons=["En 2025 B, el último dato, se sembró 35 % más papa que antes en Samacá.",  # sin precio: el mercado no tiene datos (R5)
                  "El clima de esta fecha le sirve a la papa: agua y calor bien, heladas moderadas."],
         buttons=("Ver otros cultivos", "Ver otras fechas"),
         limits=["Los datos de EVA de 2025 son preliminares.", "El suelo es el estimado para el municipio, no para su lote.",
@@ -161,7 +163,7 @@ def action_card(x, y, cw, pad, mobile, weights, farmer, case_key):
         yy += th + 22
         reasons = ["Con sus prioridades no hay nada en contra: lo que más limita son las heladas, moderadas.",
                    "Con el criterio de AgroSense, hay mucha papa sembrada en Samacá."]
-        primary, secondary = "Registrar esta siembra", "Ver otros cultivos"
+        primary, secondary = "Crear cuenta y registrarla", "Ver otros cultivos"
     else:
         c += sg.light_block(pad, yy, fw, res, "Criterio de AgroSense", True)
         yy += 128 if mobile else 102
@@ -201,11 +203,9 @@ def result(mobile=False, farmer=False, case_key="amarillo"):
     header_h = 560 if mobile else 440
     tagname = ("-m" if mobile else "") + ("-f" if farmer else "") + "-" + case_key
     b = scene("a5-municipio", w, header_h, f"recorte-resultado{tagname}", 0.12)
-    b += topbar(w, "Consultar", None if mobile else m.NAME)
+    b += topbar(w, "Consultar")
     x, y, cw, pad = (12, 92, 366, 20) if mobile else (96, 116, 900, 36)
-    c, ch, res = action_card(x, y, cw, pad, mobile, weights, farmer, case_key)
-    if res["light"] == "no-evaluable":  # sin luz no hay factor que limite
-        res = dict(res, limiting=None)
+    c, ch, res = action_card(x, y, cw, pad, mobile, weights, farmer, case_key)  # «no evaluable» llega sin factor limitante (muestra.light_for)
     b += card(x, y, cw, ch) + [group("accion", c, x, y)]
     if not mobile:
         mood = {"rojo": "preocupa", "no-evaluable": "sin-datos"}.get(res["light"], "guia")
@@ -237,7 +237,7 @@ def result(mobile=False, farmer=False, case_key="amarillo"):
         s += al
         ny += ah + 50
     elif res["action"] == "other_window":
-        bw, bh = sg.best_windows(pad2, ny + 24, iw, case["crop"], case.get("best_windows", ()), compact=mobile)
+        bw, bh = sg.best_windows(pad2, ny + 24, iw, case["crop"], case.get("best_windows", ()), compact=mobile, own=farmer)
         s += bw
         ny += bh + 50
     lb, lh = limits_box(pad2, ny, iw, TEXTS[case_key]["limits"], mobile)
@@ -259,7 +259,7 @@ def not_suitable(mobile=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
     header_h = 560 if mobile else 440
     b = scene("a6-vereda", w, header_h, "recorte-no-apto" + ("-m" if mobile else ""), 0.12)
-    b += topbar(w, "Consultar", None if mobile else m.NAME)
+    b += topbar(w, "Consultar")
     x, y, cw, pad = (12, 92, 366, 20) if mobile else (96, 116, 900, 36)
     fw = cw - 2 * pad
     c = [text(pad, 42, ns["kicker"], 14, 700, SEC)]
@@ -317,7 +317,7 @@ def priorities_sheet(mobile=False):
     weights = m.FARMER_WEIGHTS
     h = 1240 if mobile else 1000
     b = scene("a5-municipio", w, h, "recorte-prioridades" + ("-m" if mobile else ""), 0.12)
-    b += topbar(w, "Consultar", None if mobile else m.NAME)
+    b += topbar(w, "Consultar")
     b.append(f'<rect width="{w}" height="{h}" fill="{P["noche"]}" fill-opacity="0.55"/>')
     if mobile:
         sx, sy, sw, pad = 0, 150, w, 20

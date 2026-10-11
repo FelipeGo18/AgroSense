@@ -1,18 +1,20 @@
-"""Pantalla final «Lote · calendario» (D1b, tanda 7b, HU-180). Escritorio y móvil, con sus dos lecturas.
+"""Pantalla final «Lote · calendario», lectura «Mi cultivo» (D1b, tanda 7b, HU-180). Escritorio y móvil.
 
 «Mi cultivo»: para lo que ya está sembrado. Los meses de la siembra a la cosecha estimada con las decisiones del ciclo:
-la etapa del cultivo, las heladas con «Vigile» cuando la etapa es sensible, y el riego probable (plan de agua).
-En P1 se suman abonar, labores y cosecha, gota y vender; aquí van rotuladas «P1» para el equipo y en la app solo
-aparecen cuando su dato existe. Datos: POST /calendar con `sowing_date` y POST /water-plans.
+la etapa del cultivo, las heladas con «Vigile» cuando la etapa es sensible, el calor y el agua que faltaría (plan de
+agua). El texto del agua sale del riego del lote (`irrigated`), como en agua.py: sin riego, «la lluvia no alcanza» y
+el cultivo pasaría sed; con riego, «riego probable». En P1 se suman abonar, labores y cosecha, gota y vender; aquí van
+rotuladas «P1» para el equipo y en la app solo aparecen cuando su dato existe (sin precios de la zona, «Vender» dice
+«Sin datos de precios»). Datos: POST /calendar con `sowing_date` y POST /water-plans.
 
-«Planear una siembra»: para la parte libre, otro cultivo o sin cuenta. Doce meses con qué tan bueno es sembrar y el
-riesgo de helada (POST /calendar sin `sowing_date`).
+La otra lectura, «Planear una siembra» (las doce ventanas, sus semanas y la versión sin cuenta), está en ventanas.py,
+que reutiliza de aquí el interruptor de lectura, las fichas de cultivo y el rótulo.
 
-Cada nivel va con forma y texto, no solo color (R1). Es el histórico de la zona, no un pronóstico; lo de después de
-hoy y el riego son estimaciones y se dice (R10). Tocar un mes abre su detalle con las razones (R5).
-Los nombres y las cifras son de muestra.
+Cada nivel va con forma y texto, no solo color (R1), y describe el riesgo, no una orden. Es el histórico de la zona,
+no un pronóstico; lo de después de hoy y el agua son estimaciones y se dice (R10). Tocar un mes abre su detalle con
+las razones (R5). Los nombres y las cifras son de muestra.
 
-    python design/pantallas/calendario.py     # escribe svg/finca-03-calendario-*.svg y svg/consulta-04-*.svg
+    python design/pantallas/calendario.py     # escribe svg/finca-03-calendario-mi-cultivo-*.svg
 """
 
 import sys
@@ -23,35 +25,38 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ui  # noqa: E402,F401
 import muestra  # noqa: E402
 from build_kit_svg import STATUS, icon  # noqa: E402
-from finca import STAGE_TONES, drop, lot_header, lot_tabs  # noqa: E402
+from finca import ALTO, STAGE_TONES, drop, lot_header, lot_tabs  # noqa: E402
 from ui import (BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, card, chamfer, field, frame, group, link, paragraph, poly, text,  # noqa: E402
                 topbar, width_of)
 
 MONTHS = ("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
 LABEL = {"favorable": "Favorable", "moderado": "Moderado", "desfavorable": "Desfavorable"}
-SHORT = {"favorable": "Favorable", "moderado": "Moderado", "desfavorable": "Desfav."}
 FAV, MOD, UNF = "favorable", "moderado", "desfavorable"
 
-# ----- Planear una siembra: papa en Samacá (muestra), de /calendar sin sowing_date -----
-SOWING = muestra.SOWING
-BEST = muestra.BEST_SOWING  # best_sowing_months
-FROST = muestra.FROST  # frost_freq_pct
 HEAT_BY_MONTH = {7: 21.4, 8: 21.9, 9: 21.2, 10: 20.6, 11: 20.9}  # tmax_p90_c de agosto a diciembre (muestra.TMAX_P90)
 TODAY, SELECTED = 9, 11  # octubre es hoy; el mes abierto es diciembre
+# El texto del agua sale del riego del lote, como en agua.py: El Alto no tiene riego, así que no se habla de regar.
+IRRIGATED = bool(ALTO["irrigated"])
+WATER_ROW = "Riego probable" if IRRIGATED else "Agua que faltaría"
+WATER_CELL = "Probable" if IRRIGATED else "Pasaría sed"
+WATER_NOTE = "Riego probable" if IRRIGATED else "La lluvia no alcanza"
+NO_WATER_NEED = ("No", "Sin riego probable") if IRRIGATED else ("La lluvia alcanza", "La lluvia alcanza")
+# El diagnóstico dice que no hay precios para Samacá: la fila «Vender» (P1) no puede traer índices. Sin nivel y sin color (R1).
+NO_PRICE = (None, "Sin datos de precios")
 
 # ----- Mi cultivo: la papa de El Alto, sembrada el 2 de agosto (muestra), de /calendar con sowing_date -----
-# mes, etapa, tono, ¿estimada?, helada %, etapa sensible, riego probable, y en P1: abonar, labores, gota, vender
+# mes, etapa, tono, ¿estimada?, helada %, etapa sensible, ¿falta agua?, y en P1: abonar, labores, gota, vender
 CYCLE = (
     dict(m=7, stage="Siembra y emergencia", tone=1, est=False, frost=4, sens=True, water=False,
-         fert=(FAV, "Pocos aguaceros"), work=(FAV, "Suele haber días secos"), blight=(FAV, "Poco favorable"), sell=(FAV, "Suele estar 6 % arriba")),
+         fert=(FAV, "Pocos aguaceros"), work=(FAV, "Suele haber días secos"), blight=(FAV, "Poco favorable"), sell=NO_PRICE),
     dict(m=8, stage="Desarrollo", tone=2, est=False, frost=2, sens=True, water=False,
-         fert=(MOD, "Algunos aguaceros"), work=(MOD, "Pocos días secos"), blight=(MOD, "Algo favorable"), sell=(FAV, "Suele estar 2 % arriba")),
+         fert=(MOD, "Algunos aguaceros"), work=(MOD, "Pocos días secos"), blight=(MOD, "Algo favorable"), sell=NO_PRICE),
     dict(m=9, stage="Floración", tone=3, est=True, frost=1, sens=True, water=True,
-         fert=(FAV, "Pocos aguaceros"), work=(FAV, "Suele haber días secos"), blight=(FAV, "Poco favorable"), sell=(MOD, "Suele estar 3 % abajo")),
+         fert=(FAV, "Pocos aguaceros"), work=(FAV, "Suele haber días secos"), blight=(FAV, "Poco favorable"), sell=NO_PRICE),
     dict(m=10, stage="Llenado", tone=4, est=True, frost=2, sens=True, water=False,
-         fert=(UNF, "Aguaceros frecuentes"), work=(UNF, "Casi sin días secos"), blight=(UNF, "Muy favorable: vigile"), sell=(MOD, "Suele estar 7 % abajo")),
+         fert=(UNF, "Aguaceros frecuentes"), work=(UNF, "Casi sin días secos"), blight=(UNF, "Muy favorable: vigile"), sell=NO_PRICE),
     dict(m=11, stage="Llenado y cosecha", tone=5, est=True, frost=12, sens=True, water=True,
-         fert=(FAV, "Pocos aguaceros"), work=(FAV, "Días secos para cosechar"), blight=(MOD, "Algo favorable"), sell=(UNF, "Suele estar 9 % abajo")),
+         fert=(FAV, "Pocos aguaceros"), work=(FAV, "Días secos para cosechar"), blight=(MOD, "Algo favorable"), sell=NO_PRICE),
 )
 P1_ROWS = (("fert", "Abonar", "Aguaceros que lavan", "el abono; no la dosis"), ("work", "Labores y cosecha", "Días secos seguidos", "para trabajar"),
            ("blight", "Gota", "Clima que favorece", "la gota de la papa"), ("sell", "Vender", "Precio del mes frente", "al promedio del año"))
@@ -61,7 +66,10 @@ frost_level = muestra.frost_level
 
 
 def level_mark(x, y, level, size=22):
-    """El nivel como forma y color: octágono, triángulo o cuadrado."""
+    """El nivel como forma y color: octágono, triángulo o cuadrado. Sin datos (`None`): forma neutra con «?» (R1)."""
+    if level is None:
+        s = size + 10
+        return [poly(chamfer(x - s / 2, y - s / 2, s, s, 6), WHITE, D["cielo"], 1.5, "3 3"), text(x, y + size * 0.32, "?", max(11, size * 0.8), 700, D["cielo"], anchor="middle")]
     st = STATUS[level]
     return [poly(chamfer(x - size / 2 - 5, y - size / 2 - 5, size + 10, size + 10, 6), st["fill"], st["stroke"], 2)] + icon(st["icon"], x - size / 2, y - size / 2, st["ink"], size)
 
@@ -162,14 +170,15 @@ def cycle_grid(x, y, w):
         t = HEAT_BY_MONTH[c["m"]]
         out += level_mark(cx - 44, r["heat"] + 26, FAV, 18)
         out += [text(cx - 22, r["heat"] + 24, f"{t:.0f} °C", 16, 700), text(cx - 22, r["heat"] + 42, "Favorable", 13, fill=SEC)]
-    # riego probable
-    out += [text(20, r["water"] + 30, "Riego probable", 16, 700), text(20, r["water"] + 50, "Estimación del plan", 13, fill=SEC), text(20, r["water"] + 66, "de agua", 13, fill=SEC)]
+    # agua: los meses en que la lluvia no alcanza (sin riego) o el riego probable (con riego)
+    out += [text(20, r["water"] + 30, WATER_ROW, 16, 700), text(20, r["water"] + 50, "Estimación del plan", 13, fill=SEC), text(20, r["water"] + 66, "de agua", 13, fill=SEC)]
     for i, c in enumerate(CYCLE):
         cx = col(i) + cw / 2
         if c["water"]:
-            out += drop(cx - 40, r["water"] + 30, 1.5) + [text(cx - 20, r["water"] + 28, "Probable", 15, 700), text(cx - 20, r["water"] + 46, "estimación", 12, fill=SEC)]
+            out += drop(cx - 40, r["water"] + 30, 1.5) + [text(cx - 20, r["water"] + 28, WATER_CELL, 15, 700), text(cx - 20, r["water"] + 46, "estimación", 12, fill=SEC)]
         else:
-            out += [f'<circle cx="{cx - 40:.1f}" cy="{r["water"] + 32}" r="9" fill="none" stroke="{BORDE}" stroke-width="2.5"/>', text(cx - 20, r["water"] + 37, "No", 15, fill=SEC)]
+            out += [f'<circle cx="{cx - 40:.1f}" cy="{r["water"] + 32}" r="9" fill="none" stroke="{BORDE}" stroke-width="2.5"/>',
+                    text(cx - 20, r["water"] + 37, NO_WATER_NEED[0], 15 if IRRIGATED else 13, fill=SEC)]
     # filas de P1
     out += tag(94, r["p1"] - 2, "P1 · próximas filas", WHITE, D["cielo"], D["cielo"], 12)
     out.append(text(176, r["p1"] + 12, "Solo aparecen cuando su dato existe (HU-046 y señal de mercado)", 12, fill=SEC))
@@ -210,50 +219,43 @@ def wrap_lines(lines, n):
     return out
 
 
-def month_detail(x, y, w, mode="mine", foot=True):
-    """Detalle del mes elegido, con las razones que evaluó el motor (R5)."""
+def month_detail(x, y, w):
+    """Detalle del mes elegido en «Mi cultivo», con las razones que evaluó el motor (R5)."""
     n = int((w - 90) / 7.4)
-    if mode == "mine":
-        blocks = (("Etapa de la papa", None, ["Llenado del tubérculo y cosecha; se estima para el 28 de diciembre."], None, "Estimada con un año normal"),
-                  ("Heladas", MOD, ["Heló en 12 de cada 100 diciembres del histórico (mínima menor que 2 °C).", "El follaje de la papa todavía es sensible en el llenado."], None, "Moderado · vigile"),
-                  ("Calor", FAV, [f"La máxima de 1 de cada 10 días en diciembre es 21 °C; la papa aguanta hasta {muestra.HEAT_MAX_PAPA} °C."], None, "Favorable"),
-                  ("Riego de la papa", None, ["Déficit estimado de 18 a 30 mm en el mes, con el clima de la zona.", "Verifique la humedad del suelo en campo antes de regar."], "riego", "Probable · estimación"))
+    deficit = "Déficit estimado de 18 a 30 mm en el mes, con el clima de la zona."  # el mismo rango de agua.py para la papa en diciembre
+    if IRRIGATED:
+        water = ("Riego de la papa", None, [deficit, "Verifique la humedad del suelo en campo antes de regar."], "riego", "Probable · estimación")
     else:
-        blocks = (("Sembrar papa", UNF, ["La lluvia normal de diciembre a febrero no cubre la emergencia y el desarrollo.", "La floración caería en enero, el mes con más heladas."], None, None),
-                  ("Heladas", MOD, ["Heló en 12 de cada 100 diciembres del histórico (mínima menor que 2 °C).", "Si siembra en diciembre, la floración de la papa caería en enero y febrero."], None, None))
+        water = ("Agua de la papa", None, [deficit, "En este mes la lluvia no alcanza: el cultivo pasaría sed. Verifique la humedad del suelo en campo."], "riego",
+                 f"{WATER_NOTE} · estimación")
+    blocks = (("Etapa de la papa", None, ["Llenado del tubérculo y cosecha; se estima para el 28 de diciembre."], None, "Estimada con un año normal"),
+              ("Heladas", MOD, ["Heló en 12 de cada 100 diciembres del histórico (mínima menor que 2 °C).", "El follaje de la papa todavía es sensible en el llenado."], None, "Moderado · vigile"),
+              ("Calor", FAV, [f"La máxima de 1 de cada 10 días en diciembre es 21 °C; la papa aguanta hasta {muestra.HEAT_MAX_PAPA} °C."], None, "Favorable"),
+              water)
     body = [text(24, 40, "MES ELEGIDO", 14, 700, SEC), text(24, 76, "Diciembre", 28, 600, font=FONT_TITLE)]
     yy = 104
     for title, level, lines, glyph, lt in blocks:
         rr, rh = reason(24, yy, title, level, wrap_lines(lines, n), glyph, lt)
         body += rr
         yy += rh + 8
-    if mode == "mine":
-        body += link(24, yy + 12, "Ver el plan de agua", 15)
-    elif mode == "guest":
-        body += paragraph(24, yy + 10, wrap_lines(["Con una cuenta y su lote, aquí también sigue el cultivo que ya sembró: su etapa, las heladas a vigilar y el riego probable."], n + 6), 14, 20, fill=SEC)
-        yy += 44 if w > 500 else 64
-        body += link(24, yy + 12, "Crear cuenta y guardar mi lote", 15)
-    else:
-        body += link(24, yy + 12, "Ver qué sembrar después en este lote", 15)
+    body += link(24, yy + 12, "Ver el plan de agua", 15)
     h = yy + 40
     return card(x, y, w, h, "tarjeta-mes") + [group("detalle-del-mes", body, x, y)], h
 
 
-def legend(x, y, w, h=None, mode="mine"):
+def legend(x, y, w, h=None):
+    """Cómo leer «Mi cultivo»: cada nivel describe el riesgo del mes, no dice qué hacer."""
     body = [text(24, 40, "CÓMO LEERLO", 14, 700, SEC)]
     yy = 66
-    for lv, label in ((FAV, "Favorable: conviene"), (MOD, "Moderado: con cuidado"), (UNF, "Desfavorable: mejor no")):
+    for lv, label in ((FAV, "Favorable: riesgo bajo"), (MOD, "Moderado: vigile"), (UNF, "Desfavorable: riesgo alto")):
         body += level_mark(40, yy + 10, lv, 16) + [text(68, yy + 16, label, 15)]
         yy += 38
-    if mode == "mine":
-        body += drop(40, yy + 10, 1.2) + [text(68, yy + 16, "Riego probable: estimación, no medición", 15)]
-        yy += 38
-    yy += 10
+    body += drop(40, yy + 10, 1.2) + [text(68, yy + 16, ("Riego probable" if IRRIGATED else "Falta de agua") + ": estimación, no medición", 15)]
+    yy += 48
     n = int((w - 48) / 7.0)
     notes = wrap_lines(["Es el histórico de Samacá, no un pronóstico: dice qué ha pasado en cada mes, no qué va a pasar este año."], n) + [""] + \
         wrap_lines(["Helada: mínima menor que 2 °C, con la temperatura corregida por la altitud del municipio."], n)
-    if mode == "mine":
-        notes += [""] + wrap_lines(["Las etapas después de hoy se estiman con un año normal."], n)
+    notes += [""] + wrap_lines(["Las etapas después de hoy se estiman con un año normal."], n)
     body += paragraph(24, yy, notes, 14, 21, fill=SEC)
     yy += len(notes) * 21 + 10
     body += link(24, yy, "¿De dónde salen estos datos?", 15)
@@ -276,13 +278,13 @@ def mine_desktop():
     chips, cx = crop_chips(500, 282, (("Papa", True), ("Haba", False), ("Cebolla", False)))
     b += chips
     b += banner(48, 344, w - 96, "Papa en El Alto · 1,26 ha · sembrada el 2 de agosto", "Va en floración; cosecha estimada el 28 de diciembre",
-                "Este mes: riego probable · En diciembre: vigile las heladas")
+                f"Este mes: {WATER_NOTE.lower()} (estimación) · En diciembre: vigile las heladas")
     g, gh = cycle_grid(48, 432, w - 96)
     b += g
     y = 432 + gh + 32
     lw = 820
-    d, dh = month_detail(48, y, lw, "mine")
-    lg, lh = legend(48 + lw + 24, y, w - 96 - lw - 24, dh, "mine")
+    d, dh = month_detail(48, y, lw)
+    lg, lh = legend(48 + lw + 24, y, w - 96 - lw - 24, dh)
     b += d + lg
     return ui.long_page((w, y + max(dh, lh) + 60), b, P["niebla"])
 
@@ -290,22 +292,20 @@ def mine_desktop():
 # «Planear una siembra» vive en ventanas.py (orden de ventanas, semanas y sin cuenta).
 
 
-
-
 # ---------- Móvil ----------
 
-def mobile_top(w, pad, mine, cid):
+def mobile_top(w, pad, cid):
     b = topbar(w) + lot_header(pad, 118, mobile=True)
     tabs = lot_tabs(-98, 0, "Calendario")  # la pestaña activa queda a la vista al deslizar la fila
     b.append(f'<defs><clipPath id="{cid}"><rect x="0" y="200" width="{w}" height="60"/></clipPath></defs>'
              f'<g clip-path="url(#{cid})"><g transform="translate({pad} 210)">{"".join(tabs)}</g></g>')
-    b += mode_toggle(pad, 276, mine, w - 2 * pad)
-    b += field(pad, 350, w - 2 * pad, "Cultivo", "Papa · en el lote" if mine else "Papa · parte libre", trailing="▾", name="elegir-cultivo")
+    b += mode_toggle(pad, 276, True, w - 2 * pad)
+    b += field(pad, 350, w - 2 * pad, "Cultivo", "Papa · en el lote", trailing="▾", name="elegir-cultivo")
     return b
 
 
 def cycle_month_card(x, y, w, c):
-    """Un mes del ciclo en móvil: etapa, heladas, calor y riego; en P1, las otras cuatro decisiones."""
+    """Un mes del ciclo en móvil: etapa, heladas, calor y agua; en P1, las otras cuatro decisiones."""
     on, today = c["m"] == SELECTED, c["m"] == TODAY
     lv = frost_level(c["frost"])
     watch = c["sens"] and lv != FAV
@@ -324,22 +324,22 @@ def cycle_month_card(x, y, w, c):
         out.append(text(54, 102, "Etapa sensible, riesgo bajo", 12, fill=SEC))
     out += level_mark(30, 124, FAV, 16) + [text(54, 129, f"Calor: máx. {HEAT_BY_MONTH[c['m']]:.0f} °C · aguanta {muestra.HEAT_MAX_PAPA} °C", 14, 700)]
     if c["water"]:
-        out += drop(30, 156, 1.3) + [text(54, 161, "Riego probable · estimación", 14, 700)]
+        out += drop(30, 156, 1.3) + [text(54, 161, f"{WATER_NOTE} · estimación", 14, 700)]
     else:
-        out += [f'<circle cx="30" cy="156" r="8" fill="none" stroke="{BORDE}" stroke-width="2.5"/>', text(54, 161, "Sin riego probable", 14, fill=SEC)]
+        out += [f'<circle cx="30" cy="156" r="8" fill="none" stroke="{BORDE}" stroke-width="2.5"/>', text(54, 161, NO_WATER_NEED[1], 14, fill=SEC)]
     out.append(f'<rect x="16" y="180" width="{w - 32}" height="1" fill="{BORDE}"/>')
     out += tag(32, 188, "P1", WHITE, D["cielo"], D["cielo"])
     half = (w - 32) / 2
     for k, (key, title, *_rest) in enumerate(P1_ROWS):
         px, py = 16 + (k % 2) * half, 216 + (k // 2) * 24
-        out += level_mark(px + 8, py + 6, c[key][0], 10) + [text(px + 24, py + 10, title, 12, 700 if c[key][0] == UNF else 400)]
+        out += level_mark(px + 8, py + 6, c[key][0], 10) + [text(px + 24, py + 10, title + (" · sin datos" if c[key][0] is None else ""), 12, 700 if c[key][0] == UNF else 400)]
     return [group(f"mes-{MONTHS[c['m']].lower()}", out, x, y)], h
 
 
 def mine_mobile():
     w = MOBILE[0]
     pad, fw = 16, w - 32
-    b = mobile_top(w, pad, True, "recorte-pestanas-cal-1")
+    b = mobile_top(w, pad, "recorte-pestanas-cal-1")
     b += banner(pad, 444, fw, "Papa en El Alto · 1,26 ha", "En floración · cosecha: 28 dic", lines="Sembrada el 2 de agosto")
     y = 548
     for c in CYCLE:
@@ -348,14 +348,12 @@ def mine_mobile():
         y += rh + 10
     b += link(pad, y + 18, "Después de la cosecha: próxima siembra", 15)
     y += 50
-    d, dh = month_detail(pad, y, fw, "mine")
+    d, dh = month_detail(pad, y, fw)
     b += d
     y += dh + 24
-    lg, lh = legend(pad, y, fw, mode="mine")
+    lg, lh = legend(pad, y, fw)
     b += lg
     return ui.long_page((w, y + lh + 50), b, P["niebla"])
-
-
 
 
 SCREENS = {

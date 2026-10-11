@@ -118,6 +118,11 @@ def link(x, y, label, size=18, anchor="start", bold=True):
             f'<rect x="{x0:g}" y="{y + 4:g}" width="{w:g}" height="2" fill="{D["oliva"]}"/>']
 
 
+def p1_tag(x, y):
+    """Rótulo «P1» para el equipo: lo que no entra en el P0. En la app no se dibuja."""
+    return [poly(chamfer(x, y, 44, 24, 6), WHITE, D["cielo"], 1.5), text(x + 22, y + 17, "P1", 13, 700, D["cielo"], anchor="middle")]
+
+
 def logo(x, y, ink=None):
     """Marca: la semilla y el nombre."""
     ink = ink or P["noche"]
@@ -224,6 +229,7 @@ def footer(w, y0, mobile=False, above=None):
     # marca y frase
     out += logo(pad, y - 34, EARTH_INK)
     out += paragraph(pad, y + 30, ["Datos de la NASA y reglas que se", "pueden leer, para sembrar mejor."], 16, 24, fill=EARTH_SOFT)
+    # «Reportar un problema» es P1 (HU-170): el enlace se queda en el pie y lleva a transversal-05.
     cols = (("Explorar", ("Consultar", "Mi finca", "Cómo funciona")),
             ("Datos y cuenta", ("Fuentes y versión de los datos", "Política de tratamiento de datos", "Reportar un problema")))
     if mobile:
@@ -250,7 +256,7 @@ def footer(w, y0, mobile=False, above=None):
         out += _footer_link(sx, y + 92, SITE + " ↗")
         cy = hills + body_h - 74
     # línea final: derechos reservados
-    line_y = cy if mobile else cy
+    line_y = cy
     out.append(f'<rect x="{pad}" y="{line_y}" width="{w - 2 * pad}" height="1" fill="{EARTH_SOFT}" fill-opacity="0.35"/>')
     if mobile:
         out += _footer_link(pad, line_y + 36, SITE + " ↗")

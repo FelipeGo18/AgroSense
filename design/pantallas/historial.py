@@ -8,7 +8,10 @@ rotaciones que cumplen e hitos, cada uno con lo que lo produce. Datos: GET /lots
 
 Registrar: primero la cosecha (PATCH /seasons/{id} con `harvest_date`) y luego la siembra (POST /lots/{id}/seasons
 con cultivo, fecha, área, «¿qué había antes en este terreno?», con una o varias, y el diagnóstico que se vio). La suma de áreas no puede
-pasar del área del lote. Los nombres y las cifras son de muestra.
+pasar del área del lote. «Editar» en una siembra pasada abre este mismo formulario de la siembra en modo edición, con
+«Borrar esta siembra» (PATCH y DELETE /seasons/{id}; pendiente de diseño: mapa.py, parte J).
+Las pantallas de registrar son un ejemplo que ocurre después del «hoy» de la muestra (11 de octubre de 2026): la
+cosecha es del 22 de diciembre de 2026, y se rotula. Los nombres y las cifras son de muestra.
 
     python design/pantallas/historial.py     # escribe svg/finca-06-historial-*.svg y svg/finca-07-registrar-*.svg
 """
@@ -49,11 +52,12 @@ SEASONS = (
          follows=(("D", BAD, "Repite la familia (leguminosas)"),)),
     dict(id="I", crop="papa_criolla", stage=4, area=0.41, dates="feb – jun 2026", light="verde", col=2, slot=2,
          follows=(("E", OK, "No repite la familia"),)),
-    dict(id="J", crop="papa", stage=3, area=1.26, dates="desde el 2 ago 2026", light=muestra.LIGHT_AT_SOWING[("papa", "2026 B")], col=3, slot=0, current=True,
+    dict(id="J", crop="papa", stage=3, area=1.26, dates="desde el 2 ago 2026", light=muestra.LIGHT_AT_SOWING[("papa", "2026-08-02")],
+         light_farmer=muestra.LIGHT_AT_SOWING_FARMER[("papa", "2026-08-02")], col=3, slot=0, current=True,
          follows=(("G", OK, "No repite la familia"),)),
     dict(id="L", crop="cebolla", stage=2, area=0.42, dates="desde el 16 ago 2026", light="amarillo", col=3, slot=1, current=True,
          follows=(("H", OK, "No repite la familia"),)),
-    dict(id="K", crop="haba", stage=2, area=0.42, dates="desde el 1 sep 2026", light=muestra.LIGHT_AT_SOWING[("haba", "2026 B")], col=3, slot=3, current=True,
+    dict(id="K", crop="haba", stage=2, area=0.42, dates="desde el 1 sep 2026", light=muestra.LIGHT_AT_SOWING[("haba", "2026-09-01")], col=3, slot=3, current=True,
          follows=(("F", OK, "Abono verde antes de sembrar"),)),
 )
 BY_ID = {s["id"]: s for s in SEASONS}
@@ -61,6 +65,7 @@ FREE = dict(area=0.41, since="15 jun 2026", after="I", col=3, slot=2)  # lo que 
 COLUMNS = ("Sembradas feb – mar 2025", "Sembradas ago – sep 2025", "Sembradas ene – feb 2026", "Ahora · sembradas ago – sep 2026")
 LIGHT = {"verde": ("favorable", "Vio luz verde"), "amarillo": ("moderado", "Vio luz amarilla"), "rojo": ("desfavorable", "Vio luz roja"),
          "no-evaluable": (None, "No se pudo evaluar")}  # sin datos no es riesgo: forma neutra (R1)
+LIGHT_WORD = {"verde": "verde", "amarillo": "amarilla", "rojo": "roja"}  # para la segunda luz guardada (HU-203)
 MILESTONES = (("Primera rotación con leguminosa", "ago 2025", "Regla: bonificar leguminosas · papa y maíz → arveja"),
               ("Primer abono verde", "sep 2025", "Hecho registrado: avena con vicia después de la cebolla"),
               ("Tres siembras seguidas sin repetir familia", "ago 2026", "Regla: no repetir la familia · papa → arveja → maíz → papa"))
@@ -108,7 +113,9 @@ def season_card(x, y, w, s, mobile=False):
     cur = s.get("current", False)
     rows = [(state, wrap_lines([f"De {short(BY_ID[pid]['crop'])}: {rule[0].lower() + rule[1:]}"], 34 if not mobile else 44)) for pid, state, rule in s["follows"]]
     n = max(1, sum(len(r) for _, r in rows))
-    h = CARD_H if not mobile else 104 + 22 * n + 30
+    own = s.get("light_farmer")
+    dual = bool(own) and own != s["light"]  # guardó dos luces distintas: la de AgroSense y la de sus prioridades
+    h = CARD_H if not mobile else 104 + 22 * n + 30 + (18 if dual else 0)
     body = [poly(chamfer(0, 0, w, h, 12), "#FFF6EA" if cur else WHITE, P["calabaza"] if cur else BORDE, 2.5 if cur else 1.5)]
     size = 54 if not mobile else 64
     body += mini(s["crop"], s["stage"], 12, 12, size)
@@ -127,14 +134,20 @@ def season_card(x, y, w, s, mobile=False):
     ly = max(ly, 142) if not mobile else ly + 6
     if s["light"]:
         lv, label = LIGHT[s["light"]]
+        y1 = ly - 16 if dual and not mobile else ly  # con dos luces, dos líneas
         if lv:
-            body += level_mark(24, ly - 4, lv, 9)
+            body += level_mark(24, y1 - 4, lv, 9)
         else:
-            body += [poly(chamfer(14, ly - 14, 20, 20, 4), WHITE, D["cielo"], 1.5, "3 3"), text(24, ly + 1, "?", 13, 700, D["cielo"], anchor="middle")]
-        body.append(text(42, ly, label + " al sembrar", 12))
+            body += [poly(chamfer(14, y1 - 14, 20, 20, 4), WHITE, D["cielo"], 1.5, "3 3"), text(24, y1 + 1, "?", 13, 700, D["cielo"], anchor="middle")]
+        if dual:
+            body += [text(42, y1, f"{label} (AgroSense) y", 12),
+                     text(42, y1 + (18 if mobile else 16), f"{LIGHT_WORD[own]} (sus prioridades) al sembrar", 12)]
+        else:
+            body.append(text(42, ly, label + " al sembrar", 12))
     else:
         body.append(text(16, ly, "Sin diagnóstico al sembrar", 12, fill=SEC))
-    # Acción: cosechar lo que está en curso; corregir o borrar lo pasado.
+    # Acción: cosechar lo que está en curso; corregir o borrar lo pasado. «Editar» abre el formulario de la siembra en
+    # modo edición, con «Borrar esta siembra» (PATCH y DELETE /seasons/{id}).
     body += link(w - 14, 34 if mobile else h - 12, "Registrar cosecha" if cur else "Editar", 13, anchor="end")
     return [group(f"siembra-{s['id'].lower()}-{s['crop']}", body, x, y)], h
 
@@ -369,17 +382,22 @@ def diagnosis_box(x, y, w, seen=True):
     return [group("diagnostico-visto", body, x, y)], 28 + len(lines) * 20
 
 
-def form_page(w, mobile=False):
+def form_page(w, mobile=False, example=None):
+    """Marco de los formularios. `example`: rótulo visible de cuándo ocurre el ejemplo, si es después del «hoy» de la muestra."""
     b = [f'<rect width="{w}" height="2400" fill="{P["niebla"]}"/>']
     b += topbar(w, active="Mi finca", user=None if mobile else "Rosa") if not mobile else topbar(w)
     pad = 16 if mobile else 48
     b += link(pad, 118 if mobile else 140, "‹ El Alto", 16)
+    if example:
+        ew = width_of(example, 12, True) + 14
+        b += tag(w - pad - ew / 2, 104 if mobile else 126, example, P["calabaza"], P["noche"], D["calabaza"], 12)
     return b, pad
 
 
 def cosecha(mobile=False):
     w = MOBILE[0] if mobile else 1440
-    b, pad = form_page(w, mobile)
+    b, pad = form_page(w, mobile, "Ejemplo: cosecha del 22 dic 2026" if mobile else
+                       "Ejemplo: cosecha del 22 de diciembre de 2026, después del «hoy» de la muestra (11 de octubre)")
     fx, fy, fw = (pad, 150, w - 2 * pad) if mobile else (48, 172, 640)
     ip = 20 if mobile else 36
     c = step_bar(ip, 28, fw - 2 * ip, 1)
@@ -424,7 +442,8 @@ def before_list(x, y, w, mobile=False):
 
 def siembra(mobile=False, error=False):
     w = MOBILE[0] if mobile else 1440
-    b, pad = form_page(w, mobile)
+    b, pad = form_page(w, mobile, "Ejemplo: tras la cosecha del 22 dic 2026" if mobile else
+                       "Ejemplo: ocurre tras la cosecha del 22 de diciembre de 2026, después del «hoy» de la muestra (11 de octubre)")
     fx, fy, fw = (pad, 150, w - 2 * pad) if mobile else (48, 172, 640)
     ip = 20 if mobile else 36
     iw = fw - 2 * ip

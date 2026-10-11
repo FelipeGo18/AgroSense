@@ -37,7 +37,7 @@ Al terminar esta fase el diagnóstico debe funcionar de punta a punta, aunque se
 | 4 | Cambio de datos de ejemplo a reales | Paso de integración; si el contrato se respetó, encaja. |
 | 5 | EP-08 Rotaciones, con el suelo (HU-184) | Necesita el catálogo (EP-06), el motor (EP-07, con la aptitud de HU-191) y el suelo publicado (HU-181). |
 | 6 | EP-10 Web rotaciones | Puede empezar con respuestas simuladas en cuanto exista el contrato. |
-| 7 | EP-16 Cuentas, lotes y progreso | Lotes, temporadas con partes que se dividen y se juntan, historial con lo borrado y «Restaurar» (HU-204), registro y Mi finca (HU-164 a HU-169); después, el suelo del lote (HU-182) y su vista (HU-185). HU-165 espera la corrección del contrato sobre áreas al juntar partes. |
+| 7 | EP-16 Cuentas, lotes y progreso | Lotes, temporadas con partes que se dividen y se juntan, historial con lo borrado y «Restaurar» (HU-204), registro y Mi finca (HU-164 a HU-169); después, el suelo del lote (HU-182) y su vista (HU-185). La regla de áreas al dividir y juntar partes ya está en el contrato (HU-165). |
 | 8 | EP-12 Calidad y trazabilidad | Transversal: empieza pequeño en la etapa 1 y se cierra aquí. |
 
 ## Etapa 3: cierre
@@ -51,12 +51,12 @@ Al terminar esta fase el diagnóstico debe funcionar de punta a punta, aunque se
 ## Fuera del camino crítico (P1)
 
 - **EP-05 Mercado SIPSA** y **EP-11 Escenarios**, solo si sobra tiempo.
-- Las fuentes de contraste de la oferta (HU-201) y las siembras registradas en AgroSense (HU-200). HU-201 espera un lugar en el contrato para los valores de contraste; HU-200 espera las cuentas (EP-16), la decisión sobre cómo versionar el corte y el texto del consentimiento.
+- Las fuentes de contraste de la oferta (HU-201) y las siembras registradas en AgroSense (HU-200). HU-201 espera un lugar en el contrato para los valores de contraste que no son municipales, como los de FAOSTAT; HU-200 espera las cuentas (EP-16): el corte diario versionado y el consentimiento versión 3 ya están decididos (`specs/01-reglas.md`).
 - Las tres señales del P1 (`excess_rain`, `disease` y `harvest_weather`, HU-195) con sus datos (HU-046), solo si sobra tiempo. Mientras no existan, no aparecen en la respuesta.
 - EP-05 tiene un riesgo extra: no está verificado que SIPSA cubra lo necesario. El diagnóstico debe funcionar sin ella, con la señal de mercado como «datos insuficientes».
 
 ## Reglas para no atascarse
 
-1. El camino crítico es EP-00 → EP-01 → datos reales → balance hídrico y etapas → diagnóstico integrado → demo. Todo lo demás se recorta antes. La calificación con curvas (HU-196) necesita los rangos de las fichas (HU-199), que a su vez esperan columnas nuevas en `crops`: es un cambio de contrato que hay que cerrar en la fase 0.
+1. El camino crítico es EP-00 → EP-01 → datos reales → balance hídrico y etapas → diagnóstico integrado → demo. Todo lo demás se recorta antes. La calificación con curvas (HU-196) necesita los rangos de las fichas (HU-199), cuyas columnas ya están en `crops` (`specs/02-contratos.md`): falta llenarlas con fuente en la fase 0.
 2. Orden de recorte si hay retraso en la hora 34: ver `docs/plan-48h.md`.
 3. No empezar ninguna épica de la etapa 1 hasta que Haider o Felipe den por congelado el contrato de EP-01.

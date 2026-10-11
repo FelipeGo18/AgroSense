@@ -16,8 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402,F401
 from calendario import wrap_lines  # noqa: E402
-from ui import (BORDE, D, DIR, FONT_TITLE, P, SEC, WHITE, button, card, chamfer, field, frame, group, link, logo, paragraph, poly, text,  # noqa: E402
-                width_of)
+from ui import (BORDE, D, DIR, FONT_TITLE, P, SEC, WHITE, button, card, chamfer, field, frame, group, link, logo, p1_tag, paragraph, poly,  # noqa: E402
+                text, width_of)
 
 W = 1440
 NAV = ("Usuarios", "Tickets", "Bitácora", "Métricas")
@@ -48,7 +48,8 @@ def pill(x, y, label, fill, ink=None, stroke=None):
 
 
 def page_title(title, sub, x=300, y=80):
-    return [text(x, y, title, 36, 600, font=FONT_TITLE)] + paragraph(x, y + 30, [sub], 15, fill=SEC)
+    """Título de una pantalla del panel con su rótulo «P1»: todo el administrador es P1 (HU-170)."""
+    return [text(x, y, title, 36, 600, font=FONT_TITLE)] + p1_tag(x + width_of(title, 36, True) + 16, y - 24) + paragraph(x, y + 30, [sub], 15, fill=SEC)
 
 
 def table(x, y, w, heads, cols, rows, row_h=56, name="tabla"):
@@ -65,17 +66,18 @@ def table(x, y, w, heads, cols, rows, row_h=56, name="tabla"):
 
 # ---------- Usuarios ----------
 
-USERS = (("rosa.samaca", "Rosa", "Agricultor", "20 ene 2025", 4, 1, None), ("don.ernesto", "Ernesto", "Agricultor", "3 mar 2025", 2, 0, None),
-         ("lucia.toca", "Lucía", "Agricultor", "11 may 2025", 1, 0, "8 oct"), ("ana", "Ana", "Administrador", "10 ene 2025", 0, 0, None),
-         ("marta.ventaquemada", "Marta", "Agricultor", "2 ago 2026", 3, 2, None))
+# Tickets abiertos (sin cerrar) por usuario, los mismos de la bandeja: Rosa 1 en revisión, Lucía 1 y Ernesto 1 abiertos.
+USERS = (("rosa.samaca", "Rosa", "Agricultor", "20 ene 2025", 4, 1, None), ("don.ernesto", "Ernesto", "Agricultor", "3 mar 2025", 2, 1, None),
+         ("lucia.toca", "Lucía", "Agricultor", "11 may 2025", 1, 1, "8 oct"), ("ana", "Ana", "Administrador", "10 ene 2025", 0, 0, None),
+         ("marta.ventaquemada", "Marta", "Agricultor", "2 ago 2026", 3, 0, None))
 
 
 def users():
     h = 900
     b = chrome("Usuarios", h)
     b += page_title("Usuarios", "Agricultores y administradores. Ver una ficha queda registrado.")
+    # «Buscar» filtra la lista ya cargada, en el navegador. No hay filtro por rol: GET /admin/users no lo tiene en el contrato.
     b += field(300, 150, 420, "Buscar", "", "Usuario o nombre", name="campo-buscar")
-    b += field(740, 150, 220, "Rol", "Todos", trailing="▾", name="campo-rol")
     b += button(W - 48 - 220, 164, 220, "Crear usuario")
     cols = (24, 230, 370, 530, 670, 760, 930)
     rows = []
@@ -96,7 +98,7 @@ def profile(dialog=False):
     h = 1180
     b = chrome("Usuarios", h)
     b += link(300, 50, "‹ Usuarios", 15)
-    b += [text(300, 100, "Rosa", 36, 600, font=FONT_TITLE), text(410, 98, "rosa.samaca · agricultor · desde el 20 ene 2025 · consentimiento 3", 15, fill=SEC)]
+    b += [text(300, 100, "Rosa", 36, 600, font=FONT_TITLE)] + p1_tag(398, 76) + [text(456, 98, "rosa.samaca · agricultor · desde el 20 ene 2025 · consentimiento 3", 15, fill=SEC)]
     b += [poly(chamfer(300, 120, W - 348, 40, 8), "#E6F0F5"), text(318, 146, "Abrió esta ficha: queda en la bitácora como «admin.user_viewed», y Rosa lo ve en Mi actividad.", 14, 700)]
     b += button(W - 48 - 200, 70, 200, "Bloquear", "danger", h=44) + button(W - 48 - 420, 70, 200, "Cambiar rol", "secondary", h=44)
     # lotes
@@ -116,7 +118,9 @@ def profile(dialog=False):
     b.append(text(300, y, "Tickets", 22, 600, font=FONT_TITLE))
     tcols = (24, 420, 620, 800)
     trows = [([text(0, 34, "El calendario no muestra la cebolla", 15, 700)], [text(0, 34, "2 oct · lote El Alto", 14, fill=SEC)],
-              pill(0, 16, "En revisión", P["trigo"])[0], link(0, 34, "Abrir ticket", 14))]
+              pill(0, 16, "En revisión", P["trigo"])[0], link(0, 34, "Abrir ticket", 14)),
+             ([text(0, 34, "Un lote no me deja guardar la siembra", 15, 700)], [text(0, 34, "9 oct · lote El Alto", 14, fill=SEC)],
+              pill(0, 16, "Cerrado", P["brote"])[0], link(0, 34, "Abrir ticket", 14))]
     t2, th2 = table(300, y + 18, W - 348, ("ASUNTO", "ENVIADO", "ESTADO", ""), tcols, trows, 52)
     b += t2
     y += 18 + th2 + 40
@@ -150,7 +154,7 @@ def tickets():
     b = chrome("Tickets", h)
     b += page_title("Tickets", "Reportes de los agricultores. Cambiar el estado queda en la bitácora.")
     lx, lw = 300, 520
-    tabs = (("Abiertos", 2), ("En revisión", 1), ("Cerrados", 1))
+    tabs = (("Todos", len(TICKETS)), ("Abiertos", 2), ("En revisión", 1), ("Cerrados", 1))  # activa «Todos»: la lista trae los cuatro y el detalle es uno en revisión
     tx = lx
     for i, (label, n) in enumerate(tabs):
         pl, pw = pill(tx, 140, f"{label} · {n}", P["noche"] if i == 0 else WHITE, WHITE if i == 0 else P["noche"], None if i == 0 else BORDE)
@@ -169,21 +173,24 @@ def tickets():
     d += [poly(chamfer(28, 96, dw - 56, 96, 10), P["niebla"])]
     d += paragraph(46, 126, wrap_lines(["Registré la cebolla en agosto y en el calendario solo sale la papa. ¿Hice algo mal?"], 56), 15, 22)
     d += [poly(chamfer(28, 208, dw - 56, 36, 8), WHITE, BORDE, 1.5), text(44, 232, "Código para soporte: 9b1e-42c7", 14, 700)]
+    # El contrato de un ticket solo tiene `message` y `status`: no hay nota interna. PATCH /admin/tickets/{id} cambia el estado.
     d += field(28, 286, 240, "Estado", "En revisión", trailing="▾", name="campo-estado")
-    d += field(28, 390, dw - 56, "Nota interna", "Revisando el calendario de la cebolla", name="campo-nota")
-    d += button(28, 498, 220, "Guardar estado")
-    d += paragraph(28, 590, wrap_lines(["Para borrar o restaurar algo de Rosa por este ticket, hágalo desde su ficha: el ticket queda unido a la acción."], 60), 13, 19, fill=SEC)
-    b += card(dx, 140, dw, 650, "detalle-ticket") + [group("detalle-ticket-texto", d, dx, 140)]
+    d += button(28, 394, 220, "Guardar estado")
+    d += paragraph(28, 486, wrap_lines(["Para borrar o restaurar algo de Rosa por este ticket, hágalo desde su ficha: el ticket queda unido a la acción."], 60), 13, 19, fill=SEC)
+    b += card(dx, 140, dw, 546, "detalle-ticket") + [group("detalle-ticket-texto", d, dx, 140)]
     return ui.long_page((W, h), b, P["niebla"])
 
 
 # ---------- Bitácora ----------
 
+# Los eventos de Rosa son los mismos de «Mi actividad» (actividad.py). Un intento de entrada fallido no guarda de quién
+# fue: por eso no aparece en la actividad de nadie. La acción de soporte del 9 de octubre va unida al reporte de ese día.
 LOG = (("11 oct 10:42", "rosa.samaca", "Agricultor", "lot.updated", "lote El Alto · riego", "ok", "a41f…", None),
+       ("11 oct 10:30", "rosa.samaca", "Agricultor", "auth.login", "—", "ok", "a3f0…", None),
        ("11 oct 10:05", "ana", "Admin", "admin.activity_viewed", "bitácora", "ok", "77c2…", None),
        ("10 oct 18:05", "—", "—", "auth.login_failed", "—", "failed", "e9d0…", None),
-       ("9 oct 16:24", "ana", "Admin", "admin.season_restored", "rosa.samaca · cebolla", "ok", "5c19…", "2 oct"),
-       ("9 oct 16:20", "ana", "Admin", "admin.user_viewed", "rosa.samaca", "ok", "5c11…", "2 oct"),
+       ("10 oct 17:50", "rosa.samaca", "Agricultor", "auth.logout", "—", "ok", "c3a7…", None),
+       ("9 oct 16:20", "ana", "Admin", "admin.user_viewed", "rosa.samaca", "ok", "5c11…", "9 oct"),
        ("8 oct 07:55", "rosa.samaca", "Agricultor", "auth.password_changed", "—", "denied", "1b8e…", None),
        ("8 oct 07:40", "ana", "Admin", "admin.user_blocked", "lucia.toca", "ok", "0d2a…", None))
 
@@ -211,7 +218,8 @@ def activity():
 
 # ---------- Métricas ----------
 
-DAYS = (42, 38, 51, 47, 63, 58, 71, 66, 80, 74, 92, 88, 95, 101)
+DAYS = (49, 45, 58, 54, 70, 65, 78, 73, 87, 81, 99, 95, 103, 109)  # suman 1.066, como la cifra de arriba y los dos desgloses
+assert sum(DAYS) == 1066
 LOTS_BY_TOWN = (("Samacá", 38), ("Ventaquemada", 21), ("Toca", 12), ("Otros municipios*", 9))
 TOWNS_QUERIED = (("Samacá", 412), ("Ventaquemada", 268), ("Toca", 171), ("Tunja", 96), ("Otros municipios*", 119))
 CROPS_QUERIED = (("Papa", 498), ("Arveja", 187), ("Maíz", 142), ("Haba", 121), ("Otros cultivos*", 118))

@@ -16,10 +16,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402,F401
-from agua import fmt, m3  # noqa: E402
+from agua import fmt, m3, year_toggle  # noqa: E402
 from calendario import wrap_lines  # noqa: E402
 from finca import drop  # noqa: E402
-from lote import IRRIGATION, options  # noqa: E402
+from lote import options  # noqa: E402
 from ui import BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, field, frame, group, link, paragraph, poly, text, topbar  # noqa: E402
 
 AREA = 3.0
@@ -28,6 +28,7 @@ ROWS = (("Papa", 50, "2 ago 2026", {2: (10, 22), 4: (18, 30)}), ("Arveja", 30, "
 ROWS_ERROR = (("Papa", 60, "2 ago 2026", {}), ("Arveja", 50, "1 sep 2026", {}))
 MONTHS = ("Ago", "Sep", "Oct", "Nov", "Dic", "Ene")
 TODAY = 2
+IRRIGATION = ("Sí", "No", "No sé")  # sin cuenta, como en la consulta; con cuenta, en el lote, es «Todavía no sé»
 
 
 def ha(v):
@@ -131,24 +132,32 @@ def farm_form(w, mobile=False, error=False):
 
 
 def water_card(w, mobile=False):
-    """El plan de agua de la finca temporal: lo que faltaría cada mes, en rangos (R10)."""
+    """El plan de agua de la finca temporal: lo que faltaría cada mes, en rangos, con el desglose por cultivo y para un
+    año normal o un año seco (HU-145: los dos vienen en la respuesta de POST /water-plans). Es una estimación (R10)."""
     c = [text(0, 0, "PLAN DE AGUA · ESTIMACIÓN", 14, 700, SEC), text(0, 36, "Lo que faltaría cada mes", 22 if mobile else 26, 600, font=FONT_TITLE)]
-    c += paragraph(0, 62, ["Con el clima de la zona, no una medición de", "su finca. Sin riego, en los meses marcados", "el cultivo pasaría sed."] if mobile else
-                   ["Con el clima de la zona, no una medición de su finca. Sin riego, en los", "meses marcados el cultivo pasaría sed. Verifique la humedad en campo."], 14, 21, fill=SEC)
-    y = 62 + (3 if mobile else 2) * 21 + 20
+    rows = (["Con el clima de la zona, no una medición de", "su finca. Sin riego, en los meses marcados", "el cultivo pasaría sed. Verifique la humedad", "del suelo en campo."] if mobile else
+            ["Con el clima de la zona, no una medición de su finca. Sin riego, en los", "meses marcados el cultivo pasaría sed. Verifique la humedad del suelo en campo."])
+    c += paragraph(0, 62, rows, 14, 21, fill=SEC)
+    y = 62 + len(rows) * 21 + 2
+    c += year_toggle(0, y, min(w, 320))
+    y += 44 + 18
     vmax = max(hi for _, hi in TOTALS) or 1
     lab = 70
     bw = w - lab - (150 if not mobile else 120)
     for m, (lo, hi) in enumerate(TOTALS):
-        ry = y + m * 44
-        c.append(text(0, ry + 24, MONTHS[m] + (" 2027" if MONTHS[m] == "Ene" else ""), 15, 700 if m == TODAY else 400))
+        c.append(text(0, y + 24, MONTHS[m] + (" 2027" if MONTHS[m] == "Ene" else ""), 15, 700 if m == TODAY else 400))
         if hi:
-            c += [poly(chamfer(lab, ry + 8, bw * hi / vmax, 24, 3), "#E6F0F5", D["cielo"], 1.5), poly(chamfer(lab, ry + 8, bw * lo / vmax, 24, 3), P["cielo"], D["cielo"], 1.5)]
-            c += drop(lab + bw * hi / vmax + 16, ry + 20, 0.8)
-            c.append(text(w, ry + 25, f"{fmt(lo)} a {fmt(hi)} m³", 14, 700, anchor="end"))
+            c += [poly(chamfer(lab, y + 8, bw * hi / vmax, 24, 3), "#E6F0F5", D["cielo"], 1.5), poly(chamfer(lab, y + 8, bw * lo / vmax, 24, 3), P["cielo"], D["cielo"], 1.5)]
+            c += drop(lab + bw * hi / vmax + 16, y + 20, 0.8)
+            c.append(text(w, y + 25, f"{fmt(lo)} a {fmt(hi)} m³", 14, 700, anchor="end"))
+            # desglose por cultivo, con los mismos datos del total
+            parts = " · ".join(f"{name} {fmt(m3(d[m][0], area_of(p)))} a {fmt(m3(d[m][1], area_of(p)))} m³" for name, p, _, d in ROWS if m in d)
+            c.append(text(lab, y + 50, parts, 12, fill=SEC))
+            y += 62
         else:
-            c.append(text(lab, ry + 25, "La lluvia alcanza", 14, fill=SEC))
-    y += len(MONTHS) * 44 + 14
+            c.append(text(lab, y + 25, "La lluvia alcanza", 14, fill=SEC))
+            y += 44
+    y += 14
     lo, hi = sum(t[0] for t in TOTALS), sum(t[1] for t in TOTALS)
     c += [f'<rect x="0" y="{y}" width="{w}" height="2" fill="{P["noche"]}"/>', text(0, y + 30, "Faltaría en la temporada", 16, 700),
           text(w, y + 30, f"{fmt(lo)} a {fmt(hi)} m³", 18, 700, anchor="end")]

@@ -5,18 +5,19 @@ muestra tiene que coincidir con lo que muestra otra, así que los valores compar
 importan. Son cifras de muestra, no datos reales: sirven para diseñar, no para decidir.
 
 Reglas que estos datos respetan:
-- La señal de heladas del diagnóstico sale del mismo cálculo que el calendario (specs/01-reglas.md): usa el mejor mes
-  de siembra del semestre y las etapas sensibles del cultivo, con la serie mensual FROST.
-- Las razones de lluvia y oferta dicen siempre el periodo que se evaluó: es historia, no pronóstico (decisión 4).
-- La luz que el agricultor «vio al sembrar» en el historial es la del diagnóstico de ese cultivo y semestre.
+- La señal de heladas del diagnóstico sale del mismo cálculo que el calendario (specs/01-reglas.md): usa la ventana
+  de siembra consultada y las etapas sensibles del cultivo, con la serie mensual FROST.
+- Las razones de agua y oferta dicen siempre el periodo que se evaluó: es historia, no pronóstico (decisión 4).
+- La luz que el agricultor «vio al sembrar» en el historial es la del diagnóstico de ese cultivo en su fecha de siembra.
+- «Hoy» es el 11 de octubre de 2026: las doce ventanas van de noviembre de 2026 a octubre de 2027.
 """
 
 # ---------- Usuario y cuenta ----------
 NAME, USERNAME = "Rosa", "rosa.samaca"
-TOWN, TOWN_SHORT = "Samacá, Boyacá", "Samacá"
-TODAY_TEXT = "11 de octubre de 2026"
+TOWN = "Samacá, Boyacá"
 ACCOUNT_SINCE = "20 de enero de 2025"
 CONSENT_VERSION = 3
+CONSENT_ACCEPTED = "11 de octubre de 2026"  # la versión 3 se acepta al publicarse (el «hoy» de la muestra); la cuenta es anterior
 N_LOTS = 4          # El Alto, La Vega, El Bajo y Potrero (finca.py)
 N_SEASONS = 14      # 12 de El Alto (historial.py) + maíz de La Vega + arveja de El Bajo
 
@@ -27,36 +28,25 @@ VERSIONS = f"Datos {DATASET} · Reglas {RULES}"
 # ---------- Heladas: % de años con al menos una helada en el mes (mínima menor que 2 °C), de enero a diciembre ----------
 FROST = (22, 16, 5, 1, 0, 1, 3, 4, 2, 1, 2, 12)
 FROST_MODERATE, FROST_UNFAVORABLE = 5, 15   # umbrales de muestra de thresholds.yaml
-MONTH_NAMES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
 
 
 def frost_level(pct):
     return "desfavorable" if pct >= FROST_UNFAVORABLE else ("moderado" if pct >= FROST_MODERATE else "favorable")
 
 
-# ---------- Calendario de la papa en Samacá ----------
-# Qué tan bueno es sembrar cada mes. Agosto es el mejor mes del semestre B: sembrando en agosto, la papa se cosecha
-# en diciembre y no llega a enero, el mes con más heladas. Marzo y abril son los mejores del semestre A.
-FAV, MOD, UNF = "favorable", "moderado", "desfavorable"
-SOWING = (UNF, MOD, FAV, FAV, MOD, UNF, MOD, FAV, MOD, MOD, UNF, UNF)
-BEST_SOWING = (2, 3, 7)                     # marzo, abril y agosto
-BEST_SOWING_TEXT = "Marzo, abril y agosto"
-
-# La papa de El Alto: sembrada el 2 de agosto de 2026; todas sus etapas en campo son sensibles a la helada.
-PAPA_SOWING, PAPA_HARVEST = "2 de agosto", "28 de diciembre"
+# ---------- La papa de El Alto ----------
+# Sembrada el 2 de agosto de 2026, con cosecha estimada el 28 de diciembre (unos 147 días). Todas sus etapas en campo
+# son sensibles a la helada. Sembrando en agosto se cosecha en diciembre y no llega a enero, el mes con más heladas.
 PAPA_CYCLE_MONTHS = (7, 11)                 # de agosto a diciembre
-PAPA_FROST_WORST = max(range(PAPA_CYCLE_MONTHS[0], PAPA_CYCLE_MONTHS[1] + 1), key=lambda m: FROST[m])  # diciembre
 
 # ---------- Suelo (SoilGrids, 250 m). El carbono orgánico va en g/kg, como en el contrato (`soc_g_kg`) ----------
-SOIL_TOWN = dict(ph="5,2 a 5,8", soc="32 g/kg", soc_class="medio", texture="Franco arcillosa")
 SOIL_ALTO = dict(ph="5,4", ph_range="5,0 a 5,9", soc="31 g/kg", soc_class="medio", texture="Franco arcillosa")
 
-# ---------- Diagnósticos de muestra (consulta.py). La luz es la que queda guardada al sembrar (historial.py) ----------
-# Papa, semestre B de 2026, Samacá: oferta desfavorable (no crítica) -> amarillo.
-RAIN_B = "En 7 de los últimos 10 semestres B la lluvia fue favorable para la papa."
-SUPPLY_B = "En 2025 B (último dato) se sembró 35 % más papa que en los tres semestres B anteriores."
-FROST_B = f"Sembrando en agosto, heló en el llenado (diciembre) {FROST[11]} de cada 100 años."
-LIGHT_AT_SOWING = {("papa", "2026 B"): "amarillo", ("haba", "2026 B"): "no-evaluable"}
+# ---------- La luz que quedó guardada al sembrar (historial.py), por cultivo y fecha de siembra ----------
+# Papa del 2 de agosto de 2026 en El Alto: oferta desfavorable (no crítica) -> amarillo con el criterio de AgroSense y
+# verde con las prioridades de Rosa (oferta en 0). Haba del 1 de septiembre: EVA no la registra -> no evaluable.
+LIGHT_AT_SOWING = {("papa", "2026-08-02"): "amarillo", ("haba", "2026-09-01"): "no-evaluable"}
+LIGHT_AT_SOWING_FARMER = {("papa", "2026-08-02"): "verde"}
 
 
 # ---------- Consulta de muestra: una ventana de siembra (specs/01-reglas.md, «La ventana de siembra») ----------
@@ -116,7 +106,7 @@ def light_for(weights, signals=None):
     scored = [(signals[k]["score"], k) for k in SIGNAL_ORDER if counts[k] and signals[k]["score"] is not None]
     limiting = min(scored)[1] if scored else None
     if any(counts[k] and lvl[k] == "insuficiente" for k in ("water", "supply")):
-        return dict(light="no-evaluable", action="review_data", limiting=limiting, counts=counts)
+        return dict(light="no-evaluable", action="review_data", limiting=None, counts=counts)  # sin luz no hay factor que limite
     unf = [k for k in SIGNAL_ORDER if counts[k] and lvl[k] == "desfavorable"]
     crit = [k for k in unf if signals[k].get("critical")]
     if crit or len(unf) >= 2:
@@ -190,7 +180,7 @@ CASES = {
 }
 
 # Papa en un municipio cálido: no es apta para la zona y no se evalúa ninguna ventana (HU-191, HU-194).
-NOT_SUITABLE = dict(crop="Papa", town="Puerto Boyacá", score=4, kicker="PAPA · PUERTO BOYACÁ, BOYACÁ",
+NOT_SUITABLE = dict(crop="Papa", town="Puerto Boyacá", score=0, kicker="PAPA · PUERTO BOYACÁ, BOYACÁ",
                     reason="Puerto Boyacá está a 125 m; la papa se da entre 2.000 y 3.500 m.",
                     source="Ficha del cultivo · FAO EcoCrop (por confirmar)",
                     alternatives=(
@@ -202,7 +192,8 @@ NOT_SUITABLE = dict(crop="Papa", town="Puerto Boyacá", score=4, kicker="PAPA ·
 
 # ---------- Series del panel de señales (GET /trends con la ventana; muestra) ----------
 # Agua: por año, lluvia de agosto a diciembre frente a lo que la papa habría necesitado en esos meses (mm).
-WATER_YEARS = ((2016, 462, 430), (2017, 518, 430), (2018, 371, 430), (2019, 455, 430), (2020, 540, 430),
+# En 3 de los 10 años la lluvia no alcanzó (2018, 2019 y 2022): es el «7 de 10» de la razón de la señal.
+WATER_YEARS = ((2016, 462, 430), (2017, 518, 430), (2018, 371, 430), (2019, 418, 430), (2020, 540, 430),
                (2021, 497, 430), (2022, 356, 430), (2023, 470, 430), (2024, 488, 430), (2025, 452, 430))
 # Calor: temperatura máxima que se supera uno de cada diez días (`tmax_p90_c`), de agosto a diciembre, frente a lo que aguanta.
 TMAX_P90 = (("Ago", 21.4), ("Sep", 21.9), ("Oct", 21.2), ("Nov", 20.6), ("Dic", 20.9))
@@ -214,35 +205,45 @@ AGROSENSE_SUPPLY = dict(accounts=14, ha=38, date="11 oct 2026")
 
 
 # ---------- Ventanas de los próximos doce meses: papa en Samacá, sin riego (POST /calendar, «Planear una siembra») ----------
-# Sembrando de octubre a diciembre, la floración cae en enero, el mes con más heladas: riesgo grave (alto riesgo).
+# Hoy es 11 de octubre de 2026: la primera ventana es noviembre de 2026 y la última, octubre de 2027.
+# La papa dura unos 147 días: sembrando el día 1 de un mes se cosecha a finales del cuarto mes siguiente (ago -> dic).
+# Sembrando de octubre a diciembre, la floración cae en enero y febrero, los meses con más heladas: riesgo grave (alto riesgo).
 # Oferta: las siembras de julio a diciembre caen en el semestre B de EVA, con mucha papa sembrada (30); las de enero a junio, en el A (68).
 _W = (  # mes, año, cosecha estimada, agua, heladas, calor, suelo, oferta, helada crítica
-    ("Oct", 2026, "mar 2027", 62, 12, 95, 80, 30, True),
-    ("Nov", 2026, "abr 2027", 55, 9, 96, 80, 30, True),
-    ("Dic", 2026, "may 2027", 40, 16, 96, 80, 30, True),
-    ("Ene", 2027, "jun 2027", 48, 64, 95, 80, 68, False),
-    ("Feb", 2027, "jul 2027", 70, 74, 95, 80, 68, False),
-    ("Mar", 2027, "ago 2027", 84, 80, 94, 80, 68, False),
-    ("Abr", 2027, "sep 2027", 82, 72, 94, 80, 68, False),
-    ("May", 2027, "oct 2027", 66, 70, 94, 80, 68, False),
-    ("Jun", 2027, "nov 2027", 58, 60, 94, 80, 68, False),
-    ("Jul", 2027, "dic 2027", 74, 52, 94, 80, 30, False),
+    ("Nov", 2026, "mar 2027", 55, 9, 96, 80, 30, True),
+    ("Dic", 2026, "abr 2027", 40, 16, 96, 80, 30, True),
+    ("Ene", 2027, "may 2027", 48, 64, 95, 80, 68, False),
+    ("Feb", 2027, "jun 2027", 70, 74, 95, 80, 68, False),
+    ("Mar", 2027, "jul 2027", 84, 80, 94, 80, 68, False),
+    ("Abr", 2027, "ago 2027", 82, 72, 94, 80, 68, False),
+    ("May", 2027, "sep 2027", 66, 70, 94, 80, 68, False),
+    ("Jun", 2027, "oct 2027", 58, 60, 94, 80, 68, False),
+    ("Jul", 2027, "nov 2027", 74, 52, 94, 80, 30, False),
     ("Ago", 2027, "dic 2027", 86, 58, 94, 80, 30, False),
-    ("Sep", 2027, "feb 2028", 78, 34, 94, 80, 30, False),
+    ("Sep", 2027, "ene 2028", 78, 34, 94, 80, 30, False),
+    ("Oct", 2027, "feb 2028", 62, 12, 95, 80, 30, True),
 )
+WINDOW_MONTHS = tuple((mon, yr) for mon, yr, *_ in _W)  # los doce meses de siembra que se pueden elegir, en orden
+
+
+def window_summary(scores, weights=None, critical=()):
+    """Factor que más limita, su nota y el promedio ponderado de una ventana con unos pesos. Cuentan las señales con
+    peso mayor que 0 y los riesgos graves de clima (`critical`), que cuentan siempre (specs/01-reglas.md)."""
+    weights = weights or DEFAULT_WEIGHTS
+    counted = {k: v for k, v in scores.items() if v is not None and (weights[k] > 0 or k in critical)}
+    lim = min(counted, key=lambda k: counted[k])
+    wsum = sum(weights[k] for k in counted)
+    weighted = round(sum(counted[k] * weights[k] for k in counted) / wsum) if wsum else None
+    return lim, counted[lim], weighted
 
 
 def windows(weights=None):
     """Las doce ventanas con sus calificaciones, factor limitante, promedio ponderado, alto riesgo y orden (specs/01-reglas.md)."""
-    weights = weights or DEFAULT_WEIGHTS
     out = []
     for mon, yr, harvest, water, frost, heat, soil, supply, crit in _W:
         scores = dict(water=water, frost=frost, heat=heat, soil=soil, supply=supply, market=None)
-        counted = {k: v for k, v in scores.items() if v is not None and (weights[k] > 0 or (k in CLIMATE and k == "frost" and crit))}
-        lim = min(counted, key=lambda k: counted[k])
-        wsum = sum(weights[k] for k in counted)
-        weighted = round(sum(counted[k] * weights[k] for k in counted) / wsum) if wsum else None
-        out.append(dict(month=mon, year=yr, harvest=harvest, scores=scores, limiting=lim, limiting_score=counted[lim],
+        lim, lim_score, weighted = window_summary(scores, weights, ("frost",) if crit else ())
+        out.append(dict(month=mon, year=yr, harvest=harvest, scores=scores, limiting=lim, limiting_score=lim_score,
                         weighted=weighted, high_risk=crit))
     chrono = list(out)
     ranked = sorted(out, key=lambda w: (w["high_risk"], -(w["limiting_score"] // 10), -w["weighted"], chrono.index(w)))

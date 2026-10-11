@@ -18,9 +18,9 @@ import ui  # noqa: E402
 import muestra  # noqa: E402
 from calendario import wrap_lines  # noqa: E402
 from consulta import light  # noqa: E402
-from senales import BAND, KEY_TO_KIND, kind  # noqa: E402
+from senales import BAND, KEY_TO_KIND, LIGHT_TEXT, kind  # noqa: E402
 from ui import (BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, field, frame, group, link, logo, mascot,  # noqa: E402
-                paragraph, poly, text, toggle, topbar, width_of)
+                p1_tag, paragraph, poly, text, toggle, topbar, width_of)
 
 # ---------- ¿Cómo funciona y de dónde sale esto? ----------
 
@@ -32,6 +32,7 @@ STEPS = (
     ("Las mejores fechas", "Ordenamos las fechas del año por lo que más limita a cada una y, entre parecidas, por sus prioridades."),
 )
 SOURCES = (  # (señal o uso, fuente, institución, cobertura, licencia, se usa para)
+    ("Cultivo", "Ficha del cultivo", "FAO EcoCrop (por confirmar)", "Mundial · por cultivo", "Por confirmar", "Aptitud y límites de cada cultivo"),
     ("Clima", "NASA POWER", "NASA", "Mundial · celdas de unos 50 km", "Datos abiertos", "Agua, heladas y calor"),
     ("Suelo", "SoilGrids", "ISRIC", "Mundial · celdas de 250 m", "CC BY 4.0", "Suelo y agua que guarda"),
     ("Oferta", "Evaluaciones Agropecuarias (EVA)", "Ministerio de Agricultura", "Colombia", "Datos abiertos", "Oferta"),
@@ -40,6 +41,7 @@ SOURCES = (  # (señal o uso, fuente, institución, cobertura, licencia, se usa 
     ("Límites", "Marco Geoestadístico", "DANE", "Colombia", "Datos abiertos", "Municipios"),
     ("Clima de ahora", "Open-Meteo", "Open-Meteo", "Mundial", "CC BY 4.0", "Solo la escena; nunca un resultado"),
 )
+P1_SOURCES = ("FAOSTAT",)  # fuentes de contraste que no entran en el P0: van rotuladas «P1» para el equipo
 NEVER = ("No pronostica el clima, el precio ni la cosecha: muestra lo que ha pasado en su zona.",
          "No usa el clima de hoy para calcular: solo para la escena.",
          "No guarda quién consultó ni los datos de su finca sin cuenta: solo cuenta las consultas por municipio y cultivo.",
@@ -101,10 +103,10 @@ def how(mobile=False):
     lx = pad if mobile else pad + bw + 24
     lw = cw if mobile else cw - bw - 24
     lc = [text(20, 36, "Las luces", 18, 700)]
-    for i, (key, label) in enumerate((("verde", "Sembrar"), ("amarillo", "Otra fecha o cultivo"), ("rojo", "Riesgo grave"), ("no-evaluable", "Faltan datos"))):
+    for i, key in enumerate(("verde", "amarillo", "rojo", "no-evaluable")):  # los mismos nombres de luz de todas las pantallas (senales.LIGHT_TEXT)
         cx = 20 + (i % 2 if mobile else i) * ((lw - 40) / (2 if mobile else 4))
         cy = 52 + (i // 2 if mobile else 0) * 84
-        lc += light(key, cx, cy, 0.28) + [text(cx, cy + 66, label, 14, 700)]
+        lc += light(key, cx, cy, 0.28) + [text(cx, cy + 66, LIGHT_TEXT[key], 14, 700)]
     lh = 236 if mobile else 160
     b += card(lx, ly, lw, lh, "luces") + [group("luces-texto", lc, lx, ly)]
     y = ly + lh + 80
@@ -133,10 +135,12 @@ def how(mobile=False):
         for kind_, name, inst, cov, lic, use in SOURCES:
             c = [text(16, 26, kind_.upper(), 12, 700, SEC), text(16, 50, name if len(name) < 28 else name[:26] + "…", 17, 700), text(16, 72, inst, 13, fill=SEC),
                  text(16, 94, cov, 13), text(16, 114, f"{lic} · {use}", 13, fill=SEC)]
+            if name in P1_SOURCES:
+                c += p1_tag(cw - 60, 12)
             b += card(pad, y, cw, 132, "fuente") + [group("fuente-texto", c, pad, y)]
             y += 146
     else:
-        cols_x = (24, 190, 520, 790, 1040)
+        cols_x = (24, 190, 500, 750, 980)  # la última columna cabe entera dentro de la tarjeta
         heads = ("Para", "Fuente", "Cobertura", "Licencia", "Se usa para")
         c = [text(x, 40, h_, 13, 700, SEC) for x, h_ in zip(cols_x, heads)]
         for i, (kind_, name, inst, cov, lic, use) in enumerate(SOURCES):
@@ -144,6 +148,8 @@ def how(mobile=False):
             c.append(f'<rect x="24" y="{ry - 4}" width="{cw - 48}" height="1" fill="{BORDE}"/>')
             c += [text(cols_x[0], ry + 26, kind_, 15, 700), text(cols_x[1], ry + 20, name, 15, 700), text(cols_x[1], ry + 40, inst, 13, fill=SEC),
                   text(cols_x[2], ry + 26, cov, 14), text(cols_x[3], ry + 26, lic, 14), text(cols_x[4], ry + 26, use, 14, 700 if use == "Para contrastar" else 400)]
+            if name in P1_SOURCES:
+                c += p1_tag(cols_x[1] + width_of(name, 15, True) + 12, ry + 3)
         th = 64 + len(SOURCES) * 56 + 20
         c += paragraph(24, th + 4, ["Las fuentes de un mismo indicador se muestran juntas y nunca se mezclan. Las cifras de muestra van rotuladas como ejemplo."], 14, fill=SEC)
         b += card(pad, y, cw, th + 40, "fuentes") + [group("fuentes-texto", c, pad, y)]
@@ -194,7 +200,6 @@ def skeleton_card(x, y, w, h, mobile=False):
     body += [text(24, 46, "Cargando", 22, 600, font=FONT_TITLE), text(24, 76, "Calculando su ventana de siembra…", 15, fill=SEC)]
     for i, ww in enumerate((0.7, 0.5, 0.85, 0.6)):
         body.append(poly(chamfer(24, 100 + i * 30, (w - 48) * ww, 16, 4), P["niebla"]))
-    body += [text(24, h - 22, "Si tarda más de 10 s: «Sigue calculando…»", 13, fill=SEC)]
     return [group("estado-cargando", body, x, y)]
 
 
@@ -269,6 +274,8 @@ def menu(guest=False):
     for i, (label, on) in enumerate((("Modo ligero", False), ("Reducir movimiento", True), ("Sonido", False))):
         ry = y + 40 + i * 60
         b += [text(28, ry + 8, label, 18, 700, WHITE)] + toggle(w - 92, ry - 18, on, name=f"interruptor-{label.split(' ')[0].lower()}")
+        if label == "Sonido":  # P1 (Howler.js): rotulado para el equipo
+            b += p1_tag(28 + width_of(label, 18, True) + 12, ry - 10)
     y += 40 + 3 * 60 + 10
     if not guest:
         b += [text(28, y + 10, "Entró como rosa.samaca", 14, fill=P["niebla"])]
@@ -280,14 +287,15 @@ def menu(guest=False):
 
 # ---------- Reportar un problema (P1) ----------
 
-TICKETS = (("Un lote no me deja guardar la siembra", "9 oct", "Cerrado", "Soporte restauró una siembra borrada."),
-           ("El calendario no muestra la cebolla", "2 oct", "En revisión", None))
+# Los mismos dos reportes de Rosa que ve el administrador (admin.py). El contrato de un ticket solo tiene `message` y
+# `status`: no hay respuesta de soporte que mostrar; lo que soporte hizo se ve en «Mi actividad».
+TICKETS = (("Un lote no me deja guardar la siembra", "9 oct", "Cerrado"),
+           ("El calendario no muestra la cebolla", "2 oct", "En revisión"))
 
 
 def textarea(x, y, w, h, label, value_rows):
     body = [text(0, 0, label, 18, 700), poly(chamfer(1.5, 13.5, w - 3, h, 10), WHITE, P["noche"], 3)]
     body += paragraph(20, 46, value_rows, 17, 24)
-    body.append(text(w - 16, h + 2, f"{sum(len(r) for r in value_rows)} de 1.000", 12, fill=SEC, anchor="end"))
     return [group("campo-mensaje", body, x, y)]
 
 
@@ -299,7 +307,7 @@ def report(mobile=False):
     iw = cw - 2 * pad
     c = link(pad, 44, "‹ Volver", 15)
     c += [text(pad, 92, "Reportar un problema", 28 if mobile else 36, 600, font=FONT_TITLE)]
-    c += [poly(chamfer(cw - pad - 44, 70, 44, 24, 6), WHITE, D["cielo"], 1.5), text(cw - pad - 22, 87, "P1", 13, 700, D["cielo"], anchor="middle")]
+    c += p1_tag(cw - pad - 44, 70)
     intro = (["Cuéntenos qué pasó. Soporte puede ver sus", "lotes para resolverlo, como dice el", "consentimiento."] if mobile else
              ["Cuéntenos qué pasó. Soporte puede ver sus lotes para resolverlo, como dice el consentimiento."])
     c += paragraph(pad, 126, intro, 15, 22, fill=SEC)
@@ -309,7 +317,9 @@ def report(mobile=False):
     msg = (["Registré la cosecha de papa y no", "aparece en el historial."] if mobile else ["Registré la cosecha de papa y no aparece en el historial."])
     c += textarea(pad, y, iw, 120, "¿Qué pasó?", msg)
     y += 160
-    c += [poly(chamfer(pad, y, iw, 40, 8), P["niebla"]), text(pad + 16, y + 26, "Código para soporte: 9b1e-42c7 (se adjunta solo)" if not mobile else "Código: 9b1e-42c7 (se adjunta)", 14, 700)]
+    # El `request_id` no es un campo del ticket: se agrega al final del mensaje (`message`) al enviar.
+    c += [poly(chamfer(pad, y, iw, 40, 8), P["niebla"]),
+          text(pad + 16, y + 26, "Código para soporte: 9b1e-42c7 (se agrega al mensaje)" if not mobile else "Código: 9b1e-42c7 (se agrega al mensaje)", 14 if not mobile else 13, 700)]
     y += 60
     c += paragraph(pad, y, ["No escriba contraseñas ni datos de otras", "personas."] if mobile else ["No escriba contraseñas ni datos de otras personas."], 13, 19, fill=SEC)
     y += (2 if mobile else 1) * 19 + 16
@@ -327,16 +337,13 @@ def report(mobile=False):
     tx, ty, tw = (x0, top + ch + 28, cw) if mobile else (x0 + cw + 24, top, w - x0 - cw - 24 - 96)
     t = [text(24, 46, "Mis reportes", 22, 600, font=FONT_TITLE)]
     yy = 70
-    for title, date, status, answer in TICKETS:
+    for title, date, status in TICKETS:
         lines = wrap_lines([title], 22 if mobile else 28)
         t += paragraph(24, yy + 20, lines, 16, 22, weight=700)
         st_fill = P["brote"] if status == "Cerrado" else P["trigo"]
         t += [poly(chamfer(tw - 24 - 110, yy + 2, 110, 26, 6), st_fill), text(tw - 24 - 55, yy + 20, status, 13, 700, anchor="middle")]
         yy += 20 + len(lines) * 22
         t.append(text(24, yy, f"Enviado el {date}", 13, fill=SEC))
-        if answer:
-            t += paragraph(24, yy + 22, wrap_lines([answer], 34 if mobile else 42), 13, 19)
-            yy += 22 + len(wrap_lines([answer], 34 if mobile else 42)) * 19
         yy += 22
         t.append(f'<rect x="24" y="{yy}" width="{tw - 48}" height="1" fill="{BORDE}"/>')
         yy += 12

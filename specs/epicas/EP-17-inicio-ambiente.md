@@ -8,7 +8,7 @@ agentes: [web, motor-api]
 subsistemas: [W8, M9]
 depende_de: [HU-151, HU-154]
 reglas: [R1, R5, R8]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-17 · Inicio, mascota y paisaje vivo

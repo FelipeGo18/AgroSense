@@ -51,7 +51,7 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
   - [ ] La web muestra «etapa estimada con la temperatura de la zona» junto a la etapa, y la fecha del último dato
   - [ ] Caso de referencia del motor: misma fecha de siembra, un periodo frío y uno cálido dan etapas distintas
 - **Reglas que aplican:** R1, R4, R5, R6, R8
-- **Notas:** Es una estimación con el clima del municipio, no una observación del lote: NASA POWER da un punto por municipio y publica con 2 a 7 días de retraso. No predice rendimiento. La cosecha estimada (`harvest_estimate`, HU-186) sale de un año normal, lleva siempre su `basis` y no es un pronóstico. Contrato aprobado por Felipe el 10 de octubre de 2026: tabla `climate_day`, `base_temp_c` en `crops`, `gdd` en `crop_stages` y la etapa en `current_seasons` de `GET /api/v1/lots/{lot_id}`. Falta el catálogo de grados-día con fuente por cultivo. Decidido el 10 de octubre de 2026 (ver `docs/registro-de-decisiones.md`).
+- **Notas:** Es una estimación con el clima del municipio, no una observación del lote: NASA POWER da un punto por municipio y publica con 2 a 7 días de retraso. No predice rendimiento. La cosecha estimada (`harvest_estimate`, HU-186) sale de un año normal, lleva siempre su base (`harvest_basis`) y no es un pronóstico. Contrato aprobado por Felipe el 10 de octubre de 2026: tabla `climate_day`, `base_temp_c` en `crops`, `gdd` en `crop_stages` y la etapa en `current_seasons` de `GET /api/v1/lots/{lot_id}`. Falta el catálogo de grados-día con fuente por cultivo. Decidido el 10 de octubre de 2026 (ver `docs/registro-de-decisiones.md`).
 
 ### HU-143 · Lluvia y ET0 mensuales por municipio
 
@@ -72,7 +72,8 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
 - **Criterios de aceptación:**
   - [ ] Déficit = ET0 × Kc menos lluvia efectiva, por cultivo y mes
   - [ ] El balance tiene en cuenta cuánta agua retiene el suelo según su textura (`texture_class` o `clay_pct`, `sand_pct` y `silt_pct`): un suelo arenoso guarda menos agua entre lluvias que uno arcilloso. El método es uno con fuente (R8)
-  - [ ] El suelo es el del lote si la API lo pasa (HU-182) y, si no, el del municipio (`soil_municipality`); la respuesta dice cuál se usó (R10)
+  - [ ] Para la señal `water` de `/diagnostics` y `/calendar`, el suelo es el del lote cuando llega `lot_id` (HU-182) y, si no, el del municipio (`soil_municipality`). El plan de agua (`/water-plans`) no recibe `lot_id` y usa siempre el del municipio, también con cuenta. La respuesta dice cuál se usó (R10)
+  - [ ] Sin la textura del suelo, el balance se calcula sin retención y se agrega a las limitaciones (R1)
   - [ ] Volumen en m³ según el área de cada cultivo
   - [ ] Año normal y año seco; misma entrada, mismo resultado
   - [ ] El mismo cálculo, sin área, da el déficit de una ventana de siembra para la señal `water` (HU-071): no hay dos balances de agua
@@ -80,7 +81,7 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
   - [ ] Prueba: con la misma lluvia y el mismo cultivo, un suelo arenoso da un déficit mayor o igual que uno arcilloso
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `climate_month`, `crop_stages`, `soil_grid`, `soil_municipality`
-- **Notas:** Va antes del diagnóstico. La lluvia efectiva y el agua que retiene cada textura necesitan un método con fuente: por confirmar con fuente (R8); la candidata para la retención es FAO-56, por verificar. La textura entró al balance el 11 de octubre de 2026 (decisión 10). Supuesto por confirmar: si falta la textura, el balance se calcula sin retención del suelo y la limitación lo dice, o la señal de agua queda en `insufficient_data` (la segunda opción deja la luz en `not_evaluable`). `POST /water-plans` no recibe `lot_id`: el plan de agua sin cuenta usa el suelo del municipio.
+- **Notas:** Va antes del diagnóstico. La lluvia efectiva y el agua que retiene cada textura necesitan un método con fuente: por confirmar con fuente (R8); la candidata para la retención es FAO-56, por verificar. La textura entró al balance el 11 de octubre de 2026 (decisión 10). Sin la textura del suelo, el balance se calcula sin retención y se agrega a las limitaciones: la señal de agua no queda en `insufficient_data` por eso (`specs/01-reglas.md`, «Cómo se califica cada señal»). `POST /water-plans` no recibe `lot_id`: el plan de agua usa siempre el suelo del municipio, también con cuenta (`specs/02-contratos.md`).
 
 ### HU-145 · Calendario de riego de la finca
 
@@ -109,11 +110,11 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
   - [ ] Cada ventana trae la calificación de 0 a 100 de cada señal (HU-196) y cuál es su factor limitante
   - [ ] `priorities` usa los mismos pesos y el mismo significado que en el diagnóstico (0 a 5 por señal); sin `priorities`, los de `weights.yaml`
   - [ ] Si el cultivo no es apto para la zona, `windows` viene vacío y `suitability` dice por qué (HU-191)
-  - [ ] **Mi cultivo** (con `sowing_date`): responde `months`, uno por cada mes de la siembra a la cosecha estimada, con `month`, `year`, `stage`, `basis` y los bloques `frost` y `heat`, cada uno con `status`, `level`, `reasons`, `sensitive` y `watch`; más `harvest_estimate` con su `basis`. Usa el cálculo de etapas de HU-150 y HU-186
+  - [ ] **Mi cultivo** (con `sowing_date`): responde `months`, uno por cada mes de la siembra a la cosecha estimada, con `month`, `year`, `stage`, `basis` y los bloques `frost` y `heat`, cada uno con `status`, `level`, `reasons`, `sensitive` y `watch`; más `harvest_estimate` y `harvest_basis`. Usa el cálculo de etapas de HU-150 y HU-186
   - [ ] El cruce entre el riesgo y la etapa lo hace el motor: `watch` es verdadero solo si la etapa es sensible y el nivel no es `favorable` (R5)
   - [ ] `irrigated` se comporta igual que en el diagnóstico; con `lot_id`, sale del lote
   - [ ] `month` fuera de 1 a 12, o `priorities` fuera de 0 a 5 o todas en 0, responden 422
-  - [ ] Misma entrada, misma salida; trae `versions` (R4); no guarda nada (R9)
+  - [ ] Misma entrada, misma salida; trae `versions` (R4); no guarda los datos de la finca ni quién consultó (R9)
   - [ ] Prueba: una ventana del calendario y el diagnóstico de esa fecha dan las mismas señales
 - **Reglas que aplican:** R1, R2, R3, R4, R5, R6, R9
 - **Contrato que toca:** `POST /api/v1/calendar`
@@ -133,9 +134,9 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
   - [ ] Las mejores ventanas (`best_windows`) se destacan; si viene vacío, la pantalla dice «No hay una ventana sin riesgo alto en los próximos doce meses»
   - [ ] Tocar un mes abre el detalle por semanas de ese mes (`month`), con el mismo orden y desglose
   - [ ] Una señal sin datos o que no aplica se ve como tal y se dice que no entra al balance; no se pinta como riesgo (R1)
-  - [ ] Rótulo visible: «Orden según la historia de la zona. No es un pronóstico: usted decide»
+  - [ ] Rótulo visible: «Según la historia de la zona. No es un pronóstico»
   - [ ] Si el cultivo no es apto para la zona, la vista lo dice con su razón y ofrece elegir otro cultivo, sin ventanas
-  - [ ] **Mi cultivo:** los meses de la siembra a la cosecha estimada, con la etapa del cultivo, las heladas y el calor con «Vigile» en las etapas sensibles (`frost.watch`, `heat.watch`) y el riego probable del plan de agua (HU-145), sin repetir el cálculo
+  - [ ] **Mi cultivo:** los meses de la siembra a la cosecha estimada, con la etapa del cultivo, las heladas y el calor con «Vigile» en las etapas sensibles (`frost.watch`, `heat.watch`) y el déficit de agua del plan de agua (HU-145), sin repetir el cálculo; se dice «riego probable» si el lote tiene riego y «la lluvia no alcanza: el cultivo pasaría sed» si no lo tiene o no está definido
   - [ ] Cada nivel va con forma y texto, no solo color; lo estimado con un año normal y el riego llevan su rótulo (R10)
   - [ ] Tocar un mes o una ventana muestra las razones que evaluó el motor (R5)
   - [ ] Después de la cosecha estimada, enlace a «Próxima siembra»

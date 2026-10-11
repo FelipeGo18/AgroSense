@@ -67,8 +67,8 @@ QUESTIONS = (
 )
 
 SOURCES = (
-    ("Clima", "NASA POWER", ["Lluvia, temperatura, heladas y", "calor de su municipio, desde 1981."]),
-    ("Suelo", "SoilGrids · ISRIC", ["pH, materia orgánica y textura,", "estimados en celdas de 250 m."]),
+    ("Clima", "NASA POWER", ["Lluvia, temperatura, heladas y", "calor de su municipio."]),
+    ("Suelo", "SoilGrids · ISRIC", ["pH, carbono orgánico y textura,", "estimados en celdas de 250 m."]),
     ("Oferta", "Evaluaciones Agropecuarias (EVA)", ["Cuánto se sembró de cada cultivo,", "por municipio, junto a otras fuentes."]),
     ("Mercado", "SIPSA · DANE", ["Precios mayoristas,", "cuando hay datos de la zona."]),
 )

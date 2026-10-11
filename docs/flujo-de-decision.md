@@ -36,7 +36,7 @@ flowchart TD
 
 | Paso | Subsistema | Qué hace | Qué NO hace |
 |---|---|---|---|
-| 1 | W1 | Ofrece solo combinaciones válidas del catálogo: municipio, cultivo, cuándo sembrar, si hay riego y, si el agricultor quiere, sus prioridades (empiezan en las de AgroSense) | Permitir opciones fuera del catálogo ni guardar las prioridades |
+| 1 | W1 | Ofrece solo combinaciones válidas del catálogo: municipio, cultivo, cuándo sembrar, si hay riego y, si el agricultor quiere, sus prioridades (empiezan en las de AgroSense) | Permitir opciones fuera del catálogo ni enviar las prioridades a guardar sin cuenta (con cuenta van al perfil; sin cuenta, quedan en el navegador) |
 | 2 | M6 (API) | Valida la entrada; 422 si es inválida (también con un peso fuera de 0 a 5 o todos en 0) | Contener lógica de decisión |
 | 3 | M1 | Regla 0: comprueba la aptitud del cultivo en la zona. Si no es apto, termina aquí con luz roja y acción rotar | Evaluar ventanas de un cultivo que no es apto |
 | 4 | M10 | Calcula la ventana: las etapas por semana y la cosecha estimada con un año normal | Presentar la cosecha estimada como pronóstico |
@@ -56,7 +56,7 @@ Cada señal tiene un peso de 0 a 5. AgroSense propone los suyos (`weights.yaml`)
 
 | Peso | Efecto en la luz |
 |---|---|
-| 0 | La señal se muestra, pero no cuenta. Excepción: agua, heladas o calor críticos cuentan siempre |
+| 0 | La señal se muestra, pero no cuenta. Excepción: agua, heladas o calor críticos cuentan siempre (en P1, también `excess_rain` crítico) |
 | 1 a 3 | Cuenta normal |
 | 4 o 5 | Un `moderate` cuenta como `unfavorable` |
 
@@ -65,9 +65,9 @@ Cada señal tiene un peso de 0 a 5. AgroSense propone los suyos (`weights.yaml`)
 Se aplican dos veces: con los pesos del agricultor (`overall`) y con los de AgroSense (`overall_default`). «Señal que cuenta» es la de peso mayor que 0, más los riesgos graves de clima.
 
 0. **Aptitud.** Si la altitud del municipio queda fuera del rango de la ficha, el cultivo no es apto: luz `red`, acción `rotate`, sin ventanas. Si la ficha no tiene ese rango con fuente, la aptitud es `insufficient_data`: no bloquea y va a las limitaciones.
-1. Si `water` u `supply` no están disponibles, la luz es `not_evaluable` y la acción es `review_data`.
+1. Si `water` u `supply` cuentan y no están disponibles, la luz es `not_evaluable` y la acción es `review_data`.
 2. Si alguna señal que cuenta es `unfavorable` y crítica, o dos señales que cuentan son `unfavorable`, la luz es `red`.
-3. Si `water` es `favorable` y ninguna señal que cuenta es `unfavorable`, la luz es `green`.
+3. Si ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
 4. En cualquier otro caso, la luz es `yellow`.
 5. `frost`, `heat`, `soil`, `market` y las señales del P1 sin datos nunca cambian la luz, pero van a las limitaciones. `not_applicable` tampoco la cambia.
 
@@ -105,7 +105,7 @@ Con `other_window` la respuesta trae las mejores ventanas; con `rotate`, hasta t
 | El mismo cultivo y la misma lluvia, en un suelo arenoso | El suelo retiene menos agua: el déficit puede ser mayor y la calificación del agua, más baja |
 | Oferta con dos fuentes que no coinciden | Se ven juntas; la de `sources.yaml` calcula la señal y la otra va «para contrastar» |
 | Una ventana con el mejor promedio y una señal crítica | Se marca `high_risk`: va después de las demás y no entra en `best_windows` |
-| Sin datos de agua o de oferta | Luz `not_evaluable`, acción `review_data` |
+| Sin datos de agua o de oferta, en una señal que cuenta | Luz `not_evaluable`, acción `review_data`. Con peso 0 en la señal que falta, la luz no queda en `not_evaluable` |
 
 ## Cómo se ordenan las ventanas
 
@@ -113,7 +113,7 @@ Es el método de la FAO para aptitud de cultivos: primero lo que más limita, de
 
 1. Cada señal disponible se califica de 0 a 100. Una señal sin datos o que no aplica no califica y va a las limitaciones.
 2. **Factor limitante:** cada ventana vale lo que vale su señal más baja entre las que cuentan. Una ventana con un factor muy malo nunca queda arriba, por buenos que sean los demás.
-3. **Prioridades:** entre ventanas con un factor limitante parecido (dentro de 10 puntos), ordena el promedio de las calificaciones ponderado por los pesos (los del agricultor o, si no los cambió, los de AgroSense).
+3. **Prioridades:** entre ventanas cuyo factor limitante cae en la misma decena (por ejemplo, de 60 a 69), ordena el promedio de las calificaciones ponderado por los pesos (los del agricultor o, si no los cambió, los de AgroSense).
 4. Una ventana con una señal crítica que cuenta es de alto riesgo: va después de las demás y nunca entra entre las mejores.
 5. En empate, gana la ventana más temprana.
 6. Se muestran todas las ventanas con la calificación de cada señal y su factor limitante. La decisión es del agricultor.
