@@ -316,12 +316,179 @@ def tree(kind):
     return draw
 
 
+# ---------- Lote 3: musáceas y enredaderas ----------
+
+def scaled(fn, k):
+    """Dibuja la planta a escala 1 y la agranda desde su base."""
+    def draw(x, y, s, sd):
+        return [f'<g transform="translate({x:g} {y:g}) scale({k}) translate({-x:g} {-y:g})">{"".join(fn(x, y, s, sd))}</g>']
+    return draw
+
+
+def musa_leaf(x, y, ang, length, color, torn=False):
+    """Hoja de plátano: larga y ancha, con nervio central; las viejas se rasgan."""
+    a = math.radians(ang)
+    tip = (x + length * math.cos(a), y - length * math.sin(a) * 0.45 + length * 0.34)  # la hoja se arquea y cae
+    nx, ny = -math.sin(a) * 4.5, -math.cos(a) * 4.5
+    m1 = (x + (tip[0] - x) * 0.35, y + (tip[1] - y) * 0.35 - 2)
+    m2 = (x + (tip[0] - x) * 0.7, y + (tip[1] - y) * 0.7 - 1)
+    out = [poly([(x, y), (m1[0] + nx, m1[1] + ny), (m2[0] + nx, m2[1] + ny), tip, (m2[0] - nx * 0.8, m2[1] - ny * 0.8), (m1[0] - nx * 0.8, m1[1] - ny * 0.8)], color),
+           poly([(x, y), (m1[0] - nx * 0.8, m1[1] - ny * 0.8), (m2[0] - nx * 0.8, m2[1] - ny * 0.8), tip], shade(color, -0.14)),
+           f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{tip[0]:.1f}" y2="{tip[1]:.1f}" stroke="{shade(color, 0.25)}" stroke-width="0.8"/>']
+    if torn:
+        for t in (0.45, 0.62, 0.8):
+            px, py = x + (tip[0] - x) * t, y + (tip[1] - y) * t
+            out.append(f'<line x1="{px:.1f}" y1="{py:.1f}" x2="{px + nx * 0.9:.1f}" y2="{py + ny * 0.9:.1f}" stroke="#FFFFFF" stroke-width="0.9" opacity="0.7"/>')
+    return out
+
+
+def musa(kind):
+    """Plátano (racimo grande que se cosecha verde) y banano (racimo de dedos curvos que madura amarillo)."""
+    ripe = {"platano": "#B8C24A", "banano": "#F0CE3A"}[kind]
+    finger = {"platano": (3.2, 7.5), "banano": (2.4, 5.5)}[kind]
+
+    def draw(x, y, s, sd):
+        rnd = random.Random(sd)
+        if s == 0:  # hijuelo
+            return [poly([(x - 2, y), (x + 2, y), (x + 1.5, y - 8), (x - 1.5, y - 8)], "#7E9B4A")] + musa_leaf(x, y - 8, 60, 10, "#6FB04A") + musa_leaf(x, y - 8, 140, 9, "#5FA34A")
+        k = (0, 0.45, 0.75, 1.0, 1.0, 1.0)[s]
+        h = 30 * k
+        out = [poly([(x - 3.4 * k, y), (x + 3.4 * k, y), (x + 2.4 * k, y - h), (x - 2.4 * k, y - h)], "#7E9B4A"),
+               poly([(x, y), (x + 3.4 * k, y), (x + 2.4 * k, y - h), (x, y - h)], "#6A8540")]
+        for j in range(1, 4):  # vainas del pseudotallo
+            out.append(f'<line x1="{x - 3 * k:.1f}" y1="{y - h * j / 4:.1f}" x2="{x + 3 * k:.1f}" y2="{y - h * j / 4 - 2:.1f}" stroke="#5E7438" stroke-width="0.8"/>')
+        top = (x, y - h)
+        for i, ang in enumerate((20, 160, 60, 120, 95, 40, 140)[: 4 + min(3, s)]):
+            col = ("#5FA34A", "#6FB04A", "#4E9240", "#7DBB55")[i % 4]
+            if i == 6 and s >= 4:
+                col = "#9C9A45"  # hoja vieja que amarillea
+            out += musa_leaf(top[0], top[1], ang, (24 + rnd.uniform(-3, 3)) * k, col, torn=s >= 3 and i % 3 == 0)
+        if s >= 3:  # pedúnculo con la bellota morada al final
+            bx, by = x + 6 * k, y - h * 0.62
+            out.append(f'<path d="M{x + 1:.1f} {y - h + 2:.1f} Q{x + 10 * k:.1f} {y - h * 0.9:.1f} {bx:.1f} {by:.1f}" stroke="#6A8540" stroke-width="1.6" fill="none"/>')
+            if s == 3:
+                out += [poly([(bx - 3, by), (bx + 3, by), (bx, by + 9)], "#7A2E4A"), poly([(bx, by), (bx + 3, by), (bx, by + 9)], "#5E2238")]
+            else:
+                col = ripe if s == 5 else "#7FA83A"
+                for row in range(4):  # manos del racimo
+                    ry = by - 6 + row * 4.2
+                    for c in range(-2, 3):
+                        fx = bx - 1 + c * finger[0] * 0.8
+                        out.append(poly([(fx, ry), (fx + finger[0] * 0.5, ry - finger[1] * 0.75), (fx + finger[0], ry - finger[1] * 0.6), (fx + finger[0] * 0.6, ry)], shade(col, (c % 2) * -0.08)))
+                out += [poly([(bx - 2, by + 11), (bx + 2, by + 11), (bx, by + 16)], "#7A2E4A")]  # bellota restante
+        return out
+
+    return draw
+
+
+def emparrado(cx, cy, rows, s):
+    """Emparrado (granadilla): postes en las esquinas y una malla de alambre arriba."""
+    H = 52
+    pts = [at(cx, cy, u, v) for u, v in ((0.02, 0.02), (0.98, 0.02), (0.98, 0.98), (0.02, 0.98))]
+    out = []
+    for i, (px, py) in enumerate(pts):
+        if i != 2:  # el poste del frente se dibuja al final para que quede delante
+            out.append(f'<line x1="{px:.1f}" y1="{py:.1f}" x2="{px:.1f}" y2="{py - H:.1f}" stroke="{D["tierra"]}" stroke-width="2.6"/>')
+    for t in (0.02, 0.35, 0.65, 0.98):
+        a0, a1 = at(cx, cy, t, 0.02), at(cx, cy, t, 0.98)
+        b0, b1 = at(cx, cy, 0.02, t), at(cx, cy, 0.98, t)
+        out.append(f'<line x1="{a0[0]:.1f}" y1="{a0[1] - H:.1f}" x2="{a1[0]:.1f}" y2="{a1[1] - H:.1f}" stroke="#D8CDB8" stroke-width="0.9"/>')
+        out.append(f'<line x1="{b0[0]:.1f}" y1="{b0[1] - H:.1f}" x2="{b1[0]:.1f}" y2="{b1[1] - H:.1f}" stroke="#D8CDB8" stroke-width="0.9"/>')
+    return out
+
+
+def emparrado_front(cx, cy):
+    px, py = at(cx, cy, 0.98, 0.98)
+    return [f'<line x1="{px:.1f}" y1="{py:.1f}" x2="{px:.1f}" y2="{py - 52:.1f}" stroke="{D["tierra"]}" stroke-width="2.6"/>']
+
+
+def passiflora(kind):
+    """Granadilla en emparrado (techo de hojas, frutos colgando) y maracuyá en espaldera (cortina en el hilo de arriba)."""
+    roof = kind == "granadilla"
+    fruit_ripe = {"granadilla": "#F0A43A", "maracuya": "#E8C93A"}[kind]
+    corona = {"granadilla": "#7A4AA8", "maracuya": "#5B3A8C"}[kind]
+
+    def draw(x, y, s, sd):
+        rnd = random.Random(sd)
+        H = 52 if roof else 44
+        if s == 0:
+            return [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - 10:.1f}" stroke="#6E9C4A" stroke-width="1.4"/>'] + blob(x, y - 10, 3, "#6FB04A", sd)
+        reach = (0, 0.35, 0.75, 1.0, 1.0, 1.0)[s]
+        top = y - H * min(1.0, reach * 1.2)
+        out = [f'<path d="M{x:.1f} {y:.1f} Q{x + 4:.1f} {(y + top) / 2:.1f} {x:.1f} {top:.1f}" stroke="#5E7438" stroke-width="1.5" fill="none"/>']
+        if s >= 2:
+            spread = 24 * reach if roof else 16 * reach
+            for i in range(14 if roof else 11):  # follaje tupido
+                dx = rnd.uniform(-spread, spread)
+                dy = rnd.uniform(-5, 5) if roof else rnd.uniform(-2, 20)  # techo plano o cortina colgante
+                out += blob(x + dx, top + dy, 7.2 if roof else 6.4, ("#4E8F3A", "#5FA34A", "#6FB04A", "#3F7F33")[i % 4], sd + i, ry=5.2 if roof else 5.8)
+        else:
+            out += blob(x, top, 4, "#6FB04A", sd)
+        if s == 3:  # flor de pasiflora: pétalos blancos y corona morada
+            for _ in range(4):
+                fx, fy = x + rnd.uniform(-16, 16), top + (rnd.uniform(4, 9) if roof else rnd.uniform(4, 16))
+                out += [f'<circle cx="{fx:.1f}" cy="{fy:.1f}" r="3" fill="#FFFFFF" stroke="#D8CDE8" stroke-width="0.6"/>',
+                        f'<circle cx="{fx:.1f}" cy="{fy:.1f}" r="1.9" fill="none" stroke="{corona}" stroke-width="1.1"/>']
+        if s >= 4:
+            col = fruit_ripe if s == 5 else "#7FA83A"
+            for _ in range(5):
+                fx, fy = x + rnd.uniform(-18, 18), top + (rnd.uniform(8, 13) if roof else rnd.uniform(8, 22))
+                out.append(f'<line x1="{fx:.1f}" y1="{fy - 4:.1f}" x2="{fx:.1f}" y2="{fy - 2.5:.1f}" stroke="#5E7438" stroke-width="0.8"/>')
+                out += gem(fx, fy, 3.1, col, 3.5 if kind == "maracuya" else 3.1)
+                if kind == "granadilla" and s == 5:
+                    out.append(f'<circle cx="{fx + 0.8:.1f}" cy="{fy - 0.6:.1f}" r="0.6" fill="#FFFFFF" opacity="0.8"/>')
+        return out
+
+    return draw
+
+
+def espaldera(height, posts_color=None):
+    def draw(cx, cy, rows, s):
+        out = []
+        for r in range(rows):
+            v = (r + 0.5) / rows
+            a0, a1 = at(cx, cy, 0.03, v), at(cx, cy, 0.97, v)
+            for p in (a0, a1):
+                out.append(f'<line x1="{p[0]:.1f}" y1="{p[1]:.1f}" x2="{p[0]:.1f}" y2="{p[1] - height:.1f}" stroke="{posts_color or D["tierra"]}" stroke-width="2.4"/>')
+            for hgt in (height * 0.5, height * 0.95):
+                out.append(f'<line x1="{a0[0]:.1f}" y1="{a0[1] - hgt:.1f}" x2="{a1[0]:.1f}" y2="{a1[1] - hgt:.1f}" stroke="#D8CDB8" stroke-width="1"/>')
+        return out
+    return draw
+
+
+def vid(x, y, s, sd):
+    """Uva en espaldera: tronco leñoso, hojas palmeadas a lo largo del hilo y racimos que pasan de verde a morado."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - 12:.1f}" stroke="#6B4A2E" stroke-width="2"/>']
+    k = (0, 0.4, 0.75, 1.0, 1.0, 1.0)[s]
+    out = [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - 20:.1f}" stroke="#6B4A2E" stroke-width="2.6"/>']
+    for i in range(int(6 * k) + 1):  # brazos sobre el hilo y hojas palmeadas
+        dx, dy = rnd.uniform(-10, 10), -20 - rnd.uniform(0, 18) * k
+        col = ("#5FA34A", "#4E8F3A", "#6FB04A")[i % 3]
+        out += blob(x + dx, y + dy, 5.2, col, sd + i, ry=4.6)
+        out += [poly([(x + dx - 2, y + dy - 4), (x + dx, y + dy - 7), (x + dx + 2, y + dy - 4)], shade(col, 0.15))]  # punta de la hoja
+    if s == 3:
+        for _ in range(3):
+            fx, fy = x + rnd.uniform(-8, 8), y - 18 - rnd.uniform(0, 10)
+            out.append(f'<circle cx="{fx:.1f}" cy="{fy:.1f}" r="1.4" fill="#D9E6A0"/>')
+    if s >= 4:
+        col = "#9CC152" if s == 4 else "#5B2A5E"
+        for _ in range(3):  # racimos: triángulo de bayas
+            gx, gy = x + rnd.uniform(-9, 9), y - 14 - rnd.uniform(0, 6)
+            for row, n in enumerate((4, 3, 2, 1)):
+                for c in range(n):
+                    out.append(f'<circle cx="{gx - n * 1.3 + c * 2.6 + 1.3:.1f}" cy="{gy + row * 2.4:.1f}" r="1.45" fill="{shade(col, (c % 2) * 0.12)}"/>')
+    return out
+
+
 # ---------- Catálogo ----------
 
 STAGES = {
     "anual": ("Siembra", "Emergencia", "Desarrollo", "Floración", "Llenado", "Cosecha"),
     "raiz": ("Siembra", "Emergencia", "Hojas", "Crecimiento", "Engrose", "Cosecha"),
     "perenne": ("Plántula", "Joven", "Crecimiento", "Floración", "Fruto verde", "Cosecha"),
+    "musa": ("Hijuelo", "Joven", "Crecimiento", "Bellota", "Racimo verde", "Cosecha"),
 }
 
 # (clave, nombre, arquetipo, etapas, planta, filas, columnas, ¿caballones?, extras por etapa, ¿piloto?, nota)
@@ -343,6 +510,17 @@ CROPS = (
      "Copa compacta; muchos frutos achatados de naranja intenso"),
     ("aguacate", "Aguacate Hass", "tree_fruit", "perenne", tree("aguacate"), 2, 2, False, {"orchard": True}, False,
      "Árbol alto de copa irregular y hoja grande; flor verde amarillenta; fruto en forma de pera que madura casi negro"),
+    ("platano", "Plátano", "musa", "musa", scaled(musa("platano"), 1.9), 2, 2, False, {"orchard": True}, False,
+     "Pseudotallo y hojas largas que se rasgan; la bellota da un racimo de dedos grandes que se cosecha verde"),
+    ("banano", "Banano", "musa", "musa", scaled(musa("banano"), 1.9), 2, 2, False, {"orchard": True}, False,
+     "Como el plátano, con dedos más pequeños y curvos que maduran amarillos"),
+    ("granadilla", "Granadilla", "passiflora", "perenne", scaled(passiflora("granadilla"), 1.0), 3, 3, False,
+     {"all": ("emparrado", lambda cx, cy, rows, s: emparrado(cx, cy, rows, s)), "front": emparrado_front}, False,
+     "Enredadera en emparrado: techo de hojas, flor de pasiflora y frutos naranja que cuelgan por debajo"),
+    ("maracuya", "Maracuyá", "passiflora", "perenne", scaled(passiflora("maracuya"), 1.0), 3, 4, False, {"all": ("espaldera", espaldera(44))}, False,
+     "Enredadera en espaldera: cortina de hojas desde el hilo de arriba; frutos que pasan de verde a amarillo"),
+    ("uva", "Uva", "vine", "perenne", scaled(vid, 1.25), 3, 6, False, {"all": ("espaldera", espaldera(36, "#8A6A44"))}, False,
+     "Vid en espaldera: tronco leñoso, hoja palmeada y racimos que pasan de verde a morado"),
 )
 
 
@@ -358,12 +536,14 @@ def stage_cell(crop, s, cx, cy):
             for c in range(cols):
                 x, y = at(cx, cy, (c + 0.5) / cols, (r + 0.5) / rows)
                 out.append(poly([(x, y - 3), (x + 2.5, y), (x, y + 2), (x - 2.5, y)], "#E8D9B0" if rnd.random() > 0.5 else "#D9C79A"))
-    if "all" in extras and s > 0:
+    if "all" in extras and (s > 0 or extras["all"][0] in ("emparrado", "espaldera")):
         out += extras["all"][1](cx, cy, rows, s)
     if s == 5 and 5 in extras and extras[5][0] == "ground":
         out += extras[5][1](cx, cy)
-    elif s > 0:
+    elif s > 0 or "all" in extras:
         out += field(cx, cy, rows, cols, plant, s, seed=sum(map(ord, key)))
+    if "front" in extras:
+        out += extras["front"](cx, cy)
     return out
 
 
