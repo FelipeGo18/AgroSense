@@ -1,9 +1,12 @@
 // Fondos generados por design/paisaje/build_paisaje.py. Entran como texto para poder animar cada capa.
 import a1 from "../../../design/paisaje/svg/a1-orbita.svg?raw";
+import a1b from "../../../design/paisaje/svg/a1b-orbita-cerca.svg?raw";
 import a2 from "../../../design/paisaje/svg/a2-atmosfera.svg?raw";
 import a3 from "../../../design/paisaje/svg/a3-region.svg?raw";
+import a3b from "../../../design/paisaje/svg/a3b-region-baja.svg?raw";
 import a4 from "../../../design/paisaje/svg/a4-valle.svg?raw";
 import a5 from "../../../design/paisaje/svg/a5-municipio.svg?raw";
+import a5b from "../../../design/paisaje/svg/a5b-municipio-cerca.svg?raw";
 import a6 from "../../../design/paisaje/svg/a6-vereda.svg?raw";
 import a7 from "../../../design/paisaje/svg/a7-lote.svg?raw";
 import b1 from "../../../design/paisaje/svg/b1-preparar.svg?raw";
@@ -15,7 +18,7 @@ import c1 from "../../../design/paisaje/svg/c1-paramo.svg?raw";
 import c2 from "../../../design/paisaje/svg/c2-ladera.svg?raw";
 import c4 from "../../../design/paisaje/svg/c4-pueblo.svg?raw";
 
-export const SCENES = { a1, a2, a3, a4, a5, a6, a7, b1, b2, b3, b4, b5, c1, c2, c4 };
+export const SCENES = { a1, a1b, a2, a3, a3b, a4, a5, a5b, a6, a7, b1, b2, b3, b4, b5, c1, c2, c4 };
 export type SceneId = keyof typeof SCENES;
 
 /** Capas que se mueven más despacio cuanto más lejos están: eso da la profundidad. */

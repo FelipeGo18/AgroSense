@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { ExampleLabel } from "../components/Labels";
 import { Mascot, type MascotMood } from "../components/Mascot";
 import { Scene, type SceneId } from "./scenes";
-import { Card, JourneyNav, ScrollHint, useReducedMotion } from "./shared";
+import { Card, JourneyNav, ScrollHint, useReducedMotion, useSmoothScroll } from "./shared";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -40,6 +40,7 @@ function PlaceCard({ place, index }: { place: Place; index: number }) {
 export function Journey3() {
   const root = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
+  useSmoothScroll(!reduced);
   const [index, setIndex] = useState(0);
   const [moving, setMoving] = useState(false);
 
@@ -53,7 +54,7 @@ export function Journey3() {
           trigger: root.current,
           start: "top top",
           end: "bottom bottom",
-          scrub: 0.6,
+          scrub: true,
           onUpdate: (self) => {
             const p = self.progress * last;
             setIndex(Math.round(p));
