@@ -193,7 +193,7 @@ def desktop():
     y += sh + 32
     hc, hh = how_card(48, y, w - 96)
     b += hc
-    return frame((w, y + hh + 60), b, P["niebla"])
+    return ui.long_page((w, y + hh + 60), b, P["niebla"])
 
 
 def month_card(x, y, w, m):
@@ -246,7 +246,7 @@ def mobile():
     y += sh + 20
     hc, hh = how_card(pad, y, fw)
     b += hc
-    return frame((w, y + hh + 50), b, P["niebla"])
+    return ui.long_page((w, y + hh + 50), b, P["niebla"])
 
 
 SCREENS = {"finca-05-agua-escritorio": desktop, "finca-05-agua-movil": mobile}

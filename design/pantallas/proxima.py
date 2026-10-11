@@ -173,7 +173,7 @@ def desktop():
     y += p1h + 44
     b.append(text(48, y, "Datos 2026.11.0 · Reglas 1.0.0 · Cifras de muestra", 15, fill=SEC))
     b += link(w - 48, y, "¿Cómo se arma este orden?", 15, anchor="end")
-    return frame((w, y + 60), b, P["niebla"])
+    return ui.long_page((w, y + 60), b, P["niebla"])
 
 
 def mobile():
@@ -214,7 +214,7 @@ def mobile():
     y += p1h + 40
     b.append(text(pad, y, "Datos 2026.11.0 · Reglas 1.0.0 · Cifras de muestra", 13, fill=SEC))
     b += link(pad, y + 30, "¿Cómo se arma este orden?", 15)
-    return frame((w, y + 80), b, P["niebla"])
+    return ui.long_page((w, y + 80), b, P["niebla"])
 
 
 SCREENS = {"finca-04-proxima-siembra-escritorio": desktop, "finca-04-proxima-siembra-movil": mobile}

@@ -174,7 +174,7 @@ def plan_desktop(guest=False):
     y += oh + 30
     b.append(text(48, y, f"{m.VERSIONS} · Pesos de AgroSense", 14, fill=SEC))
     b += link(w - 48, y, "¿De dónde salen estos datos?", 15, anchor="end")
-    return frame((w, y + 50), b, P["niebla"])
+    return ui.long_page((w, y + 50), b, P["niebla"])
 
 
 def plan_mobile():
@@ -202,7 +202,7 @@ def plan_mobile():
     b += ol
     y += oh + 20
     b.append(text(pad, y, f"{m.VERSIONS} · Pesos de AgroSense", 13, fill=SEC))
-    return frame((w, y + 50), b, P["niebla"])
+    return ui.long_page((w, y + 50), b, P["niebla"])
 
 
 def week_row(x, y, w, wk, i, compact=False):
@@ -249,7 +249,7 @@ def weeks(mobile=False):
         y += rh + 10
     y += 14
     b.append(text(pad, y, "Según la historia de la zona. No es un pronóstico: usted decide.", 13 if mobile else 14, fill=SEC))
-    return frame((w, y + 50), b, P["niebla"])
+    return ui.long_page((w, y + 50), b, P["niebla"])
 
 
 SCREENS = {

@@ -477,9 +477,9 @@ def lote_vivo_desktop(sim=False):
           text(24, 40, "Papa · del 2 de agosto a la cosecha", 20, 700), text(w - 96 - 24, 40, "Arrastre el rombo o toque reproducir", 14, fill=SEC, anchor="end")]
     tl += timeline(24, 70, w - 96 - 48, SIM if sim else TODAY)
     b.append(group("tiempo", tl, 48, ty))
-    sc_, _ = soil_card(48, ty + 210, w - 96)
+    sc_, sh_ = soil_card(48, ty + 210, w - 96)
     b += sc_
-    return frame((w, h), b, P["niebla"])
+    return ui.long_page((w, ty + 210 + sh_ + 60), b, P["niebla"])
 
 
 def lote_vivo_mobile(view=(-30, 30, 1.45), name="m"):
@@ -513,7 +513,7 @@ def lote_vivo_mobile(view=(-30, 30, 1.45), name="m"):
     b += s_
     y += sh_ + 28
     b += button(pad, y, w - 2 * pad, "Registrar cosecha de papa", "secondary")
-    return frame((w, y + 90), b, P["niebla"])
+    return ui.long_page((w, y + 90), b, P["niebla"])
 
 
 SCREENS = {
