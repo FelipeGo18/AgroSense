@@ -42,6 +42,7 @@ estado: pendiente
 - **Criterios de aceptación:**
   - [ ] Extracción por polígono municipal
   - [ ] Mismas reglas de calidad
+- **Notas:** Con los lotes dibujados en el mapa (HU-164) se puede ir más fino: el NDVI de HLS (Harmonized Landsat Sentinel-2, de la NASA, 30 m) por polígono de lote mostraría el verdor real del cultivo. Un lote de 1,5 ha cubre unos 16 píxeles; las nubes del altiplano dejan huecos. Por evaluar en P1.
 
 ### HU-044 · Altitud de cada municipio
 

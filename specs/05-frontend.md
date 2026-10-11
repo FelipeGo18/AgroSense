@@ -157,12 +157,13 @@ Fijar versiones exactas al crear `web/`.
 | Sesión | Cookie de sesión de la API (sin librería extra) | Registro e inicio de sesión con usuario y contraseña contra `/api/v1/auth` |
 | Datos | `openapi-typescript` y MSW | Igual que el resto del proyecto: tipos del contrato y respuestas simuladas |
 | Assets 3D | glTF comprimido con `gltf-transform` | Un solo formato liviano |
+| Mapa del lote | MapLibre GL JS con Terra Draw (adaptador de MapLibre) para dibujar el contorno; mapa base OpenStreetMap (OpenFreeMap) y capa satelital por definir tras revisar su licencia | Dibujar el lote sobre el mundo real y centrar en el municipio. Licencias abiertas y sin clave de API para el mapa base |
 | Diseño | Figma (conectado por el MCP TalkToFigma) | Moodboard, tokens, componentes y pantallas |
 | Calidad | ESLint, Prettier y Vitest; las pruebas corren en Docker | Configuración mínima y el mismo entorno para todos |
 | Pruebas de scroll | `playwright-core` con el Chrome del equipo (`npm --prefix web run test:scroll`). Solo en la fase 0 y fuera de Docker y de CI | Los recorridos con GSAP y Lenis dependen de tiempos reales de cuadro: scroll brusco, táctil, teclado y cambio de tamaño no se pueden comprobar con Vitest |
 | Lenguaje | TypeScript 6.0 | `typescript-eslint` aún no soporta la 7; se sube cuando lo haga |
 
-**Descartado por ahora:** Recharts (cuesta adaptarlo al estilo), MapLibre (el descenso 3D cubre la vista regional de HU-095; se retoma solo si la escena no alcanza), Next.js y Astro (no hay servidor Node en el despliegue).
+**Descartado por ahora:** Recharts (cuesta adaptarlo al estilo), MapLibre para la vista regional (la cubre el descenso; MapLibre sí entra para dibujar el lote), Next.js y Astro (no hay servidor Node en el despliegue).
 
 ## Modo simulación
 

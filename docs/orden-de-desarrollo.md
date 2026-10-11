@@ -56,4 +56,4 @@ Al terminar esta fase el diagnóstico debe funcionar de punta a punta, aunque se
 
 1. El camino crítico es EP-00 → EP-01 → datos reales → diagnóstico integrado → demo. Todo lo demás se recorta antes.
 2. Orden de recorte si hay retraso en la hora 34: ver `docs/plan-48h.md`.
-3. No empezar ninguna épica de la etapa 1 hasta que Haider dé por congelado el contrato de EP-01.
+3. No empezar ninguna épica de la etapa 1 hasta que Haider o Felipe den por congelado el contrato de EP-01.
