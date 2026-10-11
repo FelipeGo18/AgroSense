@@ -46,3 +46,21 @@
     }
   }
 }
+
+/* Mascota (Mascot.tsx): flota en reposo. Se detiene con «reducir movimiento». */
+@keyframes mascot-float {
+  from {
+    transform: translateY(-4px) rotate(-1.5deg);
+  }
+  to {
+    transform: translateY(5px) rotate(1.5deg);
+  }
+}
+.mascot-float {
+  animation: mascot-float 2.6s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascot-float {
+    animation: none;
+  }
+}

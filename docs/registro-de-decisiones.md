@@ -24,6 +24,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Lenguaje visual de los componentes | Diorama low-poly: esquinas biseladas, caras trianguladas y canto en lugar de sombra; nada con esquinas redondas. Descartados «instrumento de campo» y «cuaderno de campo» (HU-153) | 10 oct 2026 |
 | Orden de trabajo del frontend | Cada pieza se diseña y aprueba primero en Figma; el código va después | 10 oct 2026 |
 | Control de prioridad | Cinco semillas y un «0» que se tocan, en lugar de un deslizador (se retira Radix Slider) | 10 oct 2026 |
+| Mascota | Semilla Sputnik: semilla germinando en estilo de caricatura de los años 60; raíces por antenas, brote por antena de señal. La semilla cambia según el contexto; la cara y el brote son la identidad (HU-171) | 10 oct 2026 |
 | Rotaciones y finca | Se unen en Mi finca, por lote | 10 oct 2026 |
 | Audio | P1 (HU-157) | 10 oct 2026 |
 | «Acerca de» | Sin sección aparte: el panel «¿Cómo funciona y de dónde sale esto?» cubre fuentes, versión y cómo se decide | 10 oct 2026 |

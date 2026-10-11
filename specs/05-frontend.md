@@ -35,14 +35,17 @@ Si una idea se reconoce como «una pieza del juego», se descarta.
 - **El paisaje acompaña al dato.** Las parcelas del cultivo consultado se resaltan. El paisaje refuerza, nunca reemplaza, el resultado escrito.
 - **El paisaje está vivo.** El cielo y la escena reflejan la condición aproximada de ahora en el municipio: día o noche, lluvia, nubes y viento (ver «Ambiente en vivo»).
 
-### Mascota: el satélite
+### Mascota: la Semilla Sputnik
 
-Un satélite pequeño, tecnológico y tierno. Es el guía: acompaña el descenso, señala lo importante y reacciona a lo que pasa (celebra un verde, se preocupa con un rojo, se encoge con «datos insuficientes» sin que parezca un riesgo). En el inicio presenta qué es AgroSense.
+Una semilla germinando que es un satélite, dibujada como caricatura de los años 60: tinta gruesa, ojos de pastel, brazos de manguera con guantes y pocos colores planos. Es la guía: acompaña el descenso, señala lo importante y reacciona a lo que pasa (celebra un verde, se preocupa con un rojo, se encoge entre niebla con «datos insuficientes» sin que parezca un riesgo). En el inicio presenta qué es AgroSense.
 
+- Las raíces son las antenas barridas del Sputnik: al volar quedan atrás como estela. El brote es la antena de señal y sus hojas son los paneles solares.
+- La identidad está en la cara, los brazos, las raíces y el brote. La semilla puede cambiar según el contexto (germinada, frijol, maíz…), por ejemplo con el cultivo consultado.
+- Su estilo se aleja a propósito del low-poly de la escena: es «otro material» que viaja por el paisaje.
 - Representa el origen de los datos (observación desde el espacio) sin contar la historia de NASA.
-- Tiene una versión 3D para la escena y una 2D para el modo ligero, los estados y los íconos.
+- Tiene una versión 2D (`Mascot` en `web/src/components/`) para la interfaz, el modo ligero, los estados y los íconos, y tendrá una 3D para la escena.
 - Sus expresiones refuerzan el resultado; nunca son la única forma de comunicarlo.
-- Es original: no se parece a ningún satélite ni personaje de marca existente.
+- Es original: no copia a ningún satélite ni personaje de marca existente.
 
 ## Mapa de la web
 
