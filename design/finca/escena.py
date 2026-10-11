@@ -8,6 +8,7 @@ En modo ligero o con movimiento reducido, la escena es la imagen fija del estado
     python design/finca/escena.py     # escribe svg/ambiente-combinaciones.svg y svg/ambiente-animacion.svg
 """
 
+import contextlib
 import math
 import random
 import sys
@@ -19,6 +20,7 @@ sys.path.insert(0, str(DIR.parent / "kit"))
 
 import ambiente as am  # noqa: E402
 import cultivos as cv  # noqa: E402
+import granja  # noqa: E402
 from build_kit_svg import BORDE, D, P, WHITE, chamfer, poly, shade, svg  # noqa: E402
 from sheet import FONT_TITLE, SEC, ridges, text  # noqa: E402
 
@@ -56,9 +58,23 @@ def butterfly(x, y, wing=1.0, scale=1.0, color="#F2C232", edge="#3A2A1E"):
 
 # ---------- Lote ----------
 
-def lote(cx, cy, scale, soil="normal", wind=None, frost=0.0):
-    """El lote de maíz. `wind(x)` da la inclinación en grados según la posición; `frost` de 0 a 1."""
-    _, _, _, _, plant, rows, cols, ridged, _, *_ = CROP
+def lote(cx, cy, scale, soil="normal", wind=None, frost=0.0, crop=CROP, stage=am.STAGE):
+    """El lote con un solo cultivo. `wind(x)` da la inclinación en grados según la posición; `frost` de 0 a 1."""
+    return [f'<g id="lote" transform="translate({cx:g} {cy:g}) scale({scale:g})">{"".join(cell(crop, stage, soil, wind, frost))}</g>']
+
+
+def cell(crop, stage, soil="normal", wind=None, frost=0.0):
+    """Un cubo de tierra con su cultivo en su etapa, centrado en (0, 0). Sin cultivo: la parte libre, con hierba."""
+    if crop is None:
+        out = cv.block(0, 0, 0, top=shade(cv.GRASS, -0.12))
+        rnd = random.Random(21)
+        for _ in range(26):
+            x, y = cv.at(0, 0, rnd.random(), rnd.random())
+            out += cv.blade(x, y, rnd.uniform(60, 120), rnd.uniform(5, 9), 1.6, rnd.choice(("#7DAE45", "#8DBA4F", "#6E9A3A")))
+        return out
+    key, _, _, _, plant, rows, cols, ridged, _, *_ = crop
+    if soil == "normal" and not wind and not frost:  # sin capas de clima: el cubo tal como lo dibuja el catálogo
+        return cv.stage_cell(crop, stage, 0, 0)
     top = {"mojado": "#4A2A18", "seco": "#9A6A40"}.get(soil)
     if frost:
         top = top or "#6B5048"
@@ -85,18 +101,98 @@ def lote(cx, cy, scale, soil="normal", wind=None, frost=0.0):
             return [f'<g transform="translate({x:g} {y:g}) skewX({skew:.1f}) translate({-x:g} {-y:g})">{body}</g>']
         return [body]
 
-    out += cv.field(0, 0, rows, cols, plant_state, am.STAGE, seed=sum(map(ord, "maiz")))
+    out += cv.field(0, 0, rows, cols, plant_state, stage, seed=sum(map(ord, key)))
     if frost:
         rnd = random.Random(9)
         for _ in range(int(140 * frost)):
             x, y = cv.at(0, 0, rnd.random(), rnd.random())
             out.append(f'<circle cx="{x:.1f}" cy="{y - rnd.uniform(0, 70):.1f}" r="{rnd.choice((0.7, 1.0, 1.3))}" fill="#FFFFFF" fill-opacity="{rnd.uniform(0.6, 1):.2f}"/>')
+    return out
+
+
+# ---------- Lote con varios cultivos: cubos juntos ----------
+
+GAP = granja.GAP  # separación entre cubos: el camino entre las camas
+BED = 22  # alto de las camas en la finca: más bajas que el bloque del catálogo (50)
+
+
+@contextlib.contextmanager
+def low_beds():
+    """Dibuja las camas del lote vivo más bajas que el bloque del catálogo."""
+    full, cv.DEPTH = cv.DEPTH, BED
+    try:
+        yield
+    finally:
+        cv.DEPTH = full
+
+
+def cube_origin(i, j):
+    """Centro del cubo (i a lo largo del surco, j entre surcos) en unidades del catálogo."""
+    k = 1 + GAP / (2 * cv.A)
+    return ((i - j) * cv.A * k, (i + j) * cv.B * k)
+
+
+def cube_pos(layout, i, j):
+    """Centro del cubo (i, j) con el lote centrado en su origen."""
+    xs, ys = zip(*(cube_origin(c[0], c[1]) for c in layout))
+    ox, oy = cube_origin(i, j)
+    return ox - sum(xs) / len(xs), oy - sum(ys) / len(ys)
+
+
+def cubes(cx, cy, scale, layout, soil="normal", wind=None, frost=0.0, selected=None):
+    """El lote como cubos juntos. `layout`: lista de (i, j, clave, cultivo, etapa); cada cultivo ocupa tantos cubos
+    como su parte del área. El cultivo elegido lleva un halo calabaza."""
+    out = []
+    for i, j, key, crop, stage in sorted(layout, key=lambda c: (c[0] + c[1], c[0])):
+        ox, oy = cube_pos(layout, i, j)
+        body = []
+        if key == selected:
+            N, E, S, W = cv.corners(0, 0)
+            m = 9
+            body.append(poly([(N[0], N[1] - m), (E[0] + 2 * m, E[1]), (E[0] + 2 * m, E[1] + cv.DEPTH + m), (S[0], S[1] + cv.DEPTH + 1.6 * m),
+                              (W[0] - 2 * m, W[1] + cv.DEPTH + m), (W[0] - 2 * m, W[1])], P["calabaza"]))
+        wind_here = (lambda x, ox=ox: wind(x + ox)) if wind else None
+        body += cell(crop, stage, soil if crop else "normal", wind_here, frost)
+        out.append(f'<g id="cubo-{key}-{i}-{j}" transform="translate({ox:g} {oy:g})">{"".join(body)}</g>')
     return [f'<g id="lote" transform="translate({cx:g} {cy:g}) scale({scale:g})">{"".join(out)}</g>']
+
+
+def tag(x, y, label, sub=None, on=False):
+    """Rótulo flotante de un cultivo sobre sus cubos."""
+    w = max(len(label) * 8.6, len(sub or "") * 7.0) + 22
+    h = 44 if sub else 28
+    out = [poly(chamfer(-w / 2, -h - 8, w, h, 7), P["noche"] if on else WHITE, None if on else P["noche"], 0 if on else 1.5),
+           poly([(-6, -9), (6, -9), (0, -1)], P["noche"]),
+           text(0, -h + 10, label, 14, 700, WHITE if on else P["noche"], anchor="middle")]
+    if sub:
+        out.append(text(0, -h + 27, sub, 12, fill=P["niebla"] if on else SEC, anchor="middle"))
+    return [f'<g transform="translate({x:g} {y:g})">{"".join(out)}</g>']
+
+
+# ---------- El perro de la finca (la casa y la cerca están en granja.py) ----------
+
+def dog(x, y, k=1.0, color="#B97A3E"):
+    """Perro acostado de lado, con la cabeza sobre las patas y la cola enroscada."""
+    dark, light = shade(color, -0.25), shade(color, 0.22)
+
+    def p(points, fill):
+        return poly([(x + a * k, y + b * k) for a, b in points], fill)
+    return [f'<ellipse cx="{x:g}" cy="{y + 2 * k:g}" rx="{32 * k:g}" ry="{6 * k:g}" fill="#000" fill-opacity="0.18"/>',
+            p([(26, -6), (34, -14), (38, -10), (30, -2)], dark),                        # cola
+            p([(-18, 0), (-22, -12), (-10, -20), (14, -20), (28, -10), (26, 0)], color),  # cuerpo
+            p([(-10, -20), (14, -20), (8, -14), (-8, -14)], light),                     # lomo con luz
+            p([(-32, 0), (-14, 0), (-14, -4), (-32, -4)], light),                       # patas delanteras
+            p([(-26, -4), (-34, -12), (-30, -22), (-18, -22), (-14, -12), (-16, -4)], color),  # cabeza
+            p([(-34, -12), (-42, -10), (-42, -6), (-32, -6)], light),                   # hocico
+            f'<circle cx="{x - 42 * k:g}" cy="{y - 8 * k:g}" r="{1.6 * k:g}" fill="#2A1E16"/>',
+            p([(-20, -22), (-14, -28), (-12, -18)], dark),                             # oreja
+            f'<path d="M{x - 30 * k:g} {y - 15 * k:g} q{2 * k:g} {2 * k:g} {4 * k:g} 0" stroke="#2A1E16" stroke-width="{1.2 * k:g}" fill="none"/>']  # ojo cerrado
 
 
 # ---------- Escena por capas ----------
 
-def scene(w, h, time, conds=(), soil="normal", chips=(), gust_x=None, rain_phase=0.0, frost=None, sun_y=None, butterflies=(), seed=1):
+def scene(w, h, time, conds=(), soil="normal", chips=(), gust_x=None, rain_phase=0.0, frost=None, sun_y=None, butterflies=(), seed=1,
+          crop=CROP, stage=am.STAGE, lot_k=None, lot_y=0.617, layout=None, selected=None, tags=(), farm=False, view=None, lot_x=0.5):
     conds = set(conds)
     rnd = random.Random(seed)
     top, bottom = sky_colors(time, conds)
@@ -118,11 +214,11 @@ def scene(w, h, time, conds=(), soil="normal", chips=(), gust_x=None, rain_phase
     elif time != "noche":
         for x, y, r, sd in ((0.2, 80, 18, 5), (0.5, 120, 14, 6)):
             b += am.cloud(w * x + (30 * k if "viento" in conds else 0), y * k, r * k, "#FFFFFF" if time == "dia" else "#F2C9A8", sd)
-    hy = h * 0.447
-    b.append(f'<g transform="translate(0 {hy:.0f})" opacity="{0.55 if time == "noche" else 0.9}">{"".join(ridges(w, 0, 90 * k))}</g>')
+    hy, rh = (h * 0.1, 40 * k) if farm else (h * 0.447, 90 * k)  # con la finca, el terreno llena casi toda la vista
+    b.append(f'<g transform="translate(0 {hy:.0f})" opacity="{0.55 if time == "noche" else 0.9}">{"".join(ridges(w, 0, rh))}</g>')
     f = frost if frost is not None else (1.0 if "escarcha" in conds else 0.0)
     grass = "#9DB6A8" if f > 0.6 else ("#8FAF7A" if f > 0 else shade(cv.GRASS, -0.15))
-    b.append(f'<rect y="{hy + 90 * k:.0f}" width="{w}" height="{h}" fill="{grass}"/>')
+    b.append(f'<rect y="{hy + rh:.0f}" width="{w}" height="{h}" fill="{grass}"/>')
 
     if gust_x is not None:  # la ráfaga dobla las matas a su paso, en ola
         def wind(x):
@@ -132,7 +228,38 @@ def scene(w, h, time, conds=(), soil="normal", chips=(), gust_x=None, rain_phase
             return -16
     else:
         wind = None
-    b += lote(w / 2, h * 0.617, 1.55 * k, soil, wind, f)
+    lk = lot_k or 1.55 * k
+    cx0, cy0 = w * lot_x, h * lot_y
+    world, ground = [], []  # lo que se mueve al recorrer el diorama: el terreno, la finca y el lote
+    labels = []  # los rótulos no crecen al acercar: se ubican sobre su cubo pero a tamaño fijo
+    with low_beds() if layout else contextlib.nullcontext():
+        if layout:
+            place = lambda items: [f'<g transform="translate({cx0:g} {cy0:g}) scale({lk:g})">{"".join(items)}</g>']  # noqa: E731
+            fm = granja.Farm(layout) if farm else None
+            if fm:
+                ground = place(fm.ground())
+                world += place(fm.back())
+            world += cubes(cx0, cy0, lk, layout, soil, wind, f, selected)
+            if fm:
+                dx_, dy_ = fm.dog_spot()
+                world += place(fm.front() + dog(dx_, dy_, 1.25))
+            for (tx, ty), label, sub, on in tags:
+                labels.append((cx0 + tx * lk, cy0 + ty * lk, label, sub, on))
+        else:
+            world += lote(cx0, cy0, lk, soil, wind, f, crop, stage)
+    if view:  # (dx, dy, zoom): el diorama tras arrastrar y acercar
+        dx, dy, z = view
+        move = f'translate({w / 2 + dx:g} {h / 2 + dy:g}) scale({z:g}) translate({-w / 2:g} {-h / 2:g})'
+        to_screen = lambda x, y: (w / 2 + dx + (x - w / 2) * z, h / 2 + dy + (y - h / 2) * z)  # noqa: E731
+    else:
+        move, to_screen = "", (lambda x, y: (x, y))
+    if ground:  # el terreno no tapa el cielo: se recorta bajo el horizonte
+        cid = f"recorte-terreno-{seed}-{w}"
+        b.append(f'<defs><clipPath id="{cid}"><rect y="{hy + rh:.0f}" width="{w}" height="{h}"/></clipPath></defs>'
+                 f'<g clip-path="url(#{cid})"><g transform="{move}">{"".join(ground)}</g></g>')
+    b.append(f'<g id="diorama" transform="{move}">{"".join(world)}</g>' if move else "".join(world))
+    for x, y, label, sub, on in labels:
+        b += tag(*to_screen(x, y), label, sub, on)
 
     if "lluvia" in conds:
         slant = -14 if "viento" in conds else -6
