@@ -613,6 +613,113 @@ def repollo(x, y, s, sd):
     return out
 
 
+# ---------- Lote 5: más hortalizas ----------
+
+def frijol(x, y, s, sd):
+    """Fríjol de mata: hojas de tres foliolos, flor lila y vainas que maduran jaspeadas de rojo (tipo cargamanto)."""
+    rnd = random.Random(sd)
+    if s == 1:
+        return leaf(x, y - 3, 45, 6, 5, "#7DB04A") + leaf(x, y - 3, 135, 6, 5, "#6FA03C")
+    k = (0, 0, 0.65, 0.9, 1.0, 1.0)[s]
+    col = "#5FA34A" if s < 5 else "#B9A55A"
+    out = []
+    for i in range(6):  # trifolios en la mata
+        bx, by = x + rnd.uniform(-8, 8) * k, y - rnd.uniform(4, 18) * k
+        for d in (-35, 0, 35):
+            out += leaf(bx, by, 90 + d, 6.5 * k, 5 * k, shade(col, (0.0, 0.07, -0.06)[i % 3]))
+    if s == 3:
+        for _ in range(4):
+            out += flower(x + rnd.uniform(-7, 7), y - rnd.uniform(8, 18), 1.8, "#B9A0E0", "#8A6AC0")
+    if s >= 4:
+        for _ in range(4):
+            px, py = x + rnd.uniform(-8, 8), y - rnd.uniform(4, 12)
+            pod = "#8CC152" if s == 4 else "#E8D9B0"
+            out.append(f'<ellipse cx="{px:.1f}" cy="{py:.1f}" rx="1.6" ry="5" fill="{pod}" transform="rotate(20 {px:.1f} {py:.1f})"/>')
+            if s == 5:
+                out.append(f'<line x1="{px - 1:.1f}" y1="{py - 3:.1f}" x2="{px + 1:.1f}" y2="{py + 2:.1f}" stroke="#C0392B" stroke-width="0.9"/>')
+    return out
+
+
+def brocoli(x, y, s, sd):
+    """Hojas grandes verde azulado y, en el centro, la cabeza de floretes verde oscuro."""
+    if s == 1:
+        return blob(x, y - 2, 3.5, "#6E9C86", sd)
+    k = (0, 0, 0.6, 0.85, 1.0, 1.0)[s]
+    out = []
+    for i, ang in enumerate((20, 70, 110, 160, 220, 320)):
+        a = math.radians(ang)
+        out += leaf(x, y - 3 * k, ang, 13 * k, 7 * k, ("#5E8C78", "#6E9C86", "#7FAE8C")[i % 3])
+    if s >= 3:
+        hr = (0, 0, 0, 4.5, 7, 7.5)[s]
+        head = "#6E9A3E" if s < 5 else "#5A8A36"  # floretes: verde más vivo que las hojas, con grano claro
+        for dx, dy in ((-hr * 0.5, 0), (hr * 0.5, 0), (0, -hr * 0.5), (-hr * 0.25, -hr * 0.2), (hr * 0.3, -hr * 0.3)):
+            out += blob(x + dx, y - 10 * k + dy, hr * 0.6, head, sd + int(dx * 10), light=0.25)
+        for i in range(6):
+            a = 2 * math.pi * i / 6
+            out.append(f'<circle cx="{x + math.cos(a) * hr * 0.5:.1f}" cy="{y - 10 * k - hr * 0.2 + math.sin(a) * hr * 0.3:.1f}" r="0.9" fill="#A8C870"/>')
+    return out
+
+
+def espinaca(x, y, s, sd):
+    """Roseta densa de hojas oscuras en forma de pala."""
+    if s == 1:
+        return leaf(x, y - 1, 60, 5, 4, "#3F7F33") + leaf(x, y - 1, 120, 5, 4, "#4E8F3A")
+    k = (0, 0, 0.6, 0.85, 1.0, 1.0)[s]
+    out = []
+    for i, ang in enumerate((15, 50, 85, 120, 155, 35, 140)):
+        out += leaf(x, y, ang, 10 * k, 7.5 * k, ("#2F6B2E", "#3F7F33", "#4E8F3A")[i % 3])
+    if s == 5:
+        out.append(f'<line x1="{x - 8:.1f}" y1="{y + 3:.1f}" x2="{x + 8:.1f}" y2="{y + 3:.1f}" stroke="{P["noche"]}" stroke-width="1" stroke-dasharray="3 2"/>')
+    return out
+
+
+def pepino(x, y, s, sd):
+    """Enredadera en espaldera: hojas anchas, flor amarilla y pepinos largos que cuelgan."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return [poly([(x, y - 3), (x + 2.5, y), (x, y + 2), (x - 2.5, y)], "#E8D9B0")]
+    reach = (0, 0.3, 0.7, 1.0, 1.0, 1.0)[s]
+    H = 40
+    top = y - H * reach
+    out = [f'<path d="M{x:.1f} {y:.1f} Q{x + 4:.1f} {(y + top) / 2:.1f} {x:.1f} {top:.1f}" stroke="#5E7438" stroke-width="1.5" fill="none"/>']
+    for i in range(int(8 * reach) + 1):
+        bx, by = x + rnd.uniform(-9, 9), top + rnd.uniform(0, H * reach * 0.9)
+        out += blob(bx, by, 5.5, ("#4E8F3A", "#5FA34A", "#6FB04A")[i % 3], sd + i, ry=4.6)
+    if s == 3:
+        for _ in range(4):
+            out += flower(x + rnd.uniform(-8, 8), top + rnd.uniform(4, 30), 1.9, "#F2D23A", "#E0A82A")
+    if s >= 4:
+        for _ in range(3):
+            cx0, cy0 = x + rnd.uniform(-8, 8), top + rnd.uniform(10, 30)
+            col = "#B9D77A" if s == 4 else "#4E7F2E"
+            cx0 = x + (10 if cx0 > x else -10)  # el fruto cuelga por fuera del follaje, para que se vea
+            out += [poly([(cx0 - 2.2, cy0), (cx0 + 2.2, cy0), (cx0 + 1.9, cy0 + 13), (cx0 - 1.9, cy0 + 13)], col, shade(col, -0.35), 0.8),
+                    f'<line x1="{cx0 - 0.6:.1f}" y1="{cy0 + 1:.1f}" x2="{cx0 - 0.6:.1f}" y2="{cy0 + 12:.1f}" stroke="#D8E9A8" stroke-width="0.8"/>']
+    return out
+
+
+def papa_criolla(x, y, s, sd):
+    """Como la papa, con matas más pequeñas; al cosechar, tubérculos redondos y amarillos."""
+    if s == 5:
+        return []
+    out = papa(x, y, s, sd)
+    return [f'<g transform="translate({x:g} {y:g}) scale(0.82) translate({-x:g} {-y:g})">{"".join(out)}</g>']
+
+
+def criolla_harvest(cx, cy):
+    out = []
+    rnd = random.Random(7)
+    for r in range(5):
+        for c in range(7):
+            x, y = at(cx, cy, (c + 0.5) / 7 + rnd.uniform(-0.02, 0.02), (r + 0.5) / 5)
+            out += gem(x - 2, y - 1, 3, "#F2C94C") + gem(x + 3, y + 1, 2.6, "#E8B83A")
+    return out
+
+
+def criolla_cut(cx, cy):
+    return gem(cx - 40, cy + 34, 4.5, "#F2C94C") + gem(cx - 58, cy + 26, 4, "#E8B83A") + gem(cx - 24, cy + 44, 4, "#F2C94C") + gem(cx + 30, cy + 40, 4.5, "#E8B83A")
+
+
 # ---------- Catálogo ----------
 
 STAGES = {
@@ -662,6 +769,14 @@ CROPS = (
      "Plantas tutoradas con estaca; flor amarilla y racimos que pasan de verde a rojo"),
     ("lechuga", "Lechuga", "leafy", "hoja", scaled(lechuga, 1.35), 5, 6, False, {}, False, "Rosetas de hoja rizada verde claro que se cierran en cabeza"),
     ("repollo", "Repollo", "leafy", "hoja", scaled(repollo, 1.3), 4, 5, False, {}, False, "Hojas externas grandes verde azulado y cabeza redonda y apretada"),
+    ("frijol", "Fríjol", "bush_legume", "anual", scaled(frijol, 1.3), 4, 6, False, {}, False,
+     "Fríjol de mata: hojas de tres foliolos, flor lila y vainas que maduran jaspeadas de rojo"),
+    ("brocoli", "Brócoli", "brassica", "hoja", scaled(brocoli, 1.3), 4, 5, False, {}, False, "Hojas grandes verde azulado y la cabeza de floretes en el centro"),
+    ("espinaca", "Espinaca", "leafy", "hoja", scaled(espinaca, 1.25), 5, 7, False, {}, False, "Rosetas densas de hojas oscuras en forma de pala"),
+    ("pepino", "Pepino", "climbing_vine", "anual", scaled(pepino, 1.05), 3, 5, False, {"all": ("espaldera", espaldera(42))}, False,
+     "Enredadera en espaldera: hoja ancha, flor amarilla y frutos largos que cuelgan"),
+    ("papa_criolla", "Papa criolla", "tuber", "anual", papa_criolla, 5, 7, True, {4: ("cut", criolla_cut), 5: ("ground", criolla_harvest)}, False,
+     "Matas más pequeñas que la papa; tubérculos redondos y amarillos"),
 )
 
 
