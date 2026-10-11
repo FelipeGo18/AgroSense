@@ -485,11 +485,7 @@ def signals(mobile=False):
     return frame((w, h + fh), b + foot, P["niebla"])
 
 
-SCREENS = {  # elegir y el resultado amarillo pasaron a diagnostico.py (ventanas de siembra); rojo, no evaluable y señales se rehacen en la tanda 2
-    "consulta-02-resultado-rojo-helada-escritorio": lambda: result("rojo"),
-    "consulta-02-resultado-no-evaluable-escritorio": lambda: result("no-evaluable"),
-    "consulta-03-senales-escritorio": lambda: signals(),
-    "consulta-03-senales-movil": lambda: signals(mobile=True),
+SCREENS = {  # todas las pantallas de la consulta pasaron a diagnostico.py y detalle.py (ventanas de siembra); aquí quedan las piezas y gráficas que reutilizan
 }
 
 if __name__ == "__main__":

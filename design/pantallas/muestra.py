@@ -94,23 +94,31 @@ ALTERNATIVES = (
 )
 
 
-def level_of(score):
+def level_of(score, status=None):
+    if status == "no-aplica":
+        return "no-aplica"
     if score is None:
         return "insuficiente"
     return "favorable" if score >= 70 else ("moderado" if score >= 40 else "desfavorable")
 
 
-def light_for(weights):
-    """Semáforo de la ventana con unos pesos (specs/01-reglas.md, «Agregación del semáforo»). Devuelve luz, acción y factor limitante."""
-    counts = {k: weights[k] > 0 or (k in CLIMATE and SIGNALS_CASE[k]["critical"]) for k in SIGNAL_ORDER}
+def light_for(weights, signals=None):
+    """Semáforo de una ventana con unos pesos (specs/01-reglas.md, «Agregación del semáforo»).
+    Devuelve luz, acción, factor limitante y qué señales cuentan."""
+    signals = signals or SIGNALS_CASE
+    counts = {k: weights[k] > 0 or (k in CLIMATE and signals[k].get("critical")) for k in SIGNAL_ORDER}
     lvl = {}
     for k in SIGNAL_ORDER:
-        lv = level_of(SIGNALS_CASE[k]["score"])
+        lv = level_of(signals[k]["score"], signals[k].get("status"))
         if lv == "moderado" and weights[k] >= 4:
             lv = "desfavorable"
         lvl[k] = lv
+    scored = [(signals[k]["score"], k) for k in SIGNAL_ORDER if counts[k] and signals[k]["score"] is not None]
+    limiting = min(scored)[1] if scored else None
+    if any(counts[k] and lvl[k] == "insuficiente" for k in ("water", "supply")):
+        return dict(light="no-evaluable", action="review_data", limiting=limiting, counts=counts)
     unf = [k for k in SIGNAL_ORDER if counts[k] and lvl[k] == "desfavorable"]
-    crit = [k for k in unf if SIGNALS_CASE[k]["critical"]]
+    crit = [k for k in unf if signals[k].get("critical")]
     if crit or len(unf) >= 2:
         light = "rojo"
     elif not unf and (lvl["water"] == "favorable" or not counts["water"]):
@@ -123,6 +131,83 @@ def light_for(weights):
         action = "rotate"
     else:
         action = "other_window"
-    scored = [(SIGNALS_CASE[k]["score"], k) for k in SIGNAL_ORDER if counts[k] and SIGNALS_CASE[k]["score"] is not None]
-    limiting = min(scored)[1]
     return dict(light=light, action=action, limiting=limiting, counts=counts)
+
+
+# ---------- Otros casos del resultado (tanda 2 del rediseño) ----------
+
+def _sig(score, reasons, critical=False, status=None, note=None):
+    return dict(score=score, reasons=reasons, critical=critical, status=status, note=note)
+
+
+CASES = {
+    "amarillo": dict(crop="Papa", town="Samacá", kicker=QUERY_KICKER, signals=SIGNALS_CASE, suitability=SUITABILITY),
+    # Toca está más alto y frío que Samacá: sembrando en marzo, la floración cae en las heladas de junio y julio.
+    "rojo": dict(
+        crop="Papa", town="Toca", kicker="PAPA · SIEMBRA 1 MAR 2027 → COSECHA ESTIMADA ~26 JUL · TOCA",
+        suitability=dict(score=88, reason="La altitud de Toca (2.780 m) está dentro del rango de la papa (2.000 a 3.500 m).", source=SUITABILITY["source"]),
+        signals=dict(
+            water=_sig(80, ["En 8 de los últimos 10 años la", "lluvia de mar a jul cubrió lo", "que necesita la papa."], note="Sin riego"),
+            frost=_sig(18, ["Heló en la floración (jun)", "4 de cada 10 años."], critical=True),
+            heat=_sig(96, ["La máxima rara vez pasa de", "19 °C; la papa aguanta", "hasta 28 °C."]),
+            soil=_sig(78, ["pH estimado 5,3 a 5,9: en", "el rango de la papa.", "Estimación de 250 m."]),
+            supply=_sig(74, ["En 2025 A, área sembrada", "parecida a los tres", "semestres A anteriores."]),
+            market=_sig(None, ["Sin datos de precios", "para Toca."]),
+        ),
+        best_windows=(
+            dict(sowing="1 sep 2027", harvest="~25 ene 2028", limiting="Agua", limiting_score=66, weighted=79),
+            dict(sowing="15 abr 2027", harvest="~10 sep 2027", limiting="Heladas", limiting_score=58, weighted=74),
+            dict(sowing="1 oct 2027", harvest="~24 feb 2028", limiting="Heladas", limiting_score=52, weighted=71),
+        ),
+    ),
+    # Maíz en Toca: en todas las fechas de los próximos doce meses la floración cae en un mes con heladas críticas.
+    "rojo-sin-fechas": dict(
+        crop="Maíz", town="Toca", kicker="MAÍZ · SIEMBRA 1 MAR 2027 → COSECHA ESTIMADA ~15 SEP · TOCA",
+        suitability=dict(score=61, reason="La altitud de Toca (2.780 m) está cerca del límite del maíz (hasta 3.000 m).", source=SUITABILITY["source"]),
+        signals=dict(
+            water=_sig(76, ["En 7 de los últimos 10 años la", "lluvia de mar a sep cubrió lo", "que necesita el maíz."], note="Sin riego"),
+            frost=_sig(9, ["Heló en la floración (jul)", "6 de cada 10 años."], critical=True),
+            heat=_sig(90, ["La máxima rara vez pasa de", "19 °C; el maíz aguanta", "hasta 32 °C."]),
+            soil=_sig(72, ["pH estimado 5,3 a 5,9: en", "el rango del maíz.", "Estimación de 250 m."]),
+            supply=_sig(70, ["En 2025 A, área sembrada", "parecida a los tres", "semestres A anteriores."]),
+            market=_sig(None, ["Sin datos de precios", "para Toca."]),
+        ),
+        best_windows=(),
+    ),
+    # Haba en Samacá: EVA no la registra, así que la oferta no tiene datos y el semáforo no se puede dar.
+    "no-evaluable": dict(
+        crop="Haba", town="Samacá", kicker="HABA · SIEMBRA 2 AGO 2027 → COSECHA ESTIMADA ~10 ENE 2028 · SAMACÁ",
+        suitability=dict(score=90, reason="La altitud de Samacá (2.660 m) está dentro del rango del haba (2.200 a 3.600 m).", source=SUITABILITY["source"]),
+        signals=dict(
+            water=_sig(82, ["En 7 de los últimos 10 años la", "lluvia de ago a ene cubrió lo", "que necesita el haba."], note="Sin riego"),
+            frost=_sig(None, ["La ficha del haba no tiene", "etapas sensibles a la", "helada."], status="no-aplica"),
+            heat=_sig(95, ["La máxima rara vez pasa de", "22 °C; el haba aguanta", "hasta 27 °C."]),
+            soil=_sig(55, ["pH estimado 5,2 a 5,8: en", "el límite de lo que tolera.", "Estimación de 250 m."]),
+            supply=_sig(None, ["EVA no registra haba en", "Samacá en los últimos", "semestres."]),
+            market=_sig(None, ["Sin datos de precios", "para Samacá."]),
+        ),
+    ),
+}
+
+# Papa en un municipio cálido: no es apta para la zona y no se evalúa ninguna ventana (HU-191, HU-194).
+NOT_SUITABLE = dict(crop="Papa", town="Puerto Boyacá", score=4, kicker="PAPA · PUERTO BOYACÁ, BOYACÁ",
+                    reason="Puerto Boyacá está a 125 m; la papa se da entre 2.000 y 3.500 m.",
+                    source="Ficha del cultivo · FAO EcoCrop (por confirmar)",
+                    alternatives=(
+                        dict(crop="Maíz", limiting="Agua", limiting_score=78, reasons=["Se da a esta altitud y sale", "bien en clima en esta fecha."]),
+                        dict(crop="Yuca", limiting="Calor", limiting_score=81, reasons=["Aguanta el calor de la zona", "y sale bien en esta fecha."]),
+                        dict(crop="Plátano", limiting="Agua", limiting_score=74, reasons=["Se da a esta altitud; pide", "riego en los meses secos."]),
+                    ))
+
+
+# ---------- Series del panel de señales (GET /trends con la ventana; muestra) ----------
+# Agua: por año, lluvia de agosto a diciembre frente a lo que la papa habría necesitado en esos meses (mm).
+WATER_YEARS = ((2016, 462, 430), (2017, 518, 430), (2018, 371, 430), (2019, 455, 430), (2020, 540, 430),
+               (2021, 497, 430), (2022, 356, 430), (2023, 470, 430), (2024, 488, 430), (2025, 452, 430))
+# Calor: temperatura máxima que se supera uno de cada diez días (`tmax_p90_c`), de agosto a diciembre, frente a lo que aguanta.
+TMAX_P90 = (("Ago", 21.4), ("Sep", 21.9), ("Oct", 21.2), ("Nov", 20.6), ("Dic", 20.9))
+HEAT_MAX_PAPA = 28
+# Oferta: papa sembrada en Samacá en el semestre B, por año (EVA), y la fuente de contraste (siembras registradas en AgroSense).
+AREA_B = ((2019, 790), (2020, 820), (2021, 805), (2022, 840), (2023, 860), (2024, 830), (2025, 1138))
+AREA_B_AVG3 = 843
+AGROSENSE_SUPPLY = dict(accounts=14, ha=38, date="11 oct 2026")

@@ -86,12 +86,12 @@ def score_to_seeds(score):
 
 # ---------- Tarjeta de señal ----------
 
-def signal_card(x, y, w, h, key, weights, limiting=None, compact=False):
+def signal_card(x, y, w, h, key, weights, limiting=None, compact=False, signals=None):
     """Tarjeta de una señal con su estado (forma y texto), nota de 0 a 100 y razones."""
-    case = muestra.SIGNALS_CASE[key]
-    status = muestra.level_of(case["score"])
-    counts = weights[key] > 0 or (key in muestra.CLIMATE and case["critical"])
-    ins = status == "insuficiente"
+    case = (signals or muestra.SIGNALS_CASE)[key]
+    status = muestra.level_of(case["score"], case.get("status"))
+    counts = weights[key] > 0 or (key in muestra.CLIMATE and case.get("critical"))
+    ins = status in ("insuficiente", "no-aplica")
     body = [poly(chamfer(0, 6, w, h, 14), BORDE),
             poly(chamfer(0, 0, w, h, 14), WHITE if counts else "#F4F6F8", D["cielo"] if ins else (P["calabaza"] if key == limiting else None),
                  2.5 if (ins or key == limiting) else 0, "3 5" if ins else None)]
@@ -102,14 +102,17 @@ def signal_card(x, y, w, h, key, weights, limiting=None, compact=False):
     if case.get("note"):
         body.append(text(18, 60, case["note"], 13, 700, SEC))
     ty = 70
-    body += tag(18, ty, status, min(w - 36, 172), 34, case["critical"])
+    body += tag(18, ty, status, min(w - 36, 172), 34, case.get("critical"))
     by = ty + 54
-    body += score_bar(18, by + 12, w - 36, case["score"])
+    if status == "no-aplica":
+        body.append(text(18, by + 22, "No se califica: no aplica a este cultivo", 12, fill=SEC))
+    else:
+        body += score_bar(18, by + 12, w - 36, case["score"])
     ry = by + 50
     if key == limiting:
         body += [poly(chamfer(18, ry - 18, 150, 24, 5), P["calabaza"]), text(30, ry - 1, "Lo que más limita", 13, 700)]
         ry += 22
-    if not counts:
+    if not counts and status != "no-aplica":
         body += [poly(chamfer(18, ry - 18, 196, 24, 5), WHITE, D["cielo"], 1.5), text(30, ry - 1, f"No cuenta para su luz (peso 0)", 12, 700, D["cielo"])]
         ry += 22
     body += paragraph(18, ry + 6, case["reasons"], 14 if compact else 15, 20)
@@ -243,3 +246,36 @@ def alternatives(x, y, w, items, compact=False):
         out.append(group(f"alternativa-{it['crop'].lower()}", body, cx, cy))
     rows = (len(items) + cols - 1) // cols
     return [group("alternativas", out, x, y)], top + rows * (ch + 16)
+
+
+# ---------- Mejores fechas ----------
+
+def best_windows(x, y, w, crop, windows, compact=False):
+    """Hasta tres ventanas de los próximos doce meses, sin las de alto riesgo (`best_windows`). Puede no haber ninguna."""
+    out = [text(0, 0, "Mejores fechas, próximos 12 meses" if compact else "Mejores fechas en los próximos doce meses", 20 if compact else 22, 600, font=FONT_TITLE)]
+    out += paragraph(0, 26, ["Según la historia de la zona. No es un", "pronóstico: usted decide."] if compact else
+                     ["Ordenadas por lo que más limita cada fecha. Según la historia de la zona; no es un pronóstico: usted decide."], 14, 20, fill=SEC)
+    top = 66 if compact else 46
+    if not windows:
+        body = [poly(chamfer(0, 0, w, 150 if compact else 118, 12), WHITE, D["cielo"], 2, "5 5")]
+        body += paragraph(20, 34, [f"En los próximos doce meses no hay una", f"fecha sin riesgo alto para el {crop.lower()}", "en esta zona."] if compact else
+                          [f"En los próximos doce meses no hay una fecha sin riesgo alto para el {crop.lower()} en esta zona."], 16, 22, weight=700)
+        ly = 112 if compact else 72
+        body += link(20, ly, "Ver qué sembrar en su lugar", 15)
+        if not compact:
+            body += link(300, ly, "Ver el calendario completo", 15)
+        out.append(group("sin-fechas", body, 0, top))
+        return [group("mejores-fechas", out, x, y)], top + (150 if compact else 118)
+    cols = 1 if compact else 3
+    cw = (w - (cols - 1) * 16) / cols
+    ch = 168
+    for i, it in enumerate(windows):
+        cx, cy = (i % cols) * (cw + 16), top + (i // cols) * (ch + 14)
+        body = [poly(chamfer(0, 6, cw, ch, 12), BORDE), poly(chamfer(0, 0, cw, ch, 12), WHITE, P["calabaza"] if i == 0 else None, 2.5 if i == 0 else 0)]
+        body += [text(18, 30, f"Siembra {it['sowing']}", 18, 700), text(18, 52, f"Cosecha estimada {it['harvest']}", 13, fill=SEC)]
+        body += [text(18, 86, f"{it['limiting_score']}/100", 24, 600, font=FONT_TITLE), text(90, 86, f"limita: {it['limiting'].lower()}", 14, fill=SEC)]
+        body += [text(18, 112, f"Con sus prioridades: {it['weighted']}/100", 13, fill=SEC)]
+        body += link(18, ch - 18, "Ver el diagnóstico de esta fecha", 14)
+        out.append(group(f"fecha-{i + 1}", body, cx, cy))
+    rows = (len(windows) + cols - 1) // cols
+    return [group("mejores-fechas", out, x, y)], top + rows * (ch + 14)
