@@ -75,3 +75,25 @@ estado: pendiente
   - [ ] `heavy_rain_days_mean`, `dry_window_freq_pct` y `blight_days_mean` en `climate_risk_month`, con umbrales con fuente
   - [ ] La gota usa humedad relativa (`RH2M`) y temperatura de NASA POWER con una regla publicada
 - **Notas:** Ver `docs/investigacion-decisiones.md`. La humedad de NASA POWER es de celda de unos 50 km: se presenta como orientación.
+
+### HU-188 · Riesgos que cubre un seguro, por municipio
+
+- **Historia:** Como agricultor, quiero saber qué tan seguido han ocurrido en mi zona los riesgos que cubre un seguro agropecuario, para decidir si aseguro la cosecha.
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Frecuencia histórica por municipio y semestre de helada, sequía y exceso de lluvia, con umbrales con fuente
+  - [ ] La web la muestra en «Próxima siembra» con el enlace oficial al Incentivo al Seguro Agropecuario
+  - [ ] No recomienda un seguro, una aseguradora ni un producto; es frecuencia histórica, no pronóstico
+- **Reglas que aplican:** R5, R8
+- **Notas:** Ver `docs/investigacion-decisiones.md`, decisión 9. Agregada el 11 de octubre de 2026.
+
+### HU-189 · Lluvia en años de El Niño y La Niña
+
+- **Historia:** Como agricultor, quiero ver cómo fue la lluvia del semestre en los años de El Niño y de La Niña del pasado, para saber qué tanto cambia mi zona en esos años.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Lluvia del semestre por municipio en años El Niño, La Niña y neutros, frente al promedio de los neutros, con el índice y su fuente
+  - [ ] La web la muestra en «Próxima siembra» con el enlace al boletín oficial
+  - [ ] No dice en qué fase estamos ni la presenta como pronóstico propio: la fase actual solo se cita del boletín oficial
+- **Reglas que aplican:** R5, R8
+- **Notas:** Ver `docs/investigacion-decisiones.md`, decisión 10. Cómo mostrar la fase actual sigue por decidir. Agregada el 11 de octubre de 2026.

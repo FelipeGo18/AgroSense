@@ -19,9 +19,9 @@ PARTS = (
     ("C · Consulta", "Todos", [("Elegir cultivo y semestre", 3, DONE), ("Resultado del diagnóstico", 3, DONE), ("Las cinco señales y gráficas", 3, DONE),
                                ("Qué sembrar después", 4, DONE)]),
     ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 7, DONE), ("Lote vivo y paso del tiempo", 7, DONE), ("Lote · calendario", 7, DONE),
-                                    ("Lote · próxima siembra", 7, NEXT), ("Lote · agua", 7, NEXT), ("Lote · historial y progreso", 8, TODO),
+                                    ("Lote · próxima siembra", 7, DONE), ("Lote · agua", 7, DONE), ("Lote · historial y progreso", 8, NEXT),
                                     ("Finca temporal (sin cuenta)", 8, TODO)]),
-    ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 8, TODO), ("Registrar cosecha y siembra", 8, TODO)]),
+    ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 8, TODO), ("Registrar cosecha y siembra", 8, NEXT)]),
     ("F · Cuenta", "Todos", [("Iniciar sesión", 1, DONE), ("Crear cuenta", 1, DONE), ("Mi cuenta", 1, DONE), ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 8, TODO),
                              ("Guardar la finca temporal", 8, TODO)]),
     ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale esto?", 9, TODO), ("Estados: cargando, vacío, sin cobertura, error", 9, TODO),
@@ -57,8 +57,8 @@ def sheet():
                 body += [text(24, ry + 22, name if len(name) < 30 else name[:28] + "…", 16, 700 if state != TODO else 400)] + chip(258, ry, state, tanda)
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
-    order = ["Orden: 1 Cuenta, 2 Portada y descenso, 3 Diagnóstico, 4 Rotaciones y 5 Catálogo de 46 cultivos y 6 Estados del ambiente (hechas)",
-             "→ 7 Mi finca: mapa, lote vivo, calendario, agua y próxima siembra → 8 Historial, agregar, finca temporal y Mi actividad → 9 Transversal → 10 Administrador (P1).",
+    order = ["Orden: 1 Cuenta, 2 Portada y descenso, 3 Diagnóstico, 4 Rotaciones, 5 Catálogo de 46 cultivos, 6 Estados del ambiente y 7 Mi finca (hechas)",
+             "→ 8 Historial, registrar cosecha y siembra, agregar lote, finca temporal y Mi actividad → 9 Transversal → 10 Administrador (P1).",
              "Señales: lluvia, heladas, suelo, oferta y mercado. El lote vivo usa el catálogo de cultivos y el clima de ahora. Nombres y cifras de muestra."]
     for i, line in enumerate(order):
         b.append(text(48, 1310 + i * 26, line, 16, fill=SEC))
