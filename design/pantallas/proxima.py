@@ -1,7 +1,7 @@
 """Pantalla final «Lote · próxima siembra» (D2, tanda 7c). Escritorio y móvil.
 
-Qué sembrar después en una parte del lote, con su historial real (la cadena de temporadas de esa parte,
-`follows_season_id`) y el suelo estimado del lote: POST /rotations con `lot_id`. Arriba, el diagnóstico de la
+Qué sembrar después en una parte del lote, con su historial real (el historial de ese terreno: todas las temporadas de las que viene,
+`follows_season_ids`) y el suelo estimado del lote: POST /rotations con `lot_id`. Arriba, el diagnóstico de la
 siguiente ventana para la mejor opción (POST /diagnostics con `lot_id`). Las prioridades reordenan al instante.
 Al final, dos decisiones de P1 rotuladas para el equipo: asegurar la cosecha y los años de El Niño y La Niña;
 en la app solo aparecen cuando su dato existe. Nada es pronóstico. Los nombres y las cifras son de muestra.

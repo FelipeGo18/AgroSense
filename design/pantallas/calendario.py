@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402,F401
+import muestra  # noqa: E402
 from build_kit_svg import STATUS, icon  # noqa: E402
 from finca import STAGE_TONES, drop, lot_header, lot_tabs  # noqa: E402
 from ui import (BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, card, chamfer, field, frame, group, link, paragraph, poly, text,  # noqa: E402
@@ -32,9 +33,9 @@ SHORT = {"favorable": "Favorable", "moderado": "Moderado", "desfavorable": "Desf
 FAV, MOD, UNF = "favorable", "moderado", "desfavorable"
 
 # ----- Planear una siembra: papa en Samacá (muestra), de /calendar sin sowing_date -----
-SOWING = (UNF, MOD, FAV, FAV, MOD, UNF, MOD, MOD, FAV, MOD, UNF, UNF)
-BEST = (2, 3, 8)  # best_sowing_months: marzo, abril y septiembre
-FROST = (22, 16, 5, 1, 0, 1, 3, 4, 2, 1, 2, 12)  # frost_freq_pct
+SOWING = muestra.SOWING
+BEST = muestra.BEST_SOWING  # best_sowing_months
+FROST = muestra.FROST  # frost_freq_pct
 TODAY, SELECTED = 9, 11  # octubre es hoy; el mes abierto es diciembre
 
 # ----- Mi cultivo: la papa de El Alto, sembrada el 2 de agosto (muestra), de /calendar con sowing_date -----
@@ -55,8 +56,7 @@ P1_ROWS = (("fert", "Abonar", "Aguaceros que lavan", "el abono; no la dosis"), (
            ("blight", "Gota", "Clima que favorece", "la gota de la papa"), ("sell", "Vender", "Precio del mes frente", "al promedio del año"))
 
 
-def frost_level(v):
-    return UNF if v >= 15 else (MOD if v >= 5 else FAV)
+frost_level = muestra.frost_level
 
 
 def level_mark(x, y, level, size=22):
@@ -323,7 +323,7 @@ def plan_desktop():
     b = lot_top(w, False)
     chips, cx = crop_chips(500, 282, (("Papa", True), ("Haba", False), ("Cebolla", False)))
     b += chips
-    b += banner(48, 344, w - 96, "Mejores meses para sembrar papa en Samacá · parte libre de El Alto, 0,41 ha", "Marzo, abril y septiembre",
+    b += banner(48, 344, w - 96, "Mejores meses para sembrar papa en Samacá · parte libre de El Alto, 0,41 ha", muestra.BEST_SOWING_TEXT,
                 "Según el histórico de la zona; no es pronóstico")
     g, gh = plan_grid(48, 432, w - 96)
     b += g
@@ -344,7 +344,7 @@ def guest_desktop():
     b += [text(48, 190, "Calendario de la papa", 40, 600, font=FONT_TITLE), text(48, 222, "Samacá, Boyacá · histórico de la zona, no es pronóstico", 17, fill=SEC)]
     b += field(48, 262, 300, "Municipio", "Samacá, Boyacá", trailing="▾", name="elegir-municipio")
     b += field(372, 262, 240, "Cultivo", "Papa", trailing="▾", name="elegir-cultivo")
-    b += banner(644, 270, w - 48 - 644, "Mejores meses para sembrar papa en Samacá", "Marzo, abril y septiembre", "Según el histórico de la zona")
+    b += banner(644, 270, w - 48 - 644, "Mejores meses para sembrar papa en Samacá", muestra.BEST_SOWING_TEXT, "Según el histórico de la zona")
     g, gh = plan_grid(48, 372, w - 96)
     b += g
     y = 372 + gh + 32
@@ -438,7 +438,7 @@ def plan_mobile():
     w = MOBILE[0]
     pad, fw = 16, w - 32
     b = mobile_top(w, pad, False, "recorte-pestanas-cal-2")
-    b += banner(pad, 444, fw, "Mejores meses para sembrar papa", "Marzo, abril y septiembre", lines="Según el histórico de Samacá")
+    b += banner(pad, 444, fw, "Mejores meses para sembrar papa", muestra.BEST_SOWING_TEXT, lines="Según el histórico de Samacá")
     y = 556
     b += [text(pad + 14, y, "Mes", 12, 700, SEC), text(pad + 118, y, "Sembrar", 12, 700, SEC), text(w - pad - 16, y, "Heladas", 12, 700, SEC, anchor="end")]
     y += 12

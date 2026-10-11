@@ -122,10 +122,10 @@ def questions(y0, w, mobile):
 
 
 PREVIEW = (  # el mismo caso del resultado amarillo de la tanda 3 (consulta.py), rotulado como ejemplo (R5)
-    ("lluvia", "Lluvia", "favorable", "6 % sobre lo normal"),
-    ("heladas", "Heladas", "moderado", "Heló 2 de cada 10 años al florecer"),
+    ("lluvia", "Lluvia", "favorable", "Favorable en 7 de 10 semestres B"),
+    ("heladas", "Heladas", "moderado", "Heló 12 de cada 100 años en el llenado"),
     ("suelo", "Suelo", "favorable", "pH apto para la papa (estimado)"),
-    ("oferta", "Oferta", "desfavorable", "+35 % de área sembrada"),
+    ("oferta", "Oferta", "desfavorable", "+35 % de área sembrada en 2025 B"),
     ("mercado", "Mercado", "insuficiente", "Sin datos de precios"),
 )
 

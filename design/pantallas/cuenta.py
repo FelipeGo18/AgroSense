@@ -12,13 +12,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402
+import muestra  # noqa: E402
 from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, checkbox, field, frame, group, link,
                 mascot, paragraph, poly, scene, text, toggle, topbar)  # noqa: E402
 
 POLICY = "Leer la política de tratamiento de datos"
 POLICY_SHORT = "Leer la política de datos"
 # Contenido de muestra de los diseños: una agricultora de Samacá.
-NAME, USER, SINCE, LOTS, SEASONS = "Rosa", "rosa.samaca", "12 de octubre de 2026", 3, 5
+NAME, USER, SINCE, LOTS, SEASONS = muestra.NAME, muestra.USERNAME, muestra.ACCOUNT_SINCE, muestra.N_LOTS, muestra.N_SEASONS
 
 
 def sign(x, y, w, label):
@@ -75,7 +76,7 @@ def login(mobile=False, error=False):
 
 def register(mobile=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
-    h = 1110 if mobile else 1010
+    h = 1250 if mobile else 1090  # el consentimiento versión 2 es más largo
     b = scene("a6-vereda", w, h, "recorte-registro" + ("-m" if mobile else ""))
     b += topbar(w)
     if mobile:
@@ -94,9 +95,12 @@ def register(mobile=False):
     c += field(pad, 416, fw, "Contraseña", "••••••••••", state="foco", trailing="Mostrar",
                hint="Elija una que recuerde: no se puede recuperar." if mobile else "Elija una que recuerde: por ahora no se puede recuperar.", name="campo-contrasena")
     # Consentimiento (HU-163): qué se guarda y para qué, en lenguaje claro. Sin aceptar no se crea la cuenta.
-    rows = (["Acepto que AgroSense guarde", "mi usuario, mi nombre, mis lotes", "y lo que siembro, para mostrarme", "mi finca. No se guarda correo,",
-             "celular, documento ni dirección.", "Puedo borrar todo cuando quiera."] if mobile else
-            ["Acepto que AgroSense guarde mi usuario, mi nombre,", "mis lotes y lo que siembro, para mostrarme mi finca.",
+    # Versión 2 (HU-163): ubicación de los lotes, acceso de soporte y registro de actividad por 180 días.
+    rows = (["Acepto que AgroSense guarde", "mi usuario, mi nombre, mis lotes", "con su ubicación en el mapa y", "lo que siembro, para mostrarme",
+             "mi finca. Soporte puede ver mis", "lotes para ayudarme, y se", "registra la actividad de mi", "cuenta durante 180 días.",
+             "No se guarda correo, celular,", "documento ni dirección.", "Puedo borrar todo cuando quiera."] if mobile else
+            ["Acepto que AgroSense guarde mi usuario, mi nombre,", "mis lotes con su ubicación en el mapa y lo que", "siembro, para mostrarme mi finca.",
+             "Soporte puede ver mis lotes para ayudarme, y se", "registra la actividad de mi cuenta durante 180 días.",
              "No se guarda correo, celular, documento ni dirección.", "Puedo borrar todo cuando quiera."])
     ch = 40 + len(rows) * 23 + 38
     consent = [poly(chamfer(0, 0, fw, ch, 12), P["niebla"])] + checkbox(16, 16) + paragraph(62, 36, rows, 15 if mobile else 16, 23)
@@ -139,10 +143,12 @@ def profile_cards(cw, mobile, editing=False):
         data = [title("Sus datos")] + [group("fila", r, pad, 0) for r in rows]
         data.append(text(pad, 316, "Puede cambiar su nombre y su usuario cuando quiera.", 15, fill=SEC))
         data_h = 350
-    stored_rows = (["Su usuario y su nombre.", f"Sus {LOTS} lotes y sus {SEASONS} temporadas.", "Nada más: ni correo, ni celular,", "ni documento, ni dirección.", "",
-                    "Aceptó el tratamiento de datos", f"(versión 1) el {SINCE}."] if mobile else
-                   ["Su usuario y su nombre.", f"Sus {LOTS} lotes y sus {SEASONS} temporadas de siembra.", "Nada más: ni correo, ni celular, ni documento, ni dirección.", "",
-                    f"Aceptó el tratamiento de datos (versión 1) el {SINCE}."])
+    stored_rows = (["Su usuario y su nombre.", f"Sus {LOTS} lotes, con su ubicación", f"en el mapa, y sus {SEASONS} temporadas.", "Sus sesiones abiertas y la actividad",
+                    "de su cuenta (180 días).", "No guardamos correo, celular,", "documento ni dirección.", "",
+                    "Aceptó el tratamiento de datos", f"(versión {muestra.CONSENT_VERSION}) el {SINCE}."] if mobile else
+                   ["Su usuario y su nombre.", f"Sus {LOTS} lotes, con su ubicación en el mapa, y sus {SEASONS}", "temporadas de siembra.",
+                    "Sus sesiones abiertas y la actividad de su cuenta (180 días).", "No guardamos correo, celular, documento ni dirección.", "",
+                    f"Aceptó el tratamiento de datos (versión {muestra.CONSENT_VERSION})", f"el {SINCE}."])
     stored = [title("Lo que guardamos de usted")] + paragraph(pad, 92, stored_rows, 16 if mobile else 18, 26)
     stored += link(pad, 92 + len(stored_rows) * 26 + 12, POLICY_SHORT if mobile else POLICY, 16)
     prefs = [title("Preferencias" if mobile else "Preferencias de este dispositivo")]
@@ -158,8 +164,8 @@ def profile_cards(cw, mobile, editing=False):
         bw = (fw - 16) / 2
         session += button(pad, 116, bw, "Cambiar contraseña", "secondary") + button(pad + bw + 16, 116, bw, "Cerrar sesión", "secondary")
         session_h = 204
-    danger_rows = ([f"Se borran su usuario, sus sesiones,", f"sus {LOTS} lotes y sus {SEASONS} temporadas.", "No se puede deshacer."] if mobile else
-                   [f"Se borran su usuario, sus sesiones, sus {LOTS} lotes y sus {SEASONS} temporadas.", "No se puede deshacer."])
+    danger_rows = (["Se borran su usuario, sus sesiones,", f"sus {LOTS} lotes, sus {SEASONS} temporadas,", "sus reportes y su actividad.", "No se puede deshacer."] if mobile else
+                   [f"Se borran su usuario, sus sesiones, sus {LOTS} lotes, sus {SEASONS}", "temporadas, sus reportes y el registro de su actividad.", "No se puede deshacer."])
     danger = [poly([(0, 18), (8, 18), (8, 0), (0, 0)], P["rojo"]), title("Borrar mi cuenta")] + paragraph(pad, 92, danger_rows, 16 if mobile else 18, 26)
     dy = 92 + len(danger_rows) * 26 + 6
     danger += button(pad, dy, min(fw, 260), "Borrar mi cuenta", "danger")
@@ -204,11 +210,12 @@ def profile(mobile=False, dialog=False, editing=False):
         dx, dy, dw = (w - 620) / 2, 250, 620
         d = [text(40, 70, "¿Borrar su cuenta?", 36, 600, font=FONT_TITLE)]
         d += paragraph(40, 116, ["Se va a borrar todo esto, para siempre:"], 18)
-        for i, item in enumerate((f"Su usuario «{USER}» y su nombre.", "Sus sesiones en todos los dispositivos.", f"Sus {LOTS} lotes y sus {SEASONS} temporadas de siembra.")):
+        for i, item in enumerate((f"Su usuario «{USER}» y su nombre.", "Sus sesiones en todos los dispositivos.", f"Sus {LOTS} lotes y sus {SEASONS} temporadas de siembra.",
+                                  "Sus reportes y el registro de su actividad.")):
             d += [poly([(40, 146 + i * 32), (54, 146 + i * 32), (54, 160 + i * 32), (40, 160 + i * 32)], D["rojo"]), text(66, 160 + i * 32, item, 18)]
-        d.append(text(40, 268, "No se puede deshacer.", 18, 700))
-        d += button(40, 300, 250, "No, volver") + button(330, 300, 250, "Sí, borrar todo", "danger")
-        b += card(dx, dy, dw, 400, "dialogo") + [group("dialogo-contenido", d, dx, dy)]
+        d.append(text(40, 300, "No se puede deshacer.", 18, 700))
+        d += button(40, 332, 250, "No, volver") + button(330, 332, 250, "Sí, borrar todo", "danger")
+        b += card(dx, dy, dw, 432, "dialogo") + [group("dialogo-contenido", d, dx, dy)]
     return svg_frame(w, h + fh, b)
 
 

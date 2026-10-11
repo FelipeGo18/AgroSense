@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "finca"))
 
 import ui  # noqa: E402,F401
+import muestra  # noqa: E402
 import cultivos as cv  # noqa: E402
 import escena  # noqa: E402
 from lote import G, LOT, LOT_INK, FIELDS, attribution, fmt_ha, area_ha, map_view, scale_bar, tool_button, zoom_controls  # noqa: E402
@@ -350,7 +351,8 @@ def crop_card(x, y, w, sim=False):
 def soil_card(x, y, w):
     narrow = w < 400
     h = 300 if narrow else 172
-    rows = (("pH", "5,4", "rango probable 5,0–5,9"), ("Carbono orgánico", "3,1 %", "2,4–3,9 %"), ("Textura", "Franco arcillosa", ""))
+    soil = muestra.SOIL_ALTO
+    rows = (("pH", soil["ph"], "rango probable " + soil["ph_range"]), ("Carbono orgánico", soil["soc"], "nivel " + soil["soc_class"]), ("Textura", soil["texture"], ""))
     body = [text(24, 40, "SUELO DE SU LOTE · ESTIMACIÓN", 14, 700, SEC)]
     if narrow:
         for i, (k, v, r) in enumerate(rows):
