@@ -50,6 +50,7 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, apa
 - Borrar un lote o una temporada es reversible: se marca `deleted_at` y se puede restaurar durante 30 días; después se borra para siempre. El agricultor y el administrador pueden restaurar.
 - Un polígono de lote debe ser válido (sin cruces), tener área mayor que cero y caer dentro de `municipality_boundaries` de su municipio; si no, 422.
 - `activity_log`: trazabilidad de lo que hacen agricultores y administradores. Ver «Trazabilidad» más abajo.
+- `usage_daily`: contador anónimo de uso para las métricas. Columnas: `day` (fecha), `endpoint` (`diagnostics`, `rotations`, `calendar`, `water_plans`, `scenarios`), `municipality_id`, `crop_id` y `count`; llave (`day`, `endpoint`, `municipality_id`, `crop_id`). Cada consulta de cálculo suma 1 a su fila (un plan de agua, una por cultivo). No tiene usuario, sesión, IP, hora, fecha de siembra, prioridades, área ni riego, ni se puede unir con `activity_log`. Se conserva como estadística. No cambia ningún resultado (R4). Si falla, la consulta responde igual.
 - El suelo de un lote **no se guarda**: la API lo calcula al vuelo como la mediana de las celdas de `soil_grid` que toca su polígono. Un lote sin polígono usa `soil_municipality`.
 - `support_tickets` (P1): `ticket_id`, `user_id`, `lot_id` (opcional), `message`, `status` (`open`, `in_progress`, `closed`), `created_at`, `closed_at`.
 - `crop_id` y `municipality_id` deben existir en el catálogo publicado; si no, 422.
@@ -90,7 +91,7 @@ Reglas del registro:
 - El evento se escribe **en la misma transacción** que el cambio: no hay cambio sin traza ni traza de un cambio que no ocurrió. Los intentos `denied` y `failed` se escriben aparte.
 - **Solo se agrega.** El usuario de base de datos de la API tiene `INSERT` y `SELECT` sobre `activity_log`, no `UPDATE` ni `DELETE`; solo la tarea de limpieza y el borrado de cuenta usan otro rol.
 - Se conserva **180 días** y luego se borra.
-- **Los endpoints de cálculo no escriben aquí** (R9): consultar un diagnóstico, una rotación o un plan de agua no deja rastro en la base de datos.
+- **Los endpoints de cálculo no escriben aquí** (R9): consultar un diagnóstico, una rotación o un plan de agua solo suma 1 al contador anónimo `usage_daily`, que no dice quién consultó.
 - **Al borrar la cuenta** se borran los eventos del agricultor. Las acciones de administradores sobre sus datos se conservan, pero con `subject_user_id`, `object_id` y `reason` en nulo, para no perder quién hizo qué sin guardar de quién era.
 - Lo dice el consentimiento versión 2 (HU-163): «registramos lo que hace con su cuenta durante 180 días para su seguridad».
 
@@ -203,7 +204,7 @@ Endpoints previstos (P1, sin implementar; requieren sesión y el rol indicado, s
 | `POST /api/v1/admin/users` | `admin` | Crear un usuario con `username`, `display_name` y una contraseña temporal |
 | `PATCH /api/v1/admin/users/{user_id}` | `admin` | Bloquear o desbloquear (`blocked`), y cambiar el rol entre `farmer` y `admin` |
 | `GET /api/v1/admin/activity?user_id=&action=&outcome=&from=&to=&before=&limit=` | `admin` | Bitácora: eventos de `activity_log` con filtros, paginados. Consultarla también queda registrado (`admin.activity_viewed`) |
-| `GET /api/v1/admin/metrics` | `admin` | Métricas agregadas: consultas por día, cuentas creadas, municipios y cultivos más consultados. Sin datos personales |
+| `GET /api/v1/admin/metrics` | `admin` | Métricas agregadas: consultas por día, cuentas creadas, municipios y cultivos más consultados (de `usage_daily`), lotes por municipio y siembras por cultivo (de las cuentas). Sin datos personales. Un municipio o cultivo con menos de 5 consultas, o con lotes de menos de 5 cuentas, va en «Otros» |
 | `POST /api/v1/dev/fixtures` | `developer` | Cargar datos de prueba en la base de desarrollo |
 
 - Un usuario bloqueado no puede iniciar sesión (`403` con `account_blocked`) y sus sesiones abiertas se cierran.

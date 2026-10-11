@@ -42,6 +42,7 @@ SOURCES = (  # (señal o uso, fuente, institución, cobertura, licencia, se usa 
 )
 NEVER = ("No pronostica el clima, el precio ni la cosecha: muestra lo que ha pasado en su zona.",
          "No usa el clima de hoy para calcular: solo para la escena.",
+         "No guarda quién consultó ni los datos de su finca sin cuenta: solo cuenta las consultas por municipio y cultivo.",
          "No rellena datos que faltan: si falta una fuente, lo dice.",
          "No decide por usted: la decisión es suya.")
 

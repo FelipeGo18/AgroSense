@@ -69,9 +69,10 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 ## 6. Calcular no es guardar
 
-**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, el calendario, las rotaciones y el plan de agua no guardan nada; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/me/password`, `/lots`, `/seasons`) escriben en la base de datos. Los de cálculo nunca escriben; con `lot_id` pueden leer el polígono de un lote propio para calcular su suelo.
+**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, el calendario, las rotaciones y el plan de agua no guardan nada; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/me/password`, `/lots`, `/seasons`) escriben en la base de datos. Los de cálculo no guardan los datos de la finca: solo suman 1 a un contador anónimo de uso (día, tipo de consulta, municipio y cultivo) para las métricas, sin nada que diga quién consultó; con `lot_id` pueden leer el polígono de un lote propio para calcular su suelo.
 
-- **Sin cuenta:** se puede consultar; los datos se envían solo para calcular y no se guardan en el servidor ni en sus logs.
+- **Sin cuenta:** se puede consultar; los datos de la finca se envían solo para calcular y no se guardan en el servidor ni en sus logs. La consulta solo se cuenta, sin datos de quien consulta.
+- **Métricas:** el servidor sí persiste lo necesario para saber cómo se usa la app: un contador por día, tipo de consulta, municipio y cultivo (`usage_daily`). Decidido el 11 de octubre de 2026.
 - **Con cuenta:** se guardan los lotes y su historial, con consentimiento registrado. El usuario puede borrar todo.
 - **Sin servicios externos:** PostgreSQL propio en Docker y autenticación propia con usuario y contraseña. No se pide correo ni celular. Si la base de datos falla, el modo sin cuenta sigue funcionando.
 
