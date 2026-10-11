@@ -1,12 +1,13 @@
 """Pantallas finales de la tanda 8a: «Lote · historial y progreso» (D4) y «Registrar cosecha y siembra» (E).
 
-Historial (HU-165, HU-167): cada terreno del lote tiene su historial: una temporada puede venir de varias y tener varias sucesoras (`follows_season_ids`). Entre dos
-siembras seguidas se dice si la rotación cumple las reglas de filtro y cuál regla; una que no cumple se muestra
-como hecho, sin puntaje. El progreso solo cuenta hechos registrados y reglas con fuente (R5, R8): temporadas,
+Historial (HU-165, HU-167, HU-204): una red, no cadenas. Cada siembra dice de cuáles viene (`follows_season_ids`): un
+terreno se divide en varios y varios se juntan en uno. Por cada relación se dice si la rotación cumple las reglas de
+filtro y cuál regla; una que no cumple se muestra como hecho, sin puntaje. Lo borrado hace menos de 30 días se ve
+aparte con «Restaurar». El progreso solo cuenta hechos registrados y reglas con fuente (R5, R8): temporadas,
 rotaciones que cumplen e hitos, cada uno con lo que lo produce. Datos: GET /lots/{id}/seasons y /progress.
 
 Registrar: primero la cosecha (PATCH /seasons/{id} con `harvest_date`) y luego la siembra (POST /lots/{id}/seasons
-con cultivo, fecha, área, «¿qué había antes en esta parte?» y el diagnóstico que se vio). La suma de áreas no puede
+con cultivo, fecha, área, «¿qué había antes en este terreno?», con una o varias, y el diagnóstico que se vio). La suma de áreas no puede
 pasar del área del lote. Los nombres y las cifras son de muestra.
 
     python design/pantallas/historial.py     # escribe svg/finca-06-historial-*.svg y svg/finca-07-registrar-*.svg
@@ -24,37 +25,52 @@ import cultivos as cv  # noqa: E402
 import escena  # noqa: E402
 from calendario import level_mark, tag, wrap_lines  # noqa: E402
 from finca import CROPS, lot_header, lot_tabs  # noqa: E402
-from ui import (BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, field, frame, group, link, paragraph, poly, text,  # noqa: E402
+from ui import (BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, checkbox, field, frame, group, link, paragraph, poly, text,  # noqa: E402
                 topbar, width_of)
 
 OK, BAD = "cumple", "no-cumple"
-# Cadenas por parte del lote. Temporada: semestre, cultivo, etapa para la miniatura, fechas, luz vista al sembrar.
-# Enlace con la anterior: (cumple o no, regla).
-CHAINS = (
-    dict(name="Parte de la papa", area="1,26 ha", seasons=(
-        ("2025 A", "papa", 4, "feb – jul 2025", "amarillo", None),
-        ("2025 B", "arveja", 4, "ago – dic 2025", "verde", (OK, "No repite la familia")),
-        ("2026 A", "maiz", 4, "ene – jul 2026", None, (OK, "Leguminosa antes de un cereal")),
-        ("2026 B", "papa", 3, "desde ago 2026", muestra.LIGHT_AT_SOWING[("papa", "2026 B")], (OK, "No repite la familia"))), free=False),
-    dict(name="Parte del haba", area="0,42 ha", seasons=(
-        ("2025 B", "cebolla", 4, "sep 2025 – ene 2026", "amarillo", None),
-        ("2026 A", "abono", 3, "feb – may 2026", None, (OK, "Abono verde tras un cultivo exigente")),
-        ("2026 B", "haba", 2, "desde sep 2026", muestra.LIGHT_AT_SOWING[("haba", "2026 B")], (OK, "No repite la familia"))), free=False),
-    dict(name="Parte de la cebolla", area="0,42 ha", seasons=(
-        ("2026 A", "arveja", 4, "feb – jun 2026", "verde", None),
-        ("2026 B", "cebolla", 2, "desde ago 2026", "amarillo", (OK, "No repite la familia"))), free=False),
-    dict(name="Parte libre", area="0,41 ha", seasons=(
-        ("2025 B", "papa", 4, "ago – dic 2025", "verde", None),
-        ("2026 A", "papa_criolla", 4, "ene – jun 2026", "rojo", (BAD, "Repite la familia (solanáceas)"))), free=True),
+# El historial de El Alto como red: cada siembra dice de cuáles viene (`follows_season_ids`). Un terreno se divide en
+# varios (la cebolla de 2025 dio paso a zanahoria y abono verde) y varios se juntan en uno (papa y maíz → arveja).
+# Las columnas solo ordenan por fecha de siembra; no son semestres. `slot` es la fila en escritorio.
+# follows: (id de la anterior, cumple o no, regla).
+SEASONS = (
+    dict(id="A", crop="papa", stage=4, area=1.26, dates="feb – jul 2025", light="amarillo", col=0, slot=0, follows=()),
+    dict(id="B", crop="maiz", stage=4, area=0.42, dates="feb – jul 2025", light="verde", col=0, slot=1, follows=()),
+    dict(id="C", crop="cebolla", stage=4, area=0.83, dates="mar – ago 2025", light="amarillo", col=0, slot=2.5, follows=()),
+    dict(id="D", crop="arveja", stage=4, area=1.68, dates="ago – dic 2025", light="verde", col=1, slot=0.5,
+         follows=(("A", OK, "No repite la familia"), ("B", OK, "No repite la familia"))),
+    dict(id="E", crop="zanahoria", stage=4, area=0.41, dates="sep 2025 – ene 2026", light="verde", col=1, slot=2,
+         follows=(("C", OK, "No repite la familia"),)),
+    dict(id="F", crop="abono", stage=3, area=0.42, dates="sep 2025 – feb 2026", light=None, col=1, slot=3,
+         follows=(("C", OK, "Abono verde tras un cultivo exigente"),)),
+    dict(id="G", crop="maiz", stage=4, area=1.26, dates="ene – jul 2026", light="verde", col=2, slot=0,
+         follows=(("D", OK, "Leguminosa antes de un cereal"),)),
+    dict(id="H", crop="arveja", stage=4, area=0.42, dates="ene – jun 2026", light="amarillo", col=2, slot=1,
+         follows=(("D", BAD, "Repite la familia (leguminosas)"),)),
+    dict(id="I", crop="papa_criolla", stage=4, area=0.41, dates="feb – jun 2026", light="verde", col=2, slot=2,
+         follows=(("E", OK, "No repite la familia"),)),
+    dict(id="J", crop="papa", stage=3, area=1.26, dates="desde el 2 ago 2026", light=muestra.LIGHT_AT_SOWING[("papa", "2026 B")], col=3, slot=0, current=True,
+         follows=(("G", OK, "No repite la familia"),)),
+    dict(id="L", crop="cebolla", stage=2, area=0.42, dates="desde el 16 ago 2026", light="amarillo", col=3, slot=1, current=True,
+         follows=(("H", OK, "No repite la familia"),)),
+    dict(id="K", crop="haba", stage=2, area=0.42, dates="desde el 1 sep 2026", light=muestra.LIGHT_AT_SOWING[("haba", "2026 B")], col=3, slot=3, current=True,
+         follows=(("F", OK, "Abono verde antes de sembrar"),)),
 )
+BY_ID = {s["id"]: s for s in SEASONS}
+FREE = dict(area=0.41, since="15 jun 2026", after="I", col=3, slot=2)  # lo que dejó la papa criolla
+COLUMNS = ("Sembradas feb – mar 2025", "Sembradas ago – sep 2025", "Sembradas ene – feb 2026", "Ahora · sembradas ago – sep 2026")
 LIGHT = {"verde": ("favorable", "Vio luz verde"), "amarillo": ("moderado", "Vio luz amarilla"), "rojo": ("desfavorable", "Vio luz roja"),
          "no-evaluable": (None, "No se pudo evaluar")}  # sin datos no es riesgo: forma neutra (R1)
-MILESTONES = (("Primera rotación con leguminosa", "dic 2025", "Regla: bonificar leguminosas · papa → arveja"),
-              ("Primer abono verde", "feb 2026", "Hecho registrado: avena con vicia en la parte del haba"),
-              ("Tres siembras seguidas sin repetir familia", "ago 2026", "Regla: no repetir la familia · parte de la papa"))
-N_SEASONS = sum(len(c["seasons"]) for c in CHAINS)
-N_LINKS = sum(1 for c in CHAINS for s in c["seasons"] if s[5])
-N_VALID = sum(1 for c in CHAINS for s in c["seasons"] if s[5] and s[5][0] == OK)
+MILESTONES = (("Primera rotación con leguminosa", "ago 2025", "Regla: bonificar leguminosas · papa y maíz → arveja"),
+              ("Primer abono verde", "sep 2025", "Hecho registrado: avena con vicia después de la cebolla"),
+              ("Tres siembras seguidas sin repetir familia", "ago 2026", "Regla: no repetir la familia · papa → arveja → maíz → papa"))
+N_SEASONS = len(SEASONS)
+N_LINKS = sum(len(s["follows"]) for s in SEASONS)
+N_VALID = sum(1 for s in SEASONS for f in s["follows"] if f[1] == OK)
+
+
+def ha(v):
+    return f"{v:.2f}".replace(".", ",") + " ha"
 
 
 def mini(crop_key, stage, x, y, size):
@@ -70,86 +86,115 @@ def crop_label(key):
     return "Avena con vicia" if key == "abono" else CROPS[key][1]
 
 
-def season_card(x, y, w, season, current, mobile=False):
-    sem, crop, stage, dates, light, _ = season
-    h = 140 if not mobile else 104
-    body = [poly(chamfer(0, 0, w, h, 12), "#FFF6EA" if current else WHITE, P["calabaza"] if current else BORDE, 2.5 if current else 1.5)]
-    if mobile:
-        body += mini(crop, stage, 12, 14, 76)
-        tx = 100
-        body += [text(tx, 28, sem, 12, 700, SEC), text(tx, 50, crop_label(crop), 17, 700), text(tx, 70, dates, 13, fill=SEC)]
-        ly = 90
-    else:
-        body += mini(crop, stage, 12, 12, 54)
-        tx = 76
-        body += [text(tx, 30, sem, 12, 700, SEC), text(tx, 51, crop_label(crop), 15, 700), text(tx, 70, dates, 12, fill=SEC)]
-        ly = 96
-        tx = 16
-    if light:
-        lv, label = LIGHT[light]
-        if lv:
-            body += level_mark(tx + 8, ly, lv, 10)
-        else:
-            body += [poly(chamfer(tx - 2, ly - 10, 20, 20, 4), WHITE, D["cielo"], 1.5, "3 3"), text(tx + 8, ly + 5, "?", 13, 700, D["cielo"], anchor="middle")]
-        body.append(text(tx + 24, ly + 5, label + " al sembrar", 12))
-    else:
-        body.append(text(tx, ly + 5, "Sin diagnóstico al sembrar", 12, fill=SEC))
-    if current:
-        body += tag(w - 44, 10, "En curso", P["calabaza"], P["noche"])
-        if not mobile:
-            body += link(w - 14, h - 12, "Registrar cosecha", 13, anchor="end")
-    else:
-        body += link(w - 14, (h - 12) if not mobile else 28, "Editar", 13, anchor="end")
-    return [group(f"temporada-{sem.replace(' ', '-').lower()}-{crop}", body, x, y)], h
+def short(key):
+    return crop_label(key).split(" ")[0].lower()
 
 
-def rotation_link(x, y, w, link_, vertical=False):
-    """Entre dos siembras: si la rotación cumple las reglas de filtro y cuál regla."""
-    state, rule = link_
-    ok = state == OK
+def check(x, y, ok, s=1.0):
+    """Cumple (visto) o no cumple (equis): forma y color, no solo color."""
     ink = D["oliva"] if ok else D["rojo"]
-    out = []
-    if vertical:
-        out += [f'<rect x="{x + 22}" y="{y}" width="3" height="{w}" fill="{ink}"/>',
-                poly(chamfer(x + 12, y + w / 2 - 11, 22, 22, 4 if ok else 0), "#E9F2D8" if ok else "#FBE6E2", ink, 2)]
-        cx, cy = x + 23, y + w / 2
-        out.append(f'<polyline points="{cx - 6},{cy} {cx - 2},{cy + 5} {cx + 6},{cy - 5}" fill="none" stroke="{ink}" stroke-width="2.5" stroke-linecap="round"/>' if ok else
-                   f'<path d="M{cx - 5} {cy - 5} l10 10 M{cx + 5} {cy - 5} l-10 10" stroke="{ink}" stroke-width="2.5" stroke-linecap="round"/>')
-        out += [text(x + 46, y + w / 2 - 2, "Cumple" if ok else "No cumple", 13, 700, ink), text(x + 46, y + w / 2 + 15, rule, 12, fill=SEC)]
-        return out
-    out += [f'<rect x="{x}" y="{y + 40}" width="{w}" height="3" fill="{ink}"/>', poly([(x + w - 2, y + 34), (x + w + 8, y + 41.5), (x + w - 2, y + 49)], ink),
-            poly(chamfer(x + w / 2 - 12, y + 29, 24, 24, 4 if ok else 0), "#E9F2D8" if ok else "#FBE6E2", ink, 2)]
-    cx, cy = x + w / 2, y + 41
-    out.append(f'<polyline points="{cx - 6},{cy} {cx - 2},{cy + 5} {cx + 6},{cy - 5}" fill="none" stroke="{ink}" stroke-width="2.5" stroke-linecap="round"/>' if ok else
-               f'<path d="M{cx - 5} {cy - 5} l10 10 M{cx + 5} {cy - 5} l-10 10" stroke="{ink}" stroke-width="2.5" stroke-linecap="round"/>')
-    out.append(text(cx, y + 70, "Cumple" if ok else "No cumple", 12, 700, ink, anchor="middle"))
-    for i, ln in enumerate(wrap_lines([rule], 13)):
-        out.append(text(cx, y + 86 + i * 14, ln, 11, fill=SEC, anchor="middle"))
+    r = 9 * s
+    out = [poly(chamfer(x - r, y - r, 2 * r, 2 * r, 3 if ok else 0), "#E9F2D8" if ok else "#FBE6E2", ink, 1.5)]
+    out.append(f'<polyline points="{x - 5 * s:g},{y:g} {x - 1.5 * s:g},{y + 4 * s:g} {x + 5 * s:g},{y - 4 * s:g}" fill="none" stroke="{ink}" stroke-width="2.2" stroke-linecap="round"/>' if ok else
+               f'<path d="M{x - 4 * s:g} {y - 4 * s:g} l{8 * s:g} {8 * s:g} M{x + 4 * s:g} {y - 4 * s:g} l{-8 * s:g} {8 * s:g}" stroke="{ink}" stroke-width="2.2" stroke-linecap="round"/>')
     return out
 
 
-def free_slot(x, y, w, h, mobile=False):
-    body = [poly(chamfer(0, 0, w, h, 12), WHITE, D["cielo"], 2, "5 5"), text(16, 34, "Ahora", 12, 700, SEC), text(16, 58, "Libre desde el 15 jun", 16, 700)]
-    body += button(16, h - 62, w - 32, "Registrar siembra", "primary", h=44)
-    return [group("parte-libre", body, x, y)]
+CARD_H = 172  # alto fijo en escritorio, para que la red quede en filas
 
 
-def chain_row(x, y, w, chain):
-    """Escritorio: la cadena de una parte, de izquierda a derecha."""
-    cw, lw = 212, 84
-    out = [text(0, 22, chain["name"], 18, 700), text(0, 44, chain["area"], 14, fill=SEC)]
-    cx = 170
-    for i, s in enumerate(chain["seasons"]):
-        if s[5]:
-            out += rotation_link(cx, 0, lw - 12, s[5])
-            cx += lw
-        current = i == len(chain["seasons"]) - 1 and not chain["free"]
-        c, h = season_card(cx, 0, cw, s, current)
+def season_card(x, y, w, s, mobile=False):
+    """Una siembra: cultivo, área y fechas; de qué siembras viene y si cada rotación cumple; la luz vista al sembrar."""
+    cur = s.get("current", False)
+    rows = [(state, wrap_lines([f"De {short(BY_ID[pid]['crop'])}: {rule[0].lower() + rule[1:]}"], 34 if not mobile else 44)) for pid, state, rule in s["follows"]]
+    n = max(1, sum(len(r) for _, r in rows))
+    h = CARD_H if not mobile else 104 + 22 * n + 30
+    body = [poly(chamfer(0, 0, w, h, 12), "#FFF6EA" if cur else WHITE, P["calabaza"] if cur else BORDE, 2.5 if cur else 1.5)]
+    size = 54 if not mobile else 64
+    body += mini(s["crop"], s["stage"], 12, 12, size)
+    tx = size + 24
+    body += [text(tx, 34, crop_label(s["crop"]), 16 if not mobile else 17, 700), text(tx, 54, ha(s["area"]), 13, 700),
+             text(tx, 72, s["dates"], 12 if not mobile else 13, fill=SEC)]
+    ly = 98 if not mobile else 104
+    if not rows:
+        body.append(text(16, ly, "Primera siembra registrada aquí", 12, fill=SEC))
+        ly += 22
+    for state, lines in rows:
+        body += check(24, ly - 4, state == OK, 0.9)
+        for ln in lines:
+            body.append(text(40, ly, ln, 12, 700 if state == BAD else 400, D["rojo"] if state == BAD else P["noche"]))
+            ly += 18 if not mobile else 22
+    ly = max(ly, 142) if not mobile else ly + 6
+    if s["light"]:
+        lv, label = LIGHT[s["light"]]
+        if lv:
+            body += level_mark(24, ly - 4, lv, 9)
+        else:
+            body += [poly(chamfer(14, ly - 14, 20, 20, 4), WHITE, D["cielo"], 1.5, "3 3"), text(24, ly + 1, "?", 13, 700, D["cielo"], anchor="middle")]
+        body.append(text(42, ly, label + " al sembrar", 12))
+    else:
+        body.append(text(16, ly, "Sin diagnóstico al sembrar", 12, fill=SEC))
+    # Acción: cosechar lo que está en curso; corregir o borrar lo pasado.
+    body += link(w - 14, 34 if mobile else h - 12, "Registrar cosecha" if cur else "Editar", 13, anchor="end")
+    return [group(f"siembra-{s['id'].lower()}-{s['crop']}", body, x, y)], h
+
+
+def free_card(x, y, w, h, mobile=False):
+    body = [poly(chamfer(0, 0, w, h, 12), WHITE, D["cielo"], 2, "5 5"), text(16, 32, f"Libre · {ha(FREE['area'])}", 16, 700),
+            text(16, 52, f"Desde el {FREE['since']}", 12, fill=SEC)]
+    body.append(text(16, 82, f"Antes: {short(BY_ID[FREE['after']]['crop'])}", 12, fill=SEC))
+    body += button(16, h - 60, w - 32, "Registrar siembra", "primary", h=42)
+    return [group("terreno-libre", body, x, y)]
+
+
+def network(x, y, w):
+    """Escritorio: la red por columnas de fecha, con una línea de cada siembra a las que vinieron después."""
+    cols = len(COLUMNS)
+    cw = 254
+    gap = (w - cols * cw) / (cols - 1)
+    step = CARD_H + 26
+    pos = lambda col, slot: (col * (cw + gap), 44 + slot * step)  # noqa: E731
+    out = []
+    for i, label in enumerate(COLUMNS):
+        out.append(text(i * (cw + gap), 20, label.upper(), 13, 700, P["calabaza"] if i == cols - 1 else SEC))
+    lines = []
+    def edge(a, b, ok):
+        (ax, ay), (bx, by) = a, b
+        ink = D["oliva"] if ok else D["rojo"]
+        mx = (ax + bx) / 2
+        lines.append(f'<path d="M{ax:g} {ay:g} C{mx:g} {ay:g}, {mx:g} {by:g}, {bx - 8:g} {by:g}" fill="none" stroke="{ink}" stroke-width="3"'
+                     + ('' if ok else ' stroke-dasharray="7 5"') + '/>')
+        lines.append(poly([(bx - 10, by - 6), (bx, by), (bx - 10, by + 6)], ink))
+    for s in SEASONS:
+        bx, by = pos(s["col"], s["slot"])
+        for pid, state, _ in s["follows"]:
+            p = BY_ID[pid]
+            px, py = pos(p["col"], p["slot"])
+            edge((px + cw, py + CARD_H / 2), (bx, by + CARD_H / 2), state == OK)
+    fx, fy = pos(FREE["col"], FREE["slot"])
+    p = BY_ID[FREE["after"]]
+    px, py = pos(p["col"], p["slot"])
+    lines.append(f'<path d="M{px + cw:g} {py + CARD_H / 2:g} L{fx - 8:g} {fy + CARD_H / 2:g}" fill="none" stroke="{D["cielo"]}" stroke-width="3" stroke-dasharray="3 5"/>')
+    out += lines
+    for s in SEASONS:
+        c, _ = season_card(*pos(s["col"], s["slot"]), cw, s)
         out += c
-        cx += cw
-    if chain["free"]:
-        out += [f'<rect x="{cx + 8}" y="40" width="{lw - 28}" height="3" fill="{BORDE}"/>'] + free_slot(cx + lw, 0, 220, 140)
-    return [group("cadena-" + chain["name"].split(" ")[-1], out, x, y)], 140
+    out += free_card(fx, fy, cw, CARD_H)
+    rows = max(s["slot"] for s in SEASONS) + 1
+    return [group("red-de-siembras", out, x, y)], 44 + rows * step
+
+
+def legend(x, y, w):
+    out = [poly(chamfer(0, 0, w, 52, 10), WHITE, BORDE, 1.5)]
+    lx = 20
+    for ok, label in ((True, "Cumple las reglas de rotación"), (False, "No cumple: se muestra, no resta puntos")):
+        ink = D["oliva"] if ok else D["rojo"]
+        out.append(f'<path d="M{lx} 26 h34" stroke="{ink}" stroke-width="3"' + ('' if ok else ' stroke-dasharray="7 5"') + '/>')
+        out += check(lx + 52, 26, ok, 0.9)
+        out.append(text(lx + 68, 31, label, 13))
+        lx += 68 + width_of(label, 13) + 40
+    out.append(text(lx, 31, "Una línea por cada terreno que pasó de una siembra a otra: se dividen y se juntan como usted trabaje.", 13, fill=SEC))
+    return [group("leyenda", out, x, y)]
 
 
 def progress_cards(x, y, w, mobile=False):
@@ -193,14 +238,22 @@ def progress_cards(x, y, w, mobile=False):
     return out, 150
 
 
+DELETED = dict(crop="Fríjol", area=0.20, dates="sembrado en mar 2026", until="2 de noviembre", until_short="2 nov")
+
+
 def restore_box(x, y, w, mobile=False):
-    """Una temporada borrada se puede restaurar durante 30 días."""
-    body = [poly(chamfer(0, 0, w, 60 if not mobile else 84, 12), WHITE, D["cielo"], 2, "4 4")]
+    """Lo borrado hace menos de 30 días se ve aparte y se puede restaurar (POST /seasons/{id}/restore)."""
+    d = DELETED
+    h = 60 if not mobile else 104
+    body = [poly(chamfer(0, 0, w, h, 12), P["niebla"], BORDE, 1.5, "6 5")]
     if mobile:
-        body += [text(18, 30, "1 siembra borrada: maíz, 2025 B", 15, 700), text(18, 52, "Se puede restaurar hasta el 2 nov", 13, fill=SEC)] + link(18, 74, "Restaurar", 14)
+        body += [text(18, 30, f"Borrada: {d['crop'].lower()}, {ha(d['area'])}", 15, 700, SEC), text(18, 52, d['dates'][0].upper() + d['dates'][1:], 13, fill=SEC),
+                 text(18, 72, f"Se puede restaurar hasta el {d['until']}", 13, fill=SEC)]
+        body += link(18, 94, "Restaurar", 14)
     else:
-        body += [text(24, 36, "1 siembra borrada: maíz, 2025 B, en la parte del haba. Se puede restaurar hasta el 2 de noviembre.", 15)] + link(w - 24, 36, "Restaurar", 15, anchor="end")
-    return [group("borradas", body, x, y)], 60 if not mobile else 84
+        body += [text(24, 36, f"Borrada: {d['crop'].lower()}, {ha(d['area'])}, {d['dates']}. Se puede restaurar hasta el {d['until']}.", 15, fill=SEC)]
+        body += link(w - 24, 36, "Restaurar", 15, anchor="end")
+    return [group("borradas", body, x, y)], h
 
 
 def historial_desktop():
@@ -210,27 +263,27 @@ def historial_desktop():
     b += lot_header(48, 140)
     b += lot_tabs(48, 212, "Historial")
     b.append(text(48, 312, "Historial y progreso", 34, 600, font=FONT_TITLE))
-    b.append(text(48, 340, "Cada parte del lote lleva su propia cadena de siembras. Solo se cuentan hechos registrados y reglas con fuente.", 16, fill=SEC))
+    b.append(text(48, 340, "Cada siembra dice qué había antes en su terreno. Solo se cuentan hechos registrados y reglas con fuente.", 16, fill=SEC))
     p, ph = progress_cards(48, 366, w - 96)
     b += p
     y = 366 + ph + 40
-    ch = len(CHAINS) * 168 + 30
-    b += card(48, y, w - 96, ch, "tarjeta-cadenas")
-    for i, chain in enumerate(CHAINS):
-        row, _ = chain_row(48 + 28, y + 30 + i * 168, w - 96 - 56, chain)
-        b += row
-        if i:
-            b.append(f'<rect x="{48 + 28}" y="{y + 30 + i * 168 - 18}" width="{w - 96 - 56}" height="1" fill="{BORDE}"/>')
+    net, nh = network(0, 0, w - 96 - 56)
+    ch = nh + 30 + 76
+    b += card(48, y, w - 96, ch, "tarjeta-red")
+    b.append(f'<g transform="translate({48 + 28} {y + 24})">{"".join(net)}</g>')
+    b += legend(48 + 28, y + 24 + nh + 10, w - 96 - 56)
     y += ch + 32
-    r, rh = restore_box(48, y, w - 96)
+    b.append(text(48, y + 4, "BORRADAS HACE POCO", 13, 700, SEC))
+    r, rh = restore_box(48, y + 16, w - 96)
     b += r
-    y += rh + 30
+    y += rh + 16 + 40
     b.append(text(48, y, "Una rotación que no cumple se muestra como hecho: no resta puntos ni hay puntaje de «salud del suelo».", 14, fill=SEC))
     b += link(w - 48, y, "¿Cuáles son las reglas de rotación?", 15, anchor="end")
     return frame((w, y + 60), b, P["niebla"])
 
 
 def historial_mobile():
+    """Móvil: la red se lee de lo más reciente a lo más viejo; cada siembra dice de cuáles viene."""
     w = MOBILE[0]
     pad, fw = 16, w - 32
     b = topbar(w) + lot_header(pad, 118, mobile=True)
@@ -241,30 +294,27 @@ def historial_mobile():
     p, ph = progress_cards(pad, 322, fw, True)
     b += p
     y = 322 + ph + 30
-    for chain in CHAINS:
-        b += [text(pad, y + 20, chain["name"], 18, 700), text(w - pad, y + 20, chain["area"], 14, fill=SEC, anchor="end")]
-        y += 34
-        seasons = chain["seasons"][::-1]  # lo más reciente arriba
-        if chain["free"]:
-            b += free_slot(pad, y, fw, 132, True)
-            y += 132
-            b += [f'<rect x="{pad + 22}" y="{y}" width="3" height="22" fill="{BORDE}"/>']
-            y += 22
-        for i, s in enumerate(seasons):
-            current = i == 0 and not chain["free"]
-            c, h = season_card(pad, y, fw, s, current, True)
+    b += paragraph(pad, y, ["Cada siembra dice qué había antes en su", "terreno: se dividen y se juntan como usted", "trabaje."], 14, 20, fill=SEC)
+    y += 76
+    for col in range(len(COLUMNS) - 1, -1, -1):
+        b.append(text(pad, y + 14, COLUMNS[col].upper(), 13, 700, P["calabaza"] if col == len(COLUMNS) - 1 else SEC))
+        y += 28
+        items = sorted((s for s in SEASONS if s["col"] == col), key=lambda s: s["slot"])
+        if col == FREE["col"]:
+            items = items[:2] + [None] + items[2:]
+        for s in items:
+            if s is None:
+                b += free_card(pad, y, fw, 150, True)
+                y += 150 + 12
+                continue
+            c, h = season_card(pad, y, fw, s, mobile=True)
             b += c
-            y += h
-            if current:
-                b += button(pad, y + 10, fw, "Registrar cosecha", "secondary", h=44)
-                y += 64
-            if s[5]:
-                b += rotation_link(pad, y, 52, s[5], vertical=True)
-                y += 52
-        y += 30
-    r, rh = restore_box(pad, y, fw, True)
+            y += h + 12
+        y += 18
+    b.append(text(pad, y + 4, "BORRADAS HACE POCO", 13, 700, SEC))
+    r, rh = restore_box(pad, y + 16, fw, True)
     b += r
-    y += rh + 24
+    y += rh + 16 + 30
     b += paragraph(pad, y, ["Una rotación que no cumple se muestra como", "hecho: no resta puntos."], 13, 19, fill=SEC)
     b += link(pad, y + 56, "¿Cuáles son las reglas de rotación?", 15)
     return frame((w, y + 100), b, P["niebla"])
@@ -310,7 +360,7 @@ def diagnosis_box(x, y, w, seen=True):
     """El diagnóstico que se guarda con la siembra: el que el usuario vio, con sus versiones (R4)."""
     n = int((w - 70) / 7.2)
     if seen:
-        lines = wrap_lines(["Se guarda el diagnóstico que usted vio: arveja, semestre A de 2027, luz verde (datos 2026.11.0 · reglas 1.0.0)."], n)
+        lines = wrap_lines([f"Se guarda el diagnóstico que usted vio para sembrar arveja el 15 de enero de 2027, sin riego: verde con sus prioridades y verde con el criterio de AgroSense ({muestra.VERSIONS.lower()})."], n)
         body = [poly(chamfer(0, 0, w, 28 + len(lines) * 20, 10), "#E9F2D8", D["oliva"], 1.5)] + level_mark(26, 14 + len(lines) * 10, "favorable", 12)
     else:
         lines = wrap_lines(["Todavía no ha visto el diagnóstico de este cultivo. Puede guardar la siembra sin él."], n)
@@ -350,6 +400,28 @@ def cosecha(mobile=False):
     return frame((w, max(fy + ch, sy + sh) + 60), b, P["niebla"])
 
 
+BEFORE = (("Papa", "1,26 ha · cosechada el 22 dic 2026", True), ("Papa criolla", "0,41 ha · cosechada el 15 jun 2026 · libre", False),
+          ("Nada: es la primera siembra aquí", "Tierra del lote que no había sembrado", False))
+
+
+def before_list(x, y, w, mobile=False):
+    """«¿Qué había antes en este terreno?»: una o varias siembras cosechadas (`follows_season_ids`). Marcar varias junta
+    terrenos; para dividir uno, se registra una siembra y luego otra desde el mismo. «Nada» deja la lista vacía."""
+    out = [text(0, 0, "¿Qué había antes en este terreno?", 18, 700)]
+    hint = (["Marque una o varias. Si junta terrenos,", "márquelos todos."] if mobile else ["Marque una o varias. Si junta terrenos, márquelos todos."])
+    out += paragraph(0, 24, hint, 14, 20, fill=SEC)
+    ry = 24 + len(hint) * 20 + 4
+    for name, sub, on in BEFORE:
+        out.append(poly(chamfer(0, ry, w, 58, 10), "#FFF6EA" if on else WHITE, P["calabaza"] if on else BORDE, 2 if on else 1.5))
+        out += checkbox(14, ry + 13, on, name=f"casilla-{name.lower().replace(' ', '-')}")
+        out += [text(58, ry + 25, name, 16, 700), text(58, ry + 45, sub, 13, fill=SEC)]
+        ry += 68
+    split = (["Para dividirlo en dos cultivos, registre uno y luego", "el otro marcando el mismo terreno."] if mobile else
+             ["Para dividirlo en dos cultivos, registre uno y luego el otro marcando el mismo terreno."])
+    out += paragraph(0, ry + 12, split, 14, 20, fill=SEC)
+    return [group("antes-en-este-terreno", out, x, y)], ry + 12 + len(split) * 20 + 14
+
+
 def siembra(mobile=False, error=False):
     w = MOBILE[0] if mobile else 1440
     b, pad = form_page(w, mobile)
@@ -358,12 +430,13 @@ def siembra(mobile=False, error=False):
     iw = fw - 2 * ip
     c = step_bar(ip, 28, iw, 2)
     c += [text(ip, 110, "Registrar la siembra", 26 if mobile else 32, 600, font=FONT_TITLE)]
-    c += field(ip, 152, iw, "¿Qué había antes en esta parte?", "Papa · cosechada el 22 dic · 1,26 ha", trailing="▾", name="campo-parte",
-               hint="Así se arma el historial de esta parte")
-    c += field(ip, 272, iw, "Cultivo", "Arveja", trailing="▾", name="campo-cultivo")
-    c += link(ip, 364, "Ver qué conviene sembrar aquí" if mobile else "Ver qué conviene sembrar después de la papa", 14)
+    pv, pvh = before_list(ip, 160, iw, mobile)
+    c += pv
+    o = pvh - 100  # lo que crece el formulario frente al campo de antes
+    c += field(ip, 272 + o, iw, "Cultivo", "Arveja", trailing="▾", name="campo-cultivo")
+    c += link(ip, 364 + o, "Ver qué conviene sembrar aquí" if mobile else "Ver qué conviene sembrar después de la papa", 14)
     half = iw if mobile else (iw - 16) / 2
-    ay = 408
+    ay = 408 + o
     if error:
         c += field(ip, ay, half, "Área que siembra (ha)", "1,80", state="error", hint="Solo hay 1,67 ha libres en el lote", name="campo-area")
     else:
