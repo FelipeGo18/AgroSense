@@ -18,7 +18,7 @@ TODAY_TEXT = "11 de octubre de 2026"
 ACCOUNT_SINCE = "20 de enero de 2025"
 CONSENT_VERSION = 2
 N_LOTS = 4          # El Alto, La Vega, El Bajo y Potrero (finca.py)
-N_SEASONS = 13      # 11 de El Alto (historial.py) + maíz de La Vega + arveja de El Bajo
+N_SEASONS = 14      # 12 de El Alto (historial.py) + maíz de La Vega + arveja de El Bajo
 
 # ---------- Versiones (R4) ----------
 DATASET, RULES = "2026.11.0", "1.0.0"
