@@ -97,7 +97,7 @@ def block(cx, cy, rows, ridged=False, cut=None, top=None):
     return out
 
 
-def field(cx, cy, rows, cols, plant, s, seed=1, jitter=0.03):
+def field(cx, cy, rows, cols, plant, s, seed=1, jitter=0.03, basin=False):
     """Plantas en filas, dibujadas de atrás hacia adelante para que se tapen bien."""
     rnd = random.Random(seed)
     spots = []
@@ -109,6 +109,8 @@ def field(cx, cy, rows, cols, plant, s, seed=1, jitter=0.03):
     out = []
     rx = A * RIM / cols * 0.55
     for x, y, sd in sorted(spots, key=lambda p: p[1]):
+        if basin:  # plateo: círculo de tierra limpia alrededor del árbol
+            out.append(f'<ellipse cx="{x:.1f}" cy="{y:.1f}" rx="{rx * 0.95:.1f}" ry="{rx * 0.48:.1f}" fill="{SOIL_TOP}"/>')
         if s > 1:  # sombra de contacto: la planta pesa sobre la tierra
             out.append(f'<ellipse cx="{x + 2:.1f}" cy="{y + 1.5:.1f}" rx="{rx:.1f}" ry="{rx * 0.45:.1f}" fill="#000" fill-opacity="0.22"/>')
         out += plant(x, y, s, sd)
@@ -238,11 +240,88 @@ def cebolla(x, y, s, sd):
     return out
 
 
+# ---------- Lote 2: árboles frutales (huerto con pasto y plateo) ----------
+
+TREE_SCALE = 1.85
+
+TREES = {  # tronco, lóbulos de la copa (dx, dy, r), color de copa, flor, fruto verde y maduro, forma y tamaño del fruto, frutos
+    "mango": dict(trunk=13, lobes=((-11, -1, 10), (11, -1, 10), (0, -8, 12), (-5, 5, 9), (6, 5, 9)), leaf="#2F6B2E",
+                  flower="panicle", flower_col="#E8A26A", green="#7FA83A", ripe="#F2A33A", blush="#D9533A", shape="oval", size=3.0, n=7),
+    "naranja": dict(trunk=10, lobes=((-8, 0, 9.5), (8, 0, 9.5), (0, -8, 10.5), (0, 6, 9)), leaf="#3E7D35",
+                    flower="dots", flower_col="#FFFFFF", green="#7FA83A", ripe="#F28C28", shape="round", size=2.7, n=9),
+    "limon": dict(trunk=9, lobes=((-9, 1, 8), (8, -1, 8.5), (-1, -8, 8.5), (3, 6, 7.5), (-6, -4, 6)), leaf="#5A9A3E",
+                  flower="dots", flower_col="#F4E9F7", green="#6FB03A", ripe="#B9D94A", shape="oval", size=2.3, n=9),
+    "mandarina": dict(trunk=8, lobes=((-7, 0, 8), (7, 0, 8), (0, -6, 9), (0, 5, 8)), leaf="#3F7A33",
+                      flower="dots", flower_col="#FFFFFF", green="#7FA83A", ripe="#F07A1E", shape="flat", size=2.4, n=11),
+    "aguacate": dict(trunk=15, lobes=((0, -15, 9.5), (-8, -5, 9.5), (8, -5, 9.5), (0, 4, 10.5), (-4, -11, 7)), leaf="#2E5E2A",
+                     flower="dots", flower_col="#D7D98A", green="#4C7A2E", ripe="#2B2A3A", shape="pear", size=3.0, n=6),
+}
+
+
+def stem_line(x, y, h, color, w):
+    return [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - h:.1f}" stroke="{color}" stroke-width="{w}" stroke-linecap="round"/>']
+
+
+def fruit(x, y, spec, ripe):
+    col = spec["ripe"] if ripe else spec["green"]
+    r = spec["size"]
+    if spec["shape"] == "round":
+        return gem(x, y, r, col)
+    if spec["shape"] == "flat":
+        return gem(x, y, r * 1.1, col, r * 0.82)
+    if spec["shape"] == "pear":
+        return [f'<line x1="{x:.1f}" y1="{y - r * 2.2:.1f}" x2="{x:.1f}" y2="{y - r:.1f}" stroke="#5A4630" stroke-width="0.9"/>',
+                poly([(x, y - r * 1.4), (x + r * 0.7, y - r * 0.4), (x + r, y + r * 0.6), (x, y + r * 1.2), (x - r, y + r * 0.6), (x - r * 0.7, y - r * 0.4)], col),
+                poly([(x, y - r * 1.4), (x - r * 0.7, y - r * 0.4), (x - r, y + r * 0.6), (x, y + r * 1.2)], shade(col, 0.2))]
+    out = [f'<line x1="{x:.1f}" y1="{y - r * 2.4:.1f}" x2="{x:.1f}" y2="{y - r:.1f}" stroke="#5A4630" stroke-width="0.9"/>'] if spec.get("blush") else []
+    out += gem(x, y, r * 0.8, col, r * 1.15)
+    if ripe and spec.get("blush"):
+        out.append(f'<ellipse cx="{x + r * 0.3:.1f}" cy="{y - r * 0.3:.1f}" rx="{r * 0.45:.1f}" ry="{r * 0.6:.1f}" fill="{spec["blush"]}" fill-opacity="0.8"/>')
+    return out
+
+
+def tree(kind):
+    spec = TREES[kind]
+
+    def draw(x, y, s, sd):
+        """Árbol dibujado a escala 1 y agrandado desde su base, para que llene la parcela."""
+        return [f'<g transform="translate({x:g} {y:g}) scale({TREE_SCALE}) translate({-x:g} {-y:g})">{"".join(draw1(x, y, s, sd))}</g>']
+
+    def draw1(x, y, s, sd):
+        rnd = random.Random(sd)
+        if s == 0:  # plántula con su tutor
+            return ([f'<line x1="{x + 3:.1f}" y1="{y:.1f}" x2="{x + 3:.1f}" y2="{y - 14:.1f}" stroke="#B8935A" stroke-width="1.4"/>'] +
+                    stem_line(x, y, 9, "#6B4A2E", 1.6) + blob(x - 3, y - 10, 3.2, spec["leaf"], sd) + blob(x + 2, y - 12, 3.2, shade(spec["leaf"], 0.1), sd + 1))
+        k = (0, 0.42, 0.7, 1.0, 1.0, 1.0)[s]
+        th = spec["trunk"] * k
+        cy0 = y - th - 6 * k
+        out = [poly([(x - 2.2 * k, y), (x + 2.2 * k, y), (x + 1.6 * k, y - th - 2), (x - 1.6 * k, y - th - 2)], "#6B4A2E"),
+               poly([(x, y), (x + 2.2 * k, y), (x + 1.6 * k, y - th - 2), (x, y - th - 2)], "#56391F")]
+        lobes = sorted(spec["lobes"], key=lambda lb: lb[1])
+        for i, (dx, dy, r) in enumerate(lobes):  # de atrás hacia adelante
+            out += blob(x + dx * k, cy0 + dy * k, r * k, shade(spec["leaf"], (0.0, -0.06, 0.05, -0.03, 0.08)[i % 5]), sd + i, light=0.18)
+        front = [(x + dx * k + rnd.uniform(-r, r) * 0.6 * k, cy0 + dy * k + rnd.uniform(-r, r) * 0.45 * k) for dx, dy, r in spec["lobes"] for _ in range(3)]
+        rnd.shuffle(front)
+        if s == 3:
+            for fx, fy in front[:9]:
+                if spec["flower"] == "panicle":
+                    out.append(poly([(fx - 1.6, fy), (fx + 1.6, fy), (fx, fy - 6)], spec["flower_col"]))
+                else:
+                    out.append(f'<circle cx="{fx:.1f}" cy="{fy:.1f}" r="1.5" fill="{spec["flower_col"]}"/>')
+        if s >= 4:
+            for fx, fy in front[: spec["n"]]:
+                out += fruit(fx, fy + 2, spec, s == 5)
+        return out
+
+    return draw
+
+
 # ---------- Catálogo ----------
 
 STAGES = {
     "anual": ("Siembra", "Emergencia", "Desarrollo", "Floración", "Llenado", "Cosecha"),
     "raiz": ("Siembra", "Emergencia", "Hojas", "Crecimiento", "Engrose", "Cosecha"),
+    "perenne": ("Plántula", "Joven", "Crecimiento", "Floración", "Fruto verde", "Cosecha"),
 }
 
 # (clave, nombre, arquetipo, etapas, planta, filas, columnas, ¿caballones?, extras por etapa, ¿piloto?, nota)
@@ -254,11 +333,24 @@ CROPS = (
      "Enredadera en espaldera de postes e hilos; flor blanca y vainas verdes"),
     ("zanahoria", "Zanahoria", "root", "raiz", zanahoria, 5, 8, False, {}, True, "Follaje plumoso y denso; la raíz naranja engrosa bajo tierra"),
     ("cebolla", "Cebolla de bulbo", "bulb", "raiz", cebolla, 5, 8, False, {}, True, "Hojas huecas verde azulado; el bulbo morado engrosa en la base"),
+    ("mango", "Mango", "tree_fruit", "perenne", tree("mango"), 2, 2, False, {"orchard": True}, False,
+     "Copa ancha en cúpula, verde oscuro; flor en panículas rosadas; frutos que cuelgan y maduran amarillos con rubor rojo"),
+    ("naranja", "Naranja", "tree_fruit", "perenne", tree("naranja"), 2, 2, False, {"orchard": True}, False,
+     "Copa redonda y densa; azahar blanco; frutos redondos que pasan de verde a naranja"),
+    ("limon", "Limón Tahití", "tree_fruit", "perenne", tree("limon"), 2, 2, False, {"orchard": True}, False,
+     "Copa más abierta y clara; flor blanca; frutos pequeños y ovalados, verdes al cosecharse"),
+    ("mandarina", "Mandarina", "tree_fruit", "perenne", tree("mandarina"), 2, 2, False, {"orchard": True}, False,
+     "Copa compacta; muchos frutos achatados de naranja intenso"),
+    ("aguacate", "Aguacate Hass", "tree_fruit", "perenne", tree("aguacate"), 2, 2, False, {"orchard": True}, False,
+     "Árbol alto de copa irregular y hoja grande; flor verde amarillenta; fruto en forma de pera que madura casi negro"),
 )
 
 
 def stage_cell(crop, s, cx, cy):
     key, _, _, _, plant, rows, cols, ridged, extras, *_ = crop
+    if extras.get("orchard"):  # huerto: pasto entre los árboles y plateo en cada uno
+        out = block(cx, cy, 0, top=shade(GRASS, -0.08))
+        return out + field(cx, cy, rows, cols, plant, s, seed=sum(map(ord, key)), jitter=0.0, basin=True)
     out = block(cx, cy, rows, ridged=ridged, cut=extras[4][1] if s == 4 and 4 in extras and extras[4][0] == "cut" else None)
     if s == 0:  # siembra: semillas marcadas sobre el surco
         rnd = random.Random(3)
