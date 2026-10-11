@@ -13,6 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402,F401  (agrega design/kit y design/mascota al camino de importación)
 from build_kit_svg import PIECES  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "globo"))
+from build_globo import globe, space  # noqa: E402
 from sheet import ridges  # noqa: E402
 from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, field, frame, group, link,  # noqa: E402
                 logo, mascot, paragraph, poly, scene, svg, text, topbar)
@@ -57,33 +60,46 @@ def dropdown(x, y, w, rows, active=0):
 # ---------- Portada ----------
 
 QUESTIONS = (
-    ("¿Siembro este semestre?", ["Un semáforo con sus razones: el clima,", "la oferta y el mercado de su municipio."], "semaforo-verde", "germinada"),
+    ("¿Siembro este semestre?", ["Un semáforo con sus razones: lluvia,", "heladas, suelo, oferta y mercado."], "semaforo-verde", "germinada"),
     ("¿Qué siembro después?", ["Rotaciones que cuidan el suelo, ordenadas", "según lo que a usted le importa."], "prioridad-3", "frijol"),
-    ("¿Cuánta agua va a necesitar?", ["Un plan de riego mes a mes, en rangos,", "estimado con el clima de la zona."], "rotulo-estimacion", "maiz"),
+    ("¿Cuánta agua va a necesitar?", ["Mes a mes: cuándo sembrar, riesgo de", "helada y riego estimado en rangos."], "rotulo-estimacion", "maiz"),
 )
 
 SOURCES = (
-    ("Clima", "NASA POWER", ["Lluvia y temperatura diarias", "de su municipio, desde 1981."]),
+    ("Clima", "NASA POWER", ["Lluvia, temperatura y heladas", "de su municipio, desde 1981."]),
+    ("Suelo", "SoilGrids · ISRIC", ["pH, materia orgánica y textura,", "estimados en celdas de 250 m."]),
     ("Oferta", "Evaluaciones Agropecuarias (EVA)", ["Cuánto se sembró y se cosechó", "de cada cultivo, por municipio."]),
     ("Mercado", "SIPSA · DANE", ["Precios mayoristas,", "cuando hay datos de la zona."]),
 )
 
 
+CREDITO_GLOBO = "Contornos: Natural Earth · Color: NASA Blue Marble"
+
+
 def hero(w, h, mobile):
-    b = scene("a1-orbita", w, h, "recorte-portada" + ("-m" if mobile else ""))
+    """La Tierra real gira en el espacio (build_globo.py); al bajar, frena con Colombia al frente y empieza el descenso."""
+    clip_id = "recorte-portada" + ("-m" if mobile else "")
+    if mobile:
+        earth = globe(-74, 5, 205, 195, 735)
+    else:
+        earth = globe(-74, 5, 330, 1060, 500)
+    b = [f'<defs><clipPath id="{clip_id}"><rect width="{w}" height="{h}"/></clipPath></defs>',
+         f'<g id="fondo" clip-path="url(#{clip_id})">{"".join(space(w, h))}<g id="globo">{"".join(earth)}</g></g>']
     b += topbar(w)
     if mobile:
         b.append(text(20, 170, "AgroSense", 58, 600, WHITE, FONT_TITLE))
         b += paragraph(20, 220, ["¿Es buen semestre para sembrar?", "Se lo decimos con datos del", "satélite y reglas que se pueden", "explicar."], 22, 31, fill=WHITE)
         b += button(20, 362, 350, "Consultar sin cuenta") + button(20, 434, 350, "Entrar", "secondary")
-        b += mascot(150, 520, 0.85, "guia")
+        b += mascot(292, 498, 0.4, "vuelo")
         b.append(text(195, h - 30, "Baje para empezar el descenso ↓", 16, 700, WHITE, anchor="middle"))
+        b.append(text(195, h - 10, CREDITO_GLOBO, 11, fill="#C9D6E0", anchor="middle"))
     else:
         b.append(text(96, 300, "AgroSense", 120, 600, WHITE, FONT_TITLE))
-        b += paragraph(100, 372, ["¿Es buen semestre para sembrar? Se lo decimos", "con datos del satélite y reglas que se pueden explicar."], 30, 42, fill=WHITE)
-        b += button(100, 470, 300, "Consultar sin cuenta") + button(424, 470, 180, "Entrar", "secondary")
-        b += mascot(850, 160, 1.9, "guia")
-        b.append(text(w / 2, h - 36, "Baje para empezar el descenso ↓", 18, 700, WHITE, anchor="middle"))
+        b += paragraph(100, 372, ["¿Es buen semestre para sembrar?", "Se lo decimos con datos del satélite", "y reglas que se pueden explicar."], 30, 42, fill=WHITE)
+        b += button(100, 520, 300, "Consultar sin cuenta") + button(424, 520, 180, "Entrar", "secondary")
+        b += mascot(700, 110, 0.8, "vuelo")
+        b.append(text(560, h - 36, "Baje para empezar el descenso ↓", 18, 700, WHITE, anchor="middle"))
+        b.append(text(w - 32, h - 14, CREDITO_GLOBO, 13, fill="#C9D6E0", anchor="end"))
     return b
 
 
@@ -121,13 +137,13 @@ def seed_svg(seed):
 
 
 def sources(y0, w, mobile):
-    h = 1100 if mobile else 700
+    h = 1300 if mobile else 700
     b = [f'<rect y="{y0}" width="{w}" height="{h}" fill="{P["cielo"]}"/>'] + [f'<g transform="translate(0 {y0 + h - 130})">{"".join(ridges(w, 0, 130))}</g>']
     pad = 20 if mobile else 96
     b.append(text(pad, y0 + 90, "De dónde salen los datos", 30 if mobile else 44, 600, font=FONT_TITLE))
     b += paragraph(pad, y0 + 132, ["Datos abiertos y reglas que se pueden leer.", "Cada respuesta dice de dónde sale."] if mobile else
                    ["Datos abiertos y reglas que se pueden leer. Cada respuesta dice de dónde sale y qué versión de los datos usó."], 16 if mobile else 20, 26)
-    cw = 350 if mobile else 400
+    cw = 350 if mobile else (w - 2 * pad - 3 * 24) / 4
     for i, (kind, name, rows) in enumerate(SOURCES):
         cx, cy = (pad, y0 + 200 + i * 190) if mobile else (pad + i * (cw + 24), y0 + 190)
         c = [text(28, 46, kind.upper(), 14, 700, SEC), text(28, 80, name if len(name) < 26 else "EVA", 24, 600, font=FONT_TITLE)]
@@ -135,7 +151,7 @@ def sources(y0, w, mobile):
             c.append(text(28, 104, "Evaluaciones Agropecuarias", 15, fill=SEC))
         c += paragraph(28, 132 if len(name) >= 26 else 112, rows, 16, 22)
         b += card(cx, cy, cw, 170 if mobile else 190, f"fuente-{kind.lower()}") + [group(f"fuente-{kind.lower()}-contenido", c, cx, cy)]
-    ny = y0 + (790 if mobile else 410)
+    ny = y0 + (980 if mobile else 410)
     note = [poly([(0, 0), (8, 0), (8, 70 if not mobile else 120), (0, 70 if not mobile else 120)], P["calabaza"])]
     note += paragraph(24, 30, ["AgroSense no adivina el futuro:", "le muestra el riesgo histórico", "de su zona. No es un pronóstico."] if mobile else
                       ["AgroSense no adivina el futuro: le muestra el riesgo histórico de su zona con reglas que puede leer. No es un pronóstico."], 16 if mobile else 18, 24, weight=700)
@@ -163,7 +179,7 @@ def landing(mobile=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
     hero_h = 844 if mobile else 900
     q_h = 1220 if mobile else 560
-    s_h = 1100 if mobile else 700
+    s_h = 1300 if mobile else 700
     f_h = 300 if mobile else 220
     h = hero_h + q_h + s_h + f_h
     b = hero(w, hero_h, mobile)

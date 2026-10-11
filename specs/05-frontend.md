@@ -160,6 +160,7 @@ Fijar versiones exactas al crear `web/`.
 | Sesión | Cookie de sesión de la API (sin librería extra) | Registro e inicio de sesión con usuario y contraseña contra `/api/v1/auth` |
 | Datos | `openapi-typescript` y MSW | Igual que el resto del proyecto: tipos del contrato y respuestas simuladas |
 | Assets 3D | glTF comprimido con `gltf-transform` | Un solo formato liviano |
+| Tierra del inicio | Continentes reales de Natural Earth 1:110m (paquete `world-atlas`, dominio público), facetados como el kit y con el color de cada faceta tomado de la imagen Blue Marble de la NASA. En 3D, una icosfera con React Three Fiber que gira; en modo ligero, la misma Tierra en SVG con proyección ortográfica de `d3-geo`. En reposo gira de oeste a este; al bajar frena con Colombia al frente y empieza el descenso | Fiel a la geografía real y ligada a los datos de la NASA, sin salir del estilo low-poly. Diseño en `design/globo/` |
 | Mapa del lote | MapLibre GL JS con Terra Draw (adaptador de MapLibre) para dibujar el contorno; mapa base OpenStreetMap (OpenFreeMap) y capa satelital por definir tras revisar su licencia | Dibujar el lote sobre el mundo real y centrar en el municipio. Licencias abiertas y sin clave de API para el mapa base |
 | Diseño | Figma (conectado por el MCP TalkToFigma) | Moodboard, tokens, componentes y pantallas |
 | Calidad | ESLint, Prettier y Vitest; las pruebas corren en Docker | Configuración mínima y el mismo entorno para todos |
