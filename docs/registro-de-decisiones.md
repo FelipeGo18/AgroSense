@@ -10,7 +10,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Framework de la API | FastAPI (Axum descartado, ver `specs/04-stack.md`) | 10 oct 2026 |
 | Cuentas y regla R9 | Cuentas con lotes y temporadas; R9 reescrita (decisión 6) | 10 oct 2026 |
 | Clima en vivo | Ambiente de la escena, nunca insumo de la decisión (decisión 7) | 10 oct 2026 |
-| Responsable del contrato | Haider: cambia `specs/02-contratos.md` o aprueba cada cambio | 10 oct 2026 |
+| Responsables del contrato | Haider y Felipe: cualquiera de los dos cambia `specs/02-contratos.md` o aprueba cada cambio | 10 oct 2026 |
 | Base de datos | PostgreSQL propio en Docker, sin servicios gestionados (Supabase descartado) | 10 oct 2026 |
 | Inicio de sesión | Autenticación propia: usuario y contraseña (Argon2), sesión en cookie; recuperar la contraseña en P1 | 10 oct 2026 |
 | Condiciones actuales | Open-Meteo, solo el «ahora», sin pronóstico | 10 oct 2026 |
@@ -29,6 +29,13 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Pruebas de scroll del prototipo | Batería de estrés con `playwright-core` y el Chrome del equipo, fuera de Docker y de CI; excepción de la fase 0 a la regla de no hacer pruebas de navegador (HU-155) | 10 oct 2026 |
 | Scroll de los recorridos | El scroll fija el destino y la animación lo sigue con tope de velocidad; imán hacia las paradas con contenido; las escenas de relleno no se detienen. Lenis con inercia 0,09 y tope de 110 px por golpe de rueda (HU-155) | 10 oct 2026 |
 | `design/` fuera de `web/` | Se mantiene: `design/` es la fuente del diseño (generadores, láminas, tokens) y `web/` la importa | 10 oct 2026 |
+| Etapa del cultivo en Mi finca | Se calcula con la temperatura acumulada del municipio (NASA POWER) desde la siembra; si faltan datos, por calendario y diciéndolo. Es una estimación de la zona, no una observación del lote. Contrato aprobado por Felipe; pendiente: fuentes de grados-día por cultivo (HU-150) | 10 oct 2026 |
+| Editar el perfil | Se permite cambiar nombre, usuario y contraseña: `PATCH /api/v1/me` y `POST /api/v1/me/password`, aprobados por Felipe (HU-160) | 10 oct 2026 |
+| Roles | Agricultor (`farmer`, por defecto, nunca ve datos inventados), administrador web (`admin`: usuarios, bloqueos, métricas agregadas) y desarrollador (`developer`: simulaciones y sin topes, solo en desarrollo). Documentado; se implementa en HU-170 (P1) | 10 oct 2026 |
+| Sesión: cookie y no JWT | Se mantiene la sesión en cookie `httpOnly` respaldada por la tabla `sessions`. La contraseña viaja solo al iniciar sesión, por HTTPS; después cada petición lleva un token de sesión aleatorio en cookie `httpOnly`, cuyo hash se guarda en la base de datos. Un JWT no se puede revocar sin guardar estado en el servidor, y lo necesitamos para cerrar sesión, cerrar las demás al cambiar la contraseña, bloquear usuarios y borrar la cuenta. Web y API comparten origen, así que no aporta nada | 10 oct 2026 |
+| Lotes en un mapa real | El agricultor dibuja su lote en un mapa (MapLibre y Terra Draw sobre OpenStreetMap, capa satelital por definir por licencia); el polígono debe caer en su municipio. Si no dibuja, escribe el área. El clima sigue siendo el de la celda de NASA POWER (unos 50 km) que contiene al lote (HU-164) | 10 oct 2026 |
+| Administrador y soporte | El administrador sí ve a los agricultores con sus lotes, temporadas y tickets, y puede borrar y restaurar; todo queda auditado en `admin_actions`. Borrar lotes y temporadas es reversible 30 días; borrar la cuenta sigue siendo total. El consentimiento sube a la versión 2 para decirlo (HU-170) | 10 oct 2026 |
+| Diseño de la interfaz final | Las pantallas definitivas se diseñan en una sección aparte de Figma, «AgroSense · Pantallas finales», separada de la exploración (moodboard, kit, mascotas, recorridos) | 10 oct 2026 |
 | Rotaciones y finca | Se unen en Mi finca, por lote | 10 oct 2026 |
 | Audio | P1 (HU-157) | 10 oct 2026 |
 | «Acerca de» | Sin sección aparte: el panel «¿Cómo funciona y de dónde sale esto?» cubre fuentes, versión y cómo se decide | 10 oct 2026 |

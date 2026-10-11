@@ -23,7 +23,7 @@ Un agente por rol del equipo. Cada uno vive en `.claude/agents/<nombre>.md`, con
 ## Reglas de convivencia entre agentes
 
 1. **Cada uno edita lo suyo.** Si necesita un cambio en el territorio de otro, lo pide en la spec o en el PR; no lo hace por su cuenta.
-2. **El contrato manda.** Haider es el responsable de `specs/02-contratos.md`: ningún agente lo cambia sin su aprobación.
+2. **El contrato manda.** Haider y Felipe son los responsables de `specs/02-contratos.md`: ningún agente lo cambia sin la aprobación de uno de los dos.
 3. **Revisión cruzada.** `calidad` revisa las fichas de cultivo y las reglas (HU-061, HU-062, HU-142) antes de que se den por hechas.
 4. **Sin fuente no hay dato.** Cualquier agente que agregue un dato o una regla agrega también su entrada en `sources`.
 5. **Lo que falta se declara.** Si algo no se puede confirmar, queda escrito como supuesto en la spec, no se asume.
@@ -33,5 +33,5 @@ Un agente por rol del equipo. Cada uno vive en `.claude/agents/<nombre>.md`, con
 - Todos los criterios de aceptación cumplidos y marcados en el archivo de la épica.
 - Pruebas que cubren los criterios, corriendo en CI (o a mano si se aplicó el recorte).
 - No viola ninguna regla R1–R10.
-- Si toca el contrato, está actualizado y aprobado por Haider.
+- Si toca el contrato, está actualizado y aprobado por Haider o Felipe.
 - El estado queda actualizado en la épica y en `specs/BACKLOG.md`.

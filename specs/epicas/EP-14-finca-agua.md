@@ -37,6 +37,20 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
   - [ ] Revisión cruzada por otro integrante
 - **Notas:** Se hace en la fase 0.
 
+### HU-150 · Etapa del cultivo por temperatura acumulada
+
+- **Historia:** Como agricultor, quiero que la etapa de mi cultivo siga la temperatura real de mi zona, para ver el lote más cerca de como está de verdad.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] El catálogo guarda, por cultivo, la temperatura base y la temperatura acumulada (grados-día) que cierra cada etapa, con su fuente (R8)
+  - [ ] El motor calcula la etapa del lote con la temperatura diaria del municipio (NASA POWER) acumulada desde la fecha de siembra
+  - [ ] La respuesta dice con qué método se calculó (`thermal_time` o `calendar`) y hasta qué fecha llegan los datos de temperatura
+  - [ ] Si faltan datos de temperatura o el cultivo no tiene grados-día con fuente, se usa la duración por calendario de HU-142 y se dice en pantalla: nunca se sustituye en silencio (R1)
+  - [ ] La web muestra «etapa estimada con la temperatura de la zona» junto a la etapa, y la fecha del último dato
+  - [ ] Caso de referencia del motor: misma fecha de siembra, un semestre frío y uno cálido dan etapas distintas
+- **Reglas que aplican:** R1, R4, R5, R6, R8
+- **Notas:** Es una estimación con el clima del municipio, no una observación del lote: NASA POWER da un punto por municipio y publica con 2 a 7 días de retraso. No predice rendimiento ni fecha de cosecha. Contrato aprobado por Felipe el 10 de octubre de 2026: tabla `climate_day`, `base_temp_c` en `crops`, `gdd` en `crop_stages` y la etapa en la respuesta de `GET /api/v1/lots/{lot_id}`. Falta el catálogo de grados-día con fuente por cultivo. Decidido el 10 de octubre de 2026 (ver `docs/registro-de-decisiones.md`).
+
 ### HU-143 · Lluvia y ET0 mensuales por municipio
 
 - **Historia:** Como motor, quiero la lluvia y la evapotranspiración de referencia (ET0) mensuales por municipio, con su normal y un año seco, para calcular el balance de agua.

@@ -7,7 +7,8 @@ El criterio fue un solo lenguaje en el backend, contratos que generan tipos auto
 | Lenguaje backend | Python 3.12 y `uv` para entornos | Pipeline, motor y API comparten modelos y lenguaje; `uv` da un lockfile reproducible | Axum en Rust: obliga a duplicar los modelos entre Rust y Python |
 | Datos tabulares | Polars | Elegido por el equipo; API lazy y Parquet nativo. Con una región el volumen es pequeño, así que la ganancia es de ergonomía más que de necesidad | pandas: también serviría a este volumen |
 | Clima NASA (P0) | NASA POWER por punto, comunidad AG, series diarias por centroide municipal | Entrega precipitación y temperatura diarias por punto sin procesar mallas. Con la temperatura máxima y mínima se calcula la ET0 por Hargreaves (FAO-56) | Mallas IMERG en el P0: más trabajo de geoprocesamiento |
-| Geodatos | GeoPandas y Shapely; xarray y rioxarray solo en P1 | Centroides y GeoJSON simplificado de la región; las mallas solo hacen falta para SMAP y NDVI | — |
+| Geodatos | GeoPandas y Shapely; xarray y rioxarray solo en P1 | Centroides, límites municipales simplificados y validación de los polígonos de lote; las mallas solo hacen falta para SMAP y NDVI | — |
+| Mapa en la web | MapLibre GL JS y Terra Draw; mapa base de OpenStreetMap (OpenFreeMap) | Dibujar los lotes sobre el mundo real. La capa satelital se decide revisando la licencia de cada opción | Esri World Imagery: sus términos fuera de software de Esri no son claros. Mapbox y Google: exigen clave de pago |
 | Almacenamiento | Parquet y `manifest.json`; la API carga en memoria con Polars | El dataset de una región cabe en memoria; un solo formato para todo | DuckDB en la API: se deja solo para explorar en notebooks |
 | Motor | Python puro; umbrales y pesos en YAML versionado | Se prueba sin servidor y cambia reglas sin tocar código | — |
 | API | FastAPI y Pydantic v2 | Genera el OpenAPI desde los modelos, y de ahí salen los tipos del frontend | — |

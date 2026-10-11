@@ -21,6 +21,35 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 
 ## Historias de usuario
 
+### HU-160 · Editar mi perfil y cambiar la contraseña
+
+- **Historia:** Como agricultor, quiero cambiar mi nombre, mi usuario y mi contraseña, para mantener mi cuenta a mi gusto y segura.
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] `PATCH /api/v1/me` y `POST /api/v1/me/password` del contrato
+  - [ ] 409 si el usuario nuevo ya existe; 403 si la contraseña actual es incorrecta; 422 si la nueva es corta o igual a la actual
+  - [ ] Cambiar la contraseña exige la actual y cierra las demás sesiones del usuario; los intentos fallidos cuentan para el límite de 429
+  - [ ] En la web, Mi cuenta permite editar nombre y usuario en el sitio y cambiar la contraseña en su propia vista, con estados de guardado y error
+  - [ ] No se pide ni se guarda ningún dato nuevo (R9)
+- **Reglas que aplican:** R9
+- **Notas:** Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`).
+
+### HU-170 · Roles: agricultor, administrador y desarrollador
+
+- **Historia:** Como equipo, queremos tres roles con permisos distintos, para operar la web y probarla sin mezclar datos inventados con los del agricultor.
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente (documentado)
+- **Criterios de aceptación:**
+  - [ ] Columna `role` (`farmer`, `admin`, `developer`) y `blocked_at` en `users`, con migración
+  - [ ] Endpoints de `admin` y `dev` del contrato; `403` si el rol no alcanza
+  - [ ] El agricultor nunca recibe datos simulados; las respuestas simuladas llevan `simulated: true` (R5)
+  - [ ] El administrador ve a cada agricultor con sus lotes, temporadas y tickets, y puede borrar y restaurar lotes y temporadas con motivo; toda acción queda en `admin_actions`
+  - [ ] El agricultor reporta un problema con un ticket y ve en Mi cuenta las acciones de soporte sobre sus datos
+  - [ ] La API no arranca en producción si hay usuarios `developer` o la simulación está activa
+  - [ ] Un usuario bloqueado no entra y pierde sus sesiones abiertas
+  - [ ] Las métricas son agregadas; el consentimiento (versión 2) avisa que soporte puede ver los lotes (R9)
+- **Reglas que aplican:** R5, R9
+- **Notas:** Definido el 10 de octubre de 2026; por ahora solo documentado. Falta decidir el resto de funciones del administrador y si su panel va en esta web. El modo desarrollador amplía HU-014. Revisión de seguridad obligatoria.
+
 ### HU-161 · Esquema de cuentas y migraciones
 
 - **Historia:** Como desarrollador, quiero las tablas `users`, `sessions`, `lots` y `seasons` con migraciones, para guardar cuentas de forma reproducible.
@@ -58,13 +87,16 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 
 ### HU-164 · Lotes del usuario
 
-- **Historia:** Como agricultor, quiero registrar, editar y borrar mis lotes en una o varias zonas, para tener mi finca completa.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Historia:** Como agricultor, quiero dibujar mis lotes en un mapa real, editarlos y borrarlos, en una o varias zonas, para tener mi finca completa y ubicada.
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Endpoints de `lots` del contrato
+  - [ ] Endpoints de `lots` del contrato, con `geometry` (polígono GeoJSON) y restauración durante 30 días
+  - [ ] En la web, un mapa con imagen satelital centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola
+  - [ ] El polígono debe ser válido y caer dentro de su municipio (422 si no), y se ve el límite municipal mientras se dibuja
+  - [ ] Si no puede o no quiere dibujar, escribe el área a mano y el lote queda sin ubicación; puede dibujarlo después
   - [ ] Un usuario no ve ni modifica lotes ajenos (404)
-  - [ ] Área mayor que cero; municipio del catálogo (422 si no)
 - **Reglas que aplican:** R7, R9
+- **Notas:** La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026.
 
 ### HU-165 · Temporadas e historial del lote
 

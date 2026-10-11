@@ -23,7 +23,7 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 **Analogía:** construir una casa con planos: electricista y plomero trabajan a la vez porque saben dónde irá cada pared.
 
-**Responsable:** Haider. Cambia el contrato o aprueba cada cambio.
+**Responsables:** Haider y Felipe. Cualquiera de los dos cambia el contrato o aprueba cada cambio.
 
 **HUs:** HU-011, HU-012, HU-013.
 
@@ -67,7 +67,7 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 ## 6. Calcular no es guardar
 
-**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, las rotaciones y el plan de agua no guardan nada; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/lots`, `/seasons`) leen y escriben en la base de datos.
+**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, las rotaciones y el plan de agua no guardan nada; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/me/password`, `/lots`, `/seasons`) leen y escriben en la base de datos.
 
 - **Sin cuenta:** se puede consultar, pero nada sale del dispositivo.
 - **Con cuenta:** se guardan los lotes y su historial, con consentimiento registrado. El usuario puede borrar todo.
