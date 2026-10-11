@@ -157,6 +157,7 @@ def profile_cards(cw, mobile, editing=False):
                     f"Aceptó el tratamiento de datos (versión {muestra.CONSENT_VERSION})", f"el {SINCE}."])
     stored = [title("Lo que guardamos de usted")] + paragraph(pad, 92, stored_rows, 16 if mobile else 18, 26)
     stored += link(pad, 92 + len(stored_rows) * 26 + 12, POLICY_SHORT if mobile else POLICY, 16)
+    stored += link(pad if mobile else cw - pad, 92 + len(stored_rows) * 26 + (48 if mobile else 12), "Ver mi actividad", 16, anchor="start" if mobile else "end")
     prefs = [title("Preferencias" if mobile else "Preferencias de este dispositivo")]
     for i, (t, note, on) in enumerate((("Modo ligero", "Sin escena 3D ni animaciones pesadas.", False),
                                        ("Reducir movimiento", "Sigue la configuración de su equipo.", True),
@@ -186,7 +187,7 @@ def profile_cards(cw, mobile, editing=False):
     danger = [poly([(0, 18), (8, 18), (8, 0), (0, 0)], P["rojo"]), title("Borrar mi cuenta")] + paragraph(pad, 92, danger_rows, 16 if mobile else 18, 26)
     dy = 92 + len(danger_rows) * 26 + 6
     danger += button(pad, dy, min(fw, 260), "Borrar mi cuenta", "danger")
-    return [("sus-datos", data, data_h), ("lo-que-guardamos", stored, 92 + len(stored_rows) * 26 + 50), ("preferencias", prefs, 320),
+    return [("sus-datos", data, data_h), ("lo-que-guardamos", stored, 92 + len(stored_rows) * 26 + (86 if mobile else 50)), ("preferencias", prefs, 320),
             ("sesion", session, session_h), ("borrar-cuenta", danger, dy + 88), ("sus-prioridades", prio, prio_h)]
 
 

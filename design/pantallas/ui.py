@@ -261,6 +261,13 @@ def footer(w, y0, mobile=False, above=None):
     return [group("pie", out, 0, y0)], h
 
 
+def long_page(size, body, bg=None):
+    """Vista larga: el contenido y, debajo, el pie de página común (specs/05-frontend.md, «Pie de página»)."""
+    w, h = size
+    foot, fh = footer(w, h, w < 700, above=bg)
+    return frame((w, h + fh), body + foot, bg)
+
+
 def _footer_link(x, y, label):
     wd = width_of(label, 16, True)
     return [text(x, y, label, 16, 700, EARTH_INK), f'<rect x="{x:g}" y="{y + 5:g}" width="{wd:g}" height="2" fill="{P["trigo"]}"/>']

@@ -284,7 +284,7 @@ def mine_desktop():
     d, dh = month_detail(48, y, lw, "mine")
     lg, lh = legend(48 + lw + 24, y, w - 96 - lw - 24, dh, "mine")
     b += d + lg
-    return frame((w, y + max(dh, lh) + 60), b, P["niebla"])
+    return ui.long_page((w, y + max(dh, lh) + 60), b, P["niebla"])
 
 
 # «Planear una siembra» vive en ventanas.py (orden de ventanas, semanas y sin cuenta).
@@ -353,7 +353,7 @@ def mine_mobile():
     y += dh + 24
     lg, lh = legend(pad, y, fw, mode="mine")
     b += lg
-    return frame((w, y + lh + 50), b, P["niebla"])
+    return ui.long_page((w, y + lh + 50), b, P["niebla"])
 
 
 

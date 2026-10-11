@@ -22,10 +22,10 @@ PARTS = (
                                ("Las seis señales y gráficas", f"{R} 2", DONE), ("Qué sembrar después", f"{R} 6", DONE), ("Calendario sin cuenta", f"{R} 3", DONE)]),
     ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", f"{R} 4", DONE), ("Lote vivo y paso del tiempo", f"{R} 4", DONE), ("Editar y borrar lote", f"{R} 4", DONE),
                                     ("Lote · calendario", f"{R} 3", DONE), ("Lote · próxima siembra", f"{R} 6", DONE), ("Lote · agua", f"{R} 7", DONE),
-                                    ("Lote · historial y progreso", f"{R} 5", DONE), ("Finca temporal (sin cuenta)", 8, NEXT)]),
-    ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 8, NEXT), ("Registrar cosecha y siembra", f"{R} 5", DONE)]),
+                                    ("Lote · historial y progreso", f"{R} 5", DONE), ("Finca temporal (sin cuenta)", 8, DONE)]),
+    ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 8, DONE), ("Registrar cosecha y siembra", f"{R} 5", DONE)]),
     ("F · Cuenta", "Todos", [("Iniciar sesión", 1, DONE), ("Crear cuenta · consentim. 3", f"{R} 7", DONE), ("Mi cuenta y sus prioridades", f"{R} 7", DONE),
-                             ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 8, TODO), ("Guardar la finca temporal", 8, TODO)]),
+                             ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 8, DONE), ("Guardar la finca temporal", 8, DONE)]),
     ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale esto?", 9, TODO), ("Estados: cargando, vacío, sin cobertura, error", 9, TODO),
                                   ("Menú en móvil", 9, TODO), ("Modo ligero", 9, TODO), ("Reportar un problema", 9, TODO)]),
     ("H · Administrador", "Rol admin · P1", [("Usuarios", 10, TODO), ("Ficha del agricultor", 10, TODO), ("Tickets", 10, TODO), ("Bitácora", 10, TODO), ("Métricas", 10, TODO)]),
@@ -63,7 +63,7 @@ def sheet():
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
         bottom = max(bottom, y)
-    order = ["Orden: tandas 1 a 7 y la 8a (hechas) → rediseño por ventanas de siembra, del 1 al 7 (hecho) → 8 Agregar lote, finca temporal y Mi actividad",
+    order = ["Orden: tandas 1 a 8 (hechas) y rediseño por ventanas de siembra, del 1 al 7 (hecho)",
              "→ 9 Transversal → 10 Administrador (P1). «Revisar»: hecha, pero depende de algo por confirmar (Buscar mi municipio: la región, hasta el 28 de octubre).",
              "Seis señales por ventana de siembra: agua, heladas, calor, suelo, oferta y mercado. El lote vivo usa el catálogo de cultivos y el clima de ahora.",
              "Nombres y cifras de muestra."]

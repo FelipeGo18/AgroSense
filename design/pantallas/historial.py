@@ -279,7 +279,7 @@ def historial_desktop():
     y += rh + 16 + 40
     b.append(text(48, y, "Una rotación que no cumple se muestra como hecho: no resta puntos ni hay puntaje de «salud del suelo».", 14, fill=SEC))
     b += link(w - 48, y, "¿Cuáles son las reglas de rotación?", 15, anchor="end")
-    return frame((w, y + 60), b, P["niebla"])
+    return ui.long_page((w, y + 60), b, P["niebla"])
 
 
 def historial_mobile():
@@ -317,7 +317,7 @@ def historial_mobile():
     y += rh + 16 + 30
     b += paragraph(pad, y, ["Una rotación que no cumple se muestra como", "hecho: no resta puntos."], 13, 19, fill=SEC)
     b += link(pad, y + 56, "¿Cuáles son las reglas de rotación?", 15)
-    return frame((w, y + 100), b, P["niebla"])
+    return ui.long_page((w, y + 100), b, P["niebla"])
 
 
 # ---------- Registrar cosecha y siembra ----------
