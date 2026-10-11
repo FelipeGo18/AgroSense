@@ -1214,6 +1214,32 @@ def descanso(x, y, s, sd):
     return out
 
 
+# ---------- Haba (catálogo piloto) ----------
+
+def haba(x, y, s, sd):
+    """Mata erguida de tallo grueso y hoja gris verdosa; flor blanca con mancha negra; vainas grandes que maduran negras."""
+    rnd = random.Random(sd)
+    if s == 1:
+        return leaf(x, y - 2, 60, 6, 4, "#7FA090") + leaf(x, y - 2, 120, 6, 4, "#6E9080")
+    h = (0, 0, 22, 36, 40, 40)[s]
+    col = "#6E9A7A" if s < 5 else "#3A3428"
+    out = [poly([(x - 1.6, y), (x + 1.6, y), (x + 1.3, y - h), (x - 1.3, y - h)], shade(col, -0.15))]
+    for i in range(int(h // 6)):
+        yy = y - 5 - i * 6
+        for d in (30, 150):
+            out += leaf(x, yy, d + (i % 2) * 8, 7.5, 4.6, ("#7FA090", "#6E9080", "#8FB0A0")[i % 3] if s < 5 else "#4A4234")
+    if s == 3:
+        for _ in range(4):
+            fx, fy = x + rnd.uniform(-3, 3), y - rnd.uniform(8, h - 4)
+            out += [f'<circle cx="{fx:.1f}" cy="{fy:.1f}" r="2" fill="#FFFFFF"/>', f'<circle cx="{fx + 0.6:.1f}" cy="{fy:.1f}" r="0.8" fill="#1E1E1E"/>']
+    if s >= 4:
+        for j in range(3):
+            px, py = x + (5 if j % 2 else -5), y - 8 - j * 9
+            pod = "#8CC152" if s == 4 else "#2A2620"
+            out += [poly([(px - 1.8, py), (px + 1.8, py - 2), (px + 2.2, py + 9), (px - 1.2, py + 10)], pod), poly([(px, py - 1), (px + 1.8, py - 2), (px + 2.2, py + 9), (px + 0.6, py + 9.5)], shade(pod, -0.15))]
+    return out
+
+
 # ---------- Catálogo ----------
 
 STAGES = {
@@ -1238,6 +1264,8 @@ CROPS = (
     ("maiz", "Maíz", "cereal", "anual", maiz, 4, 5, False, {}, True, "Caña alta de hojas largas; espiga arriba y mazorca con pelo en el tallo"),
     ("arveja", "Arveja", "climbing_legume", "anual", arveja, 3, 7, False, {"all": ("trellis", arveja_trellis)}, True,
      "Enredadera en espaldera de postes e hilos; flor blanca y vainas verdes"),
+    ("haba", "Haba", "bush_legume", "anual", scaled(haba, 1.3), 4, 6, False, {}, True,
+     "Mata erguida de tallo grueso y hoja gris verdosa; flor blanca con mancha negra; vainas grandes que maduran negras"),
     ("zanahoria", "Zanahoria", "root", "raiz", zanahoria, 5, 8, False, {}, True, "Follaje plumoso y denso; la raíz naranja engrosa bajo tierra"),
     ("cebolla", "Cebolla de bulbo", "bulb", "raiz", cebolla, 5, 8, False, {}, True, "Hojas huecas verde azulado; el bulbo morado engrosa en la base"),
     ("mango", "Mango", "tree_fruit", "perenne", tree("mango"), 2, 2, False, {"orchard": True}, False,
