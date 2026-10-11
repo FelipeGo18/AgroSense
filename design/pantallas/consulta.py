@@ -485,11 +485,7 @@ def signals(mobile=False):
     return frame((w, h + fh), b + foot, P["niebla"])
 
 
-SCREENS = {
-    "consulta-01-elegir-escritorio": lambda: choose(),
-    "consulta-01-elegir-movil": lambda: choose(mobile=True),
-    "consulta-02-resultado-amarillo-escritorio": lambda: result("amarillo"),
-    "consulta-02-resultado-amarillo-movil": lambda: result("amarillo", mobile=True),
+SCREENS = {  # elegir y el resultado amarillo pasaron a diagnostico.py (ventanas de siembra); rojo, no evaluable y señales se rehacen en la tanda 2
     "consulta-02-resultado-rojo-helada-escritorio": lambda: result("rojo"),
     "consulta-02-resultado-no-evaluable-escritorio": lambda: result("no-evaluable"),
     "consulta-03-senales-escritorio": lambda: signals(),
