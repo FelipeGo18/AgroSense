@@ -1,4 +1,8 @@
-"""Pantallas finales de «Qué sembrar después» (tanda 4): prioridades, ranking de rotaciones y opciones excluidas.
+"""Pantallas finales de «Qué sembrar después» (tanda 4; rediseño, tanda 6): prioridades, ranking de rotaciones y opciones excluidas.
+
+Rediseño: sin semestres. La primera siembra empieza en `sowing_date` y cada cultivo de la secuencia se evalúa en su
+propia ventana; una opción que no se da en la zona se excluye con su motivo (R3). Estas prioridades se llaman
+«¿Qué busca en la rotación?», para no confundirlas con «¿Qué le importa al elegir la fecha?» (las seis señales).
 
 EP-10 (HU-101, HU-102) sobre EP-08 y el suelo de EP-18 (HU-184). El puntaje total se calcula aquí igual que en el
 motor: promedio de los criterios ponderado por las prioridades (0 a 5). Las cifras son de muestra.
@@ -21,25 +25,27 @@ from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, butto
 PRIORITIES = (("water", "Agua", 3, "Que gaste poca agua"), ("soil", "Suelo", 5, "Que recupere el suelo"),
               ("income", "Ingreso", 2, "Que deje ingreso pronto"), ("risk", "Riesgo", 4, "Que el clima la favorezca"))
 
-OPTIONS = (  # secuencia de dos ciclos, puntaje por criterio (0 a 100) y razones con su regla
+SOWING = "15 de enero de 2027"  # `sowing_date` de la primera siembra
+OPTIONS = (  # secuencia de dos ciclos, puntaje por criterio (0 a 100), razones con su regla y la ventana de cada ciclo
     ("Arveja", "Papa", {"water": 70, "soil": 90, "income": 75, "risk": 80},
      ["Leguminosa: fija nitrógeno para la papa que sigue.", "Raíz distinta a la de la papa: alterna la profundidad."],
-     "Reglas: bonificar leguminosas · alternar la raíz"),
+     "Reglas: bonificar leguminosas · alternar la raíz", "Arveja 15 ene – may 2027 · papa desde jun 2027"),
     ("Avena con vicia", "Papa", {"water": 85, "soil": 100, "income": 20, "risk": 85},
      ["Abono verde: el carbono orgánico de su zona es medio.", "No deja cosecha esta temporada."],
-     "Regla: abono verde si el carbono orgánico es bajo o medio"),
+     "Regla: abono verde si el carbono orgánico es bajo o medio", "Avena 15 ene – abr 2027 · papa desde may 2027"),
     ("Haba", "Maíz", {"water": 60, "soil": 80, "income": 70, "risk": 60},
-     ["Leguminosa y luego un cereal de otra familia.", "El maíz tolera menos las heladas del semestre A."],
-     "Reglas: bonificar leguminosas · no repetir familia"),
+     ["Leguminosa y luego un cereal de otra familia.", "El maíz de julio pasa por meses con más heladas."],
+     "Reglas: bonificar leguminosas · no repetir familia", "Haba 15 ene – jun 2027 · maíz desde jul 2027"),
     ("Descanso", "Papa", {"water": 100, "soil": 70, "income": 0, "risk": 90},
      ["El lote descansa una temporada y corta el ciclo de plagas.", "No deja ingreso esta temporada."],
-     "Regla: no repetir la familia del cultivo"),
+     "Regla: no repetir la familia del cultivo", "Descanso ene – jun 2027 · papa desde jul 2027"),
 )
 
 EXCLUDED = (
     ("Papa → Papa", "Misma familia que el cultivo anterior (solanáceas): repite plagas y enfermedades.", "Regla: no repetir la familia · catálogo de rotación"),
     ("Papa criolla → Arveja", "La papa criolla también es solanácea, como la papa que acaba de cosechar.", "Regla: no repetir la familia · catálogo de rotación"),
     ("Cebolla → Papa", "Tolera pH de 6,0 a 7,5 y su suelo estimado es de 5,2 a 5,8: queda fuera en todo el intervalo.", "Regla: pH fuera del rango (R3) · SoilGrids"),
+    ("Yuca → Papa", "No se da en su zona: Samacá está a 2.660 m y la yuca se da hasta 1.800 m.", "Regla: aptitud del cultivo (R3) · ficha del cultivo"),
 )
 
 
@@ -65,7 +71,7 @@ RANKED = sorted(OPTIONS, key=lambda o: (-total(o[2]), o[0]))  # desempate determ
 # ---------- Piezas ----------
 
 def priorities_panel(x, y, w, mobile):
-    out = [text(0, 0, "¿Qué le importa más?", 22, 600, font=FONT_TITLE),
+    out = [text(0, 0, "¿Qué busca en la rotación?", 22, 600, font=FONT_TITLE),
            text(0, 26, "Toque las semillas: el orden cambia al instante.", 15, fill=SEC)]
     for i, (_, label, value, hint) in enumerate(PRIORITIES):
         yy = 52 + i * (66 if mobile else 60)
@@ -84,19 +90,23 @@ def bar(x, y, w, label, value, weight):
 
 
 def option_card(x, y, w, h, rank, opt, mobile):
-    first, second, scores, reasons, rule = opt
+    first, second, scores, reasons, rule, when = opt
     score = total(scores)
     body = [poly(chamfer(0, 8, w, h, 16), BORDE), poly(chamfer(0, 0, w, h, 16), WHITE, P["calabaza"] if rank == 1 else None, 3 if rank == 1 else 0)]
     body += [poly([(34, 14), (54, 34), (34, 54), (14, 34)], P["calabaza"] if rank == 1 else P["niebla"], P["noche"], 2),
              text(34, 41, f"{rank}", 20, 700, anchor="middle")]
     seq = f"{first} → {second}"
     body.append(text(70, 42, seq, 18 if mobile else 26, 600, font=FONT_TITLE))
-    body.append(text(70, 66, "Semestre A 2027, luego B 2027", 14, fill=SEC))
+    if mobile:  # dos líneas: una por ciclo, para no tapar el puntaje
+        body += [text(70, 62, part, 12, fill=SEC) for part in when.split(" · ")[:1]] + [text(70, 78, when.split(" · ")[1], 12, fill=SEC)]
+    dy = 12 if mobile else 0
+    if not mobile:
+        body.append(text(70, 66, when, 14, fill=SEC))
     body += [text(w - 24, 44, f"{score}", 34, 600, P["noche"], FONT_TITLE, anchor="end"), text(w - 24, 64, "de 100", 13, fill=SEC, anchor="end")]
     bw = (w - 220) if not mobile else (w - 190)
     for i, (k, label, weight, _) in enumerate(PRIORITIES):
-        body += bar(24, 90 + i * 26, bw, label, scores[k], weight)
-    ry = 90 + 4 * 26 + 18
+        body += bar(24, 90 + dy + i * 26, bw, label, scores[k], weight)
+    ry = 90 + dy + 4 * 26 + 18
     lines = [ln for r in reasons for ln in (wrap("· " + r, 44) if mobile else ["· " + r])]
     body += paragraph(24, ry, lines, 14, 20)
     ry += len(lines) * 20 + 8
@@ -118,13 +128,13 @@ def option_card(x, y, w, h, rank, opt, mobile):
 def excluded_box(x, y, w, opened, mobile):
     if not opened:
         body = [poly(chamfer(0, 0, w, 64, 12), WHITE, D["cielo"], 2, "4 4"),
-                text(24, 39, f"{len(EXCLUDED)} excluidas por reglas" if mobile else f"{len(EXCLUDED)} opciones excluidas por reglas", 17, 700)]
+                text(24, 39, f"{len(EXCLUDED)} excluidas, con su motivo" if mobile else f"{len(EXCLUDED)} opciones excluidas, cada una con su regla o motivo", 17, 700)]
         body += link(w - 24, 39, "Ver por qué", 16, anchor="end")
         return [group("excluidas", body, x, y)], 64
     row_h = 124 if mobile else 78
     h = 74 + len(EXCLUDED) * row_h + 10
     body = [poly(chamfer(0, 0, w, h, 12), WHITE, D["cielo"], 2, "4 4"),
-            text(24, 40, f"{len(EXCLUDED)} excluidas por reglas" if mobile else f"{len(EXCLUDED)} opciones excluidas por reglas", 17, 700)]
+            text(24, 40, f"{len(EXCLUDED)} excluidas, con su motivo" if mobile else f"{len(EXCLUDED)} opciones excluidas, cada una con su regla o motivo", 17, 700)]
     body += link(w - 24, 40, "Ocultar", 16, anchor="end")
     for i, (seq, why, rule) in enumerate(EXCLUDED):
         yy = 70 + i * row_h
@@ -157,7 +167,7 @@ def rotations(mobile=False, opened=False):
     else:
         x, y, cw, pad = 96, 116, 1248, 36
     fw = cw - 2 * pad
-    c = [text(pad, 44, "QUÉ SEMBRAR DESPUÉS · SAMACÁ" if mobile else "QUÉ SEMBRAR DESPUÉS · SAMACÁ, BOYACÁ · SEMESTRE A · ENE–JUN 2027", 14, 700, SEC)]
+    c = [text(pad, 44, "QUÉ SEMBRAR DESPUÉS · SAMACÁ" if mobile else "QUÉ SEMBRAR DESPUÉS · SAMACÁ, BOYACÁ", 14, 700, SEC)]
     if mobile:
         c += [text(pad, 84, "¿Qué sembrar después", 26, 600, font=FONT_TITLE), text(pad, 116, "de la papa?", 26, 600, font=FONT_TITLE)]
         cy0 = 140
@@ -171,15 +181,18 @@ def rotations(mobile=False, opened=False):
     c += [poly(chamfer(pad, cy0 + 64, ctx_w, 52, 10), P["niebla"]), text(pad + 18, cy0 + 86, "Suelo estimado de Samacá", 13, fill=SEC),
           text(pad + 18, cy0 + 106, "pH 5,2 a 5,8 · carbono medio" if mobile else "pH 5,2 a 5,8 · carbono orgánico medio", 16, 700)]
     c += link(pad + ctx_w - 16, cy0 + 86, "Ver suelo", 14, anchor="end")
-    c += paragraph(pad, cy0 + 144, ["Con cuenta, se usan el historial y el suelo", "de su lote dibujado."] if mobile else
-                   ["Con cuenta, se usan el historial y el suelo de su lote dibujado."], 14, 20, fill=SEC)
+    c += [poly(chamfer(pad, cy0 + 128, ctx_w, 52, 10), P["niebla"]), text(pad + 18, cy0 + 150, "Primera siembra", 13, fill=SEC),
+          text(pad + 18, cy0 + 170, SOWING, 16, 700)]
+    c += link(pad + ctx_w - 16, cy0 + 150, "Cambiar", 14, anchor="end")
+    c += paragraph(pad, cy0 + 208, ["Cada cultivo se evalúa en su propia ventana.", "Con cuenta, se usan el historial y el suelo", "de su lote dibujado."] if mobile else
+                   ["Cada cultivo se evalúa en su propia ventana. Con cuenta, se usan el historial y el suelo de su lote dibujado."], 14, 20, fill=SEC)
     if mobile:
-        pp_y = cy0 + 210
+        pp_y = cy0 + 290
         c += priorities_panel(pad, pp_y, fw, True)
         ch = pp_y + 52 + 4 * 66 + 20
     else:
         c += priorities_panel(pad + 620, 74, fw - 620, False)
-        ch = 410
+        ch = 420
     b += card(x, y, cw, ch) + [group("contexto", c, x, y)]
     top = max(header_h, y + ch + 40)
     # ranking
