@@ -1,6 +1,7 @@
 // Envía un archivo SVG al plugin local de Figma por el relé WebSocket (mismo protocolo que el MCP TalkToFigma).
-// Uso: bun send_svg.ts <canal> <archivo.svg> <x> <y> <nombre>
-const [channel, file, x, y, name] = process.argv.slice(2);
+// Uso: bun send_to_figma.ts <canal> <archivo.svg> <x> <y> <nombre> [idDelPadre]
+// Con idDelPadre (una sección o un marco), x e y son relativas a él.
+const [channel, file, x, y, name, parentId] = process.argv.slice(2);
 const svg = await Bun.file(file).text();
 const ws = new WebSocket("ws://localhost:3055");
 const id = crypto.randomUUID();
@@ -12,7 +13,7 @@ ws.onmessage = (ev) => {
   const data = JSON.parse(String(ev.data));
   if (!joined) {
     joined = true;
-    send({ id, type: "message", channel, message: { id, command: "create_svg", params: { svg, x: Number(x), y: Number(y), name, commandId: id } } });
+    send({ id, type: "message", channel, message: { id, command: "create_svg", params: { svg, x: Number(x), y: Number(y), name, parentId, commandId: id } } });
     return;
   }
   const m = data.message;
