@@ -25,6 +25,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Orden de trabajo del frontend | Cada pieza se diseña y aprueba primero en Figma; el código va después | 10 oct 2026 |
 | Control de prioridad | Cinco semillas y un «0» que se tocan, en lugar de un deslizador (se retira Radix Slider) | 10 oct 2026 |
 | Mascota | Semilla Sputnik: semilla germinando en estilo de caricatura de los años 60; raíces por antenas, brote por antena de señal. La semilla cambia según el contexto; la cara y el brote son la identidad (HU-171) | 10 oct 2026 |
+| Fondos y recorrido con scroll | Fondos en capas SVG generadas por código; el scroll mueve una línea de tiempo de GSAP, no un video. Técnicas combinadas por momento (máscara, sección fijada con paralaje, 3D como mejora; video atado al scroll solo opcional). Si entra una imagen: AVIF con respaldo WebP (HU-155) | 10 oct 2026 |
 | Rotaciones y finca | Se unen en Mi finca, por lote | 10 oct 2026 |
 | Audio | P1 (HU-157) | 10 oct 2026 |
 | «Acerca de» | Sin sección aparte: el panel «¿Cómo funciona y de dónde sale esto?» cubre fuentes, versión y cómo se decide | 10 oct 2026 |

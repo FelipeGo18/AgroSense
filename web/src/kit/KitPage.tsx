@@ -94,6 +94,14 @@ export function KitPage() {
             HU-153 y HU-171 · Estilo diorama low-poly y la mascota Semilla Sputnik. Pruebe todo con el teclado (Tab, flechas, Enter, Escape).
           </p>
           <ExampleLabel>los municipios, señales y prioridades de esta página son de muestra</ExampleLabel>
+          <p>
+            Recorridos de prueba:{" "}
+            <a className="font-bold underline" href="/recorrido/1">1 · Del satélite al lote</a>
+            {" · "}
+            <a className="font-bold underline" href="/recorrido/2">2 · El año del cultivo</a>
+            {" · "}
+            <a className="font-bold underline" href="/recorrido/3">3 · Travesía por la cordillera</a>
+          </p>
         </div>
       </header>
 

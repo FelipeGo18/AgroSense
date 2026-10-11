@@ -64,7 +64,7 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-152 | Tokens de diseño | P0 | M | hecha |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-153 | Kit de componentes con estilo de juego | P0 | L | hecha |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-154 | Escena 3D del paisaje andino | P0 | L | pendiente |
-| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-155 | Descenso de cámara del satélite al lote | P0 | L | pendiente |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-155 | Descenso de cámara del satélite al lote | P0 | L | en curso |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-156 | Sistema de motion | P0 | M | pendiente |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | pendiente |

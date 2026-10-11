@@ -65,12 +65,13 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 ### HU-155 · Descenso de cámara del satélite al lote
 
 - **Historia:** Como jurado, quiero recorrer del satélite a la finca, para entender en segundos cómo los datos de NASA llegan a una decisión.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Cuatro niveles (satélite, región, municipio, finca) navegables con scroll y con toques
   - [ ] Storyboard escrito antes de animar
   - [ ] La mascota satélite guía el recorrido (HU-172)
   - [ ] Con `prefers-reduced-motion`, los niveles cambian sin recorrido de cámara
+- **Notas:** Guion en Figma («HU-155 · Recorrido A» y «Recorridos B y C»), generado desde `design/paisaje/`. Recorrido A aprobado: del satélite al lote en siete paradas, cuatro con interfaz y tres de tránsito. Dos alternativas en evaluación: B, el año del cultivo (el scroll avanza en el tiempo), y C, la travesía por la cordillera (el scroll avanza de lado). Los fondos son capas SVG generadas por código (`build_paisaje.py`), no imágenes ni video. Prototipos para probarlos: `npm --prefix web run dev` y abrir `/recorrido/1`, `/recorrido/2` y `/recorrido/3` (GSAP ScrollTrigger; con «reducir movimiento» las paradas aparecen colocadas, sin viaje). Falta elegir recorrido, la versión 3D y la prueba en móvil de gama media.
 
 ### HU-156 · Sistema de motion
 
