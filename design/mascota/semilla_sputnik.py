@@ -31,6 +31,7 @@ MOODS = {
     "guia": dict(eyes="pie", look=4, mouth="open", arms=("down", "point"), waves=2),
     "celebra": dict(eyes="happy", mouth="big", arms=("up", "up"), lift=-8, sparkles=True),
     "sin-datos": dict(eyes="hollow", mouth="flat", arms=("tuck", "tuck"), scale=0.9, mist=True, droop=True),
+    "preocupa": dict(eyes="pie", look=-3, mouth="flat", arms=("tuck", "down")),  # con un rojo: atenta, sin drama
     "vuelo": dict(eyes="pie", look=5, mouth="open", arms=("back", "point"), tilt=-16, speed=True, waves=1),
 }
 
