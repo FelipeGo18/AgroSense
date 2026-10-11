@@ -166,7 +166,9 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Clima de ahora en la escena (HU-175): día, atardecer, noche, nubes, lluvia, viento y escarcha si la mínima de ahora baja de 2 °C. Nunca cambia un resultado (decisión 7); sin datos en vivo, clima neutro rotulado
   - [ ] Si el plan de agua marca déficit este mes, el suelo se ve seco con el aviso «Riego probable este mes · estimación» (R10)
   - [ ] Tocar el cultivo muestra su etapa, los días desde la siembra y el método (temperatura o calendario)
-  - [ ] Con movimiento reducido o en modo ligero, la misma información en 2D sin animación
+  - [ ] El ambiente está animado: el viento pasa en ráfagas y las matas se inclinan en ola, la lluvia cae en bucle y salpica, las nubes derivan, las estrellas titilan, la escarcha brilla y se derrite al salir el sol, y de día, sin lluvia ni viento fuerte, de vez en cuando cruza una mariposa
+  - [ ] Con movimiento reducido o en modo ligero, la escena es estática: la imagen fija del estado de ahora, con la misma información y los mismos rótulos
+  - [ ] La animación se pausa cuando la pestaña no se ve y limita las partículas en móvil
 - **Reglas que aplican:** R1, R5, R10
 - **Notas:** Los estados del clima que no ocurren ahora solo se ven en el modo simulación de desarrollo (HU-014). Cultivos perennes (caña, frutales) tienen arquetipo visual, pero su manejo por temporadas de varios años queda fuera del P0. Decidido el 11 de octubre de 2026.
 

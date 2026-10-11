@@ -18,8 +18,8 @@ PARTS = (
     ("B · Descenso", "Invitado y usuario nuevo", [("Buscar mi municipio", 2, DONE), ("Dibujar mi lote en el mapa", 2, DONE)]),
     ("C · Consulta", "Todos", [("Elegir cultivo y semestre", 3, DONE), ("Resultado del diagnóstico", 3, DONE), ("Las cinco señales y gráficas", 3, DONE),
                                ("Qué sembrar después", 4, DONE)]),
-    ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 7, TODO), ("Lote vivo y paso del tiempo", 7, TODO), ("Lote · calendario", 7, TODO),
-                                    ("Lote · próxima siembra", 7, TODO), ("Lote · agua", 7, TODO), ("Lote · historial y progreso", 8, TODO),
+    ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 7, NEXT), ("Lote vivo y paso del tiempo", 7, NEXT), ("Lote · calendario", 7, NEXT),
+                                    ("Lote · próxima siembra", 7, NEXT), ("Lote · agua", 7, NEXT), ("Lote · historial y progreso", 8, TODO),
                                     ("Finca temporal (sin cuenta)", 8, TODO)]),
     ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 8, TODO), ("Registrar cosecha y siembra", 8, TODO)]),
     ("F · Cuenta", "Todos", [("Iniciar sesión", 1, DONE), ("Crear cuenta", 1, DONE), ("Mi cuenta", 1, DONE), ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 8, TODO),
@@ -29,7 +29,7 @@ PARTS = (
     ("H · Administrador", "Rol admin · P1", [("Usuarios", 10, TODO), ("Ficha del agricultor", 10, TODO), ("Tickets", 10, TODO), ("Bitácora", 10, TODO), ("Métricas", 10, TODO)]),
     ("I · Catálogo visual", "Para Mi finca", [("Cultivos 1 · piloto", 5, DONE), ("Cultivos 2 · árboles frutales", 5, DONE), ("Cultivos 3 · musáceas y vides", 5, DONE),
                                               ("Cultivos 4 · raíces y hojas", 5, DONE), ("Cultivos 5 · más hortalizas", 5, DONE), ("Cultivos 6 · frutas andinas", 5, DONE),
-                                              ("Cultivos 7 · permanentes", 5, DONE), ("Cultivos 8 · aromáticas y más", 5, DONE), ("Estados del ambiente", 6, NEXT)]),
+                                              ("Cultivos 7 · permanentes", 5, DONE), ("Cultivos 8 · aromáticas y más", 5, DONE), ("Estados del ambiente", 6, DONE)]),
 )
 
 STYLE = {DONE: (P["brote"], D["brote"], P["noche"]), NEXT: (P["trigo"], D["trigo"], P["noche"]), TODO: (WHITE, BORDE, SEC)}
@@ -57,7 +57,7 @@ def sheet():
                 body += [text(24, ry + 22, name if len(name) < 30 else name[:28] + "…", 16, 700 if state != TODO else 400)] + chip(258, ry, state, tanda)
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
-    order = ["Orden: 1 Cuenta, 2 Portada y descenso, 3 Diagnóstico, 4 Rotaciones y 5 Catálogo de 46 cultivos (hechas) → 6 Estados del ambiente",
+    order = ["Orden: 1 Cuenta, 2 Portada y descenso, 3 Diagnóstico, 4 Rotaciones y 5 Catálogo de 46 cultivos y 6 Estados del ambiente (hechas)",
              "→ 7 Mi finca: mapa, lote vivo, calendario, agua y próxima siembra → 8 Historial, agregar, finca temporal y Mi actividad → 9 Transversal → 10 Administrador (P1).",
              "Señales: lluvia, heladas, suelo, oferta y mercado. El lote vivo usa el catálogo de cultivos y el clima de ahora. Nombres y cifras de muestra."]
     for i, line in enumerate(order):
