@@ -65,6 +65,7 @@
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-146 | Endpoint del plan de agua | P0 | S | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-179 | Calendario del cultivo | P0 | M | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-180 | Vista del calendario | P0 | M | pendiente |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-186 | Línea de tiempo del cultivo | P0 | M | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-147 | Aviso de riego semanal | P1 | L | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-148 | Rotaciones ponderadas por área | P1 | S | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-149 | Guardar la finca en el dispositivo | P1 | S | pendiente |
@@ -89,6 +90,7 @@
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-166 | Borrar mi cuenta | P0 | S | pendiente |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-167 | Progreso del lote | P0 | S | pendiente |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-168 | Registro, sesión y paso de invitado a cuenta | P0 | M | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-187 | El lote vivo | P0 | L | pendiente |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-169 | Mi finca con varios lotes y zonas | P0 | L | pendiente |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-171 | Diseño de la mascota satélite | P0 | M | en curso |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-172 | Expresiones y animaciones de la mascota | P0 | M | pendiente |

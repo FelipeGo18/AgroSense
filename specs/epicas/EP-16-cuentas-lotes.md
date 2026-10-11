@@ -156,12 +156,26 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Quien vuelve con sesión entra directo a Mi finca, sin descenso
 - **Reglas que aplican:** R9
 
+### HU-187 · El lote vivo
+
+- **Historia:** Como agricultor, quiero ver mi lote con su cultivo creciendo, el clima de ahora y si es probable que haya que regar, para sentir mi finca en la app y entenderla de un vistazo.
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Diorama low-poly del lote con su cultivo según su arquetipo (`crops.archetype`) y su etapa (HU-150)
+  - [ ] Línea de tiempo que se arrastra y se reproduce, de la siembra a la cosecha estimada (HU-186); lo de después de hoy lleva «Estimación con un año normal, no es pronóstico»
+  - [ ] Clima de ahora en la escena (HU-175): día, atardecer, noche, nubes, lluvia, viento y escarcha si la mínima de ahora baja de 2 °C. Nunca cambia un resultado (decisión 7); sin datos en vivo, clima neutro rotulado
+  - [ ] Si el plan de agua marca déficit este mes, el suelo se ve seco con el aviso «Riego probable este mes · estimación» (R10)
+  - [ ] Tocar el cultivo muestra su etapa, los días desde la siembra y el método (temperatura o calendario)
+  - [ ] Con movimiento reducido o en modo ligero, la misma información en 2D sin animación
+- **Reglas que aplican:** R1, R5, R10
+- **Notas:** Los estados del clima que no ocurren ahora solo se ven en el modo simulación de desarrollo (HU-014). Cultivos perennes (caña, frutales) tienen arquetipo visual, pero su manejo por temporadas de varios años queda fuera del P0. Decidido el 11 de octubre de 2026.
+
 ### HU-169 · Mi finca con varios lotes y zonas
 
 - **Historia:** Como agricultor, quiero ver todos mis lotes en el paisaje y cambiar de zona, para manejar mi finca completa.
 - **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Paisaje con los lotes del usuario, cada uno con su cultivo y etapa
+  - [ ] Los lotes del usuario en el mapa real con sus polígonos (HU-164), cada uno con su cultivo y etapa; al abrir uno, el lote vivo (HU-187)
   - [ ] Selector de zona si hay lotes en varios municipios
   - [ ] Detalle de lote con ahora, próxima siembra, agua e historial
   - [ ] Agregar lote con mini descenso al municipio elegido

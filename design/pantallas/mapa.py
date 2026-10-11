@@ -18,14 +18,18 @@ PARTS = (
     ("B · Descenso", "Invitado y usuario nuevo", [("Buscar mi municipio", 2, DONE), ("Dibujar mi lote en el mapa", 2, DONE)]),
     ("C · Consulta", "Todos", [("Elegir cultivo y semestre", 3, DONE), ("Resultado del diagnóstico", 3, DONE), ("Las cinco señales y gráficas", 3, DONE),
                                ("Qué sembrar después", 4, DONE)]),
-    ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 5, NEXT), ("Lote · ahora y su suelo", 5, TODO), ("Lote · calendario", 5, TODO), ("Lote · próxima siembra", 5, TODO), ("Lote · agua", 5, TODO),
-                                    ("Lote · historial y progreso", 6, TODO), ("Finca temporal (sin cuenta)", 6, TODO)]),
-    ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 6, TODO), ("Registrar cosecha y siembra", 6, TODO)]),
-    ("F · Cuenta", "Todos", [("Iniciar sesión", 1, DONE), ("Crear cuenta", 1, DONE), ("Mi cuenta", 1, DONE), ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 6, TODO),
-                             ("Guardar la finca temporal", 6, TODO)]),
-    ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale esto?", 7, TODO), ("Estados: cargando, vacío, sin cobertura, error", 7, TODO),
-                                  ("Menú en móvil", 7, TODO), ("Modo ligero", 7, TODO), ("Reportar un problema", 7, TODO)]),
-    ("H · Administrador", "Rol admin · P1", [("Usuarios", 8, TODO), ("Ficha del agricultor", 8, TODO), ("Tickets", 8, TODO), ("Bitácora", 8, TODO), ("Métricas", 8, TODO)]),
+    ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 7, TODO), ("Lote vivo y paso del tiempo", 7, TODO), ("Lote · calendario", 7, TODO),
+                                    ("Lote · próxima siembra", 7, TODO), ("Lote · agua", 7, TODO), ("Lote · historial y progreso", 8, TODO),
+                                    ("Finca temporal (sin cuenta)", 8, TODO)]),
+    ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 8, TODO), ("Registrar cosecha y siembra", 8, TODO)]),
+    ("F · Cuenta", "Todos", [("Iniciar sesión", 1, DONE), ("Crear cuenta", 1, DONE), ("Mi cuenta", 1, DONE), ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 8, TODO),
+                             ("Guardar la finca temporal", 8, TODO)]),
+    ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale esto?", 9, TODO), ("Estados: cargando, vacío, sin cobertura, error", 9, TODO),
+                                  ("Menú en móvil", 9, TODO), ("Modo ligero", 9, TODO), ("Reportar un problema", 9, TODO)]),
+    ("H · Administrador", "Rol admin · P1", [("Usuarios", 10, TODO), ("Ficha del agricultor", 10, TODO), ("Tickets", 10, TODO), ("Bitácora", 10, TODO), ("Métricas", 10, TODO)]),
+    ("I · Catálogo visual", "Para Mi finca", [("Cultivos 1 · piloto", 5, NEXT), ("Cultivos 2 · árboles frutales", 5, TODO), ("Cultivos 3 · musáceas y vides", 5, TODO),
+                                              ("Cultivos 4 · raíces y hojas", 5, TODO), ("Cultivos 5 · más hortalizas", 5, TODO), ("Cultivos 6 · frutas andinas", 5, TODO),
+                                              ("Cultivos 7 · permanentes", 5, TODO), ("Cultivos 8 · aromáticas y más", 5, TODO), ("Estados del ambiente", 6, TODO)]),
 )
 
 STYLE = {DONE: (P["brote"], D["brote"], P["noche"]), NEXT: (P["trigo"], D["trigo"], P["noche"]), TODO: (WHITE, BORDE, SEC)}
@@ -37,11 +41,11 @@ def chip(x, y, state, tanda):
 
 
 def sheet():
-    w, h = 1440, 1200
+    w, h = 1440, 1420
     b = [f'<rect width="{w}" height="{h}" fill="{P["niebla"]}"/>',
          text(48, 76, "Mapa de pantallas finales", 44, 600, font=FONT_TITLE),
-         text(48, 112, "34 pantallas, cada una en escritorio y en móvil. Se diseñan por tandas; cada tanda se aprueba en Figma antes de pasar a código.", 18)]
-    cols = (PARTS[:3], PARTS[3:5] + PARTS[7:], PARTS[5:7])
+         text(48, 112, "36 pantallas y láminas; las pantallas, en escritorio y en móvil. Se diseñan por tandas; cada tanda se aprueba en Figma antes de pasar a código.", 18)]
+    cols = (PARTS[:3] + PARTS[8:], PARTS[3:5] + PARTS[7:8], PARTS[5:7])
     for ci, col in enumerate(cols):
         x, y = 48 + ci * 456, 150
         for part, who, screens in col:
@@ -53,11 +57,11 @@ def sheet():
                 body += [text(24, ry + 22, name if len(name) < 30 else name[:28] + "…", 16, 700 if state != TODO else 400)] + chip(258, ry, state, tanda)
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
-    order = ["Orden: 1 Cuenta, 2 Portada y descenso, 3 Diagnóstico y 4 Rotaciones (hechas) → 5 Mi finca, lote y agua → 6 Historial, agregar",
-             "y finca temporal → 7 Transversal → 8 Administrador (P1). El lote se dibuja en un mapa real (HU-164).",
-             "Señales: lluvia, heladas, suelo, oferta y mercado. El lote muestra su etapa (HU-150), su suelo (EP-18) y su calendario (HU-180). Nombres y cifras de muestra."]
+    order = ["Orden: 1 Cuenta, 2 Portada y descenso, 3 Diagnóstico y 4 Rotaciones (hechas) → 5 Catálogo de cultivos, en lotes de cinco → 6 Estados del ambiente",
+             "→ 7 Mi finca: mapa, lote vivo, calendario, agua y próxima siembra → 8 Historial, agregar, finca temporal y Mi actividad → 9 Transversal → 10 Administrador (P1).",
+             "Señales: lluvia, heladas, suelo, oferta y mercado. El lote vivo usa el catálogo de cultivos y el clima de ahora. Nombres y cifras de muestra."]
     for i, line in enumerate(order):
-        b.append(text(48, 1090 + i * 26, line, 16, fill=SEC))
+        b.append(text(48, 1310 + i * 26, line, 16, fill=SEC))
     return svg(w, h, b)
 
 
