@@ -27,9 +27,9 @@ PARTS = (
     ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale esto?", 9, TODO), ("Estados: cargando, vacío, sin cobertura, error", 9, TODO),
                                   ("Menú en móvil", 9, TODO), ("Modo ligero", 9, TODO), ("Reportar un problema", 9, TODO)]),
     ("H · Administrador", "Rol admin · P1", [("Usuarios", 10, TODO), ("Ficha del agricultor", 10, TODO), ("Tickets", 10, TODO), ("Bitácora", 10, TODO), ("Métricas", 10, TODO)]),
-    ("I · Catálogo visual", "Para Mi finca", [("Cultivos 1 · piloto", 5, NEXT), ("Cultivos 2 · árboles frutales", 5, TODO), ("Cultivos 3 · musáceas y vides", 5, TODO),
-                                              ("Cultivos 4 · raíces y hojas", 5, TODO), ("Cultivos 5 · más hortalizas", 5, TODO), ("Cultivos 6 · frutas andinas", 5, TODO),
-                                              ("Cultivos 7 · permanentes", 5, TODO), ("Cultivos 8 · aromáticas y más", 5, TODO), ("Estados del ambiente", 6, TODO)]),
+    ("I · Catálogo visual", "Para Mi finca", [("Cultivos 1 · piloto", 5, DONE), ("Cultivos 2 · árboles frutales", 5, DONE), ("Cultivos 3 · musáceas y vides", 5, DONE),
+                                              ("Cultivos 4 · raíces y hojas", 5, DONE), ("Cultivos 5 · más hortalizas", 5, DONE), ("Cultivos 6 · frutas andinas", 5, DONE),
+                                              ("Cultivos 7 · permanentes", 5, DONE), ("Cultivos 8 · aromáticas y más", 5, DONE), ("Estados del ambiente", 6, NEXT)]),
 )
 
 STYLE = {DONE: (P["brote"], D["brote"], P["noche"]), NEXT: (P["trigo"], D["trigo"], P["noche"]), TODO: (WHITE, BORDE, SEC)}
@@ -57,7 +57,7 @@ def sheet():
                 body += [text(24, ry + 22, name if len(name) < 30 else name[:28] + "…", 16, 700 if state != TODO else 400)] + chip(258, ry, state, tanda)
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
-    order = ["Orden: 1 Cuenta, 2 Portada y descenso, 3 Diagnóstico y 4 Rotaciones (hechas) → 5 Catálogo de cultivos, en lotes de cinco → 6 Estados del ambiente",
+    order = ["Orden: 1 Cuenta, 2 Portada y descenso, 3 Diagnóstico, 4 Rotaciones y 5 Catálogo de 46 cultivos (hechas) → 6 Estados del ambiente",
              "→ 7 Mi finca: mapa, lote vivo, calendario, agua y próxima siembra → 8 Historial, agregar, finca temporal y Mi actividad → 9 Transversal → 10 Administrador (P1).",
              "Señales: lluvia, heladas, suelo, oferta y mercado. El lote vivo usa el catálogo de cultivos y el clima de ahora. Nombres y cifras de muestra."]
     for i, line in enumerate(order):
