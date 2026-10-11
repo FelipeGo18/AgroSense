@@ -266,6 +266,8 @@ TREES = {  # tronco, lóbulos de la copa (dx, dy, r), color de copa, flor, fruto
                   flower="dots", flower_col="#F4E9F7", green="#6FB03A", ripe="#B9D94A", shape="oval", size=2.3, n=9),
     "mandarina": dict(trunk=8, lobes=((-7, 0, 8), (7, 0, 8), (0, -6, 9), (0, 5, 8)), leaf="#3F7A33",
                       flower="dots", flower_col="#FFFFFF", green="#7FA83A", ripe="#F07A1E", shape="flat", size=2.4, n=11),
+    "tomate_arbol": dict(trunk=14, lobes=((-12, -2, 9), (12, -2, 9), (0, -6, 10), (-6, 2, 8), (6, 2, 8)), leaf="#4E8F3A",
+                         flower="dots", flower_col="#F4D9E8", green="#7FA83A", ripe="#D9552A", shape="oval", size=3.0, n=8, hang=True),
     "aguacate": dict(trunk=15, lobes=((0, -15, 9.5), (-8, -5, 9.5), (8, -5, 9.5), (0, 4, 10.5), (-4, -11, 7)), leaf="#2E5E2A",
                      flower="dots", flower_col="#D7D98A", green="#4C7A2E", ripe="#2B2A3A", shape="pear", size=3.0, n=6),
 }
@@ -286,7 +288,7 @@ def fruit(x, y, spec, ripe):
         return [f'<line x1="{x:.1f}" y1="{y - r * 2.2:.1f}" x2="{x:.1f}" y2="{y - r:.1f}" stroke="#5A4630" stroke-width="0.9"/>',
                 poly([(x, y - r * 1.4), (x + r * 0.7, y - r * 0.4), (x + r, y + r * 0.6), (x, y + r * 1.2), (x - r, y + r * 0.6), (x - r * 0.7, y - r * 0.4)], col),
                 poly([(x, y - r * 1.4), (x - r * 0.7, y - r * 0.4), (x - r, y + r * 0.6), (x, y + r * 1.2)], shade(col, 0.2))]
-    out = [f'<line x1="{x:.1f}" y1="{y - r * 2.4:.1f}" x2="{x:.1f}" y2="{y - r:.1f}" stroke="#5A4630" stroke-width="0.9"/>'] if spec.get("blush") else []
+    out = [f'<line x1="{x:.1f}" y1="{y - r * 2.4:.1f}" x2="{x:.1f}" y2="{y - r:.1f}" stroke="#5A4630" stroke-width="0.9"/>'] if spec.get("blush") or spec.get("hang") else []
     out += gem(x, y, r * 0.8, col, r * 1.15)
     if ripe and spec.get("blush"):
         out.append(f'<ellipse cx="{x + r * 0.3:.1f}" cy="{y - r * 0.3:.1f}" rx="{r * 0.45:.1f}" ry="{r * 0.6:.1f}" fill="{spec["blush"]}" fill-opacity="0.8"/>')
@@ -720,6 +722,121 @@ def criolla_cut(cx, cy):
     return gem(cx - 40, cy + 34, 4.5, "#F2C94C") + gem(cx - 58, cy + 26, 4, "#E8B83A") + gem(cx - 24, cy + 44, 4, "#F2C94C") + gem(cx + 30, cy + 40, 4.5, "#E8B83A")
 
 
+# ---------- Lote 6: frutas andinas ----------
+
+def beds(cx, cy, rows):
+    """Camas elevadas cubiertas con plástico (fresa): franjas grises sobre cada surco."""
+    out = []
+    for r in range(rows):
+        v = (r + 0.5) / rows
+        p0, p1 = at(cx, cy, 0.03, v), at(cx, cy, 0.97, v)
+        out.append(f'<line x1="{p0[0]:.1f}" y1="{p0[1] + 2:.1f}" x2="{p1[0]:.1f}" y2="{p1[1] + 2:.1f}" stroke="#4A3428" stroke-width="12" stroke-linecap="round"/>')
+        out.append(f'<line x1="{p0[0]:.1f}" y1="{p0[1]:.1f}" x2="{p1[0]:.1f}" y2="{p1[1]:.1f}" stroke="#5C6670" stroke-width="10" stroke-linecap="round"/>')
+        out.append(f'<line x1="{p0[0]:.1f}" y1="{p0[1] - 2:.1f}" x2="{p1[0]:.1f}" y2="{p1[1] - 2:.1f}" stroke="#7D8892" stroke-width="2.5" stroke-linecap="round"/>')
+    return out
+
+
+def fresa(x, y, s, sd):
+    """Roseta baja de hojas de tres foliolos aserrados; flor blanca; fresas que cuelgan sobre el plástico."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return leaf(x, y - 1, 60, 5, 4, "#5FA34A") + leaf(x, y - 1, 120, 5, 4, "#4E8F3A")
+    k = (0, 0.55, 0.8, 1.0, 1.0, 1.0)[s]
+    out = []
+    for i, ang in enumerate((25, 70, 110, 155, 50, 130)):
+        a = math.radians(ang)
+        bx, by = x + 7 * k * math.cos(a), y - 4 * k - 5 * k * math.sin(a)
+        for d in (-28, 0, 28):
+            out += leaf(bx, by, ang + d, 5.5 * k, 4.5 * k, ("#4E8F3A", "#5FA34A", "#3F7F33")[i % 3])
+    if s == 3:
+        for _ in range(3):
+            out += flower(x + rnd.uniform(-7, 7), y - rnd.uniform(2, 8), 2, "#FFFFFF", "#F2D23A")
+    if s >= 4:
+        for _ in range(4):
+            fx, fy = x + rnd.uniform(-9, 9), y + rnd.uniform(0, 3)
+            col = "#C9E08A" if s == 4 else "#D8322E"
+            out += [poly([(fx - 2.4, fy - 2), (fx + 2.4, fy - 2), (fx, fy + 4)], col), poly([(fx, fy - 2), (fx + 2.4, fy - 2), (fx, fy + 4)], shade(col, -0.15)),
+                    poly([(fx - 1.8, fy - 2), (fx + 1.8, fy - 2), (fx, fy - 4)], "#3F7F33")]
+            if s == 5:
+                out.append(f'<circle cx="{fx - 0.6:.1f}" cy="{fy:.1f}" r="0.4" fill="#F7E58A"/>')
+    return out
+
+
+def mora(x, y, s, sd):
+    """Cañas arqueadas en espaldera; flor blanca; bayas que pasan de rojo a negro."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return blob(x, y - 3, 3.5, "#5FA34A", sd)
+    k = (0, 0.4, 0.75, 1.0, 1.0, 1.0)[s]
+    out = []
+    for i in range(4):  # cañas arqueadas
+        d = -1 if i % 2 else 1
+        ex, ey = x + d * (10 + i * 3) * k, y - (14 + i * 6) * k
+        out.append(f'<path d="M{x:.1f} {y:.1f} Q{x + d * 2:.1f} {ey - 6 * k:.1f} {ex:.1f} {ey:.1f}" stroke="#7A4A5A" stroke-width="1.3" fill="none"/>')
+        for t in (0.45, 0.75, 1.0):
+            px, py = x + (ex - x) * t, y + (ey - y) * t - 4 * k * (1 - abs(0.6 - t))
+            out += blob(px, py, 4.5 * k + 1, ("#3F7F33", "#4E8F3A", "#5FA34A")[(i + int(t * 4)) % 3], sd + i * 7 + int(t * 10), ry=3.8 * k + 1)
+    if s == 3:
+        for _ in range(4):
+            out += flower(x + rnd.uniform(-12, 12), y - rnd.uniform(10, 26), 1.8, "#FFFFFF", "#E8E0C8")
+    if s >= 4:
+        for _ in range(5):
+            bx, by = x + rnd.uniform(-12, 12), y - rnd.uniform(8, 24)
+            col = "#D8322E" if s == 4 else "#2A1A2E"
+            for dx, dy in ((0, 0), (1.6, 0.4), (0.8, 1.6), (-0.8, 1.2)):
+                out.append(f'<circle cx="{bx + dx:.1f}" cy="{by + dy:.1f}" r="1.25" fill="{shade(col, 0.1 if dx > 0 else 0)}"/>')
+    return out
+
+
+def uchuva(x, y, s, sd):
+    """Arbusto de hoja aterciopelada; frutos dentro de un capuchón de papel que pasa de verde a pajizo."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return blob(x, y - 3, 3.5, "#7FA65A", sd)
+    k = (0, 0.45, 0.75, 1.0, 1.0, 1.0)[s]
+    out = []
+    for i in range(6):
+        out += blob(x + rnd.uniform(-9, 9) * k, y - rnd.uniform(5, 20) * k, 6.5 * k + 1, ("#6E9A4A", "#7FA65A", "#5E8C40")[i % 3], sd + i)
+    if s == 3:
+        for _ in range(4):
+            out += flower(x + rnd.uniform(-8, 8), y - rnd.uniform(6, 18), 1.8, "#F2E27A", "#6B4A2E")
+    if s >= 4:
+        for _ in range(5):
+            lx, ly = x + rnd.uniform(-10, 10), y - rnd.uniform(4, 18)
+            husk = "#A8C870" if s == 4 else "#D9C27A"
+            out += [poly([(lx, ly - 4), (lx + 3, ly - 1), (lx + 2, ly + 3), (lx - 2, ly + 3), (lx - 3, ly - 1)], husk, shade(husk, -0.3), 0.6)]
+            if s == 5:
+                out.append(f'<circle cx="{lx:.1f}" cy="{ly + 0.6:.1f}" r="1.3" fill="#F28C28"/>')
+    return out
+
+
+def arandano(x, y, s, sd):
+    """Arbusto de muchas hojas pequeñas y ramas rojizas; flor en campanita; bayas azules con polvo claro."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return blob(x, y - 3, 3.2, "#3F7F33", sd)
+    k = (0, 0.45, 0.75, 1.0, 1.0, 1.0)[s]
+    out = []
+    for i in range(4):
+        d = (i - 1.5) * 4
+        out.append(f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x + d * k:.1f}" y2="{y - 20 * k:.1f}" stroke="#8A3A3A" stroke-width="1.1"/>')
+    for i in range(10):
+        out += blob(x + rnd.uniform(-10, 10) * k, y - rnd.uniform(6, 22) * k, 4 * k + 0.8, ("#2F6B2E", "#3F7F33", "#4E8F3A")[i % 3], sd + i, ry=3.4 * k + 0.6)
+    if s == 3:
+        for _ in range(5):
+            bx, by = x + rnd.uniform(-9, 9), y - rnd.uniform(8, 20)
+            out.append(poly([(bx - 1.4, by), (bx + 1.4, by), (bx + 1, by + 2.6), (bx - 1, by + 2.6)], "#FFF4F0"))
+    if s >= 4:
+        for _ in range(6):
+            bx, by = x + rnd.uniform(-10, 10), y - rnd.uniform(6, 20)
+            col = "#A8C870" if s == 4 else "#3B4F8F"
+            for dx in (-1.4, 1.4):
+                out += [f'<circle cx="{bx + dx:.1f}" cy="{by:.1f}" r="1.5" fill="{col}"/>']
+            if s == 5:
+                out.append(f'<circle cx="{bx - 1.6:.1f}" cy="{by - 0.6:.1f}" r="0.5" fill="#B8C6E8"/>')
+    return out
+
+
 # ---------- Catálogo ----------
 
 STAGES = {
@@ -777,6 +894,16 @@ CROPS = (
      "Enredadera en espaldera: hoja ancha, flor amarilla y frutos largos que cuelgan"),
     ("papa_criolla", "Papa criolla", "tuber", "anual", papa_criolla, 5, 7, True, {4: ("cut", criolla_cut), 5: ("ground", criolla_harvest)}, False,
      "Matas más pequeñas que la papa; tubérculos redondos y amarillos"),
+    ("fresa", "Fresa", "creeping", "perenne", scaled(fresa, 1.35), 4, 6, False, {"beds": True, "transplant": True}, False,
+     "En camas cubiertas con plástico: roseta baja, flor blanca y fresas que cuelgan sobre el plástico"),
+    ("tomate_arbol", "Tomate de árbol", "tree_fruit", "perenne", tree("tomate_arbol"), 2, 2, False, {"orchard": True}, False,
+     "Arbolito de hoja grande y copa en sombrilla; frutos en forma de huevo que cuelgan y maduran rojo anaranjado"),
+    ("mora", "Mora", "bramble", "perenne", scaled(mora, 1.3), 3, 5, False, {"all": ("espaldera", espaldera(34)), "transplant": True}, False,
+     "Cañas arqueadas en espaldera; flor blanca; bayas que pasan de rojo a negro"),
+    ("uchuva", "Uchuva", "shrub", "perenne", scaled(uchuva, 1.35), 3, 4, False, {"transplant": True}, False,
+     "Arbusto de hoja aterciopelada; el fruto naranja crece dentro de un capuchón que pasa de verde a pajizo"),
+    ("arandano", "Arándano", "shrub", "perenne", scaled(arandano, 1.35), 3, 4, False, {"transplant": True}, False,
+     "Arbusto de hoja pequeña y ramas rojizas; flor en campanita; bayas azules con polvo claro"),
 )
 
 
@@ -786,6 +913,13 @@ def stage_cell(crop, s, cx, cy):
         out = block(cx, cy, 0, top=shade(GRASS, -0.08))
         return out + field(cx, cy, rows, cols, plant, s, seed=sum(map(ord, key)), jitter=0.0, basin=True)
     out = block(cx, cy, rows, ridged=ridged, cut=extras[4][1] if s == 4 and 4 in extras and extras[4][0] == "cut" else None)
+    if extras.get("beds"):
+        out += beds(cx, cy, rows)
+    structure = "all" in extras and extras["all"][0] in ("emparrado", "espaldera")
+    if extras.get("transplant") or structure:  # se trasplanta: la etapa 1 ya es una plántula
+        if "all" in extras:
+            out += extras["all"][1](cx, cy, rows, s)
+        return out + field(cx, cy, rows, cols, plant, s, seed=sum(map(ord, key))) + (extras["front"](cx, cy) if "front" in extras else [])
     if s == 0:  # siembra: semillas marcadas sobre el surco
         rnd = random.Random(3)
         for r in range(rows):
