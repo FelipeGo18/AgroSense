@@ -17,7 +17,7 @@ PARTS = (
     ("A · Inicio", "Todos", [("Portada", 2, DONE)]),
     ("B · Descenso", "Invitado y usuario nuevo", [("Buscar mi municipio", 2, DONE), ("Dibujar mi lote en el mapa", 2, DONE)]),
     ("C · Consulta", "Todos", [("Elegir cultivo y semestre", 3, DONE), ("Resultado del diagnóstico", 3, DONE), ("Las cinco señales y gráficas", 3, DONE),
-                               ("Qué sembrar después", 4, DONE)]),
+                               ("Qué sembrar después", 4, DONE), ("Calendario sin cuenta", 7, DONE)]),
     ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 7, DONE), ("Lote vivo y paso del tiempo", 7, DONE), ("Lote · calendario", 7, DONE),
                                     ("Lote · próxima siembra", 7, DONE), ("Lote · agua", 7, DONE), ("Lote · historial y progreso", 8, NEXT),
                                     ("Finca temporal (sin cuenta)", 8, TODO)]),
@@ -44,7 +44,7 @@ def sheet():
     w, h = 1440, 1420
     b = [f'<rect width="{w}" height="{h}" fill="{P["niebla"]}"/>',
          text(48, 76, "Mapa de pantallas finales", 44, 600, font=FONT_TITLE),
-         text(48, 112, "36 pantallas y láminas; las pantallas, en escritorio y en móvil. Se diseñan por tandas; cada tanda se aprueba en Figma antes de pasar a código.", 18)]
+         text(48, 112, f"{sum(len(screens) for _, _, screens in PARTS)} pantallas y láminas; las pantallas, en escritorio y en móvil. Se diseñan por tandas; cada tanda se aprueba en Figma antes de pasar a código.", 18)]
     cols = (PARTS[:3] + PARTS[8:], PARTS[3:5] + PARTS[7:8], PARTS[5:7])
     for ci, col in enumerate(cols):
         x, y = 48 + ci * 456, 150

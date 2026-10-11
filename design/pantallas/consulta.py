@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ui  # noqa: E402,F401  (agrega design/kit y design/mascota al camino de importación)
+import muestra  # noqa: E402
 from build_kit_svg import LIGHTS, STATUS, facets, icon, kind_icon, sign  # noqa: E402
 from ui import (BORDE, D, DESKTOP, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, frame, group, inner, link,  # noqa: E402
                 mascot, paragraph, poly, scene, shade, text, topbar, width_of)
@@ -96,21 +97,22 @@ def light(key, x, y, scale):
 
 SIGNALS = {
     "amarillo": [
-        ("lluvia", "Lluvia", "favorable", False, ["412 mm en el semestre:", "6 % sobre lo normal."]),
-        ("heladas", "Heladas", "moderado", False, ["Sembrando en agosto,", "heló en la floración", "2 de cada 10 años."]),
+        ("lluvia", "Lluvia", "favorable", False, ["En 7 de los últimos 10", "semestres B la lluvia fue", "favorable para la papa."]),
+        ("heladas", "Heladas", "moderado", False, ["Sembrando en agosto,", "heló en el llenado (dic)", f"{muestra.FROST[11]} de cada 100 años."]),
         ("suelo", "Suelo", "favorable", False, ["pH estimado 5,2 a 5,8:", "apto para la papa.", "Estimación de 250 m."]),
-        ("oferta", "Oferta", "desfavorable", False, ["+35 % de área sembrada", "frente a los tres", "semestres B anteriores."]),
+        ("oferta", "Oferta", "desfavorable", False, ["En 2025 B se sembró 35 %", "más papa que en los tres", "semestres B anteriores."]),
         ("mercado", "Mercado", "insuficiente", False, ["Sin datos de precios", "para Samacá. No cambia", "el semáforo."]),
     ],
+    # El caso rojo es de otro municipio, más alto y frío: en Samacá la helada no llega a crítica sembrando en el mejor mes.
     "rojo": [
-        ("lluvia", "Lluvia", "favorable", False, ["398 mm en el semestre:", "2 % sobre lo normal."]),
-        ("heladas", "Heladas", "desfavorable", True, ["Sembrando en enero,", "heló en la tuberización", "6 de cada 10 años."]),
-        ("suelo", "Suelo", "favorable", False, ["pH estimado 5,2 a 5,8:", "apto para la papa.", "Estimación de 250 m."]),
-        ("oferta", "Oferta", "favorable", False, ["Área sembrada parecida", "a los tres semestres A", "anteriores."]),
-        ("mercado", "Mercado", "insuficiente", False, ["Sin datos de precios", "para Samacá. No cambia", "el semáforo."]),
+        ("lluvia", "Lluvia", "favorable", False, ["En 8 de los últimos 10", "semestres A la lluvia fue", "favorable para la papa."]),
+        ("heladas", "Heladas", "desfavorable", True, ["Aun sembrando en marzo,", "heló en la floración", "4 de cada 10 años."]),
+        ("suelo", "Suelo", "favorable", False, ["pH estimado 5,3 a 5,9:", "apto para la papa.", "Estimación de 250 m."]),
+        ("oferta", "Oferta", "favorable", False, ["En 2025 A, área sembrada", "parecida a los tres", "semestres A anteriores."]),
+        ("mercado", "Mercado", "insuficiente", False, ["Sin datos de precios", "para Toca. No cambia", "el semáforo."]),
     ],
     "no-evaluable": [
-        ("lluvia", "Lluvia", "favorable", False, ["412 mm en el semestre:", "6 % sobre lo normal."]),
+        ("lluvia", "Lluvia", "favorable", False, ["En 7 de los últimos 10", "semestres B la lluvia fue", "favorable para el haba."]),
         ("heladas", "Heladas", "no-aplica", False, ["La ficha del cultivo", "no tiene etapas", "sensibles a la helada."]),
         ("suelo", "Suelo", "moderado", False, ["pH estimado 5,2 a 5,8:", "en el límite de lo", "que tolera."]),
         ("oferta", "Oferta", "insuficiente", False, ["EVA no registra este", "cultivo en Samacá en", "los últimos semestres."]),
@@ -120,11 +122,11 @@ SIGNALS = {
 
 HEAD = {
     "amarillo": dict(kicker=f"PAPA · SEMESTRE {SEM.upper()} · {TOWN.upper()}", title="Mejor espere otro semestre", mood="guia",
-                     reasons=["Se está sembrando mucha más papa que antes en Samacá (+35 %).",
+                     reasons=["En 2025 B, el último dato, se sembró 35 % más papa que antes en Samacá.",
                               "La lluvia ha sido favorable y el suelo es apto; las heladas, moderadas."],
                      primary="Ver el calendario de la papa", secondary="¿Qué sembrar en su lugar?"),
-    "rojo": dict(kicker="PAPA · SEMESTRE A · ENE–JUN 2027 · SAMACÁ, BOYACÁ", title="Alto riesgo: espere otro semestre", mood="preocupa",
-                 reasons=["Las heladas caen justo cuando la papa forma los tubérculos.",
+    "rojo": dict(kicker="PAPA · SEMESTRE A · ENE–JUN 2027 · TOCA, BOYACÁ", title="Alto riesgo: espere otro semestre", mood="preocupa",
+                 reasons=["En Toca ha helado en la floración aun sembrando en marzo, el mejor mes.",
                           "Una señal crítica basta para el rojo, aunque las demás sean buenas."],
                  primary="Ver el calendario de la papa", secondary="¿Qué sembrar en su lugar?"),
     "no-evaluable": dict(kicker="HABA · SEMESTRE B · JUL–DIC 2026 · SAMACÁ, BOYACÁ", title="No se puede evaluar todavía", mood="sin-datos",
@@ -337,7 +339,7 @@ def bars(x, y, w, h, values, labels, color, stroke, unit, ref=None, ref_label=""
 def frost_chart(x, y, w, h, freq, sow, sensitive, short=False):
     months = "EFMAMJJASOND"
     out = [text(0, -14, "% de años con helada" if short else "% de años con al menos una helada (mínima menor que 2 °C)", 14, 700, SEC)]
-    n, vmax = 12, 60
+    n, vmax = 12, 30
     s0, s1 = sensitive
     out.append(f'<rect x="{s0 * w / n:.1f}" y="0" width="{(s1 - s0 + 1) * w / n:.1f}" height="{h}" fill="{P["calabaza"]}" fill-opacity="0.16"/>')
     out.append(text((s0 + (s1 - s0 + 1) / 2) * w / n, 16, "etapa sensible", 12, 700, D["calabaza"], anchor="middle"))
@@ -384,7 +386,7 @@ RAIN = [350, 402, 298, 381, 420, 455, 310, 395, 376, 412]
 RAIN_LABELS = ["16", "17", "18", "19", "20", "21", "22", "23", "24", "25"]
 AREA = [790, 820, 805, 840, 860, 830, 1138]
 AREA_LABELS = ["2019", "2020", "2021", "2022", "2023", "2024", "2025"]
-FROST = [35, 30, 15, 5, 0, 5, 10, 10, 5, 10, 20, 30]
+FROST = list(muestra.FROST)  # la misma serie del calendario: es el mismo cálculo
 
 
 def panel(x, y, w, h, k, title, status, sub, body_fn, name):
@@ -420,7 +422,7 @@ def signals(mobile=False):
                     ref_label="Normal: 389 mm", last_label="2025 B")
 
     def frost(wp):
-        return frost_chart(64, 190, wp - 100, 150, FROST, 7, (9, 10), short=wp < 500)
+        return frost_chart(64, 190, wp - 100, 150, FROST, 7, muestra.PAPA_CYCLE_MONTHS, short=wp < 500)
 
     def soil(wp):
         out = ph_scale(40, 176, wp - 80)
@@ -456,10 +458,10 @@ def signals(mobile=False):
         return out
 
     items = [
-        ("lluvia", "Lluvia", "favorable", ["412 mm en el semestre B: 6 % sobre", "lo normal (promedio 1991–2020).", "Fuente: NASA POWER."], rain, "detalle-lluvia"),
-        ("heladas", "Heladas", "moderado", ["Sembrando en agosto, la floración cae", "en octubre y noviembre: heló 2 de cada", "10 años. Fuente: NASA POWER."], frost, "detalle-heladas"),
+        ("lluvia", "Lluvia", "favorable", ["En 7 de los últimos 10 semestres B la", "lluvia fue favorable para la papa.", "Último dato: 2025 B. Fuente: NASA POWER."], rain, "detalle-lluvia"),
+        ("heladas", "Heladas", "moderado", ["Sembrando en agosto, el mejor mes del", f"semestre: heló en diciembre {muestra.FROST[11]} de cada", "100 años. Fuente: NASA POWER."], frost, "detalle-heladas"),
         ("suelo", "Suelo", "favorable", ["El pH estimado cae en el rango óptimo", "de la papa. Fuente: SoilGrids (ISRIC),", "celdas de 250 m."], soil, "detalle-suelo"),
-        ("oferta", "Oferta", "desfavorable", ["+35 % de área frente al promedio de los", "tres semestres B anteriores.", "Fuente: EVA (UPRA)."], supply, "detalle-oferta"),
+        ("oferta", "Oferta", "desfavorable", ["En 2025 B (último dato, preliminar) se", "sembró 35 % más que en los tres", "semestres B anteriores. Fuente: EVA."], supply, "detalle-oferta"),
         ("mercado", "Mercado", "insuficiente", ["Sin datos de precios para Samacá.", "Fuente prevista: SIPSA (DANE)."], market, "detalle-mercado"),
     ]
     gy = hy + (150 if mobile else 140)
