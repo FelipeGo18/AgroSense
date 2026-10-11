@@ -93,6 +93,7 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
 - **Criterios de aceptación:**
   - [ ] `POST /api/v1/calendar` según el contrato, con `sowing` y `frost` por mes y `best_sowing_months`
   - [ ] `sowing` combina el balance de agua de la etapa inicial (M7) y el riesgo de helada en las etapas sensibles; nunca promedia (R2)
+  - [ ] Con `sowing_date`: `in_cycle`, `stage`, `frost.sensitive`, `frost.watch` y `harvest_estimate`, con el mismo cálculo de etapas de HU-150 y HU-186
   - [ ] Misma entrada, misma salida; trae `versions` (R4); no guarda nada (R9)
   - [ ] La señal `frost` del diagnóstico (HU-077) sale de este mismo cálculo
 - **Reglas que aplican:** R1, R2, R4, R6, R9
@@ -100,14 +101,18 @@ HU-142 (etapas y Kc) se hace en la fase 0; el resto, en el evento.
 
 ### HU-180 · Vista del calendario
 
-- **Historia:** Como agricultor, quiero ver el calendario de mi cultivo de un vistazo, junto con los meses de riego de mi lote, para planear el año.
+- **Historia:** Como agricultor, quiero ver mes a mes qué viene para el cultivo que ya sembré y qué decisiones me tocan, y también planear cuándo sembrar otro, para organizar el año.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Doce meses con los mejores meses de siembra y el riesgo de helada, con forma y texto, no solo color
-  - [ ] Con temporada en curso, suma los meses de riego del plan de agua (HU-145) sin repetir el cálculo
-  - [ ] Disponible sin cuenta desde la consulta y con cuenta en cada lote
+  - [ ] Dos lecturas. **Mi cultivo** (por defecto si el cultivo elegido está sembrado en el lote): los meses de la siembra a la cosecha estimada, con la etapa del cultivo, las heladas con «Vigile» en las etapas sensibles y el riego probable del plan de agua (HU-145), sin repetir el cálculo. **Planear una siembra** (parte libre, otro cultivo o sin cuenta): doce meses con los mejores meses de siembra y el riesgo de helada
+  - [ ] Cada nivel va con forma y texto, no solo color; lo estimado con un año normal y el riego llevan su rótulo (R10)
+  - [ ] Tocar un mes abre su detalle con las razones que evaluó el motor (R5)
+  - [ ] Después de la cosecha estimada, enlace a «Próxima siembra»
+  - [ ] P1: en «Mi cultivo» se agregan las filas «Abonar» (aguaceros, nunca la dosis), «Labores y cosecha» (ventanas secas) y «Gota» (solo papa) con HU-046, y «Vender» (índice estacional de precio, nunca precio futuro) con la señal de mercado. Una fila solo aparece cuando su dato existe
+  - [ ] Disponible sin cuenta desde la consulta (solo «Planear una siembra») y con cuenta en cada lote
   - [ ] Cada control tiene una función; nada decorativo
 - **Reglas que aplican:** R1, R5, R10
+- **Notas:** Las decisiones de cada momento del ciclo están en `docs/investigacion-decisiones.md`. Ampliada el 11 de octubre de 2026.
 
 ### HU-186 · Línea de tiempo del cultivo
 

@@ -143,7 +143,7 @@ Nunca se escriben: contraseñas, tokens, cookies, la cabecera `Authorization`, p
 | `POST /api/v1/diagnostics` | Diagnóstico de una ventana de siembra | P0 |
 | `POST /api/v1/rotations` | Ranking de rotaciones según prioridades | P0 |
 | `POST /api/v1/water-plans` | Plan de agua de una finca | P0 |
-| `POST /api/v1/calendar` | Calendario de un cultivo en un municipio: mes a mes, qué tan bueno es sembrar y el riesgo de heladas; en P1 también aguaceros (cuándo abonar), ventanas secas (labores y cosecha) y gota (ver «Cuerpos y respuestas») | P0 |
+| `POST /api/v1/calendar` | Calendario de un cultivo en un municipio: mes a mes, qué tan bueno es sembrar y el riesgo de heladas; con `sowing_date`, la etapa del cultivo ya sembrado y los meses en que hay que vigilar la helada; en P1 también aguaceros (cuándo abonar), ventanas secas (labores y cosecha) y gota (ver «Cuerpos y respuestas») | P0 |
 | `GET /api/v1/version` | Versiones del dataset y de las reglas, región y fuentes (HU-122) | P0 |
 | `POST /api/v1/scenarios` | Escenario hipotético y diferencias con el caso base | P1 |
 
@@ -290,8 +290,10 @@ La suma de `area_pct` no puede pasar de 100. Lo que falta es terreno en descanso
 ### Cuerpo y respuesta de `POST /api/v1/calendar`
 
 ```json
-{ "municipality_id": "MUNICIPIO_ID", "crop_id": "papa" }
+{ "municipality_id": "MUNICIPIO_ID", "crop_id": "papa", "sowing_date": null }
 ```
+
+`sowing_date` es opcional. Sin ella, el calendario sirve para **planear una siembra**. Con ella, sirve para **seguir un cultivo ya sembrado**: cada mes entre la siembra y la cosecha estimada trae además `in_cycle: true`, `stage` (la etapa que ocupa la mayor parte del mes, con el mismo cálculo de la línea de tiempo: `observed` hasta el último dato de temperatura y `normal_year` después) y, dentro de `frost`, `sensitive` (verdadero si alguna etapa de ese mes es sensible a la helada según la ficha del cultivo) y `watch` (verdadero si es sensible y el nivel no es `favorable`). La respuesta trae también `harvest_estimate`, con su `basis`. El cruce entre la helada y la etapa lo hace el motor, no la web (R5).
 
 Responde 12 meses. Cada mes trae `month` y estos bloques, con `status`, `level` y `reasons` como las señales (R1):
 
