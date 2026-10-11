@@ -1,3 +1,6 @@
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
 import { useEffect, useState, type ReactNode } from "react";
 import { ExampleLabel } from "../components/Labels";
 import { Plate } from "../components/Plate";
@@ -15,6 +18,25 @@ export function useReducedMotion() {
   return reduced;
 }
 
+/**
+ * Scroll con inercia (Lenis), sincronizado con ScrollTrigger: la rueda del ratón deja de avanzar a saltos
+ * y las líneas de tiempo atadas al scroll se mueven de forma continua.
+ */
+export function useSmoothScroll(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 });
+    lenis.on("scroll", ScrollTrigger.update);
+    const tick = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    return () => {
+      gsap.ticker.remove(tick);
+      lenis.destroy();
+    };
+  }, [enabled]);
+}
+
 /** Panel de interfaz sobre la escena: el dato va en HTML, encima del paisaje (principio 1 de diseño). */
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -29,7 +51,7 @@ const ROUTES = [
   { href: "/recorrido/1", label: "1 · Del satélite al lote" },
   { href: "/recorrido/2", label: "2 · El año del cultivo" },
   { href: "/recorrido/3", label: "3 · Travesía por la cordillera" },
-  { href: "/", label: "Kit" },
+  { href: "/kit", label: "Kit" },
 ];
 
 /** Barra para saltar entre los tres recorridos de prueba. */

@@ -5,7 +5,7 @@ import { EstimateLabel, ExampleLabel } from "../components/Labels";
 import { Mascot, type MascotMood, type MascotSeed } from "../components/Mascot";
 import { TrafficLightBadge } from "../components/TrafficLightBadge";
 import { Scene, type SceneId } from "./scenes";
-import { Card, JourneyNav, ScrollHint, useReducedMotion } from "./shared";
+import { Card, JourneyNav, ScrollHint, useReducedMotion, useSmoothScroll } from "./shared";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -44,6 +44,7 @@ function SeasonCard({ season }: { season: Season }) {
 export function Journey2() {
   const root = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
+  useSmoothScroll(!reduced);
   const [index, setIndex] = useState(0);
 
   useLayoutEffect(() => {
@@ -59,7 +60,7 @@ export function Journey2() {
           trigger: root.current,
           start: "top top",
           end: "bottom bottom",
-          scrub: 0.6,
+          scrub: true,
           onUpdate: (self) => setIndex(Math.min(SEASONS.length - 1, Math.round(self.progress * (SEASONS.length - 1)))),
         },
       });

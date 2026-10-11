@@ -194,13 +194,15 @@ def patchwork(rng, top, highlight=None, rows=9):
 
 # ---------- Recorrido A · del satélite al lote ----------
 
-def orbita():
+def orbita(near=False):
+    """La Tierra desde el satélite. `near` la acerca: es la escena intermedia antes de la atmósfera."""
     rng = Rng(11)
-    cx, cy, R = 720, 1560, 1000
+    cx, cy, k = (760, 2340, 1.75) if near else (720, 1560, 1.0)
+    R = 1000
     ocean, land = "#2B6A99", "#5E9B4F"
 
     def at(deg, r):
-        return (cx + r * math.cos(math.radians(deg)), cy + r * math.sin(math.radians(deg)))
+        return (cx + r * k * math.cos(math.radians(deg)), cy + r * k * math.sin(math.radians(deg)))
 
     earth = []
     rings, segs = 4, 14  # océano en facetas grandes y de tono parejo: sin efecto de tablero
@@ -224,13 +226,15 @@ def orbita():
     earth.append(poly(andes, shade(P["tierra"], 0.1)))  # la cordillera
     for a, r, w in ((-104, 930, 150), (-84, 880, 190), (-73, 960, 130), (-116, 900, 120), (-92, 800, 170)):  # nubes
         x, y = at(a, r)
-        earth.append(soft([(x - w / 2, y), (x - w * 0.3, y - 22), (x + w * 0.1, y - 30), (x + w / 2, y - 6), (x + w * 0.3, y + 14), (x - w * 0.2, y + 12)], "#FFFFFF", 0.85))
+        w *= k
+        earth.append(soft([(x - w / 2, y), (x - w * 0.3, y - 22 * k), (x + w * 0.1, y - 30 * k), (x + w / 2, y - 6 * k), (x + w * 0.3, y + 14 * k), (x - w * 0.2, y + 12 * k)], "#FFFFFF", 0.85))
     mx, my = at(-93.5, 958)
-    marker = [f'<circle cx="{mx:.1f}" cy="{my:.1f}" r="22" fill="{P["calabaza"]}" fill-opacity="0.3"/>', f'<circle cx="{mx:.1f}" cy="{my:.1f}" r="8" fill="{P["calabaza"]}" stroke="#FFFFFF" stroke-width="3"/>']
+    marker = [f'<circle cx="{mx:.1f}" cy="{my:.1f}" r="{22 * k:g}" fill="{P["calabaza"]}" fill-opacity="0.3"/>', f'<circle cx="{mx:.1f}" cy="{my:.1f}" r="{8 * k:g}" fill="{P["calabaza"]}" stroke="#FFFFFF" stroke-width="3"/>']
     glow = [at(a, R + 14) for a in range(-132, -47, 2)]
-    atmosphere = [f'<polyline points="{pts(glow)}" fill="none" stroke="#9FD3FF" stroke-width="20" stroke-opacity="0.35"/>']
+    atmosphere = [f'<polyline points="{pts(glow)}" fill="none" stroke="#9FD3FF" stroke-width="{20 * k:g}" stroke-opacity="0.35"/>']
     night = [soft([at(-132, R), at(-118, R), at(-124, R - 440), at(-132, R - 440)], "#0B1226", 0.35)]  # el lado en sombra
-    return svg(W, H, [sky("cielo-orbita", "#0B1226", "#1B3358"), layer("estrellas", stars(rng, 90, 600)), layer("atmosfera", atmosphere),
+    gid, colors = ("cielo-orbita-cerca", ("#0E1A38", "#25497A")) if near else ("cielo-orbita", ("#0B1226", "#1B3358"))
+    return svg(W, H, [sky(gid, *colors), layer("estrellas", stars(rng, 40 if near else 90, 420 if near else 600)), layer("atmosfera", atmosphere),
                       layer("tierra", earth + night), layer("aqui", marker)])
 
 
@@ -247,16 +251,18 @@ def atmosfera():
     ])
 
 
-def region():
-    rng = Rng(23)
+def region(low=False):
+    """La cordillera desde lo alto. `low` baja la cámara: cerros más grandes y menos cielo."""
+    rng = Rng(29 if low else 23)
+    d, a = (-110, 1.3) if low else (0, 1.0)
     return svg(W, H, [
-        sky("cielo-region", "#7FA6BC", "#D6E6EE"),
-        layer("lejano", ridge(rng, 440, 230, 5, P["oliva"], 0.62)),
-        layer("niebla-lejana", fog_band(rng, 480, 4, 0.5)),
-        layer("medio", ridge(rng, 570, 190, 6, P["oliva"], 0.34)),
-        layer("niebla-media", fog_band(rng, 620, 3, 0.55)),
-        layer("cercano", ridge(rng, 720, 170, 4, P["brote"], 0.1)),
-        layer("primer-plano", ridge(rng, 860, 120, 6, P["oliva"], 0.0)),
+        sky("cielo-region-baja" if low else "cielo-region", "#7FA6BC", "#D6E6EE"),
+        layer("lejano", ridge(rng, 440 + d, 230 * a, 4 if low else 5, P["oliva"], 0.62)),
+        layer("niebla-lejana", fog_band(rng, 480 + d, 4, 0.5)),
+        layer("medio", ridge(rng, 570 + d * 0.6, 190 * a, 5 if low else 6, P["oliva"], 0.34)),
+        layer("niebla-media", fog_band(rng, 620 + d * 0.5, 3, 0.55)),
+        layer("cercano", ridge(rng, 720, 170 * a, 3 if low else 4, P["brote"], 0.1)),
+        layer("primer-plano", ridge(rng, 860, 120 * a, 4 if low else 6, P["oliva"], 0.0)),
     ])
 
 
@@ -279,17 +285,20 @@ def valle():
     ])
 
 
-def municipio():
+def municipio(near=False):
+    """El mosaico de parcelas y el pueblo. `near` acerca la cámara: parcelas más grandes."""
     rng = Rng(37)
-    fields, hi = patchwork(rng, 430, highlight=(5, 6))
-    town = [p for dx, dy, k in ((0, 0, 1.0), (40, 8, 0.8), (-34, 10, 0.85), (74, 4, 0.7), (-66, 6, 0.7)) for p in house(960 + dx * 1.3, 512 + dy, 0.3 * k)]
+    top, rows, hl, z = (360, 6, (3, 4), 1.7) if near else (430, 9, (5, 6), 1.0)
+    fields, hi = patchwork(rng, top, highlight=hl, rows=rows)
+    tx, ty = (1010, top + 96) if near else (960, top + 82)
+    town = [p for dx, dy, k in ((0, 0, 1.0), (40, 8, 0.8), (-34, 10, 0.85), (74, 4, 0.7), (-66, 6, 0.7)) for p in house(tx + dx * 1.3 * z, ty + dy * z, 0.3 * k * z)]
     return svg(W, H, [
-        sky("cielo-municipio", "#86AEC3", "#DCE9EF"),
-        layer("lejano", ridge(rng, 330, 190, 5, P["oliva"], 0.5, bottom=470)),
-        layer("medio", ridge(rng, 420, 120, 6, P["oliva"], 0.22, bottom=480)),
-        layer("niebla", fog_band(rng, 440, 4, 0.6)),
+        sky("cielo-municipio-cerca" if near else "cielo-municipio", "#86AEC3", "#DCE9EF"),
+        layer("lejano", ridge(rng, top - 100, 190, 5, P["oliva"], 0.5, bottom=top + 40)),
+        layer("medio", ridge(rng, top - 10, 120, 6, P["oliva"], 0.22, bottom=top + 50)),
+        layer("niebla", fog_band(rng, top + 10, 4, 0.6)),
         layer("parcelas", fields),
-        layer("pueblo", town + church(986, 500, 0.24)),
+        layer("pueblo", town + church(tx + 26 * z, ty - 12 * z, 0.24 * z)),
         layer("lote-resaltado", hi),
     ])
 
@@ -419,8 +428,9 @@ def pueblo():
 
 
 SCENES = {
-    "a1-orbita": orbita, "a2-atmosfera": atmosfera, "a3-region": region, "a4-valle": valle,
-    "a5-municipio": municipio, "a6-vereda": vereda, "a7-lote": lote,
+    "a1-orbita": orbita, "a1b-orbita-cerca": lambda: orbita(near=True), "a2-atmosfera": atmosfera,
+    "a3-region": region, "a3b-region-baja": lambda: region(low=True), "a4-valle": valle,
+    "a5-municipio": municipio, "a5b-municipio-cerca": lambda: municipio(near=True), "a6-vereda": vereda, "a7-lote": lote,
     "c1-paramo": paramo, "c2-ladera": ladera, "c4-pueblo": pueblo,
 }
 
