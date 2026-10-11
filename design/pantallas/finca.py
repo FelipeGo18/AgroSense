@@ -482,7 +482,36 @@ def lote_vivo_desktop(sim=False):
     return ui.long_page((w, ty + 210 + sh_ + 60), b, P["niebla"])
 
 
-def lote_vivo_mobile(view=(-30, 30, 1.45), name="m"):
+def plan_2d(w, h):
+    """Modo ligero (HU-158): el lote visto desde arriba, quieto y en 2D, con la misma información que el diorama."""
+    out = [f'<rect width="{w}" height="{h}" fill="#DDE8C6"/>']
+    gw, gh = w - 48, h - 170
+    cw, ch = gw / 3, gh / 2
+    x0, y0 = 24, 70
+    tones = {"papa": STAGE_TONES[3], "haba": STAGE_TONES[2], "cebolla": STAGE_TONES[2]}
+    for p in ALTO["parts"]:
+        cells = p["cells"]
+        i0, i1 = min(i for i, _ in cells), max(i for i, _ in cells)
+        j0 = min(j for _, j in cells)
+        rx, ry, rw = x0 + i0 * cw, y0 + j0 * ch, (i1 - i0 + 1) * cw
+        on = p is PAPA_PART
+        if p["crop"]:
+            out.append(poly(chamfer(rx + 3, ry + 3, rw - 6, ch - 6, 8), tones[p["crop"]], P["calabaza"] if on else P["noche"], 3 if on else 1.5))
+            for k in range(int(rw // 26)):  # surcos
+                out.append(f'<rect x="{rx + 14 + k * 26:.1f}" y="{ry + 12}" width="3" height="{ch - 24:.1f}" fill="{P["noche"]}" fill-opacity="0.12"/>')
+            out += [text(rx + 14, ry + 30, crop_name(p), 16, 700), text(rx + 14, ry + 50, f"{stage_name(p).lower()} · {ha(p['area'])}", 12)]
+        else:
+            out.append(poly(chamfer(rx + 3, ry + 3, rw - 6, ch - 6, 8), "#C9B48A", P["noche"], 1.5, "5 5"))
+            out += [text(rx + 14, ry + 30, "Libre", 16, 700), text(rx + 14, ry + 50, ha(p["area"]), 12)]
+    chip = lambda x, y, label, icon: [group("aviso", [poly(chamfer(0, 0, len(label) * 7.2 + 44, 30, 8), WHITE, BORDE, 1.5), *icon, text(34, 20, label, 13, 700)], x, y)]  # noqa: E731
+    out += chip(16, 16, "Modo ligero · imagen fija", [poly(chamfer(10, 8, 14, 14, 3), P["niebla"], P["noche"], 1.5)])
+    cloud = [f'<path d="M10 20 a5 5 0 0 1 3 -9 a6 6 0 0 1 11 2 a4 4 0 0 1 0 7 z" fill="{P["niebla"]}" stroke="{P["noche"]}" stroke-width="1.5"/>']
+    out += chip(16, h - 84, "Ahora en Samacá: nublado · 13 °C", cloud)
+    out += chip(16, h - 46, "Riego probable este mes · estimación", drop(17, 15, 0.8))
+    return out
+
+
+def lote_vivo_mobile(view=(-30, 30, 1.45), name="m", light=False):
     """`view` es el recorrido del diorama: desplazamiento y acercamiento tras arrastrar y pellizcar."""
     w = MOBILE[0]
     pad = 16
@@ -491,13 +520,17 @@ def lote_vivo_mobile(view=(-30, 30, 1.45), name="m"):
     b.append(f'<defs><clipPath id="recorte-pestanas"><rect x="0" y="222" width="{w}" height="60"/></clipPath></defs>'
              f'<g clip-path="url(#recorte-pestanas)"><g transform="translate({pad} 232)">{"".join(tabs)}</g></g>')
     sw, sh = w, 520
-    body = escena.scene(sw, sh, "dia", ("nublado",), "seco", (("Riego probable · estimación", "riego"), ("Ahora: nublado · 13 °C", "vivo")),
-                        crop=None, layout=layout_of(ALTO), selected="papa", tags=alto_tags(), farm=True, lot_k=0.62, lot_y=0.56, seed=6,
-                        view=view)
+    if light:
+        body = plan_2d(sw, sh)
+    else:
+        body = escena.scene(sw, sh, "dia", ("nublado",), "seco", (("Riego probable · estimación", "riego"), ("Ahora: nublado · 13 °C", "vivo")),
+                            crop=None, layout=layout_of(ALTO), selected="papa", tags=alto_tags(), farm=True, lot_k=0.62, lot_y=0.56, seed=6,
+                            view=view)
     b.append(f'<g id="lote-vivo" transform="translate(0 292)"><defs><clipPath id="recorte-lote-vivo-{name}"><rect width="{sw}" height="{sh}"/></clipPath></defs>'
              f'<g clip-path="url(#recorte-lote-vivo-{name})">{"".join(body)}</g></g>')
-    b += [f'<g transform="translate({w - 60} 308) scale(0.85)">{"".join(diorama_controls(0, 0))}</g>']
-    b += hint(pad, 292 + 16, "Arrastre con un dedo")
+    if not light:  # la imagen fija no se recorre
+        b += [f'<g transform="translate({w - 60} 308) scale(0.85)">{"".join(diorama_controls(0, 0))}</g>']
+        b += hint(pad, 292 + 16, "Arrastre con un dedo")
     y = 292 + sh + 20
     pc, ph = parts_card(pad, y, w - 2 * pad)
     b += pc
@@ -523,6 +556,7 @@ SCREENS = {
     "finca-02-lote-vivo-simulacion-escritorio": lambda: lote_vivo_desktop(sim=True),
     "finca-02-lote-vivo-movil": lote_vivo_mobile,
     "finca-02-lote-vivo-recorrido-movil": lambda: lote_vivo_mobile(view=(215, 70, 1.5), name="m2"),
+    "finca-02-lote-vivo-ligero-movil": lambda: lote_vivo_mobile(name="m3", light=True),
 }
 
 if __name__ == "__main__":

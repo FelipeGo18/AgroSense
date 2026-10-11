@@ -26,8 +26,8 @@ PARTS = (
     ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 8, DONE), ("Registrar cosecha y siembra", f"{R} 5", DONE)]),
     ("F · Cuenta", "Todos", [("Iniciar sesión", 1, DONE), ("Crear cuenta · consentim. 3", f"{R} 7", DONE), ("Mi cuenta y sus prioridades", f"{R} 7", DONE),
                              ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 8, DONE), ("Guardar la finca temporal", 8, DONE)]),
-    ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale esto?", 9, TODO), ("Estados: cargando, vacío, sin cobertura, error", 9, TODO),
-                                  ("Menú en móvil", 9, TODO), ("Modo ligero", 9, TODO), ("Reportar un problema", 9, TODO)]),
+    ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale?", 9, DONE), ("Estados: carga, vacío, error", 9, DONE),
+                                  ("Menú en móvil", 9, DONE), ("Modo ligero del lote", 9, DONE), ("Reportar un problema (P1)", 9, DONE)]),
     ("H · Administrador", "Rol admin · P1", [("Usuarios", 10, TODO), ("Ficha del agricultor", 10, TODO), ("Tickets", 10, TODO), ("Bitácora", 10, TODO), ("Métricas", 10, TODO)]),
     ("I · Catálogo visual", "Para Mi finca", [("Cultivos 1 · piloto", 5, DONE), ("Cultivos 2 · árboles frutales", 5, DONE), ("Cultivos 3 · musáceas y vides", 5, DONE),
                                               ("Cultivos 4 · raíces y hojas", 5, DONE), ("Cultivos 5 · más hortalizas", 5, DONE), ("Cultivos 6 · frutas andinas", 5, DONE),
@@ -63,8 +63,8 @@ def sheet():
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
         bottom = max(bottom, y)
-    order = ["Orden: tandas 1 a 8 (hechas) y rediseño por ventanas de siembra, del 1 al 7 (hecho)",
-             "→ 9 Transversal → 10 Administrador (P1). «Revisar»: hecha, pero depende de algo por confirmar (Buscar mi municipio: la región, hasta el 28 de octubre).",
+    order = ["Orden: tandas 1 a 9 (hechas) y rediseño por ventanas de siembra, del 1 al 7 (hecho)",
+             "→ 10 Administrador (P1). «Revisar»: hecha, pero depende de algo por confirmar (Buscar mi municipio: la región, hasta el 28 de octubre).",
              "Seis señales por ventana de siembra: agua, heladas, calor, suelo, oferta y mercado. El lote vivo usa el catálogo de cultivos y el clima de ahora.",
              "Nombres y cifras de muestra."]
     for i, line in enumerate(order):
