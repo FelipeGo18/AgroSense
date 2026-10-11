@@ -1106,6 +1106,114 @@ def ruda(x, y, s, sd):
     return out
 
 
+# ---------- Lote 8b: romero, limonaria, clavel, abono verde y descanso ----------
+
+def romero(x, y, s, sd):
+    """Arbusto leñoso y erguido; hojas como agujas, verde grisáceo; flor azul pálido."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return [f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y - 7:.1f}" stroke="#6B5A3A" stroke-width="1.2"/>']
+    k = (0, 0.5, 0.8, 1.0, 1.0, 0.45)[s]
+    out = []
+    for i in range(6):
+        sx = x + (i - 2.5) * 2 * k
+        h = (16 + rnd.uniform(-3, 4)) * k
+        lean = (i - 2.5) * 0.9
+        out.append(f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{sx + lean:.1f}" y2="{y - h:.1f}" stroke="#7A6A4A" stroke-width="0.9"/>')
+        for t in range(1, 7):
+            py = y - h * t / 7
+            px = x + (sx + lean - x) * t / 7
+            for d in (-1, 1):
+                out.append(f'<line x1="{px:.1f}" y1="{py:.1f}" x2="{px + d * 3:.1f}" y2="{py - 1.6:.1f}" stroke="{("#5E7A5A", "#6E8A6A", "#4E6A4A")[(i + t) % 3]}" stroke-width="1.3" stroke-linecap="round"/>')
+        if 3 <= s <= 4:
+            out.append(f'<circle cx="{sx + lean:.1f}" cy="{y - h * 0.8:.1f}" r="1.2" fill="#A8B8E8"/>')
+    return out
+
+
+def limonaria(x, y, s, sd):
+    """Macolla densa de hojas largas y angostas que se arquean, verde claro amarillento."""
+    if s == 0:
+        return blade(x, y, 80, 8, 2, "#9CC85A") + blade(x, y, 100, 7, 2, "#8DBA4F")
+    k = (0, 0.45, 0.75, 1.0, 1.0, 0.35)[s]
+    out = []
+    for i, ang in enumerate((35, 55, 75, 90, 105, 125, 145, 65, 115)):
+        out += blade(x, y, ang, 26 * k + 3, 2.6, ("#9CC85A", "#B5D46A", "#8DBA4F")[i % 3], bend=0.45)
+    return out
+
+
+def clavel(x, y, s, sd):
+    """Clavel de corte: hojas angostas gris verdosas, tallos rectos y flor rizada rosada o roja."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return blade(x, y, 85, 6, 1.6, "#8FAFA0")
+    if s == 5:
+        return blade(x, y, 70, 6, 1.6, "#8FAFA0") + blade(x, y, 110, 6, 1.6, "#7FA090")
+    h = (0, 9, 22, 30, 32)[s]
+    out = []
+    for d in (-2, 0, 2):
+        out.append(f'<line x1="{x + d:.1f}" y1="{y:.1f}" x2="{x + d * 1.5:.1f}" y2="{y - h:.1f}" stroke="#7FA090" stroke-width="1.1"/>')
+        for t in (0.3, 0.6):
+            out += blade(x + d, y - h * t, 30 if d >= 0 else 150, 6, 1.4, "#8FAFA0")
+        tx, ty = x + d * 1.5, y - h
+        if s == 3:
+            out += [poly([(tx - 1.2, ty), (tx + 1.2, ty), (tx, ty - 4)], "#8FAFA0")]
+        if s == 4:
+            col = rnd.choice(("#E8607A", "#D9304A", "#F4A6B6"))
+            for a in range(6):
+                ang = math.pi * a / 3
+                out.append(f'<circle cx="{tx + math.cos(ang) * 1.8:.1f}" cy="{ty - 2 + math.sin(ang) * 1.2:.1f}" r="1.5" fill="{col}"/>')
+            out.append(f'<circle cx="{tx:.1f}" cy="{ty - 2:.1f}" r="1.3" fill="{shade(col, 0.2)}"/>')
+    return out
+
+
+def abono_verde(x, y, s, sd):
+    """Avena con vicia: hojas de avena con espigas y la vicia trepando con flor morada; se corta y se incorpora."""
+    rnd = random.Random(sd)
+    if s == 0:
+        return []
+    k = (0, 0.4, 0.75, 1.0, 1.0, 0)[s]
+    out = []
+    for i in range(5):
+        dx = (i - 2) * 2.2
+        ang, length = 80 + (i - 2) * 6, 24 * k + 3
+        out += blade(x + dx, y, ang, length, 2, ("#8DBA4F", "#9CC85A", "#7DAE45")[i % 3])
+        if s >= 3 and i % 2 == 0:  # panícula de la avena, en la punta del tallo
+            tx, ty = x + dx + length * math.cos(math.radians(ang)), y - length * math.sin(math.radians(ang))
+            out.append(poly([(tx - 2, ty + 1), (tx, ty - 6), (tx + 2, ty + 1)], "#D9C27A"))
+    if s >= 2:  # vicia enredada
+        for _ in range(3):
+            vx, vy = x + rnd.uniform(-5, 5), y - rnd.uniform(4, 16) * k
+            out += leaf(vx, vy, rnd.uniform(0, 180), 4, 2, "#5E8A3A")
+            if s >= 3:
+                out.append(f'<circle cx="{vx:.1f}" cy="{vy - 2:.1f}" r="1.3" fill="#8E5BB5"/>')
+    if s == 4:  # recién cortado: queda tendido
+        return [f'<g transform="translate({x:g} {y:g}) scale(1 0.35) translate({-x:g} {-y:g})">{"".join(out)}</g>']
+    return out
+
+
+def incorporated(cx, cy):
+    """Incorporado: el abono se mezcla con la tierra; quedan restos verdes y pajizos en una tierra más oscura."""
+    out = [poly([at(cx, cy, 0, 0), at(cx, cy, 1, 0), at(cx, cy, 1, 1), at(cx, cy, 0, 1)], "#4E2E1C")]
+    rnd = random.Random(11)
+    for _ in range(70):
+        x, y = at(cx, cy, rnd.random(), rnd.random())
+        col = rnd.choice(("#8DBA4F", "#C9A86A", "#6E9A3A", "#A8905A"))
+        out.append(f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x + rnd.uniform(-4, 4):.1f}" y2="{y + rnd.uniform(-1.5, 1.5):.1f}" stroke="{col}" stroke-width="1.3" stroke-linecap="round"/>')
+    return out
+
+
+def descanso(x, y, s, sd):
+    """El lote descansa: primero hierbas sueltas, luego pasto y algunas flores silvestres."""
+    rnd = random.Random(sd)
+    k = (0.25, 0.45, 0.65, 0.85, 1.0, 1.0)[s]
+    out = []
+    for i in range(int(3 + 4 * k)):
+        out += blade(x + rnd.uniform(-6, 6), y + rnd.uniform(-2, 2), 60 + rnd.uniform(0, 60), 10 * k + 2, 1.8, ("#7DAE45", "#8DBA4F", "#6E9A3A")[i % 3], bend=0.2)
+    if s >= 3 and rnd.random() > 0.4:
+        out += flower(x + rnd.uniform(-5, 5), y - 8 * k, 1.6, rnd.choice(("#FFFFFF", "#F2D23A", "#C9B3E6")))
+    return out
+
+
 # ---------- Catálogo ----------
 
 STAGES = {
@@ -1119,6 +1227,8 @@ STAGES = {
     "flor": ("Esqueje", "Brotación", "Tallos", "Botón", "Apertura", "Corte"),
     "aromatica": ("Esqueje", "Enraizamiento", "Crecimiento", "Floración", "Plena hoja", "Corte"),
     "aromatica_flor": ("Siembra", "Emergencia", "Crecimiento", "Botón", "Floración", "Cosecha de flor"),
+    "abono": ("Siembra", "Emergencia", "Crecimiento", "Floración", "Corte", "Incorporado"),
+    "descanso": ("Inicio", "Primeras hierbas", "Cobertura", "Pasto", "Pasto alto", "Fin del descanso"),
 }
 
 # (clave, nombre, arquetipo, etapas, planta, filas, columnas, ¿caballones?, extras por etapa, ¿piloto?, nota)
@@ -1198,6 +1308,17 @@ CROPS = (
      "Rastrera baja de hoja pequeña; flores lila en verticilos; se corta y rebrota"),
     ("ruda", "Ruda", "herb", "aromatica", scaled(ruda, 1.4), 4, 6, False, {"transplant": True, "harvest_cut": ("#7FA090", "#C9A86A")}, False,
      "Mata gris azulada de hojas redondeadas y lobuladas; flores amarillas pequeñas en lo alto"),
+    ("romero", "Romero", "herb", "aromatica", scaled(romero, 1.4), 4, 6, False, {"transplant": True, "harvest_cut": ("#5E7A5A", "#C9A86A")}, False,
+     "Arbusto leñoso y erguido de hojas como agujas, verde grisáceo; flor azul pálido"),
+    ("limonaria", "Limonaria", "herb", "aromatica", scaled(limonaria, 1.2), 4, 5, False, {"transplant": True, "harvest_cut": ("#9CC85A", "#C9A86A", 22)}, False,
+     "Macollas densas de hojas largas y angostas que se arquean; se corta y rebrota"),
+    ("clavel", "Clavel", "flower", "flor", scaled(clavel, 1.3), 4, 7, False,
+     {"all": ("invernadero", invernadero), "front": invernadero_front, "transplant": True, "harvest_cut": ("#E8607A", "#7FA090")}, False,
+     "En invernadero: hojas angostas gris verdosas, tallos rectos y flor rizada rosada o roja"),
+    ("abono", "Abono verde · avena con vicia", "cover", "abono", scaled(abono_verde, 1.25), 5, 7, False, {5: ("ground", incorporated)}, True,
+     "No se cosecha: se corta en floración y se incorpora al suelo para devolverle materia orgánica y nitrógeno"),
+    ("descanso", "Descanso", "fallow", "descanso", scaled(descanso, 1.3), 5, 7, False, {"transplant": True}, True,
+     "El lote descansa una temporada: lo cubren hierbas y pasto, y se corta el ciclo de plagas"),
 )
 
 
