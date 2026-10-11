@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "../components/Button";
 import { Combobox, type Option } from "../components/Combobox";
 import { EstimateLabel, ExampleLabel } from "../components/Labels";
+import { Mascot, type MascotMood, type MascotSeed } from "../components/Mascot";
 import { Plate } from "../components/Plate";
 import { PriorityControl, type Priorities } from "../components/PriorityControl";
 import { SignalCard, type Signal } from "../components/SignalCard";
@@ -49,20 +50,70 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+const MOODS: { id: MascotMood; label: string }[] = [
+  { id: "idle", label: "Reposo" },
+  { id: "guide", label: "Guía" },
+  { id: "celebrate", label: "Celebra" },
+  { id: "no_data", label: "Sin datos" },
+  { id: "flying", label: "En vuelo" },
+];
+
+const SEEDS: { id: MascotSeed; label: string }[] = [
+  { id: "sprouted", label: "Semilla germinada" },
+  { id: "bean", label: "Frijol" },
+  { id: "maize", label: "Maíz" },
+];
+
+function Choice<T extends string>({ legend, options, value, onChange }: { legend: string; options: { id: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  return (
+    <fieldset className="flex flex-wrap items-center gap-3">
+      <legend className="mb-2 font-bold">{legend}</legend>
+      {options.map((o) => (
+        <Button key={o.id} variant={o.id === value ? "primary" : "secondary"} aria-pressed={o.id === value} onClick={() => onChange(o.id)}>
+          {o.label}
+        </Button>
+      ))}
+    </fieldset>
+  );
+}
+
 export function KitPage() {
   const [municipality, setMunicipality] = useState<Option | null>(null);
   const [priorities, setPriorities] = useState<Priorities>({ water: 3, soil: 5, income: 2, risk: 4 });
   const [saving, setSaving] = useState(false);
+  const [mood, setMood] = useState<MascotMood>("guide");
+  const [seed, setSeed] = useState<MascotSeed>("sprouted");
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-8">
-      <header className="flex flex-col gap-3">
-        <h1 className="text-3xl">Kit de componentes · AgroSense</h1>
-        <p className="text-texto-principal">
-          HU-153 · Estilo diorama low-poly: cada pieza es un bloque del mismo paisaje. Pruebe todo con el teclado (Tab, flechas, Enter, Escape).
-        </p>
-        <ExampleLabel>los municipios, señales y prioridades de esta página son de muestra</ExampleLabel>
+      <header className="flex flex-wrap items-center gap-6">
+        <Mascot mood="idle" size={150} decorative className="mascot-float" />
+        <div className="flex min-w-72 flex-1 flex-col gap-3">
+          <h1 className="text-3xl">Kit de componentes · AgroSense</h1>
+          <p className="text-texto-principal">
+            HU-153 y HU-171 · Estilo diorama low-poly y la mascota Semilla Sputnik. Pruebe todo con el teclado (Tab, flechas, Enter, Escape).
+          </p>
+          <ExampleLabel>los municipios, señales y prioridades de esta página son de muestra</ExampleLabel>
+        </div>
       </header>
+
+      <Section title="Mascota · Semilla Sputnik">
+        <div className="flex flex-wrap items-center gap-8">
+          <div className="flex flex-col items-center gap-3 bg-[#F4E9D0] p-4">
+            <Mascot mood={mood} seed={seed} size={300} />
+          </div>
+          <div className="flex min-w-72 flex-1 flex-col gap-5">
+            <Choice legend="Pose" options={MOODS} value={mood} onChange={setMood} />
+            <Choice legend="Semilla (cambia según el contexto; la cara y el brote son la identidad)" options={SEEDS} value={seed} onChange={setSeed} />
+            <div className="flex items-end gap-4">
+              <Mascot mood={mood} seed={seed} size={96} decorative />
+              <Mascot mood={mood} seed={seed} size={64} decorative />
+              <Mascot mood={mood} seed={seed} size={48} decorative />
+              <span className="text-sm text-texto-secundario">96, 64 y 48 px</span>
+            </div>
+          </div>
+        </div>
+      </Section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Section title="Botón">

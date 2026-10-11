@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "./Button";
 import { Combobox, normalize, type Option } from "./Combobox";
 import { ESTIMATE_TEXT, EstimateLabel, ExampleLabel } from "./Labels";
+import { Mascot } from "./Mascot";
 import { PriorityControl, allZero, type Priorities } from "./PriorityControl";
 import { SignalCard, signalTone, type Signal } from "./SignalCard";
 import { LIGHT_LABEL, TrafficLightBadge, type Light } from "./TrafficLightBadge";
@@ -147,5 +148,30 @@ describe("Rótulos", () => {
   it("el rótulo de ejemplo dice «Ejemplo» (R5)", () => {
     render(<ExampleLabel />);
     expect(screen.getByText("Ejemplo")).toBeInTheDocument();
+  });
+});
+
+describe("Mascot", () => {
+  it("dice con texto qué semilla es y qué hace", () => {
+    render(<Mascot mood="celebrate" seed="maize" />);
+    expect(screen.getByRole("img", { name: "Mascota de AgroSense, grano de maíz, celebrando" })).toBeInTheDocument();
+  });
+
+  it("cambiar la semilla no cambia la cara ni la pose", () => {
+    const { container, rerender } = render(<Mascot mood="guide" seed="sprouted" />);
+    const face = () => container.querySelector(".mascot-eyes")!.innerHTML + container.querySelector(".mascot-mouth")!.innerHTML;
+    const before = face();
+    rerender(<Mascot mood="guide" seed="bean" />);
+    expect(face()).toBe(before);
+  });
+
+  it("sin datos no usa la cara de celebrar ni se anuncia como riesgo (R1)", () => {
+    render(<Mascot mood="no_data" />);
+    expect(screen.getByRole("img")).toHaveAccessibleName(/sin datos/);
+  });
+
+  it("decorativa queda fuera del árbol de accesibilidad", () => {
+    const { container } = render(<Mascot decorative />);
+    expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 });
