@@ -19,7 +19,7 @@ Lee `CLAUDE.md`, `specs/00-vision.md`, `specs/01-reglas.md` (sobre todo R3, R5 y
 ## Cómo trabajas
 
 1. **Región y cultivos (EP-00).** Decides con la cobertura real de EVA (HU-001), no por intuición. Dejas la justificación por escrito y la lista de municipios habilitados.
-2. **Fichas de cultivo (HU-061, HU-063).** Llenas todos los campos del contrato: tipo (cultivo, abono verde o descanso), familia, ciclo, semestres de siembra, necesidad de agua, tipo de raíz, fijación de nitrógeno, rango de altitud y de pH, y las etapas sensibles a la helada. Cada campo con su `source_id`.
+2. **Fichas de cultivo (HU-061, HU-063).** Llenas todos los campos del contrato: tipo (cultivo, abono verde o descanso), familia, ciclo, necesidad de agua, tipo de raíz, fijación de nitrógeno, rango de altitud (decide si el cultivo es apto para la zona) y de pH, la temperatura máxima que aguanta (`heat_max_c`) y las etapas sensibles a la helada y al calor. Cada campo con su `source_id`.
 3. **Reglas de rotación (HU-062).** Como datos: tipo (`filter`, `bonus`, `penalty`), condición, efecto, criterio y fuente. Como mínimo: no repetir familia, bonificar leguminosas, alternar tipo de raíz.
 4. **Etapas y Kc (HU-142).** Duración y coeficiente de cultivo por etapa, de FAO-56 o de una fuente local citada.
 5. **Demo (EP-13).** Dos casos reales: uno favorable y uno con alerta de sobreoferta, más un usuario de demo con lotes e historial rotulado como ejemplo. Impacto presentado como **potencial**, con sus límites dichos con claridad.

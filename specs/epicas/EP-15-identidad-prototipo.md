@@ -110,7 +110,8 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - [ ] Recorre inicio, descenso, consulta y Mi finca con respuestas simuladas del contrato (modo simulación, HU-014)
   - [ ] Funciona como invitado y como usuario simulado con varios lotes
   - [ ] Muestra los cuatro estados del semáforo, «datos insuficientes» y error
-  - [ ] Datos de ejemplo rotulados en pantalla; rótulo de estimación en el riego; la finca no sale del dispositivo
+  - [ ] Muestra «cultivo no apto para la zona», la acción `other_window` con sus mejores ventanas y una ventana de alto riesgo en el calendario
+  - [ ] Datos de ejemplo rotulados en pantalla; rótulo de estimación en el riego; sin cuenta, la finca no se guarda en el servidor
   - [ ] Usable a 360 px
 - **Reglas que aplican:** R1, R5, R9, R10
 - **Contrato que toca:** respuestas de ejemplo de `specs/02-contratos.md` (sin cambiarlo)

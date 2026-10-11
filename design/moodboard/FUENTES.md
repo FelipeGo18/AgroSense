@@ -8,7 +8,7 @@ Imágenes de referencia de estilo para el moodboard en Figma. **No son assets de
 | `02-niebla-paramo.jpg` | Niebla en valles | [Commons: Paisaje de páramo con neblina, Páramo Ocetá, Boyacá](https://commons.wikimedia.org/wiki/File:Paisaje_de_p%C3%A1ramo_con_neblina,_P%C3%A1ramo_Ocet%C3%A1,_Boyac%C3%A1.jpg) | Mario Andrés Izquierdo Yáñez (UNAL) | CC BY 4.0 |
 | `03-paramo-frailejones.jpg` | Cultivos y páramo | [Commons: WLE2026 CO - Valle de frailejones, Páramo de Guerrero (93)](https://commons.wikimedia.org/wiki/File:WLE2026_CO_-_Valle_de_frailejones,_P%C3%A1ramo_de_Guerrero_(93).jpg) | Jedidiahhorne | CC BY-SA 4.0 |
 | `04-farmer-was-replaced-luz-paleta.jpg` | Farmer Was Replaced (luz y paleta) | Recorte de una captura de la [página de Steam](https://store.steampowered.com/app/2060160/) (solo el campo, sin ventanas de código) | Timon Herzog | © del autor, referencia interna |
-| `05-terreno-lowpoly-render-propio.jpg` | Terreno low-poly facetado | Render propio generado con Python y la paleta tentativa | Kode Group | Propio |
+| `05-terreno-lowpoly-render-propio.jpg` | Terreno low-poly facetado | Render propio generado con Python y la paleta tentativa | RealE4Life | Propio |
 | `06-quaternius-ultimate-crops.jpg` | Cultivos por etapas | [Quaternius · Ultimate Crops Pack](https://quaternius.com/packs/ultimatecrops.html) | Quaternius | CC0 |
 | `07-gta-vi-web.jpg` | Web GTA VI (transiciones) | Captura de [rockstargames.com/VI](https://www.rockstargames.com/VI) | Rockstar Games | © Rockstar, referencia interna |
 | `08-kenney-ui-botones.png` | Botones gruesos de juego | [Kenney · UI Pack](https://kenney.nl/assets/ui-pack) | Kenney | CC0 |
