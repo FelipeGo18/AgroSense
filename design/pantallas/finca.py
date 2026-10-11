@@ -35,19 +35,25 @@ def ha(v):
 # Lotes de muestra en Samacá (coordenadas del mundo del mapa de lote.py). Cada parte: cultivo (None si está libre),
 # etapa de hoy y del 20 de diciembre, día desde la siembra, área y los cubos que ocupa en el diorama.
 LOTS = (
-    dict(key="el-alto", name="El Alto", area_pts=[(842, 498), (968, 482), (1004, 590), (936, 652), (850, 628)], alerts=("riego",), parts=(
+    dict(key="el-alto", name="El Alto", irrigated=False, area_pts=[(842, 498), (968, 482), (1004, 590), (936, 652), (850, 628)], alerts=("riego",), parts=(
         dict(crop="papa", stage=3, sim=5, day=70, area=1.26, cells=((0, 0), (1, 0), (2, 0))),
         dict(crop="haba", stage=2, sim=4, day=40, area=0.42, cells=((0, 1),)),
         dict(crop="cebolla", stage=2, sim=4, day=57, area=0.42, cells=((1, 1),)),
         dict(crop=None, area=0.41, cells=((2, 1),)))),
-    dict(key="la-vega", name="La Vega", area_pts=[(1022, 628), (1142, 610), (1166, 716), (1040, 738)], alerts=(), parts=(
+    dict(key="la-vega", name="La Vega", irrigated=True, area_pts=[(1022, 628), (1142, 610), (1166, 716), (1040, 738)], alerts=(), parts=(
         dict(crop="maiz", stage=2, sim=4, day=41, area=1.66, cells=((0, 0),)),)),
-    dict(key="el-bajo", name="El Bajo", area_pts=[(690, 540), (796, 528), (812, 626), (700, 640)], alerts=("helada",), parts=(
+    dict(key="el-bajo", name="El Bajo", irrigated=False, area_pts=[(690, 540), (796, 528), (812, 626), (700, 640)], alerts=("helada",), parts=(
         dict(crop="arveja", stage=1, sim=4, day=12, area=1.33, cells=((0, 0),)),)),
-    dict(key="potrero", name="Potrero", area_pts=[(870, 700), (972, 690), (986, 784), (884, 796)], alerts=(), parts=(
+    dict(key="potrero", name="Potrero", irrigated=None, area_pts=[(870, 700), (972, 690), (986, 784), (884, 796)], alerts=(), parts=(
         dict(crop=None, area=1.19, cells=((0, 0),)),)),
 )
 ALTO = LOTS[0]
+# Lote borrado hace poco: GET /lots lo trae con `deleted_at` y `restorable_until` (30 días).
+DELETED = dict(name="La Loma", area=0.86, deleted="3 oct", until="2 nov")
+
+
+def irrigation_label(lot):
+    return {True: "Con riego", False: "Sin riego", None: "Riego sin definir"}[lot["irrigated"]]
 
 
 def stage_name(part, sim=False):
@@ -196,17 +202,30 @@ def map_legend(x, y):
 
 # ---------- D0 · Mis lotes en el mapa ----------
 
+def deleted_row(x, y, w):
+    """Un lote borrado hace menos de 30 días: se ve aparte y se puede restaurar (POST /lots/{id}/restore)."""
+    d = DELETED
+    body = [poly(chamfer(0, 0, w, 76, 12), P["niebla"], BORDE, 1.5, "6 5"),
+            text(16, 30, d["name"], 17, 700, SEC), text(16 + width_of(d["name"], 17, True) + 10, 30, ha(d["area"]), 14, fill=SEC),
+            text(16, 56, f"Borrado el {d['deleted']} · se puede restaurar hasta el {d['until']}", 13, fill=SEC)]
+    body += link(w - 16, 30, "Restaurar", 15, anchor="end")
+    return [group("lote-borrado", body, x, y)], 76
+
+
 def lot_list(x, y, w, selected=None):
     out, yy = [], y
     for lot in LOTS:
         row, rh = lot_row(x, yy, w, lot, lot["key"] == selected)
         out += row
         yy += rh + 10
-    return out, yy
+    out.append(text(x, yy + 22, "BORRADOS HACE POCO", 13, 700, SEC))
+    row, rh = deleted_row(x, yy + 34, w)
+    out += row
+    return out, yy + 34 + rh + 14
 
 
 def mis_lotes_desktop():
-    w, h = DESKTOP
+    w, h = DESKTOP[0], DESKTOP[1] + 130
     zoom = 1.15
     center = (880 - 230 / zoom, 640)
     drawn = []
@@ -408,13 +427,20 @@ def alto_tags(sim=False):
     return tuple(out)
 
 
-def lot_header(x, y, mobile=False):
+def lot_header(x, y, mobile=False, right=None):
+    """Nombre, cultivos, área, zona y riego del lote. «Editar lote» abre su edición (PATCH /lots/{id})."""
     sub = f"{crops_label(ALTO)} · {fmt_ha(area_ha(ALTO['area_pts']))} · Samacá, Boyacá"
     out = link(x, y, "‹ Mi finca", 16)
+    # `right`: la pestaña «Ahora» suma el riego y «Editar lote»; las demás pestañas dejan la cabecera corta.
     if mobile:
         out += [text(x, y + 44, "El Alto", 30, 600, font=FONT_TITLE), text(x, y + 72, sub, 15, fill=SEC)]
+        if right:
+            out.append(text(x, y + 94, irrigation_label(ALTO), 15, 700))
+            out += link(right, y + 44, "Editar lote", 16, anchor="end")
     else:
-        out += [text(x, y + 50, "El Alto", 40, 600, font=FONT_TITLE), text(x + 170, y + 48, sub, 17, fill=SEC)]
+        out += [text(x, y + 50, "El Alto", 40, 600, font=FONT_TITLE), text(x + 170, y + 48, f"{sub} · {irrigation_label(ALTO).lower()}" if right else sub, 17, fill=SEC)]
+        if right:
+            out += link(right, y + 48, "Editar lote", 17, anchor="end")
     return out
 
 
@@ -422,7 +448,7 @@ def lote_vivo_desktop(sim=False):
     w, h = 1440, 1370
     b = [f'<rect width="{w}" height="{h}" fill="{P["niebla"]}"/>']
     b += topbar(w, active="Mi finca", user="Rosa")
-    b += lot_header(48, 140)
+    b += lot_header(48, 140, right=w - 48)
     b += lot_tabs(48, 212, "Ahora")
     sx, sy, sw, sh = 48, 282, 1010, 670
     common = dict(crop=None, layout=layout_of(ALTO, sim), selected="papa", tags=alto_tags(sim), farm=True, lot_k=1.05, lot_y=0.6, lot_x=0.6, seed=4)
@@ -460,19 +486,19 @@ def lote_vivo_mobile(view=(-30, 30, 1.45), name="m"):
     """`view` es el recorrido del diorama: desplazamiento y acercamiento tras arrastrar y pellizcar."""
     w = MOBILE[0]
     pad = 16
-    b = topbar(w) + lot_header(pad, 118, mobile=True)
+    b = topbar(w) + lot_header(pad, 118, mobile=True, right=w - pad)
     tabs = lot_tabs(0, 0, "Ahora")
-    b.append(f'<defs><clipPath id="recorte-pestanas"><rect x="0" y="200" width="{w}" height="60"/></clipPath></defs>'
-             f'<g clip-path="url(#recorte-pestanas)"><g transform="translate({pad} 210)">{"".join(tabs)}</g></g>')
+    b.append(f'<defs><clipPath id="recorte-pestanas"><rect x="0" y="222" width="{w}" height="60"/></clipPath></defs>'
+             f'<g clip-path="url(#recorte-pestanas)"><g transform="translate({pad} 232)">{"".join(tabs)}</g></g>')
     sw, sh = w, 520
     body = escena.scene(sw, sh, "dia", ("nublado",), "seco", (("Riego probable · estimación", "riego"), ("Ahora: nublado · 13 °C", "vivo")),
                         crop=None, layout=layout_of(ALTO), selected="papa", tags=alto_tags(), farm=True, lot_k=0.62, lot_y=0.56, seed=6,
                         view=view)
-    b.append(f'<g id="lote-vivo" transform="translate(0 270)"><defs><clipPath id="recorte-lote-vivo-{name}"><rect width="{sw}" height="{sh}"/></clipPath></defs>'
+    b.append(f'<g id="lote-vivo" transform="translate(0 292)"><defs><clipPath id="recorte-lote-vivo-{name}"><rect width="{sw}" height="{sh}"/></clipPath></defs>'
              f'<g clip-path="url(#recorte-lote-vivo-{name})">{"".join(body)}</g></g>')
-    b += [f'<g transform="translate({w - 60} 286) scale(0.85)">{"".join(diorama_controls(0, 0))}</g>']
-    b += hint(pad, 270 + 16, "Arrastre con un dedo")
-    y = 270 + sh + 20
+    b += [f'<g transform="translate({w - 60} 308) scale(0.85)">{"".join(diorama_controls(0, 0))}</g>']
+    b += hint(pad, 292 + 16, "Arrastre con un dedo")
+    y = 292 + sh + 20
     pc, ph = parts_card(pad, y, w - 2 * pad)
     b += pc
     y += ph + 24
