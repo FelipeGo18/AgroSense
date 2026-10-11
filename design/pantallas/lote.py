@@ -1,5 +1,7 @@
 """Pantalla final «Dibujar mi lote en el mapa» (tanda 2, HU-164). Escritorio y móvil, con sus estados.
 
+Pregunta «¿Este lote tiene riego?» (`irrigated`) con «Sí», «No» y «Todavía no sé» (rediseño, tanda 4).
+
 El mapa es real: MapLibre GL JS con la base de OpenStreetMap (OpenFreeMap) y el dibujo con Terra Draw.
 Aquí se simula con un mapa plano de parcelas, vías y río; el panel y los controles siguen el kit diorama.
 El polígono es el que el agricultor verá después en Mi finca. Los nombres y las cifras son de muestra.
@@ -191,12 +193,33 @@ def scale_bar(x, y, zoom, meters=100):
 
 
 def choice(x, y, w, left, right, on_left=True):
-    half = (w - 12) / 2
-    a = (D["oliva"], None, WHITE) if on_left else (WHITE, BORDE, P["noche"])
-    b = (WHITE, BORDE, P["noche"]) if on_left else (D["oliva"], None, WHITE)
-    out = [poly(chamfer(x, y, half, 48, 10), a[0], a[1], 2.5 if a[1] else 0), text(x + half / 2, y + 31, left, 18, 700, a[2], anchor="middle"),
-           poly(chamfer(x + half + 12, y, half, 48, 10), b[0], b[1], 2.5 if b[1] else 0), text(x + half * 1.5 + 12, y + 31, right, 18, 700, b[2], anchor="middle")]
+    return options(x, y, w, (left, right), 0 if on_left else 1)
+
+
+def options(x, y, w, labels, on, size=18):
+    """Botones de una sola elección, del mismo ancho; `on` es el índice elegido."""
+    n = len(labels)
+    bw = (w - 12 * (n - 1)) / n
+    out = []
+    for i, label in enumerate(labels):
+        bx = x + i * (bw + 12)
+        sel = i == on
+        out += [poly(chamfer(bx, y, bw, 48, 10), D["oliva"] if sel else WHITE, None if sel else BORDE, 0 if sel else 2.5),
+                text(bx + bw / 2, y + 31, label, size, 700, WHITE if sel else P["noche"], anchor="middle")]
     return [group("eleccion", out)]
+
+
+IRRIGATION = ("Sí", "No", "Todavía no sé")
+
+
+def irrigation_question(x, y, w, on=1, compact=False):
+    """«¿Este lote tiene riego?» (`irrigated`: verdadero, falso o nulo). Devuelve las piezas y el alto."""
+    out = [text(0, 0, "¿Este lote tiene riego?", 18, 700)]
+    out += options(0, 16, w, IRRIGATION, on, 16)
+    rows = (["Con riego, la falta de lluvia no se cuenta como", "riesgo; le decimos cuánto regar. Puede", "cambiarlo después."] if compact else
+            ["Con riego, la falta de lluvia no se cuenta como riesgo;", "le decimos cuánto regar. Puede cambiarlo después."])
+    out += paragraph(0, 88, rows, 14, 20, fill=SEC)
+    return [group("pregunta-riego", out, x, y)], 88 + 20 * len(rows)
 
 
 def steps_list(x, y, done, rows):
@@ -229,7 +252,7 @@ def alert(x, y, w, rows, title):
 # ---------- Pantallas ----------
 
 def desktop(error=False):
-    w, h = DESKTOP
+    w, h = DESKTOP[0], DESKTOP[1] + (190 if error else 140)
     zoom = 1.5
     shape = LOT_OUT if error else LOT_OK
     center = (sum(x for x, _ in shape) / 5 - 200 / zoom, sum(y for _, y in shape) / 5 + 30 / zoom)  # deja libre la columna del panel
@@ -256,6 +279,9 @@ def desktop(error=False):
         c += area_box(pad, top, fw, shape)
         top += 112
     c += field(pad, top + 6, fw, "Nombre del lote", "El Alto", name="campo-nombre")
+    rq, rh = irrigation_question(pad, top + 112, fw)
+    c += rq
+    top += rh + 26
     c.append(text(pad, top + 112, "¿Ya sembró algo en este lote?", 18, 700))
     c += [group("opciones", choice(pad, top + 128, fw, "Sí", "Todavía no"))]
     half = (fw - 16) / 2
@@ -307,19 +333,22 @@ def mobile_closed():
     b += [group("editar", tool_button(0, 0, G["mover"], True, name="mover-puntos"), w - 60, 86)]
     b += attribution(w - 8, mh - 4)
     pad, fw = 22, w - 44
-    s = [poly(chamfer(0, 0, w, 1000, 20), WHITE), poly(chamfer(w / 2 - 28, 10, 56, 6, 3), BORDE)]
+    s = [poly(chamfer(0, 0, w, 1200, 20), WHITE), poly(chamfer(w / 2 - 28, 10, 56, 6, 3), BORDE)]
     s += [text(pad, 52, "PASO 2 DE 2", 14, 700, SEC), text(pad, 88, "Su lote en Samacá", 26, 600, font=FONT_TITLE)]
     s += area_box(pad, 110, fw, LOT_OK)
     s += link(pad, 232, "Ajustar los puntos", 16)
     s += field(pad, 280, fw, "Nombre del lote", "El Alto", name="campo-nombre")
-    s.append(text(pad, 384, "¿Ya sembró algo en este lote?", 18, 700))
-    s += [group("opciones", choice(pad, 400, fw, "Sí", "Todavía no"))]
-    s += field(pad, 486, fw, "Cultivo", "Papa", trailing="▾", name="campo-cultivo")
-    s += field(pad, 590, fw, "Sembrado el", "15 de marzo de 2026", trailing="▾", name="campo-fecha")
-    s += paragraph(pad, 694, ["Con la fecha estimamos la etapa del cultivo", "con la temperatura de la zona."], 15, 22, fill=SEC)
-    s += button(pad, 742, fw, "Guardar lote")
-    s += link(pad, 836, "Lo dibujo después")
-    h = mh + 870
+    rq, rh = irrigation_question(pad, 384, fw, compact=True)
+    s += rq
+    d = rh + 30
+    s.append(text(pad, 384 + d, "¿Ya sembró algo en este lote?", 18, 700))
+    s += [group("opciones", choice(pad, 400 + d, fw, "Sí", "Todavía no"))]
+    s += field(pad, 486 + d, fw, "Cultivo", "Papa", trailing="▾", name="campo-cultivo")
+    s += field(pad, 590 + d, fw, "Sembrado el", "15 de marzo de 2026", trailing="▾", name="campo-fecha")
+    s += paragraph(pad, 694 + d, ["Con la fecha estimamos la etapa del cultivo", "con la temperatura de la zona."], 15, 22, fill=SEC)
+    s += button(pad, 742 + d, fw, "Guardar lote")
+    s += link(pad, 836 + d, "Lo dibujo después")
+    h = mh + 870 + d
     b += [group("hoja", s, 0, mh)]
     return frame((w, h), b)
 

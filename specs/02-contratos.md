@@ -53,7 +53,7 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, apa
 - El suelo de un lote **no se guarda**: la API lo calcula al vuelo como la mediana de las celdas de `soil_grid` que toca su polígono. Un lote sin polígono usa `soil_municipality`.
 - `support_tickets` (P1): `ticket_id`, `user_id`, `lot_id` (opcional), `message`, `status` (`open`, `in_progress`, `closed`), `created_at`, `closed_at`.
 - `crop_id` y `municipality_id` deben existir en el catálogo publicado; si no, 422.
-- Un lote puede tener varias temporadas en curso a la vez, cada una en una parte del lote. Las partes son de área, no de forma: no se dibujan. La suma de `area_ha` de las temporadas en curso no puede pasar del `area_ha` del lote; si pasa, 422. Sin `area_ha`, la temporada ocupa todo lo que queda libre.
+- Un lote puede tener varias temporadas en curso a la vez, cada una en una parte del lote. Las partes son de área, no de forma: no se dibujan. La suma de `area_ha` de las temporadas en curso no puede pasar del `area_ha` del lote; si pasa, 422. Vale también al editar el lote: un `PATCH` que lo deja más chico que lo que ocupan sus temporadas en curso responde 422. Sin `area_ha`, la temporada ocupa todo lo que queda libre.
 - El agricultor divide su lote como quiera: puede sembrar hoy la mitad y otra parte en un mes, y al cosechar puede repartir ese terreno entre varios cultivos o juntar varias partes en una. Por eso una temporada puede venir de varias (`follows_season_ids`) y tener varias sucesoras.
 - Cada temporada de `follows_season_ids` es una temporada cosechada del mismo lote, con `harvest_date` igual o anterior a `sowing_date`. El área de una temporada no puede pasar de la suma de las áreas de las que viene más el área libre del lote, y las sucesoras que vienen solo de una temporada no pueden sumar más que ella. Así se puede dividir un terreno en varios y juntar varios en uno. Si algo no se cumple, 422.
 - Esas relaciones son el historial de cada terreno: para las rotaciones y el progreso, los cultivos anteriores de una temporada son los de todas las temporadas de las que viene.
@@ -225,7 +225,7 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 
 | Situación | Respuesta |
 |---|---|
-| Entrada inválida (municipio o cultivo fuera del catálogo, diagnóstico de un cultivo con `kind` distinto de `crop`, prioridades fuera de rango o todas en 0, `sowing_date` con formato inválido, `month` fuera de 1 a 12, porcentajes de finca que pasan de 100, registro sin consentimiento, temporadas en curso que pasan del área del lote, `follows_season_ids` inválido, nombre vacío, contraseña nueva de menos de 8 caracteres o igual a la actual) | `422` |
+| Entrada inválida (municipio o cultivo fuera del catálogo, diagnóstico de un cultivo con `kind` distinto de `crop`, prioridades fuera de rango o todas en 0, `sowing_date` con formato inválido, `month` fuera de 1 a 12, porcentajes de finca que pasan de 100, registro sin consentimiento, temporadas en curso que pasan del área del lote, lote editado más chico que sus temporadas en curso, `follows_season_ids` inválido, nombre vacío, contraseña nueva de menos de 8 caracteres o igual a la actual) | `422` |
 | Endpoint de cuenta sin sesión válida, usuario y contraseña incorrectos, o `lot_id` en `/diagnostics`, `/rotations` o `/calendar` sin sesión | `401` |
 | Contraseña actual incorrecta al cambiarla | `403` (la sesión sigue abierta) |
 | Rol sin permiso para el endpoint, o cuenta bloqueada al iniciar sesión | `403` |

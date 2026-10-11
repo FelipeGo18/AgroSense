@@ -117,8 +117,11 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] El polígono debe ser válido y caer dentro de su municipio (422 si no), y se ve el límite municipal mientras se dibuja
   - [ ] Si no puede o no quiere dibujar, escribe el área a mano y el lote queda sin ubicación; puede dibujarlo después
   - [ ] Un usuario no ve ni modifica lotes ajenos (404)
+  - [ ] «Editar lote», desde la cabecera del lote, cambia el nombre, el contorno (moviendo los puntos en el mapa) y el riego; dice que al cambiar el riego se recalculan el diagnóstico, el calendario y el agua del lote, y que las siembras ya registradas guardan el diagnóstico que vieron
+  - [ ] Editar el lote a un área menor que la de sus temporadas en curso responde 422
+  - [ ] «Borrar este lote» pide confirmación y dice hasta qué fecha se puede restaurar; en Mi finca, los lotes borrados hace menos de 30 días se ven aparte («Borrados hace poco») con «Restaurar» (`POST /api/v1/lots/{lot_id}/restore`)
 - **Reglas que aplican:** R7, R9
-- **Notas:** Con el polígono, la ficha del lote muestra su suelo estimado (HU-182). La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026. `irrigated` se agregó el 11 de octubre de 2026: con riego, la falta de lluvia no es un riesgo en la señal `water` (HU-071). Es un dato mínimo que se usa (R9); el consentimiento versión 3 lo nombra (HU-163).
+- **Notas:** Un `PATCH` que deja el lote más chico que el área de sus temporadas en curso responde 422 y la pantalla lo avisa (aprobado por Felipe el 11 de octubre de 2026). Con el polígono, la ficha del lote muestra su suelo estimado (HU-182). La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026. `irrigated` se agregó el 11 de octubre de 2026: con riego, la falta de lluvia no es un riesgo en la señal `water` (HU-071). Es un dato mínimo que se usa (R9); el consentimiento versión 3 lo nombra (HU-163).
 
 ### HU-165 · Temporadas e historial del lote
 
@@ -152,7 +155,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Cada botón tiene una acción definida
 - **Reglas que aplican:** R9
 - **Contrato que toca:** `GET /api/v1/lots/{lot_id}/seasons`, `POST /api/v1/seasons/{season_id}/restore`, `activity_log`
-- **Notas:** Decidido el 11 de octubre de 2026 (antes «cómo se listan los borrados» estaba por decidir). Supuestos por confirmar: el 422 al restaurar y el 404 pasados 30 días (el contrato no fija esos códigos); cómo se listan los **lotes** borrados para restaurarlos (el contrato tiene `POST /lots/{lot_id}/restore`, pero no dice si `GET /lots` los trae).
+- **Notas:** Decidido el 11 de octubre de 2026 (antes «cómo se listan los borrados» estaba por decidir). Supuestos por confirmar: el 422 al restaurar y el 404 pasados 30 días (el contrato no fija esos códigos). Los lotes borrados vienen en `GET /lots` con `restorable_until` y se restauran desde «Borrados hace poco» en Mi finca (HU-164).
 
 ### HU-166 · Borrar mi cuenta
 
