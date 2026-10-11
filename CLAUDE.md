@@ -6,7 +6,7 @@ Herramienta web para agricultores colombianos que responde tres preguntas con da
 2. **Rotaciones:** ¿qué sembrar después? (ranking de secuencias agronómicamente válidas, con el suelo de la zona o del lote y abonos verdes).
 3. **Finca, calendario y plan de agua:** ¿en qué mes conviene sembrar, cuándo hay riesgo de helada, cuánta agua necesitará cada cultivo y en qué meses es probable regar? (estimación).
 
-Proyecto para el **NASA Space Apps Challenge 2026** (reto «Cambio de rumbo: adaptando las granjas con datos de la NASA»). Equipo: Kode Group. Hackatón: 14 y 15 de noviembre de 2026. Fase 0 (preparación): 10 de octubre al 13 de noviembre.
+Proyecto para el **NASA Space Apps Challenge 2026** (reto «Cambio de rumbo: adaptando las granjas con datos de la NASA»). Equipo: RealE4Life. Hackatón: 14 y 15 de noviembre de 2026. Fase 0 (preparación): 10 de octubre al 13 de noviembre.
 
 ## Estado actual
 

@@ -16,6 +16,7 @@ Todo dato y toda regla del proyecto debe apuntar a una entrada de la tabla `sour
 | UPRA e IDEAM (heladas) | Criterio de amenaza por helada: mínima menor que 2 °C. | Encontrado en un informe de la UPRA de enero de 2024; citar en HU-045 |
 | Natural Earth (vía `world-atlas` 2.0.2) | Contornos de continentes y países para la Tierra del inicio. Dominio público. | Elegida |
 | NASA Earth Observatory · Blue Marble: Next Generation (diciembre de 2004) | Color de las facetas de tierra del globo. Hay que acreditar «NASA Earth Observatory». | Elegida; solo para la imagen del inicio, no entra en ningún cálculo |
+| Font Awesome Free 6.5.2 (íconos de marca) | Logos originales de GitHub, Instagram, LinkedIn y YouTube del pie de página, con los colores de cada marca. Íconos con licencia CC BY 4.0: se acredita en el código (`design/pantallas/marcas.py`). | Elegida |
 | DANE (límites municipales) | Códigos DIVIPOLA, nombres y centroides. | Por descargar |
 | Open-Meteo (condiciones actuales) | Lluvia, nubes, viento y temperatura actuales por punto, de modelos con resolución de 15 minutos. Solo para el ambiente de la escena (decisión 7). | Elegida; licencia, atribución y límites de uso se verifican en HU-175 |
 | NASA GIBS (imágenes satelitales casi en tiempo real) | Posible imagen del día para el nivel «satélite» de la escena (P1). | Sin verificar |
