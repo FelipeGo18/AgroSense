@@ -22,5 +22,8 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Imagen Blue Marble de la NASA y su muestreo: se bajan y regeneran (design/globo/build_globo.py)
+design/globo/fuente/
+
 # Resultados de las pruebas de scroll (informe y capturas)
 web/e2e/results/
