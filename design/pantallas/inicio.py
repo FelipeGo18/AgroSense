@@ -1,4 +1,5 @@
-"""Pantallas finales de Inicio y Descenso (tanda 2): portada, buscar mi municipio y marcar mi primer lote.
+"""Pantallas finales de Inicio y Descenso (tanda 2): portada y buscar mi municipio.
+Dibujar el lote en el mapa está en lote.py (HU-164).
 
 EP-17 (HU-173, pantalla de inicio) y el descenso de HU-155. Escritorio y móvil.
 
@@ -200,56 +201,11 @@ def find_municipality(mobile=False):
     return frame((w, h), b)
 
 
-# ---------- Marcar mi primer lote ----------
-
-def first_lot(mobile=False):
-    w = MOBILE[0] if mobile else DESKTOP[0]
-    h = 1180 if mobile else 1100
-    b = scene("a5-municipio", w, h, "recorte-lote" + ("-m" if mobile else ""))
-    b += topbar(w, user=None if mobile else "Rosa")
-    if mobile:
-        b += stepper(12, 92, 366, 2, True)
-        x, y, cw, pad = 12, 186, 366, 22
-    else:
-        b += stepper(96, 116, 640, 2)
-        b += mascot(1010, 140, 1.1, "guia")
-        # Etiqueta junto a la parcela resaltada de la escena.
-        b.append(group("etiqueta-lote", [poly(chamfer(0, 0, 170, 44, 8), P["calabaza"], D["calabaza"], 2), text(85, 29, "Aquí va su lote", 16, 700, anchor="middle"),
-                                         poly([(76, 44), (94, 44), (85, 58)], P["calabaza"])], 1010, 560))
-        x, y, cw, pad = 96, 216, 580, 40
-    fw = cw - 2 * pad
-    c = [text(pad, 56, "PASO 2 DE 2", 15, 700, SEC), text(pad, 102, "Su primer lote en Samacá", 26 if mobile else 36, 600, font=FONT_TITLE),
-         text(pad, 138, "Lo puede cambiar cuando quiera.", 16 if mobile else 18)]
-    c += field(pad, 186, fw, "Nombre del lote", "El Alto", hint="Como usted lo llama.", name="campo-nombre")
-    c += field(pad, 314, fw, "Área", "1,5", trailing="hectáreas", hint="Un aproximado está bien.", name="campo-area")
-    c.append(text(pad, 450, "¿Ya sembró algo en este lote?", 18, 700))
-    c += [poly(chamfer(pad, 466, (fw - 12) / 2, 48, 10), D["oliva"]), text(pad + (fw - 12) / 4, 497, "Sí", 18, 700, WHITE, anchor="middle"),
-          poly(chamfer(pad + (fw - 12) / 2 + 12, 466, (fw - 12) / 2, 48, 10), WHITE, BORDE, 2.5), text(pad + (fw - 12) * 0.75 + 12, 497, "Todavía no", 18, 700, anchor="middle")]
-    half = (fw - 16) / 2
-    if mobile:
-        c += field(pad, 560, fw, "Cultivo", "Papa", trailing="▾", name="campo-cultivo")
-        c += field(pad, 664, fw, "Fecha de siembra", "15 de marzo de 2026", trailing="▾", name="campo-fecha")
-        by = 768
-    else:
-        c += field(pad, 560, half, "Cultivo", "Papa", trailing="▾", name="campo-cultivo")
-        c += field(pad + half + 16, 560, half, "Fecha de siembra", "15/03/2026", trailing="▾", name="campo-fecha")
-        by = 664
-    c += paragraph(pad, by, ["Con la fecha calculamos la etapa de su", "cultivo con la temperatura de la zona."] if mobile else
-                   ["Con la fecha calculamos la etapa de su cultivo con la temperatura de la zona."], 15, 22, fill=SEC)
-    by += 48 if mobile else 30
-    c += button(pad, by, fw, "Guardar lote")
-    c += link(pad, by + 92, "Lo marco después")
-    ch = by + 122
-    return frame((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
-
-
 SCREENS = {
     "inicio-01-portada-escritorio": lambda: landing(),
     "inicio-01-portada-movil": lambda: landing(mobile=True),
     "descenso-01-buscar-municipio-escritorio": lambda: find_municipality(),
     "descenso-01-buscar-municipio-movil": lambda: find_municipality(mobile=True),
-    "descenso-02-primer-lote-escritorio": lambda: first_lot(),
-    "descenso-02-primer-lote-movil": lambda: first_lot(mobile=True),
 }
 
 if __name__ == "__main__":
