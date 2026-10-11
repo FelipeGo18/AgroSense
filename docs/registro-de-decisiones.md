@@ -43,6 +43,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Audio | P1 (HU-157) | 10 oct 2026 |
 | «Acerca de» | Sin sección aparte: el panel «¿Cómo funciona y de dónde sale esto?» cubre fuentes, versión y cómo se decide | 10 oct 2026 |
 | Skills de frontend | `greensock/gsap-skills` y `anthemflynn/ccmp` (react-three-fiber), leídas antes de instalarlas | 10 oct 2026 |
+| Varios cultivos en un lote | Por partes de área: cada temporada guarda `area_ha` y `follows_season_id` (qué había antes en esa parte). Las partes no se dibujan; el suelo es el del lote. `current_season` pasa a `current_seasons` y la línea de tiempo pasa a `GET /seasons/{season_id}/growth`. Cambio de contrato aprobado por Felipe; hay que avisarle a Haider | 11 oct 2026 |
 
 ## Dependen de una verificación
 
