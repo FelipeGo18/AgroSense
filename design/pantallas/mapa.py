@@ -16,8 +16,8 @@ DONE, NEXT, TODO = "hecha", "sigue", "pendiente"
 PARTS = (
     ("A · Inicio", "Todos", [("Portada", 2, DONE)]),
     ("B · Descenso", "Invitado y usuario nuevo", [("Buscar mi municipio", 2, DONE), ("Dibujar mi lote en el mapa", 2, DONE)]),
-    ("C · Consulta", "Todos", [("Elegir cultivo y semestre", 3, NEXT), ("Resultado del diagnóstico", 3, NEXT), ("Las cinco señales y gráficas", 3, NEXT),
-                               ("Qué sembrar después", 4, TODO)]),
+    ("C · Consulta", "Todos", [("Elegir cultivo y semestre", 3, DONE), ("Resultado del diagnóstico", 3, DONE), ("Las cinco señales y gráficas", 3, DONE),
+                               ("Qué sembrar después", 4, NEXT)]),
     ("D · Mi finca", "Con cuenta", [("Mis lotes en el mapa", 5, TODO), ("Lote · ahora y su suelo", 5, TODO), ("Lote · calendario", 5, TODO), ("Lote · próxima siembra", 5, TODO), ("Lote · agua", 5, TODO),
                                     ("Lote · historial y progreso", 6, TODO), ("Finca temporal (sin cuenta)", 6, TODO)]),
     ("E · Agregar", "Con cuenta", [("Agregar lote o zona", 6, TODO), ("Registrar cosecha y siembra", 6, TODO)]),
@@ -53,7 +53,7 @@ def sheet():
                 body += [text(24, ry + 22, name if len(name) < 30 else name[:28] + "…", 16, 700 if state != TODO else 400)] + chip(258, ry, state, tanda)
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
-    order = ["Orden: 1 Cuenta y 2 Portada y descenso (hechas) → 3 Diagnóstico y gráficas → 4 Rotaciones → 5 Mi finca, lote y agua → 6 Historial, agregar",
+    order = ["Orden: 1 Cuenta, 2 Portada y descenso y 3 Diagnóstico (hechas) → 4 Rotaciones → 5 Mi finca, lote y agua → 6 Historial, agregar",
              "y finca temporal → 7 Transversal → 8 Administrador (P1). El lote se dibuja en un mapa real (HU-164).",
              "Señales: lluvia, heladas, suelo, oferta y mercado. El lote muestra su etapa (HU-150), su suelo (EP-18) y su calendario (HU-180). Nombres y cifras de muestra."]
     for i, line in enumerate(order):
