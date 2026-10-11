@@ -64,7 +64,17 @@ const SEEDS: { id: MascotSeed; label: string }[] = [
   { id: "maize", label: "Maíz" },
 ];
 
-function Choice<T extends string>({ legend, options, value, onChange }: { legend: string; options: { id: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+function Choice<T extends string>({
+  legend,
+  options,
+  value,
+  onChange,
+}: {
+  legend: string;
+  options: { id: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
   return (
     <fieldset className="flex flex-wrap items-center gap-3">
       <legend className="mb-2 font-bold">{legend}</legend>
@@ -91,16 +101,23 @@ export function KitPage() {
         <div className="flex min-w-72 flex-1 flex-col gap-3">
           <h1 className="text-3xl">Kit de componentes · AgroSense</h1>
           <p className="text-texto-principal">
-            HU-153 y HU-171 · Estilo diorama low-poly y la mascota Semilla Sputnik. Pruebe todo con el teclado (Tab, flechas, Enter, Escape).
+            HU-153 y HU-171 · Estilo diorama low-poly y la mascota Semilla Sputnik. Pruebe todo con el teclado (Tab, flechas, Enter,
+            Escape).
           </p>
           <ExampleLabel>los municipios, señales y prioridades de esta página son de muestra</ExampleLabel>
           <p>
             Recorridos de prueba:{" "}
-            <a className="font-bold underline" href="/recorrido/1">1 · Del satélite al lote</a>
+            <a className="font-bold underline" href="/recorrido/1">
+              1 · Del satélite al lote
+            </a>
             {" · "}
-            <a className="font-bold underline" href="/recorrido/2">2 · El año del cultivo</a>
+            <a className="font-bold underline" href="/recorrido/2">
+              2 · El año del cultivo
+            </a>
             {" · "}
-            <a className="font-bold underline" href="/recorrido/3">3 · Travesía por la cordillera</a>
+            <a className="font-bold underline" href="/recorrido/3">
+              3 · Travesía por la cordillera
+            </a>
           </p>
         </div>
       </header>
@@ -112,7 +129,12 @@ export function KitPage() {
           </div>
           <div className="flex min-w-72 flex-1 flex-col gap-5">
             <Choice legend="Pose" options={MOODS} value={mood} onChange={setMood} />
-            <Choice legend="Semilla (cambia según el contexto; la cara y el brote son la identidad)" options={SEEDS} value={seed} onChange={setSeed} />
+            <Choice
+              legend="Semilla (cambia según el contexto; la cara y el brote son la identidad)"
+              options={SEEDS}
+              value={seed}
+              onChange={setSeed}
+            />
             <div className="flex items-end gap-4">
               <Mascot mood={mood} seed={seed} size={96} decorative />
               <Mascot mood={mood} seed={seed} size={64} decorative />

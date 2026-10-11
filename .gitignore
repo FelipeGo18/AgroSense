@@ -21,3 +21,6 @@ web/dist/
 Thumbs.db
 .idea/
 .vscode/
+
+# Resultados de las pruebas de scroll (informe y capturas)
+web/e2e/results/

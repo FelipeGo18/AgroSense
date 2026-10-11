@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
+import { rateFor, restTarget, stepToward } from "../journeys/shared";
 import { Button } from "./Button";
 import { Combobox, normalize, type Option } from "./Combobox";
 import { ESTIMATE_TEXT, EstimateLabel, ExampleLabel } from "./Labels";
@@ -12,7 +13,11 @@ import { LIGHT_LABEL, TrafficLightBadge, type Light } from "./TrafficLightBadge"
 describe("Button", () => {
   it("en carga se bloquea y lo anuncia", async () => {
     const onClick = vi.fn();
-    render(<Button loading loadingText="Calculando…" onClick={onClick}>Ver</Button>);
+    render(
+      <Button loading loadingText="Calculando…" onClick={onClick}>
+        Ver
+      </Button>,
+    );
     const button = screen.getByRole("button", { name: "Calculando…" });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute("aria-busy", "true");
@@ -173,5 +178,130 @@ describe("Mascot", () => {
   it("decorativa queda fuera del árbol de accesibilidad", () => {
     const { container } = render(<Mascot decorative />);
     expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+});
+
+describe("Recorridos: tope de velocidad del scroll", () => {
+  const simulate = (target: number, total: number, maxRate: number) => {
+    let progress = 0;
+    let ms = 0;
+    while (progress !== target && ms < 120_000) {
+      progress = stepToward(progress, target, 16, total, maxRate);
+      ms += 16;
+    }
+    return ms / 1000;
+  };
+
+  it("un scroll brusco hasta el final no reproduce el recorrido en un instante", () => {
+    // 15,4 unidades de línea de tiempo a 1,1 por segundo: 14 s como mínimo, aunque el scroll llegue de golpe.
+    expect(simulate(1, 15.4, 1.1)).toBeGreaterThanOrEqual(14);
+  });
+
+  it("un paso entre escenas dura al menos 1 / velocidad máxima", () => {
+    expect(simulate(1 / 15.4, 15.4, 1.1)).toBeGreaterThanOrEqual(0.9);
+  });
+
+  it("un scroll lento se sigue casi al instante y llega exacto", () => {
+    const next = stepToward(0.5, 0.5004, 16, 15.4, 1.1);
+    expect(next).toBeGreaterThan(0.5);
+    expect(next).toBeLessThanOrEqual(0.5004);
+    expect(simulate(0.01, 15.4, 1.1)).toBeLessThan(1);
+  });
+});
+
+describe("Recorridos: el seguidor del scroll aguanta entradas hostiles", () => {
+  // Generador determinista: las pruebas con valores «al azar» dan siempre lo mismo.
+  const rng = (seed: number) => () => ((seed = (seed * 1103515245 + 12345) % 2147483648), seed / 2147483648);
+
+  it("nunca supera el tope de velocidad ni se pasa del destino, con destinos y cuadros caóticos", () => {
+    const next = rng(7);
+    const total = 8.5;
+    const maxRate = 1.1;
+    let progress = 0;
+    for (let i = 0; i < 20_000; i++) {
+      const target = next(); // el scroll salta a cualquier parte en cada cuadro
+      const dt = 1 + next() * 63; // cuadros de 1 a 64 ms
+      const before = progress;
+      progress = stepToward(progress, target, dt, total, maxRate);
+      const rate = (Math.abs(progress - before) * total) / (dt / 1000);
+      expect(rate).toBeLessThanOrEqual(maxRate + 1e-9);
+      expect(progress).toBeGreaterThanOrEqual(Math.min(before, target) - 1e-12);
+      expect(progress).toBeLessThanOrEqual(Math.max(before, target) + 1e-12);
+    }
+  });
+
+  it("con el destino quieto siempre llega, sin rebotar", () => {
+    const next = rng(11);
+    for (let round = 0; round < 200; round++) {
+      const target = next();
+      let progress = next();
+      let lastGap = Math.abs(target - progress);
+      let frames = 0;
+      while (progress !== target && frames < 10_000) {
+        progress = stepToward(progress, target, 16, 8.5, 1.1);
+        const gap = Math.abs(target - progress);
+        expect(gap).toBeLessThanOrEqual(lastGap);
+        lastGap = gap;
+        frames++;
+      }
+      expect(progress).toBe(target);
+    }
+  });
+
+  it("un cuadro de duración cero o un destino igual al actual no mueven nada ni dan NaN", () => {
+    expect(stepToward(0.3, 0.9, 0, 8.5, 1.1)).toBe(0.3);
+    expect(stepToward(0.4, 0.4, 16, 8.5, 1.1)).toBe(0.4);
+    expect(Number.isNaN(stepToward(0, 1, 16, 8.5, 1.1))).toBe(false);
+  });
+});
+
+describe("Recorridos: imán hacia las paradas con contenido", () => {
+  // Las cuatro paradas con interfaz del recorrido 1, en unidades de línea de tiempo.
+  const rests = [
+    [0, 1],
+    [2.65, 3.65],
+    [4.7, 5.7],
+    [7.05, 8.05],
+  ] as const;
+
+  it("dentro de una parada no mueve al usuario", () => {
+    for (const t of [0, 0.5, 1, 2.65, 3.2, 5.7, 8.05]) expect(restTarget(t, 1, rests)).toBeNull();
+  });
+
+  it("en una escena de relleno, bajando, lleva a la parada siguiente; subiendo, a la anterior", () => {
+    expect(restTarget(1.8, 1, rests)).toBeCloseTo(2.71);
+    expect(restTarget(1.8, -1, rests)).toBeCloseTo(0.94);
+    expect(restTarget(6.2, 1, rests)).toBeCloseTo(7.11);
+    expect(restTarget(6.2, -1, rests)).toBeCloseTo(5.64);
+  });
+
+  it("el destino siempre cae dentro de una parada: nunca deja al usuario en el relleno", () => {
+    for (let t = 0; t <= 8.05; t += 0.01) {
+      for (const direction of [-1, 0, 1]) {
+        const to = restTarget(t, direction, rests);
+        if (to !== null) expect(rests.some(([a, b]) => to >= a && to <= b)).toBe(true);
+      }
+    }
+  });
+
+  it("sin paradas definidas no hace nada", () => {
+    expect(restTarget(3, 1, [])).toBeNull();
+  });
+});
+
+describe("Recorridos: velocidad según el tipo de movimiento", () => {
+  it("con rueda o dedo el tope no se levanta nunca, por lejos que quede el destino", () => {
+    for (const gap of [0.1, 2, 5, 8.5]) expect(rateFor(gap, 1.3, false)).toBe(1.3);
+  });
+
+  it("un salto corto (avanzar página) va al tope normal", () => {
+    expect(rateFor(1, 1.3, true)).toBe(1.3);
+    expect(rateFor(2, 1.3, true)).toBe(1.3);
+  });
+
+  it("un salto largo (barra de scroll, Inicio o Fin) se acelera, hasta 4 veces", () => {
+    expect(rateFor(4, 1.3, true)).toBeCloseTo(1.3 * 2.5);
+    expect(rateFor(8.5, 1.3, true)).toBeCloseTo(1.3 * 4);
+    expect(rateFor(100, 1.3, true)).toBeCloseTo(1.3 * 4);
   });
 });

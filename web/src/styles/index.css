@@ -10,7 +10,9 @@
     font-size: var(--text-base);
     line-height: var(--leading-normal);
   }
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     font-family: var(--font-titulos);
     font-weight: var(--font-weight-titulo);
     line-height: var(--leading-ajustado);

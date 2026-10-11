@@ -9,10 +9,22 @@ import { useLayoutEffect, useRef, useState } from "react";
 export type Pt = [number, number];
 
 export function chamfer(x: number, y: number, w: number, h: number, c: number): Pt[] {
-  if (c <= 0) return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  if (c <= 0)
+    return [
+      [x, y],
+      [x + w, y],
+      [x + w, y + h],
+      [x, y + h],
+    ];
   return [
-    [x + c, y], [x + w - c, y], [x + w, y + c], [x + w, y + h - c],
-    [x + w - c, y + h], [x + c, y + h], [x, y + h - c], [x, y + c],
+    [x + c, y],
+    [x + w - c, y],
+    [x + w, y + c],
+    [x + w, y + h - c],
+    [x + w - c, y + h],
+    [x + c, y + h],
+    [x, y + h - c],
+    [x, y + c],
   ];
 }
 
@@ -29,8 +41,24 @@ const TONES = [0.06, -0.015, 0.035, -0.05, 0.015, -0.03, 0.045, -0.065, 0];
 export function facets(x: number, y: number, w: number, h: number, c: number, base: string) {
   const out: { points: Pt[]; fill: string }[] = [];
   if (c > 0) {
-    out.push({ points: [[x + c, y], [x + c, y + h], [x, y + h - c], [x, y + c]], fill: tone(base, 0.12) });
-    out.push({ points: [[x + w - c, y], [x + w, y + c], [x + w, y + h - c], [x + w - c, y + h]], fill: tone(base, -0.12) });
+    out.push({
+      points: [
+        [x + c, y],
+        [x + c, y + h],
+        [x, y + h - c],
+        [x, y + c],
+      ],
+      fill: tone(base, 0.12),
+    });
+    out.push({
+      points: [
+        [x + w - c, y],
+        [x + w, y + c],
+        [x + w, y + h - c],
+        [x + w - c, y + h],
+      ],
+      fill: tone(base, -0.12),
+    });
   }
   const x0 = x + Math.max(c, 0);
   const span = w - 2 * Math.max(c, 0);
@@ -38,10 +66,22 @@ export function facets(x: number, y: number, w: number, h: number, c: number, ba
   const bot = [0, 0.11, 0.35, 0.6, 0.86, 1].map((t) => x0 + span * t);
   const tris: Pt[][] = [];
   for (let i = 0; i < top.length - 1; i++) {
-    tris.push([[top[i], y], [top[i + 1], y], [bot[i + 1], y + h]]);
-    tris.push([[top[i], y], [bot[i + 1], y + h], [bot[i], y + h]]);
+    tris.push([
+      [top[i], y],
+      [top[i + 1], y],
+      [bot[i + 1], y + h],
+    ]);
+    tris.push([
+      [top[i], y],
+      [bot[i + 1], y + h],
+      [bot[i], y + h],
+    ]);
   }
-  tris.push([[top[top.length - 1], y], [bot[bot.length - 1], y + h], [bot[bot.length - 2], y + h]]);
+  tris.push([
+    [top[top.length - 1], y],
+    [bot[bot.length - 1], y + h],
+    [bot[bot.length - 2], y + h],
+  ]);
   tris.forEach((points, i) => out.push({ points, fill: tone(base, TONES[i % TONES.length]) }));
   return out;
 }
@@ -142,7 +182,13 @@ export function Stake({ ghost = false, className = "" }: { ghost?: boolean; clas
   return (
     <svg aria-hidden="true" width="16" height="34" viewBox="0 0 16 34" className={`shrink-0 ${className}`}>
       {ghost ? (
-        <polygon points="1.5,0 14.5,0 14.5,25 8,32 1.5,25" fill="none" stroke="var(--color-oscuro-cielo)" strokeWidth="2.5" strokeDasharray="6 4" />
+        <polygon
+          points="1.5,0 14.5,0 14.5,25 8,32 1.5,25"
+          fill="none"
+          stroke="var(--color-oscuro-cielo)"
+          strokeWidth="2.5"
+          strokeDasharray="6 4"
+        />
       ) : (
         <>
           <polygon points="0,0 16,0 16,26 8,34 0,26" fill="var(--color-estaca-luz)" />
