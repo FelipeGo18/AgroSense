@@ -26,6 +26,9 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Control de prioridad | Cinco semillas y un «0» que se tocan, en lugar de un deslizador (se retira Radix Slider) | 10 oct 2026 |
 | Mascota | Semilla Sputnik: semilla germinando en estilo de caricatura de los años 60; raíces por antenas, brote por antena de señal. La semilla cambia según el contexto; la cara y el brote son la identidad (HU-171) | 10 oct 2026 |
 | Fondos y recorrido con scroll | Fondos en capas SVG generadas por código; el scroll mueve una línea de tiempo de GSAP, no un video. Técnicas combinadas por momento (máscara, sección fijada con paralaje, 3D como mejora; video atado al scroll solo opcional). Si entra una imagen: AVIF con respaldo WebP (HU-155) | 10 oct 2026 |
+| Pruebas de scroll del prototipo | Batería de estrés con `playwright-core` y el Chrome del equipo, fuera de Docker y de CI; excepción de la fase 0 a la regla de no hacer pruebas de navegador (HU-155) | 10 oct 2026 |
+| Scroll de los recorridos | El scroll fija el destino y la animación lo sigue con tope de velocidad; imán hacia las paradas con contenido; las escenas de relleno no se detienen. Lenis con inercia 0,09 y tope de 110 px por golpe de rueda (HU-155) | 10 oct 2026 |
+| `design/` fuera de `web/` | Se mantiene: `design/` es la fuente del diseño (generadores, láminas, tokens) y `web/` la importa | 10 oct 2026 |
 | Rotaciones y finca | Se unen en Mi finca, por lote | 10 oct 2026 |
 | Audio | P1 (HU-157) | 10 oct 2026 |
 | «Acerca de» | Sin sección aparte: el panel «¿Cómo funciona y de dónde sale esto?» cubre fuentes, versión y cómo se decide | 10 oct 2026 |

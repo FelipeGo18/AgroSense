@@ -159,6 +159,8 @@ Fijar versiones exactas al crear `web/`.
 | Assets 3D | glTF comprimido con `gltf-transform` | Un solo formato liviano |
 | Diseño | Figma (conectado por el MCP TalkToFigma) | Moodboard, tokens, componentes y pantallas |
 | Calidad | ESLint, Prettier y Vitest; las pruebas corren en Docker | Configuración mínima y el mismo entorno para todos |
+| Pruebas de scroll | `playwright-core` con el Chrome del equipo (`npm --prefix web run test:scroll`). Solo en la fase 0 y fuera de Docker y de CI | Los recorridos con GSAP y Lenis dependen de tiempos reales de cuadro: scroll brusco, táctil, teclado y cambio de tamaño no se pueden comprobar con Vitest |
+| Lenguaje | TypeScript 6.0 | `typescript-eslint` aún no soporta la 7; se sube cuando lo haga |
 
 **Descartado por ahora:** Recharts (cuesta adaptarlo al estilo), MapLibre (el descenso 3D cubre la vista regional de HU-095; se retoma solo si la escena no alcanza), Next.js y Astro (no hay servidor Node en el despliegue).
 
