@@ -6,7 +6,7 @@ fase: [Evento]
 rol: "Motor y API"
 agentes: [motor-api]
 subsistemas: [M3, M4, M6]
-depende_de: [EP-06, HU-071, HU-072, HU-073]
+depende_de: [EP-06, HU-071, HU-072, HU-073, HU-181]
 reglas: [R3, R4, R5, R6]
 estado: pendiente
 ---
@@ -24,6 +24,7 @@ estado: pendiente
 - **Criterios de aceptación:**
   - [ ] Las reglas de filtro excluyen secuencias
   - [ ] Cada exclusión registra la regla que la causó
+  - [ ] Abonos verdes y descanso entran como opciones de la secuencia (HU-063)
 
 ### HU-082 · Ordenar rotaciones por prioridades
 

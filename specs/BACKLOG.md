@@ -14,22 +14,28 @@
 | [EP-01](epicas/EP-01-contratos.md) | HU-014 | Modo simulación para desarrolladores | P0 | M | pendiente |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-021 | Clonar y ejecutar con pocos comandos | P0 | S | pendiente |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-022 | Lint y pruebas automáticas en cada cambio | P0 | S | pendiente |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | pendiente |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | Esqueleto desplegado en URL pública | P0 | M | pendiente |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-031 | Datos de EVA normalizados por DIVIPOLA | P0 | M | pendiente |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-032 | Variación del área sembrada y participación departamental | P0 | M | pendiente |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-041 | Series diarias de lluvia y temperatura | P0 | M | pendiente |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-042 | Total, normal y anomalía por semestre | P0 | M | pendiente |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-043 | Humedad del suelo y NDVI | P1 | L | pendiente |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-044 | Altitud de cada municipio | P1 | S | pendiente |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-044 | Municipios, límites, altitud y corrección de la temperatura | P0 | S | pendiente |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Frecuencia de heladas por mes | P0 | M | pendiente |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-046 | Aguaceros, ventanas secas y gota por mes | P1 | M | pendiente |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | pendiente |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | pendiente |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | M | pendiente |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-071 | Señal de clima | P0 | M | pendiente |
+| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-063 | Suelo, heladas y abonos verdes en el catálogo | P0 | M | pendiente |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-071 | Señal de lluvia | P0 | M | pendiente |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-072 | Señal de oferta | P0 | M | pendiente |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-073 | Señal de mercado sin datos | P0 | S | pendiente |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-074 | Semáforo global y acción sugerida | P0 | M | pendiente |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-077 | Señal de heladas | P0 | M | pendiente |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-075 | Umbrales y pesos versionados | P0 | S | pendiente |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-076 | Endpoint de diagnóstico con errores claros | P0 | S | pendiente |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-078 | Endpoints de catálogo y tendencias | P0 | S | pendiente |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar rotaciones válidas | P0 | M | pendiente |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar rotaciones por prioridades | P0 | M | pendiente |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden del ranking | P0 | S | pendiente |
@@ -57,6 +63,8 @@
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-144 | Déficit de agua por cultivo y etapa | P0 | M | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-145 | Calendario de riego de la finca | P0 | M | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-146 | Endpoint del plan de agua | P0 | S | pendiente |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-179 | Calendario del cultivo | P0 | M | pendiente |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-180 | Vista del calendario | P0 | M | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-147 | Aviso de riego semanal | P1 | L | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-148 | Rotaciones ponderadas por área | P1 | S | pendiente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-149 | Guardar la finca en el dispositivo | P1 | S | pendiente |
@@ -71,6 +79,7 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | pendiente |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P0 | L | pendiente |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P0 | S | pendiente |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P0 | M | pendiente |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-170 | Roles: agricultor, administrador y desarrollador | P1 | L | pendiente |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-161 | Esquema de cuentas y migraciones | P0 | M | pendiente |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-162 | Autenticación | P0 | L | pendiente |
@@ -87,3 +96,8 @@
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-174 | Día y noche en la escena | P0 | S | pendiente |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-175 | Endpoint de condiciones actuales | P0 | S | pendiente |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-176 | Lluvia, nubes y viento en la escena | P0 | M | pendiente |
+| [EP-18](epicas/EP-18-suelo.md) | HU-181 | Suelo de la región publicado | P0 | M | pendiente |
+| [EP-18](epicas/EP-18-suelo.md) | HU-182 | Suelo de un lote | P0 | M | pendiente |
+| [EP-18](epicas/EP-18-suelo.md) | HU-183 | Señal de suelo en el diagnóstico | P0 | S | pendiente |
+| [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las rotaciones | P0 | M | pendiente |
+| [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | pendiente |
