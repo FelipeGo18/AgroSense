@@ -110,12 +110,49 @@ def choose(mobile=False):
 
 # ---------- Resultado ----------
 
-def action_card(x, y, cw, pad, mobile, weights, farmer):
+# Texto de cada caso: razones de la acción, botones y limitaciones. Los datos salen de muestra.CASES.
+TEXTS = {
+    "amarillo": dict(
+        reasons=["En 2025 B, el último dato, se sembró 35 % más papa que antes en Samacá: con mucha oferta, el precio suele bajar.",
+                 "El clima de esta fecha le sirve a la papa: agua y calor bien, heladas moderadas."],
+        buttons=("Ver otros cultivos", "Ver otras fechas"),
+        limits=["Los datos de EVA de 2025 son preliminares.", "El suelo es el estimado para el municipio, no para su lote.",
+                "Sin datos de mercado: el precio no se evaluó.", "Evaluado sin riego, como usted indicó."]),
+    "rojo": dict(
+        reasons=["En Toca heló en la floración de la papa (junio) 4 de cada 10 años sembrando en marzo: es un riesgo grave.",
+                 "Un riesgo grave basta para el rojo, aunque las demás señales sean buenas. Hay fechas mejores."],
+        buttons=("Ver las mejores fechas", "Ver el calendario de la papa"),
+        limits=["El suelo es el estimado para el municipio, no para su lote.", "Sin datos de mercado: el precio no se evaluó.",
+                "Evaluado sin riego, como usted indicó."]),
+    "rojo-sin-fechas": dict(
+        reasons=["En Toca heló en la floración del maíz (julio) 6 de cada 10 años sembrando en marzo: es un riesgo grave.",
+                 "En ninguna fecha de los próximos doce meses el maíz se libra de las heladas en su floración."],
+        buttons=("Ver qué sembrar en su lugar", "Ver el calendario del maíz"),
+        limits=["El maíz está cerca de su límite de altitud en Toca.", "Sin datos de mercado: el precio no se evaluó.",
+                "Evaluado sin riego, como usted indicó."]),
+    "no-evaluable": dict(
+        reasons=["Faltan datos de oferta: EVA no registra haba en Samacá. Sin agua u oferta no damos un semáforo: no inventamos datos.",
+                 "El clima de esta fecha sí está: agua y calor bien. Las heladas no aplican al haba."],
+        buttons=("Elegir otro cultivo", "¿Por qué faltan datos?"),
+        limits=["Sin datos de oferta para haba en Samacá.", "Sin datos de mercado: el precio no se evaluó.",
+                "El suelo es el estimado para el municipio, no para su lote."]),
+}
+
+
+def short_kicker(kicker):
+    """En móvil, el encabezado sin el municipio y con la cosecha corta."""
+    parts = kicker.split(" · ")
+    return " · ".join(parts[:-1]).replace("COSECHA ESTIMADA", "COSECHA")
+
+
+def action_card(x, y, cw, pad, mobile, weights, farmer, case_key):
     """La acción primero (HU-092). Con pesos propios que dan otra luz, las dos luces (HU-203)."""
+    case = m.CASES[case_key]
+    tx = TEXTS[case_key]
     fw = cw - 2 * pad
-    res = m.light_for(weights)
-    res_default = m.light_for(m.DEFAULT_WEIGHTS)
-    c = [text(pad, 42, "PAPA · SIEMBRA 2 AGO 2027 → COSECHA ~27 DIC" if mobile else m.QUERY_KICKER, 13 if mobile else 14, 700, SEC),
+    res = m.light_for(weights, case["signals"])
+    res_default = m.light_for(m.DEFAULT_WEIGHTS, case["signals"])
+    c = [text(pad, 42, short_kicker(case["kicker"]) if mobile else case["kicker"], 13 if mobile else 14, 700, SEC),
          text(pad, 62, "Cosecha estimada con un año normal; no es pronóstico.", 13, fill=SEC)]
     yy = 86
     if farmer and res["light"] != res_default["light"]:
@@ -128,9 +165,8 @@ def action_card(x, y, cw, pad, mobile, weights, farmer):
     else:
         c += sg.light_block(pad, yy, fw, res, "Criterio de AgroSense", True)
         yy += 128 if mobile else 102
-        reasons = ["En 2025 B, el último dato, se sembró 35 % más papa que antes en Samacá: con mucha oferta, el precio suele bajar.",
-                   "El clima de esta fecha le sirve a la papa: agua y calor bien, heladas moderadas."]
-        primary, secondary = "Ver otros cultivos", "Ver otras fechas"
+        reasons = tx["reasons"]
+        primary, secondary = tx["buttons"]
     for r in reasons:
         rows = wrap(r, 40 if mobile else 92)
         c += paragraph(pad, yy, rows, 16, 23)
@@ -140,61 +176,72 @@ def action_card(x, y, cw, pad, mobile, weights, farmer):
         c += button(pad, yy, fw, primary) + button(pad, yy + 68, fw, secondary, "secondary")
         yy += 140
     else:
-        c += button(pad, yy, 300, primary) + button(pad + 316, yy, 260, secondary, "secondary")
+        c += button(pad, yy, 330, primary) + button(pad + 346, yy, 320, secondary, "secondary")
         yy += 76
     c += sg.priorities_summary(pad, yy, fw, weights, own=farmer)
     yy += 88 if mobile else 72
     c += link(pad, yy, "Cambiar cultivo, fecha o riego", 15)
     yy += 26
-    return c, yy
+    return c, yy, res
 
 
-def result(mobile=False, farmer=False):
+def limits_box(x, y, w, lim, mobile):
+    lh = 60 + len(lim) * (24 if not mobile else 44)
+    lb = [poly(chamfer(0, 0, w, lh, 12), "#F2F5F7", BORDE, 2), poly([(0, 0), (8, 0), (8, lh), (0, lh)], P["calabaza"]), text(24, 34, "Limitaciones", 18, 700)]
+    for i, r in enumerate(lim):
+        rows = wrap(r, 40) if mobile else [r]
+        lb += [text(24, 62 + i * (44 if mobile else 24) + j * 20, ("· " if j == 0 else "  ") + ln, 15) for j, ln in enumerate(rows)]
+    return [group("limitaciones", lb, x, y)], lh
+
+
+def result(mobile=False, farmer=False, case_key="amarillo"):
     w = MOBILE[0] if mobile else DESKTOP[0]
+    case = m.CASES[case_key]
     weights = m.FARMER_WEIGHTS if farmer else m.DEFAULT_WEIGHTS
-    res = m.light_for(weights)
     header_h = 560 if mobile else 440
-    tagname = ("-m" if mobile else "") + ("-f" if farmer else "")
+    tagname = ("-m" if mobile else "") + ("-f" if farmer else "") + "-" + case_key
     b = scene("a5-municipio", w, header_h, f"recorte-resultado{tagname}", 0.12)
     b += topbar(w, "Consultar", None if mobile else m.NAME)
     x, y, cw, pad = (12, 92, 366, 20) if mobile else (96, 116, 900, 36)
-    c, ch = action_card(x, y, cw, pad, mobile, weights, farmer)
+    c, ch, res = action_card(x, y, cw, pad, mobile, weights, farmer, case_key)
+    if res["light"] == "no-evaluable":  # sin luz no hay factor que limite
+        res = dict(res, limiting=None)
     b += card(x, y, cw, ch) + [group("accion", c, x, y)]
     if not mobile:
-        b += mascot(1090, 130, 0.95, "guia")
+        mood = {"rojo": "preocupa", "no-evaluable": "sin-datos"}.get(res["light"], "guia")
+        b += mascot(1090, 130, 0.95, mood)
     top = max(header_h, y + ch + 40)
     pad2 = 16 if mobile else 96
     iw = w - 2 * pad2
-    s = sg.suitability_line(pad2, 20, iw, m.SUITABILITY)
+    s = sg.suitability_line(pad2, 20, iw, case["suitability"])
+    crop = case["crop"].lower()
     ty = 168 if mobile else 124
     s += [text(pad2, ty, "Las seis señales de esta fecha", 24 if mobile else 32, 600, font=FONT_TITLE)]
-    s += paragraph(pad2, ty + 32, ["Cada una calificada de 0 a 100 para la", "papa. Ninguna se promedia con otra."] if mobile else
-                   ["Cada una calificada de 0 a 100 frente a lo que necesita la papa. Ninguna se promedia con otra. Toque una para ver su gráfica."], 15, 21, fill=SEC)
+    s += paragraph(pad2, ty + 32, ["Cada una calificada de 0 a 100 para", f"el cultivo. Ninguna se promedia con otra."] if mobile else
+                   [f"Cada una calificada de 0 a 100 frente a lo que necesita el cultivo ({crop}). Ninguna se promedia con otra. Toque una para ver su gráfica."], 15, 21, fill=SEC)
     gy = 256 if mobile else 190
     if mobile:
         ch2 = 300
         for i, k in enumerate(m.SIGNAL_ORDER):
-            s += sg.signal_card(pad2, gy + i * (ch2 + 14), iw, ch2, k, weights, res["limiting"], compact=True)
+            s += sg.signal_card(pad2, gy + i * (ch2 + 14), iw, ch2, k, weights, res["limiting"], compact=True, signals=case["signals"])
         ny = gy + 6 * (ch2 + 14) + 20
     else:
         gap, cols = 24, 3
         cw2, ch2 = (iw - (cols - 1) * gap) / cols, 300
         for i, k in enumerate(m.SIGNAL_ORDER):
-            s += sg.signal_card(pad2 + (i % cols) * (cw2 + gap), gy + (i // cols) * (ch2 + gap), cw2, ch2, k, weights, res["limiting"])
+            s += sg.signal_card(pad2 + (i % cols) * (cw2 + gap), gy + (i // cols) * (ch2 + gap), cw2, ch2, k, weights, res["limiting"], signals=case["signals"])
         ny = gy + 2 * (ch2 + gap) + 20
-    show_alt = res["action"] == "rotate" or m.light_for(m.DEFAULT_WEIGHTS)["action"] == "rotate"
-    if show_alt:
+    res_default = m.light_for(m.DEFAULT_WEIGHTS, case["signals"])
+    if res["action"] == "rotate" or res_default["action"] == "rotate":
         al, ah = sg.alternatives(pad2, ny + 24, iw, m.ALTERNATIVES, compact=mobile)
         s += al
         ny += ah + 50
-    lim = ["Los datos de EVA de 2025 son preliminares.", "El suelo es el estimado para el municipio, no para su lote.",
-           "Sin datos de mercado: el precio no se evaluó.", "Evaluado sin riego, como usted indicó."]
-    lh = 60 + len(lim) * (24 if not mobile else 44)
-    lb = [poly(chamfer(0, 0, iw, lh, 12), "#F2F5F7", BORDE, 2), poly([(0, 0), (8, 0), (8, lh), (0, lh)], P["calabaza"]), text(24, 34, "Limitaciones", 18, 700)]
-    for i, r in enumerate(lim):
-        rows = wrap(r, 40) if mobile else [r]
-        lb += [text(24, 62 + i * (44 if mobile else 24) + j * 20, ("· " if j == 0 else "  ") + ln, 15) for j, ln in enumerate(rows)]
-    s.append(group("limitaciones", lb, pad2, ny))
+    elif res["action"] == "other_window":
+        bw, bh = sg.best_windows(pad2, ny + 24, iw, case["crop"], case.get("best_windows", ()), compact=mobile)
+        s += bw
+        ny += bh + 50
+    lb, lh = limits_box(pad2, ny, iw, TEXTS[case_key]["limits"], mobile)
+    s += lb
     vy = ny + lh + 40
     pesos = "Sus prioridades" if farmer else "Pesos de AgroSense"
     s.append(text(pad2, vy, f"{m.VERSIONS} · {pesos}", 15, fill=SEC))
@@ -202,6 +249,63 @@ def result(mobile=False, farmer=False):
     h = top + vy + 70
     b = [f'<rect y="{header_h}" width="{w}" height="{h - header_h}" fill="{P["niebla"]}"/>'] + b
     b.append(group("senales", s, 0, top))
+    foot, fh = ui.footer(w, h, mobile, above=P["niebla"])
+    return frame((w, h + fh), b + foot)
+
+
+def not_suitable(mobile=False):
+    """El cultivo no se da en la zona: letrero propio, sin semáforo ni señales, y cultivos que sí (HU-194)."""
+    ns = m.NOT_SUITABLE
+    w = MOBILE[0] if mobile else DESKTOP[0]
+    header_h = 560 if mobile else 440
+    b = scene("a6-vereda", w, header_h, "recorte-no-apto" + ("-m" if mobile else ""), 0.12)
+    b += topbar(w, "Consultar", None if mobile else m.NAME)
+    x, y, cw, pad = (12, 92, 366, 20) if mobile else (96, 116, 900, 36)
+    fw = cw - 2 * pad
+    c = [text(pad, 42, ns["kicker"], 14, 700, SEC)]
+    if mobile:
+        body = [poly(chamfer(0, 0, fw, 230, 12), WHITE, P["noche"], 3),
+                poly([(28, 20), (52, 20), (62, 38), (40, 64), (18, 38)], P["niebla"], P["noche"], 2.5),
+                f'<path d="M26 28 l28 28 M54 28 l-28 28" stroke="{P["noche"]}" stroke-width="3"/>',
+                text(78, 36, "La papa no se da", 20, 600, font=FONT_TITLE), text(78, 60, "en Puerto Boyacá", 20, 600, font=FONT_TITLE)]
+        body += paragraph(16, 100, ["Está a 125 m; la papa se da entre", "2.000 y 3.500 m."], 15, 21)
+        body += [text(16, 162, "Aptitud", 14, 700, SEC)] + sg.seeds(80, 146, sg.score_to_seeds(ns["score"]), 0.4) + [text(fw - 16, 164, f"{ns['score']}/100", 15, 700, anchor="end")]
+        body += paragraph(16, 196, ["Fuente: ficha del cultivo · FAO EcoCrop", "(por confirmar)"], 12, 16, fill=SEC)
+        c.append(group("no-se-da-en-su-zona", body, pad, 64))
+        yy = 64 + 230 + 24
+    else:
+        sign, sh = sg.not_suitable_sign(pad, 64, fw, ns["crop"], ns["town"], ns["score"], ns["reason"], ns["source"])
+        c += sign
+        yy = 64 + sh + 24
+    c += paragraph(pad, yy, wrap("No evaluamos fechas ni señales para un cultivo que no se da en la zona: sería inventar un resultado.", 40 if mobile else 92), 16, 23)
+    yy += (3 if mobile else 1) * 23 + 20
+    if mobile:
+        c += button(pad, yy, fw, "Elegir otro cultivo") + button(pad, yy + 68, fw, "Ver qué se da en mi zona", "secondary")
+        yy += 140
+    else:
+        c += button(pad, yy, 300, "Elegir otro cultivo") + button(pad + 316, yy, 300, "Ver qué se da en mi zona", "secondary")
+        yy += 76
+    c += link(pad, yy, "Cambiar cultivo, fecha o riego", 15)
+    ch = yy + 26
+    b += card(x, y, cw, ch) + [group("accion", c, x, y)]
+    if not mobile:
+        b += mascot(1090, 130, 0.95, "preocupa")
+    top = max(header_h, y + ch + 40)
+    pad2 = 16 if mobile else 96
+    iw = w - 2 * pad2
+    s = []
+    al, ah = sg.alternatives(pad2, 30, iw, ns["alternatives"], compact=mobile)
+    s += al
+    s = [str(x_).replace("Otros cultivos para esta fecha", "Cultivos que sí se dan en Puerto Boyacá")
+         .replace("Se dan en su zona, salen bien en clima en esta fecha y hay menos sembrado. Usted decide.", "Se dan a esta altitud y salen bien en clima en esta fecha. Usted decide.")
+         .replace("Se dan en su zona, salen bien en clima", "Se dan a esta altitud y salen bien en")
+         .replace("y hay menos sembrado. Usted decide.", "clima en esta fecha. Usted decide.") for x_ in s]
+    vy = 30 + ah + 40
+    s.append(text(pad2, vy, m.VERSIONS, 15, fill=SEC))
+    s += link(pad2 if mobile else w - pad2, vy + (30 if mobile else 0), "¿Cómo funciona y de dónde sale esto?", 15, anchor="start" if mobile else "end")
+    h = top + vy + 70
+    b = [f'<rect y="{header_h}" width="{w}" height="{h - header_h}" fill="{P["niebla"]}"/>'] + b
+    b.append(group("alternativas-zona", s, 0, top))
     foot, fh = ui.footer(w, h, mobile, above=P["niebla"])
     return frame((w, h + fh), b + foot)
 
@@ -253,6 +357,13 @@ SCREENS = {
     "consulta-02-resultado-amarillo-movil": lambda: result(mobile=True),
     "consulta-02-resultado-dos-luces-escritorio": lambda: result(farmer=True),
     "consulta-02-resultado-dos-luces-movil": lambda: result(mobile=True, farmer=True),
+    "consulta-02-resultado-rojo-helada-escritorio": lambda: result(case_key="rojo"),
+    "consulta-02-resultado-rojo-helada-movil": lambda: result(mobile=True, case_key="rojo"),
+    "consulta-02-resultado-rojo-sin-fechas-escritorio": lambda: result(case_key="rojo-sin-fechas"),
+    "consulta-02-resultado-no-evaluable-escritorio": lambda: result(case_key="no-evaluable"),
+    "consulta-02-resultado-no-evaluable-movil": lambda: result(mobile=True, case_key="no-evaluable"),
+    "consulta-02-resultado-no-apto-escritorio": lambda: not_suitable(),
+    "consulta-02-resultado-no-apto-movil": lambda: not_suitable(mobile=True),
     "consulta-05-prioridades-escritorio": lambda: priorities_sheet(),
     "consulta-05-prioridades-movil": lambda: priorities_sheet(mobile=True),
 }
