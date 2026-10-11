@@ -30,11 +30,23 @@ function Seed({ filled }: { filled: boolean }) {
     <svg aria-hidden="true" viewBox="0 0 44 44" className="size-full">
       {filled ? (
         <>
-          <polygon points="22,3 35,14 35,26 22,41 9,26 9,14" fill="var(--color-paleta-brote)" stroke="var(--color-oscuro-brote)" strokeWidth="2.5" strokeLinejoin="round" />
+          <polygon
+            points="22,3 35,14 35,26 22,41 9,26 9,14"
+            fill="var(--color-paleta-brote)"
+            stroke="var(--color-oscuro-brote)"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+          />
           <polygon points="22,3 35,14 35,26 22,41" fill="color-mix(in srgb, var(--color-paleta-brote), black 14%)" />
         </>
       ) : (
-        <polygon points="22,3 35,14 35,26 22,41 9,26 9,14" fill="var(--color-superficie-panel)" stroke="var(--color-oscuro-cielo)" strokeWidth="2" strokeLinejoin="round" />
+        <polygon
+          points="22,3 35,14 35,26 22,41 9,26 9,14"
+          fill="var(--color-superficie-panel)"
+          stroke="var(--color-oscuro-cielo)"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
       )}
     </svg>
   );
@@ -124,10 +136,21 @@ export interface PriorityControlProps {
 export function PriorityControl({ value, onChange, disabled = false }: PriorityControlProps) {
   const invalid = allZero(value);
   return (
-    <fieldset disabled={disabled} className="flex flex-col gap-4 disabled:opacity-60" aria-describedby={invalid ? "priorities-error" : undefined}>
+    <fieldset
+      disabled={disabled}
+      className="flex flex-col gap-4 disabled:opacity-60"
+      aria-describedby={invalid ? "priorities-error" : undefined}
+    >
       <legend className="mb-3 font-titulos text-lg font-titulo">¿Qué le importa más?</legend>
       {CRITERIA.map(({ key, label, hint }) => (
-        <SeedRow key={key} label={label} hint={hint} value={value[key]} disabled={disabled} onChange={(v) => onChange({ ...value, [key]: v })} />
+        <SeedRow
+          key={key}
+          label={label}
+          hint={hint}
+          value={value[key]}
+          disabled={disabled}
+          onChange={(v) => onChange({ ...value, [key]: v })}
+        />
       ))}
       {invalid && (
         <p id="priorities-error" role="alert" className="font-bold text-oscuro-rojo">

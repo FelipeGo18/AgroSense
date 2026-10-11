@@ -62,14 +62,43 @@ const POSES: Record<MascotMood, Pose> = {
   guide: { label: "señalando", eyes: "pie", look: 4, mouth: "open", arms: ["down", "point"], waves: 2 },
   celebrate: { label: "celebrando", eyes: "happy", mouth: "big", arms: ["up", "up"], transform: "translate(0 -8)", sparkles: true },
   // Sin datos: se encoge entre niebla con los ojos vacíos. No está triste ni preocupada (R1).
-  no_data: { label: "sin datos", eyes: "hollow", mouth: "flat", arms: ["tuck", "tuck"], transform: "translate(16 22) scale(0.9)", droop: true, mist: true },
-  flying: { label: "volando", eyes: "pie", look: 5, mouth: "open", arms: ["back", "point"], waves: 1, transform: "rotate(-16 158 124)", speed: true },
+  no_data: {
+    label: "sin datos",
+    eyes: "hollow",
+    mouth: "flat",
+    arms: ["tuck", "tuck"],
+    transform: "translate(16 22) scale(0.9)",
+    droop: true,
+    mist: true,
+  },
+  flying: {
+    label: "volando",
+    eyes: "pie",
+    look: 5,
+    mouth: "open",
+    arms: ["back", "point"],
+    waves: 1,
+    transform: "rotate(-16 158 124)",
+    speed: true,
+  },
 };
 
 const stroke = { fill: "none", stroke: INK, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
 function Roots({ droop }: { droop: boolean }) {
-  const ends = droop ? [[70, 214], [92, 226], [116, 234], [140, 238]] : [[30, 190], [52, 220], [86, 238], [120, 242]];
+  const ends = droop
+    ? [
+        [70, 214],
+        [92, 226],
+        [116, 234],
+        [140, 238],
+      ]
+    : [
+        [30, 190],
+        [52, 220],
+        [86, 238],
+        [120, 242],
+      ];
   return (
     <g className="mascot-roots">
       {ends.map(([x, y], i) => (
@@ -92,7 +121,15 @@ function Sprout({ waves }: { waves: number }) {
       <path d="M150 28 C142 24 136 18 132 10 M146 16 L136 22 M178 14 C172 22 166 28 158 32 M172 28 L166 16" {...stroke} strokeWidth={1.8} />
       {Array.from({ length: waves }, (_, i) => {
         const r = 14 + i * 10;
-        return <path key={i} d={`M${196 + r * 0.5} ${10 - r * 0.5} Q${200 + r} 14 ${196 + r * 0.5} ${20 + r * 0.6}`} {...stroke} stroke={RED} strokeWidth={3.5} />;
+        return (
+          <path
+            key={i}
+            d={`M${196 + r * 0.5} ${10 - r * 0.5} Q${200 + r} 14 ${196 + r * 0.5} ${20 + r * 0.6}`}
+            {...stroke}
+            stroke={RED}
+            strokeWidth={3.5}
+          />
+        );
       })}
     </g>
   );
@@ -210,11 +247,16 @@ export function Mascot({ mood = "idle", seed = "sprouted", size = 240, decorativ
         </g>
       )}
       {pose.speed &&
-        [[70, 20, 70], [104, 6, 50], [140, 14, 44]].map(([y, x1, x2]) => (
-          <path key={y} d={`M${x1} ${y} L${x2} ${y - 12}`} {...stroke} strokeWidth={3.5} />
-        ))}
+        [
+          [70, 20, 70],
+          [104, 6, 50],
+          [140, 14, 44],
+        ].map(([y, x1, x2]) => <path key={y} d={`M${x1} ${y} L${x2} ${y - 12}`} {...stroke} strokeWidth={3.5} />)}
       {pose.mist &&
-        [[84, 1], [214, 0.8]].map(([x, k]) => (
+        [
+          [84, 1],
+          [214, 0.8],
+        ].map(([x, k]) => (
           <path
             key={x}
             d={`M${x - 44 * k} 232 q${14 * k} ${-22 * k} ${34 * k} ${-10 * k} q${16 * k} ${-18 * k} ${32 * k} 0 q${22 * k} ${-6 * k} ${22 * k} 10Z`}

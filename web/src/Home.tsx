@@ -5,7 +5,11 @@ import { Plate } from "./components/Plate";
 const PAGES = [
   { href: "/kit", title: "Kit de componentes", text: "Botón, selector, semáforo, prioridad, tarjetas de señal, rótulos y la mascota." },
   { href: "/recorrido/1", title: "Recorrido 1 · Del satélite al lote", text: "La cámara baja de la órbita al lote en diez escenas." },
-  { href: "/recorrido/2", title: "Recorrido 2 · El año del cultivo", text: "La cámara se queda en el lote y el scroll avanza en el tiempo." },
+  {
+    href: "/recorrido/2",
+    title: "Recorrido 2 · El año del cultivo",
+    text: "La cámara se queda en el lote y el scroll avanza en el tiempo.",
+  },
   { href: "/recorrido/3", title: "Recorrido 3 · Travesía por la cordillera", text: "Del páramo a la finca, de lado." },
 ];
 

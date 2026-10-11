@@ -36,7 +36,12 @@ function KindIcon({ kind }: { kind: SignalKind }) {
     <svg aria-hidden="true" viewBox="0 0 44 46" className="absolute top-5 right-6 size-11">
       {kind === "climate" && (
         <>
-          <polygon points="6,26 12,14 22,10 32,14 38,24 34,30 10,30" fill="var(--color-paleta-niebla)" stroke="var(--color-oscuro-cielo)" strokeWidth="2" />
+          <polygon
+            points="6,26 12,14 22,10 32,14 38,24 34,30 10,30"
+            fill="var(--color-paleta-niebla)"
+            stroke="var(--color-oscuro-cielo)"
+            strokeWidth="2"
+          />
           <polygon points="12,14 22,10 20,30 10,30" fill="color-mix(in srgb, var(--color-paleta-niebla), black 6%)" />
           <polygon points="24,33 28,40 24,44 20,40" fill="var(--color-oscuro-cielo)" />
         </>
@@ -51,7 +56,12 @@ function KindIcon({ kind }: { kind: SignalKind }) {
       )}
       {kind === "market" && (
         <>
-          <polygon points="14,8 30,8 26,14 38,30 34,42 10,42 6,30 18,14" fill="var(--color-paleta-trigo)" stroke="var(--color-oscuro-trigo)" strokeWidth="2" />
+          <polygon
+            points="14,8 30,8 26,14 38,30 34,42 10,42 6,30 18,14"
+            fill="var(--color-paleta-trigo)"
+            stroke="var(--color-oscuro-trigo)"
+            strokeWidth="2"
+          />
           <polygon points="18,14 26,14 22,42 10,42 6,30" fill="color-mix(in srgb, var(--color-paleta-trigo), white 12%)" />
           <polygon points="16,14 28,14 28,17 16,17" fill="var(--color-oscuro-trigo)" />
         </>
@@ -63,7 +73,12 @@ function KindIcon({ kind }: { kind: SignalKind }) {
 /** Bruma de «datos insuficientes»: nubes facetadas de niebla al pie del letrero. */
 function Mist() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 500 70" preserveAspectRatio="xMidYMax meet" className="pointer-events-none absolute inset-x-1 bottom-1 h-[70px] w-[calc(100%-8px)]">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 500 70"
+      preserveAspectRatio="xMidYMax meet"
+      className="pointer-events-none absolute inset-x-1 bottom-1 h-[70px] w-[calc(100%-8px)]"
+    >
       <polygon points="220,62 240,38 280,24 324,18 370,32 402,52 390,64" fill="var(--color-paleta-niebla)" />
       <polygon points="280,24 324,18 370,32 320,64" fill="color-mix(in srgb, var(--color-paleta-niebla), black 5%)" />
       <polygon points="53,66 69,47 101,36 136,31 173,42 199,58 189,68" fill="var(--color-paleta-niebla)" />
@@ -123,7 +138,10 @@ function SignalBody({ signal }: { signal: Signal }) {
   const style = TONE_STYLE[tone];
   return (
     <>
-      <span data-tone={tone} className={`relative inline-flex h-[52px] w-fit items-center gap-2.5 px-5 font-bold whitespace-nowrap ${style.ink}`}>
+      <span
+        data-tone={tone}
+        className={`relative inline-flex h-[52px] w-fit items-center gap-2.5 px-5 font-bold whitespace-nowrap ${style.ink}`}
+      >
         <Plate {...style.plate} c={Math.min(style.plate.c ?? 10, 10)} />
         <span className="relative flex items-center gap-2.5">
           <StatusIcon icon={style.icon} />

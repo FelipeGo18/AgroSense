@@ -31,7 +31,12 @@ export const TONE_STYLE: Record<Tone, { plate: PlateProps; ink: string; icon: Ic
     icon: "ring",
   },
   insufficient_data: {
-    plate: { c: 10, fill: "var(--color-semaforo-datos-insuficientes-fondo)", stroke: "var(--color-semaforo-datos-insuficientes-borde)", dash: "3 5" },
+    plate: {
+      c: 10,
+      fill: "var(--color-semaforo-datos-insuficientes-fondo)",
+      stroke: "var(--color-semaforo-datos-insuficientes-borde)",
+      dash: "3 5",
+    },
     ink: "text-semaforo-datos-insuficientes-texto",
     icon: "question",
   },
@@ -58,7 +63,13 @@ export function StatusIcon({ icon }: { icon: Icon }) {
       {icon === "triangle" && <polygon points="10,0 20,18 0,18" fill="currentColor" />}
       {icon === "square" && <polygon points="2,2 18,2 18,18 2,18" fill="currentColor" />}
       {icon === "ring" && (
-        <polygon points="13.2,2.2 17.8,6.8 17.8,13.2 13.2,17.8 6.8,17.8 2.2,13.2 2.2,6.8 6.8,2.2" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="4 3" />
+        <polygon
+          points="13.2,2.2 17.8,6.8 17.8,13.2 13.2,17.8 6.8,17.8 2.2,13.2 2.2,6.8 6.8,2.2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeDasharray="4 3"
+        />
       )}
     </svg>
   );

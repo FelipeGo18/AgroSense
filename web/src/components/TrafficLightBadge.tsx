@@ -31,7 +31,10 @@ export function TrafficLightBadge({ light, loading = false, className = "" }: Tr
           <span className="relative">Calculando semáforo…</span>
         </span>
       ) : (
-        <span data-light={light} className={`relative inline-flex h-14 items-center gap-2.5 font-bold ${style.ink} ${light === "green" ? "px-8" : "px-5"}`}>
+        <span
+          data-light={light}
+          className={`relative inline-flex h-14 items-center gap-2.5 font-bold ${style.ink} ${light === "green" ? "px-8" : "px-5"}`}
+        >
           <Plate {...style.plate} />
           <span className="relative flex items-center gap-2.5">
             <StatusIcon icon={style.icon} />

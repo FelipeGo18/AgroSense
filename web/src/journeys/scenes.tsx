@@ -23,8 +23,19 @@ export type SceneId = keyof typeof SCENES;
 
 /** Capas que se mueven más despacio cuanto más lejos están: eso da la profundidad. */
 export const DEPTH: Record<string, number> = {
-  estrellas: 0.1, sol: 0.15, atmosfera: 0.2, "nubes-lejanas": 0.25, lejano: 0.25, "niebla-lejana": 0.3, "niebla-alta": 0.3,
-  "nubes-medias": 0.5, medio: 0.45, "niebla-media": 0.55, niebla: 0.55, cercano: 0.7, "nubes-cercanas": 1,
+  estrellas: 0.1,
+  sol: 0.15,
+  atmosfera: 0.2,
+  "nubes-lejanas": 0.25,
+  lejano: 0.25,
+  "niebla-lejana": 0.3,
+  "niebla-alta": 0.3,
+  "nubes-medias": 0.5,
+  medio: 0.45,
+  "niebla-media": 0.55,
+  niebla: 0.55,
+  cercano: 0.7,
+  "nubes-cercanas": 1,
 };
 
 /**
@@ -33,5 +44,7 @@ export const DEPTH: Record<string, number> = {
  */
 export function Scene({ id, className = "" }: { id: SceneId; className?: string }) {
   const markup = SCENES[id].replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" ');
-  return <div data-scene={id} aria-hidden="true" className={`absolute inset-0 ${className}`} dangerouslySetInnerHTML={{ __html: markup }} />;
+  return (
+    <div data-scene={id} aria-hidden="true" className={`absolute inset-0 ${className}`} dangerouslySetInnerHTML={{ __html: markup }} />
+  );
 }
