@@ -211,3 +211,51 @@ HEAT_MAX_PAPA = 28
 AREA_B = ((2019, 790), (2020, 820), (2021, 805), (2022, 840), (2023, 860), (2024, 830), (2025, 1138))
 AREA_B_AVG3 = 843
 AGROSENSE_SUPPLY = dict(accounts=14, ha=38, date="11 oct 2026")
+
+
+# ---------- Ventanas de los próximos doce meses: papa en Samacá, sin riego (POST /calendar, «Planear una siembra») ----------
+# Sembrando de octubre a diciembre, la floración cae en enero, el mes con más heladas: riesgo grave (alto riesgo).
+# Oferta: las siembras de julio a diciembre caen en el semestre B de EVA, con mucha papa sembrada (30); las de enero a junio, en el A (68).
+_W = (  # mes, año, cosecha estimada, agua, heladas, calor, suelo, oferta, helada crítica
+    ("Oct", 2026, "mar 2027", 62, 12, 95, 80, 30, True),
+    ("Nov", 2026, "abr 2027", 55, 9, 96, 80, 30, True),
+    ("Dic", 2026, "may 2027", 40, 16, 96, 80, 30, True),
+    ("Ene", 2027, "jun 2027", 48, 64, 95, 80, 68, False),
+    ("Feb", 2027, "jul 2027", 70, 74, 95, 80, 68, False),
+    ("Mar", 2027, "ago 2027", 84, 80, 94, 80, 68, False),
+    ("Abr", 2027, "sep 2027", 82, 72, 94, 80, 68, False),
+    ("May", 2027, "oct 2027", 66, 70, 94, 80, 68, False),
+    ("Jun", 2027, "nov 2027", 58, 60, 94, 80, 68, False),
+    ("Jul", 2027, "dic 2027", 74, 52, 94, 80, 30, False),
+    ("Ago", 2027, "dic 2027", 86, 58, 94, 80, 30, False),
+    ("Sep", 2027, "feb 2028", 78, 34, 94, 80, 30, False),
+)
+
+
+def windows(weights=None):
+    """Las doce ventanas con sus calificaciones, factor limitante, promedio ponderado, alto riesgo y orden (specs/01-reglas.md)."""
+    weights = weights or DEFAULT_WEIGHTS
+    out = []
+    for mon, yr, harvest, water, frost, heat, soil, supply, crit in _W:
+        scores = dict(water=water, frost=frost, heat=heat, soil=soil, supply=supply, market=None)
+        counted = {k: v for k, v in scores.items() if v is not None and (weights[k] > 0 or (k in CLIMATE and k == "frost" and crit))}
+        lim = min(counted, key=lambda k: counted[k])
+        wsum = sum(weights[k] for k in counted)
+        weighted = round(sum(counted[k] * weights[k] for k in counted) / wsum) if wsum else None
+        out.append(dict(month=mon, year=yr, harvest=harvest, scores=scores, limiting=lim, limiting_score=counted[lim],
+                        weighted=weighted, high_risk=crit))
+    chrono = list(out)
+    ranked = sorted(out, key=lambda w: (w["high_risk"], -(w["limiting_score"] // 10), -w["weighted"], chrono.index(w)))
+    for i, w in enumerate(ranked):
+        w["rank"] = i + 1
+    return chrono, ranked
+
+
+# Semanas de agosto de 2027 (al abrir el mes): el dato semanal afina dentro de un mes, pero es más variable.
+AUG_WEEKS = (
+    dict(label="2 al 8 ago", harvest="~27 dic", scores=dict(water=86, frost=58, heat=94, soil=80, supply=30, market=None)),
+    dict(label="9 al 15 ago", harvest="~3 ene", scores=dict(water=84, frost=52, heat=94, soil=80, supply=30, market=None)),
+    dict(label="16 al 22 ago", harvest="~10 ene", scores=dict(water=82, frost=46, heat=94, soil=80, supply=30, market=None)),
+    dict(label="23 al 29 ago", harvest="~17 ene", scores=dict(water=80, frost=41, heat=94, soil=80, supply=30, market=None)),
+    dict(label="30 ago al 5 sep", harvest="~24 ene", scores=dict(water=79, frost=38, heat=94, soil=80, supply=30, market=None)),
+)

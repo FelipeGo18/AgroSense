@@ -36,6 +36,7 @@ FAV, MOD, UNF = "favorable", "moderado", "desfavorable"
 SOWING = muestra.SOWING
 BEST = muestra.BEST_SOWING  # best_sowing_months
 FROST = muestra.FROST  # frost_freq_pct
+HEAT_BY_MONTH = {7: 21.4, 8: 21.9, 9: 21.2, 10: 20.6, 11: 20.9}  # tmax_p90_c de agosto a diciembre (muestra.TMAX_P90)
 TODAY, SELECTED = 9, 11  # octubre es hoy; el mes abierto es diciembre
 
 # ----- Mi cultivo: la papa de El Alto, sembrada el 2 de agosto (muestra), de /calendar con sowing_date -----
@@ -110,8 +111,8 @@ def cycle_grid(x, y, w):
     lab, after = 200, 150
     cw = (w - lab - after - 16) / len(CYCLE)
     col = lambda i: lab + i * cw  # noqa: E731
-    r = dict(stage=62, frost=150, water=252, p1=346, fert=382, work=452, blight=522, sell=592)
-    h = 672
+    r = dict(stage=62, frost=150, heat=252, water=340, p1=434, fert=470, work=540, blight=610, sell=680)
+    h = 760
     out = [poly(chamfer(0, 8, w, h, 16), BORDE), poly(chamfer(0, 0, w, h, 16), WHITE)]
     ti = next(i for i, c in enumerate(CYCLE) if c["m"] == TODAY)
     si = next(i for i, c in enumerate(CYCLE) if c["m"] == SELECTED)
@@ -119,7 +120,7 @@ def cycle_grid(x, y, w):
     out.append(poly(chamfer(col(si) + 2, 6, cw - 4, h - 12, 10), "#FFF6EA", P["calabaza"], 2.5))
     for i in range(1, len(CYCLE) + 1):
         out.append(f'<rect x="{col(i):.1f}" y="52" width="1" height="{h - 68}" fill="{BORDE}" fill-opacity="0.6"/>')
-    for key in ("stage", "frost", "water", "fert", "work", "blight", "sell"):
+    for key in ("stage", "frost", "heat", "water", "fert", "work", "blight", "sell"):
         out.append(f'<rect x="16" y="{r[key] - 6}" width="{w - 32 - after}" height="1" fill="{BORDE}"/>')
     # encabezado
     for i, c in enumerate(CYCLE):
@@ -154,6 +155,13 @@ def cycle_grid(x, y, w):
             out += tag(cx, r["frost"] + 58, "Vigile: etapa sensible", P["calabaza"], P["noche"])
         elif c["sens"]:
             out.append(text(cx, r["frost"] + 71, "Etapa sensible, riesgo bajo", 12, fill=SEC, anchor="middle"))
+    # calor: la máxima que se supera uno de cada diez días frente a lo que aguanta el cultivo
+    out += [text(20, r["heat"] + 30, "Calor", 16, 700), text(20, r["heat"] + 50, "Máxima de 1 de cada", 13, fill=SEC), text(20, r["heat"] + 66, f"10 días; aguanta {muestra.HEAT_MAX_PAPA} °C", 13, fill=SEC)]
+    for i, c in enumerate(CYCLE):
+        cx = col(i) + cw / 2
+        t = HEAT_BY_MONTH[c["m"]]
+        out += level_mark(cx - 44, r["heat"] + 26, FAV, 18)
+        out += [text(cx - 22, r["heat"] + 24, f"{t:.0f} °C", 16, 700), text(cx - 22, r["heat"] + 42, "Favorable", 13, fill=SEC)]
     # riego probable
     out += [text(20, r["water"] + 30, "Riego probable", 16, 700), text(20, r["water"] + 50, "Estimación del plan", 13, fill=SEC), text(20, r["water"] + 66, "de agua", 13, fill=SEC)]
     for i, c in enumerate(CYCLE):
@@ -208,6 +216,7 @@ def month_detail(x, y, w, mode="mine", foot=True):
     if mode == "mine":
         blocks = (("Etapa de la papa", None, ["Llenado del tubérculo y cosecha; se estima para el 28 de diciembre."], None, "Estimada con un año normal"),
                   ("Heladas", MOD, ["Heló en 12 de cada 100 diciembres del histórico (mínima menor que 2 °C).", "El follaje de la papa todavía es sensible en el llenado."], None, "Moderado · vigile"),
+                  ("Calor", FAV, [f"La máxima de 1 de cada 10 días en diciembre es 21 °C; la papa aguanta hasta {muestra.HEAT_MAX_PAPA} °C."], None, "Favorable"),
                   ("Riego de la papa", None, ["Déficit estimado de 18 a 30 mm en el mes, con el clima de la zona.", "Verifique la humedad del suelo en campo antes de regar."], "riego", "Probable · estimación"))
     else:
         blocks = (("Sembrar papa", UNF, ["La lluvia normal de diciembre a febrero no cubre la emergencia y el desarrollo.", "La floración caería en enero, el mes con más heladas."], None, None),
@@ -278,81 +287,9 @@ def mine_desktop():
     return frame((w, y + max(dh, lh) + 60), b, P["niebla"])
 
 
-# ---------- Planear una siembra: doce meses ----------
-
-def plan_grid(x, y, w):
-    lab = 176
-    cw = (w - lab - 16) / 12
-    col = lambda m: lab + m * cw  # noqa: E731
-    r = dict(sow=58, frost=160)
-    h = 284
-    out = [poly(chamfer(0, 8, w, h, 16), BORDE), poly(chamfer(0, 0, w, h, 16), WHITE)]
-    out.append(f'<rect x="{col(TODAY):.1f}" y="8" width="{cw:.1f}" height="{h - 16}" fill="{P["niebla"]}" fill-opacity="0.7"/>')
-    out.append(poly(chamfer(col(SELECTED) + 2, 6, cw - 4, h - 12, 10), "#FFF6EA", P["calabaza"], 2.5))
-    for m in range(1, 12):
-        out.append(f'<rect x="{col(m):.1f}" y="52" width="1" height="{h - 68}" fill="{BORDE}" fill-opacity="0.6"/>')
-    for key in ("sow", "frost"):
-        out.append(f'<rect x="16" y="{r[key] - 6}" width="{w - 32}" height="1" fill="{BORDE}"/>')
-    for m, name in enumerate(MONTHS):
-        cx = col(m) + cw / 2
-        out.append(text(cx, 36, name, 17, 700 if m in (TODAY, SELECTED) else 400, anchor="middle"))
-        if m == TODAY:
-            out += tag(cx, 40, "Hoy", P["noche"])
-    out += [text(20, r["sow"] + 34, "Sembrar", 16, 700), text(20, r["sow"] + 54, "¿Conviene sembrar", 13, fill=SEC), text(20, r["sow"] + 70, "este mes?", 13, fill=SEC)]
-    for m, lv in enumerate(SOWING):
-        cx = col(m) + cw / 2
-        out += level_mark(cx, r["sow"] + 30, lv)
-        out.append(text(cx, r["sow"] + 64, SHORT[lv], 13, 700 if m in BEST else 400, anchor="middle"))
-        if m in BEST:
-            out += tag(cx, r["sow"] + 72, "Mejor mes", D["oliva"])
-    out += [text(20, r["frost"] + 34, "Heladas", 16, 700), text(20, r["frost"] + 54, "% de años con", 13, fill=SEC), text(20, r["frost"] + 70, "helada en el mes", 13, fill=SEC)]
-    for m, v in enumerate(FROST):
-        cx = col(m) + cw / 2
-        lv = frost_level(v)
-        bh = max(3, 46 * v / 25)
-        out.append(poly(chamfer(cx - 15, r["frost"] + 52 - bh, 30, bh, 2), STATUS[lv]["fill"], STATUS[lv]["stroke"], 1.5))
-        out.append(text(cx, r["frost"] + 72, f"{v} %", 14, 700, anchor="middle"))
-        out += [f'<g transform="translate({cx - 34:.1f} {r["frost"] + 80})">{"".join(icon(STATUS[lv]["icon"], 0, 0, STATUS[lv]["stroke"], 12))}</g>',
-                text(cx + 6, r["frost"] + 91, SHORT[lv], 12, fill=SEC, anchor="middle")]
-    return [group("calendario-planear", out, x, y)], h
+# «Planear una siembra» vive en ventanas.py (orden de ventanas, semanas y sin cuenta).
 
 
-def plan_desktop():
-    """Con cuenta: planear la parte libre del lote (u otro cultivo)."""
-    w = 1440
-    b = lot_top(w, False)
-    chips, cx = crop_chips(500, 282, (("Papa", True), ("Haba", False), ("Cebolla", False)))
-    b += chips
-    b += banner(48, 344, w - 96, "Mejores meses para sembrar papa en Samacá · parte libre de El Alto, 0,41 ha", muestra.BEST_SOWING_TEXT,
-                "Según el histórico de la zona; no es pronóstico")
-    g, gh = plan_grid(48, 432, w - 96)
-    b += g
-    y = 432 + gh + 32
-    lw = 820
-    d, dh = month_detail(48, y, lw, "plan")
-    lg, lh = legend(48 + lw + 24, y, w - 96 - lw - 24, dh, "plan")
-    b += d + lg
-    return frame((w, y + max(dh, lh) + 60), b, P["niebla"])
-
-
-def guest_desktop():
-    """Sin cuenta, desde la consulta: solo «Planear una siembra». Se elige municipio y cultivo."""
-    w = 1440
-    b = [f'<rect width="{w}" height="2000" fill="{P["niebla"]}"/>']
-    b += topbar(w, active="Consultar")
-    b += link(48, 140, "‹ Volver al resultado", 16)
-    b += [text(48, 190, "Calendario de la papa", 40, 600, font=FONT_TITLE), text(48, 222, "Samacá, Boyacá · histórico de la zona, no es pronóstico", 17, fill=SEC)]
-    b += field(48, 262, 300, "Municipio", "Samacá, Boyacá", trailing="▾", name="elegir-municipio")
-    b += field(372, 262, 240, "Cultivo", "Papa", trailing="▾", name="elegir-cultivo")
-    b += banner(644, 270, w - 48 - 644, "Mejores meses para sembrar papa en Samacá", muestra.BEST_SOWING_TEXT, "Según el histórico de la zona")
-    g, gh = plan_grid(48, 372, w - 96)
-    b += g
-    y = 372 + gh + 32
-    lw = 820
-    d, dh = month_detail(48, y, lw, "guest")
-    lg, lh = legend(48 + lw + 24, y, w - 96 - lw - 24, dh, "guest")
-    b += d + lg
-    return frame((w, y + max(dh, lh) + 60), b, P["niebla"])
 
 
 # ---------- Móvil ----------
@@ -368,11 +305,11 @@ def mobile_top(w, pad, mine, cid):
 
 
 def cycle_month_card(x, y, w, c):
-    """Un mes del ciclo en móvil: etapa, heladas y riego; en P1, las otras cuatro decisiones."""
+    """Un mes del ciclo en móvil: etapa, heladas, calor y riego; en P1, las otras cuatro decisiones."""
     on, today = c["m"] == SELECTED, c["m"] == TODAY
     lv = frost_level(c["frost"])
     watch = c["sens"] and lv != FAV
-    h = 236
+    h = 266
     out = [poly(chamfer(0, 0, w, h, 12), "#FFF6EA" if on else WHITE, P["calabaza"] if on else BORDE, 2.5 if on else 1.2)]
     out.append(text(16, 34, MONTHS[c["m"]], 20, 700))
     if today:
@@ -385,15 +322,16 @@ def cycle_month_card(x, y, w, c):
         out += tag(54 + 62, 91, "Vigile: etapa sensible", P["calabaza"], P["noche"])
     elif c["sens"]:
         out.append(text(54, 102, "Etapa sensible, riesgo bajo", 12, fill=SEC))
+    out += level_mark(30, 124, FAV, 16) + [text(54, 129, f"Calor: máx. {HEAT_BY_MONTH[c['m']]:.0f} °C · aguanta {muestra.HEAT_MAX_PAPA} °C", 14, 700)]
     if c["water"]:
-        out += drop(30, 126, 1.3) + [text(54, 131, "Riego probable · estimación", 14, 700)]
+        out += drop(30, 156, 1.3) + [text(54, 161, "Riego probable · estimación", 14, 700)]
     else:
-        out += [f'<circle cx="30" cy="126" r="8" fill="none" stroke="{BORDE}" stroke-width="2.5"/>', text(54, 131, "Sin riego probable", 14, fill=SEC)]
-    out.append(f'<rect x="16" y="150" width="{w - 32}" height="1" fill="{BORDE}"/>')
-    out += tag(32, 158, "P1", WHITE, D["cielo"], D["cielo"])
+        out += [f'<circle cx="30" cy="156" r="8" fill="none" stroke="{BORDE}" stroke-width="2.5"/>', text(54, 161, "Sin riego probable", 14, fill=SEC)]
+    out.append(f'<rect x="16" y="180" width="{w - 32}" height="1" fill="{BORDE}"/>')
+    out += tag(32, 188, "P1", WHITE, D["cielo"], D["cielo"])
     half = (w - 32) / 2
     for k, (key, title, *_rest) in enumerate(P1_ROWS):
-        px, py = 16 + (k % 2) * half, 186 + (k // 2) * 24
+        px, py = 16 + (k % 2) * half, 216 + (k // 2) * 24
         out += level_mark(px + 8, py + 6, c[key][0], 10) + [text(px + 24, py + 10, title, 12, 700 if c[key][0] == UNF else 400)]
     return [group(f"mes-{MONTHS[c['m']].lower()}", out, x, y)], h
 
@@ -418,49 +356,11 @@ def mine_mobile():
     return frame((w, y + lh + 50), b, P["niebla"])
 
 
-def plan_month_row(x, y, w, m):
-    on, today = m == SELECTED, m == TODAY
-    h = 56
-    out = [poly(chamfer(0, 0, w, h, 10), "#FFF6EA" if on else WHITE, P["calabaza"] if on else BORDE, 2.5 if on else 1.2)]
-    out.append(text(14, 34, MONTHS[m], 17, 700))
-    if today:
-        out += tag(72, 19, "Hoy", P["noche"])
-    out += level_mark(130, 28, SOWING[m], 16)
-    out.append(text(152, 26 if m in BEST else 33, LABEL[SOWING[m]], 13, 700 if m in BEST else 400))
-    if m in BEST:
-        out.append(text(152, 43, "Mejor mes", 11, 700, D["oliva"]))
-    lv = frost_level(FROST[m])
-    out += [f'<g transform="translate({w - 78} 21)">{"".join(icon(STATUS[lv]["icon"], 0, 0, STATUS[lv]["stroke"], 14))}</g>', text(w - 16, 33, f"{FROST[m]} %", 14, 700, anchor="end")]
-    return [group(f"mes-{MONTHS[m].lower()}", out, x, y)], h
-
-
-def plan_mobile():
-    w = MOBILE[0]
-    pad, fw = 16, w - 32
-    b = mobile_top(w, pad, False, "recorte-pestanas-cal-2")
-    b += banner(pad, 444, fw, "Mejores meses para sembrar papa", muestra.BEST_SOWING_TEXT, lines="Según el histórico de Samacá")
-    y = 556
-    b += [text(pad + 14, y, "Mes", 12, 700, SEC), text(pad + 118, y, "Sembrar", 12, 700, SEC), text(w - pad - 16, y, "Heladas", 12, 700, SEC, anchor="end")]
-    y += 12
-    for m in range(12):
-        row, rh = plan_month_row(pad, y, fw, m)
-        b += row
-        y += rh + 6
-    y += 14
-    d, dh = month_detail(pad, y, fw, "plan")
-    b += d
-    y += dh + 24
-    lg, lh = legend(pad, y, fw, mode="plan")
-    b += lg
-    return frame((w, y + lh + 50), b, P["niebla"])
 
 
 SCREENS = {
     "finca-03-calendario-mi-cultivo-escritorio": mine_desktop,
     "finca-03-calendario-mi-cultivo-movil": mine_mobile,
-    "finca-03-calendario-planear-escritorio": plan_desktop,
-    "finca-03-calendario-planear-movil": plan_mobile,
-    "consulta-04-calendario-sin-cuenta-escritorio": guest_desktop,
 }
 
 if __name__ == "__main__":
