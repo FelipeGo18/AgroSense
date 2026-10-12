@@ -2,11 +2,11 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
+import { FormScene } from "@/components/layout/FormScene";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useLogin, useSession } from "@/features/auth/session";
-import { AuthLayout } from "./AuthLayout";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -35,7 +35,7 @@ export function LoginPage() {
   const failed = login.error;
 
   return (
-    <AuthLayout mood="guide" signs={["Su finca lo espera"]}>
+    <FormScene mood="guide" signs={["Su finca lo espera"]}>
       <title>Entrar · AgroSense</title>
       <header>
         <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">Entrar</p>
@@ -90,6 +90,6 @@ export function LoginPage() {
       <p className="border-t-2 border-superficie-borde pt-2 text-[15px] leading-snug text-texto-secundario">
         Si olvida su contraseña, por ahora no se puede recuperar. No guardamos su correo ni su celular.
       </p>
-    </AuthLayout>
+    </FormScene>
   );
 }

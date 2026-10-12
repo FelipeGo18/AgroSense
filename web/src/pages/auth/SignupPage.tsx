@@ -2,12 +2,12 @@ import { useId, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
+import { FormScene } from "@/components/layout/FormScene";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { CONSENT_VERSION, useRegister, useSession } from "@/features/auth/session";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { AuthLayout } from "./AuthLayout";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -72,7 +72,7 @@ export function SignupPage() {
   };
 
   return (
-    <AuthLayout mood="celebrate" signs={["Sus lotes, guardados", "Su historial de siembras"]} wide>
+    <FormScene mood="celebrate" signs={["Sus lotes, guardados", "Su historial de siembras"]} wide>
       <title>Crear cuenta · AgroSense</title>
       <header>
         <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">
@@ -193,6 +193,6 @@ export function SignupPage() {
           <span aria-hidden="true">← </span>Volver a mis datos
         </button>
       )}
-    </AuthLayout>
+    </FormScene>
   );
 }
