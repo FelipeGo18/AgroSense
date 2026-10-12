@@ -110,7 +110,8 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Prueba: una señal desfavorable crítica nunca da verde
   - [ ] Prueba: con la oferta desfavorable y peso 0 en `supply`, `overall` puede dar verde mientras `overall_default` da amarillo
   - [ ] Prueba: una helada crítica con peso 0 en `frost` sigue dando rojo
-  - [ ] Prueba: si `water` u `supply` cuentan y no están disponibles, la luz es `not_evaluable` y la acción `review_data`; con peso 0 en la que falta, la luz no queda en `not_evaluable`
+  - [ ] Prueba: si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción `review_data`; con peso 0 en el agua, la luz no queda en `not_evaluable`
+  - [ ] Prueba: sin datos de `supply`, la luz y el orden de las ventanas salen igual que con peso 0 en la oferta, y la limitación lo dice
   - [ ] Prueba: con peso 0 en `water` y sin que sea crítica, la regla 3 no exige `water` `favorable`: la luz es `green` si ninguna señal que cuenta es `unfavorable`
   - [ ] Prueba: `frost`, `heat`, `soil` o `market` sin datos no cambian la luz y aparecen en las limitaciones; `not_applicable` tampoco la cambia
 - **Reglas que aplican:** R1, R2, R3, R4, R5

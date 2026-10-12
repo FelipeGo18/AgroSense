@@ -22,7 +22,7 @@ Lee `CLAUDE.md`, `specs/01-reglas.md` completo y `specs/02-contratos.md`.
 1. **Casos de referencia primero (HU-121).** Escribes de 8 a 12 combinaciones con el **resultado esperado antes de que exista el código**, incluidos un verde, un rojo, un «no evaluable», un rojo por helada crítica, un suelo desfavorable que no basta para rojo y una exclusión de rotación por pH (HU-121). Se automatizan en pytest y corren en Docker, en local y en CI.
 2. **Pruebas mínimas obligatorias.**
    - Una señal desfavorable crítica nunca da verde.
-   - Si `water` u `supply` cuentan y no están disponibles, la luz es `not_evaluable` y la acción es `review_data`; con peso 0 en la que falta, la luz no queda en `not_evaluable`.
+   - Si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción es `review_data`; con peso 0 en el agua, no. Sin datos de `supply`, se calcula sin ella, como si su peso fuera 0.
    - Un cultivo no apto para la zona da `red` y `rotate`, sin ventanas.
    - Una ventana de alto riesgo nunca entra en `best_windows`, por alto que sea su promedio; y una ventana con un factor muy malo nunca queda arriba. Peso 0 en oferta cambia la luz; una helada crítica con peso 0 sigue en rojo.
    - Heladas, calor, suelo o mercado sin datos no cambian la luz y aparecen en `limitations`.

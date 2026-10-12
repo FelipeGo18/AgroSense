@@ -65,7 +65,7 @@ Cada señal tiene un peso de 0 a 5. AgroSense propone los suyos (`weights.yaml`)
 Se aplican dos veces: con los pesos del agricultor (`overall`) y con los de AgroSense (`overall_default`). «Señal que cuenta» es la de peso mayor que 0, más los riesgos graves de clima.
 
 0. **Aptitud.** Si la altitud del municipio queda fuera del rango de la ficha, el cultivo no es apto: luz `red`, acción `rotate`, sin ventanas. Si la ficha no tiene ese rango con fuente, la aptitud es `insufficient_data`: no bloquea y va a las limitaciones.
-1. Si `water` u `supply` cuentan y no están disponibles, la luz es `not_evaluable` y la acción es `review_data`.
+1. Si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción es `review_data`. Sin datos de `supply`, se calcula sin ella, como si su peso fuera 0.
 2. Si alguna señal que cuenta es `unfavorable` y crítica, o dos señales que cuentan son `unfavorable`, la luz es `red`.
 3. Si ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
 4. En cualquier otro caso, la luz es `yellow`.
@@ -105,7 +105,8 @@ Con `other_window` la respuesta trae las mejores ventanas; con `rotate`, hasta t
 | El mismo cultivo y la misma lluvia, en un suelo arenoso | El suelo retiene menos agua: el déficit puede ser mayor y la calificación del agua, más baja |
 | Oferta con dos fuentes que no coinciden | Se ven juntas; la de `sources.yaml` calcula la señal y la otra va «para contrastar» |
 | Una ventana con el mejor promedio y una señal crítica | Se marca `high_risk`: va después de las demás y no entra en `best_windows` |
-| Sin datos de agua o de oferta, en una señal que cuenta | Luz `not_evaluable`, acción `review_data`. Con peso 0 en la señal que falta, la luz no queda en `not_evaluable` |
+| Sin datos de agua, cuando el agua cuenta | Luz `not_evaluable`, acción `review_data`. Con peso 0 en el agua, la luz no queda en `not_evaluable` |
+| Sin datos de oferta | Se calcula sin la oferta, como si su peso fuera 0; queda en las limitaciones |
 
 ## Cómo se ordenan las ventanas
 
