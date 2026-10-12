@@ -20,8 +20,8 @@ export function Preview({ animated }: { animated: boolean }) {
           {PREVIEW.summary}
         </SectionHeader>
         <div className="mt-10">
-          <Card bodyClassName="gap-8 lg:flex-row lg:items-start">
-            <div data-reveal="left" className="flex flex-col items-start gap-4 lg:flex-1">
+          <Card bodyClassName="gap-8 xl:flex-row xl:items-start">
+            <div data-reveal="left" className="flex flex-col items-start gap-4 xl:flex-1">
               <ExampleLabel>cifras de muestra</ExampleLabel>
               <TrafficLightBadge light="yellow" />
               <h3 className="text-[clamp(1.75rem,2.5vw,2.125rem)]">{PREVIEW.action}</h3>
@@ -30,7 +30,7 @@ export function Preview({ animated }: { animated: boolean }) {
                 Pruébelo con su municipio
               </ButtonLink>
             </div>
-            <ul aria-label="Las seis señales del ejemplo" className="flex flex-col gap-2.5 lg:w-[560px] lg:shrink-0">
+            <ul aria-label="Las seis señales del ejemplo" className="flex flex-col gap-2.5 xl:w-[560px] xl:shrink-0">
               {PREVIEW.signals.map((signal) => {
                 const missing = signal.tone === "insufficient_data";
                 return (

@@ -53,7 +53,7 @@ export function Questions({ animated }: { animated: boolean }) {
         <SectionHeader stop="preguntas" title="Cuatro preguntas, cuatro respuestas claras">
           Para su lote o, sin cuenta, para su municipio.
         </SectionHeader>
-        <ol className="mt-10 grid gap-6 md:grid-cols-2">
+        <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
           {QUESTIONS.map((question, i) => (
             <li key={question.title} data-reveal className="flex">
               <Card className="flex min-h-[280px] grow flex-col" bodyClassName="grow">
@@ -64,9 +64,9 @@ export function Questions({ animated }: { animated: boolean }) {
                   {question.title}
                 </h3>
                 <p className="text-sm">{question.text}</p>
-                <div className="mt-auto flex items-end justify-between gap-4 pt-4">
+                <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2 pt-4">
                   <QuestionIcon icon={question.icon} />
-                  <Mascot mood="idle" seed={question.seed} size={104} decorative />
+                  <Mascot mood="idle" seed={question.seed} size={104} decorative className="ml-auto" />
                 </div>
               </Card>
             </li>
