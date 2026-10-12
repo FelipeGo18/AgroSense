@@ -59,7 +59,7 @@ export function MascotSlot({ id, mood = "idle", className = "" }: MascotSlotProp
   }, [slots, id, mood]);
   return (
     <div ref={el} data-mascot-slot={id} aria-hidden="true" className={`pointer-events-none aspect-[300/250] shrink-0 ${className}`}>
-      {(!guide || !guide.flying) && <Mascot mood={mood} decorative className="size-full" />}
+      {(!guide || !guide.flying) && <Mascot mood={mood} lively decorative className="size-full" />}
     </div>
   );
 }
@@ -154,6 +154,7 @@ export function MascotFlyer() {
         <Mascot
           mood={pose.mood}
           size={BASE}
+          lively
           decorative
           className={`h-auto w-full ${pose.docked ? "drop-shadow-[0_4px_0_rgb(30_42_58/0.25)]" : ""}`}
         />

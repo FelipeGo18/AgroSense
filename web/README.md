@@ -43,8 +43,10 @@ src/
 
 Carpetas que se crean cuando haga falta su primera pieza, no antes:
 
-- `src/api/`: tipos generados del OpenAPI (`openapi-typescript`), el cliente y las respuestas simuladas de MSW (HU-013).
-- `src/features/<dominio>/` (`auth`, `lots`, `strategies`…): lo que es de un solo dominio y lo usan varias páginas: sus hooks de datos, su estado y sus componentes.
+- `src/api/`: el cliente (`client.ts`) y los tipos del contrato (`schema.d.ts`), que se generan con `npm run api:types` con la API arriba; nunca se escriben a mano. Faltan las respuestas simuladas de MSW (HU-013).
+- `src/features/<dominio>/` (`auth` ya existe; `lots`, `strategies`… cuando lleguen): lo que es de un solo dominio y lo usan varias páginas: sus hooks de datos, su estado y sus componentes.
+
+Para entrar y crear cuenta hace falta la API: `docker compose up app` en la raíz. Vite le pasa lo que llegue a `/api`, así la web y la API comparten origen. La web debe abrirse en `http://localhost:5173` (el origen que la API acepta, `WEB_ORIGINS`).
 
 Dónde va cada cosa:
 
@@ -60,11 +62,12 @@ Dónde va cada cosa:
 
 Todas salen de `app/paths.ts`: los enlaces se arman con `PATHS`, nunca con texto suelto.
 
-| Dirección                                                                                     | Qué es                                                        |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `/`                                                                                           | Inicio (HU-173)                                               |
-| `/consultar`, `/mi-finca`, `/como-funciona`, `/entrar`, `/crear-cuenta`, `/politica-de-datos` | Diseñadas, aún sin programar: muestran una página que lo dice |
-| `/pruebas`, `/kit`, `/recorrido/1`, `/recorrido/2`, `/recorrido/3`                            | Pruebas de la fase 0. No se enlazan desde la app              |
+| Dirección                                                          | Qué es                                                        |
+| ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `/`                                                                | Inicio (HU-173)                                               |
+| `/entrar`, `/crear-cuenta`                                         | Entrar y crear cuenta (HU-162, HU-163)                        |
+| `/consultar`, `/mi-finca`, `/como-funciona`, `/politica-de-datos`  | Diseñadas, aún sin programar: muestran una página que lo dice |
+| `/pruebas`, `/kit`, `/recorrido/1`, `/recorrido/2`, `/recorrido/3` | Pruebas de la fase 0. No se enlazan desde la app              |
 
 ## Reglas de React de este proyecto
 
