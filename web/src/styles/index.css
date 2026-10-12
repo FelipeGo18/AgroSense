@@ -115,9 +115,3 @@
     animation: none;
   }
 }
-/* Lo mismo cuando la persona eligió «Reducir movimiento» en Mi cuenta (lib/motion.ts). */
-.reduce-motion .mascot-float,
-.reduce-motion .mascot .mascot-eyes,
-.reduce-motion .mascot-lively .mascot-arm-left {
-  animation: none;
-}
