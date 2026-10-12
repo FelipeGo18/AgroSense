@@ -47,6 +47,9 @@ export const routes: RouteObject[] = [
       { path: PATHS.home, element: <LandingPage /> },
       { path: PATHS.login, lazy: async () => ({ Component: (await import("@/pages/auth/LoginPage")).LoginPage }) },
       { path: PATHS.signup, lazy: async () => ({ Component: (await import("@/pages/auth/SignupPage")).SignupPage }) },
+      { path: PATHS.account, lazy: async () => ({ Component: (await import("@/pages/account/AccountPage")).AccountPage }) },
+      { path: PATHS.password, lazy: async () => ({ Component: (await import("@/pages/account/PasswordPage")).PasswordPage }) },
+      { path: PATHS.activity, lazy: async () => ({ Component: (await import("@/pages/account/ActivityPage")).ActivityPage }) },
       ...PENDING.map(pending),
       // Pruebas de la fase 0. Cada recorrido se carga aparte: trae sus propias escenas.
       { path: PATHS.lab, lazy: async () => ({ Component: (await import("@/pages/lab/LabIndexPage")).LabIndexPage }) },

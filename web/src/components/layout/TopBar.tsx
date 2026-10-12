@@ -16,6 +16,11 @@ const NAV = [
   { to: PATHS.howItWorks, label: "Cómo funciona" },
 ];
 
+const MEMBER = [
+  { to: PATHS.account, label: "Mi cuenta" },
+  { to: PATHS.activity, label: "Mi actividad" },
+];
+
 const GUEST = [
   { to: PATHS.login, label: "Entrar" },
   { to: PATHS.signup, label: "Crear cuenta" },
@@ -56,10 +61,11 @@ function MobileMenu() {
             </Dialog.Close>
           </div>
           <nav aria-label="Principal" className="mt-6 flex flex-col">
-            {[...NAV, ...(user ? [] : GUEST)].map((item) => (
+            {[...NAV, ...(user ? MEMBER : GUEST)].map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
+                end
                 onClick={() => change(false)}
                 className="py-3 font-titulos text-[26px] font-titulo focus-visible:outline-white aria-[current=page]:text-paleta-trigo"
               >
@@ -118,10 +124,14 @@ export function TopBar() {
           <SoundToggle />
           {user ? (
             <div className="hidden items-center gap-4 md:flex">
-              <span className="flex h-11 max-w-56 items-center gap-2 bg-superficie-panel-suave px-3 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)]">
+              <Link
+                to={PATHS.account}
+                aria-label={`Mi cuenta: ${user.display_name}`}
+                className="flex h-11 max-w-56 items-center gap-2 bg-superficie-panel-suave px-3 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)]"
+              >
                 <Mascot mood="idle" size={44} decorative />
                 <span className="truncate">{user.display_name}</span>
-              </span>
+              </Link>
               <button
                 type="button"
                 onClick={() => logout.mutate()}

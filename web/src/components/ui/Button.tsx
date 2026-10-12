@@ -3,7 +3,7 @@ import { Link, type LinkProps } from "react-router";
 import { Plate } from "./Plate";
 import { Spinner } from "./Spinner";
 
-type Variant = "primary" | "secondary";
+type Variant = "primary" | "secondary" | "danger";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -15,6 +15,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const VARIANTS: Record<Variant, { fill: string; side: string; ink: string }> = {
   primary: { fill: "var(--color-accion-primaria)", side: "var(--color-accion-primaria-borde)", ink: "text-texto-sobre-oscuro" },
   secondary: { fill: "var(--color-accion-secundaria)", side: "var(--color-accion-secundaria-borde)", ink: "text-texto-principal" },
+  // Para lo que no se puede deshacer, como borrar la cuenta.
+  danger: { fill: "var(--color-paleta-rojo)", side: "var(--color-semaforo-rojo-borde)", ink: "text-texto-sobre-oscuro" },
 };
 
 const BLOCK = "plate-button relative inline-flex h-[58px] min-w-tactil-minimo items-start justify-center px-6 font-bold outline-none";

@@ -1,32 +1,38 @@
 import type { ReactNode } from "react";
+import region from "../../../../design/paisaje/svg/a3-region.svg?raw";
 import vereda from "../../../../design/paisaje/svg/a6-vereda.svg?raw";
 import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
 import { Mascot, type MascotMood } from "@/components/mascot/Mascot";
 import { Card } from "@/components/ui/Card";
 
-// El paisaje es nuestro (design/paisaje/build_paisaje.py): se inserta tal cual y se recorta para cubrir la pantalla.
-const BACKDROP = vereda.replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" ');
+// Los paisajes son nuestros (design/paisaje/build_paisaje.py): se insertan tal cual y se recortan para cubrir la pantalla.
+const cover = (svg: string) =>
+  svg.replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" ');
+const SCENES = { vereda: cover(vereda), region: cover(region) };
 
-export interface AuthLayoutProps {
+export interface FormSceneProps {
   children: ReactNode;
+  /** El paisaje de fondo: la vereda (entrar y crear cuenta) o la región (la cuenta). */
+  scene?: keyof typeof SCENES;
   /** Gesto de la mascota que acompaña el formulario. */
   mood: MascotMood;
   /** Letreros junto a la mascota, en pantallas anchas. */
-  signs: string[];
+  signs?: string[];
   /** Tarjeta ancha, de dos columnas: para el formulario largo de crear cuenta. */
   wide?: boolean;
 }
 
 /**
- * Entrar y crear cuenta: el paisaje de la vereda, la tarjeta del formulario y, al lado, la mascota.
+ * Un formulario de una sola tarea (entrar, crear cuenta, cambiar la contraseña): un paisaje de fondo, la tarjeta del
+ * formulario y, al lado, la mascota.
  * El formulario cabe entero en la primera pantalla, sin hacer scroll; el pie de página queda debajo.
  */
-export function AuthLayout({ children, mood, signs, wide = false }: AuthLayoutProps) {
+export function FormScene({ children, scene = "vereda", mood, signs = [], wide = false }: FormSceneProps) {
   return (
     <>
       <TopBar />
-      <div aria-hidden="true" className="fixed inset-0 -z-10" dangerouslySetInnerHTML={{ __html: BACKDROP }} />
+      <div aria-hidden="true" className="fixed inset-0 -z-10" dangerouslySetInnerHTML={{ __html: SCENES[scene] }} />
       {/* El espacio de abajo es para los cerros del pie de página, que suben sobre el paisaje. */}
       <main className="mx-auto flex min-h-svh max-w-[1440px] items-start gap-8 px-3 pt-[104px] pb-36 md:px-12 md:pt-[104px] md:pb-40 lg:px-24">
         <div className={`relative w-full ${wide ? "lg:max-w-[880px]" : "md:max-w-[480px]"}`}>

@@ -6,6 +6,9 @@ export const PATHS = {
   howItWorks: "/como-funciona",
   login: "/entrar",
   signup: "/crear-cuenta",
+  account: "/mi-cuenta",
+  password: "/mi-cuenta/contrasena",
+  activity: "/mi-cuenta/actividad",
   dataPolicy: "/politica-de-datos",
   // Páginas de prueba de la fase 0: no se enlazan desde la app; se entra escribiendo la dirección.
   lab: "/pruebas",
