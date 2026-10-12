@@ -1,7 +1,7 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import { PATHS } from "@/app/paths";
 import { Earth, type EarthFrame } from "@/components/globe/Earth";
 import { useScroll } from "@/components/layout/SmoothScroll";
@@ -11,10 +11,18 @@ import { GLOBE_CREDIT } from "../content";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-/** Dónde va la Tierra: a la derecha en pantallas anchas y asomando por abajo en las angostas. Al bajar, se acerca. */
-function earthFrame(w: number, h: number, p: number): EarthFrame {
+/**
+ * Dónde va la Tierra: a la derecha en pantallas anchas y asomando por abajo en las angostas. Al bajar, se acerca.
+ * En las angostas `copyBottom` es donde termina el texto con sus botones: la Tierra nunca empieza antes, así no pasa
+ * por debajo de los botones aunque la pantalla sea baja o el texto ocupe más líneas.
+ */
+function earthFrame(w: number, h: number, p: number, copyBottom: number): EarthFrame {
   const near = p * p * (3 - 2 * p);
-  if (w < 768) return { cx: w / 2, cy: h * (0.87 - 0.05 * near), r: Math.min(w * 0.525, h * 0.3) * (1 + 0.2 * near) };
+  if (w < 768) {
+    const r = Math.min(w * 0.525, h * 0.3);
+    const top = Math.max(h * 0.87 - r, copyBottom + 20);
+    return { cx: w / 2, cy: top + r - h * 0.05 * near, r: r * (1 + 0.2 * near) };
+  }
   return { cx: w * (0.736 - 0.02 * near), cy: h * 0.556, r: Math.min(h * 0.367, w * 0.25) * (1 + 0.28 * near) };
 }
 
@@ -24,7 +32,13 @@ function earthFrame(w: number, h: number, p: number): EarthFrame {
  */
 export function Hero({ animated }: { animated: boolean }) {
   const root = useRef<HTMLElement>(null);
+  const copy = useRef<HTMLDivElement>(null);
   const progress = useRef(0);
+  // `offsetTop` y `offsetHeight` no cambian con la animación (solo se mueve con transform): dan el borde de abajo del texto.
+  const frame = useCallback(
+    (w: number, h: number, p: number) => earthFrame(w, h, p, copy.current ? copy.current.offsetTop + copy.current.offsetHeight : 0),
+    [],
+  );
   const { scrollTo } = useScroll();
 
   useGSAP(
@@ -52,18 +66,23 @@ export function Hero({ animated }: { animated: boolean }) {
   );
 
   return (
-    <section id="inicio" ref={root} aria-labelledby="inicio-titulo" className={animated ? "relative h-[160svh]" : "relative"}>
-      <div className="sticky top-0 h-svh min-h-[680px] overflow-hidden bg-linear-to-b from-[#0B1226] to-[#1B3358] text-texto-sobre-oscuro">
-        <Earth progress={progress} frame={earthFrame} still={!animated} className="absolute inset-0" />
+    <section
+      id="inicio"
+      ref={root}
+      aria-labelledby="inicio-titulo"
+      className={animated ? "relative h-[max(160svh,calc(680px+60svh))]" : "relative"}
+    >
+      <div className="sticky top-0 min-h-svh overflow-hidden bg-linear-to-b from-[#0B1226] to-[#1B3358] text-texto-sobre-oscuro md:h-svh md:min-h-[680px]">
+        <Earth progress={progress} frame={frame} still={!animated} className="absolute inset-0" />
         {/* Esta capa no recibe el puntero: así se puede agarrar la Tierra, que está debajo. Solo el texto y los botones lo reciben. */}
-        <div className="pointer-events-none relative mx-auto flex h-full max-w-[1440px] flex-col px-5 pt-[clamp(104px,21vh,200px)] md:px-12 lg:px-24">
-          <div data-hero-copy className="pointer-events-auto flex w-full flex-col items-start sm:w-auto sm:self-start">
+        <div className="pointer-events-none relative mx-auto flex h-full min-h-svh max-w-[1440px] flex-col px-5 pt-[clamp(104px,21vh,200px)] pb-28 md:min-h-0 md:px-12 md:pb-0 lg:px-24">
+          <div ref={copy} data-hero-copy className="pointer-events-auto flex w-full flex-col items-start sm:w-auto sm:self-start">
             <h1
               id="inicio-titulo"
               tabIndex={-1}
               data-section-title
               data-hero-in
-              className="text-[clamp(3.5rem,8.4vw,7.5rem)] leading-none outline-none"
+              className="text-[clamp(2.75rem,14.5vw,3.5rem)] leading-none outline-none md:text-[clamp(3.5rem,8.4vw,7.5rem)]"
             >
               AgroSense
             </h1>
@@ -74,7 +93,7 @@ export function Hero({ animated }: { animated: boolean }) {
               ¿Qué sembrar y en qué orden? Le mostramos estrategias de rotación con datos del satélite y reglas que se pueden explicar.
               Usted decide.
             </p>
-            <div data-hero-in className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-6">
+            <div data-hero-in className="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:gap-6">
               <ButtonLink to={PATHS.consult} className="sm:w-[300px]">
                 Consultar sin cuenta
               </ButtonLink>
@@ -86,7 +105,7 @@ export function Hero({ animated }: { animated: boolean }) {
           <MascotSlot
             id="inicio"
             mood="guide"
-            className="mt-5 w-[120px] self-end md:absolute md:top-[12.2%] md:left-[48.6%] md:mt-0 md:w-[clamp(160px,16.7vw,240px)]"
+            className="mt-5 w-[clamp(96px,30vw,120px)] self-end md:absolute md:top-[12.2%] md:left-[54%] md:mt-0 md:w-[clamp(160px,16.7vw,240px)]"
           />
         </div>
         <a
@@ -96,7 +115,7 @@ export function Hero({ animated }: { animated: boolean }) {
             event.preventDefault();
             scrollTo("preguntas");
           }}
-          className="absolute bottom-9 left-1/2 -translate-x-1/2 px-3 py-2 text-sm font-bold whitespace-nowrap [text-shadow:0_2px_0_rgb(11_18_38/0.7)] focus-visible:outline-white md:bottom-6 md:left-[39%]"
+          className="absolute bottom-9 left-5 w-44 py-2 text-left text-sm font-bold [text-shadow:0_2px_0_rgb(11_18_38/0.7)] focus-visible:outline-white md:bottom-6 md:left-[34%] md:w-auto md:-translate-x-1/2 md:px-3 md:text-center md:whitespace-nowrap lg:left-[39%]"
         >
           Baje para empezar el recorrido <span aria-hidden="true">↓</span>
         </a>
