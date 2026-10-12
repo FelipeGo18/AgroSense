@@ -15,22 +15,30 @@ estado: en curso
 
 **Resultado esperado:** Quien entra entiende en segundos qué es AgroSense y empieza a usarlo, con la mascota satélite en su versión estática. En P1, la mascota se anima y el paisaje refleja si en el municipio es de día o de noche, si llueve o si hay viento, sin que eso cambie ningún resultado.
 
-**Recorte del MVP (11 de octubre de 2026):** queda en P0 la pantalla de inicio sin 3D (HU-173), con la mascota en su versión estática ya diseñada. Pasaron a P1 el diseño final y las animaciones de la mascota (HU-171, HU-172) y el clima en vivo en la escena (HU-174 a HU-176).
+**Recorte del MVP (11 de octubre de 2026):** queda en P0 la pantalla de inicio sin 3D (HU-173), con la mascota en su versión 2D ya diseñada, que guía el recorrido volando entre paradas. Pasaron a P1 el diseño final y las animaciones de la mascota (HU-171, HU-172) y el clima en vivo en la escena (HU-174 a HU-176).
 
 ## Historias de usuario
 
 ### HU-173 · Pantalla de inicio
 
 - **Historia:** Como visitante, quiero entender en segundos qué es AgroSense y qué hace, para decidir si la uso.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] La mascota, en su versión estática (`Mascot` 2D), presenta qué es AgroSense y lo que hace: estrategias de rotación para su lote, la revisión de cada ciclo, el agua del plan y qué cambió en su zona
-  - [ ] Botones «Consultar sin cuenta» (lleva a la entrada de las estrategias, HU-214) y «Entrar / crear cuenta»
+  - [x] La mascota (`Mascot` 2D) presenta qué es AgroSense y lo que hace con cuatro preguntas: qué siembro y en qué orden (estrategias de rotación), si conviene cada siembra (la revisión de cada ciclo), cuánta agua va a necesitar (el agua del plan) y qué cambió en su zona
+  - [x] El inicio es un recorrido de paradas con scroll suave (GSAP y Lenis): portada, «Cuatro preguntas», «Así se revisa un ciclo» y «De dónde salen los datos». Se avanza con el scroll, con el enlace de cada parada o con los puntos del borde, que dicen en cuál va; al llegar, el foco queda en el título de la parada
+  - [x] La mascota guía el recorrido: cada parada le reserva un lugar y una sola mascota vuela de uno al siguiente; si el lugar no se ve, espera en una esquina. Lo que dice va escrito al lado (nunca es la única señal)
+  - [x] La Tierra gira de fondo en la portada (continentes reales, en un lienzo 2D); al bajar frena con la región piloto al frente y se acerca. Fuera de la pantalla deja de dibujarse
+  - [x] Botones «Consultar sin cuenta» y «Entrar». Mientras su pantalla no esté programada llevan a una página que lo dice; «Consultar sin cuenta» irá a la entrada de las estrategias (HU-214)
   - [ ] Habla de AgroSense, no del problema ni de NASA
-  - [ ] Sin escena 3D: la pantalla es 2D (HU-158)
-  - [ ] Usable a 360 px y con «reducir movimiento»
+  - [x] Sin escena 3D ni three.js: la pantalla es 2D (HU-158)
+  - [x] Usable a 360 px y con «reducir movimiento»: sin scroll suave, giro ni vuelo; cada parada muestra su mascota quieta
+  - [x] El resultado de muestra va rotulado como ejemplo (R5) y la señal sin datos no se pinta como riesgo (R1)
+  - [x] Ningún enlace sin destino: «Reportar un problema» (P1) y las redes sin dirección no se dibujan. Las direcciones de las redes salen de las variables `VITE_SOCIAL_*` (`web/.env`), no del código
+  - [x] Sonido de la interfaz con su control en la barra: arranca apagado, se prende y se quita con un botón que dice su estado, y la preferencia se recuerda en el navegador. Suena al prenderlo y al pasar de una parada a otra, y pone música de fondo: un archivo si `VITE_MUSIC_URL` lo indica o, si no, una melodía generada por la web. Con la pestaña escondida la música se calla. La página se entiende igual sin sonido
+  - [x] La Tierra se puede girar arrastrándola con el ratón o con el dedo (en táctil, el arrastre vertical sigue haciendo scroll); al soltarla retoma su giro
+  - [x] Las piezas de cada parada entran y salen con una animación sutil de GSAP, distinta en cada una: la portada llega de lado, las preguntas suben, el ejemplo entra por los dos lados y las fuentes aparecen creciendo. Con «reducir movimiento» no hay ninguna
 - **Reglas que aplican:** R5
-- **Notas:** Ajustada el 11 de octubre de 2026 al flujo del MVP (decisión 12). El registro de decisiones dice que el inicio «no habla de NASA»; con la NASA en el núcleo, nombrar los datos de la NASA en una línea del inicio queda por decidir (`docs/registro-de-decisiones.md`).
+- **Notas:** Programada el 11 de octubre de 2026 en `web/src/pages/landing/` desde el diseño de Figma (`design/pantallas/inicio.py`), con el recorrido, la mascota guía y la Tierra girando pedidos por Felipe. Ajustada el 11 de octubre de 2026 al flujo del MVP (decisión 12). El registro de decisiones dice que el inicio «no habla de NASA»; con la NASA en el núcleo, nombrar los datos de la NASA en una línea del inicio queda por decidir (`docs/registro-de-decisiones.md`).
 
 ### HU-171 · Diseño de la mascota satélite
 

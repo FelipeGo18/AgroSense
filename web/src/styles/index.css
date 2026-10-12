@@ -2,6 +2,15 @@
 /* Tokens de HU-152, generados por design/tokens/build_tokens.py */
 @import "../../../design/tokens/tailwind-theme.css";
 
+/* Colores de la portada y del pie que aún no están en tokens.json (design/pantallas/ui.py e inicio.py). */
+@theme {
+  --color-pie-tierra: #3b2a20;
+  --color-pie-tinta: #f6eedf;
+  --color-pie-suave: #cdbba3;
+  --color-seccion-ejemplo: #e9f0e1;
+  --color-fila-senal: #f5f8f2;
+}
+
 @layer base {
   html {
     background: var(--color-superficie-fondo);

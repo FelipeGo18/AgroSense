@@ -83,7 +83,7 @@ La web del MVP es 2D: el modo ligero (HU-158) es el modo por defecto. Las pantal
 | **MVP · Ciclo de una estrategia** (HU-215) | Todos | Abre un ciclo, pasa al anterior o al siguiente; con cuenta, registra la siembra del primer ciclo | Reusa el resultado del diagnóstico (parte C): aptitud, semáforo con las dos luces, las seis señales, lo que más limita, razones y limitaciones. Debajo, el agua del plan del ciclo (déficit mensual y volumen en rangos, año normal y seco, rótulo de estimación), la humedad del suelo de la zona según POWER y SMAP lado a lado, y cuándo suele estar verde el campo (MODIS NDVI). Enlace a «Qué cambió en su zona» |
 | **MVP · Qué cambió en su zona** (HU-219) | Todos | Llega desde el resultado, desde un ciclo o desde el lote | Por mes, heladas, lluvia y temperatura máxima de dos periodos (por ejemplo, 1981–2000 y 2005–2024), con años y fuente, y las mejores ventanas de cada periodo lado a lado. Rótulo: «Así fue en la historia de su zona. No es un pronóstico». Un valor sin datos se ve «Sin datos suficientes» |
 | **MVP · Mapa del lote con capa de la NASA** (HU-211) | Con cuenta | Prende y apaga la imagen satelital y el NDVI mientras dibuja o mira su lote | El mapa de MapLibre con las capas WMTS de NASA GIBS, cada una con su producto, su fecha, su resolución y su atribución. Si GIBS no responde, sigue OpenStreetMap y lo dice |
-| A. Inicio | Todos | Conoce AgroSense; elige consultar sin cuenta o entrar | La mascota (estática en el MVP) presenta qué es AgroSense y lo que hace: estrategias de rotación, revisión de cada ciclo, agua del plan y qué cambió. Sin 3D |
+| A. Inicio | Todos | Conoce AgroSense bajando por un recorrido de paradas (con el scroll, con el enlace de cada parada o con los puntos del borde); elige consultar sin cuenta o entrar | La Tierra gira en el espacio y, al bajar, frena con la región piloto al frente. La mascota guía: vuela del lugar de una parada al de la siguiente y dice una frase en cada una. Sin three.js: la Tierra se dibuja en un lienzo 2D. Con «reducir movimiento» nada gira ni vuela. Presenta el flujo del MVP con cuatro preguntas (estrategias de rotación, revisión de cada ciclo, agua del plan y qué cambió). En la barra, el control de sonido, que arranca apagado |
 | B. Descenso (**P1**; en el MVP, un buscador de municipio en 2D) | Invitado y usuario nuevo | Busca su municipio (satélite) y lo ve entre sus vecinos (región). Con cuenta, al llegar al municipio dibuja su primer lote en el mapa real, le pone nombre, dice si tiene riego y registra el cultivo y la fecha de siembra (HU-164) | La cámara baja guiada por la mascota hasta el municipio o hasta el lote |
 | C. Consulta suelta: diagnóstico de una ventana (MVP; por mes. Los cultivos alternativos, las semanas y «Planear una siembra» son **P1**) | Todos | Elige cultivo, cuándo sembrar (un mes de los próximos doce y, si quiere, una semana) y si tiene riego; si quiere, mueve sus prioridades (un peso de 0 a 5 por señal, que empiezan en los de AgroSense, con «Volver al criterio de AgroSense»); para «qué sembrar después», sin cuenta elige a mano el cultivo anterior | Si el cultivo no se da en su zona, la pantalla lo dice con su razón y ofrece elegir otro. Si se da: acción sugerida primero; luego el semáforo de esa ventana de siembra con sus prioridades y, si el de AgroSense da otra luz, las dos lado a lado («Con sus prioridades: verde · Con el criterio de AgroSense: amarillo»); las seis señales (agua, heladas, calor, suelo, oferta y mercado) con su calificación de 0 a 100, cuáles no cuentan con sus prioridades y «Lo que más limita»; las fuentes de un indicador juntas, con la usada marcada y las demás «para contrastar»; razones, limitaciones y gráficas. Con la acción «otra ventana», las mejores ventanas de los próximos doce meses y el acceso a «Planear una siembra». Con «rotar», hasta tres cultivos alternativos que en esa ventana salen bien en clima y tienen mejor oferta. Ranking de rotaciones con desglose. Rótulo: «Es información para decidir. La decisión es suya» |
 | D. Mi finca (MVP: una sola zona, sin selector; la finca temporal es **P1**) | Con cuenta (inicio de quien vuelve); sin cuenta, la finca temporal | Con cuenta: recorre sus lotes, cambia de zona y abre un lote. Sin cuenta: registra área y porcentaje por cultivo | El mapa real con sus lotes, cada uno con sus cultivos y etapas; sin cuenta, la finca temporal con su plan de agua |
@@ -204,7 +204,7 @@ La escena refleja la condición aproximada de ahora en el municipio (decisión 7
 - **La NASA se ve en pantalla.** Cada resultado nombra su producto (POWER, IMERG, NASADEM, MODIS, SMAP) y el mapa del lote lleva la capa GIBS. De POWER se dice que es un reanálisis.
 - **La humedad del suelo y el verdor son de la zona,** no del lote: llevan su resolución (R10).
 - **La oferta es valor agregado:** una señal más dentro del ciclo, nunca la portada.
-- **2D por defecto.** La escena 3D, el descenso, el lote vivo y las animaciones de la mascota son P1.
+- **2D por defecto.** La escena 3D, el descenso, el lote vivo y las animaciones de la mascota por partes (HU-172) son P1. El inicio sí tiene recorrido con scroll (GSAP y Lenis), la Tierra girando en un lienzo 2D y la mascota volando entre paradas: no usan three.js y se apagan con «reducir movimiento».
 
 1. **El dato manda.** Semáforo, acción, razones, limitaciones y cifras van en HTML legible por encima del canvas, nunca dibujados dentro de la escena 3D.
 2. **El 3D es una mejora.** Sin WebGL, en modo ligero o con «reducir movimiento», la app funciona completa en 2D.
@@ -251,19 +251,36 @@ Fijar versiones exactas al crear `web/`.
 | 3D | three.js con React Three Fiber y drei | Low-poly con sombreado plano es barato de renderizar y es la estética buscada |
 | Animación | GSAP (ScrollTrigger, SplitText, Flip) con `@gsap/react` | Línea de tiempo precisa para cámara, scroll y UI; GSAP es gratuito con todos sus plugins |
 | Scroll | Lenis | Scroll suave que se integra con R3F y ScrollTrigger |
+| Rutas | React Router (modo de datos: `createBrowserRouter`), con cada página cargada aparte | Páginas con dirección propia, parámetros (`/lote/:id`) y rutas protegidas por sesión sin escribirlo a mano. Las direcciones viven en `web/src/app/paths.ts` |
 | Estado | Zustand (escena y cámara) y TanStack Query (API) | Zustand comparte estado entre DOM y canvas sin re-render de todo el árbol |
 | UI | Tailwind y componentes propios en estilo diorama low-poly (`web/src/components/`, pieza base `Plate`); primitivas de Radix solo donde hagan falta (diálogos, menús) | Control total de la silueta biselada; Radix aporta accesibilidad en lo complejo |
 | Gráficas | SVG propio animado con GSAP | Pocas gráficas (agua de la ventana, área sembrada, calendario de agua) y control total del estilo |
-| Audio (P1) | Howler.js | Ambiente y efectos de interfaz con control de volumen y silencio |
+| Audio | Efectos de interfaz y música de fondo con Web Audio (`web/src/lib/sound.ts`), sin dependencias, con un solo control en la barra (`SoundToggle`). La música es un archivo si `VITE_MUSIC_URL` lo indica; si no, una melodía generada. Howler.js queda para el ambiente por escena (P1) | El sonido entra ya con la opción de quitarlo; el ambiente necesita assets con licencia |
 | Sesión | Cookie de sesión de la API (sin librería extra) | Registro e inicio de sesión con usuario y contraseña contra `/api/v1/auth` |
 | Datos | `openapi-typescript` y MSW | Igual que el resto del proyecto: tipos del contrato y respuestas simuladas |
 | Assets 3D | glTF comprimido con `gltf-transform` | Un solo formato liviano |
-| Tierra del inicio | Continentes reales de Natural Earth 1:110m (paquete `world-atlas`, dominio público), facetados como el kit y con el color de cada faceta tomado de la imagen Blue Marble de la NASA. En 3D, una icosfera con React Three Fiber que gira; en modo ligero, la misma Tierra en SVG con proyección ortográfica de `d3-geo`. En reposo gira de oeste a este; al bajar frena con la región piloto al frente (hoy Colombia, supuesto hasta que el reto confirme la región, decisión 11) y empieza el descenso | Fiel a la geografía real y ligada a los datos de la NASA, sin salir del estilo low-poly. Diseño en `design/globo/` |
+| Tierra del inicio | Continentes reales de Natural Earth 1:110m (paquete `world-atlas`, dominio público), facetados como el kit y con el color de cada faceta tomado de la imagen Blue Marble de la NASA. `design/globo/build_globo.py` exporta la malla a `web/src/assets/globe.json` y la web la gira y la proyecta en un lienzo 2D (`components/globe/Earth.tsx`), sin three.js ni `d3-geo`; la versión 3D con React Three Fiber es P1. En reposo gira de oeste a este; al bajar frena con la región piloto al frente (hoy Colombia, supuesto hasta que el reto confirme la región, decisión 11) y empieza el descenso | Fiel a la geografía real y ligada a los datos de la NASA, sin salir del estilo low-poly. Diseño en `design/globo/` |
 | Mapa del lote | MapLibre GL JS con Terra Draw (adaptador de MapLibre) para dibujar el contorno; mapa base OpenStreetMap (OpenFreeMap) y capas WMTS de NASA GIBS (imagen satelital y NDVI, HU-211) | Dibujar el lote sobre el mundo real y centrar en el municipio, y que la NASA se vea en pantalla. Licencias abiertas y sin clave de API para el mapa base; las capas, su resolución y las condiciones de uso de GIBS se verifican en HU-211 |
 | Diseño | Figma (conectado por el MCP TalkToFigma) | Moodboard, tokens, componentes y pantallas |
 | Calidad | ESLint, Prettier y Vitest; las pruebas corren en Docker | Configuración mínima y el mismo entorno para todos |
 | Pruebas de scroll | `playwright-core` con el Chrome del equipo (`npm --prefix web run test:scroll`). Solo en la fase 0 y fuera de Docker y de CI | Los recorridos con GSAP y Lenis dependen de tiempos reales de cuadro: scroll brusco, táctil, teclado y cambio de tamaño no se pueden comprobar con Vitest |
 | Lenguaje | TypeScript 6.0 | `typescript-eslint` aún no soporta la 7; se sube cuando lo haga |
+
+### Carpetas de `web/`
+
+Páginas en `pages/` y piezas reutilizables en `components/`. El detalle y las reglas de React del proyecto están en `web/README.md`.
+
+| Carpeta | Qué va |
+|---|---|
+| `src/app/` | Arranque, rutas (`routes.tsx`) y direcciones (`paths.ts`) |
+| `src/pages/<página>/` | Una pantalla con dirección propia: solo compone. Sus tramos y sus textos viven con ella |
+| `src/components/` | Lo que usan dos páginas o más: `ui/` (el kit), `layout/` (barra, pie, scroll suave), `mascot/` y `globe/` |
+| `src/hooks/` y `src/lib/` | Lógica sin JSX: con React y sin React |
+| `src/api/` y `src/features/<dominio>/` | Tipos del contrato y respuestas simuladas; lo propio de un dominio (cuentas, lotes, estrategias). Se crean con su primera pieza |
+
+Las páginas de prueba de la fase 0 (el kit y los tres recorridos) están en `pages/lab/`. No se enlazan desde la app: se entra escribiendo la dirección (`/pruebas`, `/kit`, `/recorrido/1` a `/recorrido/3`).
+
+Un enlace a una pantalla diseñada que aún no está programada lleva a una página que lo dice (`pages/pending/`), para que ningún control quede sin función.
 
 **Descartado por ahora:** Recharts (cuesta adaptarlo al estilo), MapLibre para la vista regional (la cubre el descenso; MapLibre sí entra para dibujar el lote), Next.js y Astro (no hay servidor Node en el despliegue).
 

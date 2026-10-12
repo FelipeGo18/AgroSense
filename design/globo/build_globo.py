@@ -8,7 +8,7 @@
 
     curl -o design/globo/fuente/blue-marble-200412.jpg       https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73909/world.topo.bathy.200412.3x5400x2700.jpg
     node design/globo/muestrear.mjs        # una vez: crea fuente/blue-marble-720x360.rgb (fuente/ no va a git)
-    python design/globo/build_globo.py     # escribe svg/globo-*.svg
+    python design/globo/build_globo.py     # escribe svg/globo-*.svg y web/src/assets/globe.json (la Tierra que gira en la web)
 """
 
 import json
@@ -319,7 +319,37 @@ FRAMES = (  # el globo gira de oeste a este: la longitud al frente baja con el t
     ("globo-3-colombia", -74, 5, "3 · Colombia al frente, con la región piloto"),
 )
 
+def export_web():
+    """La misma malla, como datos para que la web la dibuje girando (web/src/components/globe/Earth.tsx).
+    Coordenadas en la esfera unidad multiplicadas por 10 000 y redondeadas: x a la derecha, y al norte, z hacia la cámara
+    con el meridiano 0 al frente. La web solo gira y proyecta; no recorta ni muestrea nada."""
+    q = lambda v: [round(c * 10000) for c in v]  # noqa: E731
+    flat = lambda vs: [c for v in vs for c in q(v)]  # noqa: E731
+    colors, land = [], []
+    for n, color, piece, _ in mesh():
+        if color not in colors:
+            colors.append(color)
+        land.append([colors.index(color), q(n), flat(to_vec(x, y) for x, y in piece)])
+    colombia = [flat(to_vec(x, y) for x, y in outer) for outer, _ in topo_polygons("countries-110m.json", "countries", keep=COLOMBIA_ID)]
+    data = {
+        "source": "Contornos: Natural Earth 1:110m. Color: NASA Blue Marble Next Generation (diciembre de 2004).",
+        "scale": 10000,
+        "ocean_color": OCEAN,
+        "light": [round(c, 4) for c in norm(LIGHT)],
+        "ocean": [flat(tri) for tri in ocean_faces()],
+        "colors": colors,
+        "land": land,
+        "outline": colombia,
+        "pilot": {"lon": PILOTO[0], "lat": PILOTO[1], "vec": q(to_vec(*PILOTO))},
+    }
+    target = ROOT / "web" / "src" / "assets" / "globe.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8", newline="\n")
+    print("globe.json", target.stat().st_size // 1024, "KB ·", len(land), "facetas de tierra ·", len(data["ocean"]), "de mar ·", len(colors), "colores")
+
+
 if __name__ == "__main__":
+    export_web()
     out = DIR / "svg"
     out.mkdir(exist_ok=True)
     for name, lon0, lat0, _ in FRAMES:
