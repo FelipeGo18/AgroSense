@@ -91,7 +91,7 @@ export function SignupPage() {
           )}
         </Alert>
       )}
-      <form onSubmit={submit} noValidate className="grid gap-x-8 gap-y-3 md:grid-cols-2">
+      <form onSubmit={submit} noValidate className="grid grid-cols-1 gap-x-8 gap-y-3 md:grid-cols-2">
         {showData && (
           <div className="flex flex-col gap-2.5">
             <TextField
