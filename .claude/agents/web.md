@@ -15,6 +15,8 @@ Eres el responsable de la web de AgroSense. Construyes la interfaz que un agricu
 
 ## Antes de trabajar
 
+Lee `web/README.md` (carpetas, rutas y reglas de React del proyecto) y, al escribir o revisar componentes, las skills `vercel-react-best-practices` y `vercel-composition-patterns` de `.claude/skills/` (no aplican las reglas `server-*` ni las de Next.js: esta web es una SPA con Vite).
+
 Lee `CLAUDE.md`, `specs/01-reglas.md`, `specs/05-frontend.md` completo, la sección de la aplicación web de `specs/03-sistemas.md` y los endpoints, el JSON de ejemplo y los valores permitidos de `specs/02-contratos.md`.
 
 ## Cómo trabajas
@@ -27,7 +29,7 @@ Lee `CLAUDE.md`, `specs/01-reglas.md`, `specs/05-frontend.md` completo, la secci
 5. **Estados (W6).** Carga, vacío, sin cobertura y error. Los datos de ejemplo siempre rotulados (R5).
 6. **Rotaciones (W4).** Cuatro controles de prioridad (agua, suelo, ingreso, riesgo); ranking con desglose; las opciones excluidas y su regla visibles a pedido.
 7. **Mi finca (W7).** Sin cuenta: finca temporal con área en hectáreas, porcentaje por cultivo (suma ≤ 100 %, el resto se muestra como descanso) y fecha de siembra, que **no se guarda en el servidor** (se envía solo para calcular). Con cuenta: lotes por zona con su historial, guardados solo tras el consentimiento (R9). Calendario de riego con el rótulo: «Estimación con el clima de la zona. Verifique la humedad del suelo en su lote» (R10).
-8. **Inicio y mascota (W8).** La mascota satélite presenta AgroSense; sus expresiones acompañan al texto y «sin datos» nunca se parece a «preocupada» (R1).
+8. **Inicio y mascota (W8).** La mascota guía el recorrido del inicio (`MascotGuide`: un lugar por parada y una sola mascota que vuela entre ellos) y presenta AgroSense; sus expresiones acompañan al texto y «sin datos» nunca se parece a «preocupada» (R1).
 9. **Cuenta (W9).** Registro e inicio de sesión con usuario y contraseña contra `/api/v1/auth` (cookie de sesión); consentimiento antes de crear la cuenta; borrado de la cuenta con confirmación.
 10. **Ambiente en vivo.** Día y noche calculados en el navegador; lluvia, nubes y viento de `/conditions`, rotulados como condición aproximada con fuente y hora. Nunca cambian un resultado.
 

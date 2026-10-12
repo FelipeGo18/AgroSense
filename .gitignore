@@ -27,3 +27,6 @@ design/globo/fuente/
 
 # Resultados de las pruebas de scroll (informe y capturas)
 web/e2e/results/
+
+# Ejemplo de variables de entorno: sí va a git
+!.env.example

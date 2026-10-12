@@ -60,7 +60,7 @@ Detalle en `docs/decisiones.md`. Las decisiones puntuales (servicios, estilo, al
 
 ## Stack
 
-Python 3.12 con `uv` · Polars · GeoPandas/Shapely · FastAPI + Pydantic v2 · PostgreSQL con SQLAlchemy 2 + Alembic · autenticación propia (Argon2 y sesión en cookie) · pytest · Ruff. Pruebas siempre en Docker. Web: React + TypeScript + Vite, Tailwind + Radix con estilo propio, React Three Fiber + drei, GSAP + Lenis, Zustand, TanStack Query, MSW, `openapi-typescript`, gráficas en SVG propio, Howler.js (P1). Datos en Parquet con `manifest.json`. Docker Compose con la imagen de la app y PostgreSQL. Backlog en GitHub Projects. Detalle y alternativas descartadas en `specs/04-stack.md`.
+Python 3.12 con `uv` · Polars · GeoPandas/Shapely · FastAPI + Pydantic v2 · PostgreSQL con SQLAlchemy 2 + Alembic · autenticación propia (Argon2 y sesión en cookie) · pytest · Ruff. Pruebas siempre en Docker. Web: React + TypeScript + Vite, React Router, Tailwind + Radix con estilo propio, React Three Fiber + drei, GSAP + Lenis, Zustand, TanStack Query, MSW, `openapi-typescript`, gráficas en SVG propio, Howler.js (P1). Datos en Parquet con `manifest.json`. Docker Compose con la imagen de la app y PostgreSQL. Backlog en GitHub Projects. Detalle y alternativas descartadas en `specs/04-stack.md`.
 
 ## Estructura prevista del repositorio
 

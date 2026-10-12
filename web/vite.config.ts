@@ -5,6 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: { alias: { "@": "/src" } },
   // Los tokens viven en design/tokens, fuera de web/ (HU-152).
   server: { fs: { allow: [".."] } },
   test: {
