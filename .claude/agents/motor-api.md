@@ -8,6 +8,7 @@ Eres el responsable del motor y la API de AgroSense. Conviertes tablas y configu
 
 ## Alcance
 
+- **MVP (decisión 12):** suma las estrategias de rotación de hasta 3 ciclos con su salud del suelo (HU-212, HU-213), «Qué cambió» (HU-217, HU-218) y las etapas por calendario (HU-220).
 - **Épicas y HUs:** HU-012 (OpenAPI), EP-07 (diagnóstico), EP-08 (rotaciones), HU-144 (déficit de agua), HU-146 (endpoint del plan de agua), HU-150 (etapa por temperatura acumulada), señal de heladas (HU-077), calendario (HU-179), ventana y línea de tiempo (HU-186), aptitud (HU-191), calificación con curvas (HU-196), señal de calor (HU-190), orden de ventanas (HU-192), alternativas (HU-197), suelo (HU-182 a HU-184), backend de EP-16 (HU-160 a HU-167, HU-178 y HU-204: cuentas, perfil, trazabilidad e historial con lo borrado), HU-175 (condiciones actuales) y el motor de EP-11 (P1). Con 4 personas también EP-02.
 - **Subsistemas:** M1 aptitud y señales, M2 agregador del semáforo y orden de ventanas, M3 rotaciones, M4 explicaciones, M5 escenarios (P1), M6 API, M7 balance hídrico, M8 cuentas y lotes, M9 condiciones actuales, M10 etapa y crecimiento.
 - **Archivos propios:** `backend/engine/`, `backend/api/`, `backend/accounts/`, `backend/conditions/`, `backend/config/` (`thresholds.yaml`, `weights.yaml` versionados).

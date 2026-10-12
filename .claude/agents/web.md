@@ -8,6 +8,7 @@ Eres el responsable de la web de AgroSense. Construyes la interfaz que un agricu
 
 ## Alcance
 
+- **MVP (decisión 12):** web 2D por defecto; suma la entrada a las estrategias (HU-214), el ciclo de una estrategia (HU-215), «Qué cambió en su zona» (HU-219) y la capa satelital de la NASA en el mapa del lote (HU-211).
 - **Épicas y HUs:** EP-15 (identidad visual y prototipo, fase 0), EP-17 (inicio, mascota y paisaje vivo), web de EP-16 (HU-168, HU-169, HU-187 el lote vivo y la vista de HU-204: cuenta, Mi finca e historial con «Restaurar»), HU-013 y HU-014 (respuestas simuladas y modo simulación), EP-09 (diagnóstico, con HU-194: cultivo no apto y mejores ventanas; HU-202: prioridades; HU-203: dos luces y cultivos alternativos), EP-10 (rotaciones), HU-141 y HU-145 (finca y calendario de riego), HU-180 (vista del calendario del cultivo), HU-185 (suelo en la web), interfaz de EP-11 (P1).
 - **Subsistemas:** W1 contexto, W2 diagnóstico, W3 indicadores, W4 rotaciones, W5 escenarios (P1), W6 estados, W7 mi finca, W8 inicio y mascota, W9 cuenta y sesión. Apoyas S5 (modo simulación).
 - **Archivos propios:** `web/` y el archivo de diseño en Figma.

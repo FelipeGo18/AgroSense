@@ -17,6 +17,8 @@ estado: en curso
 
 Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `web/` de este repositorio; la app del evento va en un repositorio nuevo (ver HU-004).
 
+**Recorte del MVP (11 de octubre de 2026):** quedan en P0 el kit visual y los tokens (HU-151 a HU-153, hechos) y el modo ligero 2D (HU-158), que es el modo por defecto de la web del MVP. La escena 3D, el descenso de cámara, el sistema de motion y el prototipo navegable (HU-154, HU-155, HU-156 y HU-159) pasaron a P1.
+
 ## Historias de usuario
 
 ### HU-151 · Moodboard y dirección visual
@@ -54,35 +56,37 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 ### HU-154 · Escena 3D del paisaje andino
 
 - **Historia:** Como agricultor, quiero reconocer un paisaje como el mío, para sentir que la herramienta habla de mi zona.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Terreno low-poly continuo con montañas, niebla y mosaico de parcelas; nada flota
   - [ ] Cultivos con etapas de crecimiento a partir de assets CC0 o propios
   - [ ] Todos los assets listados en `web/public/assets/CREDITS.md` con licencia
   - [ ] Cumple el presupuesto de la escena de `specs/05-frontend.md`
 - **Reglas que aplican:** R5
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
 
 ### HU-155 · Descenso de cámara del satélite al lote
 
 - **Historia:** Como jurado, quiero recorrer del satélite a la finca, para entender en segundos cómo los datos de NASA llegan a una decisión.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Cuatro niveles (satélite, región, municipio, finca) navegables con scroll y con toques
   - [ ] Storyboard escrito antes de animar
   - [ ] La mascota satélite guía el recorrido (HU-172)
   - [ ] Con `prefers-reduced-motion`, los niveles cambian sin recorrido de cámara
-- **Notas:** Guion en Figma («HU-155 · Recorrido A» y «Recorridos B y C»), generado desde `design/paisaje/`. Recorrido A aprobado: del satélite al lote en siete paradas, cuatro con interfaz y tres de tránsito. Dos alternativas en evaluación: B, el año del cultivo (el scroll avanza en el tiempo), y C, la travesía por la cordillera (el scroll avanza de lado). Los fondos son capas SVG generadas por código (`build_paisaje.py`), no imágenes ni video. Prototipos para probarlos: `npm --prefix web run dev` y abrir `/recorrido/1`, `/recorrido/2` y `/recorrido/3` (GSAP ScrollTrigger con scroll suave de Lenis; con «reducir movimiento» las paradas aparecen colocadas, sin viaje). El índice está en `/` y el kit en `/kit`. El recorrido 1 tiene diez escenas: entre versiones del mismo lugar la cámara se acerca y se funden; donde cambia el lugar se atraviesa una capa de nubes o niebla que tapa el corte. Falta elegir recorrido, la versión 3D y la prueba en móvil de gama media.
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP, la NASA se ve en pantalla con la capa satelital GIBS del mapa del lote (HU-211) y con las fuentes nombradas en cada resultado. Guion en Figma («HU-155 · Recorrido A» y «Recorridos B y C»), generado desde `design/paisaje/`. Recorrido A aprobado: del satélite al lote en siete paradas, cuatro con interfaz y tres de tránsito. Dos alternativas en evaluación: B, el año del cultivo (el scroll avanza en el tiempo), y C, la travesía por la cordillera (el scroll avanza de lado). Los fondos son capas SVG generadas por código (`build_paisaje.py`), no imágenes ni video. Prototipos para probarlos: `npm --prefix web run dev` y abrir `/recorrido/1`, `/recorrido/2` y `/recorrido/3` (GSAP ScrollTrigger con scroll suave de Lenis; con «reducir movimiento» las paradas aparecen colocadas, sin viaje). El índice está en `/` y el kit en `/kit`. El recorrido 1 tiene diez escenas: entre versiones del mismo lugar la cámara se acerca y se funden; donde cambia el lugar se atraviesa una capa de nubes o niebla que tapa el corte. Falta elegir recorrido, la versión 3D y la prueba en móvil de gama media.
 
 ### HU-156 · Sistema de motion
 
 - **Historia:** Como equipo, quiero un sistema de animación con duraciones, curvas y patrones definidos, para que todo se mueva con el mismo ritmo.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Tokens de duración y curva documentados y usados en código
   - [ ] Patrones de entrada, salida, respuesta al toque y cambio de estado
   - [ ] Animaciones deterministas (función del tiempo de la línea de tiempo)
   - [ ] Revisión por un crítico distinto de quien construyó
   - [ ] Skill del proyecto `agrosense-motion` creada con este método
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP, las transiciones de la web 2D usan solo cambios de estado simples.
 
 ### HU-157 · Audio de ambiente e interfaz
 
@@ -98,14 +102,16 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 - **Historia:** Como agricultor con un celular sencillo o poca señal, quiero que la app funcione rápido aunque no muestre el paisaje 3D, para usarla en el campo.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Sin WebGL o con fps bajo, pasa sola a una versión 2D con la misma información
-  - [ ] Interruptor manual de modo ligero
+  - [ ] **En el MVP la web es 2D por defecto:** todas las pantallas del flujo (inicio, entrada, estrategias, ciclo, qué cambió, lote y cuenta) funcionan completas sin WebGL
+  - [ ] Cuando exista la escena 3D (P1), sin WebGL o con fps bajo pasa sola a la versión 2D con la misma información, y hay un interruptor manual
+  - [ ] Respeta «reducir movimiento»
   - [ ] Cumple el JS inicial y el LCP de `specs/05-frontend.md`
+- **Notas:** Desde el 11 de octubre de 2026 el modo ligero 2D es el modo por defecto de la web del MVP (decisión 12).
 
 ### HU-159 · Prototipo navegable con datos de ejemplo
 
 - **Historia:** Como equipo, quiero un prototipo navegable de diagnóstico, rotaciones y finca, para probar el estilo con el flujo real.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Recorre inicio, descenso, consulta y Mi finca con respuestas simuladas del contrato (modo simulación, HU-014)
   - [ ] Funciona como invitado y como usuario simulado con varios lotes
@@ -115,3 +121,4 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - [ ] Usable a 360 px
 - **Reglas que aplican:** R1, R5, R9, R10
 - **Contrato que toca:** respuestas de ejemplo de `specs/02-contratos.md` (sin cambiarlo)
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Las pantallas del MVP se diseñan y aprueban en Figma (`specs/05-frontend.md`, «Pantallas por diseñar del MVP»).
