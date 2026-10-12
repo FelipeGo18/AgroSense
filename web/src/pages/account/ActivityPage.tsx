@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useActivity, type ActivityItem } from "@/features/auth/session";
+import { useEntrance, useRowsEntrance } from "@/hooks/useEntrance";
 import { AccountShell, LINK } from "./AccountShell";
 import { OUTCOME_LABEL, describe, keptSince, when, who, type Outcome } from "./activity";
 
@@ -58,60 +59,64 @@ function Event({ item }: { item: ActivityItem }) {
 
 /** Mi actividad (HU-178). Diseño: design/pantallas/actividad.py. */
 export function ActivityPage() {
+  return <AccountShell>{() => <Activity />}</AccountShell>;
+}
+
+function Activity() {
   const activity = useActivity();
   const items = activity.data?.pages.flatMap((page) => page.items) ?? [];
+  const page = useEntrance<HTMLDivElement>();
+  const rows = useRowsEntrance<HTMLOListElement>(items.length);
   return (
-    <AccountShell>
-      {() => (
-        <div className="mx-auto max-w-[1008px] px-3 pt-[104px] md:px-6">
-          <title>Mi actividad · AgroSense</title>
-          <Card bodyClassName="gap-3 md:px-4 md:pt-2">
-            <Link to={PATHS.account} className={`${LINK} self-start text-[15px]`}>
-              <span aria-hidden="true">‹ </span>Mi cuenta
-            </Link>
-            <h1 className="text-[clamp(1.875rem,3vw,2.375rem)]">Mi actividad</h1>
-            <p className="text-[15px] text-texto-secundario">
-              Lo que se hizo con su cuenta y sus lotes, también lo que hizo soporte. Se guarda 180 días y no muestra lo que escribió.
-            </p>
-            <ul aria-label="Qué significa cada marca" className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
-              {(Object.keys(OUTCOME_LABEL) as Outcome[]).map((outcome) => (
-                <li key={outcome} className="flex items-center gap-2">
-                  <OutcomeMark outcome={outcome} />
-                  {OUTCOME_LABEL[outcome]}
-                </li>
+    <div ref={page} className="mx-auto max-w-[1008px] px-3 pt-[104px] md:px-6">
+      <div data-enter>
+        <title>Mi actividad · AgroSense</title>
+        <Card bodyClassName="gap-3 md:px-4 md:pt-2">
+          <Link to={PATHS.account} className={`${LINK} self-start text-[15px]`}>
+            <span aria-hidden="true">‹ </span>Mi cuenta
+          </Link>
+          <h1 className="text-[clamp(1.875rem,3vw,2.375rem)]">Mi actividad</h1>
+          <p className="text-[15px] text-texto-secundario">
+            Lo que se hizo con su cuenta y sus lotes, también lo que hizo soporte. Se guarda 180 días y no muestra lo que escribió.
+          </p>
+          <ul aria-label="Qué significa cada marca" className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+            {(Object.keys(OUTCOME_LABEL) as Outcome[]).map((outcome) => (
+              <li key={outcome} className="flex items-center gap-2">
+                <OutcomeMark outcome={outcome} />
+                {OUTCOME_LABEL[outcome]}
+              </li>
+            ))}
+          </ul>
+          {activity.isPending && <p role="status">Cargando su actividad…</p>}
+          {activity.isError && <Alert>No pudimos cargar su actividad. Intente de nuevo en un momento.</Alert>}
+          {activity.isSuccess && items.length === 0 && <p>Todavía no hay actividad en su cuenta.</p>}
+          {items.length > 0 && (
+            <ol ref={rows} aria-label="Actividad, de lo más reciente a lo más antiguo">
+              {items.map((item) => (
+                <Event key={item.event_id} item={item} />
               ))}
-            </ul>
-            {activity.isPending && <p role="status">Cargando su actividad…</p>}
-            {activity.isError && <Alert>No pudimos cargar su actividad. Intente de nuevo en un momento.</Alert>}
-            {activity.isSuccess && items.length === 0 && <p>Todavía no hay actividad en su cuenta.</p>}
-            {items.length > 0 && (
-              <ol aria-label="Actividad, de lo más reciente a lo más antiguo">
-                {items.map((item) => (
-                  <Event key={item.event_id} item={item} />
-                ))}
-              </ol>
-            )}
-            {activity.hasNextPage && (
-              <Button
-                variant="secondary"
-                className="self-start sm:w-[280px]"
-                loading={activity.isFetchingNextPage}
-                loadingText="Cargando…"
-                onClick={() => void activity.fetchNextPage()}
-              >
-                Ver más antiguos
-              </Button>
-            )}
-            <p className="text-[13px] text-texto-secundario">Lo anterior al {keptSince()} ya se borró.</p>
-            <p className="text-[15px]">
-              ¿Ve algo que no hizo?{" "}
-              <Link to={PATHS.password} className={LINK}>
-                Cambie su contraseña
-              </Link>
-            </p>
-          </Card>
-        </div>
-      )}
-    </AccountShell>
+            </ol>
+          )}
+          {activity.hasNextPage && (
+            <Button
+              variant="secondary"
+              className="self-start sm:w-[280px]"
+              loading={activity.isFetchingNextPage}
+              loadingText="Cargando…"
+              onClick={() => void activity.fetchNextPage()}
+            >
+              Ver más antiguos
+            </Button>
+          )}
+          <p className="text-[13px] text-texto-secundario">Lo anterior al {keptSince()} ya se borró.</p>
+          <p className="text-[15px]">
+            ¿Ve algo que no hizo?{" "}
+            <Link to={PATHS.password} className={LINK}>
+              Cambie su contraseña
+            </Link>
+          </p>
+        </Card>
+      </div>
+    </div>
   );
 }

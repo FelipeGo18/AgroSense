@@ -1,15 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-import { Outlet, ScrollRestoration, createBrowserRouter, type RouteObject } from "react-router";
+import { Outlet, ScrollRestoration, createBrowserRouter, useLocation, type RouteObject } from "react-router";
 import { LandingPage } from "@/pages/landing/LandingPage";
 import { PATHS } from "./paths";
 
 function Root() {
   // Un cliente por aplicación montada: guarda en memoria lo que responde la API (por ejemplo, quién tiene la sesión).
   const [client] = useState(() => new QueryClient());
+  const { pathname } = useLocation();
   return (
     <QueryClientProvider client={client}>
-      <Outlet />
+      {/* Cada página entra con un fundido corto (styles/index.css). */}
+      <div key={pathname} className="page-fade">
+        <Outlet />
+      </div>
       <ScrollRestoration />
     </QueryClientProvider>
   );

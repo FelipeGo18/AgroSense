@@ -111,6 +111,28 @@ describe("Mi cuenta (HU-160, HU-163)", () => {
     expect(calls.some((call) => call.key.startsWith("PATCH"))).toBe(false);
   });
 
+  it("el modo ligero se prende y se apaga, se recuerda en el navegador y quita el movimiento", async () => {
+    // Un equipo que no pide reducir movimiento: sin el modo ligero, el inicio tendría su recorrido.
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    fakeApi(ME);
+    open(PATHS.account);
+    const light = await screen.findByRole("switch", { name: "Modo ligero" });
+    expect(light).toHaveAttribute("aria-checked", "false");
+    await userEvent.click(light);
+    expect(light).toHaveAttribute("aria-checked", "true");
+    expect(localStorage.getItem("agrosense:modo-ligero")).toBe("1");
+    expect(document.documentElement).toHaveClass("modo-ligero");
+    await userEvent.click(light);
+    expect(light).toHaveAttribute("aria-checked", "false");
+    expect(localStorage.getItem("agrosense:modo-ligero")).toBe("0");
+    expect(document.documentElement).not.toHaveClass("modo-ligero");
+  });
+
   it("el sonido se prende y se apaga desde Mi cuenta, igual que con el botón de la barra", async () => {
     fakeApi(ME);
     open(PATHS.account);

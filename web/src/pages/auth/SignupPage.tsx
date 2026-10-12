@@ -1,13 +1,17 @@
-import { useId, useState, type FormEvent } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { useId, useRef, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
+import { celebrateThen } from "@/components/mascot/reactions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { CONSENT_VERSION, useRegister, useSession } from "@/features/auth/session";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -36,8 +40,28 @@ export function SignupPage() {
   // Los avisos de cada campo aparecen cuando la persona ya intentó seguir, no mientras escribe.
   const [tried, setTried] = useState(false);
   const [triedConsent, setTriedConsent] = useState(false);
+  // Al cambiar de paso, lo nuevo entra de lado: hacia adelante desde la derecha, de vuelta desde la izquierda.
+  const form = useRef<HTMLFormElement>(null);
+  const shownStep = useRef(step);
+  const animated = !useReducedMotion();
+  useGSAP(
+    () => {
+      const from = shownStep.current;
+      shownStep.current = step;
+      if (!animated || !narrow || from === step || !form.current) return;
+      gsap.from(form.current, {
+        x: step > from ? 36 : -36,
+        opacity: 0,
+        duration: 0.3,
+        ease: "power2.out",
+        clearProps: "transform,opacity",
+      });
+    },
+    { dependencies: [step] },
+  );
 
-  if (user) return <Navigate to={PATHS.farm} replace />;
+  // Quien acaba de crear su cuenta se queda un instante: la mascota celebra.
+  if (user && (register.isIdle || register.isError)) return <Navigate to={PATHS.farm} replace />;
 
   const errors = {
     displayName: displayName.trim() ? undefined : "Escriba cómo quiere que lo llamemos.",
@@ -67,12 +91,15 @@ export function SignupPage() {
     register.mutate(
       { display_name: displayName.trim(), username, password, consent_version: CONSENT_VERSION, consent_accepted: true },
       // Si el usuario ya existe, en pantallas angostas se vuelve al paso donde se corrige.
-      { onSuccess: () => navigate(PATHS.farm), onError: (error) => error instanceof ApiError && error.status === 409 && setStep(1) },
+      {
+        onSuccess: () => celebrateThen(() => navigate(PATHS.farm)),
+        onError: (error) => error instanceof ApiError && error.status === 409 && setStep(1),
+      },
     );
   };
 
   return (
-    <FormScene mood="celebrate" signs={["Sus lotes, guardados", "Su historial de siembras"]} wide>
+    <FormScene mood="celebrate" signs={["Sus lotes, guardados", "Su historial de siembras"]} wide rejected={failed}>
       <title>Crear cuenta · AgroSense</title>
       <header>
         <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">
@@ -91,7 +118,7 @@ export function SignupPage() {
           )}
         </Alert>
       )}
-      <form onSubmit={submit} noValidate className="grid grid-cols-1 gap-x-8 gap-y-3 md:grid-cols-2">
+      <form ref={form} onSubmit={submit} noValidate className="grid grid-cols-1 gap-x-8 gap-y-3 md:grid-cols-2">
         {showData && (
           <div className="flex flex-col gap-2.5">
             <TextField
