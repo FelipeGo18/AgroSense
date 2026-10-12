@@ -60,11 +60,17 @@ def dropdown(x, y, w, rows, active=0):
 
 # ---------- Portada ----------
 
-QUESTIONS = (
-    ("¿Cuándo conviene sembrar?", ["Un semáforo por fecha con seis señales:", "agua, heladas, calor, suelo, oferta y mercado."], "semaforo-verde", "germinada"),
-    ("¿Qué siembro después?", ["Rotaciones que cuidan el suelo, ordenadas", "según lo que a usted le importa."], "prioridad-3", "frijol"),
-    ("¿Cuánta agua va a necesitar?", ["Mes a mes: heladas y calor a vigilar,", "y el agua que faltaría, en rangos."], "rotulo-estimacion", "maiz"),
+QUESTIONS = (  # el flujo del MVP (decisión 12): estrategias, cada ciclo, agua del plan y qué cambió
+    ("¿Qué siembro y en qué orden?", ["Estrategias de rotación de hasta 3 ciclos, comparadas por agua,", "suelo, ingreso y riesgo según lo que a usted le importa."],
+     ["Estrategias de rotación de hasta 3 ciclos,", "comparadas por agua, suelo, ingreso y", "riesgo según lo que a usted le importa."], "prioridad-3", "germinada"),
+    ("¿Conviene cada siembra?", ["Un semáforo por ciclo con seis señales:", "agua, heladas, calor, suelo, oferta y mercado."],
+     ["Un semáforo por ciclo con seis señales:", "agua, heladas, calor, suelo, oferta y", "mercado."], "semaforo-verde", "frijol"),
+    ("¿Cuánta agua va a necesitar?", ["Mes a mes, el agua que faltaría en cada ciclo, en rangos.", "Es una estimación con el clima de la zona."],
+     ["Mes a mes, el agua que faltaría en cada", "ciclo, en rangos. Es una estimación con", "el clima de la zona."], "rotulo-estimacion", "maiz"),
+    ("¿Qué cambió en su zona?", ["Heladas, lluvia y calor de dos periodos de la historia,", "lado a lado. No es un pronóstico."],
+     ["Heladas, lluvia y calor de dos periodos", "de la historia, lado a lado.", "No es un pronóstico."], "heladas", "germinada"),
 )
+Q_H = {False: 880, True: 1550}  # alto de la sección: dos filas de dos tarjetas en escritorio; cuatro tarjetas en móvil
 
 SOURCES = (
     ("Clima", "NASA POWER", ["Lluvia, temperatura, heladas y", "calor de su municipio."]),
@@ -89,36 +95,47 @@ def hero(w, h, mobile):
     b += topbar(w)
     if mobile:
         b.append(text(20, 170, "AgroSense", 58, 600, WHITE, FONT_TITLE))
-        b += paragraph(20, 220, ["¿Cuándo conviene sembrar?", "Se lo mostramos con datos del", "satélite y reglas que se pueden", "explicar. Usted decide."], 22, 31, fill=WHITE)
-        b += button(20, 362, 350, "Consultar sin cuenta") + button(20, 434, 350, "Entrar", "secondary")
-        b += mascot(292, 498, 0.4, "vuelo")
-        b.append(text(195, h - 30, "Baje para empezar el descenso ↓", 16, 700, WHITE, anchor="middle"))
+        b += paragraph(20, 220, ["¿Qué sembrar y en qué orden?", "Le mostramos estrategias de", "rotación con datos del satélite y", "reglas que se pueden explicar.", "Usted decide."], 22, 31, fill=WHITE)
+        b += button(20, 392, 350, "Consultar sin cuenta") + button(20, 464, 350, "Entrar", "secondary")
+        b += mascot(292, 528, 0.4, "vuelo")
+        b += sound_toggle(w - 122, 18)
+        b.append(text(195, h - 30, "Baje para empezar el recorrido ↓", 16, 700, WHITE, anchor="middle"))
         b.append(text(195, h - 10, CREDITO_GLOBO, 11, fill="#C9D6E0", anchor="middle"))
     else:
         b.append(text(96, 300, "AgroSense", 120, 600, WHITE, FONT_TITLE))
-        b += paragraph(100, 372, ["¿Cuándo conviene sembrar?", "Se lo mostramos con datos del satélite", "y reglas que se pueden explicar. Usted decide."], 30, 42, fill=WHITE)
+        b += paragraph(100, 372, ["¿Qué sembrar y en qué orden?", "Le mostramos estrategias de rotación con datos", "del satélite y reglas que se pueden explicar. Usted decide."], 30, 42, fill=WHITE)
         b += button(100, 520, 300, "Consultar sin cuenta") + button(424, 520, 180, "Entrar", "secondary")
         b += mascot(700, 110, 0.8, "vuelo")
-        b.append(text(560, h - 36, "Baje para empezar el descenso ↓", 18, 700, WHITE, anchor="middle"))
+        b += sound_toggle(w - 260, 30)
+        b.append(text(560, h - 36, "Baje para empezar el recorrido ↓", 18, 700, WHITE, anchor="middle"))
         b.append(text(w - 32, h - 14, CREDITO_GLOBO, 13, fill="#C9D6E0", anchor="end"))
     return b
 
 
+def sound_toggle(x, y):
+    """Control de sonido de la barra: arranca apagado (specs/05-frontend.md). El altavoz tachado dice que está en silencio."""
+    body = [poly(chamfer(0, 0, 44, 44, 9), P["niebla"]),
+            poly([(11, 18), (17, 18), (25, 11), (25, 33), (17, 26), (11, 26)], P["noche"]),
+            f'<path d="M30 16 L38 28 M38 16 L30 28" stroke="{P["noche"]}" stroke-width="3" stroke-linecap="round"/>']
+    return [group("sonido-apagado", body, x, y)]
+
+
 def questions(y0, w, mobile):
-    b = [f'<rect y="{y0}" width="{w}" height="{1220 if mobile else 560}" fill="{P["niebla"]}"/>']
+    b = [f'<rect y="{y0}" width="{w}" height="{Q_H[mobile]}" fill="{P["niebla"]}"/>']
     pad = 20 if mobile else 96
-    b.append(text(pad, y0 + (80 if mobile else 110), "Tres preguntas," if mobile else "Tres preguntas, tres respuestas claras", 30 if mobile else 44, 600, font=FONT_TITLE))
+    b.append(text(pad, y0 + (80 if mobile else 110), "Cuatro preguntas," if mobile else "Cuatro preguntas, cuatro respuestas claras", 30 if mobile else 44, 600, font=FONT_TITLE))
     if mobile:
-        b.append(text(pad, y0 + 118, "tres respuestas claras", 30, 600, font=FONT_TITLE))
-    b.append(text(pad, y0 + (158 if mobile else 156), "Para cada cultivo y cada fecha de siembra, en su municipio.", 16 if mobile else 20, fill=SEC))
-    cw = 350 if mobile else 400
-    for i, (title, rows, piece, seed) in enumerate(QUESTIONS):
-        cx, cy = (pad, y0 + 200 + i * 330) if mobile else (pad + i * (cw + 24), y0 + 210)
+        b.append(text(pad, y0 + 118, "cuatro respuestas claras", 30, 600, font=FONT_TITLE))
+    b.append(text(pad, y0 + (158 if mobile else 156), "Para su lote o, sin cuenta, para su municipio.", 16 if mobile else 20, fill=SEC))
+    cw = 350 if mobile else (w - 2 * pad - 24) / 2
+    ch = 290 if mobile else 280
+    for i, (title, rows, rows_m, piece, seed) in enumerate(QUESTIONS):
+        cx, cy = (pad, y0 + 200 + i * 330) if mobile else (pad + (i % 2) * (cw + 24), y0 + 210 + (i // 2) * (ch + 34))
         c = [text(28, 54, f"{i + 1}", 34, 600, P["calabaza"], FONT_TITLE), text(64, 52, title, 20 if mobile else 24, 600, font=FONT_TITLE)]
-        c += paragraph(28, 96, rows if not mobile else [r for r in rows], 15 if mobile else 17, 24)
-        c.append(piece_icon(piece))
-        c.append(f'<g transform="translate({cw - 112} {186}) scale(0.32)">{"".join(seed_svg(seed))}</g>')
-        b += card(cx, cy, cw, 290, f"pregunta-{i + 1}") + [group(f"pregunta-{i + 1}-contenido", c, cx, cy)]
+        c += paragraph(28, 96, rows_m if mobile else rows, 15 if mobile else 17, 24)
+        c.append(piece_icon(piece, ch))
+        c.append(f'<g transform="translate({cw - 112:g} {ch - 104}) scale(0.32)">{"".join(seed_svg(seed))}</g>')
+        b += card(cx, cy, cw, ch, f"pregunta-{i + 1}") + [group(f"pregunta-{i + 1}-contenido", c, cx, cy)]
     return b
 
 
@@ -144,7 +161,7 @@ def preview(y0, w, mobile):
     h = 1320 if mobile else 720
     b = [f'<rect y="{y0}" width="{w}" height="{h}" fill="#E9F0E1"/>']
     pad = 20 if mobile else 96
-    b.append(text(pad, y0 + (80 if mobile else 100), "Así se ve una consulta", 30 if mobile else 44, 600, font=FONT_TITLE))
+    b.append(text(pad, y0 + (80 if mobile else 100), "Así se revisa un ciclo", 30 if mobile else 44, 600, font=FONT_TITLE))
     b += paragraph(pad, y0 + (118 if mobile else 144), ["Papa en Samacá, sembrando el 2 de agosto", "de 2027. Cifras de muestra."] if mobile else
                    ["Papa en Samacá, sembrando el 2 de agosto de 2027. Primero lo que conviene hacer; después, por qué. Cifras de muestra."], 16 if mobile else 20, 24, fill=SEC)
     cw = w - 2 * pad
@@ -179,13 +196,16 @@ def preview(y0, w, mobile):
     return b
 
 
-def piece_icon(piece):
-    """Pieza del kit en pequeño, como ícono de cada pregunta."""
+def piece_icon(piece, ch=290):
+    """Pieza del kit en pequeño, como ícono de cada pregunta. Va al pie de la tarjeta, de alto `ch`."""
+    dy = ch - 290
+    if piece == "heladas":  # el cristal de la señal de heladas
+        return f'<g transform="translate(28 {160 + dy}) scale(1.5)">{"".join(kind("heladas", 0, 0))}</g>'
     if piece == "rotulo-estimacion":  # gota facetada, como la del rótulo de estimación
-        return ('<g transform="translate(28 168) scale(2)"><polygon points="12,1 22,17 18,27 6,27 2,17" fill="#8FA9B8" stroke="#4A6576" stroke-width="2" stroke-linejoin="round"/>'
+        return (f'<g transform="translate(28 {168 + dy}) scale(2)"><polygon points="12,1 22,17 18,27 6,27 2,17" fill="#8FA9B8" stroke="#4A6576" stroke-width="2" stroke-linejoin="round"/>'
                 '<polygon points="12,1 22,17 18,27 12,27" fill="#4A6576"/></g>')
     markup = PIECES[piece]
-    return f'<g transform="translate(28 162) scale(0.7)">{markup[markup.index(">") + 1 : markup.rindex("</svg>")]}</g>'
+    return f'<g transform="translate(28 {162 + dy}) scale(0.7)">{markup[markup.index(">") + 1 : markup.rindex("</svg>")]}</g>'
 
 
 def seed_svg(seed):
@@ -221,7 +241,7 @@ def sources(y0, w, mobile):
 def landing(mobile=False):
     w = MOBILE[0] if mobile else DESKTOP[0]
     hero_h = 844 if mobile else 900
-    q_h = 1220 if mobile else 560
+    q_h = Q_H[mobile]
     p_h = 1320 if mobile else 720
     s_h = 1180 if mobile else 560
     foot, f_h = ui.footer(w, 0, mobile, above=P["cielo"])

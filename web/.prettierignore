@@ -2,3 +2,5 @@ dist
 node_modules
 package-lock.json
 e2e/results
+# Malla de la Tierra, generada por design/globo/build_globo.py
+src/assets/globe.json
