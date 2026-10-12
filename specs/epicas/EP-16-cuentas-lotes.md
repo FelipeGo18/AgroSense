@@ -76,11 +76,13 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-161 · Esquema de cuentas y migraciones
 
 - **Historia:** Como desarrollador, quiero las tablas `users`, `sessions`, `lots` y `seasons` con migraciones, para guardar cuentas de forma reproducible.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Tablas y columnas del contrato, con migraciones de Alembic
-  - [ ] PostgreSQL en Docker Compose con volumen persistente
-  - [ ] Borrar un usuario borra en cascada sus sesiones, lotes y temporadas y, cuando existan (P1), sus tickets y sus eventos de `activity_log`
+  - [x] Tablas y columnas del contrato, con migraciones de Alembic: `users`, `sessions`, `login_attempts`, `lots`, `seasons`, `support_tickets`, `activity_log` y `usage_daily`. Las migraciones son de toda la base de datos (`backend/db/migrations/`) y se numeran `1.1`, `1.2` … `1.9` y después `2.1`, con el primer número como carpeta (`1/1.1_…`); el número lo pone `python -m backend.db.revision`
+  - [x] PostgreSQL en Docker Compose con volumen persistente
+  - [x] Antes de aplicar o deshacer una migración se hace una copia de seguridad de la base de datos (`python -m backend.db.migrate`); si la copia falla, no se migra, y `alembic upgrade` directo se niega a correr
+  - [x] La base de datos solo cambia con migraciones que quedan en el repositorio; las pruebas fallan si los modelos cambian sin migración, si quedan dos migraciones finales o si una no se puede deshacer (`backend/README.md`)
+  - [x] Borrar un usuario borra en cascada sus sesiones, lotes y temporadas y, cuando existan (P1), sus tickets y sus eventos de `activity_log`
   - [ ] `municipality_id` y `crop_id` se validan contra el catálogo publicado
 - **Reglas que aplican:** R7, R9
 - **Contrato que toca:** base de datos de cuentas de `specs/02-contratos.md`
@@ -89,15 +91,20 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-162 · Autenticación
 
 - **Historia:** Como agricultor, quiero crear una cuenta e iniciar sesión de forma sencilla, para volver a mis lotes desde cualquier dispositivo.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] `POST /auth/register`, `/auth/login` y `/auth/logout` del contrato, con usuario y contraseña
-  - [ ] Contraseña guardada solo como hash Argon2; sesión en cookie `httpOnly`, `Secure` y `SameSite=Lax`, con el hash del token en `sessions`
-  - [ ] 409 si el usuario ya existe; 429 tras 5 intentos fallidos en 15 minutos; cerrar sesión invalida la sesión en la base de datos
-  - [ ] Los endpoints de cuenta responden 401 sin sesión válida
-  - [ ] Ninguna clave ni secreto en el repositorio
+  - [x] `POST /auth/register`, `/auth/login` y `/auth/logout` del contrato, con usuario y contraseña; `GET /me` y `DELETE /me`
+  - [x] Contraseña guardada solo como hash Argon2; sesión en cookie `httpOnly`, `Secure` y `SameSite=Lax`, con el hash del token en `sessions`
+  - [x] 409 si el usuario ya existe; 429 tras 5 intentos fallidos en 15 minutos; cerrar sesión invalida la sesión en la base de datos
+  - [x] Los endpoints de cuenta responden 401 sin sesión válida
+  - [x] Una petición que cambia datos con un `Origin` que no es el de la web responde 403
+  - [x] Ninguna clave ni secreto en el repositorio
+  - [x] La API sube siempre. Las cuentas solo se atienden con la base de datos arriba y el esquema en la última migración; si no, responden 503 (`accounts_database_down` o `accounts_migration_pending`), el log dice el motivo con las dos versiones, `GET /health` lo informa y la web sigue en modo sin cuenta
+  - [x] Pantallas de entrar y crear cuenta en la web (`web/src/pages/auth/`), contra la API real; con sesión, la barra muestra el nombre y «Cerrar sesión»
+  - [x] El formulario cabe entero en la primera pantalla, sin hacer scroll, en escritorio (desde 1366 × 700) y en móvil (desde 390 × 664); el pie de página va debajo. Crear cuenta va en dos columnas en escritorio y en dos pasos en móvil (datos y consentimiento). En teléfonos más bajos (360 × 640) el paso del consentimiento sí necesita un poco de scroll
+  - [ ] Revisión de seguridad
 - **Reglas que aplican:** R9
-- **Notas:** Recuperar la contraseña queda en P1. Revisión de seguridad obligatoria (agente `security`).
+- **Notas:** Recuperar la contraseña queda en P1. Revisión de seguridad obligatoria (agente `security`). Backend hecho el 12 de octubre de 2026 (`backend/api/auth.py`). Supuestos por confirmar: crear la cuenta deja la sesión abierta y responde el perfil (201); el usuario se compara en minúsculas y sin espacios al entrar; con la cuenta bloqueada una sesión ya abierta responde 401. El tope de intentos es por usuario y vive en la tabla `login_attempts` (sobrevive a un reinicio). Desde el 12 de octubre de 2026 se construye la versión completa, no el recorte del MVP: el backend también tiene `PATCH /me`, `POST /me/password` (HU-160), `GET /me/activity` y la bitácora `activity_log` (HU-178).
 
 ### HU-163 · Consentimiento y tratamiento de datos
 
@@ -105,11 +112,11 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Texto corto en español claro de qué se guarda y para qué, enlazado a la política de tratamiento de datos (Ley 1581 de 2012)
-  - [ ] Sin aceptar, no se crea la cuenta
-  - [ ] Se guarda `consent_version` y `consent_at`
+  - [x] Sin aceptar, no se crea la cuenta: la web no envía nada y la API responde 422
+  - [x] Se guarda `consent_version` y `consent_at`
   - [ ] La versión vigente es la **3**. Dice que se guarda la ubicación (polígono) de cada lote (HU-164), que soporte puede ver los lotes (HU-170), que se registra la actividad de la cuenta durante 180 días (HU-178) y, nuevo en la versión 3, si el lote tiene riego (`irrigated`, HU-164), que se guardan sus prioridades (`priorities`, HU-160) y que lo que siembra se suma sin su nombre a los totales de siembras de su municipio, solo con al menos 5 cuentas (HU-200)
-  - [ ] El registro envía `consent_version = 3` y la API guarda esa versión
-  - [ ] En el MVP el texto solo nombra lo que el MVP guarda: usuario, nombre, lotes con su ubicación y su riego, y siembras. El soporte, el registro de actividad y las prioridades en el perfil entran al texto cuando existan sus HU (HU-170, HU-178 y HU-160, P1); mientras tanto las prioridades se recuerdan en el navegador. Se intenta incluir HU-160 en el MVP: es la primera HU del P1 que se retoma si alcanza el tiempo
+  - [x] El registro envía `consent_version = 3` y la API guarda esa versión
+  - [x] (Sustituido el 12 de octubre de 2026: la web muestra el texto completo de la versión 3, porque se construye la versión final.) En el MVP el texto solo nombra lo que el MVP guarda: usuario, nombre, lotes con su ubicación y su riego, y siembras. El soporte, el registro de actividad y las prioridades en el perfil entran al texto cuando existan sus HU (HU-170, HU-178 y HU-160, P1); mientras tanto las prioridades se recuerdan en el navegador. Se intenta incluir HU-160 en el MVP: es la primera HU del P1 que se retoma si alcanza el tiempo
 - **Reglas que aplican:** R9
 - **Notas:** La versión 2 sumó el polígono, el soporte y la actividad (10 de octubre de 2026). La versión 3 suma el riego y las prioridades guardadas en el perfil; aprobada por Felipe el 11 de octubre de 2026. Las siembras como totales anónimos de oferta (HU-200, P1) entran en la versión 3 (`specs/01-reglas.md`, «Varias fuentes»). Por decidir: qué pasa con una cuenta que aceptó una versión anterior (por ejemplo, pedir que acepte la nueva al iniciar sesión). Mientras no haya usuarios reales, la 3 es la primera versión en producción. Supuesto por confirmar: la API responde 422 si `consent_version` no es la vigente (el contrato solo dice 422 sin `consent_accepted`). Revisión del texto legal por confirmar con la región: la Ley 1581 de 2012 es de Colombia (decisión 11). **Por decidir (11 de octubre de 2026):** con el recorte del MVP, la actividad de la cuenta (HU-178), el soporte (HU-170) y las prioridades en el perfil (HU-160) son P1; el texto de la versión 3 los nombra. Hay que decidir si el MVP publica un texto que solo diga lo que hace el MVP (y la versión 3 completa llega con el P1) o si se mantiene la versión 3 tal cual.
 

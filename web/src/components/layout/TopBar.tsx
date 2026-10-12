@@ -2,9 +2,11 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useState } from "react";
 import { Link, NavLink } from "react-router";
 import { PATHS } from "@/app/paths";
+import { Mascot } from "@/components/mascot/Mascot";
 import { ButtonLink } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { Plate } from "@/components/ui/Plate";
+import { useLogout, useSession } from "@/features/auth/session";
 import { useScroll } from "./SmoothScroll";
 import { SoundToggle } from "./SoundToggle";
 
@@ -22,6 +24,8 @@ const GUEST = [
 /** Menú a pantalla completa para pantallas angostas. */
 function MobileMenu() {
   const [open, setOpen] = useState(false);
+  const { user } = useSession();
+  const logout = useLogout();
   const { setLocked } = useScroll();
   const change = (next: boolean) => {
     setOpen(next);
@@ -52,7 +56,7 @@ function MobileMenu() {
             </Dialog.Close>
           </div>
           <nav aria-label="Principal" className="mt-6 flex flex-col">
-            {[...NAV, ...GUEST].map((item) => (
+            {[...NAV, ...(user ? [] : GUEST)].map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -63,7 +67,23 @@ function MobileMenu() {
               </NavLink>
             ))}
           </nav>
-          <p className="mt-6 border-t border-white/25 pt-6 text-sm text-paleta-niebla">Sin cuenta, lo que consulta no se guarda.</p>
+          {user ? (
+            <div className="mt-6 flex flex-col items-start gap-3 border-t border-white/25 pt-6">
+              <p className="text-sm text-paleta-niebla">Entró como {user.username}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  change(false);
+                  logout.mutate();
+                }}
+                className="min-h-11 font-bold text-paleta-trigo underline decoration-2 underline-offset-4 focus-visible:outline-white"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          ) : (
+            <p className="mt-6 border-t border-white/25 pt-6 text-sm text-paleta-niebla">Sin cuenta, lo que consulta no se guarda.</p>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -72,6 +92,8 @@ function MobileMenu() {
 
 /** Barra superior: una tabla biselada que flota sobre el paisaje. */
 export function TopBar() {
+  const { user } = useSession();
+  const logout = useLogout();
   return (
     <header className="pointer-events-none fixed inset-x-3 top-3 z-40 md:inset-x-8 md:top-5">
       <div className="pointer-events-auto relative mx-auto flex h-[62px] max-w-[1376px] items-start justify-between gap-6 pr-2 pl-4 md:h-[70px] md:pr-6 md:pl-6">
@@ -94,11 +116,27 @@ export function TopBar() {
         </div>
         <div className="relative flex h-[56px] items-center gap-2 md:h-16 md:gap-5">
           <SoundToggle />
-          <div className="hidden md:block">
-            <ButtonLink to={PATHS.login} variant="secondary" className="w-[140px]">
-              Entrar
-            </ButtonLink>
-          </div>
+          {user ? (
+            <div className="hidden items-center gap-4 md:flex">
+              <span className="flex h-11 max-w-56 items-center gap-2 bg-superficie-panel-suave px-3 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)]">
+                <Mascot mood="idle" size={44} decorative />
+                <span className="truncate">{user.display_name}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => logout.mutate()}
+                className="min-h-11 font-bold text-oscuro-oliva underline decoration-2 underline-offset-4"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          ) : (
+            <div className="hidden md:block">
+              <ButtonLink to={PATHS.login} variant="secondary" className="w-[140px]">
+                Entrar
+              </ButtonLink>
+            </div>
+          )}
           <MobileMenu />
         </div>
       </div>
