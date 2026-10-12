@@ -23,7 +23,7 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 **Analogía:** construir una casa con planos: electricista y plomero trabajan a la vez porque saben dónde irá cada pared.
 
-**Responsable:** Haider. Cambia el contrato o aprueba cada cambio.
+**Responsables:** Haider y Felipe. Cualquiera de los dos cambia el contrato o aprueba cada cambio.
 
 **HUs:** HU-011, HU-012, HU-013.
 
@@ -42,11 +42,11 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 ## 4. Reglas, no predicción
 
-**Qué es:** la herramienta no intenta adivinar el futuro (cosecha o precio). Mira el historial y aplica reglas claras. Entrega riesgo basado en lo que ya pasó, y siempre puede decir **por qué**.
+**Qué es:** la herramienta no intenta adivinar el futuro (cosecha, precio o clima). Mira el historial y aplica reglas claras. Entrega riesgo basado en lo que ya pasó, y siempre puede decir **por qué**. El diagnóstico de una ventana de siembra y el orden de las ventanas (decisión 9) dicen cómo le ha ido a esa época del año en la zona: la misma fecha en otro año da el mismo resultado de clima.
 
 **Por qué:**
 
-- EVA solo tiene datos desde 2019 con dos semestres por año: unos 12 puntos por municipio. Un modelo de aprendizaje automático con tan poco aprende mal y da números que parecen precisos pero no lo son.
+- EVA, la fuente de la oferta, solo tiene datos desde 2019 y publica dos semestres por año: unos 12 puntos por municipio. Un modelo de aprendizaje automático con tan poco aprende mal y da números que parecen precisos pero no lo son.
 - Las reglas se explican; un modelo de caja negra, no.
 - Es más honesto: nadie puede garantizar el precio futuro.
 
@@ -56,10 +56,12 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 **Qué es:** si una fuente no tiene información para el caso (por ejemplo, SIPSA no cubre la zona), la señal sale como «datos insuficientes». No se inventa un valor, no se usa el promedio de otra zona sin avisar y no se reemplaza por otra señal. Por eso cada señal tiene dos campos separados:
 
-- **Estado:** ¿hay datos? (`available` o `insufficient_data`)
+- **Estado:** ¿hay datos? (`available`, `insufficient_data` o `not_applicable` cuando la señal no aplica, por ejemplo heladas o calor en un cultivo que no los sufre)
 - **Nivel:** ¿qué tan bueno o malo es? (`favorable`, `moderate`, `unfavorable`). Sin datos, el nivel queda vacío.
 
 **Por qué:** «no sabemos» y «está mal» son cosas distintas. Mostrar la falta de datos como rojo haría creer que hay riesgo; rellenarla haría parecer sólida una recomendación que no lo es.
+
+Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decisión 9): una ficha sin rango de altitud con fuente deja la aptitud en «datos insuficientes» y no descarta el cultivo, y una señal sin datos no puntúa en el balance de una ventana.
 
 **Ejemplo de error que esta regla evita:** decir que, si SIPSA falla, el mercado se apoya solo en EVA. EVA no tiene precios; sería mezclar oferta con mercado.
 
@@ -67,13 +69,14 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 ## 6. Calcular no es guardar
 
-**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, las rotaciones y el plan de agua no guardan nada; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/lots`, `/seasons`) leen y escriben en la base de datos.
+**Qué es:** el usuario puede crear una cuenta y registrar uno o varios lotes, en una o varias zonas, con su historial de temporadas. Para eso hay una base de datos de cuentas. Pero el cálculo sigue igual: el diagnóstico, el calendario, las rotaciones y el plan de agua no guardan los datos de la finca ni quién consultó; la web les envía los datos del lote y recibe la respuesta. Solo los endpoints de cuenta (`/me`, `/me/password`, `/lots`, `/seasons`) guardan datos de una persona. En el P0 los de cálculo no escriben nada en la base de datos. Desde HU-170 (P1) suman 1 a un contador anónimo de uso (`usage_daily`: día, tipo de consulta, municipio y cultivo) para las métricas, sin nada que diga quién consultó; con `lot_id` pueden leer el polígono de un lote propio para calcular su suelo.
 
-- **Sin cuenta:** se puede consultar, pero nada sale del dispositivo.
-- **Con cuenta:** se guardan los lotes y su historial, con consentimiento registrado. El usuario puede borrar todo.
+- **Sin cuenta:** se puede consultar; los datos de la finca se envían solo para calcular y no se guardan en el servidor ni en sus logs. Cuando exista el contador (P1), la consulta solo se cuenta, sin datos de quien consulta.
+- **Métricas (P1, HU-170):** para saber cómo se usa la app, el servidor lleva un contador por día, tipo de consulta, municipio y cultivo (`usage_daily`), sin usuario, sesión, IP, hora, fecha de siembra, prioridades ni área. En el P0 no existe: los endpoints de cálculo no escriben nada. Decidido el 11 de octubre de 2026.
+- **Con cuenta:** se guardan los lotes, su historial y las prioridades del agricultor (en su perfil), con consentimiento registrado. El usuario puede borrar todo.
 - **Sin servicios externos:** PostgreSQL propio en Docker y autenticación propia con usuario y contraseña. No se pide correo ni celular. Si la base de datos falla, el modo sin cuenta sigue funcionando.
 
-**Analogía:** la calculadora de una ferretería y el cuaderno de fiado. La calculadora la usa cualquiera y no anota nada; el cuaderno solo existe si el cliente abrió su cuenta, y la puede cerrar cuando quiera.
+**Analogía:** la calculadora de una ferretería y el cuaderno de fiado. La calculadora la usa cualquiera y no anota de quién es la cuenta: solo cuenta cuántas veces se usó; el cuaderno solo existe si el cliente abrió su cuenta, y la puede cerrar cuando quiera.
 
 **Por qué:** el valor de «qué sembrar después» crece con el historial real del lote, y el progreso de un agricultor que vuelve necesita memoria. Separar cálculo y cuentas mantiene puro el motor (R6) y deja el cálculo igual de reproducible (R4).
 
@@ -95,6 +98,124 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 **Regla asociada:** R5 (se muestra la fuente y la hora de la condición) y R8.
 
+## 8. Suelo y heladas dentro del diagnóstico
+
+**Qué es:** el semáforo no tiene una sola señal de «clima»: tiene señales independientes, y las heladas y el suelo son dos de ellas. No son avisos aparte: son parte de la pregunta «¿conviene sembrar este cultivo aquí, en esta fecha?». Desde la decisión 9 las señales del P0 son seis: agua, heladas, calor, suelo, oferta y mercado.
+
+- **Heladas:** frecuencia histórica de heladas en las semanas en que el cultivo está en una etapa sensible, con la temperatura de NASA POWER corregida por la altitud del municipio. Pueden ser críticas: una helada frecuente en la floración da rojo aunque el agua alcance.
+- **Suelo:** pH de SoilGrids, del municipio o del lote dibujado. Nunca es crítico, porque es una estimación de 250 m; solo cuenta para rojo junto con otra señal desfavorable. La textura entra en el balance de agua (decisión 10) y el carbono orgánico alimenta las rotaciones; los dos se muestran.
+- **El mismo cálculo en todas partes:** el diagnóstico de una fecha y la ventana de esa fecha en el calendario dan las mismas señales, y el suelo del lote es el mismo en el diagnóstico, en las rotaciones y en la ficha del lote.
+
+**Por qué:** el reto («Field Shift») pide usar información local del suelo y rotaciones que mejoren la salud del suelo, y las heladas son el riesgo climático más dañino del altiplano. Ponerlas como avisos aparte del semáforo dejaría dos respuestas que se pueden contradecir.
+
+**Reglas asociadas:** R1, R2, R3 y R10.
+
+## 9. Ventanas de siembra, no semestres
+
+**Qué es:** la decisión se evalúa sobre una **ventana de siembra**: una fecha de siembra más lo que dura ese cultivo en campo, de la siembra a la cosecha estimada. Las ventanas se comparan por mes y, dentro de un mes, por semana.
+
+- **Primero, la aptitud.** Antes de mirar fechas, el motor comprueba que el cultivo se da en ese municipio: la altitud debe caer en el rango de su ficha. Si no (papa en la costa), la respuesta lo dice con su razón y no evalúa ventanas. Es un filtro, no una señal, y se decide solo por la altitud; trae una nota informativa de 0 a 100 que no entra al semáforo ni al orden.
+- **Seis señales por ventana.** Agua, heladas, calor, suelo, oferta y mercado. Cada una se mide contra lo que ese cultivo necesita o aguanta: un cultivo que pide poca agua rara vez sale mal en agua. En el P1 se suman exceso de lluvia, enfermedades por clima y clima de cosecha.
+- **El riego cuenta.** El agricultor dice si tiene riego. Con riego, la falta de lluvia no es un riesgo: la señal de agua informa cuánto riego haría falta.
+- **Un orden para comparar.** Las ventanas se ordenan primero por el factor que más limita y después por un balance de 0 a 100, ponderado por las prioridades del agricultor (de 0 a 5 por señal); el método está en la decisión 10. Una ventana con una señal crítica desfavorable es de **alto riesgo**: el balance no la rescata, va después de las demás y nunca entra entre las mejores.
+- **«Otra ventana» en lugar de «espere».** Si lo que sale mal es el clima de esa fecha, la acción es buscar otra ventana, y la respuesta trae las mejores de los próximos doce meses. Si es el suelo, la oferta o el mercado, o el cultivo no es apto, la acción es rotar.
+- **El semestre solo vive en la oferta.** EVA publica por semestre. La señal de oferta lee el semestre en que cae la fecha de siembra, y la respuesta dice cuál usó.
+
+**Analogía:** elegir cuándo viajar. No se pregunta «¿primer o segundo semestre?», sino «si salgo este día y el viaje dura tanto, ¿cómo suele estar el camino?». Y nadie elige por uno: se le muestran las opciones con lo que cada una gana y sacrifica.
+
+**Por qué:**
+
+- **Cada cultivo dura distinto.** Una lechuga dura dos meses y una papa cinco. Un semestre no describe a ninguna de las dos: cada una se evalúa en su propio tramo.
+- **No hay mes perfecto.** Casi siempre una fecha gana en una cosa y pierde en otra. Un solo «sí o no» por semestre esconde esa elección; el orden de ventanas la muestra.
+- **Decide el agricultor.** Él sabe qué le pesa más: el agua, la helada o el precio. Las prioridades ordenan las ventanas, pero el motor nunca esconde un riesgo crítico detrás de un buen balance.
+
+**Lo que no cambia:** sigue siendo historia de la zona, no pronóstico (decisión 4); una señal sin datos no puntúa ni se rellena (decisión 5); el semáforo se decide por reglas, nunca por el balance (R2).
+
+**Lo que exige:** fichas con rango de altitud y temperatura máxima con fuente (R8), datos de clima por semana, y que el balance hídrico esté listo antes que el diagnóstico.
+
+**Reglas asociadas:** R1, R2, R3, R4, R5 y R8. Detalle en `specs/01-reglas.md`. Aprobada por Felipe el 11 de octubre de 2026.
+
+## 10. El agricultor pondera; el riesgo grave no se negocia
+
+**Qué es:** cada señal de una ventana se califica de 0 a 100 y el agricultor puede decir cuánto le importa cada una. El método sigue el de la FAO para evaluar la aptitud de tierras para cultivos:
+
+- **Calificación por curva.** Cada señal recibe de 0 a 100 con una curva por cultivo, al estilo del modelo EcoCrop de la FAO: 100 dentro del rango óptimo del cultivo, 0 fuera de sus límites absolutos y una recta entre ambos. Los límites salen de la ficha del cultivo, con fuente. El nivel sale de la calificación (70 a 100 favorable, 40 a 69 moderado, 0 a 39 desfavorable).
+- **Primero lo que más limita.** Las ventanas se ordenan por su peor factor (la «ley del mínimo»): una ventana vale lo que vale la señal más baja entre las que cuentan. Solo entre ventanas con un factor limitante parecido (en la misma decena) decide el promedio ponderado por las prioridades.
+- **Prioridades del agricultor.** Cada señal tiene un peso de 0 a 5. AgroSense propone pesos por defecto (`weights.yaml`, con quién los definió y por qué) y el agricultor los cambia al consultar. Peso 0: la señal se muestra, pero no cambia la luz. Peso 4 o 5: un resultado moderado cuenta como desfavorable.
+- **El riesgo grave no se negocia.** Agua, heladas o calor críticos cuentan siempre, aunque el agricultor les ponga peso 0. Una ventana de alto riesgo nunca sube por un buen promedio.
+- **Dos luces cuando no coinciden.** Si los pesos del agricultor dan otra luz que los de AgroSense, se muestran las dos: «Con el criterio de AgroSense: amarillo · Con sus prioridades: verde».
+- **La oferta y el mercado sí cambian el semáforo.** Son señales como las demás. Si la acción es rotar, la respuesta sugiere cultivos aptos que en esa ventana salen bien en clima y tienen mejor oferta.
+- **El suelo pesa dos veces, sin repetirse.** El pH es la señal de suelo; la textura entra en el balance de agua, porque cambia cuánta agua retiene el suelo.
+- **Todo es informativo.** La decisión final es del agricultor.
+
+**Analogía:** una cadena se rompe por su eslabón más débil. Primero se mira el eslabón más débil de cada ventana; después, entre cadenas parecidas, se escoge la que más se ajusta a lo que el agricultor necesita. Y si un eslabón está roto (un riesgo grave), no importa cuánto le guste lo demás.
+
+**Por qué:**
+
+- **Un promedio esconde lo peor.** Una ventana con una helada muy probable y todo lo demás perfecto sacaría un buen promedio. La ley del mínimo evita que un buen promedio tape un factor que puede hacer perder la cosecha. Es como trabaja la FAO al evaluar la aptitud de tierras: lo que más limita define la clase.
+- **Cada agricultor pesa distinto.** Quien vende a un comprador fijo no se preocupa por la oferta de la zona; quien tiene un reservorio se preocupa menos por la lluvia. Un solo juego de pesos no sirve para todos.
+- **Pero no puede taparse el riesgo grave.** Un peso 0 a la helada no hace que deje de helar. Por eso el riesgo grave de clima cuenta siempre.
+- **Mostrar las dos luces es honesto.** El agricultor ve qué cambia por sus prioridades y qué diría AgroSense; nadie decide por él.
+
+**Lo que no cambia:** el semáforo se decide por reglas, no por promedio (R2); una señal sin datos no se califica ni se rellena (R1); todo es historia de la zona, no pronóstico (decisión 4).
+
+**Lo que exige:** fichas con rangos óptimos y límites absolutos con fuente (candidata FAO EcoCrop, por confirmar, R8); pesos por defecto con su porqué; un método con fuente para el agua que retiene cada textura; y que la respuesta diga qué pesos usó (R4).
+
+**Reglas asociadas:** R1, R2, R4, R5, R8 y R10. Detalle en `specs/01-reglas.md` («Cómo se califica cada señal», «Las prioridades del agricultor», «Agregación del semáforo» y «Orden de las ventanas»). Aprobada por Felipe el 11 de octubre de 2026.
+
+## 11. Varias fuentes, ninguna única verdad
+
+**Qué es:** un mismo indicador puede venir de varias fuentes. Por ejemplo, la oferta: la estadística oficial del país, FAOSTAT, reportes descargados de portales públicos y las siembras que registran los usuarios de AgroSense.
+
+- **Juntas, nunca mezcladas.** Las fuentes se muestran lado a lado para contrastarlas. Cada una dice de dónde viene, de qué fecha es y qué cubre (`coverage`). No se promedian ni una rellena a otra.
+- **Una calcula la señal.** `sources.yaml` dice, para cada región, qué fuente calcula cada señal; la respuesta dice cuál fue. Las demás son de contraste.
+- **Las siembras de AgroSense, con cuidado.** Solo se muestran como totales por municipio y cultivo, y nunca cuando hay menos de 5 cuentas, para que nadie pueda deducir lo de un vecino (R9).
+- **La región está por confirmar.** El reto todavía no dice qué datos ni qué región. Colombia es un supuesto: el P0 se prepara con una región piloto colombiana (EVA, DIVIPOLA, SIPSA, IDEAM, UPRA, IGAC) hasta que el enunciado del 28 de octubre la confirme o la cambie (HU-002). El modelo no supone Colombia fuera de los adaptadores de cada fuente (R7).
+
+**Analogía:** preguntar la hora a varias personas. Si dos relojes no coinciden, no se saca el promedio: se dice qué marca cada uno y cuál se está usando.
+
+**Por qué:**
+
+- **Ninguna fuente es perfecta.** La estadística oficial llega con meses de retraso y el último año es preliminar; las siembras de AgroSense son recientes pero de pocos usuarios. Juntas dan una idea más honesta que cualquiera sola.
+- **Mezclarlas esconde de dónde sale el número.** Un promedio de fuentes distintas no tiene fuente (R8).
+- **La región puede cambiar.** Si el reto pide otra región o otros datos, basta con cambiar los adaptadores y `sources.yaml`; el motor sigue igual.
+
+**Lo que no cambia:** sin datos no hay señal (decisión 5): si la fuente que calcula la señal no tiene dato, la señal es «datos insuficientes» aunque otra fuente sí tenga.
+
+**Lo que exige:** `sources` con `coverage`; `sources.yaml` por región; la fuente en la llave de `supply_semester`; un lugar en el contrato para los valores de contraste que no son municipales, como los de FAOSTAT (por decidir); y, para usar las siembras de AgroSense, el consentimiento versión 3, que ya lo dice, y un corte diario versionado.
+
+**Reglas asociadas:** R1, R5, R7, R8 y R9. Aprobada por Felipe el 11 de octubre de 2026.
+
+## 12. La NASA en el núcleo y las estrategias de rotación en el centro
+
+**Qué es:** el MVP se centra en lo que pide el reto oficial («Field Shift»): una herramienta que use observaciones de la Tierra de la NASA, el suelo local, las características de los cultivos y las prioridades del agricultor para explorar estrategias de rotación que fortalezcan el suelo y adapten la finca a condiciones que cambian. Son cinco decisiones que van juntas:
+
+- **La NASA es el núcleo: se usa todo lo que dé.** Cada producto entra por su propio adaptador y publica tablas versionadas: NASA POWER ampliado (lluvia, temperatura, humedad del suelo modelada, y radiación, viento y humedad para la ET0 por Penman-Monteith), NASADEM (altitud del municipio y del lote), GPM IMERG (lluvia por satélite), MODIS NDVI (verdor por municipio y por lote), SMAP (humedad del suelo por satélite) y las capas de NASA GIBS en el mapa del lote. `sources.yaml` dice qué producto calcula cada señal en cada región. Si un producto falta, la señal o el indicador es «datos insuficientes». Ninguno cambia el motor. De NASA POWER se dice siempre que es un reanálisis, no una observación directa. Lo que recomiende el enunciado del 28 de octubre entra por el mismo mecanismo.
+- **Las estrategias de rotación son el centro del producto.** El flujo principal es: lote (o municipio y área, sin cuenta) → estrategias de rotación de 3 ciclos → un ciclo con su diagnóstico de ventana → agua del plan → qué cambió. El diagnóstico de ventana no desaparece: es la revisión de cada ciclo y sigue disponible como consulta suelta. Cada estrategia trae su salud del suelo con cuatro criterios por reglas con fuente: nitrógeno, carbono orgánico, suelo cubierto y corte de plagas. Una estrategia con un cultivo que no se da en la zona, o con un ciclo de alto riesgo de clima, se descarta con su motivo.
+- **«Qué cambió».** Para un municipio y un cultivo, se comparan dos periodos de la misma fuente (por defecto 1981–2000 y 2005–2024 con POWER): heladas, lluvia y temperatura máxima por mes, y cómo se movieron las mejores ventanas de siembra. Es historia comparada, nunca pronóstico.
+- **Siete cultivos con ficha completa.** Papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia (abono verde), cada dato con su fuente. Es trabajo de la fase 0, sin código, y va primero.
+- **P0 es el MVP.** Todo lo que no sirve al flujo principal pasó a P1: la escena 3D y el descenso, el lote vivo, el clima en vivo, el calendario completo, la finca temporal, los cultivos alternativos, el progreso, la trazabilidad y restaurar lo borrado. La web del MVP es 2D.
+- **La oferta es valor agregado, no protagonista.** Sigue siendo una de las seis señales, con su peso; en las estrategias entra solo por el criterio de ingreso; y la demo abre con rotación, suelo, NASA y qué cambió, y deja la oferta para el final.
+
+**Analogía:** un mecánico con varios instrumentos. No mide todo con el mismo aparato: usa el que sirve para cada cosa, dice cuál usó y, si dos no coinciden, muestra las dos lecturas. Y cuando recomienda un plan de mantenimiento para los próximos tres servicios, explica por qué cuida el motor según el manual del fabricante; no promete cuántos kilómetros más va a durar.
+
+**Por qué:**
+
+- **Es lo que pide el reto.** El enunciado habla de rotaciones, salud del suelo, observaciones de la NASA y condiciones que cambian. El producto ponía primero el semáforo de una fecha y usaba un solo producto de la NASA, que además es un reanálisis.
+- **Un adaptador por producto protege el plan.** Si SMAP o el NDVI por lote no alcanzan a entrar, se recortan sin tocar el motor, y lo que el enunciado recomiende el 28 de octubre se suma sin rehacer nada.
+- **Tres ciclos muestran lo que una siembra no.** El nitrógeno que deja una leguminosa, el suelo cubierto o el descanso de una familia solo se ven mirando la secuencia.
+- **No hay modelo de suelo.** Decir cuánto va a mejorar el suelo sería inventar (decisión 4). Comparar estrategias con reglas que tienen fuente sí se puede explicar.
+- **Comparar dos periodos responde «condiciones que cambian» sin predecir.** Mostrar cómo era y cómo es la zona es historia; decir cómo será sería un pronóstico.
+- **Las horas van a lo que pide el reto.** El equipo tiene unas 168 horas útiles en el evento. El recorte sacó unas 100 horas de lo que no sirve al flujo y las puso en los datos de la NASA, las estrategias y «Qué cambió», que además se pueden adelantar en la fase 0. El P0 sigue sin caber sin esa preparación (`docs/plan-48h.md`).
+
+**Lo que no cambia:** reglas, no predicción (decisión 4); sin datos no hay señal (decisión 5); calcular no es guardar (decisión 6); las fuentes se muestran juntas y nunca se mezclan (decisión 11); el semáforo se decide por reglas (R2).
+
+**Lo que exige:** cuenta de NASA Earthdata y descargas recortadas a la región; fichas de los 7 cultivos y reglas de rotación con fuente en la fase 0; tablas nuevas en el contrato; diseñar en Figma las pantallas nuevas antes de programarlas; y confirmar esta semana qué se puede llevar preparado al evento (HU-004).
+
+**Orden de recorte de los productos NASA:** primero SMAP, luego GIBS, luego el NDVI por lote (queda por municipio). POWER, NASADEM e IMERG no se recortan.
+
+**Reglas asociadas:** R1, R2, R3, R4, R5, R6, R8, R9 y R10. R9 suma `/changes` a los endpoints de cálculo y R10 suma la humedad del suelo y el verdor como datos de la zona. Detalle en `specs/01-reglas.md` («Estrategias de rotación» y «Qué cambió en la zona»). Decidida por Felipe el 11 de octubre de 2026.
+
 ## Cómo se conectan
 
-Los datos se calculan antes (3), con un formato acordado desde el inicio (2). Un motor separado de la web (1) aplica reglas explicables (4) y dice honestamente cuando le falta información (5). Lo que el usuario registra vive aparte, en su cuenta, y solo llega al cálculo a través de la API (6). El clima de ahora decora la escena, pero nunca entra al cálculo (7).
+La NASA es el núcleo de los datos y las estrategias de rotación son el centro del producto (12). Los datos se calculan antes (3), con un formato acordado desde el inicio (2) y sin una única fuente de verdad (11). Un motor separado de la web (1) aplica reglas explicables (4) y dice honestamente cuando le falta información (5). Lo que el usuario registra vive aparte, en su cuenta, y solo llega al cálculo a través de la API (6). El clima de ahora decora la escena, pero nunca entra al cálculo (7). El suelo y las heladas son señales del mismo semáforo (8), que se evalúa sobre una ventana de siembra: primero la aptitud del cultivo, luego sus señales y, para comparar fechas, un orden que deja decidir al agricultor (9). Cada señal se califica con una curva por cultivo, el agricultor pondera, y el riesgo grave cuenta siempre (10).

@@ -7,7 +7,7 @@ rol: "Plataforma (Motor y API si el equipo es de 4)"
 agentes: [plataforma]
 subsistemas: [S1, S2]
 depende_de: []
-reglas: []
+reglas: [R4, R9]
 estado: pendiente
 ---
 
@@ -32,6 +32,22 @@ estado: pendiente
 - **Criterios de aceptación:**
   - [ ] GitHub Actions corre Ruff, pytest, Vitest y el build web dentro de Docker Compose
   - [ ] Las mismas pruebas corren en local con un solo comando de Docker
+
+### HU-177 · Logs de la terminal
+
+- **Historia:** Como equipo, queremos logs claros en la terminal del backend y del pipeline, para saber qué pasa en el servidor y diagnosticar un fallo durante la demo.
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] `structlog` configurado una vez y usado por la API, el pipeline y los avisos de Uvicorn (el log de acceso propio de Uvicorn se apaga)
+  - [ ] En desarrollo, líneas legibles con color; en producción, una línea JSON por evento a la salida estándar (Docker la recoge). Sin archivos de log
+  - [ ] Cada petición deja una línea con los campos de «Logs de la terminal» del contrato; el `request_id` sale en la cabecera `X-Request-ID`
+  - [ ] Niveles: `DEBUG` solo en desarrollo; `INFO` por defecto; `WARNING` para `403` y `429`; `ERROR` para `500`, con la traza del error
+  - [ ] Un procesador de redacción borra de cualquier evento las llaves `password`, `token`, `cookie`, `authorization` y `geometry`; una prueba lo comprueba
+  - [ ] Los cuerpos de los endpoints de cálculo no se escriben en el log (R9); se registra solo la ruta, el estado, la duración y las versiones del dataset y de las reglas
+  - [ ] El pipeline registra cada paso con la fuente, filas leídas, filas rechazadas y el motivo
+  - [ ] Nivel y formato se eligen con `AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT` (`console` o `json`)
+- **Reglas que aplican:** R4, R9
+- **Notas:** Los logs de la terminal son para operar el servidor y no se consultan desde la web; lo que hace cada usuario va en la trazabilidad de la base de datos (HU-178). La web no envía logs al servidor ni a servicios de terceros. Definido el 10 de octubre de 2026.
 
 ### HU-023 · Esqueleto desplegado en URL pública
 

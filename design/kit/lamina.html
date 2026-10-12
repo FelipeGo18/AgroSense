@@ -1,0 +1,6 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Lámina</title>
+<!-- Vista previa de una lámina SVG con las fuentes reales: lamina.html?f=kit.svg o ?f=../tokens/tokens.svg (servir desde design/). -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@600&display=swap">
+<style>body{margin:0;background:#1E2A3A}svg{width:100%;height:auto;display:block}</style>
+<div id="k"></div>
+<script>fetch(new URLSearchParams(location.search).get("f")||"kit.svg").then(r=>r.text()).then(t=>{document.getElementById("k").innerHTML=t})</script>

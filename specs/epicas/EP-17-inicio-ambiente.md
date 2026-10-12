@@ -6,61 +6,67 @@ fase: [Fase 0, Evento]
 rol: "Web, con Motor y API"
 agentes: [web, motor-api]
 subsistemas: [W8, M9]
-depende_de: [HU-151, HU-154]
+depende_de: [HU-151]
 reglas: [R1, R5, R8]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-17 · Inicio, mascota y paisaje vivo
 
-**Resultado esperado:** Quien entra conoce AgroSense a través de su mascota satélite, y el paisaje refleja si en el municipio es de día o de noche, si llueve o si hay viento, sin que eso cambie ningún resultado.
+**Resultado esperado:** Quien entra entiende en segundos qué es AgroSense y empieza a usarlo, con la mascota satélite en su versión estática. En P1, la mascota se anima y el paisaje refleja si en el municipio es de día o de noche, si llueve o si hay viento, sin que eso cambie ningún resultado.
 
-La mascota y el prototipo se hacen en la fase 0; el endpoint de condiciones y la integración, en el evento.
+**Recorte del MVP (11 de octubre de 2026):** queda en P0 la pantalla de inicio sin 3D (HU-173), con la mascota en su versión estática ya diseñada. Pasaron a P1 el diseño final y las animaciones de la mascota (HU-171, HU-172) y el clima en vivo en la escena (HU-174 a HU-176).
 
 ## Historias de usuario
-
-### HU-171 · Diseño de la mascota satélite
-
-- **Historia:** Como equipo, quiero una mascota satélite tecnológica y tierna, para que AgroSense tenga una cara reconocible.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
-- **Criterios de aceptación:**
-  - [ ] Bocetos y versión final en Figma, en 2D y como modelo 3D low-poly
-  - [ ] Original: no se parece a un satélite ni personaje de marca existente
-  - [ ] Legible a 48 px en su versión 2D
-
-### HU-172 · Expresiones y animaciones de la mascota
-
-- **Historia:** Como usuario, quiero que la mascota reaccione a lo que pasa, para sentir que la app me acompaña.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
-- **Criterios de aceptación:**
-  - [ ] Expresiones: reposo, guía, celebra (verde), duda (amarillo), preocupada (rojo), sin datos (no evaluable), cargando, error
-  - [ ] «Sin datos» no se parece a «preocupada» (R1)
-  - [ ] La expresión acompaña al texto; nunca es la única señal
-- **Reglas que aplican:** R1
 
 ### HU-173 · Pantalla de inicio
 
 - **Historia:** Como visitante, quiero entender en segundos qué es AgroSense y qué hace, para decidir si la uso.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] La mascota presenta qué es AgroSense y sus tres funciones (diagnóstico, qué sembrar después y agua)
-  - [ ] Botones «Consultar sin cuenta» y «Entrar / crear cuenta»
+  - [ ] La mascota, en su versión estática (`Mascot` 2D), presenta qué es AgroSense y lo que hace: estrategias de rotación para su lote, la revisión de cada ciclo, el agua del plan y qué cambió en su zona
+  - [ ] Botones «Consultar sin cuenta» (lleva a la entrada de las estrategias, HU-214) y «Entrar / crear cuenta»
   - [ ] Habla de AgroSense, no del problema ni de NASA
+  - [ ] Sin escena 3D: la pantalla es 2D (HU-158)
   - [ ] Usable a 360 px y con «reducir movimiento»
+- **Reglas que aplican:** R5
+- **Notas:** Ajustada el 11 de octubre de 2026 al flujo del MVP (decisión 12). El registro de decisiones dice que el inicio «no habla de NASA»; con la NASA en el núcleo, nombrar los datos de la NASA en una línea del inicio queda por decidir (`docs/registro-de-decisiones.md`).
+
+### HU-171 · Diseño de la mascota satélite
+
+- **Historia:** Como equipo, quiero una mascota satélite tecnológica y tierna, para que AgroSense tenga una cara reconocible.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** en curso
+- **Criterios de aceptación:**
+  - [ ] Bocetos y versión final en Figma, en 2D y como modelo 3D low-poly
+  - [x] Original: no se parece a un satélite ni personaje de marca existente
+  - [x] Legible a 48 px en su versión 2D
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. El MVP usa la versión estática 2D ya diseñada. Elegida la **Semilla Sputnik**: una semilla germinando dibujada como caricatura de los años 60 (tinta gruesa, ojos de pastel, brazos de manguera). Las raíces son las antenas barridas, el brote es la antena de señal y las hojas son los paneles. La identidad está en la cara, los brazos, las raíces y el brote; **la semilla puede cambiar según el contexto** (germinada, frijol, maíz y las que se agreguen, por ejemplo según el cultivo consultado). Su estilo se aleja a propósito del low-poly: es «otro material» que viaja por el paisaje. Bocetos en Figma (tres rondas: tres conceptos, nueve estilos y la fusión elegida) y en `design/mascota/`; las propuestas descartadas se conservan. Versión 2D en código: `web/src/components/Mascot.tsx`, con una clase por parte animable. Falta: versión final por capas con puntos de giro en Figma y el modelo 3D.
+
+### HU-172 · Expresiones y animaciones de la mascota
+
+- **Historia:** Como usuario, quiero que la mascota reaccione a lo que pasa, para sentir que la app me acompaña.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Expresiones: reposo, guía, celebra (verde), duda (amarillo), preocupada (rojo), sin datos (no evaluable), cargando, error
+  - [ ] «Sin datos» no se parece a «preocupada» (R1)
+  - [ ] La expresión acompaña al texto; nunca es la única señal
+- **Reglas que aplican:** R1
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
 
 ### HU-174 · Día y noche en la escena
 
 - **Historia:** Como agricultor, quiero ver mi zona de día o de noche según la hora real, para sentir que es mi lugar.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Calculado en el navegador con la hora y la posición del municipio
   - [ ] Transición suave entre día, atardecer y noche
   - [ ] El texto mantiene el contraste en todas las horas
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
 
 ### HU-175 · Endpoint de condiciones actuales
 
 - **Historia:** Como desarrollador web, quiero la condición aproximada actual del municipio, para que la escena refleje el clima de ahora.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] `GET /api/v1/conditions` del contrato, con datos de Open-Meteo y caché de 15 minutos
   - [ ] Solo la condición de ahora; ningún dato de pronóstico
@@ -68,15 +74,16 @@ La mascota y el prototipo se hacen en la fase 0; el endpoint de condiciones y la
   - [ ] Sin datos del proveedor: `insufficient_data` y valores nulos
   - [ ] Fuente registrada en `sources`; el motor no usa este endpoint
 - **Reglas que aplican:** R5, R8
-- **Notas:** NASA POWER no sirve para esto por su retraso de 2 a 7 días (decisión 7).
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. NASA POWER no sirve para esto por su retraso de 2 a 7 días (decisión 7).
 
 ### HU-176 · Lluvia, nubes y viento en la escena
 
 - **Historia:** Como agricultor, quiero ver si llueve o hace viento en mi zona, para que la app se sienta viva.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Lluvia, nubes y viento con intensidad según la condición
   - [ ] Rótulo «Condición aproximada en <municipio> · <fuente> · <hora>»
   - [ ] Sin datos: clima neutro y rótulo «sin condición en vivo»
   - [ ] Efectos quietos con «reducir movimiento»; ícono en modo ligero
 - **Reglas que aplican:** R5
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
