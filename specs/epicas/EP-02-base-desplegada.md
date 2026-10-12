@@ -22,7 +22,7 @@ estado: pendiente
 - **Historia:** Como integrante, quiero clonar y ejecutar todo con pocos comandos, para no perder tiempo configurando.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] README de arranque probado por otra persona
+  - [ ] README de arranque probado por otra persona. Escrito el 12 de octubre de 2026 (`README.md`, «Cómo correr el proyecto», con Docker y sin Docker); falta que lo pruebe otra persona en una máquina limpia
   - [ ] Estructura del repositorio acordada
 
 ### HU-022 · Lint y pruebas automáticas en cada cambio
@@ -36,16 +36,18 @@ estado: pendiente
 ### HU-177 · Logs de la terminal
 
 - **Historia:** Como equipo, queremos logs claros en la terminal del backend y del pipeline, para saber qué pasa en el servidor y diagnosticar un fallo durante la demo.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] `structlog` configurado una vez y usado por la API, el pipeline y los avisos de Uvicorn (el log de acceso propio de Uvicorn se apaga)
-  - [ ] En desarrollo, líneas legibles con color; en producción, una línea JSON por evento a la salida estándar (Docker la recoge). Sin archivos de log
-  - [ ] Cada petición deja una línea con los campos de «Logs de la terminal» del contrato; el `request_id` sale en la cabecera `X-Request-ID`
-  - [ ] Niveles: `DEBUG` solo en desarrollo; `INFO` por defecto; `WARNING` para `403` y `429`; `ERROR` para `500`, con la traza del error
-  - [ ] Un procesador de redacción borra de cualquier evento las llaves `password`, `token`, `cookie`, `authorization` y `geometry`; una prueba lo comprueba
+  - [ ] `structlog` configurado una vez y usado por la API, el pipeline y los avisos de Uvicorn (el log de acceso propio de Uvicorn se apaga). Hecho para la API, las migraciones y Uvicorn (`backend/config/logging.py`); falta el pipeline, que aún no existe
+  - [x] En desarrollo, líneas legibles con color; en producción, una línea JSON por evento a la salida estándar (Docker la recoge). Sin archivos de log
+  - [x] Cada petición deja una línea con los campos de «Logs de la terminal» del contrato; el `request_id` sale en la cabecera `X-Request-ID`
+  - [x] Niveles: `DEBUG` solo en desarrollo; `INFO` por defecto; `WARNING` para todo lo rechazado (`400` a `499`) y `503`; `ERROR` para `500`, con la traza del error
+  - [x] Cada línea explica qué pasó en palabras (`detail`) y dice qué endpoint atendió (`endpoint`); en la consola, el nivel, el mensaje, el código y el endpoint van cada uno en su color
+  - [x] Un procesador de redacción borra de cualquier evento las llaves `password`, `token`, `cookie`, `authorization` y `geometry`; una prueba lo comprueba
+  - [x] Cuando las cuentas están apagadas, el log dice por qué: la base de datos no responde, o qué migración no se completó y en cuál está la base
   - [ ] Los cuerpos de los endpoints de cálculo no se escriben en el log (R9); se registra solo la ruta, el estado, la duración y las versiones del dataset y de las reglas
   - [ ] El pipeline registra cada paso con la fuente, filas leídas, filas rechazadas y el motivo
-  - [ ] Nivel y formato se eligen con `AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT` (`console` o `json`)
+  - [x] Nivel y formato se eligen con `AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT` (`console` o `json`)
 - **Reglas que aplican:** R4, R9
 - **Notas:** Los logs de la terminal son para operar el servidor y no se consultan desde la web; lo que hace cada usuario va en la trazabilidad de la base de datos (HU-178). La web no envía logs al servidor ni a servicios de terceros. Definido el 10 de octubre de 2026.
 

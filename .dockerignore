@@ -1,0 +1,11 @@
+.git
+.venv
+**/__pycache__
+**/node_modules
+web
+design
+data
+.env
+.env.*
+.claude
+backups

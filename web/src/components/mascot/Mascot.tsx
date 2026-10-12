@@ -202,12 +202,14 @@ export interface MascotProps {
   seed?: MascotSeed;
   /** Ancho en píxeles; el alto guarda la proporción 300:250. */
   size?: number;
+  /** De vez en cuando saluda con la mano. Para la mascota que guía o acompaña, no para las pequeñas de una lista. */
+  lively?: boolean;
   /** Decorativa cuando el texto de al lado ya dice lo mismo; la expresión nunca es la única señal. */
   decorative?: boolean;
   className?: string;
 }
 
-export function Mascot({ mood = "idle", seed = "sprouted", size = 240, decorative = false, className = "" }: MascotProps) {
+export function Mascot({ mood = "idle", seed = "sprouted", size = 240, lively = false, decorative = false, className = "" }: MascotProps) {
   const pose = POSES[mood];
   const s = SEEDS[seed];
   return (
@@ -215,7 +217,7 @@ export function Mascot({ mood = "idle", seed = "sprouted", size = 240, decorativ
       viewBox="0 0 300 250"
       width={size}
       height={(size * 250) / 300}
-      className={`mascot shrink-0 ${className}`}
+      className={`mascot shrink-0 ${lively ? "mascot-lively" : ""} ${className}`}
       data-mood={mood}
       data-seed={seed}
       {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": `Mascota de AgroSense, ${s.label}, ${pose.label}` })}

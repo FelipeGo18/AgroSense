@@ -4,3 +4,5 @@ package-lock.json
 e2e/results
 # Malla de la Tierra, generada por design/globo/build_globo.py
 src/assets/globe.json
+# Tipos del contrato, generados con `npm run api:types`
+src/api/schema.d.ts

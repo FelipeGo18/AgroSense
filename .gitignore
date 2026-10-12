@@ -30,3 +30,6 @@ web/e2e/results/
 
 # Ejemplo de variables de entorno: sí va a git
 !.env.example
+
+# Copias de seguridad de la base de datos (se hacen antes de cada migración): tienen datos de cuentas, nunca van a git
+backups/

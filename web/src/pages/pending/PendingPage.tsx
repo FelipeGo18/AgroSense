@@ -11,7 +11,7 @@ export function PendingPage({ title }: { title: string }) {
       <TopBar />
       <main className="mx-auto flex min-h-svh max-w-2xl flex-col justify-center px-5 pt-28 pb-16">
         <Card>
-          <Mascot mood="idle" size={150} decorative className="self-center" />
+          <Mascot mood="idle" size={150} lively decorative className="self-center" />
           <h1 className="text-2xl">{title}</h1>
           <p>Esta pantalla ya está diseñada, pero todavía no está programada. Por ahora solo funciona el inicio.</p>
           <ButtonLink to={PATHS.home} className="self-start">
