@@ -11,7 +11,6 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { TextField } from "@/components/ui/TextField";
 import { Toggle } from "@/components/ui/Toggle";
 import { useDeleteAccount, useLogout, useUpdateProfile, type Profile } from "@/features/auth/session";
-import { useMotionPreference } from "@/hooks/useReducedMotion";
 import { useSound } from "@/hooks/useSound";
 import { AccountShell, LINK } from "./AccountShell";
 
@@ -148,20 +147,15 @@ function StoredCard({ user }: { user: Profile }) {
   );
 }
 
-/** Preferencias que viven en este navegador, no en la cuenta. */
+/**
+ * Preferencias que viven en este navegador, no en la cuenta. Por ahora solo el sonido: el modo ligero y «reducir
+ * movimiento» (sin animaciones, GSAP ni Lenis) llegan con su propio trabajo y sus interruptores van aquí.
+ */
 function PreferencesCard() {
-  const motion = useMotionPreference();
   const [sound, setSound] = useSound();
   return (
     <Card bodyClassName="gap-5">
       <Title>Preferencias de este dispositivo</Title>
-      <Toggle
-        label="Reducir movimiento"
-        note={motion.system ? "Lo pide la configuración de su equipo." : "Sin recorridos, giros ni animaciones."}
-        checked={motion.system || motion.chosen}
-        disabled={motion.system}
-        onChange={motion.setChosen}
-      />
       <Toggle label="Sonido" note="Música y efectos. Empieza apagado." checked={sound} onChange={setSound} />
     </Card>
   );

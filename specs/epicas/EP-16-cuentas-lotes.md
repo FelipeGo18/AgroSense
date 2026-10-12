@@ -34,9 +34,9 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Cambiar la contraseña exige la actual y cierra las demás sesiones del usuario; los intentos fallidos cuentan para el límite de 429
   - [ ] En la web, Mi cuenta permite editar nombre y usuario en el sitio y cambiar la contraseña en su propia vista, con estados de guardado y error
   - [ ] No se pide ningún dato personal nuevo: las prioridades son preferencias, no datos de la finca (R9)
-  - [x] (Web, 12 de octubre de 2026) «Mi cuenta» en `/mi-cuenta`: ver y editar el nombre y el usuario, lo que se guarda con la versión y la fecha del consentimiento, preferencias de este dispositivo (reducir movimiento y sonido), cerrar sesión y borrar la cuenta con confirmación. «Cambiar contraseña» en `/mi-cuenta/contrasena`. Son páginas con sesión: sin ella llevan a «Entrar»
+  - [x] (Web, 12 de octubre de 2026) «Mi cuenta» en `/mi-cuenta`: ver y editar el nombre y el usuario, lo que se guarda con la versión y la fecha del consentimiento, preferencias de este dispositivo (por ahora, el sonido), cerrar sesión y borrar la cuenta con confirmación. «Cambiar contraseña» en `/mi-cuenta/contrasena`. Son páginas con sesión: sin ella llevan a «Entrar»
   - [ ] (Web) La tarjeta «Sus prioridades» de Mi cuenta. Depende de los pesos por defecto de `weights.yaml` (HU-198), que la API todavía no expone: sin ellos no se puede mostrar el criterio de AgroSense ni volver a él. El backend (`PATCH /me` con `priorities`) ya está
-  - [ ] (Web) El interruptor «Modo ligero» de las preferencias: no se dibuja mientras no exista la escena 3D que apagaría
+  - [ ] (Web) Los interruptores «Modo ligero» y «Reducir movimiento» de las preferencias. El modo ligero no es solo para la escena 3D: también quita las animaciones, el movimiento, GSAP y Lenis. Lo está haciendo Haider en su propio trabajo; aquí no se toca
 - **Reglas que aplican:** R9
 - **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Mientras no exista, las prioridades de las señales se recuerdan en el navegador también con cuenta (HU-202). Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`).
 

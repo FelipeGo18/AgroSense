@@ -111,39 +111,17 @@ describe("Mi cuenta (HU-160, HU-163)", () => {
     expect(calls.some((call) => call.key.startsWith("PATCH"))).toBe(false);
   });
 
-  it("si el equipo ya pide reducir movimiento, la preferencia sale prendida y no se puede apagar", async () => {
+  it("el sonido se prende y se apaga desde Mi cuenta, igual que con el botón de la barra", async () => {
     fakeApi(ME);
     open(PATHS.account);
-    const motion = await screen.findByRole("switch", { name: "Reducir movimiento" });
-    expect(motion).toHaveAttribute("aria-checked", "true");
-    expect(motion).toBeDisabled();
-    expect(screen.getByText("Lo pide la configuración de su equipo.")).toBeInTheDocument();
-  });
-
-  it("las preferencias del dispositivo se prenden y se apagan, y se recuerdan en el navegador", async () => {
-    // Un equipo que no pide reducir movimiento: la preferencia la decide la persona.
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: false,
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    }));
-    fakeApi(ME);
-    open(PATHS.account);
-    const motion = await screen.findByRole("switch", { name: "Reducir movimiento" });
-    expect(motion).toHaveAttribute("aria-checked", "false");
-    await userEvent.click(motion);
-    expect(motion).toHaveAttribute("aria-checked", "true");
-    expect(localStorage.getItem("agrosense:reducir-movimiento")).toBe("1");
-    expect(document.documentElement).toHaveClass("reduce-motion");
-    await userEvent.click(motion);
-    expect(document.documentElement).not.toHaveClass("reduce-motion");
-    // El mismo sonido que el botón de la barra: los dos controles dicen lo mismo.
-    const sound = screen.getByRole("switch", { name: "Sonido" });
+    const sound = await screen.findByRole("switch", { name: "Sonido" });
+    expect(sound).toHaveAttribute("aria-checked", "false");
     await userEvent.click(sound);
     expect(sound).toHaveAttribute("aria-checked", "true");
+    // Los dos controles dicen lo mismo.
     expect(screen.getByRole("button", { name: "Sonido" })).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(sound);
+    expect(sound).toHaveAttribute("aria-checked", "false");
   });
 
   it("borrar la cuenta pide confirmar, dice qué se pierde y solo entonces borra", async () => {
