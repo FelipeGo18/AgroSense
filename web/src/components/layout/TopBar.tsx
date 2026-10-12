@@ -1,6 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useState } from "react";
-import { Link, NavLink } from "react-router";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { Link, NavLink, useLocation } from "react-router";
 import { PATHS } from "@/app/paths";
 import { Mascot } from "@/components/mascot/Mascot";
 import { ButtonLink } from "@/components/ui/Button";
@@ -14,6 +14,11 @@ const NAV = [
   { to: PATHS.consult, label: "Consultar" },
   { to: PATHS.farm, label: "Mi finca" },
   { to: PATHS.howItWorks, label: "Cómo funciona" },
+];
+
+const MEMBER = [
+  { to: PATHS.account, label: "Mi cuenta" },
+  { to: PATHS.activity, label: "Mi actividad" },
 ];
 
 const GUEST = [
@@ -45,7 +50,7 @@ function MobileMenu() {
         <Dialog.Content
           aria-describedby={undefined}
           data-lenis-prevent
-          className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-paleta-noche px-7 pt-6 pb-10 text-texto-sobre-oscuro outline-none lg:hidden"
+          className="menu-curtain fixed inset-0 z-50 flex flex-col overflow-y-auto bg-paleta-noche px-7 pt-6 pb-10 text-texto-sobre-oscuro outline-none lg:hidden"
         >
           <div className="flex items-center justify-between">
             <Dialog.Title className="font-titulos text-base font-titulo tracking-wide uppercase">Menú</Dialog.Title>
@@ -56,12 +61,14 @@ function MobileMenu() {
             </Dialog.Close>
           </div>
           <nav aria-label="Principal" className="mt-6 flex flex-col">
-            {[...NAV, ...(user ? [] : GUEST)].map((item) => (
+            {[...NAV, ...(user ? MEMBER : GUEST)].map((item, i) => (
               <NavLink
                 key={item.to}
+                style={{ "--i": i } as CSSProperties}
                 to={item.to}
+                end
                 onClick={() => change(false)}
-                className="py-3 font-titulos text-[26px] font-titulo focus-visible:outline-white aria-[current=page]:text-paleta-trigo"
+                className="menu-item py-3 font-titulos text-[26px] font-titulo focus-visible:outline-white aria-[current=page]:text-paleta-trigo"
               >
                 {item.label}
               </NavLink>
@@ -90,6 +97,50 @@ function MobileMenu() {
   );
 }
 
+/** Dónde quedó la raya naranja en la página anterior: cada página monta su barra, y la raya sale de ahí. */
+let lastMark: { left: number; width: number } | null = null;
+
+/** Enlaces principales de pantallas anchas. Una raya naranja marca la página actual y se desliza de un enlace al otro. */
+function MainNav() {
+  const nav = useRef<HTMLElement>(null);
+  const mark = useRef<HTMLSpanElement>(null);
+  const { pathname } = useLocation();
+  useLayoutEffect(() => {
+    const place = (from: typeof lastMark) => {
+      const bar = mark.current;
+      const current = nav.current?.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!bar) return;
+      if (!current || current.offsetWidth === 0) {
+        bar.style.opacity = "0";
+        lastMark = null;
+        return;
+      }
+      const to = { left: current.offsetLeft, width: current.offsetWidth };
+      // Sale de donde estaba: se pone ahí sin transición y, ya pintada, viaja a su sitio.
+      bar.style.transition = "none";
+      Object.assign(bar.style, { left: `${(from ?? to).left}px`, width: `${(from ?? to).width}px`, opacity: "1" });
+      void bar.offsetWidth;
+      bar.style.transition = "";
+      Object.assign(bar.style, { left: `${to.left}px`, width: `${to.width}px` });
+      lastMark = to;
+    };
+    place(lastMark);
+    const onResize = () => place(null);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [pathname]);
+  return (
+    <nav ref={nav} aria-label="Principal" className="relative hidden items-center gap-8 lg:flex xl:gap-10">
+      {NAV.map((item) => (
+        <NavLink key={item.to} to={item.to} className="border-b-[5px] border-transparent pt-[5px] aria-[current=page]:font-bold">
+          {item.label}
+        </NavLink>
+      ))}
+      <span ref={mark} aria-hidden="true" className="nav-mark pointer-events-none absolute bottom-0 h-[5px] bg-paleta-calabaza opacity-0" />
+    </nav>
+  );
+}
+
 /** Barra superior: una tabla biselada que flota sobre el paisaje. */
 export function TopBar() {
   const { user } = useSession();
@@ -102,26 +153,20 @@ export function TopBar() {
           <Link to={PATHS.home} aria-label="AgroSense, inicio" className="text-texto-principal">
             <Logo className="max-[339px]:text-[22px]" />
           </Link>
-          <nav aria-label="Principal" className="hidden items-center gap-8 lg:flex xl:gap-10">
-            {NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className="border-b-[5px] border-transparent pt-[5px] aria-[current=page]:border-paleta-calabaza aria-[current=page]:font-bold"
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          <MainNav />
         </div>
         <div className="relative flex h-[56px] shrink-0 items-center gap-2 md:h-16 md:gap-5">
           <SoundToggle />
           {user ? (
             <div className="hidden items-center gap-4 lg:flex">
-              <span className="flex h-11 max-w-40 items-center gap-2 bg-superficie-panel-suave px-3 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)] xl:max-w-56">
+              <Link
+                to={PATHS.account}
+                aria-label={`Mi cuenta: ${user.display_name}`}
+                className="flex h-11 max-w-40 items-center gap-2 bg-superficie-panel-suave px-3 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)] xl:max-w-56"
+              >
                 <Mascot mood="idle" size={44} decorative />
                 <span className="truncate">{user.display_name}</span>
-              </span>
+              </Link>
               <button
                 type="button"
                 onClick={() => logout.mutate()}

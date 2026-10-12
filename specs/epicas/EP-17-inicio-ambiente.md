@@ -59,7 +59,7 @@ estado: en curso
   - [ ] «Sin datos» no se parece a «preocupada» (R1)
   - [ ] La expresión acompaña al texto; nunca es la única señal
 - **Reglas que aplican:** R1
-- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Adelanto del 12 de octubre de 2026 (fase 0), en los formularios de entrar, crear cuenta y cambiar contraseña (`web/src/components/mascot/reactions.ts` y `SceneLife.tsx`): la mascota mira el campo donde se escribe, se tapa los ojos en la contraseña y espía cuando está a la vista, dice que no cuando la API rechaza, celebra al entrar o crear la cuenta, brinca si la tocan, bosteza y se duerme tras 45 s sin actividad, y reacciona a una mariposa y al viento. Gestos nuevos: atenta, tapándose los ojos, espiando, negando, bostezando y dormida. Todo se apaga con «reducir movimiento» y con el modo ligero. Faltan las expresiones de los resultados (duda, preocupada, cargando, error).
 
 ### HU-174 · Día y noche en la escena
 
@@ -69,7 +69,7 @@ estado: en curso
   - [ ] Calculado en el navegador con la hora y la posición del municipio
   - [ ] Transición suave entre día, atardecer y noche
   - [ ] El texto mantiene el contraste en todas las horas
-- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Adelanto del 12 de octubre de 2026 (fase 0): el paisaje de los formularios se tiñe de amanecer, día, atardecer o noche según la hora del dispositivo (`web/src/lib/dayPhase.ts`, `SceneAmbient.tsx`), sin transición y sin la posición del municipio, porque esas pantallas no tienen zona. Los criterios de esta HU siguen pendientes.
 
 ### HU-175 · Endpoint de condiciones actuales
 
@@ -94,4 +94,4 @@ estado: en curso
   - [ ] Sin datos: clima neutro y rótulo «sin condición en vivo»
   - [ ] Efectos quietos con «reducir movimiento»; ícono en modo ligero
 - **Reglas que aplican:** R5
-- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Adelanto del 12 de octubre de 2026 (fase 0): en los formularios hay ambiente de decoración (sombras de nubes, pájaros, luciérnagas de noche y una llovizna pasajera al azar; `SceneAmbient.tsx`). No es la condición de ninguna zona, no lleva rótulo y no entra a ningún cálculo. Cuando exista esta HU, en las pantallas con zona la lluvia y el viento salen solo de la condición en vivo, con su rótulo (R5).

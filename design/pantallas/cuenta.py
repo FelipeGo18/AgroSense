@@ -278,33 +278,32 @@ def profile(mobile=False, dialog=False, editing=False):
 
 
 def change_password(mobile=False, error=False):
-    w = MOBILE[0] if mobile else DESKTOP[0]
+    """Cabe entero en la primera pantalla, sin hacer scroll; debajo va el pie de página común."""
+    w, h = MOBILE if mobile else DESKTOP
     if mobile:
-        x, y, cw, pad = 12, 236, 366, 22
+        x, y, cw, pad = 12, 104, 366, 22
     else:
-        x, y, cw, pad = 96, 140, 540, 40
+        x, y, cw, pad = 96, 104, 480, 36
     fw = cw - 2 * pad
-    c = [text(pad, 54, "MI CUENTA", 15, 700, SEC), text(pad, 100, "Cambiar contraseña", 30 if mobile else 40, 600, font=FONT_TITLE)]
-    top = 138
+    c = [text(pad, 46, "MI CUENTA", 15, 700, SEC), text(pad, 86, "Cambiar contraseña", 30 if mobile else 36, 600, font=FONT_TITLE)]
+    top = 116
     if error:
-        c += alert(pad, top - 14, fw, ["La contraseña actual no es correcta.", "Su sesión sigue abierta."])
-        top += 84
+        c += alert(pad, top - 12, fw, ["La contraseña actual no es correcta.", "Su sesión sigue abierta."])
+        top += 76
     else:
-        c += paragraph(pad, top, ["Al cambiarla, se cierra su sesión en los" if mobile else "Al cambiarla, se cierra su sesión en los demás dispositivos.",
-                                  "demás dispositivos." if mobile else ""], 16 if mobile else 18)
-        top += 26 if mobile else 0
-    c += field(pad, top + 46, fw, "Contraseña actual", "••••••••", "", "error" if error else "normal", trailing="Mostrar", name="campo-actual")
-    c += field(pad, top + 150, fw, "Contraseña nueva", "" if error else "••••••••••", "Al menos 8 caracteres", "normal" if error else "foco",
-               hint="Al menos 8 caracteres. Que no la olvide: no se puede recuperar." if not mobile else "Al menos 8 caracteres.", trailing="Mostrar", name="campo-nueva")
-    c += field(pad, top + 278, fw, "Repita la contraseña nueva", "", "Escríbala otra vez", name="campo-repetir")
-    c += button(pad, top + 372, fw, "Guardar contraseña")
-    c += link(pad, top + 466, "Volver a Mi cuenta")
-    ch = top + 500
-    h = max(DESKTOP[1], y + ch + 60) if not mobile else y + ch + 40
+        c += paragraph(pad, top, ["Al cambiarla, se cierra su sesión en los", "demás dispositivos."] if mobile else ["Al cambiarla, se cierra su sesión en los demás", "dispositivos."], 16 if mobile else 18, 24)
+        top += 24
+    c += field(pad, top + 40, fw, "Contraseña actual", "••••••••", "", "error" if error else "normal", trailing="Mostrar", name="campo-actual")
+    c += field(pad, top + 132, fw, "Contraseña nueva", "" if error else "••••••••••", "Al menos 8 caracteres", "normal" if error else "foco",
+               hint="Al menos 8 caracteres. No se puede recuperar.", trailing="Mostrar", name="campo-nueva")
+    c += field(pad, top + 248, fw, "Repita la contraseña nueva", "", "Escríbala otra vez", name="campo-repetir")
+    c += button(pad, top + 332, fw, "Guardar contraseña")
+    c += link(pad, top + 420, "Volver a Mi cuenta")
+    ch = top + 448
     tag = ("-m" if mobile else "") + ("-e" if error else "")
     b = scene("a3-region", w, h, "recorte-contrasena" + tag) + topbar(w, user=None if mobile else NAME)
-    b += mascot(232, 92, 0.5, "reposo") if mobile else mascot(820, 300, 1.5, "reposo")
-    return frame((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
+    b += mascot(300, 66, 0.21, "reposo") if mobile else mascot(800, 220, 1.5, "reposo")
+    return ui.long_page((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
 
 
 def svg_frame(w, h, body):
