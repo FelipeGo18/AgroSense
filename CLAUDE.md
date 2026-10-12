@@ -1,12 +1,15 @@
 # AgroSense · Siembra Segura
 
-Herramienta web para agricultores colombianos que responde tres preguntas con datos abiertos y reglas explicables:
+Herramienta web de apoyo a la decisión para agricultores (región piloto en Colombia, por confirmar con el enunciado del reto y la sede) que, con observaciones de la Tierra de la NASA, el suelo local, las características de los cultivos y las prioridades del agricultor, ayuda a explorar estrategias de rotación que cuiden el suelo y adapten la finca a condiciones que cambian. El flujo del MVP:
 
-1. **Diagnóstico de ventana:** ¿es buen semestre para sembrar este cultivo en este municipio? (semáforo con razones).
-2. **Rotaciones:** ¿qué sembrar después? (ranking de secuencias agronómicamente válidas).
-3. **Finca y plan de agua:** ¿cuánta agua necesitará cada cultivo y en qué meses es probable regar? (estimación).
+1. **Estrategias de rotación:** para un lote (o un municipio y un área, sin cuenta), planes de hasta 3 ciclos que cumplen las reglas agronómicas, comparados por agua, suelo, ingreso y riesgo según las prioridades del agricultor, y con cuatro criterios de salud del suelo por reglas con fuente (nitrógeno, carbono orgánico, cobertura y corte de plagas). Es una comparación, no una predicción de cuánto mejora el suelo.
+2. **Diagnóstico de cada ciclo:** ¿conviene sembrar este cultivo en esta fecha? (primero, si el cultivo se da en la zona; luego, un semáforo con seis señales: agua, heladas, calor, suelo, oferta y mercado; cada señal calificada de 0 a 100; si las prioridades del agricultor dan otra luz que las de AgroSense, se muestran las dos; y las ventanas de siembra del año ordenadas primero por el factor que más limita y después por las prioridades). También se puede consultar suelto.
+3. **Agua del plan:** cuánta agua necesitará cada ciclo y en qué meses la lluvia no alcanza (estimación).
+4. **Qué cambió:** cómo se movieron las heladas, la lluvia, el calor y las mejores ventanas entre dos periodos de la historia de la zona. Es historia comparada, nunca pronóstico.
 
-Proyecto para el **NASA Space Apps Challenge 2026** (reto «Cambio de rumbo: adaptando las granjas con datos de la NASA»). Equipo: Kode Group. Hackatón: 14 y 15 de noviembre de 2026. Fase 0 (preparación): 10 de octubre al 13 de noviembre.
+La oferta es valor agregado, no protagonista: es una de las seis señales y entra a las estrategias solo por el criterio de ingreso.
+
+Proyecto para el **NASA Space Apps Challenge 2026** (reto «Field Shift: Adapting Farms with NASA Data»; el texto oficial está en `specs/00-vision.md`). Equipo: RealE4Life. Hackatón: 14 y 15 de noviembre de 2026. Fase 0 (preparación): 10 de octubre al 13 de noviembre.
 
 ## Estado actual
 
@@ -22,7 +25,7 @@ Todo cambio parte de una historia de usuario (HU) escrita en `specs/epicas/`.
 2. Si la HU es ambigua o contradice una regla, **corrige la spec primero** y luego el código.
 3. Un cambio de código corresponde a una HU. Menciona su código (por ejemplo `HU-074`) en el commit y en el PR.
 4. Cuando termines, marca los criterios de aceptación en el archivo de la épica, actualiza el estado y refleja el cambio en `specs/BACKLOG.md`.
-5. **Haider es el responsable del contrato** (`specs/02-contratos.md`): lo cambia él o aprueba cada cambio. Avísale antes, porque un cambio de contrato rompe el trabajo en paralelo.
+5. **Haider y Felipe son los responsables del contrato** (`specs/02-contratos.md`): lo cambia uno de los dos o aprueba cada cambio. Avísales antes, porque un cambio de contrato rompe el trabajo en paralelo.
 
 Mapa de documentos:
 
@@ -47,8 +50,11 @@ Mapa de documentos:
 - **Datos precalculados:** el pipeline corre antes de la demo y publica Parquet versionado. Para calcular, la API solo lee y aplica reglas.
 - **Reglas, no predicción:** no hay modelo de aprendizaje automático. Se entrega riesgo histórico explicable, no rendimiento ni precio futuro.
 - **Sin datos no hay señal:** si falta una fuente, la señal es `insufficient_data` con nivel nulo. Nunca se rellena ni se sustituye en silencio.
-- **Calcular no es guardar:** hay cuentas con lotes y temporadas en PostgreSQL propio (en Docker), con autenticación propia, pero los endpoints de cálculo no guardan nada. Sin cuenta, nada sale del dispositivo.
-- **El clima en vivo es ambiente:** la escena refleja día, noche, lluvia y viento aproximados de ahora (Open-Meteo); nunca entra al motor ni cambia un resultado.
+- **Calcular no es guardar:** hay cuentas con lotes y temporadas en PostgreSQL propio (en Docker), con autenticación propia, pero los endpoints de cálculo no guardan los datos de la finca ni quién consultó. En el P0 no escriben nada en la base de datos; desde HU-170 (P1) solo suman 1 a un contador anónimo de uso (día, tipo, municipio y cultivo) para las métricas. Sin cuenta, los datos de la finca se envían solo para calcular y no se guardan.
+- **El agricultor pondera; el riesgo grave no se negocia:** cada señal se califica de 0 a 100 con una curva por cultivo (estilo EcoCrop de la FAO); el agricultor pone un peso de 0 a 5 por señal; agua, heladas o calor críticos cuentan siempre; si las luces difieren se muestran las dos. La decisión final es del agricultor.
+- **Varias fuentes, ninguna única verdad:** las fuentes de un indicador se muestran juntas y nunca se mezclan; `sources.yaml` dice cuál calcula cada señal por región. La región es un supuesto hasta el enunciado del 28 de octubre.
+- **La NASA en el núcleo y las estrategias en el centro (decisión 12):** cada producto de la NASA entra por su adaptador (POWER ampliado, NASADEM, IMERG, MODIS NDVI, SMAP y capas GIBS) y `sources.yaml` dice cuál calcula cada señal; POWER es un reanálisis y se rotula así. El producto gira sobre las estrategias de rotación.
+- **El clima en vivo es ambiente (P1):** la escena refleja día, noche, lluvia y viento aproximados de ahora (Open-Meteo); nunca entra al motor ni cambia un resultado.
 
 Detalle en `docs/decisiones.md`. Las decisiones puntuales (servicios, estilo, alcance) con su fecha están en `docs/registro-de-decisiones.md`.
 
@@ -65,16 +71,16 @@ AgroSense/
 ├── specs/                   # fuente de verdad de qué construir
 ├── docs/                    # contexto, decisiones, plan, riesgos
 ├── pipeline/                # D1–D4: adaptadores, validación, indicadores, publicación
-│   ├── sources/             # nasa_power, eva, sipsa, dane
+│   ├── sources/             # nasa_power, nasadem, imerg, modis_ndvi, smap, soilgrids, eva, sipsa, dane
 │   └── build.py             # un comando reconstruye el dataset
 ├── catalog/                 # AG1–AG3: crops.yaml, rotation_rules.yaml, sources.yaml
 ├── backend/
-│   ├── engine/              # M1–M5: Python puro, sin FastAPI
+│   ├── engine/              # M1–M5, M7, M10 y M11: Python puro, sin FastAPI
 │   ├── api/                 # M6: rutas, modelos Pydantic, errores
 │   ├── accounts/            # M8: usuarios, lotes, temporadas (PostgreSQL)
 │   ├── conditions/          # M9: condiciones actuales con caché
 │   └── config/              # thresholds.yaml, weights.yaml (versionados)
-├── web/                     # W1–W9: React + Vite; src/api con tipos generados
+├── web/                     # W1–W10: React + Vite; src/api con tipos generados
 ├── data/
 │   ├── raw/                 # caché de descargas (fuera de git)
 │   └── published/           # Parquet + manifest.json de la versión de la demo
@@ -87,9 +93,9 @@ Las carpetas de código se crean cuando se implemente su primera HU. No las cree
 
 ## Convenciones
 
-- **Idioma:** textos de interfaz, documentación y mensajes de commit en español. Identificadores de código, columnas, endpoints y valores de contrato en inglés y `snake_case` (sin tildes), por ejemplo `municipality_id`, `precip_anomaly_pct`, `insufficient_data`.
-- **Llave territorial:** siempre el código DIVIPOLA de 5 dígitos (`municipality_id`). Nunca se une por nombre.
-- **Semestres:** A es enero–junio y B es julio–diciembre (supuesto por confirmar en HU-001).
+- **Idioma:** textos de interfaz, documentación y mensajes de commit en español. Identificadores de código, columnas, endpoints y valores de contrato en inglés y `snake_case` (sin tildes), por ejemplo `municipality_id`, `frost_freq_pct`, `insufficient_data`.
+- **Llave territorial:** el código oficial de la unidad territorial de la región; en la región piloto (Colombia), el DIVIPOLA de 5 dígitos (`municipality_id`). Nunca se une por nombre.
+- **Ventanas de siembra:** la decisión se evalúa sobre una fecha de siembra más lo que dura el cultivo, no sobre semestres. El semestre (A es enero–junio y B es julio–diciembre, por confirmar en HU-001) solo existe en la oferta de EVA.
 - **Datos de ejemplo:** se rotulan como ejemplo en los archivos y en la interfaz.
 - **Fuentes:** cada fila de datos y cada regla agronómica apunta a una entrada de la tabla `sources`.
 - **Tamaños de HU:** S ≈ 2 h, M ≈ 4 h, L ≈ 8 h de una persona.
@@ -113,19 +119,23 @@ docker compose run --rm web npm test          # Vitest
 
 ## Lo que nunca se hace
 
-- Presentar un resultado como pronóstico de rendimiento, precio o clima.
+- Presentar un resultado como pronóstico de rendimiento, precio o clima; tampoco «Qué cambió», que es historia comparada.
+- Presentar la salud del suelo de una estrategia como una predicción de cuánto mejora el suelo: es una comparación por reglas.
+- Presentar NASA POWER como una observación directa de satélite: es un reanálisis.
 - Usar el clima en vivo para calcular un resultado (decisión 7).
 - Rellenar, promediar o sustituir en silencio una fuente que falta (R1).
-- Promediar señales para decidir el semáforo (R2).
+- Promediar señales para decidir el semáforo, dejar que el promedio de una ventana compense una señal crítica, o que un peso 0 esconda un riesgo grave de clima (R2).
+- Mezclar o promediar en silencio las fuentes de un mismo indicador.
 - Importar FastAPI o leer archivos dentro del motor (R6).
 - Guardar datos de la finca sin cuenta ni consentimiento, o desde un endpoint de cálculo (R9).
 - Añadir una regla agronómica o un dato sin fuente (R8).
 - Mostrar datos ficticios sin rotularlos como ejemplo (R5).
-- Decir que el riego es una medición del lote (R10).
+- Decir que el riego o el suelo son una medición del lote (R10).
+- Dibujar un botón o control sin función.
 
 ## Qué se puede recortar y qué no
 
-Orden de recorte si hay retraso en la hora 34 (detalle en `docs/plan-48h.md`): todo el P1; lluvia, nubes y viento en la escena (queda solo día y noche); progreso del lote; reducir HU-093 a una sola gráfica; plan de agua solo con año normal; explicaciones con una razón por opción; pruebas de CI a mano; como último recurso, las cuentas (la demo queda en modo sin cuenta). **Nunca se recorta:** los estados «datos insuficientes» y «no evaluable», los casos de referencia del motor, el consentimiento y el borrado de la cuenta si hay cuentas, el despliegue y el video de respaldo, y las citas de fuentes en la entrega.
+Orden de recorte si hay retraso en la hora 34 (detalle en `docs/plan-48h.md`): todo el P1; SMAP; la capa GIBS del mapa; el NDVI por lote (queda por municipio); el suelo por lote (queda el del municipio); el agua del plan solo con año normal; una sola razón por estrategia; pruebas de CI a mano; como último recurso, las cuentas (la demo queda en modo sin cuenta). **Nunca se recorta:** los estados «datos insuficientes», «no evaluable» y «no aplica», el suelo de la zona y las heladas en el diagnóstico y las estrategias, al menos un producto de observación satelital de la NASA en el núcleo (POWER, NASADEM e IMERG no se recortan), los casos de referencia del motor, el consentimiento y el borrado de la cuenta si hay cuentas, el despliegue y el video de respaldo, y las citas de fuentes en la entrega.
 
 ## Agentes
 

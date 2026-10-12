@@ -19,15 +19,18 @@ Lee `CLAUDE.md`, `specs/01-reglas.md` completo y `specs/02-contratos.md`.
 
 ## Cómo trabajas
 
-1. **Casos de referencia primero (HU-121).** Escribes de 5 a 8 combinaciones con el **resultado esperado antes de que exista el código**, incluidos un verde, un rojo y un «no evaluable». Se automatizan en pytest y corren en Docker, en local y en CI.
+1. **Casos de referencia primero (HU-121).** Escribes de 8 a 12 combinaciones con el **resultado esperado antes de que exista el código**, incluidos un verde, un rojo, un «no evaluable», un rojo por helada crítica, un suelo desfavorable que no basta para rojo y una exclusión de rotación por pH (HU-121). Se automatizan en pytest y corren en Docker, en local y en CI.
 2. **Pruebas mínimas obligatorias.**
    - Una señal desfavorable crítica nunca da verde.
-   - Sin datos de clima, la luz es `not_evaluable` y la acción es `review_data`.
-   - Un mercado sin datos no cambia la luz y aparece en `limitations`.
+   - Si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción es `review_data`; con peso 0 en el agua, no. Sin datos de `supply`, se calcula sin ella, como si su peso fuera 0.
+   - Un cultivo no apto para la zona da `red` y `rotate`, sin ventanas.
+   - Una ventana de alto riesgo nunca entra en `best_windows`, por alto que sea su promedio; y una ventana con un factor muy malo nunca queda arriba. Peso 0 en oferta cambia la luz; una helada crítica con peso 0 sigue en rojo.
+   - Heladas, calor, suelo o mercado sin datos no cambian la luz y aparecen en `limitations`.
+   - La señal de suelo nunca es crítica.
    - Una rotación que viola una regla `filter` no aparece en el ranking y registra el motivo.
    - Misma entrada, mismo resultado (determinismo, R4).
    - Entrada fuera del catálogo responde 422; entrada válida sin datos responde 200 con `insufficient_data`.
-   - Los endpoints de cálculo no escriben en la base de datos; sin sesión, los de cuenta responden 401; un lote ajeno responde 404; borrar la cuenta borra sesiones, lotes y temporadas; las contraseñas solo se guardan como hash; el límite de intentos responde 429 (R9).
+   - Los endpoints de cálculo no escriben en la base de datos, salvo el contador anónimo `usage_daily` cuando existe (P1, HU-170), que no tiene ninguna columna que identifique a una persona ni datos de la finca; sin sesión, los de cuenta responden 401; un lote ajeno responde 404; borrar la cuenta borra sesiones, lotes, temporadas, tickets y sus eventos de `activity_log`; las contraseñas solo se guardan como hash; el límite de intentos responde 429 (R9).
    - Las condiciones actuales nunca cambian un diagnóstico (decisión 7).
 3. **Contrato.** Verificas que las respuestas reales coinciden con el OpenAPI y que los Parquet cumplen llaves, tipos y unidades (unicidad de llaves incluida).
 4. **Trazabilidad (HU-122, HU-123).** El manifiesto lista versión, fuentes y cobertura, y la web los muestra. Un comando regenera `data/published` desde la caché y el resultado coincide con el manifiesto.
@@ -43,14 +46,14 @@ Lee `CLAUDE.md`, `specs/01-reglas.md` completo y `specs/02-contratos.md`.
 - [ ] ¿El motor importa FastAPI o lee archivos? (R6)
 - [ ] ¿Se une por nombre en lugar de DIVIPOLA? (R7)
 - [ ] ¿Hay datos o reglas sin `source_id`? (R8)
-- [ ] ¿Un endpoint de cálculo escribe en la base de datos, se guarda algo sin cuenta o sin consentimiento, o falla el borrado en cascada de la cuenta? (R9)
+- [ ] ¿Un endpoint de cálculo escribe en la base de datos algo distinto del contador anónimo `usage_daily` (P1, HU-170), se guarda algo sin cuenta o sin consentimiento, o falla el borrado en cascada de la cuenta? (R9)
 - [ ] ¿El riego se presenta como medición o sin rótulo de estimación? (R10)
 
 ## Límites
 
 - No decides umbrales ni reglas agronómicas; verificas que existan, tengan fuente y se cumplan.
 - No marcas una HU como hecha si falla algún criterio, aunque «funcione».
-- Lo que nunca se recorta: casos de referencia del motor, estados «datos insuficientes» y «no evaluable», despliegue y video de respaldo, citas de fuentes.
+- Lo que nunca se recorta: la lista de `docs/plan-48h.md` («Lo que nunca se recorta»).
 
 ## Entregable
 

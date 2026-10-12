@@ -34,26 +34,28 @@ estado: pendiente
 - **Criterios de aceptación:**
   - [ ] OpenAPI generado de los modelos Pydantic
   - [ ] Tipos TypeScript generados
-  - [ ] Ejemplos de `available`, `insufficient_data` y error 422
-  - [ ] Incluye los endpoints de cuenta (con ejemplos de 401 y 404) y el de condiciones actuales
+  - [ ] Ejemplos de `available`, `insufficient_data`, `not_applicable` y error 422
+  - [ ] Incluye los endpoints de cuenta del P0 (con ejemplos de 401 y 404), `/rotations` con una estrategia excluida y `/changes` con un periodo en `insufficient_data`
 
 ### HU-013 · Respuestas simuladas (MSW)
 
 - **Historia:** Como desarrollador web, quiero respuestas simuladas, para desarrollar contra casos realistas.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] MSW responde todos los endpoints P0
-  - [ ] Se puede forzar cada estado desde la interfaz de desarrollo
-- **Notas:** El panel para forzar estados se detalla en HU-014.
+  - [ ] MSW responde todos los endpoints P0, incluidos `/rotations` con estrategias de 3 ciclos y `/changes`
+  - [ ] Se puede forzar cada estado con un parámetro de la URL en desarrollo (por ejemplo, `?estado=insufficient_data`)
+  - [ ] Cada respuesta simulada lleva el rótulo de ejemplo en pantalla (R5)
+- **Reglas que aplican:** R5
+- **Notas:** El panel de simulación para forzar estados, usuarios, clima y tiempo es HU-014, que pasó a P1 el 11 de octubre de 2026; en el MVP basta el parámetro de la URL.
 
 ### HU-014 · Modo simulación para desarrolladores
 
 - **Historia:** Como desarrollador, quiero activar un modo simulación con una variable de entorno, para ver cada resultado, usuario, clima y momento sin depender del backend real.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] `VITE_SIMULATION=true` activa MSW para todos los endpoints (cálculo, cuentas y condiciones) y el panel de simulación de `specs/05-frontend.md`
   - [ ] `AGROSENSE_SIMULATION=true` arranca el backend con usuario simulado y base de datos de ejemplo
   - [ ] Franja visible «Modo simulación · datos de ejemplo» mientras está activo
   - [ ] El build de producción no incluye MSW ni el panel; el CI falla si la variable está activa en producción; el backend no arranca en producción con simulación
 - **Reglas que aplican:** R5
-- **Notas:** Se adelanta en la fase 0 junto al prototipo (EP-15).
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP, las respuestas simuladas de HU-013 bastan para desarrollar la web.
