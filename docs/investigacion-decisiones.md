@@ -2,17 +2,25 @@
 
 10 de octubre de 2026. Sirve de base para decidir qué más entra en AgroSense, además de qué sembrar y cuándo regar.
 
-> **Las secciones 1 a 4 describen el estado previo a la decisión.** Lo que se decidió está en las secciones 5, 5b y 5c y ya está en las specs (EP-18, HU-044, HU-045, HU-077, HU-179, HU-180, `specs/01-reglas.md`). Donde la tabla dice «P1 alto» o «P0, pero cambia el contrato», mandan las secciones 5 y 5b. El 11 de octubre de 2026 la decisión pasó a evaluarse por ventana de siembra (sección 5b y decisión 9 de `docs/decisiones.md`).
+> **Las secciones 1 a 4 describen el estado previo a la decisión.** Lo que se decidió está en las secciones 5, 5b y 5c y ya está en las specs (EP-18, HU-044, HU-045, HU-077, HU-179, HU-180, `specs/01-reglas.md`). Donde la tabla dice «P1 alto» o «P0, pero cambia el contrato», mandan las secciones 5 y 5b. El 11 de octubre de 2026 la decisión pasó a evaluarse por ventana de siembra (sección 5b y decisión 9 de `docs/decisiones.md`) y, al final del día, el MVP se centró en el reto oficial (sección 5d y decisión 12).
 
 ## 1. Qué pide el reto, según la página oficial
 
 Página del reto: «Field Shift: Adapting Farms with NASA Data» ([spaceappschallenge.org](https://www.spaceappschallenge.org/2026/challenges/field-shift-adapting-farms-with-nasa-data/)). Nivel intermedio y avanzado; temas: ciencias de la Tierra, software, artes y multimedia.
 
+**Texto oficial**, leído el 11 de octubre de 2026 en <https://www.spaceappschallenge.org/2026/challenges/field-shift-adapting-farms-with-nasa-data/>:
+
+> «Farmers around the world navigate shifting temperatures, changing rainfall patterns, water shortages, extreme weather, and declining soil health. These pressures make it difficult to choose crop rotations that protect fields, conserve water, and support long-term resilience. Your challenge is to create a decision-support tool that uses NASA Earth observations along with local soil information, crop characteristics, and farmer priorities to help farmers explore rotation strategies that could strengthen soil health and adapt their farms to changing conditions.»
+
+Una versión local del reto (sede de Moquegua, según una imagen) dice: «Crea una herramienta que combine datos satelitales, suelo y cultivos para ayudar a los agricultores a tomar mejores decisiones». La sede del equipo no está confirmada: la región piloto sigue en Colombia como supuesto (HU-002).
+
+Cómo cubre el MVP cada parte del enunciado: tabla en `specs/00-vision.md`.
+
 Resumen publicado (traducción nuestra): los agricultores enfrentan cambios de temperatura, lluvias que cambian de patrón, escasez de agua, clima extremo y deterioro del suelo, y eso hace difícil **elegir rotaciones que protejan el campo, ahorren agua y den resiliencia a largo plazo**. El reto es una herramienta de apoyo a la decisión que use **observaciones de la Tierra de la NASA junto con información local del suelo, características de los cultivos y las prioridades del agricultor**, para explorar rotaciones que mejoren la salud del suelo y adapten la finca.
 
 Lo que eso significa para nosotros:
 
-- **El centro del reto son las rotaciones y la salud del suelo**, no el semáforo. Hoy nuestro P0 pone el diagnóstico de ventana primero y deja el suelo para el P1 («ajuste por suelo del usuario»). Es el hueco más grande frente al reto.
+- **El centro del reto son las rotaciones y la salud del suelo**, no el semáforo. Hoy nuestro P0 pone el diagnóstico de ventana primero y deja el suelo para el P1 («ajuste por suelo del usuario»). Es el hueco más grande frente al reto. **Resuelto el 11 de octubre de 2026 (sección 5d):** las estrategias de rotación pasan al centro.
 - **Pide «información local del suelo» de forma explícita.** No tenemos ningún dato de suelo en el P0.
 - **Las «prioridades del agricultor»** ya están: las rotaciones se ordenan por agua, suelo, ingreso y riesgo (HU-082).
 - La página aún muestra solo el resumen. El enunciado completo, con los datos recomendados, sale el **28 de octubre** (`specs/00-vision.md`). Hay que revisarlo ese día.
@@ -112,6 +120,17 @@ Aprobado por Felipe. Explicación en las decisiones 10 y 11 de `docs/decisiones.
 3. **La oferta y el mercado cambian el semáforo**, y con «rotar» se sugieren cultivos alternativos.
 4. **La textura del suelo** entra en el balance de agua.
 5. **Varias fuentes, ninguna única verdad**, y la región es un supuesto hasta el 28 de octubre.
+
+## 5d. Qué cambió al final del 11 de octubre: MVP centrado en el reto
+
+Decidido por Felipe. Explicación en la decisión 12 de `docs/decisiones.md`. Manda sobre lo que las secciones anteriores digan distinto:
+
+1. **La NASA es el núcleo.** Además de NASA POWER (ampliado, y dicho como reanálisis): NASADEM, GPM IMERG, MODIS NDVI, SMAP y la capa GIBS del mapa. Los puntos 11 y 12 de la sección 3 (NDVI y humedad del suelo) pasan de P1 a P0, con MODIS a 250 m en lugar de HLS a 30 m, que queda en P1.
+2. **Las estrategias de rotación de 3 ciclos son la entrada del producto**, con la salud del suelo en cuatro criterios por reglas con fuente. No es una predicción de cuánto mejora el suelo.
+3. **«Qué cambió»** compara dos periodos de la historia de la zona. Responde a «adaptarse a condiciones que cambian» sin pronosticar.
+4. **Siete cultivos** con ficha completa y con fuente: papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia.
+5. **P0 es el MVP.** El calendario completo, el lote vivo, el clima en vivo, la escena 3D, la finca temporal y los cultivos alternativos pasan a P1. En el MVP las ventanas se comparan por mes y la duración del cultivo sale de su ficha.
+6. **La oferta es valor agregado**, no protagonista: una señal más, dentro del criterio de ingreso de las estrategias, y al final de la demo.
 
 ## 6. Fuentes
 

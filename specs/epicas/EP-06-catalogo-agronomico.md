@@ -13,11 +13,13 @@ estado: pendiente
 
 # EP-06 · Catálogo agronómico con fuentes
 
-**Resultado esperado:** Fichas de 6 a 8 cultivos, de los abonos verdes y del descanso, y reglas de rotación como datos, cada una con fuente. Cada ficha dice lo que el cultivo necesita y lo que aguanta (agua, altitud, temperatura, helada y pH), con su rango óptimo y sus límites absolutos: contra eso se califica cada ventana de siembra (HU-196). Además, los pesos por defecto de cada señal, con quién los definió y por qué.
+**Resultado esperado:** Las fichas completas, cada campo con su fuente, de los **7 cultivos del MVP** del altiplano: papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia (abono verde, `kind = cover`), más el descanso (`kind = fallow`). Y las reglas de rotación entre ellos como datos, incluidas las de los cuatro criterios de salud del suelo de las estrategias (HU-212). Cada ficha dice lo que el cultivo necesita y lo que aguanta (agua, altitud, temperatura, helada y pH), con su rango óptimo y sus límites absolutos: contra eso se califica cada ventana de siembra (HU-196). Además, los pesos por defecto de cada señal, con quién los definió y por qué.
 
 La ficha no dice en qué época se siembra: eso lo responde el motor, ventana por ventana, con la historia de la zona.
 
-Los cultivos dependen de la región piloto, que es un supuesto mientras el reto no confirme la región (decisión 11, HU-002).
+**Es trabajo de la fase 0, sin código, y va primero en el orden de desarrollo** (`docs/orden-de-desarrollo.md`): sin fichas con fuente, la aptitud, el calor, las curvas y las estrategias quedan en «datos insuficientes». Fuentes candidatas: FAO EcoCrop, FAO-56 (Kc y etapas) y Agrosavia (fichas técnicas y las rotaciones papa-avena-arveja de Tibaitatá), todas por confirmar en `docs/fuentes.md`.
+
+Los cultivos dependen de la región piloto, que es un supuesto mientras el reto no confirme la región (decisión 11, HU-002). La lista de 7 se decidió el 11 de octubre de 2026 (decisión 12).
 
 ## Historias de usuario
 
@@ -26,6 +28,8 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
 - **Historia:** Como motor, quiero una ficha por cultivo con lo que necesita y lo que aguanta, para saber si se da en una zona y evaluar sus ventanas de siembra.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
+  - [ ] Hay una ficha por cada uno de los 7 cultivos del MVP (papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia) y otra para el descanso, con `crop_id` en `snake_case` sin tildes
+  - [ ] Cada ficha trae, con fuente: altitud mínima, máxima y óptima; temperatura óptima y `heat_max_c`; rango de pH; familia (`family`); tipo de raíz (`root_type`); si fija nitrógeno (`fixes_nitrogen`); duración (`cycle_months` y los días de cada etapa en `crop_stages`, HU-142) y, si hay fuente, grados-día
   - [ ] Todos los campos del contrato llenos; los que el contrato permite nulos (`altitude_min_m`, `altitude_max_m`, `heat_max_c`, los límites de las curvas `temp_*`, `rain_*` y `altitude_opt_*`, pH, `base_temp_c`, `gdd`) quedan nulos solo si no hay fuente, y se anota por qué
   - [ ] `altitude_min_m` y `altitude_max_m` (rango en que se da el cultivo) con fuente: de ahí sale la aptitud en la zona (HU-191)
   - [ ] `heat_max_c` (temperatura máxima que aguanta) con fuente: de ahí sale la señal de calor (HU-190)
@@ -34,13 +38,14 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
   - [ ] Revisión cruzada por otro integrante
 - **Reglas que aplican:** R3, R8
 - **Contrato que toca:** tabla `crops`
-- **Notas:** Sin el rango de altitud con fuente, la aptitud queda en «datos insuficientes» y no filtra; sin `heat_max_c`, la señal de calor queda en «datos insuficientes» (`docs/riesgos.md`). Los rangos óptimos para las curvas son HU-199. Fuentes por confirmar (`docs/fuentes.md`). Cambiada el 11 de octubre de 2026.
+- **Notas:** Sin el rango de altitud con fuente, la aptitud queda en «datos insuficientes» y no filtra; sin `heat_max_c`, la señal de calor queda en «datos insuficientes» (`docs/riesgos.md`). Los rangos óptimos para las curvas son HU-199. Fuentes por confirmar (`docs/fuentes.md`). Cambiada el 11 de octubre de 2026 y, el mismo día, fijada a los 7 cultivos del MVP (decisión 12). Supuesto por confirmar: la avena con vicia es una mezcla de dos especies; su ficha se arma con la fuente que la describa como abono verde, o se dice qué dato sale de cada especie.
 
 ### HU-199 · Límites óptimos y absolutos de cada cultivo
 
 - **Historia:** Como motor, quiero el rango óptimo y los límites absolutos de temperatura, lluvia y altitud de cada cultivo, con fuente, para calificar cada señal de 0 a 100 con una curva por cultivo.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
+  - [ ] Cubre los 7 cultivos del MVP; el descanso no tiene curvas
   - [ ] Por cultivo: temperatura óptima (mínima y máxima) y absoluta (mínima y máxima), lluvia óptima y absoluta, y altitud óptima y absoluta, en las columnas de `crops` del contrato (`temp_min_c`, `temp_opt_min_c`, `temp_opt_max_c`, `rain_min_mm`, `rain_opt_min_mm`, `rain_opt_max_mm`, `rain_max_mm`, `altitude_opt_min_m` y `altitude_opt_max_m`; los absolutos de altitud y de calor son `altitude_min_m`, `altitude_max_m` y `heat_max_c`, de HU-061)
   - [ ] Cada valor con su fuente en `sources` (R8). La candidata es FAO EcoCrop, **por confirmar**: se verifica el acceso, la licencia, la especie o variedad que describe y la unidad de cada campo antes de usarla
   - [ ] Si hay una fuente local (por ejemplo, fichas técnicas de Agrosavia) que difiere de EcoCrop, se anotan las dos en las notas de la ficha y se dice cuál se usa y por qué
@@ -68,11 +73,17 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
 
 ### HU-062 · Reglas de rotación como datos
 
-- **Historia:** Como motor, quiero las reglas de rotación como datos, para filtrar y puntuar secuencias sin cambiar código.
+- **Historia:** Como motor, quiero las reglas de rotación como datos, para filtrar y puntuar estrategias de hasta 3 ciclos y evaluar su salud del suelo sin cambiar código.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Como mínimo: no repetir familia, bonificar leguminosas y alternar tipo de raíz
-  - [ ] Cada regla con tipo, condición, efecto y fuente
+  - [ ] Como mínimo: no repetir familia en ciclos seguidos (filtro), bonificar leguminosas y alternar tipo de raíz
+  - [ ] Cubren todos los pares posibles entre los 7 cultivos del MVP y el descanso: para cada par de ciclos seguidos se puede decir qué reglas aplican
+  - [ ] Reglas de los cuatro criterios de salud del suelo (`criterion`: `nitrogen`, `organic_carbon`, `soil_cover`, `pest_break`), con los cortes que dan cada nivel, para HU-212
+  - [ ] Cada regla con tipo, condición, efecto, criterio y fuente (R8)
+  - [ ] Revisión cruzada por otro integrante
+- **Reglas que aplican:** R3, R8
+- **Contrato que toca:** `rotation_rules`
+- **Notas:** Punto de partida con fuente: las rotaciones papa-avena-arveja evaluadas por Agrosavia en Tibaitatá (`docs/investigacion-decisiones.md`). Cambiada el 11 de octubre de 2026 (decisión 12). Supuesto por confirmar: cuántos ciclos debe esperar la papa para volver al mismo terreno (`pest_break`) y con qué fuente.
 
 ### HU-063 · Suelo, heladas y abonos verdes en el catálogo
 
@@ -81,7 +92,8 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
 - **Criterios de aceptación:**
   - [ ] `kind`, `ph_min`, `ph_max`, `ph_opt_min` y `ph_opt_max` en cada ficha, con fuente; nulos si no hay fuente. Son los límites absolutos y óptimos de la curva de la señal de suelo (HU-196)
   - [ ] `frost_sensitive` y `heat_sensitive` por etapa en `crop_stages`, con fuente
-  - [ ] Al menos un abono verde de la región (por ejemplo, avena con vicia) y el descanso, con sus reglas de rotación
+  - [ ] La avena con vicia (abono verde, `kind = cover`) y el descanso (`kind = fallow`), con sus reglas de rotación y su duración con fuente
+  - [ ] Etapas sensibles a la helada de los 7 cultivos, con fuente
   - [ ] Reglas de suelo con fuente: exclusión por pH fuera de rango y bonificación de abonos verdes, descanso y leguminosas con carbono orgánico bajo (umbral con fuente)
   - [ ] Revisión cruzada por otro integrante
 - **Reglas que aplican:** R3, R8

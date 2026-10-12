@@ -7,7 +7,7 @@ rol: "Motor y API, con Web"
 agentes: [motor-api, web]
 subsistemas: [M8, W7, W9]
 depende_de: [HU-012]
-reglas: [R3, R4, R5, R7, R9]
+reglas: [R3, R4, R5, R7, R8, R9, R10]
 estado: pendiente
 ---
 
@@ -19,12 +19,14 @@ Decisión 6 de `docs/decisiones.md` y regla R9. Cuentas en PostgreSQL propio con
 
 El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cuentas se hace en el evento.
 
+**Recorte del MVP (11 de octubre de 2026):** quedan en P0 las cuentas mínimas (esquema, registro, entrar, salir, consentimiento y borrar la cuenta: HU-161, HU-162, HU-163, HU-166 y HU-168, que el proyecto no recorta), los lotes con polígono, su suelo y la capa satelital de la NASA (HU-164, HU-182, HU-211), las temporadas simples (HU-165) y Mi finca reducida a una sola zona (HU-169). Pasaron a P1: editar el perfil y la contraseña (HU-160), la trazabilidad y Mi actividad (HU-178), restaurar lo borrado (HU-204; borrar un lote o una siembra sigue siendo posible), el progreso (HU-167) y el lote vivo (HU-187). Desde el lote se entra a las estrategias de rotación (HU-214).
+
 ## Historias de usuario
 
 ### HU-160 · Editar mi perfil y cambiar la contraseña
 
 - **Historia:** Como agricultor, quiero cambiar mi nombre, mi usuario y mi contraseña, para mantener mi cuenta a mi gusto y segura.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] `PATCH /api/v1/me` y `POST /api/v1/me/password` del contrato
   - [ ] `PATCH /api/v1/me` acepta `priorities`: un entero de 0 a 5 por señal; nulo vuelve a los pesos de AgroSense; fuera de rango o todas en 0, 422
@@ -33,12 +35,12 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] En la web, Mi cuenta permite editar nombre y usuario en el sitio y cambiar la contraseña en su propia vista, con estados de guardado y error
   - [ ] No se pide ningún dato personal nuevo: las prioridades son preferencias, no datos de la finca (R9)
 - **Reglas que aplican:** R9
-- **Notas:** Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`).
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Mientras no exista, las prioridades de las señales se recuerdan en el navegador también con cuenta (HU-202). Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`).
 
 ### HU-178 · Trazabilidad de lo que hacen agricultores y administradores
 
 - **Historia:** Como agricultor, quiero ver qué se hizo con mi cuenta y mis lotes, y como equipo queremos saber quién hizo qué y cuándo, para confiar en la app y resolver tickets.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Tabla `activity_log` con migración, según «Trazabilidad» del contrato
   - [ ] Cada endpoint de cuenta escribe su evento en la misma transacción que el cambio; los intentos `denied` y `failed` también quedan
@@ -49,7 +51,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] `GET /me/activity` y la pantalla «Mi actividad» en Mi cuenta, con el estado de cada evento (`ok`, `denied`, `failed`)
   - [ ] El `request_id` de cada evento coincide con el de la terminal (HU-177)
 - **Reglas que aplican:** R9
-- **Notas:** Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento lo menciona desde la versión 2 (vigente: 3, HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria.
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP la tabla `activity_log` no existe; los logs de la terminal (HU-177) siguen. Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento lo menciona desde la versión 2 (vigente: 3, HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria.
 
 ### HU-170 · Roles: agricultor, administrador y desarrollador
 
@@ -78,10 +80,11 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Criterios de aceptación:**
   - [ ] Tablas y columnas del contrato, con migraciones de Alembic
   - [ ] PostgreSQL en Docker Compose con volumen persistente
-  - [ ] Borrar un usuario borra en cascada sus sesiones, lotes, temporadas, tickets y sus eventos de `activity_log`
+  - [ ] Borrar un usuario borra en cascada sus sesiones, lotes y temporadas y, cuando existan (P1), sus tickets y sus eventos de `activity_log`
   - [ ] `municipality_id` y `crop_id` se validan contra el catálogo publicado
 - **Reglas que aplican:** R7, R9
 - **Contrato que toca:** base de datos de cuentas de `specs/02-contratos.md`
+- **Notas:** `activity_log` (HU-178) y `support_tickets` (HU-170) son P1: en el MVP no se crean.
 
 ### HU-162 · Autenticación
 
@@ -107,26 +110,26 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] La versión vigente es la **3**. Dice que se guarda la ubicación (polígono) de cada lote (HU-164), que soporte puede ver los lotes (HU-170), que se registra la actividad de la cuenta durante 180 días (HU-178) y, nuevo en la versión 3, si el lote tiene riego (`irrigated`, HU-164), que se guardan sus prioridades (`priorities`, HU-160) y que lo que siembra se suma sin su nombre a los totales de siembras de su municipio, solo con al menos 5 cuentas (HU-200)
   - [ ] El registro envía `consent_version = 3` y la API guarda esa versión
 - **Reglas que aplican:** R9
-- **Notas:** La versión 2 sumó el polígono, el soporte y la actividad (10 de octubre de 2026). La versión 3 suma el riego y las prioridades guardadas en el perfil; aprobada por Felipe el 11 de octubre de 2026. Las siembras como totales anónimos de oferta (HU-200, P1) entran en la versión 3 (`specs/01-reglas.md`, «Varias fuentes»). Por decidir: qué pasa con una cuenta que aceptó una versión anterior (por ejemplo, pedir que acepte la nueva al iniciar sesión). Mientras no haya usuarios reales, la 3 es la primera versión en producción. Supuesto por confirmar: la API responde 422 si `consent_version` no es la vigente (el contrato solo dice 422 sin `consent_accepted`). Revisión del texto legal por confirmar con la región: la Ley 1581 de 2012 es de Colombia (decisión 11).
+- **Notas:** La versión 2 sumó el polígono, el soporte y la actividad (10 de octubre de 2026). La versión 3 suma el riego y las prioridades guardadas en el perfil; aprobada por Felipe el 11 de octubre de 2026. Las siembras como totales anónimos de oferta (HU-200, P1) entran en la versión 3 (`specs/01-reglas.md`, «Varias fuentes»). Por decidir: qué pasa con una cuenta que aceptó una versión anterior (por ejemplo, pedir que acepte la nueva al iniciar sesión). Mientras no haya usuarios reales, la 3 es la primera versión en producción. Supuesto por confirmar: la API responde 422 si `consent_version` no es la vigente (el contrato solo dice 422 sin `consent_accepted`). Revisión del texto legal por confirmar con la región: la Ley 1581 de 2012 es de Colombia (decisión 11). **Por decidir (11 de octubre de 2026):** con el recorte del MVP, la actividad de la cuenta (HU-178), el soporte (HU-170) y las prioridades en el perfil (HU-160) son P1; el texto de la versión 3 los nombra. Hay que decidir si el MVP publica un texto que solo diga lo que hace el MVP (y la versión 3 completa llega con el P1) o si se mantiene la versión 3 tal cual.
 
 ### HU-164 · Lotes del usuario
 
 - **Historia:** Como agricultor, quiero dibujar mis lotes en un mapa real, editarlos y borrarlos, en una o varias zonas, para tener mi finca completa y ubicada.
 - **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Endpoints de `lots` del contrato, con `geometry` (polígono GeoJSON) y restauración durante 30 días
-  - [ ] Restaurar un lote restaura también las temporadas que se borraron con él; pasados los 30 días, o si el lote no está borrado, responde 404
+  - [ ] Endpoints de `lots` del contrato del P0, con `geometry` (polígono GeoJSON). Borrar marca `deleted_at` y el lote deja de verse; restaurarlo es HU-204 (P1)
   - [ ] El lote guarda `irrigated` (si tiene riego): el formulario pregunta «¿Este lote tiene riego?» con «Sí», «No» y «Todavía no sé»; sin respuesta queda nulo y se puede cambiar después con `PATCH`
-  - [ ] Con `lot_id`, el diagnóstico y el calendario toman `irrigated` del lote; con `irrigated` nulo, se evalúa como sin riego y la limitación lo dice
-  - [ ] En la web, un mapa base de OpenStreetMap centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola. La capa satelital entra solo si se aprueba su licencia
+  - [ ] Con `lot_id`, el diagnóstico y las estrategias toman `irrigated` del lote; con `irrigated` nulo, se evalúa como sin riego y la limitación lo dice
+  - [ ] En la web, un mapa base de OpenStreetMap centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola. La capa satelital de la NASA es HU-211
   - [ ] El polígono debe ser válido y caer dentro de su municipio (422 si no), y se ve el límite municipal mientras se dibuja
   - [ ] Si no puede o no quiere dibujar, escribe el área a mano y el lote queda sin ubicación; puede dibujarlo después
   - [ ] Un usuario no ve ni modifica lotes ajenos (404)
-  - [ ] «Editar lote», desde la cabecera del lote, cambia el nombre, el contorno (moviendo los puntos en el mapa) y el riego; dice que al cambiar el riego se recalculan el diagnóstico, el calendario y el agua del lote, y que las siembras ya registradas guardan el diagnóstico que vieron
+  - [ ] «Editar lote», desde la cabecera del lote, cambia el nombre, el contorno (moviendo los puntos en el mapa) y el riego; dice que al cambiar el riego se recalculan el diagnóstico, las estrategias y el agua del lote, y que las siembras ya registradas guardan el diagnóstico que vieron
   - [ ] Editar el lote a un área menor que la de sus temporadas en curso responde 422
-  - [ ] «Borrar este lote» pide confirmación y dice hasta qué fecha se puede restaurar; en Mi finca, los lotes borrados hace menos de 30 días se ven aparte («Borrados hace poco») con «Restaurar» (`POST /api/v1/lots/{lot_id}/restore`)
+  - [ ] «Borrar este lote» pide confirmación. P1 (HU-204): dice hasta qué fecha se puede restaurar y, en Mi finca, los lotes borrados hace menos de 30 días se ven aparte («Borrados hace poco») con «Restaurar»
+  - [ ] Desde el lote, «Ver estrategias de rotación» abre HU-214 con el lote
 - **Reglas que aplican:** R7, R9
-- **Notas:** Un `PATCH` que deja el lote más chico que el área de sus temporadas en curso responde 422 y la pantalla lo avisa (aprobado por Felipe el 11 de octubre de 2026). Con el polígono, la ficha del lote muestra su suelo estimado (HU-182). La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026. `irrigated` se agregó el 11 de octubre de 2026: con riego, la falta de lluvia no es un riesgo en la señal `water` (HU-071). Es un dato mínimo que se usa (R9); el consentimiento versión 3 lo nombra (HU-163).
+- **Notas:** Restaurar lo borrado pasó a P1 el 11 de octubre de 2026 (HU-204): recorte del MVP. Un `PATCH` que deja el lote más chico que el área de sus temporadas en curso responde 422 y la pantalla lo avisa (aprobado por Felipe el 11 de octubre de 2026). Con el polígono, la ficha del lote muestra su suelo estimado (HU-182). La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026. `irrigated` se agregó el 11 de octubre de 2026: con riego, la falta de lluvia no es un riesgo en la señal `water` (HU-071). Es un dato mínimo que se usa (R9); el consentimiento versión 3 lo nombra (HU-163).
 
 ### HU-165 · Temporadas e historial del lote
 
@@ -141,8 +144,9 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Validaciones (422): cada temporada de `follows_season_ids` es del mismo lote, está cosechada y su `harvest_date` es igual o anterior a la `sowing_date` de la nueva; el área de una temporada no pasa de la suma de las áreas de las que viene más el área libre del lote, y la suma de las temporadas en curso nunca pasa del área del lote
   - [ ] Cada temporada guarda el diagnóstico visto al sembrar (`diagnosis_light`, `diagnosis_light_default`, `diagnosis_action`, `diagnosis_weights`, `diagnosis_irrigated`) con `dataset_version` y `rules_version`: es el diagnóstico de la ventana que empieza en su `sowing_date`
   - [ ] `diagnosis_action` acepta solo `sow`, `other_window`, `rotate` y `review_data`; si el agricultor no consultó el diagnóstico, esos campos van nulos
-  - [ ] Las rotaciones de una temporada nueva reciben los cultivos de todas las temporadas de las que viene su terreno
-  - [ ] El historial del lote (`GET /lots/{lot_id}/seasons`) incluye las temporadas borradas hace menos de 30 días (HU-204)
+  - [ ] Las estrategias de rotación de un terreno reciben los cultivos de todas las temporadas de las que viene
+  - [ ] La etapa de cada temporada en curso sale de las etapas por calendario (HU-220, `stage_method = calendar`)
+  - [ ] Borrar una temporada marca `deleted_at` y deja de verse; listarla y restaurarla es HU-204 (P1)
 - **Reglas que aplican:** R4, R9
 - **Contrato que toca:** `seasons` (con `follows_season_ids`), `POST /api/v1/lots/{lot_id}/seasons`, `PATCH /api/v1/seasons/{season_id}`, tabla de errores
 - **Notas:** Las partes son de área, no se dibujan en el mapa; el suelo es el mismo para todo el lote. Decidido el 11 de octubre de 2026 y ampliado el mismo día: el agricultor divide su lote como quiera; una temporada puede venir de varias y tener varias sucesoras (`follows_season_ids`, antes `follows_season_id` singular). Ejemplo de uso: hoy siembra papa en la mitad; en un mes divide la otra mitad en fresa y ajo; al cosechar la papa, reparte ese terreno. Pasa de M a L. La regla de áreas es una sola (`specs/02-contratos.md`): el área de una temporada no pasa de la suma de las áreas de las que viene más el área libre del lote, y la suma de las temporadas en curso nunca pasa del área del lote; eso basta para que un terreno no se reparta dos veces. Por eso juntar dos temporadas de 1 ha en una de 2 ha es válido, y una sucesora puede ocupar el terreno anterior más terreno libre (por ejemplo, 1,5 ha después de una papa de 1 ha, si hay 0,5 ha libres). Cada temporada guarda las dos luces (`diagnosis_light`, con los pesos con que se vio, y `diagnosis_light_default`, con los de AgroSense) y esos pesos (`diagnosis_weights`) (R4). Por decidir: el orden de `previous_crop_ids` cuando hay varias anteriores cosechadas el mismo día.
@@ -150,32 +154,34 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-204 · Historial con lo borrado y «Restaurar»
 
 - **Historia:** Como agricultor, quiero ver en el historial del lote lo que borré hace poco y poder restaurarlo, para corregir un error sin perder mis datos.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] `GET /api/v1/lots/{lot_id}/seasons` trae las temporadas borradas hace menos de 30 días, con `deleted_at` y `restorable_until`; las borradas hace 30 días o más no vienen
+  - [ ] Lo mismo para los lotes: `GET /api/v1/lots` trae los borrados hace menos de 30 días y `POST /api/v1/lots/{lot_id}/restore` los restaura con las temporadas que se borraron con ellos; en Mi finca se ven aparte («Borrados hace poco»)
   - [ ] En la web, las borradas se ven aparte, con el rótulo «Borrada · se puede restaurar hasta <fecha>» y el botón «Restaurar», que llama a `POST /api/v1/seasons/{season_id}/restore`
-  - [ ] Al restaurar, la temporada vuelve al historial y al progreso, y queda el evento `season.restored` en `activity_log`
+  - [ ] Al restaurar, la temporada vuelve al historial y al progreso y, si existe `activity_log` (HU-178), queda el evento `season.restored`
   - [ ] Restaurar valida lo mismo que crear: si la temporada restaurada hace pasar las temporadas en curso del área del lote, o sus `follows_season_ids` ya no son válidas, responde 422 y la web dice por qué
   - [ ] Restaurar después de 30 días, o algo que no está borrado, responde 404
   - [ ] Cada botón tiene una acción definida
 - **Reglas que aplican:** R9
 - **Contrato que toca:** `GET /api/v1/lots/{lot_id}/seasons`, `POST /api/v1/seasons/{season_id}/restore`, `activity_log`
-- **Notas:** Decidido el 11 de octubre de 2026 (antes «cómo se listan los borrados» estaba por decidir). El contrato fija los códigos (`POST /api/v1/seasons/{season_id}/restore`): restaurar vuelve a validar el área y las temporadas de las que viene (422 si ya no cabe); pasados los 30 días, o si no está borrada, 404; lo borrado no cuenta en el área libre ni en el progreso. Los lotes borrados vienen en `GET /lots` con `restorable_until` y se restauran desde «Borrados hace poco» en Mi finca (HU-164).
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Borrar un lote o una siembra sigue siendo posible en el MVP (HU-164, HU-165); los datos quedan marcados con `deleted_at` y se borran para siempre a los 30 días. La restauración de lotes, que estaba en HU-164, se movió aquí. Decidido el 11 de octubre de 2026 (antes «cómo se listan los borrados» estaba por decidir). El contrato fija los códigos (`POST /api/v1/seasons/{season_id}/restore`): restaurar vuelve a validar el área y las temporadas de las que viene (422 si ya no cabe); pasados los 30 días, o si no está borrada, 404; lo borrado no cuenta en el área libre ni en el progreso. Los lotes borrados vienen en `GET /lots` con `restorable_until` y se restauran desde «Borrados hace poco» en Mi finca (HU-164).
 
 ### HU-166 · Borrar mi cuenta
 
 - **Historia:** Como agricultor, quiero borrar mi cuenta y todo lo que registré, para tener control de mis datos.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] `DELETE /api/v1/me` borra usuario, sesiones, lotes, temporadas, tickets y sus eventos de `activity_log` (las acciones de administradores sobre sus datos quedan anonimizadas)
+  - [ ] `DELETE /api/v1/me` borra usuario, sesiones, lotes y temporadas (también los borrados que aún se podían restaurar) y, cuando existan (P1), sus tickets y sus eventos de `activity_log`, con las acciones de administradores sobre sus datos anonimizadas
   - [ ] Confirmación clara en la web antes de borrar
   - [ ] Prueba automática del borrado en cascada
 - **Reglas que aplican:** R9
+- **Notas:** No se recorta: es parte de las cuentas que el proyecto no recorta mientras haya cuentas (`CLAUDE.md`).
 
 ### HU-167 · Progreso del lote
 
 - **Historia:** Como agricultor, quiero ver el progreso de mis lotes, para sentir que mi trabajo avanza y cuidar el suelo.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Derivado de `seasons`: temporadas registradas, rotaciones que cumplen las reglas de filtro, hitos
   - [ ] `rotations` trae una entrada por cada relación entre una temporada y una de sus sucesoras (`from_season_id`, `to_season_id`), con `valid` y `violated_rule_ids`: la lista de reglas de `rotation_rules` que viola, vacía si cumple. Al dividir, una temporada da varias entradas; al juntar, una sucesora recibe varias
@@ -186,7 +192,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Prueba: un terreno dividido en dos sucesoras da dos relaciones; dos temporadas juntadas en una dan dos relaciones hacia la misma
 - **Reglas que aplican:** R3, R5, R8
 - **Contrato que toca:** `GET /api/v1/lots/{lot_id}/progress`
-- **Notas:** `violated_rule_ids` reemplaza a la regla única por par; cambió el 11 de octubre de 2026 con `follows_season_ids`. Lo borrado no cuenta en el área libre ni en el progreso (`specs/02-contratos.md`, `POST /api/v1/seasons/{season_id}/restore`).
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. `violated_rule_ids` reemplaza a la regla única por par; cambió el 11 de octubre de 2026 con `follows_season_ids`. Lo borrado no cuenta en el área libre ni en el progreso (`specs/02-contratos.md`, `POST /api/v1/seasons/{season_id}/restore`).
 
 ### HU-168 · Registro, sesión y paso de invitado a cuenta
 
@@ -194,14 +200,16 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Vistas de registro, inicio de sesión y perfil con el estilo de `specs/05-frontend.md`
-  - [ ] Al registrarse, la finca temporal del dispositivo se ofrece para guardar como un lote con una temporada por cultivo, cada una con su parte del área
-  - [ ] Quien vuelve con sesión entra directo a Mi finca, sin descenso
+  - [ ] Al registrarse después de consultar estrategias sin cuenta, el municipio, el área y el cultivo anterior que escribió se ofrecen para crear su primer lote (sin dibujar), que puede dibujar después
+  - [ ] Quien vuelve con sesión entra directo a Mi finca
+  - [ ] P1 (con HU-141): la finca temporal del dispositivo se ofrece para guardar como un lote con una temporada por cultivo, cada una con su parte del área
 - **Reglas que aplican:** R9
+- **Notas:** Ajustada el 11 de octubre de 2026 al recorte del MVP: la finca temporal pasó a P1 y sin cuenta se consulta por municipio, área y cultivo anterior (HU-214).
 
 ### HU-187 · El lote vivo
 
 - **Historia:** Como agricultor, quiero ver mi lote con sus cultivos creciendo, el clima de ahora y si es probable que haya que regar, para sentir mi finca en la app y entenderla de un vistazo.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Diorama low-poly del lote: cubos de tierra juntos, y cada cultivo en curso ocupa tantos cubos como su parte del área (al menos uno), cada uno con su arquetipo (`crops.archetype`) y su etapa (HU-150); la parte libre se ve como tierra en descanso
   - [ ] Alrededor del lote, la finca hecha de bloques: terreno de pasto, camino de tierra entre las camas, cerca de madera con faroles y portón, casa con techo escalonado, porche y materas, huerta de flores, árbol y un perro acostado. Es ambiente: no muestra ningún dato ni tiene controles
@@ -215,16 +223,33 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Con movimiento reducido o en modo ligero, la escena es estática: la imagen fija del estado de ahora, con la misma información y los mismos rótulos
   - [ ] La animación se pausa cuando la pestaña no se ve y limita las partículas en móvil
 - **Reglas que aplican:** R1, R5, R10
-- **Notas:** Los estados del clima que no ocurren ahora solo se ven en el modo simulación de desarrollo (HU-014). Cultivos perennes (caña, frutales) tienen arquetipo visual, pero su manejo por temporadas de varios años queda fuera del P0. Decidido el 11 de octubre de 2026.
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP el lote se ve en 2D: su mapa con la capa de la NASA (HU-211), su suelo, sus temporadas y la entrada a las estrategias. Los estados del clima que no ocurren ahora solo se ven en el modo simulación de desarrollo (HU-014). Cultivos perennes (caña, frutales) tienen arquetipo visual, pero su manejo por temporadas de varios años queda fuera del P0. Decidido el 11 de octubre de 2026.
 
 ### HU-169 · Mi finca con varios lotes y zonas
 
-- **Historia:** Como agricultor, quiero ver todos mis lotes en el paisaje y cambiar de zona, para manejar mi finca completa.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Historia:** Como agricultor, quiero ver mis lotes de mi zona en el mapa y abrir uno, para manejar mi finca y planear su próxima siembra.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Los lotes del usuario en el mapa real con sus polígonos (HU-164), cada uno con sus cultivos y etapas; al abrir uno, el lote vivo (HU-187)
-  - [ ] Selector de zona si hay lotes en varios municipios
-  - [ ] Detalle de lote con ahora, próxima siembra, agua e historial (con lo borrado y «Restaurar», HU-204)
-  - [ ] En «Próxima siembra», la pregunta «¿Qué había antes en este terreno?» permite elegir una o varias temporadas cosechadas (HU-165)
-  - [ ] Agregar lote con mini descenso al municipio elegido
+  - [ ] Los lotes del usuario en el mapa real con sus polígonos (HU-164) y la capa de la NASA (HU-211), cada uno con sus cultivos y etapas; los lotes sin dibujar se ven en una lista
+  - [ ] **Una sola zona:** Mi finca muestra los lotes de un municipio, sin selector de zonas. Si el usuario tiene lotes en otro municipio, se ven en la lista con su municipio y abrirlos centra el mapa allí
+  - [ ] Detalle de lote en 2D con su suelo (HU-185), sus temporadas en curso y cosechadas, y «Ver estrategias de rotación» (HU-214)
+  - [ ] En la próxima siembra, la pregunta «¿Qué había antes en este terreno?» permite elegir una o varias temporadas cosechadas (HU-165)
+  - [ ] «Agregar lote» abre el mapa del municipio para dibujar (HU-164), sin descenso
+  - [ ] Cada botón tiene una acción o una navegación definida
 - **Reglas que aplican:** R1, R5, R9, R10
+- **Notas:** Reducida el 11 de octubre de 2026 al recorte del MVP: una sola zona, sin selector, sin lote vivo (HU-187, P1), sin progreso (HU-167, P1) y sin «Restaurar» (HU-204, P1); pasó de L a M.
+
+### HU-211 · Capa satelital de la NASA en el mapa del lote
+
+- **Historia:** Como agricultor, quiero ver mi lote sobre una imagen satelital y el verdor de la NASA, para reconocer mi terreno y ver de dónde salen los datos.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] El mapa del lote (MapLibre) suma capas WMTS de NASA GIBS: una imagen satelital de color real y una de NDVI, que el agricultor prende y apaga
+  - [ ] Cada capa dice su producto, su fecha y su resolución, y la atribución que pida GIBS (R8)
+  - [ ] Una imagen de días con nubes se ve como tal; el rótulo dice que la imagen es de la fecha indicada, no de hoy, y que el verdor es de la zona a la resolución del producto (R10)
+  - [ ] Si GIBS no responde, el mapa sigue con OpenStreetMap y lo dice; dibujar el lote no depende de la capa
+  - [ ] La capa es solo para ver: no entra al motor ni cambia un resultado
+  - [ ] Funciona en el mapa de dibujo (HU-164) y en Mi finca (HU-169)
+  - [ ] Entrada de GIBS en `sources` con sus condiciones de uso verificadas
+- **Reglas que aplican:** R5, R8, R10
+- **Notas:** Decisión 12. Resuelve la «capa satelital por definir» de `specs/05-frontend.md`. Los nombres exactos de las capas, su resolución y las condiciones de uso se verifican antes de usarlas (`docs/fuentes.md`). Es lo segundo que se recorta si falta tiempo, después de SMAP. Agregada el 11 de octubre de 2026.

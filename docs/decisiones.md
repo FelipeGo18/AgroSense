@@ -186,6 +186,36 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Reglas asociadas:** R1, R5, R7, R8 y R9. Aprobada por Felipe el 11 de octubre de 2026.
 
+## 12. La NASA en el núcleo y las estrategias de rotación en el centro
+
+**Qué es:** el MVP se centra en lo que pide el reto oficial («Field Shift»): una herramienta que use observaciones de la Tierra de la NASA, el suelo local, las características de los cultivos y las prioridades del agricultor para explorar estrategias de rotación que fortalezcan el suelo y adapten la finca a condiciones que cambian. Son cinco decisiones que van juntas:
+
+- **La NASA es el núcleo: se usa todo lo que dé.** Cada producto entra por su propio adaptador y publica tablas versionadas: NASA POWER ampliado (lluvia, temperatura, humedad del suelo modelada, y radiación, viento y humedad para la ET0 por Penman-Monteith), NASADEM (altitud del municipio y del lote), GPM IMERG (lluvia por satélite), MODIS NDVI (verdor por municipio y por lote), SMAP (humedad del suelo por satélite) y las capas de NASA GIBS en el mapa del lote. `sources.yaml` dice qué producto calcula cada señal en cada región. Si un producto falta, la señal o el indicador es «datos insuficientes». Ninguno cambia el motor. De NASA POWER se dice siempre que es un reanálisis, no una observación directa. Lo que recomiende el enunciado del 28 de octubre entra por el mismo mecanismo.
+- **Las estrategias de rotación son el centro del producto.** El flujo principal es: lote (o municipio y área, sin cuenta) → estrategias de rotación de 3 ciclos → un ciclo con su diagnóstico de ventana → agua del plan → qué cambió. El diagnóstico de ventana no desaparece: es la revisión de cada ciclo y sigue disponible como consulta suelta. Cada estrategia trae su salud del suelo con cuatro criterios por reglas con fuente: nitrógeno, carbono orgánico, suelo cubierto y corte de plagas. Una estrategia con un cultivo que no se da en la zona, o con un ciclo de alto riesgo de clima, se descarta con su motivo.
+- **«Qué cambió».** Para un municipio y un cultivo, se comparan dos periodos de la misma fuente (por defecto 1981–2000 y 2005–2024 con POWER): heladas, lluvia y temperatura máxima por mes, y cómo se movieron las mejores ventanas de siembra. Es historia comparada, nunca pronóstico.
+- **Siete cultivos con ficha completa.** Papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia (abono verde), cada dato con su fuente. Es trabajo de la fase 0, sin código, y va primero.
+- **P0 es el MVP.** Todo lo que no sirve al flujo principal pasó a P1: la escena 3D y el descenso, el lote vivo, el clima en vivo, el calendario completo, la finca temporal, los cultivos alternativos, el progreso, la trazabilidad y restaurar lo borrado. La web del MVP es 2D.
+- **La oferta es valor agregado, no protagonista.** Sigue siendo una de las seis señales, con su peso; en las estrategias entra solo por el criterio de ingreso; y la demo abre con rotación, suelo, NASA y qué cambió, y deja la oferta para el final.
+
+**Analogía:** un mecánico con varios instrumentos. No mide todo con el mismo aparato: usa el que sirve para cada cosa, dice cuál usó y, si dos no coinciden, muestra las dos lecturas. Y cuando recomienda un plan de mantenimiento para los próximos tres servicios, explica por qué cuida el motor según el manual del fabricante; no promete cuántos kilómetros más va a durar.
+
+**Por qué:**
+
+- **Es lo que pide el reto.** El enunciado habla de rotaciones, salud del suelo, observaciones de la NASA y condiciones que cambian. El producto ponía primero el semáforo de una fecha y usaba un solo producto de la NASA, que además es un reanálisis.
+- **Un adaptador por producto protege el plan.** Si SMAP o el NDVI por lote no alcanzan a entrar, se recortan sin tocar el motor, y lo que el enunciado recomiende el 28 de octubre se suma sin rehacer nada.
+- **Tres ciclos muestran lo que una siembra no.** El nitrógeno que deja una leguminosa, el suelo cubierto o el descanso de una familia solo se ven mirando la secuencia.
+- **No hay modelo de suelo.** Decir cuánto va a mejorar el suelo sería inventar (decisión 4). Comparar estrategias con reglas que tienen fuente sí se puede explicar.
+- **Comparar dos periodos responde «condiciones que cambian» sin predecir.** Mostrar cómo era y cómo es la zona es historia; decir cómo será sería un pronóstico.
+- **Las horas van a lo que pide el reto.** El equipo tiene unas 168 horas útiles en el evento. El recorte sacó unas 100 horas de lo que no sirve al flujo y las puso en los datos de la NASA, las estrategias y «Qué cambió», que además se pueden adelantar en la fase 0. El P0 sigue sin caber sin esa preparación (`docs/plan-48h.md`).
+
+**Lo que no cambia:** reglas, no predicción (decisión 4); sin datos no hay señal (decisión 5); calcular no es guardar (decisión 6); las fuentes se muestran juntas y nunca se mezclan (decisión 11); el semáforo se decide por reglas (R2).
+
+**Lo que exige:** cuenta de NASA Earthdata y descargas recortadas a la región; fichas de los 7 cultivos y reglas de rotación con fuente en la fase 0; tablas nuevas en el contrato; diseñar en Figma las pantallas nuevas antes de programarlas; y confirmar esta semana qué se puede llevar preparado al evento (HU-004).
+
+**Orden de recorte de los productos NASA:** primero SMAP, luego GIBS, luego el NDVI por lote (queda por municipio). POWER, NASADEM e IMERG no se recortan.
+
+**Reglas asociadas:** R1, R2, R3, R4, R5, R6, R8, R9 y R10. R9 suma `/changes` a los endpoints de cálculo y R10 suma la humedad del suelo y el verdor como datos de la zona. Detalle en `specs/01-reglas.md` («Estrategias de rotación» y «Qué cambió en la zona»). Decidida por Felipe el 11 de octubre de 2026.
+
 ## Cómo se conectan
 
-Los datos se calculan antes (3), con un formato acordado desde el inicio (2) y sin una única fuente de verdad (11). Un motor separado de la web (1) aplica reglas explicables (4) y dice honestamente cuando le falta información (5). Lo que el usuario registra vive aparte, en su cuenta, y solo llega al cálculo a través de la API (6). El clima de ahora decora la escena, pero nunca entra al cálculo (7). El suelo y las heladas son señales del mismo semáforo (8), que se evalúa sobre una ventana de siembra: primero la aptitud del cultivo, luego sus señales y, para comparar fechas, un orden que deja decidir al agricultor (9). Cada señal se califica con una curva por cultivo, el agricultor pondera, y el riesgo grave cuenta siempre (10).
+La NASA es el núcleo de los datos y las estrategias de rotación son el centro del producto (12). Los datos se calculan antes (3), con un formato acordado desde el inicio (2) y sin una única fuente de verdad (11). Un motor separado de la web (1) aplica reglas explicables (4) y dice honestamente cuando le falta información (5). Lo que el usuario registra vive aparte, en su cuenta, y solo llega al cálculo a través de la API (6). El clima de ahora decora la escena, pero nunca entra al cálculo (7). El suelo y las heladas son señales del mismo semáforo (8), que se evalúa sobre una ventana de siembra: primero la aptitud del cultivo, luego sus señales y, para comparar fechas, un orden que deja decidir al agricultor (9). Cada señal se califica con una curva por cultivo, el agricultor pondera, y el riesgo grave cuenta siempre (10).

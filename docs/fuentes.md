@@ -4,11 +4,26 @@ Todo dato y toda regla del proyecto debe apuntar a una entrada de la tabla `sour
 
 Un indicador puede tener varias fuentes: se muestran juntas para contrastarlas y nunca se mezclan. `sources.yaml` dice qué fuente calcula cada señal en cada región (decisión 11). Las fuentes de Colombia (EVA, SIPSA, IDEAM, UPRA, DANE, IGAC) son de la región piloto, que es un supuesto hasta que el reto confirme la región (HU-002).
 
+## Productos de la NASA del MVP (decisión 12)
+
+La NASA es el núcleo de los datos. Cada producto entra por su adaptador y `sources.yaml` dice cuál calcula cada señal por región. **Todo lo que dice «por verificar» se confirma en la HU del producto antes de usarlo**: no se da por cierto. El orden de recorte es SMAP, GIBS y NDVI por lote; POWER, NASADEM e IMERG no se recortan.
+
+| Producto | Misión u origen | Resolución espacial | Resolución temporal | Desde cuándo | Acceso | Licencia | Para qué se usa | HU |
+|---|---|---|---|---|---|---|---|---|
+| NASA POWER (comunidad AG), ampliado | Proyecto POWER de la NASA. **Es un reanálisis** (un modelo con observaciones asimiladas), no una observación directa: se dice siempre | Celda de unos 50 km para el clima; la de la radiación puede ser más gruesa (por verificar) | Diaria | 1981 para lluvia y temperatura; el inicio de la radiación y de la humedad del suelo, por verificar | API por punto, sin cuenta. Consultas regionales de hasta 4,5° × 4,5°. Su respuesta trae la altura de la celda | Datos abiertos de la NASA; cita y atribución por verificar | Lluvia y temperatura (serie larga, para «Qué cambió»); humedad del suelo modelada (`GWETTOP`, `GWETROOT`), para contrastar; radiación, viento y humedad relativa (`RH2M`) para la ET0 por Penman-Monteith (FAO-56). Los nombres de las variables de radiación y viento, por verificar en su documentación | HU-041, HU-042, HU-205, HU-143 |
+| NASADEM | Reprocesamiento de la NASA de la misión de radar SRTM | 30 m (1 segundo de arco) | Una sola fecha: es estático | Datos de 2000 (por verificar) | LP DAAC, con cuenta de Earthdata (por verificar) | Datos abiertos de la NASA; por verificar | Altitud del municipio y del lote: aptitud del cultivo y corrección de la temperatura. Reemplaza al «modelo de elevación por elegir» | HU-206, HU-044 |
+| GPM IMERG | Misión GPM (Global Precipitation Measurement), NASA y JAXA | Unos 10 km (0,1°) | Media hora, con productos diarios y mensuales; cuál se usa, por verificar | Junio de 2000 | GES DISC, con cuenta de Earthdata. Se descarga solo el recuadro de la región | Datos abiertos de la NASA; por verificar | Lluvia por satélite por municipio: calcula la señal `water` donde la región la tiene. Se muestra junto a POWER y nunca se mezclan | HU-207 |
+| MODIS NDVI (MOD13Q1) | Sensor MODIS del satélite Terra | 250 m | Compuesto de 16 días | Febrero de 2000 | LP DAAC, con cuenta de Earthdata; AppEEARS como opción para extraer por polígono (por verificar) | Datos abiertos de la NASA; por verificar. Versión del producto, por verificar | Cuándo está verde el campo en la zona, para contrastar las ventanas; cobertura del suelo por municipio y por lote para la salud del suelo de las estrategias. Una celda (6,25 ha) es más grande que muchos lotes | HU-208, HU-209 |
+| SMAP (nivel 4) | Misión SMAP (Soil Moisture Active Passive) | 9 km | Cada 3 horas (por verificar); se publica el promedio mensual | Marzo de 2015 | NSIDC DAAC, con cuenta de Earthdata; también en AppEEARS | Datos abiertos de la NASA; por verificar. Producto, versión y profundidades, por verificar | Humedad del suelo superficial y de raíces, para contrastar la de POWER en la señal de agua y en el plan de agua. Serie corta: no sirve para normales largas | HU-210 |
+| NASA GIBS / Worldview | Servicio de imágenes de la NASA (Global Imagery Browse Services) | Depende de la capa (por verificar) | Diaria o por compuesto, según la capa (por verificar) | Depende de la capa | Capas WMTS públicas, desde el navegador (por verificar si pide clave) | Condiciones de uso y atribución, por verificar | Imagen satelital y NDVI en el mapa del lote, para que la NASA se vea en pantalla. Solo se muestra: no entra al motor. Los nombres de las capas, por verificar | HU-211 |
+
+El enunciado completo, con los datos que recomienda, sale el 28 de octubre (HU-002): lo que recomiende se agrega a esta tabla y entra por el mismo mecanismo.
+
 ## Datos
 
 | Fuente | Qué aporta | Estado |
 |---|---|---|
-| NASA POWER (comunidad AG) | Series diarias por punto: precipitación, temperatura máxima y mínima y, para P1, humedad relativa. Consultas regionales de hasta 4,5° × 4,5°. Su respuesta trae la altura de la celda. | Documentación del cliente revisada; confirmar contra el enunciado del 28 de octubre (HU-002) |
+| NASA POWER (comunidad AG) | Ver la tabla de productos de la NASA, arriba. | Documentación del cliente revisada; confirmar contra el enunciado del 28 de octubre (HU-002) |
 | EVA / UPRA | Área sembrada, cosechada y producción por municipio, cultivo y semestre (desde 2019); es el único dato que va por semestre. Cobertura aproximada del 70 % de los municipios. Informe final 2024-2025 publicado hacia mayo de 2026; el último año es preliminar. | Verificar DIVIPOLA y definición de semestre (HU-001) |
 | SIPSA / DANE | Precios y abastecimiento de alimentos. | **Sin verificar** cobertura de productos y mercados (HU-003) |
 | IDEAM | Posible fuente complementaria de clima. | Sin verificar |
@@ -22,17 +37,20 @@ Un indicador puede tener varias fuentes: se muestran juntas para contrastarlas y
 | Agua que retiene el suelo según su textura | Método para llevar la textura de SoilGrids al balance de agua (HU-144). | **Por elegir y confirmar con fuente**. Candidata sin verificar: FAO-56 |
 | Pesos por defecto (`weights.yaml`) | Cuánto pesa cada señal en el criterio de AgroSense (HU-198). | No es un dato con fuente: es un criterio del equipo, con quién lo definió y su porqué. No se cita una fuente que no lo diga |
 | SoilGrids (ISRIC) | pH, carbono orgánico, nitrógeno y textura a 250 m, con intervalo de predicción del 90 %. Licencia CC BY 4.0. (P0, EP-18) | Documentación revisada; verificar acceso (WCS) y versión en HU-181 |
-| Modelo de elevación | Altitud de cada municipio para corregir la temperatura (HU-044). | Por elegir |
+| Modelo de elevación | Altitud de cada municipio y de cada lote. | **Elegido: NASADEM** (decisión 12, HU-206). Ver la tabla de productos de la NASA |
+| Reglas de salud del suelo de las estrategias | Cortes de `nitrogen`, `organic_carbon`, `soil_cover` y `pest_break` (HU-062, HU-212). | **Por elegir y confirmar con fuente.** Punto de partida: las rotaciones papa-avena-arveja de Agrosavia en Tibaitatá. Sin fuente, el criterio queda en «datos insuficientes» |
+| Fichas de los 7 cultivos del MVP | Papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia: altitud, temperatura, `heat_max_c`, etapas sensibles, Kc por etapa, duración, pH, familia y tipo de raíz (HU-061, HU-063, HU-142, HU-199). | **Por confirmar con fuente** en la fase 0. Candidatas: FAO EcoCrop, FAO-56 y Agrosavia |
 | UPRA e IDEAM (heladas) | Criterio de amenaza por helada: mínima menor que 2 °C. | Encontrado en un informe de la UPRA de enero de 2024; citar en HU-045 |
 | Natural Earth (vía `world-atlas` 2.0.2) | Contornos de continentes y países para la Tierra del inicio. Dominio público. | Elegida |
 | NASA Earth Observatory · Blue Marble: Next Generation (diciembre de 2004) | Color de las facetas de tierra del globo. Hay que acreditar «NASA Earth Observatory». | Elegida; solo para la imagen del inicio, no entra en ningún cálculo |
 | Font Awesome Free 6.5.2 (íconos de marca) | Logos originales de GitHub, Instagram, LinkedIn y YouTube del pie de página, con los colores de cada marca. Íconos con licencia CC BY 4.0: se acredita en el código (`design/pantallas/marcas.py`). | Elegida |
 | DANE (límites municipales) | Códigos DIVIPOLA, nombres y centroides. | Por descargar |
 | Open-Meteo (condiciones actuales) | Lluvia, nubes, viento y temperatura actuales por punto, de modelos con resolución de 15 minutos. Solo para el ambiente de la escena (decisión 7). | Elegida; licencia, atribución y límites de uso se verifican en HU-175 |
-| NASA GIBS (imágenes satelitales casi en tiempo real) | Posible imagen del día para el nivel «satélite» de la escena (P1). | Sin verificar |
+| NASA GIBS (imágenes satelitales) | Capa del mapa del lote en el MVP (HU-211). La imagen del día para el nivel «satélite» de la escena sigue en P1. | Ver la tabla de productos de la NASA; condiciones de uso por verificar |
 
 ## Referencia
 
+- Texto oficial del reto «Field Shift: Adapting Farms with NASA Data», leído el 11 de octubre de 2026: <https://www.spaceappschallenge.org/2026/challenges/field-shift-adapting-farms-with-nasa-data/> (copia textual en `specs/00-vision.md`).
 - Términos y condiciones de Space Apps 2025: no prohíben explícitamente preparar antes del evento y exigen citar todas las fuentes. **Hay que confirmar los de 2026 (HU-004).**
 - Nota de prensa sobre Space Apps 2026: equipos de hasta 6 personas.
 - FAO-56 (Allen et al.): evapotranspiración de referencia y coeficientes de cultivo (Kc).

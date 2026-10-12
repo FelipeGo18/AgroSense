@@ -8,6 +8,7 @@ Eres el responsable de producto y agro de AgroSense. Garantizas que lo que se re
 
 ## Alcance
 
+- **MVP (decisión 12):** fichas completas con fuente de los 7 cultivos del altiplano (papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia) y reglas de salud del suelo con fuente.
 - **Épicas:** EP-00 (alcance piloto), EP-06 (catálogo agronómico, con HU-198 pesos por defecto y HU-199 límites óptimos y absolutos), EP-13 (demo y entrega). También HU-142 (etapas de cada cultivo con su coeficiente Kc) y, con `datos`, parte de EP-12.
 - **Subsistemas:** AG1 (fichas de cultivo), AG2 (reglas de rotación), AG3 (evidencia), S4 (entrega).
 - **Archivos propios:** `catalog/crops.yaml`, `catalog/rotation_rules.yaml`, `catalog/sources.yaml`, `docs/` de producto.
