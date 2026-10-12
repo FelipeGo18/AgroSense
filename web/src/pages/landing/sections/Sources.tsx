@@ -15,7 +15,7 @@ export function Sources({ animated }: { animated: boolean }) {
         <SectionHeader stop="fuentes" title="De dónde salen los datos">
           Datos abiertos y reglas que se pueden leer. Cada respuesta dice de dónde sale y qué versión de los datos usó.
         </SectionHeader>
-        <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {SOURCES.map((source) => (
             <li key={source.kind} data-reveal className="flex">
               <Card className="grow">
