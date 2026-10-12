@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -153,11 +153,79 @@ describe("Crear cuenta (HU-162, HU-163)", () => {
   });
 });
 
+describe("Vida alrededor de la mascota", () => {
+  it("sin movimiento no hay mariposa ni viento", async () => {
+    fakeApi({});
+    const { container } = open(PATHS.login);
+    await screen.findByLabelText("Usuario");
+    expect(container.querySelector("[data-butterfly]")).toBeNull();
+    expect(container.querySelector("[data-streak]")).toBeNull();
+  });
+
+  it("con movimiento, la mariposa y el viento son decoración: no se leen ni reciben el puntero", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    fakeApi({});
+    const { container } = open(PATHS.login);
+    await screen.findByLabelText("Usuario");
+    const butterflies = container.querySelectorAll("[data-butterfly]");
+    expect(butterflies.length).toBeGreaterThan(0);
+    for (const butterfly of butterflies) {
+      const layer = butterfly.parentElement!;
+      expect(layer).toHaveAttribute("aria-hidden", "true");
+      expect(layer).toHaveClass("pointer-events-none");
+    }
+    // La mirada se mueve aparte del parpadeo.
+    expect(container.querySelector(".mascot-gaze .mascot-eyes")).not.toBeNull();
+  });
+});
+
+describe("La mascota reacciona (HU-172)", () => {
+  const moods = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll<SVGElement>("main .mascot")).map((mascot) => mascot.dataset.mood);
+  const withMotion = () =>
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+
+  it("mira el campo de texto, se tapa los ojos en la contraseña y espía cuando está a la vista", async () => {
+    withMotion();
+    fakeApi({});
+    const { container } = open(PATHS.login);
+    const username = await screen.findByLabelText("Usuario");
+    expect(moods(container)).toEqual(["guide", "guide"]);
+    // Se espera a que termine la entrada: en jsdom GSAP saca y vuelve a meter los elementos al medirlos, y eso quita el foco.
+    await new Promise((done) => setTimeout(done, 1200));
+    username.focus();
+    await waitFor(() => expect(moods(container)).toEqual(["watch", "watch"]));
+    screen.getByLabelText("Contraseña").focus();
+    await waitFor(() => expect(moods(container)).toEqual(["shy", "shy"]));
+    fireEvent.click(container.querySelector("[data-field] button[aria-pressed]")!);
+    await waitFor(() => expect(moods(container)).toEqual(["peek", "peek"]));
+  });
+
+  it("sin movimiento no reacciona: se queda con su gesto", async () => {
+    fakeApi({});
+    const { container } = open(PATHS.login);
+    (await screen.findByLabelText("Contraseña")).focus();
+    await new Promise((done) => setTimeout(done, 60));
+    expect(moods(container)).toEqual(["guide", "guide"]);
+  });
+});
+
 describe("Crear cuenta en pantallas angostas", () => {
   // En un teléfono va en dos pasos, para que cada uno quepa en la pantalla sin hacer scroll.
   const narrow = () =>
     vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: query.includes("max-width: 767px"),
+      // Angosta y, como el resto de las pruebas, sin movimiento.
+      matches: query.includes("max-width: 767px") || query.includes("prefers-reduced-motion"),
       media: query,
       addEventListener: () => {},
       removeEventListener: () => {},

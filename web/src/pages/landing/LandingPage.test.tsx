@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { SOCIAL_LINKS } from "@/app/config";
 import { PATHS } from "@/app/paths";
 import { routes } from "@/app/routes";
+import { setLightMode } from "@/lib/lightMode";
 
 // La portada se prueba como la ve quien pide «reducir movimiento»: sin scroll suave, giro ni vuelo.
 beforeEach(() => {
@@ -48,6 +49,24 @@ describe("Inicio (HU-173)", () => {
     await screen.findByRole("heading", { level: 1 });
     expect(container.querySelector("[data-mascot-flyer]")).toBeNull();
     expect(container.querySelectorAll("[data-mascot-slot] svg")).toHaveLength(5);
+  });
+
+  it("con el modo ligero tampoco hay vuelo ni recorrido, aunque el equipo no pida reducir movimiento", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    setLightMode(true);
+    try {
+      const { container } = open(PATHS.home);
+      await screen.findByRole("heading", { level: 1 });
+      expect(container.querySelector("[data-mascot-flyer]")).toBeNull();
+      expect(container.querySelectorAll("[data-mascot-slot] svg")).toHaveLength(5);
+    } finally {
+      setLightMode(false);
+    }
   });
 
   it("rotula el resultado de muestra como ejemplo (R5)", async () => {

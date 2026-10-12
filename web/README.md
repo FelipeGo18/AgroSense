@@ -62,12 +62,13 @@ Dónde va cada cosa:
 
 Todas salen de `app/paths.ts`: los enlaces se arman con `PATHS`, nunca con texto suelto.
 
-| Dirección                                                          | Qué es                                                        |
-| ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| `/`                                                                | Inicio (HU-173)                                               |
-| `/entrar`, `/crear-cuenta`                                         | Entrar y crear cuenta (HU-162, HU-163)                        |
-| `/consultar`, `/mi-finca`, `/como-funciona`, `/politica-de-datos`  | Diseñadas, aún sin programar: muestran una página que lo dice |
-| `/pruebas`, `/kit`, `/recorrido/1`, `/recorrido/2`, `/recorrido/3` | Pruebas de la fase 0. No se enlazan desde la app              |
+| Dirección                                                          | Qué es                                                                      |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `/`                                                                | Inicio (HU-173)                                                             |
+| `/entrar`, `/crear-cuenta`                                         | Entrar y crear cuenta (HU-162, HU-163)                                      |
+| `/mi-cuenta`, `/mi-cuenta/contrasena`, `/mi-cuenta/actividad`      | Mi cuenta, cambiar contraseña y mi actividad (HU-160, HU-178). Piden sesión |
+| `/consultar`, `/mi-finca`, `/como-funciona`, `/politica-de-datos`  | Diseñadas, aún sin programar: muestran una página que lo dice               |
+| `/pruebas`, `/kit`, `/recorrido/1`, `/recorrido/2`, `/recorrido/3` | Pruebas de la fase 0. No se enlazan desde la app                            |
 
 ## Reglas de React de este proyecto
 
