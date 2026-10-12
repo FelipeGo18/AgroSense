@@ -52,12 +52,13 @@ export function PasswordPage() {
   return (
     <RequireSession>
       {() => (
-        <FormScene scene="region" mood="idle">
+        <FormScene scene="region" mood="idle" rejected={change.error}>
           <title>Cambiar contraseña · AgroSense</title>
           <header>
             <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">Mi cuenta</p>
             <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Cambiar contraseña</h1>
-            {!change.error && <p>Se cierra su sesión en los demás dispositivos.</p>}
+            {/* En pantallas angostas cada línea cuenta: la frase de apoyo solo va donde sobra alto. */}
+            {!change.error && <p className="hidden md:block">Se cierra su sesión en los demás dispositivos.</p>}
           </header>
           {change.error && <Alert>{message(change.error)}</Alert>}
           <form onSubmit={submit} noValidate className="flex flex-col gap-3">

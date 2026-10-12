@@ -1,0 +1,152 @@
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { dayPhase, type DayPhase } from "@/lib/dayPhase";
+import { playSound } from "@/lib/sound";
+
+gsap.registerPlugin(useGSAP);
+
+/** Con qué se tiñe el paisaje a cada hora. Se multiplica sobre el dibujo: de día no hay tinte. */
+const TINT: Record<DayPhase, string | null> = {
+  dawn: "linear-gradient(#F7C9D3, #FFE9CF)",
+  day: null,
+  dusk: "linear-gradient(#FFC3A0, #FFE6C2)",
+  night: "linear-gradient(#1A2850, #3A4C86)",
+};
+
+// Posiciones fijas (en % de la pantalla): el cielo de noche es siempre el mismo, no cambia en cada visita.
+const STARS = [
+  [6, 9], [14, 22], [23, 6], [31, 17], [38, 28], [47, 8], [55, 20], [63, 5], [71, 26], [79, 12], [88, 21], [95, 7],
+  [10, 34], [44, 36], [84, 33],
+]; // prettier-ignore
+const FIREFLIES = [
+  [8, 62], [19, 78], [33, 68], [46, 84], [58, 64], [69, 80], [81, 70], [92, 86],
+]; // prettier-ignore
+
+function usePhase() {
+  const [phase, setPhase] = useState(() => dayPhase(new Date().getHours()));
+  useEffect(() => {
+    const timer = setInterval(() => setPhase(dayPhase(new Date().getHours())), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return phase;
+}
+
+/**
+ * Ambiente del paisaje de un formulario. Va detrás de todo: nunca tapa la tarjeta ni recibe el puntero.
+ *
+ * - **Hora del día** (según el reloj del dispositivo): amanecer, día, atardecer o noche, con estrellas y luna. Esto
+ *   no es movimiento y se ve siempre.
+ * - **Con movimiento permitido:** sombras de nubes que cruzan el campo, unos pájaros de vez en cuando, luciérnagas de
+ *   noche y, cada tanto, una llovizna pasajera.
+ *
+ * Es decoración, no un dato: la llovizna y la hora no dicen cómo está el clima de ninguna zona (eso es HU-176, con su
+ * rótulo y su fuente) y nada de esto entra a un cálculo (decisión 7).
+ */
+export function SceneAmbient() {
+  const layer = useRef<HTMLDivElement>(null);
+  const animated = !useReducedMotion();
+  const phase = usePhase();
+  const night = phase === "night";
+  const tint = TINT[phase];
+
+  useGSAP(
+    (_context, contextSafe) => {
+      const root = layer.current;
+      if (!animated || !root || !contextSafe) return;
+      const quiet = () => document.hidden || document.activeElement?.matches("input, textarea, select") === true;
+
+      const birds = gsap.utils.toArray<HTMLElement>("[data-bird]", root);
+      const flyBirds = contextSafe(() => {
+        const fromLeft = Math.random() < 0.5;
+        const width = root.clientWidth;
+        const top = gsap.utils.random(0.14, 0.3) * root.clientHeight;
+        playSound("chirp");
+        birds.forEach((bird, i) => {
+          const lag = i * 26;
+          gsap.set(bird, { autoAlpha: 1, y: top + (i % 2 ? 14 : 0), scaleX: fromLeft ? 1 : -1 });
+          gsap.fromTo(
+            bird,
+            { x: fromLeft ? -60 - lag : width + 60 + lag },
+            { x: fromLeft ? width + 60 : -60, duration: 11, ease: "none", onComplete: () => gsap.set(bird, { autoAlpha: 0 }) },
+          );
+          gsap.fromTo(bird, { scaleY: 1 }, { scaleY: 0.35, duration: 0.28, yoyo: true, repeat: 39, ease: "sine.inOut" });
+        });
+      });
+
+      const drizzle = root.querySelector("[data-drizzle]");
+      const rain = contextSafe(() => {
+        playSound("drizzle");
+        gsap.fromTo(drizzle, { autoAlpha: 0 }, { keyframes: { autoAlpha: [0, 0.6, 0.6, 0] }, duration: 7, ease: "none" });
+      });
+
+      const every = contextSafe((first: number, [min, max]: [number, number], run: () => void) => {
+        const again = contextSafe((seconds: number) => {
+          gsap.delayedCall(seconds, () => {
+            if (quiet()) return again(5);
+            run();
+            again(gsap.utils.random(min, max));
+          });
+        });
+        again(first);
+      });
+      // De noche los pájaros duermen.
+      if (!night) every(gsap.utils.random(12, 20), [35, 70], flyBirds);
+      every(gsap.utils.random(45, 75), [90, 150], rain);
+    },
+    { scope: layer, dependencies: [animated, night], revertOnUpdate: true },
+  );
+
+  return (
+    <>
+      {/* El tinte se multiplica sobre el paisaje: por eso es una capa aparte, hermana suya, y no va dentro de la del ambiente. */}
+      {tint && (
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 mix-blend-multiply" style={{ backgroundImage: tint }} />
+      )}
+      <div ref={layer} aria-hidden="true" data-phase={phase} className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        {night && (
+          <>
+            {STARS.map(([x, y], i) => (
+              <span
+                key={i}
+                className={`absolute size-[3px] rounded-full bg-white ${animated ? "star-twinkle" : ""}`}
+                style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${(i % 5) * 0.7}s` }}
+              />
+            ))}
+            <span className="absolute top-[18%] left-[88%] size-12 rounded-full bg-[#FFF6D8] shadow-[0_0_40px_10px_rgb(255_246_216/0.35)]" />
+          </>
+        )}
+        {animated && (
+          <>
+            {!night &&
+              [
+                { top: "52%", width: "42vw", delay: "-20s", time: "80s" },
+                { top: "70%", width: "56vw", delay: "-62s", time: "105s" },
+              ].map((cloud) => (
+                <span
+                  key={cloud.top}
+                  className="cloud-shadow absolute left-0 h-[16vh] rounded-[50%] bg-paleta-noche/15 blur-2xl"
+                  style={{ top: cloud.top, width: cloud.width, animationDelay: cloud.delay, animationDuration: cloud.time }}
+                />
+              ))}
+            {night &&
+              FIREFLIES.map(([x, y], i) => (
+                <span
+                  key={i}
+                  className="firefly absolute size-[5px] rounded-full bg-[#F4F79A] shadow-[0_0_8px_3px_rgb(244_247_154/0.7)]"
+                  style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${i * 0.9}s` } as CSSProperties}
+                />
+              ))}
+            {[0, 1, 2].map((bird) => (
+              <svg key={bird} data-bird viewBox="0 0 24 10" className="invisible absolute top-0 left-0 h-[10px] w-6 overflow-visible">
+                <path d="M1 8 Q7 0 12 7 Q17 0 23 8" fill="none" stroke="#1D1D1B" strokeWidth="2.2" strokeLinecap="round" />
+              </svg>
+            ))}
+            <div data-drizzle className="drizzle invisible absolute inset-0" />
+          </>
+        )}
+      </div>
+    </>
+  );
+}

@@ -18,7 +18,7 @@ export function TextField({ label, hint, error, type = "text", className = "", .
   const secret = type === "password";
   const note = error ?? hint;
   return (
-    <div className={`flex flex-col gap-1 ${className}`}>
+    <div data-enter data-field className={`flex flex-col gap-1 ${className}`}>
       <label htmlFor={id} className="font-bold">
         {label}
       </label>

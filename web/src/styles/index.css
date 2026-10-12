@@ -115,3 +115,171 @@
     animation: none;
   }
 }
+/* Lo mismo con el modo ligero prendido (lib/lightMode.ts). */
+.modo-ligero .mascot-float,
+.modo-ligero .mascot .mascot-eyes,
+.modo-ligero .mascot-lively .mascot-arm-left {
+  animation: none;
+}
+
+/*
+ * Movimiento corto de la interfaz hecho con CSS. Todo se apaga con «reducir movimiento» y con el modo ligero.
+ */
+/* Cada página entra con un fundido (app/routes.tsx). */
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+}
+.page-fade {
+  animation: page-fade 180ms ease-out;
+}
+/* Interruptor (Toggle.tsx): la semilla se desliza y el riel cambia de color. */
+.toggle-part {
+  transition:
+    transform 180ms cubic-bezier(0.3, 1.4, 0.6, 1),
+    fill 180ms ease-out,
+    stroke 180ms ease-out;
+}
+/* Diálogo de confirmar (ConfirmDialog.tsx): el fondo se oscurece y la tarjeta crece. */
+@keyframes dialog-grow {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+.dialog-overlay[data-state="open"] {
+  animation: page-fade 200ms ease-out;
+}
+.dialog-card[data-state="open"] {
+  animation: dialog-grow 220ms cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+/* Menú de pantallas angostas (TopBar.tsx): baja como una cortina y sus enlaces entran uno tras otro. */
+@keyframes menu-drop {
+  from {
+    transform: translateY(-100%);
+  }
+}
+@keyframes menu-lift {
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes menu-item {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+.menu-curtain[data-state="open"] {
+  animation: menu-drop 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.menu-curtain[data-state="closed"] {
+  animation: menu-lift 180ms ease-in;
+}
+.menu-curtain[data-state="open"] .menu-item {
+  animation: menu-item 260ms ease-out backwards;
+  animation-delay: calc(140ms + var(--i, 0) * 45ms);
+}
+/* Barra (TopBar.tsx): la raya naranja se desliza de un enlace al otro. */
+.nav-mark {
+  transition:
+    left 280ms cubic-bezier(0.3, 1.2, 0.5, 1),
+    width 280ms cubic-bezier(0.3, 1.2, 0.5, 1),
+    opacity 160ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-fade,
+  .dialog-overlay,
+  .dialog-card,
+  .menu-curtain,
+  .menu-curtain .menu-item {
+    animation: none !important;
+  }
+  .toggle-part,
+  .nav-mark {
+    transition: none;
+  }
+}
+.modo-ligero :is(.page-fade, .dialog-overlay, .dialog-card, .menu-curtain, .menu-curtain .menu-item) {
+  animation: none !important;
+}
+.modo-ligero :is(.toggle-part, .nav-mark) {
+  transition: none;
+}
+
+/*
+ * Ambiente del paisaje de los formularios (SceneAmbient.tsx). Lo que se mueve solo se dibuja con movimiento permitido.
+ */
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-50vw);
+  }
+  to {
+    transform: translateX(115vw);
+  }
+}
+.cloud-shadow {
+  animation: cloud-drift 80s linear infinite;
+}
+@keyframes star-twinkle {
+  50% {
+    opacity: 0.25;
+  }
+}
+.star-twinkle {
+  animation: star-twinkle 3.4s ease-in-out infinite;
+}
+@keyframes firefly {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  30%,
+  60% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(14px, -18px);
+  }
+}
+.firefly {
+  animation: firefly 5.5s ease-in-out infinite;
+}
+@keyframes drizzle-fall {
+  to {
+    background-position: 0 64px;
+  }
+}
+.drizzle {
+  background-image: linear-gradient(100deg, transparent 47%, rgb(255 255 255 / 0.55) 50%, transparent 53%);
+  background-size: 28px 64px;
+  animation: drizzle-fall 0.5s linear infinite;
+}
+/* La mascota dormida respira despacio. */
+@keyframes mascot-zzz {
+  from {
+    opacity: 0.2;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+.mascot-zzz {
+  animation: mascot-zzz 1.8s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cloud-shadow,
+  .star-twinkle,
+  .firefly,
+  .drizzle,
+  .mascot-zzz {
+    animation: none;
+  }
+}
+.modo-ligero :is(.cloud-shadow, .star-twinkle, .firefly, .drizzle, .mascot-zzz) {
+  animation: none;
+}

@@ -12,7 +12,6 @@ export interface ToggleProps {
 /** Interruptor del kit: una semilla que corre por un riel biselado. Dice su estado con forma y posición, no solo con color. */
 export function Toggle({ label, note, checked, onChange, disabled = false }: ToggleProps) {
   const id = useId();
-  const x = checked ? 44 : 20;
   return (
     <div className="flex items-center justify-between gap-4">
       <div>
@@ -37,13 +36,17 @@ export function Toggle({ label, note, checked, onChange, disabled = false }: Tog
       >
         <svg aria-hidden="true" viewBox="0 0 64 40" className="h-10 w-16 overflow-visible">
           <polygon
+            className="toggle-part"
             points="10,6 54,6 64,16 64,24 54,34 10,34 0,24 0,16"
             fill={checked ? "var(--color-oscuro-oliva)" : "var(--color-paleta-niebla)"}
             stroke={checked ? "var(--color-oscuro-oliva)" : "var(--color-superficie-borde)"}
             strokeWidth="2.5"
           />
+          {/* La semilla se dibuja a la izquierda y se corre 24 unidades al prender: así el cambio se puede animar. */}
           <polygon
-            points={`${x},2 ${x + 13},12 ${x + 13},28 ${x},38 ${x - 13},28 ${x - 13},12`}
+            className="toggle-part"
+            style={{ transform: `translateX(${checked ? 24 : 0}px)` }}
+            points="20,2 33,12 33,28 20,38 7,28 7,12"
             fill={checked ? "var(--color-paleta-brote)" : "var(--color-superficie-panel)"}
             stroke={checked ? "var(--color-oscuro-brote)" : "var(--color-oscuro-cielo)"}
             strokeWidth="2.5"

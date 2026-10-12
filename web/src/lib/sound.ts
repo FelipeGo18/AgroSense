@@ -6,7 +6,7 @@
  * (por ejemplo `/audio/tema.mp3`, puesto en `web/public/audio/`); si no, suena una melodía generada aquí mismo.
  */
 
-export type SoundEffect = "on" | "stop";
+export type SoundEffect = "on" | "stop" | "flutter" | "land" | "wind" | "drizzle" | "giggle" | "cheer" | "nope" | "yawn" | "chirp";
 
 const KEY = "agrosense:sonido";
 const listeners = new Set<() => void>();
@@ -47,7 +47,10 @@ function note(ctx: AudioContext, type: OscillatorType, hz: number, at: number, l
 // ---------- Efectos ----------
 
 /** Notas de cada efecto: frecuencia en Hz, cuándo empieza y cuánto dura, en segundos. */
-const EFFECTS: Record<SoundEffect, { type: OscillatorType; notes: [hz: number, at: number, length: number][] }> = {
+const EFFECTS: Record<
+  Exclude<SoundEffect, "wind" | "drizzle">,
+  { type: OscillatorType; notes: [hz: number, at: number, length: number][]; volume?: number }
+> = {
   // Al prender el sonido: tres notas que suben.
   on: {
     type: "triangle",
@@ -65,9 +68,104 @@ const EFFECTS: Record<SoundEffect, { type: OscillatorType; notes: [hz: number, a
       [587.33, 0.07, 0.2],
     ],
   },
+  // Pasa una mariposa: unas notas altas y muy bajitas, como un aleteo.
+  flutter: {
+    type: "triangle",
+    volume: 0.025,
+    notes: [
+      [1568, 0, 0.05],
+      [1760, 0.08, 0.05],
+      [1568, 0.16, 0.05],
+      [1976, 0.24, 0.09],
+    ],
+  },
+  // La mariposa se posa en el brote.
+  land: {
+    type: "sine",
+    volume: 0.04,
+    notes: [
+      [880, 0, 0.08],
+      [1174.66, 0.07, 0.16],
+    ],
+  },
+  // Le hacen cosquillas a la mascota: una risa corta.
+  giggle: {
+    type: "triangle",
+    volume: 0.05,
+    notes: [
+      [987.77, 0, 0.07],
+      [1318.51, 0.08, 0.07],
+      [987.77, 0.16, 0.07],
+      [1318.51, 0.24, 0.07],
+      [1567.98, 0.32, 0.12],
+    ],
+  },
+  // Entró o creó su cuenta: una fanfarria chiquita.
+  cheer: {
+    type: "triangle",
+    notes: [
+      [523.25, 0, 0.1],
+      [659.25, 0.08, 0.1],
+      [783.99, 0.16, 0.1],
+      [1046.5, 0.26, 0.3],
+    ],
+  },
+  // La mascota dice que no: dos notas que bajan.
+  nope: {
+    type: "sine",
+    volume: 0.06,
+    notes: [
+      [311.13, 0, 0.14],
+      [233.08, 0.16, 0.24],
+    ],
+  },
+  // Bosteza: una escalera lenta hacia abajo.
+  yawn: {
+    type: "sine",
+    volume: 0.04,
+    notes: [
+      [523.25, 0, 0.4],
+      [440, 0.3, 0.4],
+      [349.23, 0.6, 0.5],
+      [261.63, 0.95, 0.8],
+    ],
+  },
+  // Pasan unos pájaros a lo lejos.
+  chirp: {
+    type: "sine",
+    volume: 0.022,
+    notes: [
+      [2637, 0, 0.05],
+      [3136, 0.06, 0.06],
+      [2637, 0.5, 0.05],
+      [3520, 0.56, 0.07],
+    ],
+  },
 };
 
 const EFFECT_VOLUME = 0.07;
+
+/** Ruido filtrado que sube y baja, sin notas: un soplo de viento o, más agudo y largo, una llovizna. */
+function gust(ctx: AudioContext, at: number, length: number, volume: number, [low, peak, end] = [350, 900, 420]) {
+  const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * length), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.Q.value = 0.7;
+  filter.frequency.setValueAtTime(low, at);
+  filter.frequency.linearRampToValueAtTime(peak, at + length * 0.45);
+  filter.frequency.linearRampToValueAtTime(end, at + length);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(volume, at + length * 0.4);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
+  source.connect(filter).connect(gain).connect(ctx.destination);
+  source.start(at);
+  source.stop(at + length);
+}
 
 /** Suena un efecto, si el sonido está prendido y el navegador ya lo permite (hace falta un gesto del usuario). */
 export function playSound(effect: SoundEffect) {
@@ -76,8 +174,10 @@ export function playSound(effect: SoundEffect) {
   if (context.state === "suspended") void context.resume().catch(() => {});
   if (context.state !== "running") return;
   const now = context.currentTime;
-  const { type, notes } = EFFECTS[effect];
-  for (const [hz, at, length] of notes) note(context, type, hz, now + at, length, EFFECT_VOLUME);
+  if (effect === "wind") return gust(context, now, 1.7, 0.05);
+  if (effect === "drizzle") return gust(context, now, 7, 0.018, [2600, 3400, 2800]);
+  const { type, notes, volume = EFFECT_VOLUME } = EFFECTS[effect];
+  for (const [hz, at, length] of notes) note(context, type, hz, now + at, length, volume);
 }
 
 // ---------- Música ----------

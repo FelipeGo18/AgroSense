@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import gsap from "gsap";
+import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router";
 import region from "../../../../design/paisaje/svg/a3-region.svg?raw";
 import { ApiError } from "@/api/client";
@@ -11,6 +12,8 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { TextField } from "@/components/ui/TextField";
 import { Toggle } from "@/components/ui/Toggle";
 import { useDeleteAccount, useLogout, useUpdateProfile, type Profile } from "@/features/auth/session";
+import { useEntrance } from "@/hooks/useEntrance";
+import { useLightMode, useReducedMotion } from "@/hooks/useReducedMotion";
 import { useSound } from "@/hooks/useSound";
 import { AccountShell, LINK } from "./AccountShell";
 
@@ -49,6 +52,30 @@ function DataCard({ user }: { user: Profile }) {
   const taken = update.error instanceof ApiError && update.error.status === 409;
   const failed = update.error && !taken ? update.error : null;
 
+  // Al pasar de ver a editar (y de vuelta) la tarjeta cambia de alto con suavidad, en vez de saltar.
+  const frame = useRef<HTMLDivElement>(null);
+  const before = useRef<{ editing: boolean; height: number } | null>(null);
+  const animated = !useReducedMotion();
+  useLayoutEffect(() => {
+    const card = frame.current?.firstElementChild as HTMLElement | null | undefined;
+    if (!card) return;
+    const from = before.current;
+    const changed = from !== null && from.editing !== editing;
+    if (changed) {
+      gsap.killTweensOf(card);
+      gsap.set(card, { clearProps: "height,overflow" });
+    }
+    const height = card.offsetHeight;
+    if (changed && animated) {
+      gsap.fromTo(
+        card,
+        { height: from.height, overflow: "hidden" },
+        { height, duration: 0.3, ease: "power2.out", clearProps: "height,overflow" },
+      );
+    }
+    before.current = { editing, height };
+  });
+
   const open = () => {
     setDisplayName(user.display_name);
     setUsername(user.username);
@@ -65,58 +92,62 @@ function DataCard({ user }: { user: Profile }) {
 
   if (editing) {
     return (
-      <Card>
-        <Title>Sus datos</Title>
-        {failed && <Alert>{failed instanceof ApiError ? failed.message : "Algo falló. Intente de nuevo."}</Alert>}
-        <form onSubmit={submit} noValidate className="flex flex-col gap-3">
-          <TextField
-            label="Nombre"
-            name="display_name"
-            autoComplete="nickname"
-            maxLength={40}
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            error={tried ? errors.displayName : undefined}
-          />
-          <TextField
-            label="Usuario"
-            name="username"
-            autoComplete="username"
-            autoCapitalize="none"
-            spellCheck={false}
-            maxLength={30}
-            value={username}
-            onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/\s/g, ""))}
-            hint="Con este usuario va a entrar. Cambiarlo no cierra su sesión."
-            error={taken ? "Ese usuario ya existe. Pruebe con otro." : tried ? errors.username : undefined}
-          />
-          <div className="mt-1 grid gap-3 sm:grid-cols-2">
-            <Button type="submit" loading={update.isPending} loadingText="Guardando…">
-              Guardar
-            </Button>
-            <Button variant="secondary" onClick={() => setEditing(false)} disabled={update.isPending}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
-      </Card>
+      <div ref={frame} data-enter>
+        <Card>
+          <Title>Sus datos</Title>
+          {failed && <Alert>{failed instanceof ApiError ? failed.message : "Algo falló. Intente de nuevo."}</Alert>}
+          <form onSubmit={submit} noValidate className="flex flex-col gap-3">
+            <TextField
+              label="Nombre"
+              name="display_name"
+              autoComplete="nickname"
+              maxLength={40}
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              error={tried ? errors.displayName : undefined}
+            />
+            <TextField
+              label="Usuario"
+              name="username"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={30}
+              value={username}
+              onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/\s/g, ""))}
+              hint="Con este usuario va a entrar. Cambiarlo no cierra su sesión."
+              error={taken ? "Ese usuario ya existe. Pruebe con otro." : tried ? errors.username : undefined}
+            />
+            <div className="mt-1 grid gap-3 sm:grid-cols-2">
+              <Button type="submit" loading={update.isPending} loadingText="Guardando…">
+                Guardar
+              </Button>
+              <Button variant="secondary" onClick={() => setEditing(false)} disabled={update.isPending}>
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
     );
   }
   return (
-    <Card>
-      <div className="flex items-center justify-between gap-4">
-        <Title>Sus datos</Title>
-        <button type="button" onClick={open} className={`${LINK} min-h-11`}>
-          Editar<span className="sr-only"> mi nombre y mi usuario</span>
-        </button>
-      </div>
-      <dl className="flex flex-col gap-3">
-        <Row label="Nombre" value={user.display_name} />
-        <Row label="Usuario" value={user.username} />
-        <Row label="Cuenta creada" value={date(user.created_at)} />
-      </dl>
-      <p className="text-[15px] text-texto-secundario">Puede cambiar su nombre y su usuario cuando quiera.</p>
-    </Card>
+    <div ref={frame} data-enter>
+      <Card>
+        <div className="flex items-center justify-between gap-4">
+          <Title>Sus datos</Title>
+          <button type="button" onClick={open} className={`${LINK} min-h-11`}>
+            Editar<span className="sr-only"> mi nombre y mi usuario</span>
+          </button>
+        </div>
+        <dl className="flex flex-col gap-3">
+          <Row label="Nombre" value={user.display_name} />
+          <Row label="Usuario" value={user.username} />
+          <Row label="Cuenta creada" value={date(user.created_at)} />
+        </dl>
+        <p className="text-[15px] text-texto-secundario">Puede cambiar su nombre y su usuario cuando quiera.</p>
+      </Card>
+    </div>
   );
 }
 
@@ -147,15 +178,14 @@ function StoredCard({ user }: { user: Profile }) {
   );
 }
 
-/**
- * Preferencias que viven en este navegador, no en la cuenta. Por ahora solo el sonido: el modo ligero y «reducir
- * movimiento» (sin animaciones, GSAP ni Lenis) llegan con su propio trabajo y sus interruptores van aquí.
- */
+/** Preferencias que viven en este navegador, no en la cuenta. */
 function PreferencesCard() {
+  const [light, setLight] = useLightMode();
   const [sound, setSound] = useSound();
   return (
     <Card bodyClassName="gap-5">
       <Title>Preferencias de este dispositivo</Title>
+      <Toggle label="Modo ligero" note="Sin animaciones, recorridos ni movimiento." checked={light} onChange={setLight} />
       <Toggle label="Sonido" note="Música y efectos. Empieza apagado." checked={sound} onChange={setSound} />
     </Card>
   );
@@ -227,38 +257,47 @@ function DangerCard({ user }: { user: Profile }) {
 export function AccountPage() {
   // Al volver de cambiar la contraseña se avisa que quedó guardada.
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
+  return <AccountShell>{(user) => <Account user={user} notice={notice} />}</AccountShell>;
+}
+
+function Account({ user, notice }: { user: Profile; notice?: string }) {
+  const page = useEntrance<HTMLDivElement>();
   return (
-    <AccountShell>
-      {(user) => (
-        <>
-          <title>Mi cuenta · AgroSense</title>
-          <div className="relative h-[230px] overflow-hidden md:h-[280px]">
-            <div aria-hidden="true" className="absolute inset-0" dangerouslySetInnerHTML={{ __html: STRIP }} />
-            <div className="relative mx-auto flex h-full max-w-[1440px] items-end justify-between px-3 pb-5 md:px-12 lg:px-24">
-              <h1 className="text-[clamp(2.25rem,4vw,3rem)] [text-shadow:0_2px_0_rgb(255_255_255/0.6)]">Mi cuenta</h1>
-              <Mascot mood="idle" lively decorative className="h-auto w-[120px] md:w-[200px]" />
+    <>
+      <title>Mi cuenta · AgroSense</title>
+      <div className="relative h-[230px] overflow-hidden md:h-[280px]">
+        <div aria-hidden="true" className="absolute inset-0" dangerouslySetInnerHTML={{ __html: STRIP }} />
+        <div className="relative mx-auto flex h-full max-w-[1440px] items-end justify-between px-3 pb-5 md:px-12 lg:px-24">
+          <h1 className="text-[clamp(2.25rem,4vw,3rem)] [text-shadow:0_2px_0_rgb(255_255_255/0.6)]">Mi cuenta</h1>
+          <Mascot mood="idle" lively decorative className="h-auto w-[120px] md:w-[200px]" />
+        </div>
+      </div>
+      <div ref={page} className="mx-auto mt-6 flex max-w-[1440px] flex-col gap-7 px-3 md:px-12 lg:px-24">
+        {notice && (
+          <p role="status" data-enter className="border-l-8 border-oscuro-oliva bg-superficie-panel px-4 py-3 font-bold">
+            {notice}
+          </p>
+        )}
+        <div className="grid items-start gap-7 lg:grid-cols-2">
+          <div className="flex flex-col gap-7">
+            <DataCard user={user} />
+            <div data-enter>
+              <SessionCard user={user} />
             </div>
           </div>
-          <div className="mx-auto mt-6 flex max-w-[1440px] flex-col gap-7 px-3 md:px-12 lg:px-24">
-            {notice && (
-              <p role="status" className="border-l-8 border-oscuro-oliva bg-superficie-panel px-4 py-3 font-bold">
-                {notice}
-              </p>
-            )}
-            <div className="grid items-start gap-7 lg:grid-cols-2">
-              <div className="flex flex-col gap-7">
-                <DataCard user={user} />
-                <SessionCard user={user} />
-              </div>
-              <div className="flex flex-col gap-7">
-                <StoredCard user={user} />
-                <PreferencesCard />
-                <DangerCard user={user} />
-              </div>
+          <div className="flex flex-col gap-7">
+            <div data-enter>
+              <StoredCard user={user} />
+            </div>
+            <div data-enter>
+              <PreferencesCard />
+            </div>
+            <div data-enter>
+              <DangerCard user={user} />
             </div>
           </div>
-        </>
-      )}
-    </AccountShell>
+        </div>
+      </div>
+    </>
   );
 }
