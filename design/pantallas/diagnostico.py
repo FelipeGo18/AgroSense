@@ -133,11 +133,11 @@ TEXTS = {
         limits=["El maíz está cerca de su límite de altitud en Toca.", "Sin datos de mercado: el precio no se evaluó.",
                 "Evaluado sin riego, como usted indicó."]),
     "no-evaluable": dict(
-        reasons=["Faltan datos de oferta: EVA no registra haba en Samacá. Sin agua u oferta no damos un semáforo: no inventamos datos.",
-                 "El clima de esta fecha sí está: agua y calor bien. Las heladas no aplican al haba."],
+        reasons=["Faltan datos de agua: la ficha del haba no tiene con fuente cuánta agua pide. Sin la señal de agua no damos un semáforo: no inventamos datos.",
+                 "El calor de esta fecha sí está y le sirve al haba. Las heladas no aplican. Sin datos de oferta, se calcula sin ella."],
         buttons=("Elegir otro cultivo", "¿Por qué faltan datos?"),
-        limits=["Sin datos de oferta para haba en Samacá.", "Sin datos de mercado: el precio no se evaluó.",
-                "El suelo es el estimado para el municipio, no para su lote."]),
+        limits=["Sin datos de agua: la ficha del haba no trae su necesidad de agua con fuente.", "Sin datos de oferta para haba en Samacá: se calculó sin ella.",
+                "Sin datos de mercado: el precio no se evaluó.", "El suelo es el estimado para el municipio, no para su lote."]),
 }
 
 

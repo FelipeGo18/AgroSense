@@ -27,7 +27,7 @@ from ui import (BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, 
 STEPS = (
     ("¿Se da en su zona?", "Primero miramos si el cultivo se da a la altitud de su municipio, según su ficha. Si no se da, se lo decimos y le sugerimos otros."),
     ("Seis señales de 0 a 100", "Para la fecha que eligió y lo que dura el cultivo: agua, heladas, calor, suelo, oferta y mercado. Cada una se compara con lo que ese cultivo necesita o aguanta."),
-    ("Un semáforo por reglas", "Una señal mala y grave basta para el rojo: no se compensa con las buenas. Sin datos de agua u oferta no damos semáforo."),
+    ("Un semáforo por reglas", "Una señal mala y grave basta para el rojo: no se compensa con las buenas. Sin datos de agua no damos semáforo; sin datos de oferta, se calcula sin ella."),
     ("Sus prioridades", "Cada señal pesa de 0 a 5. Un riesgo grave de clima cuenta siempre. Si su luz y la de AgroSense difieren, le mostramos las dos."),
     ("Las mejores fechas", "Ordenamos las fechas del año por lo que más limita a cada una y, entre parecidas, por sus prioridades."),
 )

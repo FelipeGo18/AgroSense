@@ -35,7 +35,7 @@ R1, R2, R3, R4 (cada respuesta lleva `versions.dataset` y `versions.rules`), R5,
 
 ## Cómo pruebas
 
-Primero los casos de referencia (HU-121): resultado esperado escrito antes de programar. Prueba mínima obligatoria: una señal desfavorable crítica nunca da verde; si `water` u `supply` cuentan y no están disponibles, la luz es `not_evaluable`; la señal de suelo nunca es crítica. El motor se prueba sin levantar servidor; la API con `TestClient`; las cuentas contra el PostgreSQL de Docker Compose. Todas las pruebas corren en Docker.
+Primero los casos de referencia (HU-121): resultado esperado escrito antes de programar. Prueba mínima obligatoria: una señal desfavorable crítica nunca da verde; sin datos de `supply` se calcula sin ella, como si su peso fuera 0; si `water` cuenta y no están disponibles, la luz es `not_evaluable`; la señal de suelo nunca es crítica. El motor se prueba sin levantar servidor; la API con `TestClient`; las cuentas contra el PostgreSQL de Docker Compose. Todas las pruebas corren en Docker.
 
 ## Límites
 

@@ -105,7 +105,9 @@ def light_for(weights, signals=None):
         lvl[k] = lv
     scored = [(signals[k]["score"], k) for k in SIGNAL_ORDER if counts[k] and signals[k]["score"] is not None]
     limiting = min(scored)[1] if scored else None
-    if any(counts[k] and lvl[k] == "insuficiente" for k in ("water", "supply")):
+    if lvl["supply"] == "insuficiente":  # sin datos de oferta se calcula sin ella, como con peso 0
+        counts["supply"] = False
+    if counts["water"] and lvl["water"] == "insuficiente":
         return dict(light="no-evaluable", action="review_data", limiting=None, counts=counts)  # sin luz no hay factor que limite
     unf = [k for k in SIGNAL_ORDER if counts[k] and lvl[k] == "desfavorable"]
     crit = [k for k in unf if signals[k].get("critical")]
@@ -169,11 +171,11 @@ CASES = {
         crop="Haba", town="Samacá", kicker="HABA · SIEMBRA 2 AGO 2027 → COSECHA ESTIMADA ~10 ENE 2028 · SAMACÁ",
         suitability=dict(score=90, reason="La altitud de Samacá (2.660 m) está dentro del rango del haba (2.200 a 3.600 m).", source=SUITABILITY["source"]),
         signals=dict(
-            water=_sig(82, ["En 7 de los últimos 10 años la", "lluvia de ago a ene cubrió lo", "que necesita el haba."], note="Sin riego"),
+            water=_sig(None, ["La ficha del haba no tiene", "con fuente cuánta agua pide", "en cada etapa."], note="Sin riego"),
             frost=_sig(None, ["La ficha del haba no tiene", "etapas sensibles a la", "helada."], status="no-aplica"),
             heat=_sig(95, ["La máxima rara vez pasa de", "22 °C; el haba aguanta", "hasta 27 °C."]),
             soil=_sig(55, ["pH estimado 5,2 a 5,8: en", "el límite de lo que tolera.", "Estimación de 250 m."]),
-            supply=_sig(None, ["EVA no registra haba en", "Samacá en los últimos", "semestres."]),
+            supply=_sig(None, ["EVA no registra haba en", "Samacá: se calcula sin", "la oferta."]),
             market=_sig(None, ["Sin datos de precios", "para Samacá."]),
         ),
     ),

@@ -121,11 +121,11 @@ Cada señal tiene un **peso de 0 a 5**. AgroSense propone un peso por defecto pa
 Los umbrales viven en configuración versionada (`backend/config/`). Las reglas se aplican en orden sobre **una** ventana, con los pesos de quien consulta (y otra vez con los pesos por defecto):
 
 0. Si el cultivo no es apto para la zona, la luz es `red` y la acción es `rotate`. No se evalúa nada más.
-1. Si `water` u `supply` cuentan y no están disponibles, la luz es `not_evaluable` y la acción es `review_data`.
+1. Si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción es `review_data`. Si `supply` no está disponible, se calcula sin ella, como si su peso fuera 0: no cuenta para la luz ni para el orden de las ventanas, se muestra «sin datos» y se agrega a las limitaciones.
 2. Si alguna señal que cuenta es `unfavorable` y crítica, o dos señales que cuentan son `unfavorable`, la luz es `red`.
 3. Si ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
 4. En cualquier otro caso, la luz es `yellow`.
-5. `frost`, `heat`, `soil`, `market` y las señales del P1 sin datos **nunca cambian la luz**, pero se agregan a las limitaciones. `not_applicable` tampoco la cambia.
+5. `frost`, `heat`, `soil`, `supply`, `market` y las señales del P1 sin datos **nunca cambian la luz**, pero se agregan a las limitaciones. `not_applicable` tampoco la cambia.
 
 «Señal que cuenta» es la que tiene peso mayor que 0, más los riesgos graves de clima, que cuentan siempre. Con riego, `water` no es `unfavorable` por falta de lluvia: es `favorable` y la razón dice cuánto riego haría falta.
 
