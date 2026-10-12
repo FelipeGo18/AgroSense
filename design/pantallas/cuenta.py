@@ -41,83 +41,118 @@ def alert(x, y, w, rows):
 
 
 # ---------- Iniciar sesión ----------
+# El formulario cabe entero en la primera pantalla, sin hacer scroll (un portátil a 125 % deja unos 700 px de alto);
+# debajo va el pie de página común.
 
 def login(mobile=False, error=False):
     w, h = MOBILE if mobile else DESKTOP
     b = scene("a6-vereda", w, h, "recorte-login" + ("-m" if mobile else "") + ("-e" if error else ""))
     b += topbar(w)
     if mobile:
-        b += mascot(232, 92, 0.5, "guia")
-        x, y, cw, pad = 12, 236, 366, 22
+        b += mascot(300, 66, 0.21, "guia")  # se asoma por el borde de la tarjeta: no le quita alto al formulario
+        x, y, cw, pad = 12, 104, 366, 22
     else:
-        b += sign(800, 212, 330, "Su finca lo espera") + mascot(760, 300, 1.75, "guia")
-        x, y, cw, pad = 96, 140, 500, 40
+        b += sign(800, 150, 330, "Su finca lo espera") + mascot(760, 236, 1.6, "guia")
+        x, y, cw, pad = 96, 104, 480, 36
     fw = cw - 2 * pad
-    c = [text(pad, 54, "ENTRAR", 15, 700, SEC), text(pad, 100, "Vuelva a su finca", 30 if mobile else 40, 600, font=FONT_TITLE)]
-    top = 138
+    c = [text(pad, 46, "ENTRAR", 15, 700, SEC), text(pad, 86, "Vuelva a su finca", 30 if mobile else 36, 600, font=FONT_TITLE)]
+    top = 116
     if error:
-        c += alert(pad, top - 14, fw, ["Usuario o contraseña incorrectos.", "Revíselos y vuelva a intentar."])
-        top += 84
+        c += alert(pad, top - 12, fw, ["Usuario o contraseña incorrectos.", "Revíselos y vuelva a intentar."])
+        top += 76
     else:
         c.append(text(pad, top, "Entre con su usuario y contraseña.", 18))
-    c += field(pad, top + 46, fw, "Usuario", USER if error else "", "Su usuario", name="campo-usuario")
-    c += field(pad, top + 150, fw, "Contraseña", "••••••••" if error else "", "Su contraseña", "error" if error else "normal", trailing="Mostrar", name="campo-contrasena")
-    c += button(pad, top + 244, fw, "Entrar")
-    c.append(text(pad, top + 338, "¿No tiene cuenta?", 18))
-    c += link(pad + 162, top + 338, "Crear cuenta")
-    c.append(f'<rect x="{pad}" y="{top + 360}" width="{fw}" height="2" fill="{BORDE}"/>')
-    c += link(pad, top + 398, "Seguir sin cuenta")
-    c += paragraph(pad, top + 434, ["Si olvida su contraseña, por ahora no se puede", "recuperar. No guardamos su correo ni su celular."], 15, 21, fill=SEC)
-    ch = top + 484
-    if mobile:  # en móvil la página crece con la tarjeta
-        h = y + ch + 40
-        b = scene("a6-vereda", w, h, "recorte-login-m" + ("-e" if error else "")) + topbar(w) + mascot(232, 92, 0.5, "guia")
-    return frame((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
+    c += field(pad, top + 40, fw, "Usuario", USER if error else "", "Su usuario", name="campo-usuario")
+    c += field(pad, top + 132, fw, "Contraseña", "••••••••" if error else "", "Su contraseña", "error" if error else "normal", trailing="Mostrar", name="campo-contrasena")
+    c += button(pad, top + 216, fw, "Entrar")
+    c.append(text(pad, top + 306, "¿No tiene cuenta?", 18))
+    c += link(pad + 162, top + 306, "Crear cuenta")
+    c += link(pad, top + 340, "Seguir sin cuenta")
+    c.append(f'<rect x="{pad}" y="{top + 358}" width="{fw}" height="2" fill="{BORDE}"/>')
+    c += paragraph(pad, top + 384, ["Si olvida su contraseña, por ahora no se", "puede recuperar. No guardamos su correo", "ni su celular."] if mobile else
+                   ["Si olvida su contraseña, por ahora no se puede recuperar.", "No guardamos su correo ni su celular."], 15, 20, fill=SEC)
+    ch = top + (446 if mobile else 426)
+    return ui.long_page((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
 
 
 # ---------- Crear cuenta ----------
+# En escritorio va en dos columnas (los datos y el consentimiento). En móvil, en dos pasos: primero los datos y después
+# el consentimiento. Así cada pantalla cabe sin hacer scroll.
 
-def register(mobile=False):
-    w = MOBILE[0] if mobile else DESKTOP[0]
-    h = 1454 if mobile else 1200  # el consentimiento versión 3 es más largo
-    b = scene("a6-vereda", w, h, "recorte-registro" + ("-m" if mobile else ""))
+CONSENT = (  # versión 3 (HU-163), en primera persona: lo dice quien acepta
+    "Acepto que AgroSense guarde mi usuario, mi nombre y mis prioridades, mis lotes con su ubicación en el mapa, si tienen riego y lo que siembro, para mostrarme mi finca.",
+    "Soporte puede ver mis lotes para ayudarme, y se registra la actividad de mi cuenta durante 180 días.",
+    "Lo que siembro se suma, sin mi nombre, a los totales de mi municipio, solo si hay al menos 5 cuentas.",
+    "No se guarda correo, celular, documento ni dirección. Puedo borrar todo cuando quiera.",
+)
+
+
+def wrap(sentence, limit):
+    """Parte una frase en renglones de hasta `limit` letras."""
+    rows, row = [], ""
+    for word in sentence.split():
+        if row and len(row) + 1 + len(word) > limit:
+            rows.append(row)
+            row = word
+        else:
+            row = f"{row} {word}".strip()
+    return rows + [row]
+
+
+def consent_box(x, y, w, limit, size, policy):
+    """El consentimiento con su casilla: qué se guarda y para qué. Sin aceptar no se crea la cuenta (R9)."""
+    line = size + 6
+    body, cy = checkbox(14, 14), 34
+    for sentence in CONSENT:
+        rows = wrap(sentence, limit)
+        body += paragraph(58, cy, rows, size, line)
+        cy += len(rows) * line + 8
+    body += link(58, cy + 4, policy, size)
+    h = cy + 26
+    return [group("consentimiento", [poly(chamfer(0, 0, w, h, 12), P["niebla"])] + body, x, y)], h
+
+
+def register(mobile=False, step=1):
+    w, h = MOBILE if mobile else DESKTOP
+    tag = "-m" + str(step) if mobile else ""
+    b = scene("a6-vereda", w, h, "recorte-registro" + tag)
     b += topbar(w)
     if mobile:
-        b += mascot(232, 92, 0.5, "celebra")
-        x, y, cw, pad = 12, 236, 366, 22
-    else:
-        b += mascot(650, 300, 1.6, "celebra")
-        for i, label in enumerate(("Sus lotes, guardados", "Su historial de siembras", "Su plan de agua")):
-            b += sign(1060, 300 + i * 124, 310, label)
-        x, y, cw, pad = 96, 116, 540, 40
-    fw = cw - 2 * pad
-    c = [text(pad, 54, "CREAR CUENTA", 15, 700, SEC), text(pad, 100, "Guarde su finca", 30 if mobile else 40, 600, font=FONT_TITLE),
-         text(pad, 138, "Solo un nombre, un usuario y una contraseña.", 16 if mobile else 18)]
-    c += field(pad, 184, fw, "¿Cómo quiere que lo llamemos?", NAME, name="campo-nombre")
-    c += field(pad, 288, fw, "Usuario", USER, hint="Con este usuario va a entrar.", name="campo-usuario")
-    c += field(pad, 416, fw, "Contraseña", "••••••••••", state="foco", trailing="Mostrar",
-               hint="Elija una que recuerde: no se puede recuperar." if mobile else "Elija una que recuerde: por ahora no se puede recuperar.", name="campo-contrasena")
-    # Consentimiento (HU-163): qué se guarda y para qué, en lenguaje claro. Sin aceptar no se crea la cuenta.
-    # Versión 2: ubicación de los lotes, acceso de soporte y registro de actividad por 180 días.
-    # Versión 3: si el lote tiene riego, las prioridades y las siembras como totales sin nombre, con al menos 5 cuentas (HU-200).
-    # Todo el texto va en primera persona: lo dice quien acepta.
-    rows = (["Acepto que AgroSense guarde", "mi usuario, mi nombre y mis", "prioridades, mis lotes con su", "ubicación en el mapa, si tienen", "riego y lo que siembro, para",
-             "mostrarme mi finca. Soporte", "puede ver mis lotes para", "ayudarme, y se registra la", "actividad de mi cuenta durante", "180 días.",
-             "Lo que siembro se suma, sin mi", "nombre, a los totales de mi", "municipio, solo si hay al menos", "5 cuentas.",
-             "No se guarda correo, celular,", "documento ni dirección.", "Puedo borrar todo cuando quiera."] if mobile else
-            ["Acepto que AgroSense guarde mi usuario, mi nombre", "y mis prioridades, mis lotes con su ubicación en el", "mapa, si tienen riego y lo que siembro, para", "mostrarme mi finca.",
-             "Soporte puede ver mis lotes para ayudarme, y se", "registra la actividad de mi cuenta durante 180 días.",
-             "Lo que siembro se suma, sin mi nombre, a los totales", "de mi municipio, solo si hay al menos 5 cuentas.",
-             "No se guarda correo, celular, documento ni dirección.", "Puedo borrar todo cuando quiera."])
-    ch = 40 + len(rows) * 23 + 38
-    consent = [poly(chamfer(0, 0, fw, ch, 12), P["niebla"])] + checkbox(16, 16) + paragraph(62, 36, rows, 15 if mobile else 16, 23)
-    consent += link(62, 36 + len(rows) * 23 + 8, POLICY_SHORT if mobile else POLICY, 15 if mobile else 16)
-    c.append(group("consentimiento", consent, pad, 536))
-    by = 536 + ch + 22
-    c += button(pad, by, fw, "Crear cuenta")
-    c.append(text(pad, by + 94, "¿Ya tiene cuenta?", 18))
-    c += link(pad + 158, by + 94, "Entrar")
-    return frame((w, h), b + card(x, y, cw, by + 124) + [group("contenido", c, x, y)])
+        b += mascot(300, 66, 0.21, "celebra")
+        x, y, cw, pad = 12, 104, 366, 22
+        fw = cw - 2 * pad
+        c = [text(pad, 46, f"CREAR CUENTA · PASO {step} DE 2", 15, 700, SEC)]
+        if step == 1:
+            c.append(text(pad, 86, "Guarde su finca", 30, 600, font=FONT_TITLE))
+            c += field(pad, 126, fw, "¿Cómo quiere que lo llamemos?", NAME, name="campo-nombre")
+            c += field(pad, 218, fw, "Usuario", USER, name="campo-usuario")
+            c += field(pad, 310, fw, "Contraseña", "••••••••••", state="foco", trailing="Mostrar", hint="Al menos 8 caracteres. No se puede recuperar.", name="campo-contrasena")
+            c += button(pad, 420, fw, "Continuar")
+            c.append(text(pad, 510, "¿Ya tiene cuenta?", 18))
+            c += link(pad + 158, 510, "Entrar")
+            ch = 536
+        else:
+            box, bh = consent_box(pad, 64, fw, 38, 14, POLICY_SHORT)
+            c += box
+            c += button(pad, 64 + bh + 14, fw, "Crear cuenta")
+            c += link(pad, 64 + bh + 108, "← Volver a mis datos")
+            ch = 64 + bh + 134
+        return ui.long_page((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
+    b += sign(1080, 132, 290, "Sus lotes, guardados") + sign(1066, 212, 318, "Su historial de siembras") + mascot(1060, 300, 1.05, "celebra")
+    x, y, cw, pad = 96, 104, 880, 36
+    col = (cw - 2 * pad - 32) / 2
+    c = [text(pad, 46, "CREAR CUENTA", 15, 700, SEC), text(pad, 86, "Guarde su finca", 36, 600, font=FONT_TITLE),
+         text(pad, 116, "Solo un nombre, un usuario y una contraseña.", 18)]
+    c += field(pad, 156, col, "¿Cómo quiere que lo llamemos?", NAME, name="campo-nombre")
+    c += field(pad, 248, col, "Usuario", USER, hint="Con este usuario va a entrar.", name="campo-usuario")
+    c += field(pad, 364, col, "Contraseña", "••••••••••", state="foco", trailing="Mostrar", hint="Al menos 8 caracteres. No se puede recuperar.", name="campo-contrasena")
+    c.append(text(pad, 496, "¿Ya tiene cuenta?", 18))
+    c += link(pad + 158, 496, "Entrar")
+    box, bh = consent_box(pad + col + 32, 142, col, 44, 15, POLICY)
+    c += box
+    c += button(pad + col + 32, 142 + bh + 14, col, "Crear cuenta")
+    ch = max(520, 142 + bh + 14 + 76)
+    return ui.long_page((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
 
 
 # ---------- Mi cuenta ----------
@@ -284,6 +319,7 @@ SCREENS = {
     "cuenta-01-iniciar-sesion-error-escritorio": lambda: login(error=True),
     "cuenta-02-crear-cuenta-escritorio": lambda: register(),
     "cuenta-02-crear-cuenta-movil": lambda: register(mobile=True),
+    "cuenta-02-crear-cuenta-paso2-movil": lambda: register(mobile=True, step=2),
     "cuenta-03-mi-cuenta-escritorio": lambda: profile(),
     "cuenta-03-mi-cuenta-movil": lambda: profile(mobile=True),
     "cuenta-04-confirmar-borrado-escritorio": lambda: profile(dialog=True),

@@ -66,6 +66,7 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, apa
 - Borrar un lote o una temporada es reversible: se marca `deleted_at` y se puede restaurar durante 30 días; después se borra para siempre. Borrar un lote borra con él sus temporadas, y restaurarlo las restaura. El agricultor y el administrador pueden restaurar.
 - Un polígono de lote debe ser válido (sin cruces), tener área mayor que cero y caer dentro de `municipality_boundaries` de su municipio; si no, 422.
 - `activity_log`: trazabilidad de lo que hacen agricultores y administradores. Ver «Trazabilidad» más abajo.
+- `login_attempts` (agregada el 12 de octubre de 2026; por revisar con Haider): `attempt_id`, `username_hash` y `attempted_at`. Una fila por intento fallido de entrar o de cambiar la contraseña, solo para el tope de 5 intentos en 15 minutos. Guarda el hash del usuario que se intentó, nunca el texto (podría ser una contraseña escrita en el campo equivocado), ni la IP. Las filas de más de 15 minutos se borran solas. Está en la base de datos y no en memoria para que el tope sobreviva a un reinicio.
 - `usage_daily` (P1, HU-170): contador anónimo de uso para las métricas. En el P0 la tabla no existe y los endpoints de cálculo no escriben nada en la base de datos. Columnas: `day` (fecha), `endpoint` (`diagnostics`, `rotations`, `changes`, `calendar`, `water_plans`, `scenarios`), `municipality_id`, `crop_id` y `count`; llave (`day`, `endpoint`, `municipality_id`, `crop_id`). Cada consulta de cálculo suma 1 a su fila. El `crop_id` que se cuenta: en `/diagnostics`, `/changes`, `/calendar` y `/scenarios`, el cultivo consultado; en `/water-plans`, una fila por cultivo; en `/rotations`, el primer cultivo de `previous_crop_ids` (el más reciente). No tiene usuario, sesión, IP, hora, fecha de siembra, prioridades, área ni riego, ni se puede unir con `activity_log`. Se conserva como estadística. No cambia ningún resultado (R4). Si falla, la consulta responde igual.
 - El suelo de un lote **no se guarda**: la API lo calcula al vuelo como la mediana de las celdas de `soil_grid` que toca su polígono. Un lote sin polígono usa `soil_municipality`.
 - `support_tickets` (P1): `ticket_id`, `user_id`, `lot_id` (opcional), `message`, `status` (`open`, `in_progress`, `closed`), `created_at`, `closed_at`.
@@ -136,7 +137,7 @@ Respuesta de `GET /api/v1/me/activity` (la de `GET /api/v1/admin/activity` es ig
 
 ### Logs de la terminal (HU-177)
 
-No son parte de la API ni se consultan desde la web; se documentan aquí porque fijan qué se puede escribir y qué no. Los escribe `structlog` a la salida estándar: con color en desarrollo y una línea JSON por evento en producción.
+No son parte de la API ni se consultan desde la web; se documentan aquí porque fijan qué se puede escribir y qué no. Los escribe `structlog` a la salida estándar: con color en desarrollo y una línea JSON por evento en producción. En la consola cada parte tiene su color: el nivel (gris `debug`, verde `info`, amarillo `warning`, rojo `error`), el mensaje (blanco), el código de la respuesta (verde, amarillo o rojo), el endpoint (azul claro) y lo demás atenuado.
 
 ```json
 {"ts": "2026-11-14T15:02:11.204Z", "level": "info", "event": "request", "request_id": "9b1e…", "method": "POST", "route": "/api/v1/lots/{lot_id}/restore", "status": 200, "duration_ms": 18, "user_id": "3c7a…", "role": "farmer", "dataset": "2026.11.1", "rules": "1.4.0"}
@@ -144,10 +145,16 @@ No son parte de la API ni se consultan desde la web; se documentan aquí porque 
 
 | Campo | Siempre | Notas |
 |---|---|---|
-| `ts`, `level`, `event`, `request_id` | Sí | `level`: `debug` (solo desarrollo), `info`, `warning` (`403`, `429`), `error` (`500`, con la traza del error) |
+| `ts`, `level`, `event`, `request_id` | Sí | `level`: `debug` (solo desarrollo), `info`, `warning` (todo lo rechazado, de `400` a `499`, y `503`), `error` (`500`, con la traza del error). Cambiado el 12 de octubre de 2026: antes solo `403` y `429` eran `warning` |
+| `detail` | Sí | Qué pasó, en español y en palabras: «Inicio de sesión rechazado: usuario no registrado», «Perfil actualizado: display_name». Puede decir más que la respuesta (por ejemplo, si falló el usuario o la contraseña), porque solo se ve en la terminal del servidor. Nunca repite lo que escribió la persona |
+| `endpoint` | En peticiones que llegan a una ruta | La función que atendió, como `auth.login`. Solo en el log: la respuesta no lo lleva |
 | `method`, `route`, `status`, `duration_ms` | En peticiones | `route` es la plantilla de la ruta, no la URL con sus parámetros de consulta |
 | `user_id`, `role` | Si hay sesión | Nunca el `username` ni el nombre |
 | `dataset`, `rules` | En endpoints de cálculo | Versiones usadas (R4) |
+
+Cuando las cuentas están apagadas, cada intento de usarlas deja un evento `accounts_unavailable` de nivel `warning` con `reason` (`database_down` o `migration_pending`), `current_migration`, `expected_migration` y `detail` («Cuentas no disponibles (503) porque la migración 2.1 no se completó; la base de datos está en la 1.9»). Al arrancar, la API registra `migration_applied`, `migration_up_to_date`, `migration_skipped` (la base no responde) o `migration_failed` (nivel `error`, con las dos versiones y la traza).
+
+`GET /api/v1/health` responde siempre `200` mientras la API esté arriba, con `accounts`: `available`, `reason` (`ok`, `database_down` o `migration_pending`), `current_migration` y `expected_migration`.
 
 Nunca se escriben: contraseñas, tokens, cookies, la cabecera `Authorization`, polígonos ni los cuerpos de los endpoints de cálculo (R9). Un procesador de redacción borra esas llaves de cualquier evento.
 
@@ -254,6 +261,7 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 | Lote o temporada que no existe o es de otro usuario | `404` |
 | Entrada válida sin datos | `200` con `insufficient_data` en la señal |
 | Cultivo que no es apto para la zona | `200` con `suitability.level = not_suitable`, luz `red` y acción `rotate`; sin ventanas |
+| Las cuentas no se pueden atender (agregado el 12 de octubre de 2026; por revisar con Haider): la base de datos no responde, o su esquema no está en la última migración que trae el código | `503` en los endpoints de cuenta, con `code = accounts_database_down` o `accounts_migration_pending`. El mensaje para la persona es el mismo en los dos casos («Las cuentas no están disponibles en este momento. Puede seguir consultando sin cuenta.»); el motivo exacto va al log de la terminal. Los endpoints que no usan la base de datos siguen respondiendo |
 | Fallo interno | `500` con `{"error": {"code": "...", "message": "...", "request_id": "..."}}` |
 
 ## Cuerpos y respuestas

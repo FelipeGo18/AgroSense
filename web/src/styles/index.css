@@ -70,8 +70,48 @@
 .mascot-float {
   animation: mascot-float 2.6s ease-in-out infinite alternate;
 }
+/* Parpadea: los ojos se cierran un instante cada pocos segundos. Los ojos vacíos de «sin datos» no parpadean. */
+@keyframes mascot-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+.mascot:not([data-mood="no_data"]) .mascot-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mascot-blink 4.6s ease-in-out infinite;
+}
+/* Saluda: de vez en cuando levanta el brazo que tiene abajo y mueve la mano. El hombro es el punto de giro. */
+@keyframes mascot-wave {
+  0%,
+  72%,
+  100% {
+    transform: rotate(0deg);
+  }
+  77%,
+  85%,
+  93% {
+    transform: rotate(128deg);
+  }
+  81%,
+  89% {
+    transform: rotate(102deg);
+  }
+}
+.mascot-lively:is([data-mood="idle"], [data-mood="guide"]) .mascot-arm-left {
+  transform-box: view-box;
+  transform-origin: 108px 138px;
+  animation: mascot-wave 9s ease-in-out 2.5s infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .mascot-float {
+  .mascot-float,
+  .mascot .mascot-eyes,
+  .mascot-lively .mascot-arm-left {
     animation: none;
   }
 }

@@ -19,6 +19,8 @@ boolean prop proliferation by using compound components, lifting state, and
 composing internals. These patterns make codebases easier for both humans and AI
 agents to work with as they scale.
 
+> **Recortada para AgroSense (12 de octubre de 2026).** Se quitó el documento compilado que repetía todas las reglas. Origen: `vercel-labs/agent-skills` (MIT), commit `063bee9`.
+
 ## When to Apply
 
 Reference these guidelines when:
@@ -83,7 +85,3 @@ Each rule file contains:
 - Incorrect code example with explanation
 - Correct code example with explanation
 - Additional context and references
-
-## Full Compiled Document
-
-For the complete guide with all rules expanded: `AGENTS.md`
