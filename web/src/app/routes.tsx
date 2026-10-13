@@ -1,17 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Outlet, ScrollRestoration, createBrowserRouter, useLocation, type RouteObject } from "react-router";
-import { LandingPage } from "@/pages/landing/LandingPage";
 import { PATHS } from "./paths";
 
 function Root() {
   // Un cliente por aplicación montada: guarda en memoria lo que responde la API (por ejemplo, quién tiene la sesión).
   const [client] = useState(() => new QueryClient());
   const { pathname } = useLocation();
+  const [start] = useState(pathname);
+  const [moved, setMoved] = useState(false);
+  if (!moved && pathname !== start) setMoved(true);
   return (
     <QueryClientProvider client={client}>
-      {/* Cada página entra con un fundido corto (styles/index.css). */}
-      <div key={pathname} className="page-fade">
+      {/* Cada página entra con un fundido corto (styles/index.css), salvo la primera: esa ya viene pintada. */}
+      <div key={pathname} className={moved ? "page-fade" : undefined}>
         <Outlet />
       </div>
       <ScrollRestoration />
@@ -48,7 +50,8 @@ export const routes: RouteObject[] = [
     element: <Root />,
     HydrateFallback: Loading,
     children: [
-      { path: PATHS.home, element: <LandingPage /> },
+      // Cada página se carga aparte, también el inicio: quien abre «Entrar» no descarga el recorrido de la portada.
+      { path: PATHS.home, lazy: async () => ({ Component: (await import("@/pages/landing/LandingPage")).LandingPage }) },
       { path: PATHS.login, lazy: async () => ({ Component: (await import("@/pages/auth/LoginPage")).LoginPage }) },
       { path: PATHS.signup, lazy: async () => ({ Component: (await import("@/pages/auth/SignupPage")).SignupPage }) },
       { path: PATHS.account, lazy: async () => ({ Component: (await import("@/pages/account/AccountPage")).AccountPage }) },

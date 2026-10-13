@@ -1,3 +1,4 @@
+import { isFirstLoad } from "@/lib/firstLoad";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -45,7 +46,8 @@ export function Hero({ animated }: { animated: boolean }) {
     () => {
       if (!animated || !root.current) return;
       // Entrada: el nombre, la frase y los botones aparecen uno tras otro, de izquierda a derecha.
-      gsap.from("[data-hero-in]", { x: -28, autoAlpha: 0, duration: 0.7, ease: "power2.out", stagger: 0.12, delay: 0.1 });
+      if (!isFirstLoad())
+        gsap.from("[data-hero-in]", { x: -28, autoAlpha: 0, duration: 0.7, ease: "power2.out", stagger: 0.12, delay: 0.1 });
       gsap
         .timeline({
           defaults: { ease: "none" },

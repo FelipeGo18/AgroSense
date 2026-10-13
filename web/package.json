@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && vite build --ssr src/app/entry-server.tsx --outDir node_modules/.agrosense-ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:scroll": "node e2e/scroll-stress.mjs",
+    "perf": "node e2e/perf.mjs",
     "api:types": "npx --yes openapi-typescript@7.13.0 http://127.0.0.1:8000/api/openapi.json -o src/api/schema.d.ts"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.12.0",
     "jsdom": "30.1.1",
+    "lighthouse": "12.8.2",
     "playwright-core": "1.63.0",
     "prettier": "3.9.9",
     "prettier-plugin-tailwindcss": "0.8.1",

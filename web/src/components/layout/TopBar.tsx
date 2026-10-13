@@ -1,5 +1,4 @@
-import * as Dialog from "@radix-ui/react-dialog";
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { Suspense, lazy, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { PATHS } from "@/app/paths";
 import { Mascot } from "@/components/mascot/Mascot";
@@ -9,91 +8,42 @@ import { Plate } from "@/components/ui/Plate";
 import { useLogout, useSession } from "@/features/auth/session";
 import { useScroll } from "./SmoothScroll";
 import { SoundToggle } from "./SoundToggle";
+import { NAV } from "./navLinks";
 
-const NAV = [
-  { to: PATHS.consult, label: "Consultar" },
-  { to: PATHS.farm, label: "Mi finca" },
-  { to: PATHS.howItWorks, label: "Cómo funciona" },
-];
+const MobileMenuPanel = lazy(() => import("./MobileMenuPanel").then((module) => ({ default: module.MobileMenuPanel })));
 
-const MEMBER = [
-  { to: PATHS.account, label: "Mi cuenta" },
-  { to: PATHS.activity, label: "Mi actividad" },
-];
-
-const GUEST = [
-  { to: PATHS.login, label: "Entrar" },
-  { to: PATHS.signup, label: "Crear cuenta" },
-];
-
-/** Menú a pantalla completa para pantallas angostas. */
+/** Botón del menú de pantallas angostas. El menú mismo (MobileMenuPanel) se trae la primera vez que se abre. */
 function MobileMenu() {
   const [open, setOpen] = useState(false);
-  const { user } = useSession();
-  const logout = useLogout();
+  const [asked, setAsked] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const { setLocked } = useScroll();
   const change = (next: boolean) => {
+    if (next) setAsked(true);
     setOpen(next);
     setLocked(next);
   };
   return (
-    <Dialog.Root open={open} onOpenChange={change}>
-      <Dialog.Trigger
+    <>
+      <button
+        ref={trigger}
+        type="button"
         aria-label="Abrir el menú"
-        className="relative flex size-11 flex-col items-center justify-center gap-[5px] outline-none lg:hidden"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => change(true)}
+        className="relative flex size-11 flex-col items-center justify-center gap-[5px] lg:hidden"
       >
         {[0, 1, 2].map((bar) => (
           <span key={bar} aria-hidden="true" className="block h-[5px] w-[30px] rounded-[2px] bg-paleta-noche" />
         ))}
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Content
-          aria-describedby={undefined}
-          data-lenis-prevent
-          className="menu-curtain fixed inset-0 z-50 flex flex-col overflow-y-auto bg-paleta-noche px-7 pt-6 pb-10 text-texto-sobre-oscuro outline-none lg:hidden"
-        >
-          <div className="flex items-center justify-between">
-            <Dialog.Title className="font-titulos text-base font-titulo tracking-wide uppercase">Menú</Dialog.Title>
-            <Dialog.Close aria-label="Cerrar el menú" className="flex size-11 items-center justify-center focus-visible:outline-white">
-              <svg aria-hidden="true" viewBox="0 0 30 30" className="size-7">
-                <path d="M4 4l22 22M26 4L4 26" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-              </svg>
-            </Dialog.Close>
-          </div>
-          <nav aria-label="Principal" className="mt-6 flex flex-col">
-            {[...NAV, ...(user ? MEMBER : GUEST)].map((item, i) => (
-              <NavLink
-                key={item.to}
-                style={{ "--i": i } as CSSProperties}
-                to={item.to}
-                end
-                onClick={() => change(false)}
-                className="menu-item py-3 font-titulos text-[26px] font-titulo focus-visible:outline-white aria-[current=page]:text-paleta-trigo"
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          {user ? (
-            <div className="mt-6 flex flex-col items-start gap-3 border-t border-white/25 pt-6">
-              <p className="text-sm text-paleta-niebla">Entró como {user.username}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  change(false);
-                  logout.mutate();
-                }}
-                className="min-h-11 font-bold text-paleta-trigo underline decoration-2 underline-offset-4 focus-visible:outline-white"
-              >
-                Cerrar sesión
-              </button>
-            </div>
-          ) : (
-            <p className="mt-6 border-t border-white/25 pt-6 text-sm text-paleta-niebla">Sin cuenta, lo que consulta no se guarda.</p>
-          )}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+      </button>
+      {asked && (
+        <Suspense fallback={null}>
+          <MobileMenuPanel open={open} onOpenChange={change} returnFocus={trigger} />
+        </Suspense>
+      )}
+    </>
   );
 }
 

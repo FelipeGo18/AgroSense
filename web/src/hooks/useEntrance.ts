@@ -1,6 +1,7 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useRef } from "react";
+import { isFirstLoad } from "@/lib/firstLoad";
 import { useReducedMotion } from "./useReducedMotion";
 
 gsap.registerPlugin(useGSAP);
@@ -18,7 +19,8 @@ export function useEntrance<T extends HTMLElement>() {
   const animated = !useReducedMotion();
   useGSAP(
     () => {
-      if (!animated || !scope.current) return;
+      // Sobre HTML que ya venía pintado no hay entrada: sería esconder lo que la persona ya está viendo.
+      if (!animated || !scope.current || isFirstLoad()) return;
       const all = gsap.utils.toArray<HTMLElement>("[data-enter]", scope.current);
       const pops = all.filter((el) => el.dataset.enter === "pop");
       const rises = all.filter((el) => el.dataset.enter !== "pop");
