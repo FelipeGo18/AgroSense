@@ -125,11 +125,11 @@ describe("Mi cuenta (HU-160, HU-163)", () => {
     expect(light).toHaveAttribute("aria-checked", "false");
     await userEvent.click(light);
     expect(light).toHaveAttribute("aria-checked", "true");
-    expect(localStorage.getItem("agrosense:modo-ligero")).toBe("1");
+    expect(localStorage.getItem("agrosense:modo-ligero")).toBe("on");
     expect(document.documentElement).toHaveClass("modo-ligero");
     await userEvent.click(light);
     expect(light).toHaveAttribute("aria-checked", "false");
-    expect(localStorage.getItem("agrosense:modo-ligero")).toBe("0");
+    expect(localStorage.getItem("agrosense:modo-ligero")).toBe("off");
     expect(document.documentElement).not.toHaveClass("modo-ligero");
   });
 

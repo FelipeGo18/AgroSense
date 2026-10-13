@@ -27,7 +27,7 @@ PARTS = (
     ("F · Cuenta", "Todos", [("Iniciar sesión", 1, DONE), ("Crear cuenta · consentim. 3", f"{R} 7", DONE), ("Mi cuenta y sus prioridades", f"{R} 7", DONE),
                              ("Confirmar borrado", 1, DONE), ("Editar datos y contraseña", 1, DONE), ("Mi actividad", 8, DONE), ("Guardar la finca temporal", 8, DONE)]),
     ("G · Transversal", "Todos", [("¿Cómo funciona y de dónde sale?", 9, DONE), ("Estados: carga, vacío, error", 9, DONE),
-                                  ("Menú en móvil", 9, DONE), ("Modo ligero del lote", 9, DONE), ("Reportar un problema (P1)", 9, DONE)]),
+                                  ("Menú en móvil", 9, DONE), ("Modo ligero del lote", 9, DONE), ("Modo ligero: botón y aviso", f"{R} 8", DONE), ("Reportar un problema (P1)", 9, DONE)]),
     ("H · Administrador", "Rol admin · P1", [("Usuarios", 10, DONE), ("Ficha del agricultor", 10, DONE), ("Tickets", 10, DONE), ("Bitácora", 10, DONE), ("Métricas", 10, DONE)]),
     ("I · Catálogo visual", "Vive en design/finca/", [("Cultivos 1 · piloto", 5, DONE), ("Cultivos 2 · árboles frutales", 5, DONE), ("Cultivos 3 · musáceas y vides", 5, DONE),
                                               ("Cultivos 4 · raíces y hojas", 5, DONE), ("Cultivos 5 · más hortalizas", 5, DONE), ("Cultivos 6 · frutas andinas", 5, DONE),

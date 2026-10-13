@@ -50,10 +50,10 @@ export function SignupPage() {
       shownStep.current = step;
       if (!animated || !narrow || from === step || !form.current) return;
       gsap.from(form.current, {
-        x: step > from ? 36 : -36,
+        x: step > from ? 70 : -70,
         opacity: 0,
-        duration: 0.3,
-        ease: "power2.out",
+        duration: 0.45,
+        ease: "back.out(1.4)",
         clearProps: "transform,opacity",
       });
     },
@@ -194,7 +194,7 @@ export function SignupPage() {
                   <p>Soporte puede ver mis lotes para ayudarme, y se registra la actividad de mi cuenta durante 180 días.</p>
                   <p>Lo que siembro se suma, sin mi nombre, a los totales de mi municipio, solo si hay al menos 5 cuentas.</p>
                   <p>No se guarda correo, celular, documento ni dirección. Puedo borrar todo cuando quiera.</p>
-                  <Link to={PATHS.dataPolicy} className={`${LINK} self-start`}>
+                  <Link to={PATHS.dataPolicy} className={`${LINK} inline-flex min-h-11 items-center self-start`}>
                     Leer la política de {narrow ? "" : "tratamiento de "}datos
                   </Link>
                 </div>

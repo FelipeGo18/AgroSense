@@ -77,7 +77,7 @@ export function Hero({ animated }: { animated: boolean }) {
       <div className="sticky top-0 min-h-svh overflow-hidden bg-linear-to-b from-[#0B1226] to-[#1B3358] text-texto-sobre-oscuro md:h-svh md:min-h-[680px]">
         <Earth progress={progress} frame={frame} still={!animated} className="absolute inset-0" />
         {/* Esta capa no recibe el puntero: así se puede agarrar la Tierra, que está debajo. Solo el texto y los botones lo reciben. */}
-        <div className="pointer-events-none relative mx-auto flex h-full min-h-svh max-w-[1440px] flex-col px-5 pt-[clamp(104px,21vh,200px)] pb-28 md:min-h-0 md:px-12 md:pb-0 lg:px-24">
+        <div className="pointer-events-none relative container-page flex h-full min-h-svh flex-col pt-[clamp(104px,21vh,200px)] pb-28 md:min-h-0 md:pb-0">
           <div ref={copy} data-hero-copy className="pointer-events-auto flex w-full flex-col items-start sm:w-auto sm:self-start">
             <h1
               id="inicio-titulo"
@@ -117,7 +117,7 @@ export function Hero({ animated }: { animated: boolean }) {
             event.preventDefault();
             scrollTo("preguntas");
           }}
-          className="absolute bottom-9 left-5 w-44 py-2 text-left text-sm font-bold [text-shadow:0_2px_0_rgb(11_18_38/0.7)] focus-visible:outline-white md:bottom-6 md:left-[34%] md:w-auto md:-translate-x-1/2 md:px-3 md:text-center md:whitespace-nowrap lg:left-[39%]"
+          className="absolute bottom-9 left-5 w-44 py-2 text-left text-sm font-bold [text-shadow:0_2px_0_rgb(11_18_38/0.7)] focus-visible:outline-white md:bottom-6 md:left-[34%] md:flex md:min-h-11 md:w-auto md:-translate-x-1/2 md:items-center md:justify-center md:px-3 md:text-center md:whitespace-nowrap lg:left-[39%]"
         >
           Baje para empezar el recorrido <span aria-hidden="true">↓</span>
         </a>

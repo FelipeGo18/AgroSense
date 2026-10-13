@@ -117,7 +117,7 @@ export function Footer({ aside }: { aside?: ReactNode }) {
           <polygon key={i} points={pts(facet.points)} fill={facet.fill} />
         ))}
       </svg>
-      <div className="relative mx-auto flex max-w-[1440px] flex-col gap-10 px-5 pt-10 pb-8 md:px-12 lg:px-24">
+      <div className="relative container-page flex flex-col gap-10 pt-10 pb-8">
         <div className="flex flex-col gap-10 md:flex-row md:flex-wrap md:justify-between">
           <div className="flex max-w-sm items-end gap-3">
             <div>

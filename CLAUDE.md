@@ -133,6 +133,14 @@ docker compose run --rm web npm test          # Vitest
 - Decir que el riego o el suelo son una medición del lote (R10).
 - Dibujar un botón o control sin función.
 
+## Web: reglas que valen para todo lo nuevo
+
+Al crear o cambiar cualquier pantalla, vista o componente de `web/`, lea `web/CLAUDE.md` y aplíquelo sin que nadie lo pida:
+
+- **Modo ligero (HU-158):** todo lo que se mueve (GSAP, scroll suave, animaciones, transiciones, la Tierra, la mascota) debe poder quedarse quieto con la misma información. Se pregunta `useAnimated()` o se usa la variante `animated:`; nunca se decide movimiento por cuenta propia.
+- **Diseño adaptable (HU-096):** reglas globales desde 320 px (`container-page`, `grid-cols-1` en la base, anchos fijos con su versión angosta, `min-h-svh`, sin scroll horizontal, objetivos táctiles de 44 px).
+- Una pantalla nueva no está hecha hasta que se ve completa en modo ligero y pasa `npm run test:responsive` con su ruta agregada.
+
 ## Qué se puede recortar y qué no
 
 Orden de recorte si hay retraso en la hora 34 (detalle en `docs/plan-48h.md`): todo el P1; SMAP; la capa GIBS del mapa; el NDVI por lote (queda por municipio); el suelo por lote (queda el del municipio); el agua del plan solo con año normal; una sola razón por estrategia; pruebas de CI a mano; como último recurso, las cuentas (la demo queda en modo sin cuenta). **Nunca se recorta:** los estados «datos insuficientes», «no evaluable» y «no aplica», el suelo de la zona y las heladas en el diagnóstico y las estrategias, al menos un producto de observación satelital de la NASA en el núcleo (POWER, NASADEM e IMERG no se recortan), los casos de referencia del motor, el consentimiento y el borrado de la cuenta si hay cuentas, el despliegue y el video de respaldo, y las citas de fuentes en la entrega.
