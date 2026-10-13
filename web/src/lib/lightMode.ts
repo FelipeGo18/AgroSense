@@ -39,7 +39,9 @@ let pref: LightPref = hasWindow() ? readPref() : "auto";
 let light = resolve(pref);
 
 const apply = () => {
-  if (hasWindow()) document.documentElement.toggleAttribute("data-light", light);
+  if (!hasWindow()) return;
+  document.documentElement.toggleAttribute("data-light", light);
+  document.documentElement.classList.toggle("modo-ligero", light); // clase que usan los estilos de la cuenta y de la escena
 };
 
 const refresh = () => {
@@ -59,7 +61,15 @@ export function initLightMode() {
   if (typeof matchMedia === "function") matchMedia(REDUCED_MOTION).addEventListener("change", refresh);
 }
 
-export const lightModeOn = () => light;
+/** Valor efectivo. En automático se vuelve a mirar al equipo en cada lectura: así un cambio de «reducir movimiento» se ve al instante. */
+export const lightModeOn = () => {
+  const next = resolve(pref);
+  if (next !== light) {
+    light = next;
+    apply();
+  }
+  return light;
+};
 export const lightModePref = () => pref;
 
 export function subscribeLightMode(listener: () => void) {

@@ -1,15 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
-import { Outlet, ScrollRestoration, createBrowserRouter, type RouteObject } from "react-router";
+import { Outlet, ScrollRestoration, createBrowserRouter, useLocation, type RouteObject } from "react-router";
 import { LandingPage } from "@/pages/landing/LandingPage";
 import { PATHS } from "./paths";
 
 function Root() {
   // Un cliente por aplicación montada: guarda en memoria lo que responde la API (por ejemplo, quién tiene la sesión).
   const [client] = useState(() => new QueryClient());
+  const { pathname } = useLocation();
   return (
     <QueryClientProvider client={client}>
-      <Outlet />
+      {/* Cada página entra con un fundido corto (styles/index.css). */}
+      <div key={pathname} className="page-fade">
+        <Outlet />
+      </div>
       <ScrollRestoration />
     </QueryClientProvider>
   );
@@ -47,6 +51,9 @@ export const routes: RouteObject[] = [
       { path: PATHS.home, element: <LandingPage /> },
       { path: PATHS.login, lazy: async () => ({ Component: (await import("@/pages/auth/LoginPage")).LoginPage }) },
       { path: PATHS.signup, lazy: async () => ({ Component: (await import("@/pages/auth/SignupPage")).SignupPage }) },
+      { path: PATHS.account, lazy: async () => ({ Component: (await import("@/pages/account/AccountPage")).AccountPage }) },
+      { path: PATHS.password, lazy: async () => ({ Component: (await import("@/pages/account/PasswordPage")).PasswordPage }) },
+      { path: PATHS.activity, lazy: async () => ({ Component: (await import("@/pages/account/ActivityPage")).ActivityPage }) },
       ...PENDING.map(pending),
       // Pruebas de la fase 0. Cada recorrido se carga aparte: trae sus propias escenas.
       { path: PATHS.lab, lazy: async () => ({ Component: (await import("@/pages/lab/LabIndexPage")).LabIndexPage }) },

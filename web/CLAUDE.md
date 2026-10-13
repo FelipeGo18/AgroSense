@@ -14,6 +14,8 @@ El modo ligero es la misma información sin scroll suave, sin recorrido animado 
 4. **Scroll:** nada secuestra el scroll ni pega («pin») una sección en modo ligero. El contenido tiene su altura natural y los enlaces internos saltan sin animar (`scrollTo` de `SmoothScroll` ya lo hace).
 5. **La información no puede depender de una animación.** Nada empieza escondido (`opacity-0`, `autoAlpha: 0`, fuera de pantalla) si algo que solo corre con movimiento lo tiene que mostrar. Si una pieza entra animada, en modo ligero ya está a la vista.
 
+`useReducedMotion()` (`@/hooks/useReducedMotion`) sigue existiendo por compatibilidad y es `!useAnimated()`; en código nuevo se usa `useAnimated()`.
+
 **Prohibido:** leer `prefers-reduced-motion` o `matchMedia` por su cuenta para decidir movimiento (eso es de `lightMode.ts`), crear otro interruptor de movimiento, o usar GSAP, Lenis o ScrollTrigger fuera de un componente que reciba `animated`.
 
 **Pantalla nueva, lista cuando:** se ve completa y sin tocar nada en modo ligero (una prueba con `setLightMode(true)`), y está en `ROUTES` de `e2e/responsive-check.mjs`.

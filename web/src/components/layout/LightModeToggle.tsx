@@ -78,7 +78,7 @@ export function LightModeToggle({ className = "" }: { className?: string }) {
         </svg>
         <span className="relative hidden text-sm font-bold xl:inline">Modo ligero</span>
       </button>
-      <span role="status" className="sr-only">
+      <span aria-live="polite" className="sr-only">
         {announcement}
       </span>
       {visible && (
