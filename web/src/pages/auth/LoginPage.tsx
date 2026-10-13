@@ -2,11 +2,12 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
+import { FormScene } from "@/components/layout/FormScene";
+import { celebrateThen } from "@/components/mascot/reactions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useLogin, useSession } from "@/features/auth/session";
-import { AuthLayout } from "./AuthLayout";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -25,17 +26,17 @@ export function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  // Quien ya tiene la sesión abierta no vuelve a entrar.
-  if (user) return <Navigate to={PATHS.farm} replace />;
+  // Quien ya tiene la sesión abierta no vuelve a entrar. Quien acaba de entrar se queda un instante: la mascota celebra.
+  if (user && (login.isIdle || login.isError)) return <Navigate to={PATHS.farm} replace />;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    login.mutate({ username, password }, { onSuccess: () => navigate(PATHS.farm) });
+    login.mutate({ username, password }, { onSuccess: () => celebrateThen(() => navigate(PATHS.farm)) });
   };
   const failed = login.error;
 
   return (
-    <AuthLayout mood="guide" signs={["Su finca lo espera"]}>
+    <FormScene mood="guide" signs={["Su finca lo espera"]} rejected={failed}>
       <title>Entrar · AgroSense</title>
       <header>
         <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">Entrar</p>
@@ -90,6 +91,6 @@ export function LoginPage() {
       <p className="border-t-2 border-superficie-borde pt-2 text-[15px] leading-snug text-texto-secundario">
         Si olvida su contraseña, por ahora no se puede recuperar. No guardamos su correo ni su celular.
       </p>
-    </AuthLayout>
+    </FormScene>
   );
 }

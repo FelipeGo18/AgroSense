@@ -8,10 +8,23 @@ import type { ReactNode } from "react";
  * La identidad está en la cara, los brazos, las raíces y el brote; la semilla puede cambiar
  * según el contexto (por ejemplo, el cultivo consultado).
  * Cada parte animable lleva su clase: mascot-roots, mascot-arm-left, mascot-arm-right,
- * mascot-sprout, mascot-body, mascot-eyes, mascot-mouth.
+ * mascot-sprout, mascot-body, mascot-gaze (la mirada), mascot-eyes (el parpadeo), mascot-pupil (las pupilas),
+ * mascot-mouth.
  */
 
-export type MascotMood = "idle" | "guide" | "celebrate" | "no_data" | "flying";
+export type MascotMood =
+  | "idle"
+  | "guide"
+  | "celebrate"
+  | "no_data"
+  | "flying"
+  // Reacciones a lo que hace la persona (components/mascot/reactions.ts).
+  | "watch"
+  | "shy"
+  | "peek"
+  | "deny"
+  | "yawn"
+  | "asleep";
 export type MascotSeed = "sprouted" | "bean" | "maize";
 
 const INK = "#1D1D1B";
@@ -39,9 +52,9 @@ const SEEDS: Record<MascotSeed, { d: string; fill: string; light: string; label:
   },
 };
 
-type Arm = "down" | "up" | "point" | "tuck" | "back";
-type Eyes = "pie" | "happy" | "hollow";
-type Mouth = "smile" | "open" | "big" | "flat";
+type Arm = "down" | "up" | "point" | "tuck" | "back" | "cover" | "cheek";
+type Eyes = "pie" | "happy" | "hollow" | "closed";
+type Mouth = "smile" | "open" | "big" | "flat" | "small" | "yawn";
 
 interface Pose {
   label: string;
@@ -55,6 +68,7 @@ interface Pose {
   sparkles?: boolean;
   speed?: boolean;
   mist?: boolean;
+  zzz?: boolean;
 }
 
 const POSES: Record<MascotMood, Pose> = {
@@ -81,6 +95,16 @@ const POSES: Record<MascotMood, Pose> = {
     transform: "rotate(-16 158 124)",
     speed: true,
   },
+  // Mira el campo donde la persona escribe; las pupilas las mueve quien la anima.
+  watch: { label: "atenta", eyes: "pie", mouth: "smile", arms: ["down", "down"] },
+  // No mira la contraseña: se tapa los ojos con las dos manos.
+  shy: { label: "tapándose los ojos", eyes: "closed", mouth: "smile", arms: ["cover", "cover"] },
+  // La contraseña está a la vista: baja una mano y espía con un ojo.
+  peek: { label: "espiando", eyes: "pie", mouth: "small", arms: ["cover", "cheek"] },
+  // Dice que no. Es un gesto, no un regaño: el texto del aviso es el que explica.
+  deny: { label: "negando", eyes: "pie", mouth: "flat", arms: ["down", "down"] },
+  yawn: { label: "bostezando", eyes: "closed", mouth: "yawn", arms: ["up", "down"] },
+  asleep: { label: "dormida", eyes: "closed", mouth: "small", arms: ["down", "down"], droop: true, zzz: true },
 };
 
 const stroke = { fill: "none", stroke: INK, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -137,19 +161,23 @@ function Sprout({ waves }: { waves: number }) {
 
 function ArmShape({ kind, side }: { kind: Arm; side: -1 | 1 }) {
   const sx = 158 + side * 50;
-  const arms: Record<Arm, { d: string; hand: [number, number] }> = {
+  const arms = {
     down: { d: `M${sx} 138 C${sx + side * 26} 148 ${sx + side * 32} 166 ${sx + side * 28} 184`, hand: [sx + side * 28, 188] },
     up: { d: `M${sx} 126 C${sx + side * 30} 112 ${sx + side * 42} 88 ${sx + side * 40} 62`, hand: [sx + side * 40, 58] },
     point: { d: `M${sx} 130 C${sx + side * 22} 124 ${sx + side * 44} 118 ${sx + side * 64} 112`, hand: [sx + side * 68, 111] },
     tuck: { d: `M${sx} 140 C${sx + side * 16} 150 ${sx + side * 10} 166 ${sx - side * 6} 168`, hand: [sx - side * 8, 168] },
     back: { d: `M${sx} 140 C${sx + side * 18} 156 ${sx + side * 34} 162 ${sx + side * 54} 170`, hand: [sx + side * 58, 172] },
-  };
-  const { d, hand } = arms[kind];
+    // La mano sube hasta el ojo de su lado y lo tapa: es más grande que en los demás gestos.
+    cover: { d: `M${sx} 138 C${sx + side * 30} 152 ${sx + side * 34} 112 ${161 + side * 26} 118`, hand: [161 + side * 21, 117], r: 20 },
+    // La mano baja del ojo a la mejilla: deja ver.
+    cheek: { d: `M${sx} 138 C${sx + side * 28} 152 ${sx + side * 30} 138 ${sx - side * 4} 150`, hand: [sx - side * 8, 152] },
+  } satisfies Record<Arm, { d: string; hand: [number, number]; r?: number }>;
+  const { d, hand, r = 13 }: { d: string; hand: [number, number]; r?: number } = arms[kind];
   const finger = `M${hand[0] + side * 8} ${hand[1] - 2} l${side * 16} -3`;
   return (
     <g className={side < 0 ? "mascot-arm-left" : "mascot-arm-right"}>
       <path d={d} {...stroke} strokeWidth={9} />
-      <circle cx={hand[0]} cy={hand[1]} r={13} fill={CREAM} stroke={INK} strokeWidth={4} />
+      <circle cx={hand[0]} cy={hand[1]} r={r} fill={CREAM} stroke={INK} strokeWidth={4} />
       {kind === "point" && (
         <>
           <path d={finger} {...stroke} strokeWidth={7} />
@@ -166,12 +194,14 @@ function EyesShape({ kind, look }: { kind: Eyes; look: number }) {
       {[140, 182].map((x) =>
         kind === "happy" ? (
           <path key={x} d={`M${x - 14} 122 Q${x} 100 ${x + 14} 122`} {...stroke} strokeWidth={5} />
+        ) : kind === "closed" ? (
+          <path key={x} d={`M${x - 13} 116 Q${x} 128 ${x + 13} 116`} {...stroke} strokeWidth={5} />
         ) : kind === "hollow" ? (
           <ellipse key={x} cx={x} cy={116} rx={15} ry={20} fill={CREAM} stroke={INK} strokeWidth={3.5} strokeDasharray="5 5" />
         ) : (
           <g key={x}>
             <ellipse cx={x} cy={116} rx={15} ry={20} fill={CREAM} stroke={INK} strokeWidth={4} />
-            <path d={`M${x + look} 120 m0 -10 a10 10 0 1 1 -9 6 l9 4Z`} fill={INK} />
+            <path className="mascot-pupil" d={`M${x + look} 120 m0 -10 a10 10 0 1 1 -9 6 l9 4Z`} fill={INK} />
           </g>
         ),
       )}
@@ -190,6 +220,8 @@ function MouthShape({ kind }: { kind: Mouth }) {
       </>
     ),
     flat: <path d="M150 154 H172" {...stroke} strokeWidth={4} />,
+    small: <ellipse cx={161} cy={155} rx={6} ry={5} fill={INK} />,
+    yawn: <ellipse cx={161} cy={158} rx={12} ry={15} fill={INK} stroke={INK} strokeWidth={3} />,
   };
   return <g className="mascot-mouth">{shapes[kind]}</g>;
 }
@@ -224,7 +256,8 @@ export function Mascot({ mood = "idle", seed = "sprouted", size = 240, lively = 
     >
       <g transform={pose.transform}>
         <Roots droop={pose.droop ?? false} />
-        <ArmShape kind={pose.arms[0]} side={-1} />
+        {/* El brazo izquierdo va detrás del cuerpo, salvo cuando sube a taparle un ojo. */}
+        {pose.arms[0] !== "cover" && <ArmShape kind={pose.arms[0]} side={-1} />}
         <Sprout waves={pose.waves ?? 0} />
         <g className="mascot-body">
           <path d={s.d} fill={s.fill} stroke={INK} strokeWidth={5} strokeLinejoin="round" />
@@ -236,8 +269,12 @@ export function Mascot({ mood = "idle", seed = "sprouted", size = 240, lively = 
           <ellipse cx={124} cy={142} rx={9} ry={5} fill={RED} opacity={0.55} />
           <ellipse cx={196} cy={142} rx={9} ry={5} fill={RED} opacity={0.55} />
         </g>
-        <EyesShape kind={pose.eyes} look={pose.look ?? 0} />
+        {/* La mirada se mueve aparte del parpadeo: así puede seguir a la mariposa o entrecerrarse con el viento. */}
+        <g className="mascot-gaze">
+          <EyesShape kind={pose.eyes} look={pose.look ?? 0} />
+        </g>
         <MouthShape kind={pose.mouth} />
+        {pose.arms[0] === "cover" && <ArmShape kind="cover" side={-1} />}
         <ArmShape kind={pose.arms[1]} side={1} />
       </g>
       {pose.sparkles && (
@@ -246,6 +283,13 @@ export function Mascot({ mood = "idle", seed = "sprouted", size = 240, lively = 
           <path d={sparkle(262, 96, 9)} fill={RED} />
           <path d={sparkle(238, 214, 8)} fill={RED} />
           <path d={sparkle(74, 26, 6)} fill="#2A9D8F" />
+        </g>
+      )}
+      {pose.zzz && (
+        <g className="mascot-zzz" {...stroke} strokeWidth={4}>
+          <path d="M214 62 h14 l-14 16 h14" />
+          <path d="M240 34 h18 l-18 20 h18" />
+          <path d="M270 2 h22 l-22 24 h22" />
         </g>
       )}
       {pose.speed &&

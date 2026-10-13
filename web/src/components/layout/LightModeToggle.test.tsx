@@ -14,11 +14,11 @@ describe("Botón «Modo ligero» (HU-158)", () => {
     expect(button).toHaveAttribute("aria-pressed", "false");
     await userEvent.click(button);
     expect(button).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("status")).toHaveTextContent("Modo ligero activado");
+    expect(document.querySelector("[aria-live]")).toHaveTextContent("Modo ligero activado");
     expect(document.documentElement).toHaveAttribute("data-light");
     await userEvent.click(button);
     expect(button).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("status")).toHaveTextContent("Modo ligero desactivado");
+    expect(document.querySelector("[aria-live]")).toHaveTextContent("Modo ligero desactivado");
     expect(document.documentElement).not.toHaveAttribute("data-light");
   });
 
