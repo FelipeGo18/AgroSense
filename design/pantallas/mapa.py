@@ -33,9 +33,11 @@ PARTS = (
                                               ("Cultivos 4 · raíces y hojas", 5, DONE), ("Cultivos 5 · más hortalizas", 5, DONE), ("Cultivos 6 · frutas andinas", 5, DONE),
                                               ("Cultivos 7 · permanentes", 5, DONE), ("Cultivos 8 · aromáticas y más", 5, DONE), ("Estados del ambiente", 6, DONE)]),
     # Lo que los enlaces de las pantallas ya prometen y todavía no tiene pantalla propia.
-    ("J · Pendientes de diseño", "Tanda 11", [("Política de tratamiento de datos", 11, TODO), ("Editar o borrar una siembra", 11, TODO),
-                                              ("Lote sin dibujar (área a mano)", 11, TODO), ("Estados que faltan del resultado", 11, TODO),
-                                              ("Rotaciones sin opciones", 11, TODO)]),
+    # Tanda 11: lo que faltaba del MVP por estrategias (decisión 12) y lo que los enlaces ya prometían.
+    ("J · Estrategias (MVP)", "Tanda 11", [("Entrada a las estrategias", 11, DONE), ("Estrategias de rotación", 11, DONE), ("Descartadas y sin opciones", 11, DONE),
+                                           ("Ciclo de una estrategia", 11, DONE), ("Qué cambió en su zona", 11, DONE)]),
+    ("K · Lo que faltaba", "Tanda 11", [("Mapa con capas de la NASA", 11, REVIEW), ("Editar o borrar una siembra", 11, DONE), ("Lote sin dibujar (área a mano)", 11, DONE),
+                                        ("Estados del resultado y verde", 11, DONE), ("Política de tratamiento de datos", 11, REVIEW)]),
 )
 
 STYLE = {DONE: (P["brote"], D["brote"], P["noche"]), NEXT: (P["trigo"], D["trigo"], P["noche"]), TODO: (WHITE, BORDE, SEC),
@@ -61,7 +63,7 @@ def sheet():
     b = [f'<rect width="{w}" height="{h}" fill="{P["niebla"]}"/>',
          text(48, 76, "Mapa de pantallas finales", 44, 600, font=FONT_TITLE),
          text(48, 112, f"{len(screens_all) - todo} pantallas y láminas hechas y {todo} pendientes; la mayoría en escritorio y en móvil. Se diseñan por tandas; cada tanda se aprueba en Figma antes de pasar a código.", 18)]
-    cols = (PARTS[:3] + PARTS[8:9], PARTS[3:5] + PARTS[7:8], PARTS[5:7] + PARTS[9:])
+    cols = (PARTS[:3] + PARTS[8:9], PARTS[3:5] + PARTS[7:8] + PARTS[10:], PARTS[5:7] + PARTS[9:10])
     bottom = 0
     for ci, col in enumerate(cols):
         x, y = 48 + ci * 456, 150
@@ -75,8 +77,8 @@ def sheet():
             b.append(group(part.split(" · ")[1].lower().replace(" ", "-"), body, x, y))
             y += ph + 32
         bottom = max(bottom, y)
-    order = ["Orden: tandas 1 a 10 (hechas), rediseño por ventanas de siembra, del 1 al 7 (hecho), y tanda 11 (pendiente). El administrador es P1 y solo de escritorio.",
-             "«Revisar»: hecha, pero depende de algo por confirmar (Buscar mi municipio: la región).",
+    order = ["Orden: tandas 1 a 10, rediseño por ventanas de siembra (del 1 al 7) y tanda 11: el MVP por estrategias de rotación. El administrador es P1 y solo de escritorio.",
+             "«Revisar»: hecha, pero depende de algo por confirmar (Buscar mi municipio: la región; Política de datos: la revisión legal; capas de la NASA: los nombres de las capas de GIBS).",
              "Seis señales por ventana de siembra: agua, heladas, calor, suelo, oferta y mercado. El lote vivo usa el catálogo de cultivos y el clima de ahora.",
              "Nombres y cifras de muestra."]
     for i, line in enumerate(order):

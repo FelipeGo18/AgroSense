@@ -98,7 +98,6 @@ def hero(w, h, mobile):
         b += paragraph(20, 220, ["¿Qué sembrar y en qué orden?", "Le mostramos estrategias de", "rotación con datos del satélite y", "reglas que se pueden explicar.", "Usted decide."], 22, 31, fill=WHITE)
         b += button(20, 392, 350, "Consultar sin cuenta") + button(20, 464, 350, "Entrar", "secondary")
         b += mascot(292, 528, 0.4, "vuelo")
-        b += sound_toggle(w - 122, 18)
         b.append(text(195, h - 30, "Baje para empezar el recorrido ↓", 16, 700, WHITE, anchor="middle"))
         b.append(text(195, h - 10, CREDITO_GLOBO, 11, fill="#C9D6E0", anchor="middle"))
     else:
@@ -106,18 +105,9 @@ def hero(w, h, mobile):
         b += paragraph(100, 372, ["¿Qué sembrar y en qué orden?", "Le mostramos estrategias de rotación con datos", "del satélite y reglas que se pueden explicar. Usted decide."], 30, 42, fill=WHITE)
         b += button(100, 520, 300, "Consultar sin cuenta") + button(424, 520, 180, "Entrar", "secondary")
         b += mascot(700, 110, 0.8, "vuelo")
-        b += sound_toggle(w - 260, 30)
         b.append(text(560, h - 36, "Baje para empezar el recorrido ↓", 18, 700, WHITE, anchor="middle"))
         b.append(text(w - 32, h - 14, CREDITO_GLOBO, 13, fill="#C9D6E0", anchor="end"))
     return b
-
-
-def sound_toggle(x, y):
-    """Control de sonido de la barra: arranca apagado (specs/05-frontend.md). El altavoz tachado dice que está en silencio."""
-    body = [poly(chamfer(0, 0, 44, 44, 9), P["niebla"]),
-            poly([(11, 18), (17, 18), (25, 11), (25, 33), (17, 26), (11, 26)], P["noche"]),
-            f'<path d="M30 16 L38 28 M38 16 L30 28" stroke="{P["noche"]}" stroke-width="3" stroke-linecap="round"/>']
-    return [group("sonido-apagado", body, x, y)]
 
 
 def questions(y0, w, mobile):

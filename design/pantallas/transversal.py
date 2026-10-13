@@ -269,14 +269,7 @@ def menu(guest=False):
             b.append(poly([(12, y + i * 58 - 18), (20, y + i * 58 - 10), (12, y + i * 58 - 2), (4, y + i * 58 - 10)], P["calabaza"]))
     y += len(items) * 58 + 10
     b.append(f'<rect x="28" y="{y}" width="{w - 56}" height="1" fill="{WHITE}" fill-opacity="0.25"/>')
-    y += 44
-    b.append(text(28, y, "ESTE DISPOSITIVO", 13, 700, P["niebla"]))
-    for i, (label, on) in enumerate((("Modo ligero", False), ("Reducir movimiento", True), ("Sonido", False))):
-        ry = y + 40 + i * 60
-        b += [text(28, ry + 8, label, 18, 700, WHITE)] + toggle(w - 92, ry - 18, on, name=f"interruptor-{label.split(' ')[0].lower()}")
-        if label == "Sonido":  # P1 (Howler.js): rotulado para el equipo
-            b += p1_tag(28 + width_of(label, 18, True) + 12, ry - 10)
-    y += 40 + 3 * 60 + 10
+    y += 34  # el modo ligero y el sonido están en la barra, no en el menú
     if not guest:
         b += [text(28, y + 10, "Entró como rosa.samaca", 14, fill=P["niebla"])]
         b += [text(28, y + 46, "Cerrar sesión", 17, 700, P["trigo"]), f'<rect x="28" y="{y + 51}" width="114" height="2" fill="{P["trigo"]}"/>']

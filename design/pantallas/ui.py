@@ -133,11 +133,43 @@ def logo(x, y, ink=None):
     return [group("marca", seed + [text(40, 33, "AgroSense", 28, 600, ink, FONT_TITLE)], x, y)]
 
 
+def sound_button(x, y, on=False):
+    """Botón de sonido de la barra: arranca apagado y el altavoz tachado lo dice (web: SoundToggle.tsx)."""
+    ink = P["noche"]
+    waves = (f'<path d="M29 17 Q33 22 29 27 M32.5 13 Q39 22 32.5 31" fill="none" stroke="{ink}" stroke-width="3" stroke-linecap="round"/>' if on else
+             f'<path d="M30 16 L38 28 M38 16 L30 28" fill="none" stroke="{ink}" stroke-width="3" stroke-linecap="round"/>')
+    return [group("boton-sonido", [poly(chamfer(0, 0, 44, 44, 9), P["niebla"]), poly([(11, 18), (17, 18), (25, 11), (25, 33), (17, 26), (11, 26)], ink), waves], x, y)]
+
+
+LIGHT_W = 150
+
+
+def light_button(x, y, on=False, icon_only=False):
+    """Botón «Modo ligero» de la barra (HU-158), con las medidas del componente de Figma («8 · Modo ligero»): 150 × 44 en
+    escritorio y solo el ícono, de 40 × 40, en móvil. Apagado va con borde; prendido, relleno. Al tocarlo abre su aviso."""
+    fill, ink = (D["oliva"], WHITE) if on else (WHITE, P["noche"])
+    w, h = (40, 40) if icon_only else (LIGHT_W, 44)
+    ox, oy = (9, 9) if icon_only else (14, 12)
+    k = 1.1 if icon_only else 1
+    feather = (f'<g transform="translate({ox} {oy}) scale({k})"><path d="M3 18 C2 9 8 2 18 2 C18 12 12 18 3 18Z" fill="none" stroke="{ink}" stroke-width="2.2" stroke-linejoin="round"/>'
+               f'<path d="M2 19 L12 8" fill="none" stroke="{ink}" stroke-width="2.2" stroke-linecap="round"/></g>')
+    body = [poly(chamfer(1.5, 1.5, w - 3, h - 3, 9), fill, D["oliva"] if on else P["noche"], 2.5), feather]
+    if not icon_only:
+        body.append(text(42, 28, "Modo ligero", 16, 700, ink))
+    return [group("boton-modo-ligero", body, x, y)]
+
+
 def topbar(w, active=None, user=None):
-    """Barra superior: una tabla biselada que flota sobre el paisaje."""
-    if w < 700:  # móvil: marca y menú
+    """Barra superior: una tabla biselada que flota sobre el paisaje.
+
+    A la derecha, de afuera hacia adentro: «Entrar» o quien entró con «Cerrar sesión», «Modo ligero» y el sonido.
+    En móvil, la marca, el modo ligero (solo el ícono), el sonido y el menú.
+    """
+    if w < 700:  # móvil: marca, sonido y menú
         body = [poly(chamfer(12, 18, w - 24, 56, 12), BORDE), poly(chamfer(12, 12, w - 24, 56, 12), WHITE)]
         body += logo(26, 18)
+        body += sound_button(w - 122, 18)
+        body += light_button(w - 170, 20, icon_only=True)
         for i in range(3):
             body.append(poly(chamfer(w - 62, 27 + i * 10, 30, 5, 2), P["noche"]))
         return [group("barra", body)]
@@ -151,11 +183,17 @@ def topbar(w, active=None, user=None):
             body.append(poly(chamfer(x, 68, width_of(item, 18, True), 5, 2), P["calabaza"]))
         x += width_of(item, 18, True) + 44
     if user:
-        body.append(poly(chamfer(w - 250, 30, 194, 44, 10), P["niebla"]))
-        body.append(f'<g transform="translate({w - 244} 28) scale(0.16)">{"".join(seed_mascot("reposo"))}</g>')
-        body.append(text(w - 190, 59, user, 18, 700))
+        body += link(w - 56, 59, "Cerrar sesión", 18, anchor="end")
+        chip_w = 76 + width_of(user, 18, True)
+        left = w - 56 - width_of("Cerrar sesión", 18, True) - 18 - chip_w
+        body.append(poly(chamfer(left, 30, chip_w, 44, 10), P["niebla"]))
+        body.append(f'<g transform="translate({left + 6} 28) scale(0.16)">{"".join(seed_mascot("reposo"))}</g>')
+        body.append(text(left + 60, 59, user, 18, 700))
     else:
-        body += button(w - 196, 26, 140, "Entrar", "secondary")
+        left = w - 196
+        body += button(left, 26, 140, "Entrar", "secondary")
+    body += light_button(left - 12 - LIGHT_W, 30)
+    body += sound_button(left - 12 - LIGHT_W - 12 - 44, 30)
     return [group("barra", body)]
 
 
