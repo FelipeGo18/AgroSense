@@ -6,11 +6,30 @@
  * (por ejemplo `/audio/tema.mp3`, puesto en `web/public/audio/`); si no, suena una melodía generada aquí mismo.
  */
 
-export type SoundEffect = "on" | "stop" | "flutter" | "land" | "wind" | "drizzle" | "giggle" | "cheer" | "nope" | "yawn" | "chirp";
+export type SoundEffect =
+  "on" | "stop" | "flutter" | "land" | "wind" | "drizzle" | "giggle" | "cheer" | "nope" | "yawn" | "chirp" | "shake";
 
 const KEY = "agrosense:sonido";
 const listeners = new Set<() => void>();
 let context: AudioContext | undefined;
+// Todo lo que suena pasa por esta salida. Al quitar el sonido se desconecta: así callan de inmediato también las notas
+// que ya estaban programadas (la música se programa con un segundo de ventaja y su bajo dura tres).
+let output: GainNode | undefined;
+
+/** La salida de un contexto de audio; se crea de nuevo después de cada silencio. */
+function out(ctx: AudioContext) {
+  if (!output) {
+    output = ctx.createGain();
+    output.connect(ctx.destination);
+  }
+  return output;
+}
+
+/** Calla ya todo lo que esté sonando o por sonar. */
+function silence() {
+  output?.disconnect();
+  output = undefined;
+}
 
 const read = () => {
   try {
@@ -39,7 +58,7 @@ function note(ctx: AudioContext, type: OscillatorType, hz: number, at: number, l
   gain.gain.setValueAtTime(0, at);
   gain.gain.linearRampToValueAtTime(volume, at + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
-  oscillator.connect(gain).connect(ctx.destination);
+  oscillator.connect(gain).connect(out(ctx));
   oscillator.start(at);
   oscillator.stop(at + length + 0.02);
 }
@@ -131,6 +150,19 @@ const EFFECTS: Record<
     ],
   },
   // Pasan unos pájaros a lo lejos.
+  // La mascota se sacude el agua, como un perro: un traqueteo corto.
+  shake: {
+    type: "triangle",
+    volume: 0.04,
+    notes: [
+      [330, 0, 0.05],
+      [415, 0.07, 0.05],
+      [330, 0.14, 0.05],
+      [415, 0.21, 0.05],
+      [330, 0.28, 0.05],
+      [494, 0.36, 0.14],
+    ],
+  },
   chirp: {
     type: "sine",
     volume: 0.022,
@@ -162,20 +194,20 @@ function gust(ctx: AudioContext, at: number, length: number, volume: number, [lo
   gain.gain.setValueAtTime(0.0001, at);
   gain.gain.exponentialRampToValueAtTime(volume, at + length * 0.4);
   gain.gain.exponentialRampToValueAtTime(0.0001, at + length);
-  source.connect(filter).connect(gain).connect(ctx.destination);
+  source.connect(filter).connect(gain).connect(out(ctx));
   source.start(at);
   source.stop(at + length);
 }
 
-/** Suena un efecto, si el sonido está prendido y el navegador ya lo permite (hace falta un gesto del usuario). */
-export function playSound(effect: SoundEffect) {
+/** Suena un efecto (`seconds` es cuánto dura la llovizna), si el sonido está prendido y el navegador ya lo permite (hace falta un gesto del usuario). */
+export function playSound(effect: SoundEffect, seconds = 7) {
   if (!enabled || typeof AudioContext === "undefined") return;
   context ??= new AudioContext();
   if (context.state === "suspended") void context.resume().catch(() => {});
   if (context.state !== "running") return;
   const now = context.currentTime;
   if (effect === "wind") return gust(context, now, 1.7, 0.05);
-  if (effect === "drizzle") return gust(context, now, 7, 0.018, [2600, 3400, 2800]);
+  if (effect === "drizzle") return gust(context, now, seconds, 0.018, [2600, 3400, 2800]);
   const { type, notes, volume = EFFECT_VOLUME } = EFFECTS[effect];
   for (const [hz, at, length] of notes) note(context, type, hz, now + at, length, volume);
 }
@@ -240,6 +272,7 @@ function stopMusic() {
   file?.pause();
   if (timer !== undefined) clearInterval(timer);
   timer = undefined;
+  silence();
 }
 
 /** Con la pestaña escondida la música se calla; vuelve al regresar. */

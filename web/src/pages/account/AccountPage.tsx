@@ -167,14 +167,9 @@ function StoredCard({ user }: { user: Profile }) {
       <p>
         Aceptó el tratamiento de datos (versión {user.consent_version}) el {date(user.consent_at)}.
       </p>
-      <div className="flex flex-wrap justify-between gap-x-6 gap-y-2">
-        <Link to={PATHS.dataPolicy} className={LINK}>
-          Leer la política de tratamiento de datos
-        </Link>
-        <Link to={PATHS.activity} className={LINK}>
-          Ver mi actividad
-        </Link>
-      </div>
+      <Link to={PATHS.dataPolicy} className={`${LINK} self-start`}>
+        Leer la política de tratamiento de datos
+      </Link>
     </Card>
   );
 }
@@ -206,6 +201,19 @@ function SessionCard({ user }: { user: Profile }) {
           Cerrar sesión
         </Button>
       </div>
+    </Card>
+  );
+}
+
+/** Acceso a «Mi actividad» (HU-178): lo que se hizo con la cuenta, también lo que hizo soporte. */
+function ActivityCard() {
+  return (
+    <Card>
+      <Title>Mi actividad</Title>
+      <p>Lo que se hizo con su cuenta y sus lotes, también lo que hizo soporte. Se guarda 180 días.</p>
+      <ButtonLink to={PATHS.activity} variant="secondary" className="self-start">
+        Ver mi actividad
+      </ButtonLink>
     </Card>
   );
 }
@@ -294,7 +302,7 @@ function Account({ user, notice }: { user: Profile; notice?: string }) {
             {notice}
           </p>
         )}
-        <div className="grid items-start gap-7 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-2">
           <div className="flex flex-col gap-7">
             <DataCard user={user} />
             <div data-enter>
@@ -308,9 +316,15 @@ function Account({ user, notice }: { user: Profile; notice?: string }) {
             <div data-enter>
               <PreferencesCard />
             </div>
-            <div data-enter>
-              <DangerCard user={user} />
-            </div>
+          </div>
+        </div>
+        {/* Abajo, lado a lado: ver lo que se hizo con la cuenta y borrarla. */}
+        <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-2">
+          <div data-enter>
+            <ActivityCard />
+          </div>
+          <div data-enter>
+            <DangerCard user={user} />
           </div>
         </div>
       </div>

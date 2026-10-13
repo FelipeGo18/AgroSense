@@ -118,6 +118,36 @@ def link(x, y, label, size=18, anchor="start", bold=True):
             f'<rect x="{x0:g}" y="{y + 4:g}" width="{w:g}" height="2" fill="{D["oliva"]}"/>']
 
 
+LIGHT_WHAT = ("Quita las animaciones y el scroll", "suave. La información es la misma.")
+
+
+def light_button(x, y, on=False, label=True, name="boton-modo-ligero"):
+    """Botón «Modo ligero» de la barra superior (HU-158). Una pluma: solo el contorno si está desactivado; llena y en
+    oliva si está activado (el estado se ve por la forma, no solo por el color). Con `label=False` es solo el ícono
+    (bajo 1280 px y en el celular); el nombre queda en el aviso y en el nombre accesible."""
+    w = 164 if label else 44
+    fill, ink = (D["oliva"], WHITE) if on else (P["niebla"], P["noche"])
+    quill = D["oliva"] if on else ink
+    feather = (f'<g transform="translate({6 if label else 0} 0)">'
+               f'<path d="M31 11C21 11 14 17 12 27l-1 5 5-1c10-2 16-9 15-20z" fill="{ink if on else "none"}" stroke="{ink}" stroke-width="3" stroke-linejoin="round"/>'
+               f'<path d="M12 32 25 19" stroke="{quill}" stroke-width="3" stroke-linecap="round"/></g>')
+    body = [poly(chamfer(0, 0, w, 44, 9), fill), feather]
+    if label:
+        body.append(text(56, 29, "Modo ligero", 16, 700, ink))
+    return [group(name, body, x, y)]
+
+
+def light_tip(x, y, on=False, name="aviso-modo-ligero"):
+    """Aviso del botón «Modo ligero»: sale al pasar el cursor, al enfocarlo con el teclado o al tocarlo (se queda 8 s).
+    Título con el estado, una frase y qué pasa al tocar. Escape lo cierra."""
+    w, h = 288, 140
+    body = [poly(chamfer(0, 6, w, h, 12), BORDE), poly(chamfer(0, 0, w, h, 12), WHITE),
+            text(20, 36, f"Modo ligero: {'activado' if on else 'desactivado'}", 19, 600, font=FONT_TITLE)]
+    body += paragraph(20, 64, LIGHT_WHAT, 15, 21)
+    body.append(text(20, 120, "Toque para " + ("desactivarlo." if on else "activarlo."), 15, fill=SEC))
+    return [group(name, body, x, y)]
+
+
 def p1_tag(x, y):
     """Rótulo «P1» para el equipo: lo que no entra en el P0. En la app no se dibuja."""
     return [poly(chamfer(x, y, 44, 24, 6), WHITE, D["cielo"], 1.5), text(x + 22, y + 17, "P1", 13, 700, D["cielo"], anchor="middle")]
@@ -141,35 +171,12 @@ def sound_button(x, y, on=False):
     return [group("boton-sonido", [poly(chamfer(0, 0, 44, 44, 9), P["niebla"]), poly([(11, 18), (17, 18), (25, 11), (25, 33), (17, 26), (11, 26)], ink), waves], x, y)]
 
 
-LIGHT_W = 150
-
-
-def light_button(x, y, on=False, icon_only=False):
-    """Botón «Modo ligero» de la barra (HU-158), con las medidas del componente de Figma («8 · Modo ligero»): 150 × 44 en
-    escritorio y solo el ícono, de 40 × 40, en móvil. Apagado va con borde; prendido, relleno. Al tocarlo abre su aviso."""
-    fill, ink = (D["oliva"], WHITE) if on else (WHITE, P["noche"])
-    w, h = (40, 40) if icon_only else (LIGHT_W, 44)
-    ox, oy = (9, 9) if icon_only else (14, 12)
-    k = 1.1 if icon_only else 1
-    feather = (f'<g transform="translate({ox} {oy}) scale({k})"><path d="M3 18 C2 9 8 2 18 2 C18 12 12 18 3 18Z" fill="none" stroke="{ink}" stroke-width="2.2" stroke-linejoin="round"/>'
-               f'<path d="M2 19 L12 8" fill="none" stroke="{ink}" stroke-width="2.2" stroke-linecap="round"/></g>')
-    body = [poly(chamfer(1.5, 1.5, w - 3, h - 3, 9), fill, D["oliva"] if on else P["noche"], 2.5), feather]
-    if not icon_only:
-        body.append(text(42, 28, "Modo ligero", 16, 700, ink))
-    return [group("boton-modo-ligero", body, x, y)]
-
-
-def topbar(w, active=None, user=None):
-    """Barra superior: una tabla biselada que flota sobre el paisaje.
-
-    A la derecha, de afuera hacia adentro: «Entrar» o quien entró con «Cerrar sesión», «Modo ligero» y el sonido.
-    En móvil, la marca, el modo ligero (solo el ícono), el sonido y el menú.
-    """
-    if w < 700:  # móvil: marca, sonido y menú
+def topbar(w, active=None, user=None, light_on=False):
+    """Barra superior: una tabla biselada que flota sobre el paisaje."""
+    if w < 700:  # móvil: marca y menú
         body = [poly(chamfer(12, 18, w - 24, 56, 12), BORDE), poly(chamfer(12, 12, w - 24, 56, 12), WHITE)]
         body += logo(26, 18)
-        body += sound_button(w - 122, 18)
-        body += light_button(w - 170, 20, icon_only=True)
+        body += light_button(w - 118, 18, on=light_on, label=False)
         for i in range(3):
             body.append(poly(chamfer(w - 62, 27 + i * 10, 30, 5, 2), P["noche"]))
         return [group("barra", body)]
@@ -192,8 +199,9 @@ def topbar(w, active=None, user=None):
     else:
         left = w - 196
         body += button(left, 26, 140, "Entrar", "secondary")
-    body += light_button(left - 12 - LIGHT_W, 30)
-    body += sound_button(left - 12 - LIGHT_W - 12 - 44, 30)
+    # El modo ligero (el componente de «8 · Modo ligero») y, a su izquierda, el sonido, como en la web.
+    body += light_button(left - 24 - 164, 30, on=light_on)
+    body += sound_button(left - 24 - 164 - 12 - 44, 30)
     return [group("barra", body)]
 
 

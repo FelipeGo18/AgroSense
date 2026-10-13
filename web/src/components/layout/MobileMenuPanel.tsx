@@ -2,7 +2,24 @@ import * as Dialog from "@radix-ui/react-dialog";
 import type { CSSProperties, RefObject } from "react";
 import { NavLink } from "react-router";
 import { useLogout, useSession } from "@/features/auth/session";
+import { PreferenceSwitch } from "@/components/ui/PreferenceSwitch";
+import { useSound } from "@/hooks/useSound";
+import { LightModeSwitch } from "./LightModeToggle";
 import { GUEST, MEMBER, NAV } from "./navLinks";
+
+/** El sonido, como interruptor del menú: en pantallas muy angostas su botón no cabe en la barra. */
+function SoundSwitch() {
+  const [enabled, setEnabled] = useSound();
+  return (
+    <PreferenceSwitch
+      label="Sonido"
+      hint="Efectos suaves al pasar de sección. Empieza apagado y la web se entiende igual sin él."
+      checked={enabled}
+      onChange={setEnabled}
+      onDark
+    />
+  );
+}
 
 /**
  * El menú a pantalla completa de las pantallas angostas. Se carga aparte, la primera vez que se abre: así el diálogo
@@ -54,6 +71,10 @@ export function MobileMenuPanel({
               </NavLink>
             ))}
           </nav>
+          <section aria-label="Preferencias" className="mt-6 flex flex-col border-t border-white/25 pt-3">
+            <LightModeSwitch onDark />
+            <SoundSwitch />
+          </section>
           {user ? (
             <div className="mt-6 flex flex-col items-start gap-3 border-t border-white/25 pt-6">
               <p className="text-sm text-paleta-niebla">Entró como {user.username}</p>

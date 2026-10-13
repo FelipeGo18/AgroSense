@@ -8,6 +8,9 @@ import { playSound } from "@/lib/sound";
 
 gsap.registerPlugin(useGSAP);
 
+/** Aviso de que empezó (`detail: true`) o paró (`false`) la llovizna del paisaje. */
+export const RAIN_EVENT = "agrosense:lluvia";
+
 /** Con qué se tiñe el paisaje a cada hora. Se multiplica sobre el dibujo: de día no hay tinte. */
 const TINT: Record<DayPhase, string | null> = {
   dawn: "linear-gradient(#F7C9D3, #FFE9CF)",
@@ -33,7 +36,7 @@ const FIREFLIES = [
  * - **Hora del día** (según el reloj del dispositivo): amanecer, día, atardecer o noche, con estrellas y luna. Esto
  *   no es movimiento y se ve siempre.
  * - **Con movimiento permitido:** sombras de nubes que cruzan el campo, unos pájaros de vez en cuando, luciérnagas de
- *   noche y, cada tanto, una llovizna pasajera.
+ *   noche y, cada tanto, una llovizna que dura de unos segundos a casi medio minuto.
  *
  * Es decoración, no un dato: la llovizna y la hora no dicen cómo está el clima de ninguna zona (eso es HU-176, con su
  * rótulo y su fuente) y nada de esto entra a un cálculo (decisión 7).
@@ -71,9 +74,24 @@ export function SceneAmbient({ contained = false }: { contained?: boolean }) {
       });
 
       const drizzle = root.querySelector("[data-drizzle]");
+      // Cada llovizna dura distinto: a veces pasa rápido, a veces se queda un rato. Avisa cuándo empieza y cuándo
+      // para (`RAIN_EVENT`), para que la mascota se moje y después se sacuda (SceneLife).
+      const tell = (raining: boolean) => document.dispatchEvent(new CustomEvent(RAIN_EVENT, { detail: raining }));
+      let raining = false;
       const rain = contextSafe(() => {
-        playSound("drizzle");
-        gsap.fromTo(drizzle, { autoAlpha: 0 }, { keyframes: { autoAlpha: [0, 0.6, 0.6, 0] }, duration: 7, ease: "none" });
+        const seconds = gsap.utils.random(9, 28);
+        playSound("drizzle", seconds);
+        raining = true;
+        tell(true);
+        gsap
+          .timeline({
+            onComplete: () => {
+              raining = false;
+              tell(false);
+            },
+          })
+          .fromTo(drizzle, { autoAlpha: 0 }, { autoAlpha: 0.6, duration: 1.5, ease: "none" })
+          .to(drizzle, { autoAlpha: 0, duration: 2, ease: "none" }, seconds - 2);
       });
 
       const every = contextSafe((first: number, [min, max]: [number, number], run: () => void) => {
@@ -89,6 +107,10 @@ export function SceneAmbient({ contained = false }: { contained?: boolean }) {
       // De noche los pájaros duermen.
       if (!night) every(gsap.utils.random(12, 20), [35, 70], flyBirds);
       every(gsap.utils.random(45, 75), [90, 150], rain);
+      // Si la capa se desmonta lloviendo, la lluvia también para para quien la escucha.
+      return () => {
+        if (raining) tell(false);
+      };
     },
     { scope: layer, dependencies: [animated, night], revertOnUpdate: true },
   );
@@ -107,7 +129,7 @@ export function SceneAmbient({ contained = false }: { contained?: boolean }) {
                 style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${(i % 5) * 0.7}s` }}
               />
             ))}
-            <span className="absolute top-[18%] left-[88%] size-12 rounded-full bg-[#FFF6D8] shadow-[0_0_40px_10px_rgb(255_246_216/0.35)]" />
+            <span className="absolute top-[18%] right-[6%] size-12 rounded-full bg-[#FFF6D8] shadow-[0_0_40px_10px_rgb(255_246_216/0.35)]" />
           </>
         )}
         {animated && (

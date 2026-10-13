@@ -23,7 +23,7 @@ export function GuideNote({ stop, className = "" }: { stop: Exclude<StopId, "ini
             event.preventDefault();
             scrollTo(target);
           }}
-          className="relative mt-1 inline-block font-bold text-oscuro-oliva underline decoration-2 underline-offset-4"
+          className="relative mt-1 inline-flex min-h-11 items-center font-bold text-oscuro-oliva underline decoration-2 underline-offset-4"
         >
           {nextLabel} <span aria-hidden="true">{next ? "↓" : "↑"}</span>
         </a>

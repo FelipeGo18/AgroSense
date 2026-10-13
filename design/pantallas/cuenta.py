@@ -198,9 +198,9 @@ def profile_cards(cw, mobile, editing=False):
     stored += link(pad, 92 + len(stored_rows) * 26 + 12, POLICY_SHORT if mobile else POLICY, 16)
     stored += link(pad if mobile else cw - pad, 92 + len(stored_rows) * 26 + (48 if mobile else 12), "Ver mi actividad", 16, anchor="start" if mobile else "end")
     prefs = [title("Preferencias" if mobile else "Preferencias de este dispositivo")]
-    # El modo ligero vive en la barra superior (Figma, «8 · Modo ligero»): aquí queda el sonido.
-    for i, (t, note, on) in enumerate((("Sonido", "Música y efectos. Empieza apagado.", False),)):
-        prefs.append(group("preferencia", pref(104 + i * 76, t, note, on, fw), pad, 0))
+    for i, (t, note, on) in enumerate((("Modo ligero", "Quita las animaciones y el scroll suave.", False),
+                                       ("Sonido", "Ambiente y efectos. Empieza apagado.", False))):
+        prefs.append(group("preferencia", pref(104 + i * 76, t, note.replace("animaciones pesadas", "animaciones") if mobile else note, on, fw, p1=t == "Sonido"), pad, 0))
     session = [title("Sesión y contraseña"), text(pad, 92, f"Entró como {USER}.", 18)]
     if mobile:
         session += button(pad, 116, fw, "Cambiar contraseña", "secondary") + button(pad, 188, fw, "Cerrar sesión", "secondary")
@@ -225,7 +225,7 @@ def profile_cards(cw, mobile, editing=False):
     danger = [poly([(0, 18), (8, 18), (8, 0), (0, 0)], P["rojo"]), title("Borrar mi cuenta")] + paragraph(pad, 92, danger_rows, 16 if mobile else 18, 26)
     dy = 92 + len(danger_rows) * 26 + 6
     danger += button(pad, dy, min(fw, 260), "Borrar mi cuenta", "danger")
-    return [("sus-datos", data, data_h), ("lo-que-guardamos", stored, 92 + len(stored_rows) * 26 + (86 if mobile else 50)), ("preferencias", prefs, 168),
+    return [("sus-datos", data, data_h), ("lo-que-guardamos", stored, 92 + len(stored_rows) * 26 + (86 if mobile else 50)), ("preferencias", prefs, 244),
             ("sesion", session, session_h), ("borrar-cuenta", danger, dy + 88), ("sus-prioridades", prio, prio_h)]
 
 

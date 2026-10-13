@@ -2,7 +2,10 @@ import type { ReactNode } from "react";
 import { Card as BaseCard } from "@/components/ui/Card";
 import { ExampleLabel } from "@/components/ui/Labels";
 
-export { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useAnimated } from "@/hooks/useLightMode";
+
+/** El laboratorio lo llama «reducir movimiento»: es el modo ligero (HU-158). */
+export const useReducedMotion = () => !useAnimated();
 export { useSmoothScroll } from "@/hooks/useSmoothScroll";
 export { followScroll } from "@/lib/followScroll";
 

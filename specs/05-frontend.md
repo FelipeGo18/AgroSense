@@ -226,6 +226,12 @@ La escena refleja la condición aproximada de ahora en el municipio (decisión 7
 4. **Cada acción tiene respuesta.** Tocar, elegir y cambiar prioridades produce un cambio visible inmediato.
 5. **Español claro, sin jerga.** La jerga técnica vive en el glosario y en el detalle a pedido.
 
+## Modo ligero y diseño adaptable (reglas para todo lo nuevo)
+
+**Modo ligero (HU-158).** Es la misma información sin scroll suave, sin recorrido animado y sin movimiento. Hay un solo interruptor, en la barra superior («Modo ligero», con un aviso que dice qué es y qué desactiva) y en el menú del celular. Es «automático» por defecto: sigue a «reducir movimiento» y al ahorro de datos del equipo, y la persona lo puede forzar en uno u otro sentido. Todo lo que se mueve se escribe compatible con él: se pregunta `useAnimated()` o se usa la variante `animated:`, y sin movimiento se dibuja ya colocado, con los mismos textos y botones. Ninguna información depende de una animación. Las reglas para quien programa están en `web/CLAUDE.md`.
+
+**Diseño adaptable (HU-096).** Mobile-first desde 320 px, con los cortes de Tailwind (640, 768, 1024 y 1280 px). Reglas globales en lugar de arreglos por pantalla: `container-page` para los márgenes, cuadrículas con `grid-cols-1` en la base, anchos fijos con su versión angosta, `min-h-svh` en lugar de alturas fijas, nada que se salga del ancho y objetivos táctiles de 44 px o más. `npm run test:responsive` lo comprueba en 11 tamaños, con y sin movimiento. Detalle en `web/CLAUDE.md`.
+
 ## Accesibilidad y rendimiento
 
 Metas iniciales; se validan y ajustan con el prototipo.

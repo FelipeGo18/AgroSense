@@ -38,7 +38,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] (Web) La tarjeta «Sus prioridades» de Mi cuenta. Depende de los pesos por defecto de `weights.yaml` (HU-198), que la API todavía no expone: sin ellos no se puede mostrar el criterio de AgroSense ni volver a él. El backend (`PATCH /me` con `priorities`) ya está
   - [x] (Web) El interruptor «Modo ligero» de las preferencias: se guarda en el navegador y, prendido, quita las animaciones, los recorridos, el scroll suave (Lenis), GSAP y el movimiento de la mascota. El interruptor vive en `web/src/lib/lightMode.ts`; lo que el modo ligero apague de más (la escena 3D, imágenes pesadas) lo engancha Haider ahí, que es quien lleva el modo ligero
 - **Reglas que aplican:** R9
-- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Mientras no exista, las prioridades de las señales se recuerdan en el navegador también con cuenta (HU-202). Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`).
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Mientras no exista, las prioridades de las señales se recuerdan en el navegador también con cuenta (HU-202). Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`). **Pendiente en Figma (12 de octubre de 2026):** Mi cuenta tiene ahora una tarjeta propia «Mi actividad» con su botón, antes de «Borrar mi cuenta» (antes era solo un enlace en «Lo que guardamos de usted»); falta pasarla a `design/pantallas/cuenta.py` y a Figma.
 
 ### HU-178 · Trazabilidad de lo que hacen agricultores y administradores
 

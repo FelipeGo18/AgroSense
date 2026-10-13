@@ -39,7 +39,7 @@ export interface FormSceneProps {
  * del día (`SceneAmbient`).
  */
 export function FormScene({ children, scene = "vereda", mood, signs = [], wide = false, rejected }: FormSceneProps) {
-  const stage = useEntrance<HTMLElement>();
+  const stage = useEntrance<HTMLElement>({ bold: true });
   const animated = !useReducedMotion();
   const { act, poke } = useMascotReactions(stage, rejected);
   useEffect(() => {

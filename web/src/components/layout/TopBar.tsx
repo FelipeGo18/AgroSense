@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { Plate } from "@/components/ui/Plate";
 import { useLogout, useSession } from "@/features/auth/session";
+import { LightModeToggle } from "./LightModeToggle";
 import { useScroll } from "./SmoothScroll";
 import { SoundToggle } from "./SoundToggle";
 import { NAV } from "./navLinks";
@@ -106,7 +107,8 @@ export function TopBar() {
           <MainNav />
         </div>
         <div className="relative flex h-[56px] shrink-0 items-center gap-2 md:h-16 md:gap-5">
-          <SoundToggle />
+          <SoundToggle className="max-[399px]:hidden" />
+          <LightModeToggle />
           {user ? (
             <div className="hidden items-center gap-4 lg:flex">
               <Link

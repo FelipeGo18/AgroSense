@@ -19,8 +19,8 @@ import muestra  # noqa: E402
 from calendario import wrap_lines  # noqa: E402
 from consulta import light  # noqa: E402
 from senales import BAND, KEY_TO_KIND, LIGHT_TEXT, kind  # noqa: E402
-from ui import (BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, field, frame, group, link, logo, mascot,  # noqa: E402
-                p1_tag, paragraph, poly, text, toggle, topbar, width_of)
+from ui import (BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, chamfer, field, frame, group, light_button, light_tip, link,  # noqa: E402
+                logo, mascot, p1_tag, paragraph, poly, text, toggle, topbar, width_of)
 
 # ---------- ¿Cómo funciona y de dónde sale esto? ----------
 
@@ -269,7 +269,17 @@ def menu(guest=False):
             b.append(poly([(12, y + i * 58 - 18), (20, y + i * 58 - 10), (12, y + i * 58 - 2), (4, y + i * 58 - 10)], P["calabaza"]))
     y += len(items) * 58 + 10
     b.append(f'<rect x="28" y="{y}" width="{w - 56}" height="1" fill="{WHITE}" fill-opacity="0.25"/>')
-    y += 34  # el modo ligero y el sonido están en la barra, no en el menú
+    y += 44
+    b.append(text(28, y, "PREFERENCIAS", 13, 700, P["niebla"]))
+    # En la barra del celular no cabe el sonido (bajo 400 px): vive aquí, junto al modo ligero, con su explicación.
+    prefs = (("Modo ligero", ("Quita las animaciones y el", "scroll suave."), False), ("Sonido", ("Efectos al pasar de sección.", "Empieza apagado."), False))
+    for i, (label, hint, on) in enumerate(prefs):
+        ry = y + 40 + i * 92
+        b += [text(28, ry + 8, label, 18, 700, WHITE)] + paragraph(28, ry + 32, hint, 14, 20, fill=P["niebla"])
+        b += toggle(w - 92, ry - 18, on, name=f"interruptor-{label.split(' ')[0].lower()}")
+        if label == "Sonido":  # P1 (Howler.js): rotulado para el equipo
+            b += p1_tag(28 + width_of(label, 18, True) + 12, ry - 10)
+    y += 40 + 2 * 92 + 10
     if not guest:
         b += [text(28, y + 10, "Entró como rosa.samaca", 14, fill=P["niebla"])]
         b += [text(28, y + 46, "Cerrar sesión", 17, 700, P["trigo"]), f'<rect x="28" y="{y + 51}" width="114" height="2" fill="{P["trigo"]}"/>']
@@ -347,7 +357,64 @@ def report(mobile=False):
     return frame((w, h), b, P["niebla"])
 
 
+# ---------- Modo ligero: el botón de la barra, su aviso y qué apaga (HU-158) ----------
+
+OFF_ROWS = (
+    ("Scroll", "Normal del navegador, sin inercia ni recorrido."),
+    ("Portada", "Quieta: la Tierra no gira y la mascota no vuela."),
+    ("Secciones", "Ya están colocadas: nada aparece ni se desliza."),
+    ("Mascota y botones", "Sin parpadeo, vaivén ni transiciones."),
+)
+
+
+def light_mode(mobile=False):
+    """Cómo se ve el modo ligero: el botón en la barra con su aviso, sus estados y qué apaga. No es una pantalla de la app."""
+    w = MOBILE[0] if mobile else 1440
+    pad = 24 if mobile else 56
+    b = topbar(w)
+    # El aviso sale debajo del botón, alineado a la derecha de la barra (cursor, teclado o toque).
+    b += light_tip(w - 12 - 288 if mobile else w - pad - 288, 84 if mobile else 98)
+    y = 290 if mobile else 300
+    b.append(text(pad, y, "Modo ligero", 32 if mobile else 40, 600, font=FONT_TITLE))
+    lead = (["La misma información, sin", "animaciones ni scroll suave.", "Para celulares básicos o con poca señal."] if mobile else
+            ["La misma información, sin animaciones ni scroll suave.", "Para celulares básicos o con poca señal."])
+    b += paragraph(pad, y + 40, lead, 18, 26)
+    y += 40 + len(lead) * 26 + 24
+    b.append(text(pad, y, "Estados del botón", 24, 600, font=FONT_TITLE))
+    y += 28
+    rows = ((("Desactivado", False), ("Activado", True)), (("Desactivado · solo ícono", False), ("Activado · solo ícono", True)))
+    for r, items in enumerate(rows):
+        cx = pad
+        for label, on in items:
+            b += light_button(cx, y + r * 100, on=on, label=(r == 0), name=f"estado-{'activado' if on else 'desactivado'}-{'texto' if r == 0 else 'icono'}")
+            b.append(text(cx, y + r * 100 + 66, label, 14, fill=SEC))
+            cx += 164 + (24 if mobile else 40)
+    y += 2 * 100 + 8
+    if mobile:
+        b += paragraph(pad, y, ["Con texto desde 1280 px. Debajo, solo", "el ícono; el nombre sale en el aviso."], 14, 20, fill=SEC)
+        y += 60
+    else:
+        b.append(text(pad, y, "Con texto desde 1280 px. Debajo, solo el ícono; el nombre sale en el aviso.", 14, fill=SEC))
+        y += 52
+    b.append(text(pad, y, "Qué se apaga", 24, 600, font=FONT_TITLE))
+    y += 14
+    for label, what in OFF_ROWS:
+        y += 52 if mobile else 36
+        b.append(text(pad, y, label, 17, 700))
+        if mobile:
+            b.append(text(pad, y + 22, what, 15, fill=SEC))
+        else:
+            b.append(text(pad + 220, y, what, 17))
+    y += 64 if mobile else 52
+    notes = (["Automático por defecto: sigue a «reducir", "movimiento» y al ahorro de datos. Se puede forzar", "y se guarda en el dispositivo."] if mobile else
+             ["Automático por defecto: sigue a «reducir movimiento» y al ahorro de datos del equipo.", "La persona lo puede forzar en uno u otro sentido y se guarda en el dispositivo."])
+    b += paragraph(pad, y, notes, 15, 22, fill=SEC)
+    return frame((w, y + 80), b, P["niebla"])
+
+
 SCREENS = {
+    "transversal-06-modo-ligero-escritorio": light_mode,
+    "transversal-06-modo-ligero-movil": lambda: light_mode(mobile=True),
     "transversal-01-como-funciona-escritorio": how,
     "transversal-01-como-funciona-movil": lambda: how(mobile=True),
     "transversal-02-estados-escritorio": states,
