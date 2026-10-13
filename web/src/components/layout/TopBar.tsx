@@ -7,6 +7,9 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { Plate } from "@/components/ui/Plate";
 import { useLogout, useSession } from "@/features/auth/session";
+import { PreferenceSwitch } from "@/components/ui/PreferenceSwitch";
+import { useSound } from "@/hooks/useSound";
+import { LightModeSwitch, LightModeToggle } from "./LightModeToggle";
 import { useScroll } from "./SmoothScroll";
 import { SoundToggle } from "./SoundToggle";
 
@@ -20,6 +23,20 @@ const GUEST = [
   { to: PATHS.login, label: "Entrar" },
   { to: PATHS.signup, label: "Crear cuenta" },
 ];
+
+/** El sonido, como interruptor del menú: en pantallas muy angostas su botón no cabe en la barra. */
+function SoundSwitch() {
+  const [enabled, setEnabled] = useSound();
+  return (
+    <PreferenceSwitch
+      label="Sonido"
+      hint="Efectos suaves al pasar de sección. Empieza apagado y la web se entiende igual sin él."
+      checked={enabled}
+      onChange={setEnabled}
+      onDark
+    />
+  );
+}
 
 /** Menú a pantalla completa para pantallas angostas. */
 function MobileMenu() {
@@ -67,6 +84,10 @@ function MobileMenu() {
               </NavLink>
             ))}
           </nav>
+          <section aria-label="Preferencias" className="mt-6 flex flex-col border-t border-white/25 pt-3">
+            <LightModeSwitch onDark />
+            <SoundSwitch />
+          </section>
           {user ? (
             <div className="mt-6 flex flex-col items-start gap-3 border-t border-white/25 pt-6">
               <p className="text-sm text-paleta-niebla">Entró como {user.username}</p>
@@ -115,7 +136,8 @@ export function TopBar() {
           </nav>
         </div>
         <div className="relative flex h-[56px] shrink-0 items-center gap-2 md:h-16 md:gap-5">
-          <SoundToggle />
+          <SoundToggle className="max-[399px]:hidden" />
+          <LightModeToggle />
           {user ? (
             <div className="hidden items-center gap-4 lg:flex">
               <span className="flex h-11 max-w-40 items-center gap-2 bg-superficie-panel-suave px-3 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)] xl:max-w-56">

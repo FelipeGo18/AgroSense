@@ -11,7 +11,7 @@ export function Sources({ animated }: { animated: boolean }) {
   return (
     <section id="fuentes" ref={scope} aria-labelledby="fuentes-titulo" className="relative z-10 bg-paleta-cielo">
       {/* El espacio de abajo es para los cerros del pie de página, que suben sobre esta sección. */}
-      <div className="mx-auto max-w-[1440px] px-5 pt-28 pb-44 md:px-12 md:pb-52 lg:px-24">
+      <div className="container-page pt-28 pb-44 md:pb-52">
         <SectionHeader stop="fuentes" title="De dónde salen los datos">
           Datos abiertos y reglas que se pueden leer. Cada respuesta dice de dónde sale y qué versión de los datos usó.
         </SectionHeader>
@@ -31,7 +31,7 @@ export function Sources({ animated }: { animated: boolean }) {
           <p className="max-w-[60rem] font-bold">
             AgroSense no adivina el futuro: le muestra el riesgo histórico de su zona con reglas que puede leer. No es un pronóstico.
           </p>
-          <Link to={PATHS.howItWorks} className="mt-2 inline-block font-bold underline decoration-2 underline-offset-4">
+          <Link to={PATHS.howItWorks} className="mt-2 inline-flex min-h-11 items-center font-bold underline decoration-2 underline-offset-4">
             ¿Cómo funciona y de dónde sale esto?
           </Link>
         </div>

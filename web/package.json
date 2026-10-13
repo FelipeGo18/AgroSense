@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:scroll": "node e2e/scroll-stress.mjs",
+    "test:responsive": "node e2e/responsive-check.mjs",
     "api:types": "npx --yes openapi-typescript@7.13.0 http://127.0.0.1:8000/api/openapi.json -o src/api/schema.d.ts"
   },
   "dependencies": {
