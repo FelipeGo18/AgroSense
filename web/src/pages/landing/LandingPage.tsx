@@ -4,7 +4,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { MascotFlyer, MascotGuide, MascotSlot } from "@/components/mascot/MascotGuide";
 import { useActiveSection } from "@/hooks/useActiveSection";
 import { useEffect, useRef } from "react";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useAnimated } from "@/hooks/useLightMode";
 import { playSound } from "@/lib/sound";
 import { SectionNav } from "./SectionNav";
 import { STOP_IDS, type StopId } from "./content";
@@ -19,7 +19,7 @@ import { Sources } from "./sections/Sources";
  * Con «reducir movimiento» no hay scroll suave, giro ni vuelo: todo aparece ya colocado.
  */
 export function LandingPage() {
-  const animated = !useReducedMotion();
+  const animated = useAnimated();
   const active = useActiveSection(STOP_IDS) as StopId;
   // Al pasar a otra parada suena una nota, si el sonido está prendido. La primera pintura no cuenta.
   const heard = useRef(active);

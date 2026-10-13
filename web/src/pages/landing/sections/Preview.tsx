@@ -15,7 +15,7 @@ export function Preview({ animated }: { animated: boolean }) {
   const scope = useReveal<HTMLElement>(animated, "slide");
   return (
     <section id="ejemplo" ref={scope} aria-labelledby="ejemplo-titulo" className="relative z-10 overflow-x-clip bg-seccion-ejemplo">
-      <div className="mx-auto max-w-[1440px] px-5 pt-28 pb-20 md:px-12 lg:px-24">
+      <div className="container-page pt-28 pb-20">
         <SectionHeader stop="ejemplo" title="Así se revisa un ciclo">
           {PREVIEW.summary}
         </SectionHeader>

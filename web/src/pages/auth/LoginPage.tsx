@@ -83,7 +83,7 @@ export function LoginPage() {
             Crear cuenta
           </Link>
         </span>
-        <Link to={PATHS.consult} className={LINK}>
+        <Link to={PATHS.consult} className={`${LINK} inline-flex min-h-11 items-center`}>
           Seguir sin cuenta
         </Link>
       </p>

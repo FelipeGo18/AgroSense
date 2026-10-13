@@ -49,7 +49,7 @@ export function Questions({ animated }: { animated: boolean }) {
     <section id="preguntas" ref={scope} aria-labelledby="preguntas-titulo" className="relative z-10 bg-paleta-niebla">
       {/* Sin recorrido la portada no se queda quieta: las nubes taparían su parte de abajo. */}
       {animated && <CloudEdge className="text-paleta-niebla" />}
-      <div className="mx-auto max-w-[1440px] px-5 pt-28 pb-20 md:px-12 lg:px-24">
+      <div className="container-page pt-28 pb-20">
         <SectionHeader stop="preguntas" title="Cuatro preguntas, cuatro respuestas claras">
           Para su lote o, sin cuenta, para su municipio.
         </SectionHeader>
