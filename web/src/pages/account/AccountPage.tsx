@@ -1,10 +1,13 @@
 import gsap from "gsap";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router";
-import region from "../../../../design/paisaje/svg/a3-region.svg?raw";
+import region from "../../../../design/paisaje/svg/a3-region.svg?url";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
+import { SceneAmbient } from "@/components/layout/SceneAmbient";
 import { Mascot } from "@/components/mascot/Mascot";
+import { SceneLife } from "@/components/mascot/SceneLife";
+import { useMascotReactions } from "@/components/mascot/reactions";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -12,13 +15,11 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { TextField } from "@/components/ui/TextField";
 import { Toggle } from "@/components/ui/Toggle";
 import { useDeleteAccount, useLogout, useUpdateProfile, type Profile } from "@/features/auth/session";
+import { useDayPhase } from "@/hooks/useDayPhase";
 import { useEntrance } from "@/hooks/useEntrance";
 import { useLightMode, useReducedMotion } from "@/hooks/useReducedMotion";
 import { useSound } from "@/hooks/useSound";
 import { AccountShell, LINK } from "./AccountShell";
-
-// La franja de paisaje de arriba: Mi cuenta sigue estando en el mismo mundo.
-const STRIP = region.replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" ');
 
 const USERNAME = /^[a-z0-9._]{3,30}$/;
 const DATE = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
@@ -262,15 +263,30 @@ export function AccountPage() {
 
 function Account({ user, notice }: { user: Profile; notice?: string }) {
   const page = useEntrance<HTMLDivElement>();
+  // La franja tiene la misma vida que el paisaje de los formularios: la hora del día, la mariposa, el viento y una
+  // mascota que mira el campo que se edita, se ríe si la tocan y se duerme si nadie hace nada.
+  const stage = useRef<HTMLDivElement>(null);
+  const { act, poke } = useMascotReactions(stage, null);
+  const night = useDayPhase() === "night";
   return (
-    <>
+    <div ref={stage}>
       <title>Mi cuenta · AgroSense</title>
       <div className="relative h-[230px] overflow-hidden md:h-[280px]">
-        <div aria-hidden="true" className="absolute inset-0" dangerouslySetInnerHTML={{ __html: STRIP }} />
-        <div className="relative mx-auto flex h-full max-w-[1440px] items-end justify-between px-3 pb-5 md:px-12 lg:px-24">
-          <h1 className="text-[clamp(2.25rem,4vw,3rem)] [text-shadow:0_2px_0_rgb(255_255_255/0.6)]">Mi cuenta</h1>
-          <Mascot mood="idle" lively decorative className="h-auto w-[120px] md:w-[200px]" />
-        </div>
+        <img src={region} alt="" aria-hidden="true" className="absolute inset-0 size-full object-cover" />
+        <SceneAmbient contained />
+        <SceneLife className="relative mx-auto flex h-full max-w-[1440px] items-end justify-between px-3 pb-5 md:px-12 lg:px-24">
+          {/* De noche el paisaje se oscurece: el título pasa a claro para que se siga leyendo. */}
+          <h1
+            className={`text-[clamp(2.25rem,4vw,3rem)] ${
+              night ? "text-texto-sobre-oscuro [text-shadow:0_2px_0_rgb(11_18_38/0.7)]" : "[text-shadow:0_2px_0_rgb(255_255_255/0.6)]"
+            }`}
+          >
+            Mi cuenta
+          </h1>
+          <div onPointerDown={poke}>
+            <Mascot mood={act ?? "idle"} lively decorative className="block h-auto w-[120px] md:w-[200px]" />
+          </div>
+        </SceneLife>
       </div>
       <div ref={page} className="mx-auto mt-6 flex max-w-[1440px] flex-col gap-7 px-3 md:px-12 lg:px-24">
         {notice && (
@@ -298,6 +314,6 @@ function Account({ user, notice }: { user: Profile; notice?: string }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

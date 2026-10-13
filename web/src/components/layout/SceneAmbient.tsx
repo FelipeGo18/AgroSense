@@ -1,8 +1,9 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
+import { useDayPhase } from "@/hooks/useDayPhase";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { dayPhase, type DayPhase } from "@/lib/dayPhase";
+import type { DayPhase } from "@/lib/dayPhase";
 import { playSound } from "@/lib/sound";
 
 gsap.registerPlugin(useGSAP);
@@ -24,17 +25,10 @@ const FIREFLIES = [
   [8, 62], [19, 78], [33, 68], [46, 84], [58, 64], [69, 80], [81, 70], [92, 86],
 ]; // prettier-ignore
 
-function usePhase() {
-  const [phase, setPhase] = useState(() => dayPhase(new Date().getHours()));
-  useEffect(() => {
-    const timer = setInterval(() => setPhase(dayPhase(new Date().getHours())), 60_000);
-    return () => clearInterval(timer);
-  }, []);
-  return phase;
-}
-
 /**
- * Ambiente del paisaje de un formulario. Va detrás de todo: nunca tapa la tarjeta ni recibe el puntero.
+ * Ambiente de un paisaje. Va detrás de todo: nunca tapa el contenido ni recibe el puntero. Por defecto cubre la
+ * pantalla, detrás de la página (los formularios); con `contained` llena solo la caja que lo contiene (la franja de
+ * Mi cuenta), y va justo después del dibujo del paisaje.
  *
  * - **Hora del día** (según el reloj del dispositivo): amanecer, día, atardecer o noche, con estrellas y luna. Esto
  *   no es movimiento y se ve siempre.
@@ -44,10 +38,11 @@ function usePhase() {
  * Es decoración, no un dato: la llovizna y la hora no dicen cómo está el clima de ninguna zona (eso es HU-176, con su
  * rótulo y su fuente) y nada de esto entra a un cálculo (decisión 7).
  */
-export function SceneAmbient() {
+export function SceneAmbient({ contained = false }: { contained?: boolean }) {
+  const place = contained ? "absolute inset-0" : "fixed inset-0 -z-10";
   const layer = useRef<HTMLDivElement>(null);
   const animated = !useReducedMotion();
-  const phase = usePhase();
+  const phase = useDayPhase();
   const night = phase === "night";
   const tint = TINT[phase];
 
@@ -101,10 +96,8 @@ export function SceneAmbient() {
   return (
     <>
       {/* El tinte se multiplica sobre el paisaje: por eso es una capa aparte, hermana suya, y no va dentro de la del ambiente. */}
-      {tint && (
-        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 mix-blend-multiply" style={{ backgroundImage: tint }} />
-      )}
-      <div ref={layer} aria-hidden="true" data-phase={phase} className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {tint && <div aria-hidden="true" className={`pointer-events-none mix-blend-multiply ${place}`} style={{ backgroundImage: tint }} />}
+      <div ref={layer} aria-hidden="true" data-phase={phase} className={`pointer-events-none overflow-hidden ${place}`}>
         {night && (
           <>
             {STARS.map(([x, y], i) => (

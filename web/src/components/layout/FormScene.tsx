@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
-import region from "../../../../design/paisaje/svg/a3-region.svg?raw";
-import vereda from "../../../../design/paisaje/svg/a6-vereda.svg?raw";
+import region from "../../../../design/paisaje/svg/a3-region.svg?url";
+import vereda from "../../../../design/paisaje/svg/a6-vereda.svg?url";
 import { Footer } from "@/components/layout/Footer";
 import { SceneAmbient } from "@/components/layout/SceneAmbient";
 import { TopBar } from "@/components/layout/TopBar";
@@ -11,10 +11,9 @@ import { Card } from "@/components/ui/Card";
 import { shake, useEntrance } from "@/hooks/useEntrance";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
-// Los paisajes son nuestros (design/paisaje/build_paisaje.py): se insertan tal cual y se recortan para cubrir la pantalla.
-const cover = (svg: string) =>
-  svg.replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" ');
-const SCENES = { vereda: cover(vereda), region: cover(region) };
+// Los paisajes son nuestros (design/paisaje/build_paisaje.py). Van como imagen, no dentro del JavaScript: así el
+// navegador los descarga aparte, los guarda en caché y no hay que leerlos para arrancar la página.
+const SCENES = { vereda, region };
 
 export interface FormSceneProps {
   children: ReactNode;
@@ -49,7 +48,7 @@ export function FormScene({ children, scene = "vereda", mood, signs = [], wide =
   return (
     <>
       <TopBar />
-      <div aria-hidden="true" className="fixed inset-0 -z-10" dangerouslySetInnerHTML={{ __html: SCENES[scene] }} />
+      <img src={SCENES[scene]} alt="" aria-hidden="true" className="fixed inset-0 -z-10 size-full object-cover" />
       <SceneAmbient />
       {/* El espacio de abajo es para los cerros del pie de página, que suben sobre el paisaje. */}
       {/* En pantallas angostas la tarjeta baja un poco: queda una franja de paisaje donde vive la mascota. */}
