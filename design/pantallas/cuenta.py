@@ -49,8 +49,8 @@ def login(mobile=False, error=False):
     b = scene("a6-vereda", w, h, "recorte-login" + ("-m" if mobile else "") + ("-e" if error else ""))
     b += topbar(w)
     if mobile:
-        b += mascot(300, 66, 0.21, "guia")  # se asoma por el borde de la tarjeta: no le quita alto al formulario
-        x, y, cw, pad = 12, 104, 366, 22
+        b += mascot(286, 82, 0.253, "guia")  # se para en el borde de la tarjeta, en la franja de paisaje; por ahí pasan la mariposa y el viento
+        x, y, cw, pad = 12, 136, 366, 22
     else:
         b += sign(800, 150, 330, "Su finca lo espera") + mascot(760, 236, 1.6, "guia")
         x, y, cw, pad = 96, 104, 480, 36
@@ -118,8 +118,8 @@ def register(mobile=False, step=1):
     b = scene("a6-vereda", w, h, "recorte-registro" + tag)
     b += topbar(w)
     if mobile:
-        b += mascot(300, 66, 0.21, "celebra")
-        x, y, cw, pad = 12, 104, 366, 22
+        b += mascot(286, 82, 0.253, "celebra")
+        x, y, cw, pad = 12, 136, 366, 22
         fw = cw - 2 * pad
         c = [text(pad, 46, f"CREAR CUENTA · PASO {step} DE 2", 15, 700, SEC)]
         if step == 1:
@@ -198,10 +198,9 @@ def profile_cards(cw, mobile, editing=False):
     stored += link(pad, 92 + len(stored_rows) * 26 + 12, POLICY_SHORT if mobile else POLICY, 16)
     stored += link(pad if mobile else cw - pad, 92 + len(stored_rows) * 26 + (48 if mobile else 12), "Ver mi actividad", 16, anchor="start" if mobile else "end")
     prefs = [title("Preferencias" if mobile else "Preferencias de este dispositivo")]
-    for i, (t, note, on) in enumerate((("Modo ligero", "Sin escena 3D ni animaciones pesadas.", False),
-                                       ("Reducir movimiento", "Sigue la configuración de su equipo.", True),
-                                       ("Sonido", "Ambiente y efectos. Empieza apagado.", False))):
-        prefs.append(group("preferencia", pref(104 + i * 76, t, note.replace("animaciones pesadas", "animaciones") if mobile else note, on, fw, p1=t == "Sonido"), pad, 0))
+    # El modo ligero vive en la barra superior (Figma, «8 · Modo ligero»): aquí queda el sonido.
+    for i, (t, note, on) in enumerate((("Sonido", "Música y efectos. Empieza apagado.", False),)):
+        prefs.append(group("preferencia", pref(104 + i * 76, t, note, on, fw), pad, 0))
     session = [title("Sesión y contraseña"), text(pad, 92, f"Entró como {USER}.", 18)]
     if mobile:
         session += button(pad, 116, fw, "Cambiar contraseña", "secondary") + button(pad, 188, fw, "Cerrar sesión", "secondary")
@@ -226,7 +225,7 @@ def profile_cards(cw, mobile, editing=False):
     danger = [poly([(0, 18), (8, 18), (8, 0), (0, 0)], P["rojo"]), title("Borrar mi cuenta")] + paragraph(pad, 92, danger_rows, 16 if mobile else 18, 26)
     dy = 92 + len(danger_rows) * 26 + 6
     danger += button(pad, dy, min(fw, 260), "Borrar mi cuenta", "danger")
-    return [("sus-datos", data, data_h), ("lo-que-guardamos", stored, 92 + len(stored_rows) * 26 + (86 if mobile else 50)), ("preferencias", prefs, 320),
+    return [("sus-datos", data, data_h), ("lo-que-guardamos", stored, 92 + len(stored_rows) * 26 + (86 if mobile else 50)), ("preferencias", prefs, 168),
             ("sesion", session, session_h), ("borrar-cuenta", danger, dy + 88), ("sus-prioridades", prio, prio_h)]
 
 
@@ -281,7 +280,7 @@ def change_password(mobile=False, error=False):
     """Cabe entero en la primera pantalla, sin hacer scroll; debajo va el pie de página común."""
     w, h = MOBILE if mobile else DESKTOP
     if mobile:
-        x, y, cw, pad = 12, 104, 366, 22
+        x, y, cw, pad = 12, 136, 366, 22
     else:
         x, y, cw, pad = 96, 104, 480, 36
     fw = cw - 2 * pad
@@ -290,9 +289,10 @@ def change_password(mobile=False, error=False):
     if error:
         c += alert(pad, top - 12, fw, ["La contraseña actual no es correcta.", "Su sesión sigue abierta."])
         top += 76
+    elif mobile:  # en móvil cada renglón cuenta: la frase de apoyo solo va donde sobra alto
+        top -= 30
     else:
-        c += paragraph(pad, top, ["Al cambiarla, se cierra su sesión en los", "demás dispositivos."] if mobile else ["Al cambiarla, se cierra su sesión en los demás", "dispositivos."], 16 if mobile else 18, 24)
-        top += 24
+        c.append(text(pad, top, "Se cierra su sesión en los demás dispositivos.", 18))
     c += field(pad, top + 40, fw, "Contraseña actual", "••••••••", "", "error" if error else "normal", trailing="Mostrar", name="campo-actual")
     c += field(pad, top + 132, fw, "Contraseña nueva", "" if error else "••••••••••", "Al menos 8 caracteres", "normal" if error else "foco",
                hint="Al menos 8 caracteres. No se puede recuperar.", trailing="Mostrar", name="campo-nueva")
@@ -302,7 +302,7 @@ def change_password(mobile=False, error=False):
     ch = top + 448
     tag = ("-m" if mobile else "") + ("-e" if error else "")
     b = scene("a3-region", w, h, "recorte-contrasena" + tag) + topbar(w, user=None if mobile else NAME)
-    b += mascot(300, 66, 0.21, "reposo") if mobile else mascot(800, 220, 1.5, "reposo")
+    b += mascot(286, 82, 0.253, "reposo") if mobile else mascot(800, 220, 1.5, "reposo")
     return ui.long_page((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
 
 
