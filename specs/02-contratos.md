@@ -66,7 +66,7 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, apa
 - Borrar un lote o una temporada es reversible: se marca `deleted_at` y se puede restaurar durante 30 días; después se borra para siempre. Borrar un lote borra con él sus temporadas, y restaurarlo las restaura. El agricultor y el administrador pueden restaurar.
 - Un polígono de lote debe ser válido (sin cruces), tener área mayor que cero y caer dentro de `municipality_boundaries` de su municipio; si no, 422.
 - `activity_log`: trazabilidad de lo que hacen agricultores y administradores. Ver «Trazabilidad» más abajo.
-- `login_attempts` (agregada el 12 de octubre de 2026; por revisar con Haider): `attempt_id`, `username_hash` y `attempted_at`. Una fila por intento fallido de entrar o de cambiar la contraseña, solo para el tope de 5 intentos en 15 minutos. Guarda el hash del usuario que se intentó, nunca el texto (podría ser una contraseña escrita en el campo equivocado), ni la IP. Las filas de más de 15 minutos se borran solas. Está en la base de datos y no en memoria para que el tope sobreviva a un reinicio.
+- `login_attempts` (agregada el 12 de octubre de 2026; aprobada por Felipe): `attempt_id`, `username_hash` y `attempted_at`. Una fila por intento fallido de entrar o de cambiar la contraseña, solo para el tope de 5 intentos en 15 minutos. Guarda el hash del usuario que se intentó, nunca el texto (podría ser una contraseña escrita en el campo equivocado), ni la IP. Las filas de más de 15 minutos se borran solas. Está en la base de datos y no en memoria para que el tope sobreviva a un reinicio.
 - `usage_daily` (P1, HU-170): contador anónimo de uso para las métricas. En el P0 la tabla no existe y los endpoints de cálculo no escriben nada en la base de datos. Columnas: `day` (fecha), `endpoint` (`diagnostics`, `rotations`, `changes`, `calendar`, `water_plans`, `scenarios`), `municipality_id`, `crop_id` y `count`; llave (`day`, `endpoint`, `municipality_id`, `crop_id`). Cada consulta de cálculo suma 1 a su fila. El `crop_id` que se cuenta: en `/diagnostics`, `/changes`, `/calendar` y `/scenarios`, el cultivo consultado; en `/water-plans`, una fila por cultivo; en `/rotations`, el primer cultivo de `previous_crop_ids` (el más reciente). No tiene usuario, sesión, IP, hora, fecha de siembra, prioridades, área ni riego, ni se puede unir con `activity_log`. Se conserva como estadística. No cambia ningún resultado (R4). Si falla, la consulta responde igual.
 - El suelo de un lote **no se guarda**: la API lo calcula al vuelo como la mediana de las celdas de `soil_grid` que toca su polígono. Un lote sin polígono usa `soil_municipality`.
 - `support_tickets` (P1): `ticket_id`, `user_id`, `lot_id` (opcional), `message`, `status` (`open`, `in_progress`, `closed`), `created_at`, `closed_at`.
@@ -261,7 +261,7 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 | Lote o temporada que no existe o es de otro usuario | `404` |
 | Entrada válida sin datos | `200` con `insufficient_data` en la señal |
 | Cultivo que no es apto para la zona | `200` con `suitability.level = not_suitable`, luz `red` y acción `rotate`; sin ventanas |
-| Las cuentas no se pueden atender (agregado el 12 de octubre de 2026; por revisar con Haider): la base de datos no responde, o su esquema no está en la última migración que trae el código | `503` en los endpoints de cuenta, con `code = accounts_database_down` o `accounts_migration_pending`. El mensaje para la persona es el mismo en los dos casos («Las cuentas no están disponibles en este momento. Puede seguir consultando sin cuenta.»); el motivo exacto va al log de la terminal. Los endpoints que no usan la base de datos siguen respondiendo |
+| Las cuentas no se pueden atender (agregado el 12 de octubre de 2026; aprobado por Felipe): la base de datos no responde, o su esquema no está en la última migración que trae el código | `503` en los endpoints de cuenta, con `code = accounts_database_down` o `accounts_migration_pending`. El mensaje para la persona es el mismo en los dos casos («Las cuentas no están disponibles en este momento. Puede seguir consultando sin cuenta.»); el motivo exacto va al log de la terminal. Los endpoints que no usan la base de datos siguen respondiendo |
 | Fallo interno | `500` con `{"error": {"code": "...", "message": "...", "request_id": "..."}}` |
 
 ## Cuerpos y respuestas
@@ -296,7 +296,9 @@ Sin datos para una serie, la serie viene vacía con `status = insufficient_data`
 
 ### Respuesta de `GET /api/v1/version`
 
-`dataset_version`, `rules_version`, `created_at`, `region`, `default_weights` (los pesos por defecto de `weights.yaml`, para mostrarlos antes de consultar) y `sources` (lista con `source_id`, `name`, `institution`, `url`, `coverage` y `license`). Es lo que muestra el panel «¿Cómo funciona y de dónde sale esto?».
+`dataset_version`, `rules_version`, `created_at`, `region`, `default_weights` (los pesos por defecto de `weights.yaml`, para mostrarlos antes de consultar), `weights_version` (la versión de `weights.yaml`), `weights_reasons` (el porqué de cada peso, como criterio del equipo) y `sources` (lista con `source_id`, `name`, `institution`, `url`, `coverage` y `license`). Es lo que muestra el panel «¿Cómo funciona y de dónde sale esto?».
+
+> **13 de octubre de 2026 (aprobado por Felipe):** el endpoint ya existe con lo único que hay, los pesos por defecto. Mientras no haya dataset ni reglas publicados, `dataset_version`, `rules_version`, `created_at` y `region` vienen nulos y `sources` vacío: no se inventan (R5). `weights_version` y `weights_reasons` son campos nuevos. No usa la base de datos ni guarda nada.
 
 ### Cuerpo y respuesta de `POST /api/v1/rotations`
 

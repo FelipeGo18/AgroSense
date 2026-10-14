@@ -20,6 +20,7 @@ import { useEntrance } from "@/hooks/useEntrance";
 import { useLightMode, useReducedMotion } from "@/hooks/useReducedMotion";
 import { useSound } from "@/hooks/useSound";
 import { AccountShell, LINK } from "./AccountShell";
+import { PrioritiesCard } from "./PrioritiesCard";
 
 const USERNAME = /^[a-z0-9._]{3,30}$/;
 const DATE = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
@@ -305,6 +306,9 @@ function Account({ user, notice }: { user: Profile; notice?: string }) {
         <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-2">
           <div className="flex flex-col gap-7">
             <DataCard user={user} />
+            <div data-enter>
+              <PrioritiesCard user={user} />
+            </div>
             <div data-enter>
               <SessionCard user={user} />
             </div>
