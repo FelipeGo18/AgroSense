@@ -9,9 +9,10 @@ from typing import Any
 from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 
-from backend.api import auth, errors
+from backend.api import auth, errors, version
 from backend.config import logging
 from backend.config.settings import get_settings
+from backend.config.weights import get_default_weights
 from backend.db.session import get_db
 from backend.db.state import accounts_state
 
@@ -23,6 +24,8 @@ SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 def create_app() -> FastAPI:
     settings = get_settings()
     logging.configure(settings.log_level, settings.log_format)
+    # Si `weights.yaml` no sirve, la API no arranca y dice por qué (HU-075).
+    get_default_weights()
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -53,6 +56,7 @@ def create_app() -> FastAPI:
     # El último middleware que se registra es el primero que corre: el identificador de petición envuelve a todos.
     errors.install(app)
     app.include_router(auth.router)
+    app.include_router(version.router)
 
     @app.get("/api/v1/health", tags=["estado"])
     def health(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:

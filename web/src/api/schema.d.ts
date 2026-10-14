@@ -126,6 +126,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Version
+         * @description No usa la base de datos ni guarda nada: responde aunque las cuentas estén apagadas.
+         */
+        get: operations["version_api_v1_version_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -133,7 +153,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description La API responde aunque la base de datos no: `accounts` dice si las cuentas están disponibles y, si no, por qué.
+         */
         get: operations["health_api_v1_health_get"];
         put?: never;
         post?: never;
@@ -277,6 +300,34 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * Version
+         * @description Lo que muestra «¿Cómo funciona y de dónde sale esto?» y lo que necesita la web antes de consultar.
+         */
+        Version: {
+            /** Dataset Version */
+            dataset_version: string | null;
+            /** Rules Version */
+            rules_version: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Region */
+            region: string | null;
+            /** Default Weights */
+            default_weights: {
+                [key: string]: number;
+            };
+            /** Weights Version */
+            weights_version: string;
+            /** Weights Reasons */
+            weights_reasons: {
+                [key: string]: string;
+            };
+            /** Sources */
+            sources: {
+                [key: string]: unknown;
+            }[];
         };
     };
     responses: never;
@@ -505,6 +556,26 @@ export interface operations {
             };
         };
     };
+    version_api_v1_version_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+        };
+    };
     health_api_v1_health_get: {
         parameters: {
             query?: never;
@@ -521,7 +592,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string;
+                        [key: string]: unknown;
                     };
                 };
             };
