@@ -7,6 +7,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Decisión | Elegida | Fecha |
 |---|---|---|
 | Herramienta de backlog | GitHub Projects | 10 oct 2026 |
+| Pesos por defecto de las señales (**provisionales**) | Agua 3, heladas 3, calor 3, suelo 2, oferta 3 y mercado 2: los de muestra de los diseños, en `backend/config/weights.yaml` (versión 0.1.0). Se aceptan para avanzar con «Sus prioridades»; falta la propuesta de Producto y agro y la aprobación formal (HU-198) | 13 oct 2026 |
 | Framework de la API | FastAPI (Axum descartado, ver `specs/04-stack.md`) | 10 oct 2026 |
 | Cuentas y regla R9 | Cuentas con lotes y temporadas; R9 reescrita (decisión 6) | 10 oct 2026 |
 | Clima en vivo | Ambiente de la escena, nunca insumo de la decisión (decisión 7) | 10 oct 2026 |

@@ -32,7 +32,23 @@ function fakeApi(replies: Record<string, Reply>) {
   return calls;
 }
 
-const ME = { "GET /api/v1/me": { status: 200, body: ROSA } };
+const DEFAULT_WEIGHTS = { water: 3, frost: 3, heat: 3, soil: 2, supply: 3, market: 2 };
+const VERSION = {
+  "GET /api/v1/version": {
+    status: 200,
+    body: {
+      dataset_version: null,
+      rules_version: null,
+      created_at: null,
+      region: null,
+      default_weights: DEFAULT_WEIGHTS,
+      weights_version: "0.1.0",
+      weights_reasons: {},
+      sources: [],
+    },
+  },
+};
+const ME = { "GET /api/v1/me": { status: 200, body: ROSA }, ...VERSION };
 const open = (path: string) => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />);
 const card = (title: string) =>
   screen.getByRole("heading", { level: 2, name: title }).closest("div.relative")!.parentElement as HTMLElement;
@@ -219,7 +235,7 @@ describe("Cambiar contraseña (HU-160)", () => {
     open(PATHS.password);
     await fill("papa-criolla-2026", "arveja-verde-2027", "arveja-verde-2027");
     expect(await screen.findByRole("heading", { level: 1, name: "Mi cuenta" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Su contraseña quedó cambiada. Las demás sesiones se cerraron.");
+    expect(screen.getByText("Su contraseña quedó cambiada. Las demás sesiones se cerraron.")).toHaveAttribute("role", "status");
     expect(calls.find((call) => call.key.startsWith("POST"))?.body).toEqual({
       current_password: "papa-criolla-2026",
       new_password: "arveja-verde-2027",
@@ -238,6 +254,77 @@ const event = (changes: Partial<ActivityItem>): ActivityItem => ({
   ticket_id: null,
   details: null,
   ...changes,
+});
+
+describe("Sus prioridades (HU-160, HU-202)", () => {
+  const level = (signal: string, value: number) =>
+    within(screen.getByRole("radiogroup", { name: new RegExp("^" + signal + ":") })).getAllByRole("radio")[value];
+  const ready = () => screen.findByRole("radiogroup", { name: /^Agua:/ });
+
+  it("sin prioridades propias muestra el criterio de AgroSense y lo dice", async () => {
+    fakeApi(ME);
+    open(PATHS.account);
+    await ready();
+    const prio = within(card("Sus prioridades"));
+    expect(prio.getByText("Está usando el criterio de AgroSense.")).toBeInTheDocument();
+    expect(level("Agua", 3)).toHaveAttribute("aria-checked", "true");
+    expect(level("Suelo", 2)).toHaveAttribute("aria-checked", "true");
+    expect(prio.getByText(/Criterio de AgroSense: agua 3 · heladas 3 · calor 3 · suelo 2 · oferta 3 · mercado 2/)).toBeInTheDocument();
+    // Agua, heladas y calor dicen que un riesgo grave cuenta siempre.
+    expect(prio.getAllByText("Un riesgo grave cuenta siempre")).toHaveLength(3);
+    expect(prio.queryByRole("button", { name: "Volver al criterio de AgroSense" })).toBeNull();
+  });
+
+  it("al tocar una semilla guarda las seis prioridades en el perfil", async () => {
+    const mine = { ...DEFAULT_WEIGHTS, supply: 0 };
+    const calls = fakeApi({ ...ME, "PATCH /api/v1/me": { status: 200, body: { ...ROSA, priorities: mine } } });
+    open(PATHS.account);
+    await ready();
+    await userEvent.click(level("Oferta", 0));
+    expect(calls.find((call) => call.key.startsWith("PATCH"))?.body).toEqual({ priorities: mine });
+    const prio = within(card("Sus prioridades"));
+    expect(await prio.findByText("Está usando sus prioridades.")).toBeInTheDocument();
+    expect(prio.getByRole("status")).toHaveTextContent("Guardado.");
+    expect(level("Oferta", 0)).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("«Volver al criterio de AgroSense» borra las propias", async () => {
+    const mine = { ...DEFAULT_WEIGHTS, water: 5 };
+    const calls = fakeApi({
+      ...VERSION,
+      "GET /api/v1/me": { status: 200, body: { ...ROSA, priorities: mine } },
+      "PATCH /api/v1/me": { status: 200, body: ROSA },
+    });
+    open(PATHS.account);
+    await ready();
+    expect(level("Agua", 5)).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Volver al criterio de AgroSense" }));
+    expect(calls.find((call) => call.key.startsWith("PATCH"))?.body).toEqual({ priorities: null });
+    expect(await within(card("Sus prioridades")).findByText("Está usando el criterio de AgroSense.")).toBeInTheDocument();
+    expect(level("Agua", 3)).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("con todas en 0 no envía nada y pide subir al menos una", async () => {
+    const one = { water: 1, frost: 0, heat: 0, soil: 0, supply: 0, market: 0 };
+    const calls = fakeApi({ ...VERSION, "GET /api/v1/me": { status: 200, body: { ...ROSA, priorities: one } } });
+    open(PATHS.account);
+    await ready();
+    await userEvent.click(level("Agua", 0));
+    expect(within(card("Sus prioridades")).getByRole("alert")).toHaveTextContent("Suba al menos una prioridad");
+    expect(calls.some((call) => call.key.startsWith("PATCH"))).toBe(false);
+  });
+
+  it("si no se puede cargar el criterio de AgroSense lo dice y no inventa pesos", async () => {
+    fakeApi({
+      "GET /api/v1/me": { status: 200, body: ROSA },
+      "GET /api/v1/version": { status: 500, body: { error: { code: "internal", message: "x" } } },
+    });
+    open(PATHS.account);
+    await screen.findByRole("button", { name: "Volver a intentar" });
+    const prio = within(card("Sus prioridades"));
+    expect(prio.getByRole("alert")).toHaveTextContent("No pudimos cargar el criterio de AgroSense");
+    expect(prio.queryByRole("radiogroup")).toBeNull();
+  });
 });
 
 describe("Mi actividad (HU-178)", () => {
