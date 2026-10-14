@@ -2,6 +2,7 @@
 //
 //   dist/index.html            el inicio, ya dibujado
 //   dist/entrar/index.html     «Entrar», ya dibujado
+//   dist/politica-de-datos/index.html   la política de tratamiento de datos, ya dibujada
 //   dist/app.html              el cascarón vacío: lo que el servidor debe entregar para cualquier otra ruta de la app
 //
 // Las páginas dibujadas no piden el JavaScript por adelantado: primero se pintan, con todo el ancho de banda para el
@@ -16,7 +17,7 @@ import { dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 
 /** Páginas que se ven igual para todos y que no cambian de estructura según el ancho de la pantalla. */
-const PAGES = ["/", "/entrar"];
+const PAGES = ["/", "/entrar", "/politica-de-datos"];
 const MAIN = "src/app/main.tsx";
 const EMPTY_ROOT = '<div id="root"></div>';
 
