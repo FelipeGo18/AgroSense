@@ -61,7 +61,7 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [ ] Cada entrada de `sources` dice qué cubre (`coverage`: país o región)
   - [ ] `sources.yaml` dice, por región, qué fuente calcula cada señal (también qué producto NASA da la lluvia de `water`); la validación falla si una señal de la región no tiene fuente asignada o la fuente no existe en `sources` (R8)
   - [ ] Cada producto NASA del MVP (POWER, NASADEM, IMERG, MODIS NDVI, SMAP y GIBS) tiene su entrada en `sources` con misión, resolución, periodo, acceso y licencia, y el panel lo muestra
-  - [ ] `GET /api/v1/version` responde `dataset_version`, `rules_version`, `created_at`, `region`, `default_weights` (los pesos por defecto de `weights.yaml`, para mostrarlos antes de consultar) y `sources` (lista con `source_id`, `name`, `institution`, `url`, `coverage` y `license`), según el contrato
+  - [ ] `GET /api/v1/version` responde `dataset_version`, `rules_version`, `created_at`, `region`, `default_weights` (los pesos por defecto de `weights.yaml`, para mostrarlos antes de consultar) y `sources` (lista con `source_id`, `name`, `institution`, `url`, `coverage` y `license`), según el contrato. **Parcial (13 de octubre de 2026):** el endpoint ya existe y publica `default_weights`, `weights_version` y `weights_reasons`; lo demás viene nulo o vacío hasta que haya dataset, reglas y fuentes publicados
   - [ ] La web muestra fuentes, versión y los pesos por defecto con su porqué (HU-198)
 - **Reglas que aplican:** R4, R7, R8
 - **Contrato que toca:** `GET /api/v1/version`, `manifest.json`, `sources`

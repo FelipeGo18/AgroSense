@@ -1,0 +1,46 @@
+# Pesos por defecto de las señales: el «criterio de AgroSense» (HU-198, HU-075).
+#
+# Cada señal tiene un peso entero de 0 a 5. El agricultor puede cambiarlos; estos son los que se usan cuando no lo
+# hace, y los que se le muestran para que pueda volver a ellos. Ningún peso por defecto es 0: el criterio de AgroSense
+# mira las seis señales.
+#
+# Son un criterio del equipo, no un dato agronómico: no hay evidencia que fije cuánto pesa cada señal
+# (docs/riesgos.md). Si aparece evidencia, se cambian aquí y sube la versión.
+#
+# PROVISIONALES: son los valores de muestra de los diseños, aceptados para avanzar el 13 de octubre de 2026. Falta la
+# propuesta del rol Producto y agro y la aprobación del dueño del producto (docs/registro-de-decisiones.md).
+
+version: "0.1.0"
+status: provisional
+
+weights:
+  water:
+    weight: 3
+    why: "Importancia normal. Un riesgo grave de agua cuenta siempre, tenga el peso que tenga."
+    set_by: "Felipe (provisional)"
+    set_on: "2026-10-13"
+  frost:
+    weight: 3
+    why: "Importancia normal. Un riesgo grave de heladas cuenta siempre, tenga el peso que tenga."
+    set_by: "Felipe (provisional)"
+    set_on: "2026-10-13"
+  heat:
+    weight: 3
+    why: "Importancia normal. Un riesgo grave de calor cuenta siempre, tenga el peso que tenga."
+    set_by: "Felipe (provisional)"
+    set_on: "2026-10-13"
+  soil:
+    weight: 2
+    why: "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición del lote."
+    set_by: "Felipe (provisional)"
+    set_on: "2026-10-13"
+  supply:
+    weight: 3
+    why: "Importancia normal. Dice si en la zona se está sembrando mucho o poco del cultivo."
+    set_by: "Felipe (provisional)"
+    set_on: "2026-10-13"
+  market:
+    weight: 2
+    why: "Pesa menos: los precios por mes todavía no tienen datos en el P0."
+    set_by: "Felipe (provisional)"
+    set_on: "2026-10-13"

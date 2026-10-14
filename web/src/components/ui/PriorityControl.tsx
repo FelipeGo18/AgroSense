@@ -52,16 +52,18 @@ function Seed({ filled }: { filled: boolean }) {
   );
 }
 
-interface SeedRowProps {
+export interface SeedRowProps {
   label: string;
   hint: string;
+  /** Una línea bajo el nombre, para lo que no se puede negociar (por ejemplo, que un riesgo grave cuenta siempre). */
+  note?: string;
   value: number;
   disabled: boolean;
   onChange: (value: number) => void;
 }
 
 /** Un «0» y cinco semillas. Es un grupo de opciones: se toca la semilla, no se arrastra. */
-function SeedRow({ label, hint, value, disabled, onChange }: SeedRowProps) {
+export function SeedRow({ label, hint, note, value, disabled, onChange }: SeedRowProps) {
   const group = useRef<HTMLDivElement>(null);
 
   const move = (next: number) => {
@@ -83,8 +85,15 @@ function SeedRow({ label, hint, value, disabled, onChange }: SeedRowProps) {
     <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
       <span className="min-w-56 grow basis-56">
         <span className="text-lg font-bold">{label}</span> <span className="text-sm text-texto-secundario">{hint}</span>
+        {note && <span className="block text-sm font-bold text-oscuro-cielo">{note}</span>}
       </span>
-      <div ref={group} role="radiogroup" aria-label={`${label}: ${hint}`} onKeyDown={onKeyDown} className="flex items-center gap-1.5">
+      <div
+        ref={group}
+        role="radiogroup"
+        aria-label={`${label}: ${hint}`}
+        onKeyDown={onKeyDown}
+        className="flex items-center gap-0 sm:gap-1.5"
+      >
         {LEVELS.map((level) => (
           <button
             key={level}

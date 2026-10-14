@@ -210,15 +210,16 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-075 · Umbrales y pesos versionados
 
 - **Historia:** Como equipo, quiero umbrales y pesos versionados en configuración, para ajustarlos sin tocar código y explicar qué versión se usó.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Archivos YAML con número de versión
   - [ ] `thresholds.yaml` fija los cortes de calificación a nivel (70 y 40), el umbral crítico de cada señal y los límites de las curvas que no dependen del cultivo (HU-196); la señal de suelo no tiene umbral crítico (R10)
-  - [ ] `weights.yaml` fija el peso por defecto de 0 a 5 de cada señal del P0; su contenido y su porqué salen de HU-198
+  - [x] `weights.yaml` fija el peso por defecto de 0 a 5 de cada señal del P0; su contenido y su porqué salen de HU-198
   - [ ] El motor recibe la configuración ya leída: no abre los archivos (R6)
-  - [ ] Si falta una señal en `weights.yaml` o un peso está fuera de 0 a 5, la API no arranca y dice por qué
+  - [x] Si falta una señal en `weights.yaml` o un peso está fuera de 0 a 5, la API no arranca y dice por qué (hecho para `weights.yaml`; `thresholds.yaml` todavía no existe)
   - [ ] La respuesta incluye la versión del dataset y de las reglas, y los pesos usados (`weights`)
 - **Reglas que aplican:** R4, R6, R10
+- **Notas:** **13 de octubre de 2026:** hecha la parte de los pesos (`backend/config/weights.py`, con pruebas en `tests/test_version.py`). Falta `thresholds.yaml` y todo lo que depende del motor.
 
 ### HU-076 · Endpoint de diagnóstico con errores claros
 
