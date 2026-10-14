@@ -31,7 +31,10 @@ export function Sources({ animated }: { animated: boolean }) {
           <p className="max-w-[60rem] font-bold">
             AgroSense no adivina el futuro: le muestra el riesgo histórico de su zona con reglas que puede leer. No es un pronóstico.
           </p>
-          <Link to={PATHS.howItWorks} className="mt-2 inline-flex min-h-11 items-center font-bold underline decoration-2 underline-offset-4">
+          <Link
+            to={PATHS.howItWorks}
+            className="mt-2 inline-flex min-h-11 items-center font-bold underline decoration-2 underline-offset-4"
+          >
             ¿Cómo funciona y de dónde sale esto?
           </Link>
         </div>

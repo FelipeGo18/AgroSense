@@ -7,8 +7,21 @@ npm install
 npm run dev          # http://localhost:5173
 npm test             # Vitest
 npm run typecheck && npm run lint && npm run format:check
-npm run build
+npm run build        # empaqueta y además dibuja el HTML de las páginas públicas (ver «Rendimiento»)
+npm run perf         # auditoría de rendimiento sobre el build; falla si algo baja de su presupuesto
 ```
+
+## Rendimiento
+
+**Se mide con `npm run perf`, nunca sobre `npm run dev`.** El servidor de desarrollo entrega el código sin empaquetar y da notas muy bajas que no dicen nada del producto. `npm run perf` hace el build, lo sirve comprimido y corre Lighthouse tres veces por caso (Inicio y Entrar, en escritorio y en móvil, con y sin movimiento); cuenta la mediana y termina con error si un caso baja de su presupuesto (`e2e/perf.mjs`). El «móvil» es un teléfono de gama media con 4G lento, simulado: antes del evento hay que probar también en un teléfono de verdad.
+
+Lo que sostiene esas notas:
+
+- **Las páginas públicas llegan ya dibujadas.** Después de empaquetar, `scripts/prerender.mjs` genera el HTML del inicio y de «Entrar» (`src/app/entry-server.tsx`). El navegador las pinta con el HTML y los estilos; la aplicación se trae y arranca después del primer pintado, sobre ese mismo HTML (`src/app/boot.ts`, `src/app/main.tsx`). Lo que la persona escriba antes de que arranque no se pierde.
+- **Una página nueva solo se agrega a `PAGES` de `scripts/prerender.mjs` si se ve igual para todos** (no depende de la sesión) **y no cambia de estructura según el ancho de la pantalla** con `useMediaQuery`: en el build no hay pantalla. Lo que dependa del navegador (hora, preferencias, ancho) debe empezar igual que en el build y cambiar después, como `useDayPhase` o `useMediaQuery`.
+- **Cada página carga solo lo suyo** (todas las rutas son `lazy`) y los paisajes van como imagen, no dentro del JavaScript.
+
+**Qué debe hacer el alojamiento:** servir `dist/` comprimido (gzip o brotli) y con caché larga para `/assets`; entregar `index.html` para `/` y `entrar/index.html` para `/entrar`; y para cualquier otra ruta de la aplicación, **`app.html`** (el cascarón vacío), no `index.html`. Si entrega el HTML de otra ruta no se rompe nada (la aplicación lo nota y dibuja de cero), pero se pierde la ventaja.
 
 ## Variables de entorno
 
@@ -25,7 +38,8 @@ Se leen en un solo lugar, `src/app/config.ts`. Ninguna dirección externa se esc
 
 ```
 src/
-├── app/             # arranque: main.tsx, rutas (routes.tsx), direcciones (paths.ts) y configuración (config.ts)
+├── app/             # arranque: boot.ts y main.tsx, rutas (routes.tsx), direcciones (paths.ts), configuración (config.ts)
+│                    #   y entry-server.tsx (dibuja las páginas públicas en el build)
 ├── pages/           # una carpeta por página. Una página solo compone; no tiene piezas reutilizables
 │   ├── landing/     #   LandingPage.tsx, sections/ (una por tramo), content.ts (textos y datos de muestra)
 │   ├── pending/     #   a dónde llevan los enlaces de pantallas diseñadas que aún no se programan; y el 404

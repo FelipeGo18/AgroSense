@@ -6,6 +6,11 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": "/src" } },
+  // Para generar el HTML de las páginas públicas en el build (scripts/prerender.mjs): estas librerías se empaquetan,
+  // porque Node no las carga bien sueltas.
+  ssr: { noExternal: ["gsap", "@gsap/react", "lenis"] },
+  // El manifiesto dice qué archivos necesita cada página: con él se piden por adelantado en el HTML.
+  build: { manifest: true },
   // Los tokens viven en design/tokens, fuera de web/ (HU-152).
   server: {
     fs: { allow: [".."] },

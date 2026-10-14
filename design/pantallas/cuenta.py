@@ -49,8 +49,8 @@ def login(mobile=False, error=False):
     b = scene("a6-vereda", w, h, "recorte-login" + ("-m" if mobile else "") + ("-e" if error else ""))
     b += topbar(w)
     if mobile:
-        b += mascot(300, 66, 0.21, "guia")  # se asoma por el borde de la tarjeta: no le quita alto al formulario
-        x, y, cw, pad = 12, 104, 366, 22
+        b += mascot(286, 82, 0.253, "guia")  # se para en el borde de la tarjeta, en la franja de paisaje; por ahí pasan la mariposa y el viento
+        x, y, cw, pad = 12, 136, 366, 22
     else:
         b += sign(800, 150, 330, "Su finca lo espera") + mascot(760, 236, 1.6, "guia")
         x, y, cw, pad = 96, 104, 480, 36
@@ -118,8 +118,8 @@ def register(mobile=False, step=1):
     b = scene("a6-vereda", w, h, "recorte-registro" + tag)
     b += topbar(w)
     if mobile:
-        b += mascot(300, 66, 0.21, "celebra")
-        x, y, cw, pad = 12, 104, 366, 22
+        b += mascot(286, 82, 0.253, "celebra")
+        x, y, cw, pad = 12, 136, 366, 22
         fw = cw - 2 * pad
         c = [text(pad, 46, f"CREAR CUENTA · PASO {step} DE 2", 15, 700, SEC)]
         if step == 1:
@@ -280,7 +280,7 @@ def change_password(mobile=False, error=False):
     """Cabe entero en la primera pantalla, sin hacer scroll; debajo va el pie de página común."""
     w, h = MOBILE if mobile else DESKTOP
     if mobile:
-        x, y, cw, pad = 12, 104, 366, 22
+        x, y, cw, pad = 12, 136, 366, 22
     else:
         x, y, cw, pad = 96, 104, 480, 36
     fw = cw - 2 * pad
@@ -289,9 +289,10 @@ def change_password(mobile=False, error=False):
     if error:
         c += alert(pad, top - 12, fw, ["La contraseña actual no es correcta.", "Su sesión sigue abierta."])
         top += 76
+    elif mobile:  # en móvil cada renglón cuenta: la frase de apoyo solo va donde sobra alto
+        top -= 30
     else:
-        c += paragraph(pad, top, ["Al cambiarla, se cierra su sesión en los", "demás dispositivos."] if mobile else ["Al cambiarla, se cierra su sesión en los demás", "dispositivos."], 16 if mobile else 18, 24)
-        top += 24
+        c.append(text(pad, top, "Se cierra su sesión en los demás dispositivos.", 18))
     c += field(pad, top + 40, fw, "Contraseña actual", "••••••••", "", "error" if error else "normal", trailing="Mostrar", name="campo-actual")
     c += field(pad, top + 132, fw, "Contraseña nueva", "" if error else "••••••••••", "Al menos 8 caracteres", "normal" if error else "foco",
                hint="Al menos 8 caracteres. No se puede recuperar.", trailing="Mostrar", name="campo-nueva")
@@ -301,7 +302,7 @@ def change_password(mobile=False, error=False):
     ch = top + 448
     tag = ("-m" if mobile else "") + ("-e" if error else "")
     b = scene("a3-region", w, h, "recorte-contrasena" + tag) + topbar(w, user=None if mobile else NAME)
-    b += mascot(300, 66, 0.21, "reposo") if mobile else mascot(800, 220, 1.5, "reposo")
+    b += mascot(286, 82, 0.253, "reposo") if mobile else mascot(800, 220, 1.5, "reposo")
     return ui.long_page((w, h), b + card(x, y, cw, ch) + [group("contenido", c, x, y)])
 
 

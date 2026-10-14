@@ -111,12 +111,12 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente | |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | en curso | Interruptor, botón en la barra y reglas para lo nuevo hechos; falta cargar GSAP solo con movimiento y el Figma |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P1 | L | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P1 | S | en curso | Backend y pantallas hechos; faltan la tarjeta «Sus prioridades» (espera a HU-198) y la revisión de seguridad |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P1 | M | en curso | Tabla, eventos de la cuenta y «Mi actividad» hechos; faltan los permisos de solo agregar, la limpieza de 180 días y la revisión de seguridad |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-170 | Roles: agricultor, administrador y desarrollador | P1 | L | pendiente | |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-161 | Esquema de cuentas y migraciones | P0 | M | en curso | Esquema completo del contrato; falta validar `municipality_id` y `crop_id` contra el catálogo |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-162 | Autenticación | P0 | L | en curso | Backend y pantallas hechos; falta la revisión de seguridad |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-163 | Consentimiento y tratamiento de datos | P0 | S | en curso | Falta la página de la política de datos |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-163 | Consentimiento y tratamiento de datos | P0 | S | en curso | Falta programar la página de la política de datos (ya diseñada) y su revisión legal |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | L | pendiente | Restaurar pasó a HU-204 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-165 | Temporadas e historial del lote | P0 | L | pendiente | |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-204 | Historial con lo borrado y «Restaurar» | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
@@ -128,7 +128,7 @@
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-211 | Capa satelital de la NASA en el mapa del lote | P0 | M | pendiente | Nueva |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-173 | Pantalla de inicio | P0 | M | en curso | Sin 3D; recorrido con la mascota guía y la Tierra girando |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-171 | Diseño de la mascota satélite | P1 | M | en curso | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
-| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-172 | Expresiones y animaciones de la mascota | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-172 | Expresiones y animaciones de la mascota | P1 | M | en curso | Reacciones en los formularios y en Mi cuenta hechas; faltan las expresiones de los resultados |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-174 | Día y noche en la escena | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-175 | Endpoint de condiciones actuales | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-176 | Lluvia, nubes y viento en la escena | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |

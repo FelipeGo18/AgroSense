@@ -26,36 +26,36 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-160 · Editar mi perfil y cambiar la contraseña
 
 - **Historia:** Como agricultor, quiero cambiar mi nombre, mi usuario y mi contraseña, para mantener mi cuenta a mi gusto y segura.
-- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] `PATCH /api/v1/me` y `POST /api/v1/me/password` del contrato
-  - [ ] `PATCH /api/v1/me` acepta `priorities`: un entero de 0 a 5 por señal; nulo vuelve a los pesos de AgroSense; fuera de rango o todas en 0, 422
-  - [ ] 409 si el usuario nuevo ya existe; 403 si la contraseña actual es incorrecta; 422 si la nueva es corta o igual a la actual
-  - [ ] Cambiar la contraseña exige la actual y cierra las demás sesiones del usuario; los intentos fallidos cuentan para el límite de 429
-  - [ ] En la web, Mi cuenta permite editar nombre y usuario en el sitio y cambiar la contraseña en su propia vista, con estados de guardado y error
-  - [ ] No se pide ningún dato personal nuevo: las prioridades son preferencias, no datos de la finca (R9)
+  - [x] `PATCH /api/v1/me` y `POST /api/v1/me/password` del contrato
+  - [x] `PATCH /api/v1/me` acepta `priorities`: un entero de 0 a 5 por señal; nulo vuelve a los pesos de AgroSense; fuera de rango o todas en 0, 422
+  - [x] 409 si el usuario nuevo ya existe; 403 si la contraseña actual es incorrecta; 422 si la nueva es corta o igual a la actual
+  - [x] Cambiar la contraseña exige la actual y cierra las demás sesiones del usuario; los intentos fallidos cuentan para el límite de 429
+  - [x] En la web, Mi cuenta permite editar nombre y usuario en el sitio y cambiar la contraseña en su propia vista, con estados de guardado y error
+  - [x] No se pide ningún dato personal nuevo: las prioridades son preferencias, no datos de la finca (R9)
   - [x] (Web, 12 de octubre de 2026) «Mi cuenta» en `/mi-cuenta`: ver y editar el nombre y el usuario, lo que se guarda con la versión y la fecha del consentimiento, preferencias de este dispositivo (modo ligero y sonido), cerrar sesión y borrar la cuenta con confirmación. «Cambiar contraseña» en `/mi-cuenta/contrasena`. Son páginas con sesión: sin ella llevan a «Entrar»
   - [ ] (Web) La tarjeta «Sus prioridades» de Mi cuenta. Depende de los pesos por defecto de `weights.yaml` (HU-198), que la API todavía no expone: sin ellos no se puede mostrar el criterio de AgroSense ni volver a él. El backend (`PATCH /me` con `priorities`) ya está
   - [x] (Web) El interruptor «Modo ligero» de las preferencias: se guarda en el navegador y, prendido, quita las animaciones, los recorridos, el scroll suave (Lenis), GSAP y el movimiento de la mascota. El interruptor vive en `web/src/lib/lightMode.ts`; lo que el modo ligero apague de más (la escena 3D, imágenes pesadas) lo engancha Haider ahí, que es quien lleva el modo ligero
 - **Reglas que aplican:** R9
-- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Mientras no exista, las prioridades de las señales se recuerdan en el navegador también con cuenta (HU-202). Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`).
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Mientras no exista, las prioridades de las señales se recuerdan en el navegador también con cuenta (HU-202). Aprobado por Felipe el 10 de octubre de 2026. Revisión de seguridad obligatoria (agente `security`). **Pendiente en Figma (12 de octubre de 2026):** Mi cuenta tiene ahora una tarjeta propia «Mi actividad» con su botón, antes de «Borrar mi cuenta» (antes era solo un enlace en «Lo que guardamos de usted»); falta pasarla a `design/pantallas/cuenta.py` y a Figma. **Estado al 13 de octubre de 2026:** hechos el backend (con pruebas en `tests/accounts/test_account.py`) y las pantallas; faltan la tarjeta «Sus prioridades» (espera a HU-198) y la revisión de seguridad. El interruptor de modo ligero de Mi cuenta usa el mismo interruptor de la barra (HU-158).
 
 ### HU-178 · Trazabilidad de lo que hacen agricultores y administradores
 
 - **Historia:** Como agricultor, quiero ver qué se hizo con mi cuenta y mis lotes, y como equipo queremos saber quién hizo qué y cuándo, para confiar en la app y resolver tickets.
-- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Tabla `activity_log` con migración, según «Trazabilidad» del contrato
-  - [ ] Cada endpoint de cuenta escribe su evento en la misma transacción que el cambio; los intentos `denied` y `failed` también quedan
+  - [x] Tabla `activity_log` con migración, según «Trazabilidad» del contrato
+  - [x] Cada endpoint de cuenta escribe su evento en la misma transacción que el cambio; los intentos `denied` y `failed` también quedan
   - [ ] Prueba: ningún endpoint de cálculo escribe en `activity_log` (R9)
-  - [ ] Prueba: ningún evento guarda contraseñas, tokens, el polígono ni valores de campos
+  - [x] Prueba: ningún evento guarda contraseñas, tokens, el polígono ni valores de campos
   - [ ] El usuario de la API no puede modificar ni borrar eventos; la limpieza de 180 días corre con otro rol
   - [ ] Borrar la cuenta borra los eventos del agricultor y anonimiza las acciones de administradores sobre sus datos
-  - [ ] `GET /me/activity` y la pantalla «Mi actividad» en Mi cuenta, con el estado de cada evento (`ok`, `denied`, `failed`)
-  - [ ] El `request_id` de cada evento coincide con el de la terminal (HU-177)
+  - [x] `GET /me/activity` y la pantalla «Mi actividad» en Mi cuenta, con el estado de cada evento (`ok`, `denied`, `failed`)
+  - [x] El `request_id` de cada evento coincide con el de la terminal (HU-177)
   - [x] (Web, 12 de octubre de 2026) «Mi actividad» en `/mi-cuenta/actividad`: cada evento en palabras, con quién lo hizo (usted o soporte), cuándo y su resultado con forma y texto; solo los nombres de los campos que cambiaron; de a 50 con «Ver más antiguos». «¿Ve algo que no hizo?» lleva a cambiar la contraseña mientras no exista «Reportar un problema» (HU-170)
 - **Reglas que aplican:** R9
-- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP la tabla `activity_log` no existe; los logs de la terminal (HU-177) siguen. Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento lo menciona desde la versión 2 (vigente: 3, HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria.
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP la tabla `activity_log` no existe; los logs de la terminal (HU-177) siguen. Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento lo menciona desde la versión 2 (vigente: 3, HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria. **Estado al 13 de octubre de 2026:** hechos la tabla (migración 1.3), los eventos de los endpoints de cuenta, `GET /me/activity` y la pantalla. Faltan: la prueba de que los endpoints de cálculo no escriben (todavía no existen), los permisos de solo agregar y la limpieza de 180 días con otro rol, y anonimizar las acciones de administradores (no hay administradores hasta HU-170; borrar la cuenta ya borra los eventos del agricultor). Falta también la revisión de seguridad.
 
 ### HU-170 · Roles: agricultor, administrador y desarrollador
 

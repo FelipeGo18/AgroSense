@@ -2,6 +2,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useRef, type ReactNode } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { RAIN_EVENT } from "@/components/layout/SceneAmbient";
 import { playSound } from "@/lib/sound";
 
 gsap.registerPlugin(useGSAP);
@@ -13,6 +14,8 @@ gsap.registerPlugin(useGSAP);
  * Lo que pasa:
  * - **Mariposa:** cruza con vuelo ondulado; la mascota la sigue con la mirada y se inclina hacia ella. Una de cada
  *   tres veces se le posa en el brote unos segundos.
+ * - **Llovizna** (la del paisaje, `SceneAmbient`): mientras llueve la mascota se moja: le escurren gotas, se le cae
+ *   el brote y entrecierra los ojos. Cuando para, se sacude el agua como un perro y las gotas salen volando.
  * - **Viento:** pasan unos trazos de aire; el brote se dobla, las raíces se van hacia atrás, entrecierra los ojos y
  *   los letreros marcados con `data-sway` se mecen. Después todo vuelve con un rebote.
  *
@@ -34,6 +37,11 @@ export function SceneLife({ children, className = "relative" }: { children: Reac
       const sprout = mascot.querySelector(".mascot-sprout");
       const roots = mascot.querySelector(".mascot-roots");
       let busy = false;
+      let wet = false;
+      let dripping: gsap.core.Tween[] = [];
+      const drips = gsap.utils.toArray<HTMLElement>("[data-drip]", root);
+      const splashes = gsap.utils.toArray<HTMLElement>("[data-splash]", root);
+      const hidden = () => mascot.getClientRects().length === 0;
 
       /** Dónde está un punto de la mascota (en sus unidades de dibujo, 300 × 250) dentro de la escena, en píxeles. */
       const spot = (ux: number, uy: number) => {
@@ -138,6 +146,79 @@ export function SceneLife({ children, className = "relative" }: { children: Reac
           .to(root.querySelectorAll("[data-sway]"), { rotation: 0, duration: 1.4, stagger: 0.06, ease: "elastic.out(1, 0.3)" }, 1.1);
       });
 
+      /** Empieza a llover: le escurren gotas por los lados, el brote se le cae y entrecierra los ojos. */
+      const getWet = contextSafe(() => {
+        if (wet || hidden()) return;
+        wet = true;
+        gsap.to(sprout, { rotation: 20, svgOrigin: "158 62", duration: 1.2, ease: "power2.out", overwrite: "auto" });
+        gsap.to(gaze, { scaleY: 0.6, svgOrigin: "161 116", duration: 0.6, overwrite: "auto" });
+        dripping = drips.map((drip, i) => {
+          const from = spot(96 + i * 38, 70 + (i % 2) * 26);
+          const to = spot(92 + i * 40, 226);
+          return gsap.fromTo(
+            drip,
+            { x: from.x, y: from.y, autoAlpha: 0 },
+            {
+              keyframes: { y: [from.y, to.y], autoAlpha: [0, 0.9, 0.9, 0] },
+              x: to.x,
+              duration: 1.1,
+              delay: 0.8 + i * 0.37,
+              repeat: -1,
+              repeatDelay: 0.5,
+              ease: "power1.in",
+            },
+          );
+        });
+      });
+
+      /** Paró de llover: se sacude como un perro, las gotas salen volando y vuelve a lo suyo. */
+      const shakeOff = contextSafe(() => {
+        if (!wet) return;
+        wet = false;
+        dripping.forEach((tween) => tween.kill());
+        dripping = [];
+        gsap.set(drips, { autoAlpha: 0 });
+        if (hidden()) return;
+        busy = true;
+        playSound("shake");
+        const center = spot(158, 125);
+        splashes.forEach((splash, i) => {
+          const angle = (Math.PI * 2 * i) / splashes.length - Math.PI / 2;
+          const reach = center.size * gsap.utils.random(0.45, 0.75);
+          gsap.fromTo(
+            splash,
+            { x: center.x, y: center.y, autoAlpha: 1, scale: 1 },
+            {
+              x: center.x + Math.cos(angle) * reach,
+              y: center.y + Math.sin(angle) * reach * 0.8,
+              autoAlpha: 0,
+              scale: 0.4,
+              duration: 0.7,
+              delay: 0.15 + (i % 3) * 0.12,
+              ease: "power2.out",
+            },
+          );
+        });
+        gsap
+          .timeline({ onComplete: () => (busy = false) })
+          .to(
+            mascot,
+            {
+              keyframes: { rotation: [0, -13, 13, -12, 12, -9, 9, -5, 0], x: [0, -4, 4, -4, 4, -3, 3, 0, 0] },
+              duration: 0.95,
+              ease: "none",
+              transformOrigin: "50% 80%",
+            },
+            0,
+          )
+          .to(sprout, { keyframes: { rotation: [20, -24, 24, -18, 14, 0] }, svgOrigin: "158 62", duration: 1.1, ease: "none" }, 0)
+          .to(gaze, { scaleY: 1, duration: 0.3 }, 0.9)
+          .to(mascot, { y: -8, duration: 0.16, yoyo: true, repeat: 1, ease: "power1.out" }, 1.0);
+      });
+
+      const onRain = (event: Event) => ((event as CustomEvent<boolean>).detail ? getWet() : shakeOff());
+      document.addEventListener(RAIN_EVENT, onRain);
+
       /** Quien está escribiendo no se interrumpe; tampoco se anima con la pestaña escondida ni la escena que no se ve. */
       const quiet = () =>
         document.hidden ||
@@ -149,13 +230,14 @@ export function SceneLife({ children, className = "relative" }: { children: Reac
       let next: "butterfly" | "wind" = Math.random() < 0.5 ? "butterfly" : "wind";
       const schedule = contextSafe((seconds: number) => {
         gsap.delayedCall(seconds, () => {
-          if (busy || quiet()) return schedule(4);
+          if (busy || wet || quiet()) return schedule(4); // con lluvia no vuela la mariposa ni sopla el viento
           (next === "butterfly" ? flyButterfly : blowWind)();
           next = next === "butterfly" ? "wind" : "butterfly";
           schedule(gsap.utils.random(18, 34));
         });
       });
       schedule(gsap.utils.random(5, 9));
+      return () => document.removeEventListener(RAIN_EVENT, onRain);
     },
     { scope: stage, dependencies: [animated], revertOnUpdate: true },
   );
@@ -186,6 +268,20 @@ export function SceneLife({ children, className = "relative" }: { children: Reac
             />
             <path d="M16 5v14" stroke="#1D1D1B" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
+          {[0, 1, 2, 3].map((drip) => (
+            <span
+              key={`gota-${drip}`}
+              data-drip
+              className="invisible absolute top-0 left-0 h-3.5 w-1.5 rounded-full border border-[#3E7FA6] bg-[#A9DBF5]"
+            />
+          ))}
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((splash) => (
+            <span
+              key={`salpico-${splash}`}
+              data-splash
+              className="invisible absolute top-0 left-0 size-3 rounded-full border border-[#3E7FA6] bg-[#A9DBF5]"
+            />
+          ))}
           {[18, 34, 52, 70].map((top, i) => (
             <span
               key={top}

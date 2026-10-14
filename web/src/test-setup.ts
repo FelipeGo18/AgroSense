@@ -1,4 +1,8 @@
 import "@testing-library/jest-dom/vitest";
+import { configure } from "@testing-library/react";
+
+// Cada página se carga aparte: la primera prueba de un archivo la trae por primera vez y eso puede pasar de un segundo.
+configure({ asyncUtilTimeout: 5000 });
 import { afterEach } from "vitest";
 import { resetLightMode } from "@/lib/lightMode";
 
