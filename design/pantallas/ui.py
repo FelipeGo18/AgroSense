@@ -163,6 +163,14 @@ def logo(x, y, ink=None):
     return [group("marca", seed + [text(40, 33, "AgroSense", 28, 600, ink, FONT_TITLE)], x, y)]
 
 
+def sound_button(x, y, on=False):
+    """Botón de sonido de la barra: arranca apagado y el altavoz tachado lo dice (web: SoundToggle.tsx)."""
+    ink = P["noche"]
+    waves = (f'<path d="M29 17 Q33 22 29 27 M32.5 13 Q39 22 32.5 31" fill="none" stroke="{ink}" stroke-width="3" stroke-linecap="round"/>' if on else
+             f'<path d="M30 16 L38 28 M38 16 L30 28" fill="none" stroke="{ink}" stroke-width="3" stroke-linecap="round"/>')
+    return [group("boton-sonido", [poly(chamfer(0, 0, 44, 44, 9), P["niebla"]), poly([(11, 18), (17, 18), (25, 11), (25, 33), (17, 26), (11, 26)], ink), waves], x, y)]
+
+
 def topbar(w, active=None, user=None, light_on=False):
     """Barra superior: una tabla biselada que flota sobre el paisaje."""
     if w < 700:  # móvil: marca y menú
@@ -181,13 +189,19 @@ def topbar(w, active=None, user=None, light_on=False):
         if on:
             body.append(poly(chamfer(x, 68, width_of(item, 18, True), 5, 2), P["calabaza"]))
         x += width_of(item, 18, True) + 44
-    body += light_button((w - 250 if user else w - 196) - 24 - 164, 30, on=light_on)
     if user:
-        body.append(poly(chamfer(w - 250, 30, 194, 44, 10), P["niebla"]))
-        body.append(f'<g transform="translate({w - 244} 28) scale(0.16)">{"".join(seed_mascot("reposo"))}</g>')
-        body.append(text(w - 190, 59, user, 18, 700))
+        body += link(w - 56, 59, "Cerrar sesión", 18, anchor="end")
+        chip_w = 76 + width_of(user, 18, True)
+        left = w - 56 - width_of("Cerrar sesión", 18, True) - 18 - chip_w
+        body.append(poly(chamfer(left, 30, chip_w, 44, 10), P["niebla"]))
+        body.append(f'<g transform="translate({left + 6} 28) scale(0.16)">{"".join(seed_mascot("reposo"))}</g>')
+        body.append(text(left + 60, 59, user, 18, 700))
     else:
-        body += button(w - 196, 26, 140, "Entrar", "secondary")
+        left = w - 196
+        body += button(left, 26, 140, "Entrar", "secondary")
+    # El modo ligero (el componente de «8 · Modo ligero») y, a su izquierda, el sonido, como en la web.
+    body += light_button(left - 24 - 164, 30, on=light_on)
+    body += sound_button(left - 24 - 164 - 12 - 44, 30)
     return [group("barra", body)]
 
 

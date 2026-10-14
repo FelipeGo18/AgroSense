@@ -149,20 +149,20 @@ Una sola experiencia continua, con una URL por nivel y por lote, para que funcio
 
 ### Pantallas por diseñar del MVP
 
-Regla del proyecto: **cada pantalla se diseña y se aprueba en Figma antes de programarla** (con su generador en `design/pantallas/`). Faltan por diseñar, en móvil y en escritorio:
+Regla del proyecto: **cada pantalla se diseña y se aprueba en Figma antes de programarla** (con su generador en `design/pantallas/`). Las diez ya están diseñadas, en móvil y en escritorio, y **falta aprobarlas en Figma**:
 
 | # | Pantalla | HU | Notas |
 |---|---|---|---|
-| 1 | Entrada a las estrategias, sin cuenta y desde el lote | HU-214 | Municipio, área, cultivo anterior, fecha, riego y número de ciclos |
-| 2 | Estrategias de rotación | HU-101, HU-102 | Tarjetas con ciclos, desglose, salud del suelo, descartadas a pedido y estado vacío |
-| 3 | Ciclo de una estrategia | HU-215 | Reusa el resultado del diagnóstico; suma agua del plan, humedad del suelo y verdor; ciclo de descanso |
-| 4 | Qué cambió en su zona | HU-219 | Dos periodos por mes, mejores ventanas de cada uno, «Sin datos suficientes» y cultivo no apto |
-| 5 | Mapa del lote con capa de la NASA | HU-211 | Control de capas, atribución, fecha de la imagen y estado «GIBS no responde» |
-| 6 | Política de tratamiento de datos | HU-163 | Pendiente de la tanda 11 |
-| 7 | Editar o borrar una siembra | HU-165 | Pendiente de la tanda 11 |
-| 8 | Lote sin dibujar | HU-164 | Pendiente de la tanda 11 |
-| 9 | Estados que faltan del resultado | HU-092, HU-094 | Pendiente de la tanda 11 |
-| 10 | Rotaciones sin opciones | HU-102 | Pendiente de la tanda 11; ahora es el estado vacío de las estrategias (se puede unir con la 2) |
+| 1 | Entrada a las estrategias, sin cuenta y desde el lote | HU-214 | Diseñada el 12 de octubre de 2026 (`design/pantallas/estrategias.py`). Municipio, área, cultivo anterior, fecha, riego y número de ciclos |
+| 2 | Estrategias de rotación | HU-101, HU-102 | Diseñada el 12 de octubre de 2026 (`estrategias.py`). Tarjetas con ciclos, desglose, salud del suelo, descartadas a pedido y estado vacío |
+| 3 | Ciclo de una estrategia | HU-215 | Diseñada el 12 de octubre de 2026 (`ciclo.py`). Reusa el resultado del diagnóstico; suma agua del plan, humedad del suelo y verdor; ciclo de descanso |
+| 4 | Qué cambió en su zona | HU-219 | Diseñada el 12 de octubre de 2026 (`cambio.py`). Dos periodos por mes, mejores ventanas de cada uno, «Sin datos suficientes» y cultivo no apto |
+| 5 | Mapa del lote con capa de la NASA | HU-211 | Diseñada el 12 de octubre de 2026 (`capas.py`). Control de capas, atribución, fecha de la imagen y estado «GIBS no responde». Los nombres de las capas de GIBS siguen por verificar |
+| 6 | Política de tratamiento de datos | HU-163 | Diseñada el 12 de octubre de 2026 (`design/pantallas/politica.py`); falta aprobarla en Figma y la revisión legal del texto |
+| 7 | Editar o borrar una siembra | HU-165 | Diseñada el 12 de octubre de 2026 (`temporada.py`). Por decidir: qué pasa con el diagnóstico guardado si se corrige el cultivo o la fecha |
+| 8 | Lote sin dibujar | HU-164 | Diseñada el 12 de octubre de 2026 (`sin_dibujo.py`): el formulario con el área a mano y cómo se ve en Mi finca |
+| 9 | Estados que faltan del resultado | HU-092, HU-094 | Diseñada el 12 de octubre de 2026 (`estados_resultado.py`): luz verde con riego, cargando, error, sin cobertura, entrada no válida y sin conexión |
+| 10 | Rotaciones sin opciones | HU-102 | Diseñada el 12 de octubre de 2026: es el estado vacío de las estrategias (`estrategias.py`) |
 
 También hay que revisar las pantallas ya diseñadas que cambian con el MVP: el inicio (sin 3D y con el flujo nuevo), Mi finca (una sola zona), el detalle 2D del lote (sin lote vivo) y Mi cuenta (sin editar perfil ni Mi actividad).
 
@@ -243,6 +243,8 @@ Metas iniciales; se validan y ajustan con el prototipo.
 | Movimiento | Respeta `prefers-reduced-motion`; ninguna información depende de una animación |
 | Audio | Apagado por defecto, con control visible; la app se entiende sin sonido |
 | JS inicial | ≤ 200 KB comprimido, sin contar la escena 3D |
+| Lighthouse (rendimiento) | ≥ 95 en móvil y en escritorio, en Inicio y Entrar, con y sin movimiento. Se mide con `npm run perf` sobre el build (mediana de tres pasadas), nunca sobre el servidor de desarrollo (`web/README.md`, «Rendimiento») |
+| Primer pintado | Las páginas públicas llegan ya dibujadas en el HTML (se generan en el build) y la aplicación arranca después del primer pintado |
 | Escena 3D | Se carga después de la primera pintura; ≤ 3 MB transferidos en total; modelos comprimidos |
 | Carga | LCP ≤ 2,5 s en 4G lento simulado |
 | Fluidez | ≥ 30 fps en un Android de gama media; si no se alcanza, pasa sola a modo ligero |

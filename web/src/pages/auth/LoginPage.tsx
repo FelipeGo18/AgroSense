@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
@@ -8,6 +8,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useLogin, useSession } from "@/features/auth/session";
+import { typedBefore } from "@/lib/firstLoad";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -25,6 +26,19 @@ export function LoginPage() {
   const login = useLogin();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  // Si la página llegó ya dibujada, puede que la persona haya escrito antes de que arrancara la aplicación: se recupera.
+  // El primer dibujo coincide con el HTML (campos vacíos); en el siguiente, ya arrancada, se pone lo que había escrito.
+  const started = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const [recovered, setRecovered] = useState(false);
+  if (started && !recovered) {
+    setRecovered(true);
+    if (typedBefore("username")) setUsername(typedBefore("username"));
+    if (typedBefore("password")) setPassword(typedBefore("password"));
+  }
 
   // Quien ya tiene la sesión abierta no vuelve a entrar. Quien acaba de entrar se queda un instante: la mascota celebra.
   if (user && (login.isIdle || login.isError)) return <Navigate to={PATHS.farm} replace />;

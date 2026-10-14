@@ -50,10 +50,10 @@ export function SignupPage() {
       shownStep.current = step;
       if (!animated || !narrow || from === step || !form.current) return;
       gsap.from(form.current, {
-        x: step > from ? 36 : -36,
+        x: step > from ? 70 : -70,
         opacity: 0,
-        duration: 0.3,
-        ease: "power2.out",
+        duration: 0.45,
+        ease: "back.out(1.4)",
         clearProps: "transform,opacity",
       });
     },

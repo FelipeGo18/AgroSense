@@ -1,11 +1,15 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
+import { useDayPhase } from "@/hooks/useDayPhase";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { dayPhase, type DayPhase } from "@/lib/dayPhase";
+import type { DayPhase } from "@/lib/dayPhase";
 import { playSound } from "@/lib/sound";
 
 gsap.registerPlugin(useGSAP);
+
+/** Aviso de que empezó (`detail: true`) o paró (`false`) la llovizna del paisaje. */
+export const RAIN_EVENT = "agrosense:lluvia";
 
 /** Con qué se tiñe el paisaje a cada hora. Se multiplica sobre el dibujo: de día no hay tinte. */
 const TINT: Record<DayPhase, string | null> = {
@@ -24,30 +28,24 @@ const FIREFLIES = [
   [8, 62], [19, 78], [33, 68], [46, 84], [58, 64], [69, 80], [81, 70], [92, 86],
 ]; // prettier-ignore
 
-function usePhase() {
-  const [phase, setPhase] = useState(() => dayPhase(new Date().getHours()));
-  useEffect(() => {
-    const timer = setInterval(() => setPhase(dayPhase(new Date().getHours())), 60_000);
-    return () => clearInterval(timer);
-  }, []);
-  return phase;
-}
-
 /**
- * Ambiente del paisaje de un formulario. Va detrás de todo: nunca tapa la tarjeta ni recibe el puntero.
+ * Ambiente de un paisaje. Va detrás de todo: nunca tapa el contenido ni recibe el puntero. Por defecto cubre la
+ * pantalla, detrás de la página (los formularios); con `contained` llena solo la caja que lo contiene (la franja de
+ * Mi cuenta), y va justo después del dibujo del paisaje.
  *
  * - **Hora del día** (según el reloj del dispositivo): amanecer, día, atardecer o noche, con estrellas y luna. Esto
  *   no es movimiento y se ve siempre.
  * - **Con movimiento permitido:** sombras de nubes que cruzan el campo, unos pájaros de vez en cuando, luciérnagas de
- *   noche y, cada tanto, una llovizna pasajera.
+ *   noche y, cada tanto, una llovizna que dura de unos segundos a casi medio minuto.
  *
  * Es decoración, no un dato: la llovizna y la hora no dicen cómo está el clima de ninguna zona (eso es HU-176, con su
  * rótulo y su fuente) y nada de esto entra a un cálculo (decisión 7).
  */
-export function SceneAmbient() {
+export function SceneAmbient({ contained = false }: { contained?: boolean }) {
+  const place = contained ? "absolute inset-0" : "fixed inset-0 -z-10";
   const layer = useRef<HTMLDivElement>(null);
   const animated = !useReducedMotion();
-  const phase = usePhase();
+  const phase = useDayPhase();
   const night = phase === "night";
   const tint = TINT[phase];
 
@@ -76,9 +74,24 @@ export function SceneAmbient() {
       });
 
       const drizzle = root.querySelector("[data-drizzle]");
+      // Cada llovizna dura distinto: a veces pasa rápido, a veces se queda un rato. Avisa cuándo empieza y cuándo
+      // para (`RAIN_EVENT`), para que la mascota se moje y después se sacuda (SceneLife).
+      const tell = (raining: boolean) => document.dispatchEvent(new CustomEvent(RAIN_EVENT, { detail: raining }));
+      let raining = false;
       const rain = contextSafe(() => {
-        playSound("drizzle");
-        gsap.fromTo(drizzle, { autoAlpha: 0 }, { keyframes: { autoAlpha: [0, 0.6, 0.6, 0] }, duration: 7, ease: "none" });
+        const seconds = gsap.utils.random(9, 28);
+        playSound("drizzle", seconds);
+        raining = true;
+        tell(true);
+        gsap
+          .timeline({
+            onComplete: () => {
+              raining = false;
+              tell(false);
+            },
+          })
+          .fromTo(drizzle, { autoAlpha: 0 }, { autoAlpha: 0.6, duration: 1.5, ease: "none" })
+          .to(drizzle, { autoAlpha: 0, duration: 2, ease: "none" }, seconds - 2);
       });
 
       const every = contextSafe((first: number, [min, max]: [number, number], run: () => void) => {
@@ -94,6 +107,10 @@ export function SceneAmbient() {
       // De noche los pájaros duermen.
       if (!night) every(gsap.utils.random(12, 20), [35, 70], flyBirds);
       every(gsap.utils.random(45, 75), [90, 150], rain);
+      // Si la capa se desmonta lloviendo, la lluvia también para para quien la escucha.
+      return () => {
+        if (raining) tell(false);
+      };
     },
     { scope: layer, dependencies: [animated, night], revertOnUpdate: true },
   );
@@ -101,10 +118,8 @@ export function SceneAmbient() {
   return (
     <>
       {/* El tinte se multiplica sobre el paisaje: por eso es una capa aparte, hermana suya, y no va dentro de la del ambiente. */}
-      {tint && (
-        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 mix-blend-multiply" style={{ backgroundImage: tint }} />
-      )}
-      <div ref={layer} aria-hidden="true" data-phase={phase} className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {tint && <div aria-hidden="true" className={`pointer-events-none mix-blend-multiply ${place}`} style={{ backgroundImage: tint }} />}
+      <div ref={layer} aria-hidden="true" data-phase={phase} className={`pointer-events-none overflow-hidden ${place}`}>
         {night && (
           <>
             {STARS.map(([x, y], i) => (
@@ -114,7 +129,7 @@ export function SceneAmbient() {
                 style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${(i % 5) * 0.7}s` }}
               />
             ))}
-            <span className="absolute top-[18%] left-[88%] size-12 rounded-full bg-[#FFF6D8] shadow-[0_0_40px_10px_rgb(255_246_216/0.35)]" />
+            <span className="absolute top-[18%] right-[6%] size-12 rounded-full bg-[#FFF6D8] shadow-[0_0_40px_10px_rgb(255_246_216/0.35)]" />
           </>
         )}
         {animated && (

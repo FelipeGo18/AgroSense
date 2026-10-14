@@ -19,7 +19,7 @@ export default tseslint.config(
   },
   {
     // Pruebas de navegador: el guion corre en Node y parte de su código se ejecuta dentro de la página.
-    files: ["e2e/**/*.mjs"],
+    files: ["e2e/**/*.mjs", "scripts/**/*.mjs"],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
   // Prettier decide el formato: se apagan las reglas de estilo que chocarían con él.
