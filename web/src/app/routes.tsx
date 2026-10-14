@@ -34,7 +34,6 @@ const PENDING: { path: string; title: string }[] = [
   { path: PATHS.consult, title: "Consultar" },
   { path: PATHS.farm, title: "Mi finca" },
   { path: PATHS.howItWorks, title: "¿Cómo funciona?" },
-  { path: PATHS.dataPolicy, title: "Política de tratamiento de datos" },
 ];
 
 const pending = ({ path, title }: (typeof PENDING)[number]): RouteObject => ({
@@ -57,6 +56,7 @@ export const routes: RouteObject[] = [
       { path: PATHS.account, lazy: async () => ({ Component: (await import("@/pages/account/AccountPage")).AccountPage }) },
       { path: PATHS.password, lazy: async () => ({ Component: (await import("@/pages/account/PasswordPage")).PasswordPage }) },
       { path: PATHS.activity, lazy: async () => ({ Component: (await import("@/pages/account/ActivityPage")).ActivityPage }) },
+      { path: PATHS.dataPolicy, lazy: async () => ({ Component: (await import("@/pages/policy/PolicyPage")).PolicyPage }) },
       ...PENDING.map(pending),
       // Pruebas de la fase 0. Cada recorrido se carga aparte: trae sus propias escenas.
       { path: PATHS.lab, lazy: async () => ({ Component: (await import("@/pages/lab/LabIndexPage")).LabIndexPage }) },
