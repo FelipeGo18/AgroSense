@@ -37,7 +37,7 @@ describe("Entrar (HU-162)", () => {
     await userEvent.type(await screen.findByLabelText("Usuario"), "rosa.samaca");
     await userEvent.type(screen.getByLabelText("Contraseña"), "papa-criolla-2026");
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Mi finca" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
     expect(calls.find((call) => call.key.startsWith("POST"))?.body).toEqual({ username: "rosa.samaca", password: "papa-criolla-2026" });
     // Con la sesión abierta, la barra dice quién entró y deja salir.
     expect(screen.getByText("Rosa")).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe("Crear cuenta (HU-162, HU-163)", () => {
     await fill();
     await userEvent.click(screen.getByRole("checkbox"));
     await userEvent.click(screen.getByRole("button", { name: "Crear cuenta" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Mi finca" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
     expect(calls.find((call) => call.key.startsWith("POST"))?.body).toEqual({
       display_name: "Rosa",
       username: "rosa.samaca",
@@ -254,7 +254,7 @@ describe("Crear cuenta en pantallas angostas", () => {
     expect(calls.some((call) => call.key.startsWith("POST"))).toBe(false);
     await userEvent.click(screen.getByRole("checkbox"));
     await userEvent.click(screen.getByRole("button", { name: "Crear cuenta" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Mi finca" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
   });
 });
 
@@ -270,12 +270,13 @@ describe("Sesión", () => {
   it("quien ya entró no vuelve a ver la pantalla de entrar", async () => {
     fakeApi({ "GET /api/v1/me": { status: 200, body: ROSA } });
     open(PATHS.login);
-    expect(await screen.findByRole("heading", { level: 1, name: "Mi finca" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
   });
 
   it("cerrar sesión vuelve a ofrecer «Entrar»", async () => {
     const calls = fakeApi({ "GET /api/v1/me": { status: 200, body: ROSA }, "POST /api/v1/auth/logout": { status: 204 } });
-    open(PATHS.farm);
+    // Una página pública con la barra (Mi finca ahora pide sesión y, al salir, lleva al inicio).
+    open(PATHS.consult);
     await userEvent.click((await screen.findAllByRole("button", { name: "Cerrar sesión" }))[0]);
     expect(await screen.findByRole("link", { name: "Entrar" })).toHaveAttribute("href", PATHS.login);
     expect(calls.some((call) => call.key === "POST /api/v1/auth/logout")).toBe(true);

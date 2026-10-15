@@ -79,3 +79,47 @@ def client(engine) -> Iterator[TestClient]:
     with TestClient(app, base_url="https://testserver") as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+# ---------- Dataset publicado ----------
+
+# Municipios de ejemplo para las pruebas (R5): códigos DIVIPOLA reales, el resto de columnas como las publica el DANE.
+SAMPLE_MUNICIPALITIES = [
+    {"cod_dpto": "15", "dpto": "BOYACÁ", "cod_mpio": "15646", "nom_mpio": "SAMACÁ", "latitud": "5,4925", "longitud": "-73,4856"},
+    {"cod_dpto": "15", "dpto": "BOYACÁ", "cod_mpio": "15407", "nom_mpio": "VILLA DE LEYVA", "latitud": "5,6339", "longitud": "-73,5249"},
+    {"cod_dpto": "25", "dpto": "CUNDINAMARCA", "cod_mpio": "25899", "nom_mpio": "ZIPAQUIRÁ", "latitud": "5,0221", "longitud": "-74,0048"},
+    {"cod_dpto": "05", "dpto": "ANTIOQUIA", "cod_mpio": "05001", "nom_mpio": "MEDELLÍN", "latitud": "6,2466", "longitud": "-75,5817"},
+]
+SAMPLE_META = {
+    "name": "DIVIPOLA - Códigos municipios (ejemplo de pruebas)",
+    "license": "CC BY-SA 4.0",
+    "downloaded_at": "2026-10-15T00:00:00+00:00",
+}
+SAMPLE_REGION = {
+    "dataset_version": "0.0.0-pruebas",
+    "region": {"id": "pruebas", "name": "Región de ejemplo de las pruebas", "country": "CO", "departments": ["15", "25"]},
+}
+
+
+@pytest.fixture(autouse=True)
+def no_dataset(tmp_path_factory, monkeypatch):
+    """Cada prueba parte sin dataset publicado: nada depende de lo que haya en data/published."""
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(tmp_path_factory.mktemp("sin-dataset")))
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+def dataset(tmp_path, monkeypatch):
+    """Un dataset de ejemplo publicado con el mismo código del pipeline."""
+    import polars as pl
+
+    from pipeline.build import publish
+    from pipeline.sources import dane
+
+    folder = tmp_path / "published"
+    publish(SAMPLE_REGION, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), pl.DataFrame([dane.source(SAMPLE_META)]), folder)
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(folder))
+    get_settings.cache_clear()
+    return folder

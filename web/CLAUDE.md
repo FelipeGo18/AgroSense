@@ -45,3 +45,6 @@ npm run test:responsive                    # en otra: desborde, tamaños, modo l
 npm test                                   # vitest
 npm run typecheck && npm run lint
 ```
+
+- Si la API no está en el 8000: `API_PROXY=http://127.0.0.1:8001 npm run dev`.
+- Páginas con sesión (Mi finca, Mi cuenta): `SESSION=<cookie agrosense_session de una cuenta de prueba> ROUTES=/mi-finca npm run test:responsive`. Borre la cuenta de prueba al terminar.

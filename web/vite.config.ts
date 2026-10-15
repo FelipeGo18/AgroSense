@@ -15,8 +15,8 @@ export default defineConfig({
   server: {
     fs: { allow: [".."] },
     // La API corre aparte en desarrollo (docker compose up app). Con este puente la web y la API comparten origen,
-    // como en la demo: la cookie de sesión viaja sin CORS.
-    proxy: { "/api": "http://127.0.0.1:8000" },
+    // como en la demo: la cookie de sesión viaja sin CORS. `API_PROXY` la cambia si la API está en otro puerto.
+    proxy: { "/api": process.env.API_PROXY ?? "http://127.0.0.1:8000" },
   },
   test: {
     environment: "jsdom",

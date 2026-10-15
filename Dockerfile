@@ -24,6 +24,9 @@ RUN uv sync --frozen
 
 COPY alembic.ini ./
 COPY backend ./backend
+COPY pipeline ./pipeline
+# El dataset publicado por el pipeline: la API solo lo lee (AGROSENSE_DATA_DIR).
+COPY data/published ./data/published
 COPY tests ./tests
 
 # Sin privilegios dentro del contenedor.
