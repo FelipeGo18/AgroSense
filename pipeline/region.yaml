@@ -1,0 +1,14 @@
+# Región del dataset publicado y versión del dataset (HU-044; specs/02-contratos.md, «Tablas publicadas»).
+#
+# SUPUESTO (decisión 11): la región piloto es el altiplano de Boyacá y Cundinamarca, en Colombia, hasta el enunciado
+# del reto del 28 de octubre de 2026 (HU-002). Si cambia, cambian esta lista y el adaptador de su país; el modelo no.
+#
+# `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
+
+dataset_version: "2026.10.1"
+region:
+  id: co-boyaca-cundinamarca
+  name: "Boyacá y Cundinamarca, Colombia (supuesto hasta el 28 de octubre de 2026)"
+  country: CO
+  # Códigos DIVIPOLA de departamento (2 dígitos).
+  departments: ["15", "25"]

@@ -4,7 +4,8 @@
 **/node_modules
 web
 design
-data
+# Lo crudo no entra en la imagen; el dataset publicado (data/published) sí: es lo que lee la API.
+data/raw
 .env
 .env.*
 .claude

@@ -87,7 +87,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [x] Antes de aplicar o deshacer una migración se hace una copia de seguridad de la base de datos (`python -m backend.db.migrate`); si la copia falla, no se migra, y `alembic upgrade` directo se niega a correr
   - [x] La base de datos solo cambia con migraciones que quedan en el repositorio; las pruebas fallan si los modelos cambian sin migración, si quedan dos migraciones finales o si una no se puede deshacer (`backend/README.md`)
   - [x] Borrar un usuario borra en cascada sus sesiones, lotes y temporadas y, cuando existan (P1), sus tickets y sus eventos de `activity_log`
-  - [ ] `municipality_id` y `crop_id` se validan contra el catálogo publicado
+  - [ ] `municipality_id` y `crop_id` se validan contra el catálogo publicado (`municipality_id` hecho el 15 de octubre de 2026 en la API de lotes; `crop_id` espera al catálogo de cultivos)
 - **Reglas que aplican:** R7, R9
 - **Contrato que toca:** base de datos de cuentas de `specs/02-contratos.md`
 - **Notas:** `activity_log` (HU-178) y `support_tickets` (HU-170) son P1: en el MVP no se crean.
@@ -131,21 +131,21 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-164 · Lotes del usuario
 
 - **Historia:** Como agricultor, quiero dibujar mis lotes en un mapa real, editarlos y borrarlos, en una o varias zonas, para tener mi finca completa y ubicada.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Endpoints de `lots` del contrato del P0, con `geometry` (polígono GeoJSON). Borrar marca `deleted_at` y el lote deja de verse; restaurarlo es HU-204 (P1)
-  - [ ] El lote guarda `irrigated` (si tiene riego): el formulario pregunta «¿Este lote tiene riego?» con «Sí», «No» y «Todavía no sé»; sin respuesta queda nulo y se puede cambiar después con `PATCH`
+  - [x] El lote guarda `irrigated` (si tiene riego): el formulario pregunta «¿Este lote tiene riego?» con «Sí», «No» y «Todavía no sé»; sin respuesta queda nulo y se puede cambiar después con `PATCH`
   - [ ] Con `lot_id`, el diagnóstico y las estrategias toman `irrigated` del lote; con `irrigated` nulo, se evalúa como sin riego y la limitación lo dice
   - [ ] En la web, un mapa base de OpenStreetMap centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola. La capa satelital de la NASA es HU-211
   - [ ] El polígono debe ser válido y caer dentro de su municipio (422 si no), y se ve el límite municipal mientras se dibuja
-  - [ ] Si no puede o no quiere dibujar, escribe el área a mano y el lote queda sin ubicación; puede dibujarlo después
-  - [ ] Un usuario no ve ni modifica lotes ajenos (404)
+  - [x] Si no puede o no quiere dibujar, escribe el área a mano y el lote queda sin ubicación; puede dibujarlo después (entrega 1; dibujarlo después llega con la entrega 2)
+  - [x] Un usuario no ve ni modifica lotes ajenos (404)
   - [ ] «Editar lote», desde la cabecera del lote, cambia el nombre, el contorno (moviendo los puntos en el mapa) y el riego; dice que al cambiar el riego se recalculan el diagnóstico, las estrategias y el agua del lote, y que las siembras ya registradas guardan el diagnóstico que vieron
-  - [ ] Editar el lote a un área menor que la de sus temporadas en curso responde 422
+  - [x] Editar el lote a un área menor que la de sus temporadas en curso responde 422
   - [ ] «Borrar este lote» pide confirmación. P1 (HU-204): dice hasta qué fecha se puede restaurar y, en Mi finca, los lotes borrados hace menos de 30 días se ven aparte («Borrados hace poco») con «Restaurar»
   - [ ] Desde el lote, «Ver estrategias de rotación» abre HU-214 con el lote
 - **Reglas que aplican:** R7, R9
-- **Notas:** Restaurar lo borrado pasó a P1 el 11 de octubre de 2026 (HU-204): recorte del MVP. Un `PATCH` que deja el lote más chico que el área de sus temporadas en curso responde 422 y la pantalla lo avisa (aprobado por Felipe el 11 de octubre de 2026). Con el polígono, la ficha del lote muestra su suelo estimado (HU-182). La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026. `irrigated` se agregó el 11 de octubre de 2026: con riego, la falta de lluvia no es un riesgo en la señal `water` (HU-071). Es un dato mínimo que se usa (R9); el consentimiento versión 3 lo nombra (HU-163).
+- **Notas:** Restaurar lo borrado pasó a P1 el 11 de octubre de 2026 (HU-204): recorte del MVP. Un `PATCH` que deja el lote más chico que el área de sus temporadas en curso responde 422 y la pantalla lo avisa (aprobado por Felipe el 11 de octubre de 2026). Con el polígono, la ficha del lote muestra su suelo estimado (HU-182). La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026. `irrigated` se agregó el 11 de octubre de 2026: con riego, la falta de lluvia no es un riesgo en la señal `water` (HU-071). Es un dato mínimo que se usa (R9); el consentimiento versión 3 lo nombra (HU-163). **Entrega 1 (15 de octubre de 2026):** API de lotes (`backend/api/lots.py`: listar, crear, ver, editar y borrar; ajeno o borrado da 404; `lot.created`, `lot.updated` y `lot.deleted` en la actividad) y, en la web, «Agregar lote» sin dibujar (municipio, área a mano, nombre y riego) y el lote con «Editar lote» y «Borrar este lote». **Mientras no llegue la entrega 2 (el mapa), un `geometry` responde 422 `geometry_not_available`.** Diseños aprobados por Felipe el 15 de octubre: `design/pantallas/sin_dibujo.py`, `agregar.py` y `editar.py`, sin el mapa. Pruebas en `tests/accounts/test_lotes.py` y `web/src/pages/farm/farm.test.tsx`.
 
 ### HU-165 · Temporadas e historial del lote
 
@@ -244,7 +244,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-169 · Mi finca con varios lotes y zonas
 
 - **Historia:** Como agricultor, quiero ver mis lotes de mi zona en el mapa y abrir uno, para manejar mi finca y planear su próxima siembra.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Los lotes del usuario en el mapa real con sus polígonos (HU-164) y la capa de la NASA (HU-211), cada uno con sus cultivos y etapas; los lotes sin dibujar se ven en una lista
   - [ ] **Una sola zona:** Mi finca muestra los lotes de un municipio, sin selector de zonas. Si el usuario tiene lotes en otro municipio, se ven en la lista con su municipio y abrirlos centra el mapa allí
@@ -253,7 +253,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] «Agregar lote» abre el mapa del municipio para dibujar (HU-164), sin descenso
   - [ ] Cada botón tiene una acción o una navegación definida
 - **Reglas que aplican:** R1, R5, R9, R10
-- **Notas:** Reducida el 11 de octubre de 2026 al recorte del MVP: una sola zona, sin selector, sin lote vivo (HU-187, P1), sin progreso (HU-167, P1) y sin «Restaurar» (HU-204, P1); pasó de L a M.
+- **Notas:** Reducida el 11 de octubre de 2026 al recorte del MVP: una sola zona, sin selector, sin lote vivo (HU-187, P1), sin progreso (HU-167, P1) y sin «Restaurar» (HU-204, P1); pasó de L a M. **Entrega 1 (15 de octubre de 2026):** Mi finca en `/mi-finca` con la lista de lotes sin dibujar (municipio, área y siembras en curso) y «Agregar lote»; el lote en `/mi-finca/lotes/{{id}}` con sus siembras en curso, su suelo («sin datos» hasta HU-181) y editar o borrar. Sin mapa todavía. No se dibuja «Registrar siembra», «Dibujar en el mapa» ni «Ver estrategias de rotación» hasta que tengan función. **Ajuste del 15 de octubre (pedido por Felipe):** las pantallas siguen los marcos de Figma («D0 · Agregar lote o zona», «D1 · Editar lote», «Lote sin dibujar»): tarjeta sobre el paisaje con la mascota (`FormScene`, con la entrada de GSAP que se queda quieta en modo ligero), «Cancelar» para volver, «Editar lote» en su propia ruta (`/mi-finca/lotes/{id}/editar`) con «Borrar este lote» adentro, y el paso 2 y la edición en dos columnas. Mi finca, Agregar lote (los dos pasos), el lote y Editar lote caben sin scroll en escritorio desde 1366 × 700; en el celular el paso 2, el lote y la edición necesitan algo de scroll.
 
 ### HU-211 · Capa satelital de la NASA en el mapa del lote
 

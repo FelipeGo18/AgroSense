@@ -137,7 +137,7 @@ export interface paths {
         };
         /**
          * Version
-         * @description No usa la base de datos ni guarda nada: responde aunque las cuentas estén apagadas.
+         * @description No usa la base de datos ni guarda nada: responde aunque las cuentas o el dataset no estén.
          */
         get: operations["version_api_v1_version_get"];
         put?: never;
@@ -146,6 +146,75 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalogs/municipalities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Municipalities
+         * @description Los municipios de la región, por departamento y nombre. No usa la base de datos ni guarda nada (R9).
+         */
+        get: operations["municipalities_api_v1_catalogs_municipalities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Lots
+         * @description Los lotes del usuario, del más antiguo al más nuevo. Los borrados no salen (restaurarlos es HU-204, P1).
+         */
+        get: operations["list_lots_api_v1_lots_get"];
+        put?: never;
+        /**
+         * Create Lot
+         * @description Crea un lote sin dibujar. Guarda solo lo mínimo: nombre, municipio, área y riego (R9).
+         */
+        post: operations["create_lot_api_v1_lots_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lots/{lot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lot */
+        get: operations["get_lot_api_v1_lots__lot_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Lot
+         * @description Borra el lote y sus temporadas: se marcan con la misma hora, para restaurarlos juntos durante 30 días (HU-204).
+         */
+        delete: operations["delete_lot_api_v1_lots__lot_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Lot
+         * @description Cambia el nombre, el municipio, el área o el riego. El área no puede quedar por debajo de lo sembrado (422).
+         */
+        patch: operations["update_lot_api_v1_lots__lot_id__patch"];
         trace?: never;
     };
     "/api/v1/health": {
@@ -211,6 +280,35 @@ export interface components {
             /** Next Before */
             next_before: string | null;
         };
+        /** CurrentSeason */
+        CurrentSeason: {
+            /**
+             * Season Id
+             * Format: uuid
+             */
+            season_id: string;
+            /** Crop Id */
+            crop_id: string;
+            /** Area Ha */
+            area_ha: number;
+            /** Follows Season Ids */
+            follows_season_ids: string[];
+            /**
+             * Sowing Date
+             * Format: date
+             */
+            sowing_date: string;
+            /** Days Since Sowing */
+            days_since_sowing: number;
+            /** Stage */
+            stage?: string | null;
+            /** Stage Progress Pct */
+            stage_progress_pct?: number | null;
+            /** Stage Method */
+            stage_method?: string | null;
+            /** Thermal Data Until */
+            thermal_data_until?: string | null;
+        };
         /**
          * DeleteBody
          * @description Borrar la cuenta pide la contraseña: una sesión abierta en un equipo prestado no basta para borrarlo todo.
@@ -230,6 +328,150 @@ export interface components {
             username: string;
             /** Password */
             password: string;
+        };
+        /** LotCreate */
+        LotCreate: {
+            /** Name */
+            name: string;
+            /** Municipality Id */
+            municipality_id: string;
+            /** Area Ha */
+            area_ha: number;
+            /** Irrigated */
+            irrigated?: boolean | null;
+            /** Geometry */
+            geometry?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** LotDetail */
+        LotDetail: {
+            /**
+             * Lot Id
+             * Format: uuid
+             */
+            lot_id: string;
+            /** Municipality Id */
+            municipality_id: string;
+            /** Name */
+            name: string;
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            } | null;
+            /** Area Ha */
+            area_ha: number;
+            /** Irrigated */
+            irrigated: boolean | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Soil */
+            soil: {
+                [key: string]: unknown;
+            } | null;
+            /** Current Seasons */
+            current_seasons: components["schemas"]["CurrentSeason"][];
+        };
+        /** LotListItem */
+        LotListItem: {
+            /**
+             * Lot Id
+             * Format: uuid
+             */
+            lot_id: string;
+            /** Municipality Id */
+            municipality_id: string;
+            /** Name */
+            name: string;
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            } | null;
+            /** Area Ha */
+            area_ha: number;
+            /** Irrigated */
+            irrigated: boolean | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Current Crop Ids */
+            current_crop_ids: string[];
+        };
+        /** LotOut */
+        LotOut: {
+            /**
+             * Lot Id
+             * Format: uuid
+             */
+            lot_id: string;
+            /** Municipality Id */
+            municipality_id: string;
+            /** Name */
+            name: string;
+            /** Geometry */
+            geometry: {
+                [key: string]: unknown;
+            } | null;
+            /** Area Ha */
+            area_ha: number;
+            /** Irrigated */
+            irrigated: boolean | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * LotPatch
+         * @description Lo que no viene no cambia. `irrigated` acepta nulo: «Todavía no sé».
+         */
+        LotPatch: {
+            /** Name */
+            name?: string | null;
+            /** Municipality Id */
+            municipality_id?: string | null;
+            /** Area Ha */
+            area_ha?: number | null;
+            /** Irrigated */
+            irrigated?: boolean | null;
+            /** Geometry */
+            geometry?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** MunicipalityItem */
+        MunicipalityItem: {
+            /** Municipality Id */
+            municipality_id: string;
+            /** Name */
+            name: string;
+            /** Department */
+            department: string;
+            /** Lat */
+            lat: number | null;
+            /** Lon */
+            lon: number | null;
         };
         /** PasswordBody */
         PasswordBody: {
@@ -595,6 +837,174 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Version"];
+                };
+            };
+        };
+    };
+    municipalities_api_v1_catalogs_municipalities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MunicipalityItem"][];
+                };
+            };
+        };
+    };
+    list_lots_api_v1_lots_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotListItem"][];
+                };
+            };
+        };
+    };
+    create_lot_api_v1_lots_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LotCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lot_api_v1_lots__lot_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_lot_api_v1_lots__lot_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lot_api_v1_lots__lot_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LotPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

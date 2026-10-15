@@ -4,7 +4,7 @@ Herramienta web para agricultores (región piloto en Colombia, por confirmar con
 
 Flujo del MVP: lote (o municipio y área, sin cuenta) → estrategias de rotación → un ciclo con su diagnóstico → agua del plan → qué cambió. Es historia de la zona y comparación según reglas con fuente: no predice el clima, el rendimiento ni cuánto mejora el suelo.
 
-> **Estado:** fase 0 (preparación). Las specs son la fuente de verdad. Ya hay código de la web (`web/`) y de las cuentas (`backend/`); el pipeline de datos y el motor de decisión siguen en especificación.
+> **Estado:** fase 0 (preparación). Las specs son la fuente de verdad. Ya hay código de la web (`web/`), de las cuentas y los lotes (`backend/`) y del comienzo del pipeline (`pipeline/`: municipios de DIVIPOLA); el catálogo agronómico y el motor de decisión siguen en especificación.
 
 ## Por dónde empezar
 

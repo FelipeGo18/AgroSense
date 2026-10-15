@@ -13,7 +13,7 @@ Proyecto para el **NASA Space Apps Challenge 2026** (reto «Field Shift: Adaptin
 
 ## Estado actual
 
-Hay código de dos partes: la web (`web/`: inicio, entrar y crear cuenta) y las cuentas (`backend/`: esquema completo, migraciones y la API de cuenta y sesión). Del pipeline, el catálogo y el motor solo hay especificaciones. No inventes comandos, archivos ni módulos que no existan: si algo falta, créalo según la spec o pregunta.
+Hay código de la web (`web/`: inicio, entrar, crear cuenta, Mi cuenta y Mi finca sin mapa), de las cuentas y los lotes (`backend/`: esquema completo, migraciones y la API de cuenta, sesión y lotes) y del pipeline (`pipeline/`: por ahora los municipios de DIVIPOLA, `sources` y el manifiesto). Del catálogo agronómico y el motor solo hay especificaciones. No inventes comandos, archivos ni módulos que no existan: si algo falta, créalo según la spec o pregunta.
 
 **Excepción de la fase 0: el frontend y las cuentas.** Desde el 12 de octubre de 2026 también se adelanta el backend de las cuentas (`backend/`, PostgreSQL en Docker y migraciones de Alembic: `backend/README.md`). Identidad visual, animaciones, audio, assets 3D y un prototipo navegable se adelantan ahora en `web/` y en Figma (EP-15, `specs/05-frontend.md`). La app de la demo se construye en el evento en un repositorio nuevo. Todo lo de diseño y frontend (pantallas, HUs de web, estilo, stack de la web) se puede rediseñar. Un cambio que toque las reglas R1–R10 o el contrato de la API se registra en `docs/decisiones.md` y se refleja en `specs/01-reglas.md` y `specs/02-contratos.md`.
 
@@ -102,13 +102,13 @@ Las carpetas de código se crean cuando se implemente su primera HU. No las cree
 
 ## Comandos previstos
 
-Los de las cuentas y la web ya existen (`backend/README.md` y `web/README.md`); los del pipeline se definen con su primera HU. La convención acordada es:
+Los de las cuentas, la web y el pipeline ya existen (`backend/README.md`, `web/README.md` y `pipeline/README.md`). La convención acordada es:
 
 ```bash
 # Desarrollo
 docker compose up -d db                       # PostgreSQL local para las cuentas
 uv sync                                       # entorno Python reproducible
-uv run python -m pipeline.build               # reconstruye data/published desde la caché
+uv run python -m pipeline.build               # reconstruye data/published desde la caché (--descargar baja las fuentes)
 npm --prefix web run dev                      # web; con VITE_SIMULATION=true usa respuestas simuladas
 
 # Pruebas y lint: siempre en Docker

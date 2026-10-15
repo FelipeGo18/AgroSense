@@ -239,13 +239,13 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-078 · Endpoints de catálogo y tendencias
 
 - **Historia:** Como desarrollador web, quiero los endpoints de municipios, cultivos, límites, suelo del municipio y tendencias, para armar la consulta y las gráficas.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] `GET /catalogs/municipalities`, `/catalogs/crops`, `/catalogs/municipalities/{id}/boundary`, `/catalogs/municipalities/{id}/soil` y `/trends` según el contrato
   - [ ] `/trends` recibe `sowing_date` y devuelve tres series: `water` (por año, `precip_mm` de los meses de la ventana, de la fuente de lluvia que calcula la señal, y `need_mm` del cultivo), `supply` (por año, `planted_ha` y `preliminary` del semestre de EVA en que cae la fecha) y `ndvi` (por periodo de 16 días, `ndvi_normal` del municipio, HU-208)
   - [ ] Solo leen el dataset publicado; sin datos, la serie viene vacía con `insufficient_data` (R1)
 - **Reglas que aplican:** R1, R4, R7
-- **Notas:** La serie `ndvi` se sumó el 11 de octubre de 2026 (decisión 12): sirve para contrastar la ventana con la época en que el campo suele estar verde.
+- **Notas:** La serie `ndvi` se sumó el 11 de octubre de 2026 (decisión 12): sirve para contrastar la ventana con la época en que el campo suele estar verde. **15 de octubre de 2026:** hecho `GET /catalogs/municipalities` (`backend/api/catalogs.py`): lee el dataset publicado y, sin él, responde 503 `dataset_unavailable` con el motivo en el log. Faltan los cultivos, el límite, el suelo y `/trends`.
 
 ### HU-217 · Comparar dos periodos de la historia de la zona
 

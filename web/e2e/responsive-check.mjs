@@ -10,6 +10,9 @@
 //   npm run test:responsive                         (o: BASE=http://127.0.0.1:5190 node e2e/responsive-check.mjs)
 //
 // Usa el Chrome instalado en el equipo (playwright-core, canal «chrome»): no descarga navegadores.
+//
+// Las páginas con sesión (Mi finca, Mi cuenta) se revisan con el token de una cuenta de prueba:
+//   SESSION=<valor de la cookie agrosense_session> ROUTES=/mi-finca,/mi-finca/agregar npm run test:responsive
 
 import { chromium } from "playwright-core";
 
@@ -49,6 +52,10 @@ function inspect({ light, minTarget }) {
   const seen = new Set();
   for (const el of document.querySelectorAll("body *")) {
     if (el.closest("svg, canvas, [data-reveal], [aria-hidden='true'].absolute")) continue;
+    // Decoración dentro de una capa escondida que recorta lo que se sale (las nubes del paisaje): no se ve fuera de la
+    // capa ni hace desplazar la página. El desplazamiento horizontal real se mide arriba, con scrollWidth.
+    const deco = el.closest("[aria-hidden='true']");
+    if (deco && ["hidden", "clip"].includes(getComputedStyle(deco).overflowX)) continue;
     const box = el.getBoundingClientRect();
     if (!box.width || !box.height || (box.right <= cw + 1 && box.left >= -1)) continue;
     // Si un ancestro recorta (overflow hidden/clip) y la pieza queda fuera, el visitante no la ve: es un fallo igual.
@@ -133,6 +140,7 @@ for (const light of [false, true]) {
       for (let attempt = 1; attempt <= 3 && !problems; attempt++) {
         const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 768, isMobile: width < 768 });
         await context.addInitScript(([key, value]) => localStorage.setItem(key, value), [KEY, light ? "on" : "off"]);
+        if (process.env.SESSION) await context.addCookies([{ name: "agrosense_session", value: process.env.SESSION, url: BASE }]);
         try {
           problems = await check(context, route, width, light);
         } catch (error) {

@@ -97,7 +97,7 @@ export function PasswordPage() {
               Guardar contraseña
             </Button>
           </form>
-          <Link to={PATHS.account} className={`${LINK} self-start`}>
+          <Link to={PATHS.account} className={`${LINK} min-h-11 self-start py-2`}>
             Volver a Mi cuenta
           </Link>
         </FormScene>
