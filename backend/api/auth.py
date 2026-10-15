@@ -1,6 +1,7 @@
 """Cuenta y sesión: `/api/v1/auth/*` y `/api/v1/me*` (HU-160, HU-162, HU-163 y HU-178; specs/02-contratos.md)."""
 
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
@@ -11,14 +12,16 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as Db
 
 from backend.accounts import activity
-from backend.accounts.models import Session, User
+from backend.accounts.limits import FAILED_PER_IP_AND_USER, LIMITER, LOGIN_PER_IP, REGISTER_PER_IP, Hit, Rule, retry_after
+from backend.accounts.models import LoginAttempt, Session, User
 from backend.accounts.security import (
+    ATTEMPT_WINDOW,
     clear_attempts,
     hash_password,
     hash_token,
     new_session_token,
-    record_failed_attempt,
-    too_many_attempts,
+    release_attempt,
+    take_attempt,
     verify_password,
 )
 from backend.api.errors import ACCOUNTS_UNAVAILABLE, ApiError, explain, request_id_of
@@ -54,6 +57,8 @@ SESSION_DAYS = 30
 CONSENT_VERSION = 3
 # Las señales que el agricultor puede ponderar (specs/01-reglas.md): las seis del P0 y las tres del P1.
 SIGNALS = frozenset({"water", "frost", "heat", "soil", "supply", "market", "excess_rain", "disease", "harvest_weather"})
+TOO_MANY_ATTEMPTS = "Demasiados intentos. Espere 15 minutos y vuelva a intentar."
+TOO_MANY_REQUESTS = "Demasiadas peticiones desde su conexión. Espere unos minutos y vuelva a intentar."
 
 # 3 a 30 caracteres: letras minúsculas sin tilde, números, punto y guion bajo.
 Username = Annotated[str, StringConstraints(pattern=r"^[a-z0-9._]{3,30}$")]
@@ -99,6 +104,14 @@ class ProfilePatch(BaseModel):
         if all(weight == 0 for weight in value.values()):
             raise ValueError("No pueden estar todas las prioridades en 0.")
         return value
+
+
+class DeleteBody(BaseModel):
+    """Borrar la cuenta pide la contraseña: una sesión abierta en un equipo prestado no basta para borrarlo todo."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    password: str = Field(max_length=128)
 
 
 class PasswordBody(BaseModel):
@@ -171,6 +184,75 @@ def _close_cookie(response: Response, settings: Settings) -> None:
     response.delete_cookie(SESSION_COOKIE, path="/", httponly=True, secure=settings.session_cookie_secure, samesite="lax")
 
 
+def _client_ip(request: Request) -> str:
+    """La IP de quien llama. Solo se usa en memoria, como llave de los límites, y nunca se guarda ni se escribe (R9).
+    Detrás de un proxy, Uvicorn la toma de `X-Forwarded-For` solo si el proxy está en `FORWARDED_ALLOW_IPS`."""
+    return request.client.host if request.client else "sin-ip"
+
+
+def _limit_connection(request: Request, rule: Rule, what: str) -> None:
+    """Límite de peticiones por conexión (IP), salgan bien o mal."""
+    taken = LIMITER.take(rule, _client_ip(request))
+    if isinstance(taken, float):
+        raise ApiError(
+            429,
+            "too_many_requests",
+            TOO_MANY_REQUESTS,
+            log=f"Rechazado: demasiadas peticiones de {what} desde la misma conexión",
+            headers={"Retry-After": retry_after(taken)},
+        )
+
+
+@dataclass
+class PasswordCheck:
+    """Un intento de verificar una contraseña, anotado antes de verificarla en los dos topes: el de esta conexión con
+    este usuario (en memoria) y el general del usuario (en la base de datos). Si la contraseña es mala, queda anotado."""
+
+    db: Db
+    ip: str
+    username: str
+    hit: Hit
+    attempt: LoginAttempt
+
+    def release(self) -> None:
+        """La contraseña era la buena, pero no se siguió (cuenta bloqueada, contraseña nueva igual): no cuenta."""
+        LIMITER.release(self.hit)
+        release_attempt(self.db, self.attempt)
+
+    def succeeded(self) -> None:
+        """La contraseña era la buena y se siguió: se borran los intentos de este usuario. Se confirma con el cambio."""
+        LIMITER.clear(FAILED_PER_IP_AND_USER, self.ip, self.username)
+        clear_attempts(self.db, self.username)
+
+
+def _check_password(db: Db, request: Request, username: str, actor: User | None, action: str) -> PasswordCheck:
+    """Antes de verificar una contraseña: 429 si esta conexión ya se equivocó 5 veces con este usuario en 15 minutos,
+    o si el usuario lleva 20 fallidos desde cualquier conexión. Un bloqueo deja un solo evento por ventana."""
+    ip = _client_ip(request)
+    hit = LIMITER.take(FAILED_PER_IP_AND_USER, ip, username)
+    if isinstance(hit, float):
+        activity.record_lockout(db, action, request_id=request_id_of(request), actor=actor, window=ATTEMPT_WINDOW)
+        raise ApiError(
+            429,
+            "too_many_attempts",
+            TOO_MANY_ATTEMPTS,
+            log="Rechazado: 5 contraseñas que no coinciden para ese usuario desde la misma conexión en 15 minutos",
+            headers={"Retry-After": retry_after(hit)},
+        )
+    attempt = take_attempt(db, username)
+    if attempt is None:
+        LIMITER.release(hit)
+        activity.record_lockout(db, action, request_id=request_id_of(request), actor=actor, window=ATTEMPT_WINDOW)
+        raise ApiError(
+            429,
+            "too_many_attempts",
+            TOO_MANY_ATTEMPTS,
+            log="Rechazado: 20 intentos fallidos de ese usuario desde cualquier conexión en 15 minutos",
+            headers={"Retry-After": retry_after(ATTEMPT_WINDOW.total_seconds())},
+        )
+    return PasswordCheck(db, ip, username, hit, attempt)
+
+
 def current_session(request: Request, db: Db = Depends(get_db)) -> Session:
     """La sesión de quien llama. Sin cookie, con un token desconocido, con la sesión vencida o con la cuenta bloqueada, 401."""
     token = request.cookies.get(SESSION_COOKIE)
@@ -202,7 +284,9 @@ def register(
     db: Db = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> User:
-    """Crea la cuenta y deja la sesión abierta. Sin aceptar el consentimiento vigente no se crea nada (R9)."""
+    """Crea la cuenta y deja la sesión abierta. Sin aceptar el consentimiento vigente no se crea nada (R9).
+    Cada conexión intenta hasta 10 registros por hora: así tampoco se puede probar en masa qué usuarios existen (409)."""
+    _limit_connection(request, REGISTER_PER_IP, "registro")
     if not body.consent_accepted or body.consent_version != CONSENT_VERSION:
         raise ApiError(
             422,
@@ -245,29 +329,24 @@ def login(
     db: Db = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> User:
+    _limit_connection(request, LOGIN_PER_IP, "inicio de sesión")
     username = body.username.strip().lower()
     request_id = request_id_of(request)
     user = db.scalar(select(User).where(User.username == username))
-    if too_many_attempts(db, username):
-        activity.record_rejected(db, "auth.login_failed", request_id=request_id, actor=user, outcome="denied")
-        raise ApiError(
-            429,
-            "too_many_attempts",
-            "Demasiados intentos. Espere 15 minutos y vuelva a intentar.",
-            log="Rechazado: 5 intentos fallidos de ese usuario en los últimos 15 minutos",
-        )
+    # El intento se anota antes de verificar: así varias peticiones a la vez no se saltan el tope.
+    check = _check_password(db, request, username, user, "auth.login_failed")
     if not verify_password(user.password_hash if user else None, body.password) or user is None:
-        record_failed_attempt(db, username)
-        # El evento no guarda el usuario que se intentó: si no existe, queda sin actor.
+        # El intento ya quedó anotado. El evento no guarda el usuario que se intentó: si no existe, queda sin actor.
         activity.record(db, "auth.login_failed", request_id=request_id, actor=user, outcome="failed")
         db.commit()
         # A la persona se le dice lo mismo en los dos casos; en la terminal del servidor sí se sabe cuál fue.
         why = "usuario no registrado" if user is None else "contraseña incorrecta"
         raise ApiError(401, "invalid_credentials", "El usuario o la contraseña no coinciden.", log=f"Inicio de sesión rechazado: {why}")
     if user.blocked_at is not None:
+        check.release()
         activity.record_rejected(db, "auth.login_failed", request_id=request_id, actor=user, outcome="denied")
         raise ApiError(403, "account_blocked", "Esta cuenta está bloqueada.", log="Inicio de sesión rechazado: la cuenta está bloqueada")
-    clear_attempts(db, username)
+    check.succeeded()
     # De paso se limpia lo vencido: sesiones de este usuario y eventos de más de 180 días.
     db.execute(delete(Session).where(Session.user_id == user.user_id, Session.expires_at <= _now()))
     activity.purge_old(db)
@@ -342,17 +421,9 @@ def change_password(
     """Cambia la contraseña. Cierra las demás sesiones del usuario; la actual sigue abierta."""
     user = session.user
     request_id = request_id_of(request)
-    if too_many_attempts(db, user.username):
-        activity.record_rejected(db, "auth.password_changed", request_id=request_id, actor=user, outcome="denied")
-        raise ApiError(
-            429,
-            "too_many_attempts",
-            "Demasiados intentos. Espere 15 minutos y vuelva a intentar.",
-            log="Rechazado: 5 intentos fallidos de ese usuario en los últimos 15 minutos",
-        )
+    check = _check_password(db, request, user.username, user, "auth.password_changed")
     if not verify_password(user.password_hash, body.current_password):
-        # Cuenta igual que un intento fallido de entrar. La sesión sigue abierta.
-        record_failed_attempt(db, user.username)
+        # Cuenta igual que un intento fallido de entrar (ya quedó anotado). La sesión sigue abierta.
         activity.record(
             db, "auth.password_changed", request_id=request_id, actor=user, outcome="failed", object_type="user", object_id=user.user_id
         )
@@ -364,6 +435,7 @@ def change_password(
             log="Cambio de contraseña rechazado: la contraseña actual es incorrecta",
         )
     if body.new_password == body.current_password:
+        check.release()
         raise ApiError(
             422,
             "same_password",
@@ -372,7 +444,7 @@ def change_password(
         )
     user.password_hash = hash_password(body.new_password)
     db.execute(delete(Session).where(Session.user_id == user.user_id, Session.session_id != session.session_id))
-    clear_attempts(db, user.username)
+    check.succeeded()
     activity.record(db, "auth.password_changed", request_id=request_id, actor=user, object_type="user", object_id=user.user_id)
     db.commit()
 
@@ -391,12 +463,31 @@ def my_activity(
 
 @router.delete("/me", status_code=204)
 def delete_me(
+    body: DeleteBody,
+    request: Request,
     response: Response,
     user: User = Depends(current_user),
     db: Db = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> None:
-    """Borra la cuenta para siempre, con todo lo que cuelga de ella: sesiones, lotes, temporadas, tickets y su actividad (R9)."""
+    """Borra la cuenta para siempre, con todo lo que cuelga de ella: sesiones, lotes, temporadas, tickets y su actividad (R9).
+    Pide la contraseña; una que no coincide cuenta como un intento fallido y la sesión sigue abierta."""
+    check = _check_password(db, request, user.username, user, "account.deleted")
+    if not verify_password(user.password_hash, body.password):
+        activity.record(
+            db,
+            "account.deleted",
+            request_id=request_id_of(request),
+            actor=user,
+            outcome="failed",
+            object_type="user",
+            object_id=user.user_id,
+        )
+        db.commit()
+        raise ApiError(
+            403, "wrong_password", "La contraseña no coincide.", log="Borrado de la cuenta rechazado: la contraseña es incorrecta"
+        )
+    check.succeeded()
     activity.forget_user(db, user)
     db.execute(delete(User).where(User.user_id == user.user_id))
     db.commit()

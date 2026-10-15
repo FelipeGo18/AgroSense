@@ -1,5 +1,7 @@
 """Regla: ninguna migración se aplica sin una copia de seguridad de la base de datos antes (backend/README.md)."""
 
+import os
+import stat
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -42,6 +44,9 @@ def test_antes_de_migrar_se_copia_la_base_y_la_copia_sirve(engine, database_url,
         # Un volcado de PostgreSQL de verdad, y con lo que había antes de migrar.
         content = saved.read_bytes()
         assert content[:5] == b"PGDMP" and b"usage_daily" in content
+        # Trae las cuentas sin cifrar: solo el dueño la puede leer (las pruebas corren en Linux, en Docker).
+        if os.name == "posix":
+            assert stat.S_IMODE(saved.stat().st_mode) == 0o600
         assert "usage_daily" not in inspect(engine).get_table_names()
     finally:
         command.upgrade(alembic_config(database_url), "head")

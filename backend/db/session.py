@@ -12,7 +12,8 @@ from backend.config.settings import get_settings
 @lru_cache
 def get_engine() -> Engine:
     # Si la base de datos no responde, se sabe en 3 segundos: la API no se queda colgada esperándola.
-    return create_engine(get_settings().database_url, pool_pre_ping=True, connect_args={"connect_timeout": 3})
+    # `hide_parameters`: la traza de un error de base de datos no lleva los valores de la consulta (un hash, un nombre).
+    return create_engine(get_settings().database_url, pool_pre_ping=True, hide_parameters=True, connect_args={"connect_timeout": 3})
 
 
 @lru_cache

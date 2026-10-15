@@ -12,6 +12,28 @@ uv run uvicorn backend.api.main:app --reload   # API en http://127.0.0.1:8000 (d
 
 O todo en Docker: `docker compose up app` copia la base, aplica las migraciones y deja la API en el mismo puerto.
 
+La documentación (`/api/docs` y `/api/openapi.json`, que usa `npm run api:types`) solo existe con
+`AGROSENSE_API_DOCS=true`: lo trae `.env.example` y Docker Compose la enciende. Sin la variable queda apagada, y así
+debe ir en producción.
+
+## Seguridad de la cuenta
+
+- Toda respuesta lleva `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy` y,
+  por HTTPS, `Strict-Transport-Security`. Lo de la cuenta (`/api/v1/auth/*` y `/api/v1/me*`) va con `Cache-Control: no-store`.
+- Límites (`backend/accounts/limits.py`): 5 contraseñas malas por usuario y conexión en 15 minutos (en memoria), 20 por
+  usuario desde cualquier conexión (en `login_attempts`, sobrevive a un reinicio), 30 inicios de sesión y 10 registros por
+  conexión, y 4 cálculos de Argon2 a la vez (si no, 503 `server_busy`). El intento se anota **antes** de verificar la
+  contraseña: varias peticiones a la vez no se lo saltan. La IP nunca se guarda: en memoria queda solo su hash con una sal
+  que cambia en cada arranque.
+- Detrás de un proxy hay que darle a Uvicorn su dirección en `FORWARDED_ALLOW_IPS`, para que tome la IP real de
+  `X-Forwarded-For`; si no, todas las personas parecen una sola conexión y se bloquean juntas.
+- Borrar la cuenta (`DELETE /me`) pide la contraseña.
+- Un bloqueo por intentos deja un solo evento `denied` en la actividad por ventana de 15 minutos, no uno por petición.
+- Los eventos de más de 180 días se borran al arrancar la API y en cada inicio de sesión correcto.
+- Las copias de `backups/` quedan solo para el dueño (carpeta 700 y archivos 600; en Windows valen los permisos de su carpeta).
+- El log nunca repite una dirección que no existe en la API (`route=[sin ruta]`) y escribe los caracteres de control
+  como `\x1b`. Las trazas de errores de base de datos no llevan los valores de la consulta.
+
 ## La API sube siempre
 
 La base de datos no tumba la API. Al arrancar se intenta copiar la base y migrar; pase lo que pase, la API sube.

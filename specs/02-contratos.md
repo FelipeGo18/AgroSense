@@ -66,7 +66,7 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, apa
 - Borrar un lote o una temporada es reversible: se marca `deleted_at` y se puede restaurar durante 30 días; después se borra para siempre. Borrar un lote borra con él sus temporadas, y restaurarlo las restaura. El agricultor y el administrador pueden restaurar.
 - Un polígono de lote debe ser válido (sin cruces), tener área mayor que cero y caer dentro de `municipality_boundaries` de su municipio; si no, 422.
 - `activity_log`: trazabilidad de lo que hacen agricultores y administradores. Ver «Trazabilidad» más abajo.
-- `login_attempts` (agregada el 12 de octubre de 2026; aprobada por Felipe): `attempt_id`, `username_hash` y `attempted_at`. Una fila por intento fallido de entrar o de cambiar la contraseña, solo para el tope de 5 intentos en 15 minutos. Guarda el hash del usuario que se intentó, nunca el texto (podría ser una contraseña escrita en el campo equivocado), ni la IP. Las filas de más de 15 minutos se borran solas. Está en la base de datos y no en memoria para que el tope sobreviva a un reinicio.
+- `login_attempts` (agregada el 12 de octubre de 2026; aprobada por Felipe): `attempt_id`, `username_hash` y `attempted_at`. Una fila por intento fallido de entrar, de cambiar la contraseña o de borrar la cuenta, solo para el **tope general** de 20 intentos en 15 minutos por usuario desde cualquier conexión (cambiado el 15 de octubre de 2026; aprobado por Felipe: antes era el único tope, de 5). El tope de 5 por conexión vive en memoria (ver «Cómo viaja la credencial»). Guarda el hash del usuario que se intentó, nunca el texto (podría ser una contraseña escrita en el campo equivocado), ni la IP. Las filas de más de 15 minutos se borran solas. La fila se anota **antes** de verificar la contraseña y se quita si era la buena, para que varias peticiones a la vez no se salten el tope; un intento rechazado con 429 no se anota, así que no alarga el bloqueo. Está en la base de datos para que el tope sobreviva a un reinicio.
 - `usage_daily` (P1, HU-170): contador anónimo de uso para las métricas. En el P0 la tabla no existe y los endpoints de cálculo no escriben nada en la base de datos. Columnas: `day` (fecha), `endpoint` (`diagnostics`, `rotations`, `changes`, `calendar`, `water_plans`, `scenarios`), `municipality_id`, `crop_id` y `count`; llave (`day`, `endpoint`, `municipality_id`, `crop_id`). Cada consulta de cálculo suma 1 a su fila. El `crop_id` que se cuenta: en `/diagnostics`, `/changes`, `/calendar` y `/scenarios`, el cultivo consultado; en `/water-plans`, una fila por cultivo; en `/rotations`, el primer cultivo de `previous_crop_ids` (el más reciente). No tiene usuario, sesión, IP, hora, fecha de siembra, prioridades, área ni riego, ni se puede unir con `activity_log`. Se conserva como estadística. No cambia ningún resultado (R4). Si falla, la consulta responde igual.
 - El suelo de un lote **no se guarda**: la API lo calcula al vuelo como la mediana de las celdas de `soil_grid` que toca su polígono. Un lote sin polígono usa `soil_municipality`.
 - `support_tickets` (P1): `ticket_id`, `user_id`, `lot_id` (opcional), `message`, `status` (`open`, `in_progress`, `closed`), `created_at`, `closed_at`.
@@ -106,8 +106,9 @@ Reglas del registro:
 
 - **Nunca se guardan** contraseñas, tokens, cookies, el polígono ni los valores de los campos; tampoco el usuario que se intentó en un inicio de sesión fallido (podría ser una contraseña escrita en el campo equivocado), ni la IP.
 - El evento se escribe **en la misma transacción** que el cambio: no hay cambio sin traza ni traza de un cambio que no ocurrió. Los intentos `denied` y `failed` se escriben aparte.
+- Un bloqueo por demasiados intentos (429) deja **un** evento `denied` por ventana de 15 minutos, no uno por petición; con un usuario que no existe, ninguno (14 de octubre de 2026, revisión de seguridad; aprobado por Felipe).
 - **Solo se agrega.** El usuario de base de datos de la API tiene `INSERT` y `SELECT` sobre `activity_log`, no `UPDATE` ni `DELETE`; solo la tarea de limpieza y el borrado de cuenta usan otro rol.
-- Se conserva **180 días** y luego se borra.
+- Se conserva **180 días** y luego se borra. La limpieza corre al arrancar la API y en cada inicio de sesión correcto.
 - **Los endpoints de cálculo no escriben aquí** (R9): consultar un diagnóstico, una rotación o un plan de agua no deja ningún evento. Desde HU-170 (P1) solo suma 1 al contador anónimo `usage_daily`, que no dice quién consultó.
 - **Al borrar la cuenta** se borran los eventos del agricultor. Las acciones de administradores sobre sus datos se conservan, pero con `subject_user_id`, `object_id` y `reason` en nulo, para no perder quién hizo qué sin guardar de quién era.
 - Lo dice el consentimiento desde la versión 2 (vigente: 3, HU-163): «registramos lo que hace con su cuenta durante 180 días para su seguridad».
@@ -133,7 +134,7 @@ Respuesta de `GET /api/v1/me/activity` (la de `GET /api/v1/admin/activity` es ig
 }
 ```
 
-`next_before` es nulo cuando no hay más páginas. Al agricultor nunca se le muestra quién es el administrador, solo `actor_role`.
+`next_before` es nulo cuando no hay más páginas. Varios eventos pueden tener la misma hora (los de una misma petición): si el corte de una página cae entre ellos, la página se alarga hasta incluirlos a todos, así que puede traer algunos más que `limit` (14 de octubre de 2026; aprobado por Felipe: antes se perdían). Al agricultor nunca se le muestra quién es el administrador, solo `actor_role`.
 
 ### Logs de la terminal (HU-177)
 
@@ -148,7 +149,7 @@ No son parte de la API ni se consultan desde la web; se documentan aquí porque 
 | `ts`, `level`, `event`, `request_id` | Sí | `level`: `debug` (solo desarrollo), `info`, `warning` (todo lo rechazado, de `400` a `499`, y `503`), `error` (`500`, con la traza del error). Cambiado el 12 de octubre de 2026: antes solo `403` y `429` eran `warning` |
 | `detail` | Sí | Qué pasó, en español y en palabras: «Inicio de sesión rechazado: usuario no registrado», «Perfil actualizado: display_name». Puede decir más que la respuesta (por ejemplo, si falló el usuario o la contraseña), porque solo se ve en la terminal del servidor. Nunca repite lo que escribió la persona |
 | `endpoint` | En peticiones que llegan a una ruta | La función que atendió, como `auth.login`. Solo en el log: la respuesta no lo lleva |
-| `method`, `route`, `status`, `duration_ms` | En peticiones | `route` es la plantilla de la ruta, no la URL con sus parámetros de consulta |
+| `method`, `route`, `status`, `duration_ms` | En peticiones | `route` es la plantilla de la ruta, no la URL con sus parámetros de consulta. Una dirección que no existe en la API se escribe `[sin ruta]`: nunca lo que llegó |
 | `user_id`, `role` | Si hay sesión | Nunca el `username` ni el nombre |
 | `dataset`, `rules` | En endpoints de cálculo | Versiones usadas (R4) |
 
@@ -156,7 +157,7 @@ Cuando las cuentas están apagadas, cada intento de usarlas deja un evento `acco
 
 `GET /api/v1/health` responde siempre `200` mientras la API esté arriba, con `accounts`: `available`, `reason` (`ok`, `database_down` o `migration_pending`), `current_migration` y `expected_migration`.
 
-Nunca se escriben: contraseñas, tokens, cookies, la cabecera `Authorization`, polígonos ni los cuerpos de los endpoints de cálculo (R9). Un procesador de redacción borra esas llaves de cualquier evento.
+Nunca se escriben: contraseñas, tokens, cookies, la cabecera `Authorization`, polígonos ni los cuerpos de los endpoints de cálculo (R9). Un procesador de redacción borra esas llaves de cualquier evento. Otro escribe los caracteres de control de cualquier texto como `\x1b`, para que lo que llega de afuera no parta una línea ni cambie lo que muestra la terminal. Las trazas de errores de base de datos no llevan los valores de la consulta.
 
 ## Endpoints
 
@@ -192,7 +193,7 @@ Endpoints de cuenta (requieren sesión, salvo `register` y `login`):
 | `GET /api/v1/me` | Perfil y consentimiento del usuario | P0 |
 | `PATCH /api/v1/me` | Editar el perfil: `display_name`, `username` y `priorities` (sus pesos por señal; nulo vuelve a los de AgroSense). Responde el perfil actualizado | P1 (HU-160) |
 | `POST /api/v1/me/password` | Cambiar la contraseña con `current_password` y `new_password`. Cierra las demás sesiones del usuario; la actual sigue abierta | P1 (HU-160) |
-| `DELETE /api/v1/me` | Borrar la cuenta con sus sesiones, lotes, temporadas, tickets y sus eventos de `activity_log` (las acciones de administradores sobre sus datos quedan anonimizadas) | P0 |
+| `DELETE /api/v1/me` | Borrar la cuenta con sus sesiones, lotes, temporadas, tickets y sus eventos de `activity_log` (las acciones de administradores sobre sus datos quedan anonimizadas). Pide la contraseña en el cuerpo: `{"password": "..."}` (15 de octubre de 2026; aprobado por Felipe). Sin ella, `422`; si no coincide, `403` `wrong_password`, la sesión sigue y cuenta para los topes de intentos | P0 |
 | `GET /api/v1/lots` · `POST /api/v1/lots` | Listar y crear lotes. Con HU-204 (P1), la lista incluye los lotes borrados hace menos de 30 días, con `deleted_at` y `restorable_until` | P0 |
 | `GET`, `PATCH`, `DELETE /api/v1/lots/{lot_id}` | Ver, editar y borrar un lote. `GET` trae las temporadas en curso, cada una con su parte del área y su etapa estimada (ver «Cuerpos de cuenta»). `DELETE` es reversible durante 30 días | P0 |
 | `POST /api/v1/lots/{lot_id}/restore` | Restaurar un lote borrado hace menos de 30 días. Restaura también las temporadas que se borraron con él. Pasados los 30 días, o si no está borrado, 404 | P1 (HU-204) |
@@ -205,7 +206,24 @@ Endpoints de cuenta (requieren sesión, salvo `register` y `login`):
 | `GET /api/v1/lots/{lot_id}/progress` | Progreso derivado del historial | P1 (HU-167) |
 | `GET /api/v1/seasons/{season_id}/growth` | Línea de tiempo de un cultivo en curso, de la siembra a la cosecha estimada, para simular el paso del tiempo (ver «Cuerpos de cuenta») | P1 (HU-186) |
 
-**Cómo viaja la credencial:** el usuario y la contraseña solo se envían una vez, en `/auth/register` y `/auth/login`, siempre por HTTPS. La API responde con un token de sesión aleatorio de 256 bits; en la base de datos se guarda solo su hash. De ahí en adelante cada petición lleva únicamente ese token, nunca la contraseña. El token viaja en una cookie `httpOnly` (el JavaScript de la página no lo puede leer), `Secure` (solo por HTTPS) y `SameSite=Lax`; además, la API rechaza las peticiones que cambian datos si su cabecera `Origin` no es la de la web (protección contra CSRF). Como la API y la web comparten origen, no hace falta CORS. Contraseña de al menos 8 caracteres. Tras 5 intentos fallidos de inicio de sesión en 15 minutos, responde 429; los intentos fallidos de cambiar la contraseña cuentan igual. Recuperar la contraseña queda en P1, porque no se guarda correo ni celular. Un usuario solo ve y modifica sus propios lotes: pedir uno ajeno responde 404.
+**Cómo viaja la credencial:** el usuario y la contraseña solo se envían una vez, en `/auth/register` y `/auth/login`, siempre por HTTPS. La API responde con un token de sesión aleatorio de 256 bits; en la base de datos se guarda solo su hash. De ahí en adelante cada petición lleva únicamente ese token, nunca la contraseña. El token viaja en una cookie `httpOnly` (el JavaScript de la página no lo puede leer), `Secure` (solo por HTTPS) y `SameSite=Lax`; además, la API rechaza las peticiones que cambian datos si su cabecera `Origin` no es la de la web (protección contra CSRF). Como la API y la web comparten origen, no hace falta CORS. Contraseña de al menos 8 caracteres. Los intentos fallidos de entrar, de cambiar la contraseña y de borrar la cuenta cuentan para los topes de abajo. Recuperar la contraseña queda en P1, porque no se guarda correo ni celular. Un usuario solo ve y modifica sus propios lotes: pedir uno ajeno responde 404.
+
+**Límites por conexión y topes de intentos** (15 de octubre de 2026, revisión de seguridad; aprobado por Felipe). Todo lo que verifica una contraseña (entrar, cambiar la contraseña y borrar la cuenta) anota el intento **antes** de verificarla:
+
+| Límite | Cuánto | Dónde vive | Respuesta |
+|---|---|---|---|
+| Contraseñas que no coinciden para un usuario **desde una misma conexión** | 5 en 15 minutos | Memoria de la API | `429` `too_many_attempts`, solo para esa conexión |
+| Intentos fallidos de un usuario **desde cualquier conexión** (ataque repartido) | 20 en 15 minutos | `login_attempts` (sobrevive a un reinicio) | `429` `too_many_attempts` |
+| Inicios de sesión desde una misma conexión, salgan bien o mal | 30 en 15 minutos | Memoria de la API | `429` `too_many_requests` |
+| Registros desde una misma conexión, salgan bien o mal (también los `409`) | 10 por hora | Memoria de la API | `429` `too_many_requests` |
+| Cálculos de contraseña (Argon2, unos 64 MiB cada uno) a la vez | 4; los demás esperan hasta 10 segundos | Memoria de la API | `503` `server_busy` |
+
+- Todo `429` y el `503` llevan `Retry-After` con los segundos que faltan.
+- Así, equivocarse a propósito con la contraseña de otra persona solo bloquea la conexión de quien lo hace, no la cuenta; y el `409` del registro no sirve para probar en masa qué usuarios existen.
+- **La IP no se guarda** (R9): ni en la base de datos ni en el log. En memoria solo queda su hash con una sal aleatoria que cambia cada vez que arranca la API, y se olvida al pasar la ventana. Un reinicio borra los límites de memoria; el tope general sigue.
+- Detrás de un proxy, Uvicorn toma la IP de `X-Forwarded-For` solo si el proxy está en `FORWARDED_ALLOW_IPS`; si no, todas las personas parecerían una sola conexión.
+
+**Cabeceras de seguridad** (14 de octubre de 2026, revisión de seguridad; aprobado por Felipe): toda respuesta lleva `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` y, por HTTPS, `Strict-Transport-Security`. `/api/v1/auth/*` y `/api/v1/me*` van además con `Cache-Control: no-store`. La documentación (`/api/docs` y `/api/openapi.json`) solo existe con `AGROSENSE_API_DOCS=true`, en desarrollo.
 
 ### Roles (documentado; se implementa en HU-170)
 
@@ -254,10 +272,11 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 |---|---|
 | Entrada inválida (municipio o cultivo fuera del catálogo, diagnóstico de un cultivo con `kind` distinto de `crop`, prioridades fuera de rango o todas en 0, `sowing_date` con formato inválido, anterior a hoy o a más de doce meses (salvo en «Mi cultivo»), `month` fuera de 1 a 12, `cycles` distinto de 2 o 3, más de 3 cultivos en `previous_crop_ids`, `/changes` con un cultivo que no es `kind = crop`, porcentajes de finca que pasan de 100, registro sin consentimiento, temporadas en curso que pasan del área del lote, lote editado más chico que sus temporadas en curso, `follows_season_ids` inválido, nombre vacío, contraseña nueva de menos de 8 caracteres o igual a la actual) | `422` |
 | Endpoint de cuenta sin sesión válida, usuario y contraseña incorrectos, o `lot_id` en `/diagnostics`, `/rotations` o `/calendar` sin sesión | `401` |
-| Contraseña actual incorrecta al cambiarla | `403` (la sesión sigue abierta) |
+| Contraseña actual incorrecta al cambiarla, o contraseña incorrecta al borrar la cuenta | `403` `wrong_password` (la sesión sigue abierta) |
 | Rol sin permiso para el endpoint, o cuenta bloqueada al iniciar sesión | `403` |
 | Nombre de usuario ya registrado, al crear la cuenta o al editar el perfil | `409` |
-| Demasiados intentos de inicio de sesión | `429` |
+| Demasiados intentos con la contraseña de un usuario (`too_many_attempts`) o demasiadas peticiones de entrar o crear cuenta desde una misma conexión (`too_many_requests`) | `429` con `Retry-After` |
+| Todos los cálculos de contraseña ocupados (agregado el 15 de octubre de 2026; aprobado por Felipe) | `503` `server_busy` con `Retry-After` |
 | Lote o temporada que no existe o es de otro usuario | `404` |
 | Entrada válida sin datos | `200` con `insufficient_data` en la señal |
 | Cultivo que no es apto para la zona | `200` con `suitability.level = not_suitable`, luz `red` y acción `rotate`; sin ventanas |
