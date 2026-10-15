@@ -1,6 +1,7 @@
 """Configuración del backend. Todo sale de variables de entorno (`.env` en desarrollo); ningún secreto va en el código."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,9 @@ class Settings(BaseSettings):
     # La documentación de la API (`/api/docs` y `/api/openapi.json`) solo en desarrollo: en producción no se publica el
     # mapa de la API. Docker Compose la enciende; `npm run api:types` la necesita.
     api_docs: bool = Field(False, validation_alias="AGROSENSE_API_DOCS")
+
+    # Dónde está el dataset publicado por el pipeline (Parquet y manifest.json). Solo se lee.
+    data_dir: Path = Field(Path("data/published"), validation_alias="AGROSENSE_DATA_DIR")
 
     # Logs de la terminal (HU-177): DEBUG solo en desarrollo; `console` con color o `json` (una línea por evento).
     log_level: str = Field("INFO", validation_alias="AGROSENSE_LOG_LEVEL")

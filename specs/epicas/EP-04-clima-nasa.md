@@ -161,14 +161,14 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-044 · Municipios, límites, altitud y corrección de la temperatura
 
 - **Historia:** Como motor, quiero la altitud de cada municipio y la de su celda de NASA POWER, para corregir la temperatura y filtrar cultivos por piso térmico.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] `altitude_m` desde NASADEM (HU-206), con fuente
   - [ ] `climate_cell_elevation_m` desde la respuesta de NASA POWER
   - [ ] Todas las temperaturas publicadas se corrigen con un gradiente térmico con fuente; el gradiente vive en la configuración del pipeline
   - [ ] Comprobación manual en 2 municipios contra una estación del IDEAM, si la hay
 - **Reglas que aplican:** R7, R8
-- **Notas:** También publica `municipalities` (con `source_ids`) y `municipality_boundaries` desde el Marco Geoestadístico Nacional del DANE, que usan HU-164, HU-181 y HU-078. Pasa a P0 el 10 de octubre de 2026 porque las heladas dependen de la temperatura mínima, y la celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio. Desde el 11 de octubre de 2026 la altitud sale de NASADEM (HU-206, decisión 12).
+- **Notas:** También publica `municipalities` (con `source_ids`) y `municipality_boundaries` desde el Marco Geoestadístico Nacional del DANE, que usan HU-164, HU-181 y HU-078. Pasa a P0 el 10 de octubre de 2026 porque las heladas dependen de la temperatura mínima, y la celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio. Desde el 11 de octubre de 2026 la altitud sale de NASADEM (HU-206, decisión 12). **15 de octubre de 2026:** adelantada la parte de municipios (decisión de Felipe, para los lotes): `pipeline/sources/dane.py` publica `municipalities` desde DIVIPOLA del DANE (datos.gov.co, CC BY-SA 4.0) para Boyacá y Cundinamarca (`pipeline/region.yaml`, supuesto hasta el 28 de octubre), con `sources` y `manifest.json`; 239 municipios. `altitude_m` y `climate_cell_elevation_m` van nulas hasta NASADEM y NASA POWER. Faltan los límites (`municipality_boundaries`, Marco Geoestadístico Nacional), la altitud y la corrección de la temperatura. Pruebas en `tests/pipeline/test_municipios.py`.
 
 ### HU-045 · Heladas y temperatura máxima por mes
 

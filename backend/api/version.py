@@ -1,7 +1,7 @@
 """`GET /api/v1/version`: qué versiones y qué criterio está usando AgroSense (HU-122, HU-198).
 
-Por ahora solo existe el criterio: los pesos por defecto de las señales. El dataset, las reglas, la región y las
-fuentes llegan con el pipeline y el catálogo; mientras tanto esos campos vienen nulos o vacíos, nunca inventados (R5).
+El dataset, la región y las fuentes salen del `manifest.json` publicado; las reglas agronómicas todavía no existen y
+vienen nulas. Sin dataset publicado, sus campos vienen nulos o vacíos, nunca inventados (R5): el criterio sí está.
 """
 
 from datetime import datetime
@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from backend.api import errors
 from backend.config.weights import get_default_weights
+from backend.dataset import DatasetUnavailable, get_dataset
 
 router = APIRouter(prefix="/api/v1", tags=["estado"])
 
@@ -33,16 +34,22 @@ class Version(BaseModel):
 
 @router.get("/version")
 def version(request: Request) -> Version:
-    """No usa la base de datos ni guarda nada: responde aunque las cuentas estén apagadas."""
+    """No usa la base de datos ni guarda nada: responde aunque las cuentas o el dataset no estén."""
     defaults = get_default_weights()
-    errors.explain(request, f"Versiones consultadas: pesos por defecto {defaults.version}; todavía no hay dataset ni reglas publicados")
+    try:
+        dataset = get_dataset()
+    except DatasetUnavailable as error:
+        errors.explain(request, f"Versiones consultadas: pesos por defecto {defaults.version}; sin dataset porque {error}")
+        dataset = None
+    else:
+        errors.explain(request, f"Versiones consultadas: dataset {dataset.version}, pesos por defecto {defaults.version}")
     return Version(
-        dataset_version=None,
-        rules_version=None,
-        created_at=None,
-        region=None,
+        dataset_version=dataset.version if dataset else None,
+        rules_version=dataset.rules_version if dataset else None,
+        created_at=dataset.created_at if dataset else None,
+        region=dataset.region.get("name") if dataset else None,
         default_weights=defaults.weights,
         weights_version=defaults.version,
         weights_reasons=defaults.reasons,
-        sources=[],
+        sources=dataset.sources if dataset else [],
     )

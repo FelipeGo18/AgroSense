@@ -32,7 +32,6 @@ function Loading() {
 /** Pantallas ya diseñadas en Figma que todavía no están programadas: cada enlace lleva a un lugar que lo dice. */
 const PENDING: { path: string; title: string }[] = [
   { path: PATHS.consult, title: "Consultar" },
-  { path: PATHS.farm, title: "Mi finca" },
   { path: PATHS.howItWorks, title: "¿Cómo funciona?" },
 ];
 
@@ -56,6 +55,10 @@ export const routes: RouteObject[] = [
       { path: PATHS.account, lazy: async () => ({ Component: (await import("@/pages/account/AccountPage")).AccountPage }) },
       { path: PATHS.password, lazy: async () => ({ Component: (await import("@/pages/account/PasswordPage")).PasswordPage }) },
       { path: PATHS.activity, lazy: async () => ({ Component: (await import("@/pages/account/ActivityPage")).ActivityPage }) },
+      { path: PATHS.farm, lazy: async () => ({ Component: (await import("@/pages/farm/FarmPage")).FarmPage }) },
+      { path: PATHS.addLot, lazy: async () => ({ Component: (await import("@/pages/farm/AddLotPage")).AddLotPage }) },
+      { path: PATHS.lot(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/LotPage")).LotPage }) },
+      { path: PATHS.editLot(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/EditLotPage")).EditLotPage }) },
       { path: PATHS.dataPolicy, lazy: async () => ({ Component: (await import("@/pages/policy/PolicyPage")).PolicyPage }) },
       ...PENDING.map(pending),
       // Pruebas de la fase 0. Cada recorrido se carga aparte: trae sus propias escenas.
