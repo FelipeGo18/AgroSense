@@ -1,5 +1,6 @@
 """Perfil, contraseña, actividad y borrado de la cuenta (HU-160, HU-178; specs/02-contratos.md)."""
 
+import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -7,7 +8,9 @@ from decimal import Decimal
 from sqlalchemy import func, select, update
 
 from backend.accounts.farm_models import Lot, Season
+from backend.accounts.limits import LIMITER
 from backend.accounts.models import LoginAttempt, Session, User
+from backend.accounts.security import MAX_ATTEMPTS
 from backend.accounts.trace_models import ActivityEvent, SupportTicket
 
 ROSA = {"username": "rosa.samaca", "password": "papa-criolla-2026", "display_name": "Rosa", "consent_version": 3, "consent_accepted": True}
@@ -118,13 +121,14 @@ def test_el_tope_guarda_un_hash_y_no_lo_que_se_escribio(client, db):
     assert len(attempt.username_hash) == 64 and "secreta" not in attempt.username_hash
 
 
-def test_el_tope_sobrevive_a_un_reinicio_y_se_levanta_a_los_15_minutos(client, db):
+def test_el_tope_general_sobrevive_a_un_reinicio_y_se_levanta_a_los_15_minutos(client, db):
+    """20 fallidos desde cualquier conexión bloquean al usuario. Ese tope vive en la base de datos, no en la memoria."""
     register(client)
     client.cookies.clear()
-    for _ in range(5):
-        client.post("/api/v1/auth/login", json={**LOGIN, "password": "no-es-esta"})
-    # Está en la base de datos, no en la memoria del proceso.
-    assert db.scalar(select(func.count()).select_from(LoginAttempt)) == 5
+    key = hashlib.sha256(f"intento:{ROSA['username']}".encode()).hexdigest()
+    db.add_all(LoginAttempt(username_hash=key) for _ in range(MAX_ATTEMPTS))
+    db.commit()
+    LIMITER.reset()  # como un reinicio: los límites de memoria se pierden; este no
     assert client.post("/api/v1/auth/login", json=LOGIN).status_code == 429
     db.execute(update(LoginAttempt).values(attempted_at=datetime.now(UTC) - timedelta(minutes=15, seconds=1)))
     db.commit()
@@ -239,7 +243,7 @@ def test_borrar_la_cuenta_se_lleva_todo_lo_suyo(client, db):
     )
     db.commit()
 
-    assert client.delete("/api/v1/me").status_code == 204
+    assert client.request("DELETE", "/api/v1/me", json={"password": ROSA["password"]}).status_code == 204
     db.expire_all()
     assert db.scalars(select(User.username)).all() == ["soporte"]
     for table in (Session, Lot, Season, SupportTicket):

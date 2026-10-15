@@ -111,11 +111,11 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente | |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | en curso | Interruptor, botón en la barra y reglas para lo nuevo hechos; falta cargar GSAP solo con movimiento y el Figma |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P1 | L | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P1 | S | en curso | Backend, pantallas y «Sus prioridades» hechos; falta la revisión de seguridad |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P1 | M | en curso | Tabla, eventos de la cuenta y «Mi actividad» hechos; faltan los permisos de solo agregar, la limpieza de 180 días y la revisión de seguridad |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P1 | S | en curso | Backend, pantallas y «Sus prioridades» hechos; revisión de seguridad hecha; borrar la cuenta pide la contraseña |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P1 | M | en curso | Tabla, eventos de la cuenta y «Mi actividad» hechos; revisión de seguridad hecha y limpieza de 180 días al arrancar; faltan los permisos de solo agregar y la limpieza con otro rol |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-170 | Roles: agricultor, administrador y desarrollador | P1 | L | pendiente | |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-161 | Esquema de cuentas y migraciones | P0 | M | en curso | Esquema completo del contrato; falta validar `municipality_id` y `crop_id` contra el catálogo |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-162 | Autenticación | P0 | L | en curso | Backend y pantallas hechos; falta la revisión de seguridad |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-162 | Autenticación | P0 | L | en curso | Backend y pantallas hechos; revisión de seguridad hecha y arreglada, con límites por conexión (15 oct) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-163 | Consentimiento y tratamiento de datos | P0 | S | en curso | Página de la política hecha, con el aviso de que falta la revisión legal; falta esa revisión y el canal de contacto |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | L | pendiente | Restaurar pasó a HU-204 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-165 | Temporadas e historial del lote | P0 | L | pendiente | |

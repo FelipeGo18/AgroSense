@@ -8,6 +8,7 @@ export type LoginBody = Schemas["LoginBody"];
 export type RegisterBody = Schemas["RegisterBody"];
 export type ProfilePatch = Schemas["ProfilePatch"];
 export type PasswordBody = Schemas["PasswordBody"];
+export type DeleteBody = Schemas["DeleteBody"];
 export type ActivityItem = Schemas["ActivityItem"];
 export type ActivityPage = Schemas["ActivityPage"];
 
@@ -100,10 +101,11 @@ export function useChangePassword() {
   });
 }
 
+/** Borrar la cuenta pide la contraseña: una sesión abierta en un equipo prestado no basta para borrarlo todo. */
 export function useDeleteAccount() {
   const leave = useLeave();
   return useMutation({
-    mutationFn: () => api<void>("/me", { method: "DELETE" }),
+    mutationFn: (body: DeleteBody) => api<void>("/me", { method: "DELETE", body }),
     onSuccess: leave,
   });
 }
