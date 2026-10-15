@@ -1,0 +1,25 @@
+{
+  "dataset_version": "2026.10.1",
+  "rules_version": null,
+  "created_at": "2026-10-15T16:26:24+00:00",
+  "region": {
+    "id": "co-boyaca-cundinamarca",
+    "name": "Boyacá y Cundinamarca, Colombia (supuesto hasta el 28 de octubre de 2026)",
+    "country": "CO",
+    "departments": [
+      "15",
+      "25"
+    ]
+  },
+  "periods": [],
+  "tables": {
+    "municipalities": {
+      "rows": 239,
+      "coverage": "Boyacá y Cundinamarca, Colombia (supuesto hasta el 28 de octubre de 2026)"
+    },
+    "sources": {
+      "rows": 1,
+      "coverage": "todas las fuentes de lo publicado"
+    }
+  }
+}

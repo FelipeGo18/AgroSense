@@ -16,6 +16,12 @@ La documentación (`/api/docs` y `/api/openapi.json`, que usa `npm run api:types
 `AGROSENSE_API_DOCS=true`: lo trae `.env.example` y Docker Compose la enciende. Sin la variable queda apagada, y así
 debe ir en producción.
 
+## Dataset publicado
+
+La API lee el dataset del pipeline de `AGROSENSE_DATA_DIR` (por defecto `data/published`, que también va dentro de la imagen).
+Solo lo lee. Si no está, los catálogos y crear o editar un lote responden 503 `dataset_unavailable` y el log dice por qué;
+lo demás sigue. Se publica con `uv run python -m pipeline.build` (`pipeline/README.md`).
+
 ## Seguridad de la cuenta
 
 - Toda respuesta lleva `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy` y,
