@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
+from backend.accounts.limits import LIMITER
 from backend.api.main import app
 from backend.config.settings import get_settings
 from backend.db.models import Base
@@ -62,6 +63,8 @@ def db(engine) -> Iterator[Session]:
 def client(engine) -> Iterator[TestClient]:
     """La API contra la base de pruebas, vacía en cada prueba."""
     forget_down()
+    # Los límites por conexión viven en memoria: cada prueba parte sin nada anotado.
+    LIMITER.reset()
     with engine.begin() as connection:
         tables = ", ".join(f'"{table.name}"' for table in Base.metadata.sorted_tables)
         connection.execute(text(f"truncate {tables} cascade"))

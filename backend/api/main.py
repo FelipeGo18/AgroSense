@@ -19,6 +19,10 @@ from backend.db.state import accounts_state
 log = logging.get_logger("agrosense.api")
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+DOCS_URL = "/api/docs"
+OPENAPI_URL = "/api/openapi.json"
+# Lo que es de una cuenta: nunca se guarda en caché.
+PRIVATE_PREFIXES = ("/api/v1/auth/", "/api/v1/me")
 
 
 def create_app() -> FastAPI:
@@ -33,8 +37,14 @@ def create_app() -> FastAPI:
         yield
         log.info("api_stopped", detail="La API de AgroSense se apagó")
 
+    docs = settings.api_docs
     app = FastAPI(
-        title="AgroSense", version="0.0.0", docs_url="/api/docs", openapi_url="/api/openapi.json", redoc_url=None, lifespan=lifespan
+        title="AgroSense",
+        version="0.0.0",
+        docs_url=DOCS_URL if docs else None,
+        openapi_url=OPENAPI_URL if docs else None,
+        redoc_url=None,
+        lifespan=lifespan,
     )
 
     @app.middleware("http")
@@ -52,6 +62,27 @@ def create_app() -> FastAPI:
                 errors.explain(request, f"Petición rechazada: viene de {origin}, que no es la web de AgroSense (protección contra CSRF)")
                 return errors.error_response(request, 403, "forbidden_origin", "Esta petición no viene de la web de AgroSense.")
         return await call_next(request)
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next):
+        """Cabeceras de seguridad en toda respuesta, también en las que rechaza la protección contra CSRF.
+
+        La API solo responde JSON: nada de lo suyo se interpreta como otro tipo, se muestra dentro de otra página ni
+        carga recursos. Lo de la cuenta no se guarda en ninguna caché (ni del navegador ni de un proxy).
+        """
+        response = await call_next(request)
+        headers = response.headers
+        headers.setdefault("X-Content-Type-Options", "nosniff")
+        headers.setdefault("X-Frame-Options", "DENY")
+        headers.setdefault("Referrer-Policy", "no-referrer")
+        # La página de la documentación (solo en desarrollo) carga su JavaScript y su estilo: no lleva esta política.
+        if request.url.path != DOCS_URL:
+            headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+        if request.url.scheme == "https":
+            headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        if request.url.path.startswith(PRIVATE_PREFIXES):
+            headers["Cache-Control"] = "no-store"
+        return response
 
     # El último middleware que se registra es el primero que corre: el identificador de petición envuelve a todos.
     errors.install(app)

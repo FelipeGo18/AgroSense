@@ -8,6 +8,7 @@ Se configura una vez; lo usan la API, las migraciones y los avisos de Uvicorn. N
 """
 
 import logging
+import re
 import sys
 from typing import Any
 
@@ -24,6 +25,27 @@ def redact(_logger: Any, _method: str, event: dict[str, Any]) -> dict[str, Any]:
     def clean(value: Any) -> Any:
         if isinstance(value, dict):
             return {key: REDACTED if str(key).lower() in SECRET_KEYS else clean(item) for key, item in value.items()}
+        if isinstance(value, list | tuple):
+            return [clean(item) for item in value]
+        return value
+
+    return clean(event)
+
+
+# Caracteres de control (C0, DEL y C1): un texto que llega de afuera con ellos podría partir una línea en dos o, con
+# secuencias de escape, cambiar lo que muestra la terminal.
+_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+
+
+def escape_control(_logger: Any, _method: str, event: dict[str, Any]) -> dict[str, Any]:
+    """Escribe los caracteres de control de cualquier texto del evento como `\\x1b`, para que se vean y no actúen.
+    La traza de un error se agrega después y conserva sus saltos de línea."""
+
+    def clean(value: Any) -> Any:
+        if isinstance(value, str):
+            return _CONTROL.sub(lambda match: f"\\x{ord(match.group()):02x}", value)
+        if isinstance(value, dict):
+            return {key: clean(item) for key, item in value.items()}
         if isinstance(value, list | tuple):
             return [clean(item) for item in value]
         return value
@@ -97,6 +119,7 @@ def configure(level: str = "INFO", fmt: str = "console") -> None:
         structlog.stdlib.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True, key="ts"),
         redact,
+        escape_control,
     ]
     renderer = structlog.processors.JSONRenderer(ensure_ascii=False) if fmt == "json" else console_renderer()
     structlog.configure(

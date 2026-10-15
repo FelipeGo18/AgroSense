@@ -53,7 +53,9 @@ class Session(Base):
 
 
 class LoginAttempt(Base):
-    """Un intento fallido de entrar o de cambiar la contraseña. Sirve solo para el tope de 5 intentos en 15 minutos.
+    """Un intento fallido (o en curso) de entrar, de cambiar la contraseña o de borrar la cuenta. Sirve solo para el
+    tope general de 20 intentos en 15 minutos por usuario, desde cualquier conexión: se anota antes de verificar la
+    contraseña y se quita si era la buena. El tope de 5 por conexión vive en memoria (`backend/accounts/limits.py`).
 
     No guarda el usuario que se intentó (podría ser una contraseña escrita en el campo equivocado) sino su hash,
     ni la IP. Las filas viejas se borran solas: pasados los 15 minutos ya no cuentan.

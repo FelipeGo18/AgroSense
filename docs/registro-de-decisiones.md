@@ -7,6 +7,8 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Decisión | Elegida | Fecha |
 |---|---|---|
 | Herramienta de backlog | GitHub Projects | 10 oct 2026 |
+| Límites de las cuentas | En la API y en memoria, sin guardar la IP: 5 contraseñas malas por usuario y conexión, 20 por usuario desde cualquier conexión (en la base), 30 inicios de sesión y 10 registros por conexión, 4 cálculos de Argon2 a la vez. Se prefirió a un límite en el proxy porque el despliegue todavía no está definido | 15 oct 2026 |
+| Borrar la cuenta pide la contraseña | `DELETE /me` con `password`: una sesión abierta en un equipo prestado no basta para borrarlo todo | 15 oct 2026 |
 | Pesos por defecto de las señales (**provisionales**) | Agua 3, heladas 3, calor 3, suelo 2, oferta 3 y mercado 2: los de muestra de los diseños, en `backend/config/weights.yaml` (versión 0.1.0). Se aceptan para avanzar con «Sus prioridades»; falta la propuesta de Producto y agro y la aprobación formal (HU-198) | 13 oct 2026 |
 | Framework de la API | FastAPI (Axum descartado, ver `specs/04-stack.md`) | 10 oct 2026 |
 | Cuentas y regla R9 | Cuentas con lotes y temporadas; R9 reescrita (decisión 6) | 10 oct 2026 |

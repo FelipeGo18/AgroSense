@@ -219,10 +219,28 @@ function ActivityCard() {
   );
 }
 
-/** Borrar la cuenta: dice qué se pierde y pide confirmar. No se puede deshacer (R9). */
+/** Borrar la cuenta: dice qué se pierde y pide confirmar con la contraseña. No se puede deshacer (R9). */
 function DangerCard({ user }: { user: Profile }) {
   const remove = useDeleteAccount();
   const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [missing, setMissing] = useState(false);
+  const toggle = (next: boolean) => {
+    setOpen(next);
+    // Al cerrar no queda la contraseña escrita ni el error de la vez anterior.
+    if (!next) {
+      setPassword("");
+      setMissing(false);
+      remove.reset();
+    }
+  };
+  const confirm = () => {
+    if (!password) {
+      setMissing(true);
+      return;
+    }
+    remove.mutate({ password });
+  };
   return (
     <Card className="border-l-8 border-paleta-rojo">
       <Title>Borrar mi cuenta</Title>
@@ -234,13 +252,13 @@ function DangerCard({ user }: { user: Profile }) {
       </Button>
       <ConfirmDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={toggle}
         title="¿Borrar su cuenta?"
         cancelLabel="No, volver"
         confirmLabel="Sí, borrar todo"
         busy={remove.isPending}
         busyLabel="Borrando…"
-        onConfirm={() => remove.mutate()}
+        onConfirm={confirm}
       >
         <p>Se va a borrar todo esto, para siempre:</p>
         <ul className="flex flex-col gap-1.5">
@@ -257,6 +275,17 @@ function DangerCard({ user }: { user: Profile }) {
           ))}
         </ul>
         <p className="font-bold">No se puede deshacer.</p>
+        <TextField
+          label="Su contraseña, para confirmar"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setMissing(false);
+          }}
+          error={missing ? "Escriba su contraseña para borrar la cuenta." : undefined}
+        />
         {remove.error && <Alert>{remove.error instanceof ApiError ? remove.error.message : "Algo falló. Intente de nuevo."}</Alert>}
       </ConfirmDialog>
     </Card>

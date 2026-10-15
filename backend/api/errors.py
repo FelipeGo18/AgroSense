@@ -14,20 +14,26 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from backend.accounts.security import ServerBusy
 from backend.config.logging import get_logger
 from backend.db.state import remember_down
 
 log = get_logger("agrosense.api")
 
 REQUEST_ID_HEADER = "X-Request-ID"
+# Lo que dice el log en `route` cuando la petición no llegó a ninguna ruta de la API.
+NO_ROUTE = "[sin ruta]"
+SERVER_BUSY = "AgroSense está atendiendo a mucha gente en este momento. Intente de nuevo en unos segundos."
 ACCOUNTS_UNAVAILABLE = "Las cuentas no están disponibles en este momento. Puede seguir consultando sin cuenta."
 
 
 class ApiError(Exception):
     """Un error que la API sabe explicar. `message` es para la persona: en español y sin detalles internos."""
 
-    def __init__(self, status_code: int, code: str, message: str, log: str | None = None) -> None:
+    def __init__(self, status_code: int, code: str, message: str, log: str | None = None, headers: dict[str, str] | None = None) -> None:
         super().__init__(message)
+        # Cabeceras que van con la respuesta, como `Retry-After` en un 429.
+        self.headers = headers or {}
         self.status_code = status_code
         self.code = code
         self.message = message
@@ -40,12 +46,12 @@ def request_id_of(request: Request) -> str:
     return getattr(request.state, "request_id", "")
 
 
-def error_response(request: Request, status_code: int, code: str, message: str) -> JSONResponse:
+def error_response(request: Request, status_code: int, code: str, message: str, headers: dict[str, str] | None = None) -> JSONResponse:
     request_id = request_id_of(request)
     return JSONResponse(
         {"error": {"code": code, "message": message, "request_id": request_id}},
         status_code=status_code,
-        headers={REQUEST_ID_HEADER: request_id},
+        headers={**(headers or {}), REQUEST_ID_HEADER: request_id},
     )
 
 
@@ -118,13 +124,15 @@ def install(app: FastAPI) -> None:
         started = time.perf_counter()
         response = await call_next(request)
         response.headers[REQUEST_ID_HEADER] = request.state.request_id
-        # La plantilla de la ruta, no la URL: sin parámetros ni identificadores. Nunca el cuerpo (R9).
+        # La plantilla de la ruta, no la URL: sin parámetros ni identificadores. Nunca el cuerpo (R9). Las rutas propias de
+        # FastAPI (la documentación) no dejan plantilla, pero son fijas: va su dirección. Una dirección que no existe no
+        # se escribe: puede traer cualquier cosa, hasta secuencias que cambian lo que muestra la terminal.
         route = request.scope.get("route")
         endpoint = _endpoint(request)
         fields = {
             "detail": _detail(request, endpoint, response.status_code),
             "method": request.method,
-            "route": getattr(route, "path", request.url.path),
+            "route": getattr(route, "path", None) or (request.url.path if endpoint else NO_ROUTE),
             "status": response.status_code,
             "duration_ms": round((time.perf_counter() - started) * 1000),
         }
@@ -140,7 +148,7 @@ def install(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def api_error(request: Request, exc: ApiError):
         explain(request, exc.log)
-        return error_response(request, exc.status_code, exc.code, exc.message)
+        return error_response(request, exc.status_code, exc.code, exc.message, exc.headers)
 
     @app.exception_handler(RequestValidationError)
     async def invalid(request: Request, exc: RequestValidationError):
@@ -166,6 +174,12 @@ def install(app: FastAPI) -> None:
             detail="Cuentas no disponibles (503) porque la base de datos está apagada o no responde",
         )
         return error_response(request, 503, "accounts_database_down", ACCOUNTS_UNAVAILABLE)
+
+    @app.exception_handler(ServerBusy)
+    async def busy(request: Request, exc: ServerBusy):
+        # Demasiadas contraseñas calculándose a la vez: se responde en vez de dejar crecer la memoria sin tope.
+        explain(request, "Servicio ocupado (503): todos los cálculos de contraseña están en uso")
+        return error_response(request, 503, "server_busy", SERVER_BUSY, {"Retry-After": "5"})
 
     @app.exception_handler(Exception)
     async def unexpected(request: Request, exc: Exception):

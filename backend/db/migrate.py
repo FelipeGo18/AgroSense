@@ -11,6 +11,7 @@ La única excepción es una base recién creada, que no tiene nada que copiar.
 """
 
 import argparse
+import contextlib
 import os
 import shutil
 import subprocess  # noqa: S404 - se llama a pg_dump con argumentos fijos, sin pasar por un intérprete de órdenes
@@ -24,7 +25,9 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import URL, create_engine
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
 
+from backend.accounts import activity
 from backend.config import logging
 from backend.config.logging import get_logger
 from backend.config.settings import get_settings
@@ -66,11 +69,20 @@ def _dump_command(url: URL, output: Path) -> tuple[list[str], dict[str, str]]:
 
 
 def backup(url: URL, current: str, target: str, folder: Path = BACKUPS) -> Path:
-    """Copia toda la base de datos a un archivo. Si algo falla, lanza `BackupError` y no deja un archivo a medias."""
-    folder.mkdir(parents=True, exist_ok=True)
+    """Copia toda la base de datos a un archivo. Si algo falla, lanza `BackupError` y no deja un archivo a medias.
+
+    La copia trae las cuentas sin cifrar (hashes, sesiones, lotes): la carpeta y el archivo quedan solo para el dueño
+    (700 y 600). En Windows esos permisos no aplican y valen los de la carpeta del usuario.
+    """
+    folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     output = folder / backup_name(str(url.database), current, target, datetime.now(UTC))
     args, env = _dump_command(url, output)
     to_stdout = args[0] == "docker"
+    # Se crea vacío y con permisos de solo el dueño antes de escribir nada: `pg_dump --file` lo reescribe sin cambiarlos.
+    output.touch(mode=0o600)
+    # Por si la máscara del proceso no dejó el 600. Una carpeta montada desde Windows puede no aceptarlo: no frena la copia.
+    with contextlib.suppress(OSError):
+        output.chmod(0o600)
     try:
         with output.open("wb") if to_stdout else open(os.devnull, "wb") as sink:
             result = subprocess.run(args, env=env, stdout=sink, stderr=subprocess.PIPE, check=False, timeout=600)  # noqa: S603
@@ -164,6 +176,25 @@ def on_startup(url: URL, config: Config) -> None:
             backup=str(saved) if saved else None,
             detail=f"Migraciones aplicadas: de {before or 'vacía'} a {after}, {copy}",
         )
+    purge_activity(url)
+
+
+def purge_activity(url: URL) -> None:
+    """Borra los eventos de actividad de más de 180 días (HU-178). Corre al arrancar, aparte de los inicios de sesión,
+    para que la retención se cumpla aunque nadie entre. Si falla, lo registra y la API sube igual."""
+    log = get_logger("agrosense.migrate")
+    engine = create_engine(url, hide_parameters=True, connect_args={"connect_timeout": 3})
+    try:
+        with Session(engine) as db:
+            purged = activity.purge_old(db)
+            db.commit()
+    except Exception as error:  # noqa: BLE001 - la limpieza no tumba la API
+        log.warning("activity_purge_failed", detail=f"No se pudo borrar la actividad de más de 180 días: {type(error).__name__}")
+        return
+    finally:
+        engine.dispose()
+    if purged:
+        log.info("activity_purged", purged=purged, detail=f"Se borraron {purged} eventos de actividad de más de 180 días")
 
 
 def main() -> None:

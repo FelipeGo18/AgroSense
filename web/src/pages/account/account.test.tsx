@@ -174,9 +174,37 @@ describe("Mi cuenta (HU-160, HU-163)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(calls.some((call) => call.key.startsWith("DELETE"))).toBe(false);
     await userEvent.click(screen.getByRole("button", { name: "Borrar mi cuenta" }));
-    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Sí, borrar todo" }));
+    const again = await screen.findByRole("dialog");
+    // Sin la contraseña no se envía nada.
+    await userEvent.click(within(again).getByRole("button", { name: "Sí, borrar todo" }));
+    expect(within(again).getByText("Escriba su contraseña para borrar la cuenta.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("DELETE"))).toBe(false);
+    await userEvent.type(within(again).getByLabelText("Su contraseña, para confirmar"), "papa-criolla-2026");
+    await userEvent.click(within(again).getByRole("button", { name: "Sí, borrar todo" }));
     expect(await screen.findByRole("heading", { level: 1, name: "AgroSense" })).toBeInTheDocument();
-    expect(calls.some((call) => call.key === "DELETE /api/v1/me")).toBe(true);
+    expect(calls.find((call) => call.key === "DELETE /api/v1/me")?.body).toEqual({ password: "papa-criolla-2026" });
+  });
+
+  it("con una contraseña que no coincide dice por qué y la cuenta sigue", async () => {
+    fakeApi({
+      ...ME,
+      "DELETE /api/v1/me": {
+        status: 403,
+        body: { error: { code: "wrong_password", message: "La contraseña no coincide.", request_id: "" } },
+      },
+    });
+    open(PATHS.account);
+    await userEvent.click(await screen.findByRole("button", { name: "Borrar mi cuenta" }));
+    const dialog = await screen.findByRole("dialog", { name: "¿Borrar su cuenta?" });
+    await userEvent.type(within(dialog).getByLabelText("Su contraseña, para confirmar"), "no-es-esta");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sí, borrar todo" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("La contraseña no coincide.");
+    // Al cerrar y volver a abrir, no queda la contraseña escrita ni el error.
+    await userEvent.click(within(dialog).getByRole("button", { name: "No, volver" }));
+    await userEvent.click(screen.getByRole("button", { name: "Borrar mi cuenta" }));
+    const reopened = await screen.findByRole("dialog");
+    expect(within(reopened).getByLabelText("Su contraseña, para confirmar")).toHaveValue("");
+    expect(within(reopened).queryByRole("alert")).toBeNull();
   });
 
   it("cerrar sesión desde la barra lleva al inicio y no deja nada de la cuenta en pantalla", async () => {
