@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # La cookie de sesión solo viaja por HTTPS. Los navegadores tratan `localhost` como seguro, así que sirve en desarrollo.
     session_cookie_secure: bool = True
 
+    # La documentación de la API (`/api/docs` y `/api/openapi.json`) solo en desarrollo: en producción no se publica el
+    # mapa de la API. Docker Compose la enciende; `npm run api:types` la necesita.
+    api_docs: bool = Field(False, validation_alias="AGROSENSE_API_DOCS")
+
     # Logs de la terminal (HU-177): DEBUG solo en desarrollo; `console` con color o `json` (una línea por evento).
     log_level: str = Field("INFO", validation_alias="AGROSENSE_LOG_LEVEL")
     log_format: str = Field("console", validation_alias="AGROSENSE_LOG_FORMAT")

@@ -167,7 +167,7 @@ def test_sin_sesion_los_endpoints_de_cuenta_responden_401(client):
 def test_borrar_la_cuenta_borra_al_usuario_y_sus_sesiones(client, db):
     register(client)
     client.post("/api/v1/auth/login", json=LOGIN)  # una segunda sesión, como desde otro dispositivo
-    assert client.delete("/api/v1/me").status_code == 204
+    assert client.request("DELETE", "/api/v1/me", json={"password": ROSA["password"]}).status_code == 204
     assert db.scalar(select(User)) is None
     assert db.scalar(select(Session)) is None
     assert client.post("/api/v1/auth/login", json=LOGIN).status_code == 401

@@ -16,6 +16,7 @@ export interface paths {
         /**
          * Register
          * @description Crea la cuenta y deja la sesión abierta. Sin aceptar el consentimiento vigente no se crea nada (R9).
+         *     Cada conexión intenta hasta 10 registros por hora: así tampoco se puede probar en masa qué usuarios existen (409).
          */
         post: operations["register_api_v1_auth_register_post"];
         delete?: never;
@@ -75,6 +76,7 @@ export interface paths {
         /**
          * Delete Me
          * @description Borra la cuenta para siempre, con todo lo que cuelga de ella: sesiones, lotes, temporadas, tickets y su actividad (R9).
+         *     Pide la contraseña; una que no coincide cuenta como un intento fallido y la sesión sigue abierta.
          */
         delete: operations["delete_me_api_v1_me_delete"];
         options?: never;
@@ -208,6 +210,14 @@ export interface components {
             items: components["schemas"]["ActivityItem"][];
             /** Next Before */
             next_before: string | null;
+        };
+        /**
+         * DeleteBody
+         * @description Borrar la cuenta pide la contraseña: una sesión abierta en un equipo prestado no basta para borrarlo todo.
+         */
+        DeleteBody: {
+            /** Password */
+            password: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -449,7 +459,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteBody"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             204: {
@@ -457,6 +471,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

@@ -47,6 +47,8 @@ services:
       WEB_ORIGINS: ${WEB_ORIGINS:-http://localhost:5173}
       AGROSENSE_LOG_LEVEL: ${AGROSENSE_LOG_LEVEL:-INFO}
       AGROSENSE_LOG_FORMAT: ${AGROSENSE_LOG_FORMAT:-console}
+      # Compose es para desarrollo y pruebas: la documentación de la API queda encendida. En producción, false.
+      AGROSENSE_API_DOCS: ${AGROSENSE_API_DOCS:-true}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     volumes:

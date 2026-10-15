@@ -60,7 +60,8 @@ docker compose up --build app
 ```
 
 Ese comando levanta PostgreSQL, espera a que esté listo, aplica las migraciones (con una copia de seguridad antes) y
-deja la API en `http://127.0.0.1:8000`. La documentación de los endpoints queda en `http://127.0.0.1:8000/api/docs`.
+deja la API en `http://127.0.0.1:8000`. La documentación de los endpoints queda en `http://127.0.0.1:8000/api/docs` (solo en desarrollo, con
+`AGROSENSE_API_DOCS=true`, que Compose ya enciende).
 
 Para comprobar que está arriba:
 
