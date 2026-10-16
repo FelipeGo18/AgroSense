@@ -7,6 +7,8 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Decisión | Elegida | Fecha |
 |---|---|---|
 | Herramienta de backlog | GitHub Projects | 10 oct 2026 |
+| Límites municipales | Servicio MGN 2025 del geoportal del DANE, por departamento, simplificado a unos 10 m; un lote dibujado se valida contra él con ese margen | 15 oct 2026 |
+| Área de un lote dibujado | La calcula la API sobre el elipsoide WGS84 (pyproj); la web muestra al dibujar una estimación sobre una esfera de igual área | 15 oct 2026 |
 | Catálogo de municipios antes que los lotes | Se adelanta la parte de municipios de HU-044 con DIVIPOLA del DANE (datos reales, Boyacá y Cundinamarca) en vez de un catálogo de ejemplo: si el 28 de octubre cambia la región, cambia el adaptador | 15 oct 2026 |
 | Diseños de Mi finca y «Lote sin dibujar» (tanda 11) | Aprobados por Felipe para la entrega 1 de Mis lotes, sin el mapa | 15 oct 2026 |
 | Límites de las cuentas | En la API y en memoria, sin guardar la IP: 5 contraseñas malas por usuario y conexión, 20 por usuario desde cualquier conexión (en la base), 30 inicios de sesión y 10 registros por conexión, 4 cálculos de Argon2 a la vez. Se prefirió a un límite en el proxy porque el despliegue todavía no está definido | 15 oct 2026 |

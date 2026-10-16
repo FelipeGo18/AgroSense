@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
+import type { Boundary } from "./geo";
 
 export type Municipality = Schemas["MunicipalityItem"];
 export type LotListItem = Schemas["LotListItem"];
@@ -16,6 +17,23 @@ export function useMunicipalities() {
   return useQuery({
     queryKey: ["catalogs", "municipalities"],
     queryFn: () => api<Municipality[]>("/catalogs/municipalities"),
+    staleTime: Infinity,
+    retry: false,
+  });
+}
+
+export interface BoundaryFeature {
+  type: "Feature";
+  properties: { municipality_id: string; name: string; source_id: string };
+  geometry: Boundary;
+}
+
+/** El límite del municipio (GET /catalogs/municipalities/{id}/boundary): para centrar el mapa y validar el dibujo. */
+export function useBoundary(municipalityId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["catalogs", "boundary", municipalityId],
+    queryFn: () => api<BoundaryFeature>(`/catalogs/municipalities/${municipalityId}/boundary`),
+    enabled: Boolean(municipalityId),
     staleTime: Infinity,
     retry: false,
   });

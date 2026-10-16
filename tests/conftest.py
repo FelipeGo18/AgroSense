@@ -116,10 +116,29 @@ def dataset(tmp_path, monkeypatch):
     import polars as pl
 
     from pipeline.build import publish
-    from pipeline.sources import dane
+    from pipeline.sources import dane, dane_mgn
 
     folder = tmp_path / "published"
-    publish(SAMPLE_REGION, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), pl.DataFrame([dane.source(SAMPLE_META)]), folder)
+    sources = pl.DataFrame([dane.source(SAMPLE_META), dane_mgn.source(SAMPLE_META)])
+    municipalities = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
+    publish(SAMPLE_REGION, municipalities, sources, folder, sample_boundaries(municipalities))
     monkeypatch.setenv("AGROSENSE_DATA_DIR", str(folder))
     get_settings.cache_clear()
     return folder
+
+
+def sample_boundaries(municipalities):
+    """Límites de ejemplo (R5): un cuadrado de 0,1° (unos 11 km) alrededor del punto de cada municipio."""
+    import polars as pl
+    import shapely
+    from shapely.geometry import box
+
+    rows = [
+        {
+            "municipality_id": m["municipality_id"],
+            "geometry": shapely.to_wkb(box(m["lon"] - 0.05, m["lat"] - 0.05, m["lon"] + 0.05, m["lat"] + 0.05)),
+            "source_id": "dane_mgn_2025",
+        }
+        for m in municipalities.iter_rows(named=True)
+    ]
+    return pl.DataFrame(rows, schema={"municipality_id": pl.String, "geometry": pl.Binary, "source_id": pl.String})

@@ -31,4 +31,14 @@ def test_version_dice_el_dataset_la_region_y_sus_fuentes(dataset):
     assert body["created_at"] is not None
     # Las reglas agronómicas todavía no existen: no se inventa una versión.
     assert body["rules_version"] is None
-    assert [source["source_id"] for source in body["sources"]] == ["dane_divipola"]
+    assert [source["source_id"] for source in body["sources"]] == ["dane_divipola", "dane_mgn_2025"]
+
+
+def test_el_limite_del_municipio_en_geojson(dataset):
+    body = TestClient(app).get("/api/v1/catalogs/municipalities/15646/boundary").json()
+    assert body["type"] == "Feature" and body["geometry"]["type"] == "Polygon"
+    assert body["properties"] == {"municipality_id": "15646", "name": "Samacá", "source_id": "dane_mgn_2025"}
+
+
+def test_el_limite_de_un_municipio_fuera_de_la_region_responde_404(dataset):
+    assert TestClient(app).get("/api/v1/catalogs/municipalities/05001/boundary").status_code == 404
