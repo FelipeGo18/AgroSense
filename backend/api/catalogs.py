@@ -3,6 +3,9 @@
 Por ahora, los municipios de la región. Los cultivos, el límite y el suelo de cada municipio llegan con sus tablas.
 """
 
+from typing import Any
+
+import shapely.geometry
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
@@ -12,6 +15,8 @@ from backend.dataset import Dataset, DatasetUnavailable, get_dataset
 
 log = get_logger("agrosense.api")
 
+# La fuente de los límites municipales (pipeline/sources/dane_mgn.py).
+BOUNDARY_SOURCE = "dane_mgn_2025"
 DATASET_UNAVAILABLE = "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde."
 
 
@@ -42,3 +47,27 @@ def municipalities(request: Request, dataset: Dataset = Depends(require_dataset)
     items = sorted(dataset.municipalities.values(), key=lambda m: (m.department, m.name, m.municipality_id))
     explain(request, f"Municipios consultados: {len(items)} del dataset {dataset.version}")
     return [MunicipalityItem(**{field: getattr(m, field) for field in MunicipalityItem.model_fields}) for m in items]
+
+
+@router.get("/municipalities/{municipality_id}/boundary")
+def boundary(municipality_id: str, request: Request, dataset: Dataset = Depends(require_dataset)) -> dict[str, Any]:
+    """El límite del municipio en GeoJSON (WGS84), para centrar el mapa y validar el dibujo del lote en la web."""
+    municipality = dataset.municipalities.get(municipality_id)
+    if municipality is None:
+        raise ApiError(
+            404,
+            "not_found",
+            "Ese municipio no está entre los de la región de AgroSense.",
+            log="Límite pedido de un municipio fuera del catálogo",
+        )
+    geometry = dataset.boundaries.get(municipality_id)
+    if geometry is None:
+        detail = f"Datos no disponibles (503) porque el dataset {dataset.version} no trae el límite de ese municipio"
+        log.warning("dataset_unavailable", detail=detail)
+        raise ApiError(503, "dataset_unavailable", DATASET_UNAVAILABLE, log=detail)
+    explain(request, f"Límite del municipio consultado (dataset {dataset.version})")
+    return {
+        "type": "Feature",
+        "properties": {"municipality_id": municipality_id, "name": municipality.name, "source_id": BOUNDARY_SOURCE},
+        "geometry": shapely.geometry.mapping(geometry),
+    }

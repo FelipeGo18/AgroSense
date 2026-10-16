@@ -6,6 +6,8 @@ export const PATHS = {
   addLot: "/mi-finca/agregar",
   lot: (lotId: string) => `/mi-finca/lotes/${lotId}` as const,
   editLot: (lotId: string) => `/mi-finca/lotes/${lotId}/editar` as const,
+  /** Editar lote con el mapa listo para dibujar: desde «Dibujar en el mapa» de un lote sin dibujar. */
+  drawLot: (lotId: string) => `/mi-finca/lotes/${lotId}/editar?dibujar` as const,
   howItWorks: "/como-funciona",
   login: "/entrar",
   signup: "/crear-cuenta",

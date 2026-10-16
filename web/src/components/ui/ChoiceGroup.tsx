@@ -46,7 +46,7 @@ export function ChoiceGroup<T extends string | number | boolean | null>({ legend
                 onChange={() => onChange(choice.value)}
                 className="peer absolute inset-0 cursor-pointer opacity-0"
               />
-              <span className={`relative font-bold ${checked ? "text-texto-sobre-oscuro" : ""}`}>{choice.label}</span>
+              <span className={`pointer-events-none relative font-bold ${checked ? "text-texto-sobre-oscuro" : ""}`}>{choice.label}</span>
               {/* El foco del teclado se ve en la opción, no en el radio escondido. */}
               <span
                 aria-hidden="true"

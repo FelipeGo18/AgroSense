@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
+import shapely
+from shapely.geometry.base import BaseGeometry
 
 from backend.config.settings import get_settings
 
@@ -39,6 +41,9 @@ class Dataset:
     # Por `municipality_id`, en el orden de la tabla (por código).
     municipalities: dict[str, Municipality]
     sources: list[dict[str, Any]]
+    # El límite de cada municipio (WGS84), preparado para preguntar rápido si un lote cae dentro. Vacío si el dataset
+    # no trae `municipality_boundaries`: entonces no se puede dibujar ni validar un lote (R1).
+    boundaries: dict[str, BaseGeometry]
 
 
 def load(folder: Path) -> Dataset:
@@ -49,6 +54,8 @@ def load(folder: Path) -> Dataset:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         municipalities = pl.read_parquet(folder / "municipalities.parquet")
         sources = pl.read_parquet(folder / "sources.parquet")
+        boundaries_path = folder / "municipality_boundaries.parquet"
+        boundaries = pl.read_parquet(boundaries_path) if boundaries_path.exists() else None
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -68,7 +75,17 @@ def load(folder: Path) -> Dataset:
             for row in municipalities.iter_rows(named=True)
         },
         sources=sources.to_dicts(),
+        boundaries={} if boundaries is None else _geometries(boundaries),
     )
+
+
+def _geometries(table: pl.DataFrame) -> dict[str, BaseGeometry]:
+    geometries = {}
+    for municipality_id, wkb in table.select("municipality_id", "geometry").iter_rows():
+        geometry = shapely.from_wkb(wkb)
+        shapely.prepare(geometry)
+        geometries[municipality_id] = geometry
+    return geometries
 
 
 @lru_cache

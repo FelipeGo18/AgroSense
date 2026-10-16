@@ -1,18 +1,22 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
+import { MapScene, PANEL_WIDTH } from "@/components/layout/MapScene";
+import { LotMap, type DrawMode } from "@/components/map/LotMap";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { ChoiceGroup } from "@/components/ui/ChoiceGroup";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { TextField } from "@/components/ui/TextField";
+import { areaHa, areaM2, formatM2, pointsOutside, type LotPolygon } from "@/features/farm/geo";
 import {
   byId,
   formatHa,
   haText,
   parseHa,
+  useBoundary,
   useDeleteLot,
   useLot,
   useMunicipalities,
@@ -20,12 +24,13 @@ import {
   type LotDetail,
 } from "@/features/farm/lots";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
-import { AREA_ERROR, Eyebrow, IRRIGATION, IRRIGATION_HINT, NAME_ERROR, placeName } from "./common";
+import { DRAW_STEPS } from "./AddLotPage";
+import { AREA_ERROR, DrawSteps, DrawnArea, Eyebrow, IRRIGATION, IRRIGATION_HINT, NAME_ERROR, OutsideWarning, placeName } from "./common";
 
 /**
- * Editar lote (HU-164). Figma: «D1 · Editar lote» y «confirmar borrar». Sin dibujo, el área se escribe (en vez del
- * contorno en el mapa, que llega con la entrega 2). Cambia el nombre, el área y el riego (PATCH /lots/{id}); «Borrar
- * este lote» pide confirmar (DELETE /lots/{id}). En escritorio va en dos columnas, para que quepa sin scroll.
+ * Editar lote (HU-164). Figma: «D1 · Editar lote» y «confirmar borrar». El contorno se corrige moviendo sus puntos en
+ * el mapa; un lote sin dibujar se puede dibujar (con `?dibujar` el mapa abre listo para eso) o seguir con el área
+ * escrita. Cambia el nombre, el contorno o el área y el riego (PATCH /lots/{id}); «Borrar este lote» pide confirmar.
  */
 export function EditLotPage() {
   return <RequireSession>{() => <EditLotLoader />}</RequireSession>;
@@ -61,99 +66,141 @@ function EditLotLoader() {
 
 function EditLot({ lot }: { lot: LotDetail }) {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const update = useUpdateLot(lot.lot_id);
   const remove = useDeleteLot(lot.lot_id);
   const municipalities = useMunicipalities();
+  const boundary = useBoundary(lot.municipality_id);
+  const saved = lot.geometry as unknown as LotPolygon | null;
+  const [geometry, setGeometry] = useState<LotPolygon | null>(saved);
+  const [mode, setMode] = useState<DrawMode>(saved ? "move" : params.has("dibujar") ? "draw" : "view");
   const [name, setName] = useState(lot.name);
   const [area, setArea] = useState(haText(lot.area_ha));
   const [irrigated, setIrrigated] = useState<boolean | null>(lot.irrigated ?? null);
   const [tried, setTried] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const errors = { area: parseHa(area) === null ? AREA_ERROR : undefined, name: name.trim() ? undefined : NAME_ERROR };
+  const place = byId(municipalities.data).get(lot.municipality_id);
+  const town = place?.name ?? "su municipio";
+  const outside = Boolean(geometry && boundary.data && pointsOutside(geometry, boundary.data.geometry).length > 0);
+  // Un lote dibujado sigue dibujado: si se borra el dibujo, hay que volver a dibujarlo antes de guardar.
+  const errors = {
+    area: !geometry && parseHa(area) === null ? AREA_ERROR : undefined,
+    name: name.trim() ? undefined : NAME_ERROR,
+    drawing: saved && !geometry ? "Vuelva a dibujar el contorno del lote." : undefined,
+  };
   const sown = lot.current_seasons.reduce((sum, season) => sum + season.area_ha, 0);
   const crops = lot.current_seasons.length;
-  const summary = `${crops === 0 ? "Sin siembra en curso" : crops === 1 ? "1 siembra en curso" : `${crops} siembras en curso`} · ${formatHa(lot.area_ha)}`;
+  const summary = `${placeName(place, lot.municipality_id)} · ${crops === 0 ? "Sin siembra en curso" : crops === 1 ? "1 siembra en curso" : `${crops} siembras en curso`}`;
 
   const save = (event: FormEvent) => {
     event.preventDefault();
     setTried(true);
-    const areaHa = parseHa(area);
-    if (areaHa === null || errors.name) return;
+    if (outside || Object.values(errors).some(Boolean)) return;
+    const changedDrawing = JSON.stringify(geometry) !== JSON.stringify(saved);
     update.mutate(
-      { name: name.trim(), area_ha: areaHa, irrigated },
+      {
+        name: name.trim(),
+        irrigated,
+        ...(geometry ? (changedDrawing ? { geometry: { ...geometry } } : {}) : { area_ha: parseHa(area)! }),
+      },
       { onSuccess: () => void navigate(PATHS.lot(lot.lot_id), { state: { notice: "Cambios guardados." } }) },
     );
   };
 
   return (
-    <FormScene scene="region" mood="idle" wide rejected={update.error ?? remove.error}>
+    <MapScene
+      map={
+        <LotMap
+          boundary={boundary.data?.geometry ?? null}
+          focus={saved}
+          panelWidth={PANEL_WIDTH}
+          drawing={{
+            geometry,
+            onChange: setGeometry,
+            mode,
+            onModeChange: setMode,
+            areaLabel: geometry ? formatHa(areaHa(geometry)) : undefined,
+            outside,
+          }}
+        />
+      }
+    >
       <title>{`Editar ${lot.name} · AgroSense`}</title>
       <header>
         <Eyebrow>Editar lote</Eyebrow>
         <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)] break-words">{lot.name}</h1>
         <p className="text-[15px] text-texto-secundario">{summary}</p>
       </header>
+      {mode === "draw" && <DrawSteps steps={DRAW_STEPS} />}
       {update.isError && <Alert>{update.error instanceof ApiError ? update.error.message : "No se pudo guardar. Intente de nuevo."}</Alert>}
       <form onSubmit={save} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-x-8 gap-y-4 lg:grid-cols-2">
-          <div className="flex flex-col gap-4">
-            <TextField
-              label="Nombre del lote"
-              name="name"
-              maxLength={60}
-              autoComplete="off"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              error={tried ? errors.name : undefined}
-            />
-            <TextField
-              label="Área del lote (ha)"
-              name="area_ha"
-              inputMode="decimal"
-              autoComplete="off"
-              value={area}
-              onChange={(event) => setArea(event.target.value)}
-              hint={sown > 0 ? `No puede quedar más chico que lo sembrado (${formatHa(sown)}).` : "En hectáreas, escrita a mano."}
-              error={tried ? errors.area : undefined}
-            />
-            <div>
-              <p className="font-bold">Zona</p>
-              <p>{placeName(byId(municipalities.data).get(lot.municipality_id), lot.municipality_id)}</p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-4">
-            <ChoiceGroup
-              legend="¿Este lote tiene riego?"
-              choices={IRRIGATION}
-              value={irrigated}
-              onChange={setIrrigated}
-              hint={IRRIGATION_HINT}
-            />
-            <p className="bg-[#EEF2E6] px-4 py-3 text-[14px] leading-snug">
-              Al cambiar el riego se recalculan el diagnóstico, las estrategias y el agua de este lote. Las siembras ya registradas guardan
-              el diagnóstico que vieron.
+        {outside ? (
+          <OutsideWarning place={town} />
+        ) : geometry ? (
+          <>
+            <DrawnArea ha={formatHa(areaHa(geometry))} m2={formatM2(areaM2(geometry))} />
+            <p className="-mt-2 text-[14px] text-texto-secundario">
+              Mueva los puntos en el mapa para cambiar el contorno.
+              {sown > 0 && ` No puede quedar más chico que lo sembrado (${formatHa(sown)}).`}
             </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 items-center gap-2 lg:grid-cols-2 lg:gap-8">
-          <Button type="submit" loading={update.isPending} loadingText="Guardando…">
-            Guardar cambios
-          </Button>
-          <Link to={PATHS.lot(lot.lot_id)} className={`${LINK} min-h-11 self-center justify-self-center py-2`}>
-            Cancelar
-          </Link>
-        </div>
+          </>
+        ) : (
+          <>
+            {tried && errors.drawing && (
+              <p role="alert" className="font-bold text-oscuro-rojo">
+                {errors.drawing}
+              </p>
+            )}
+            {!saved && (
+              <TextField
+                label="Área del lote (ha)"
+                name="area_ha"
+                inputMode="decimal"
+                autoComplete="off"
+                value={area}
+                onChange={(event) => setArea(event.target.value)}
+                hint={
+                  sown > 0
+                    ? `No puede quedar más chico que lo sembrado (${formatHa(sown)}).`
+                    : "Escrita a mano. O dibuje el lote en el mapa."
+                }
+                error={tried ? errors.area : undefined}
+              />
+            )}
+          </>
+        )}
+        <TextField
+          label="Nombre del lote"
+          name="name"
+          maxLength={60}
+          autoComplete="off"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          error={tried ? errors.name : undefined}
+        />
+        <ChoiceGroup
+          legend="¿Este lote tiene riego?"
+          choices={IRRIGATION}
+          value={irrigated}
+          onChange={setIrrigated}
+          hint={IRRIGATION_HINT}
+        />
+        <p className="bg-[#EEF2E6] px-4 py-3 text-[14px] leading-snug">
+          Al cambiar el riego se recalculan el diagnóstico, las estrategias y el agua de este lote. Las siembras ya registradas guardan el
+          diagnóstico que vieron.
+        </p>
+        <Button type="submit" disabled={outside} loading={update.isPending} loadingText="Guardando…">
+          Guardar cambios
+        </Button>
+        <Link to={PATHS.lot(lot.lot_id)} className={`${LINK} min-h-11 self-center py-2`}>
+          Cancelar
+        </Link>
       </form>
-      <section
-        aria-labelledby="borrar"
-        className="mt-1 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t-2 border-superficie-borde pt-4"
-      >
-        <div className="min-w-0 flex-1 basis-[260px]">
-          <h2 id="borrar" className="text-[18px]">
-            Borrar este lote
-          </h2>
-          <p className="text-[14px] text-texto-secundario">Deja de verse con sus siembras y su historial.</p>
-        </div>
+      <section aria-labelledby="borrar" className="flex flex-col gap-2 border-t-2 border-superficie-borde pt-4">
+        <h2 id="borrar" className="text-[18px]">
+          Borrar este lote
+        </h2>
+        <p className="text-[14px] text-texto-secundario">Deja de verse con sus siembras y su historial.</p>
         <Button variant="danger" className="w-full sm:w-[220px]" onClick={() => setConfirming(true)}>
           Borrar este lote
         </Button>
@@ -185,6 +232,6 @@ function EditLot({ lot }: { lot: LotDetail }) {
         </ul>
         {remove.error && <Alert>{remove.error instanceof ApiError ? remove.error.message : "Algo falló. Intente de nuevo."}</Alert>}
       </ConfirmDialog>
-    </FormScene>
+    </MapScene>
   );
 }

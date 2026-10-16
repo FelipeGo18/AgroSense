@@ -168,6 +168,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalogs/municipalities/{municipality_id}/boundary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boundary
+         * @description El límite del municipio en GeoJSON (WGS84), para centrar el mapa y validar el dibujo del lote en la web.
+         */
+        get: operations["boundary_api_v1_catalogs_municipalities__municipality_id__boundary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/lots": {
         parameters: {
             query?: never;
@@ -183,7 +203,8 @@ export interface paths {
         put?: never;
         /**
          * Create Lot
-         * @description Crea un lote sin dibujar. Guarda solo lo mínimo: nombre, municipio, área y riego (R9).
+         * @description Crea un lote, dibujado o con el área escrita a mano. Guarda solo lo mínimo: nombre, municipio, contorno o área y
+         *     riego (R9). La ubicación del lote es un dato personal que nombra el consentimiento (HU-163).
          */
         post: operations["create_lot_api_v1_lots_post"];
         delete?: never;
@@ -212,7 +233,8 @@ export interface paths {
         head?: never;
         /**
          * Update Lot
-         * @description Cambia el nombre, el municipio, el área o el riego. El área no puede quedar por debajo de lo sembrado (422).
+         * @description Cambia el nombre, el municipio, el contorno, el área o el riego. Con contorno, el área sale del dibujo y la enviada
+         *     se ignora; el dibujo no se quita, se corrige. El área no puede quedar por debajo de lo sembrado (422).
          */
         patch: operations["update_lot_api_v1_lots__lot_id__patch"];
         trace?: never;
@@ -336,7 +358,7 @@ export interface components {
             /** Municipality Id */
             municipality_id: string;
             /** Area Ha */
-            area_ha: number;
+            area_ha?: number | null;
             /** Irrigated */
             irrigated?: boolean | null;
             /** Geometry */
@@ -857,6 +879,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MunicipalityItem"][];
+                };
+            };
+        };
+    };
+    boundary_api_v1_catalogs_municipalities__municipality_id__boundary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                municipality_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

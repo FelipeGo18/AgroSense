@@ -15,9 +15,10 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
+import shapely
 import yaml
 
-from pipeline.sources import dane
+from pipeline.sources import dane, dane_mgn
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 PUBLISHED = Path("data/published")
@@ -53,12 +54,39 @@ def validate(municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
         raise ValidationError(f"Filas sin fuente o con una fuente que no está en `sources`: {sorted(cited - known) or 'sin source_ids'}")
 
 
-def publish(region: dict[str, Any], municipalities: pl.DataFrame, sources: pl.DataFrame, folder: Path = PUBLISHED) -> dict[str, Any]:
+def validate_boundaries(boundaries: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """Cada municipio publicado tiene un solo límite, válido, de área mayor que cero, y con una fuente que existe (R7, R8)."""
+    ids, wanted = boundaries["municipality_id"].to_list(), set(municipalities["municipality_id"].to_list())
+    if len(ids) != len(set(ids)):
+        raise ValidationError("`municipality_boundaries` tiene municipios repetidos.")
+    missing, extra = sorted(wanted - set(ids)), sorted(set(ids) - wanted)
+    if missing or extra:
+        raise ValidationError(f"Límites que no cuadran con `municipalities`: faltan {missing[:5]}, sobran {extra[:5]}")
+    for municipality_id, wkb in boundaries.select("municipality_id", "geometry").iter_rows():
+        geometry = shapely.from_wkb(wkb)
+        if geometry.geom_type not in ("Polygon", "MultiPolygon") or not geometry.is_valid or geometry.area <= 0:
+            raise ValidationError(f"El límite de {municipality_id} no es un polígono válido.")
+    unknown = set(boundaries["source_id"].to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"Límites con una fuente que no está en `sources`: {sorted(unknown)}")
+
+
+def publish(
+    region: dict[str, Any],
+    municipalities: pl.DataFrame,
+    sources: pl.DataFrame,
+    folder: Path = PUBLISHED,
+    boundaries: pl.DataFrame | None = None,
+) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4)."""
     validate(municipalities, sources)
+    if boundaries is not None:
+        validate_boundaries(boundaries, municipalities, sources)
     folder.mkdir(parents=True, exist_ok=True)
     municipalities.write_parquet(folder / "municipalities.parquet")
     sources.sort("source_id").write_parquet(folder / "sources.parquet")
+    if boundaries is not None:
+        boundaries.write_parquet(folder / "municipality_boundaries.parquet")
     manifest = {
         "dataset_version": region["dataset_version"],
         # Las reglas agronómicas (catálogo) todavía no existen: no hay versión que decir.
@@ -72,18 +100,24 @@ def publish(region: dict[str, Any], municipalities: pl.DataFrame, sources: pl.Da
             "sources": {"rows": sources.height, "coverage": "todas las fuentes de lo publicado"},
         },
     }
+    if boundaries is not None:
+        manifest["tables"]["municipality_boundaries"] = {"rows": boundaries.height, "coverage": region["region"]["name"]}
     (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return manifest
 
 
 def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE) -> dict[str, Any]:
     region = load_region()
+    departments = region["region"]["departments"]
     if download:
         dane.download(cache)
+        dane_mgn.download(departments, cache)
     rows, meta = dane.read_cache(cache)
-    municipalities = dane.municipalities(rows, region["region"]["departments"])
-    sources = pl.DataFrame([dane.source(meta)])
-    return publish(region, municipalities, sources, folder)
+    municipalities = dane.municipalities(rows, departments)
+    features, mgn_meta = dane_mgn.read_cache(departments, cache)
+    boundaries = dane_mgn.boundaries(features)
+    sources = pl.DataFrame([dane.source(meta), dane_mgn.source(mgn_meta)])
+    return publish(region, municipalities, sources, folder, boundaries)
 
 
 def main() -> None:
