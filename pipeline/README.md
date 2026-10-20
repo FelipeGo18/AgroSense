@@ -14,6 +14,8 @@ uv run python -m pipeline.build               # publica otra vez desde la caché
 - Antes de escribir se valida todo: `municipality_id` de 5 dígitos y sin repetir (R7), nombre, coordenadas en rango y
   que cada fila cite una fuente que está en `sources` (R8). Si algo falla, no se publica nada.
 - Lo que todavía no tiene fuente va nulo, nunca inventado (R1).
+- Los precios de SIPSA, además, los baja la API cada día por su cuenta (HU-222, `backend/README.md`): lo publicado
+  aquí es el punto de partida.
 - `--descargar` baja también SIPSA: unos 300 MB que tardan un par de minutos. Sin `--descargar` hace falta su caché en
   `data/raw/sipsa/`.
 

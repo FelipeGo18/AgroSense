@@ -22,6 +22,19 @@ La API lee el dataset del pipeline de `AGROSENSE_DATA_DIR` (por defecto `data/pu
 Solo lo lee. Si no está, los catálogos y crear o editar un lote responden 503 `dataset_unavailable` y el log dice por qué;
 lo demás sigue. Se publica con `uv run python -m pipeline.build` (`pipeline/README.md`).
 
+## Precios de SIPSA al día (HU-222)
+
+Con `AGROSENSE_MARKET_REFRESH=true` (Docker Compose lo trae encendido), la API baja los precios del DANE al arrancar si
+lo que tiene es viejo y después cada día a las 3:00 p. m. de Bogotá (el DANE publica a las 2:00). Los valida con las
+reglas del pipeline y los guarda como una versión nueva en `AGROSENSE_MARKET_DIR` (por defecto `data/market`, en el
+volumen `market_data`). Si algo falla, sigue sirviendo la última versión buena y reintenta en una hora. Cada respuesta
+de `/market/*` dice su `version` y su `updated_at` (R4). La descarga pesa unos 300 MB y tarda un par de minutos; la
+API sigue atendiendo mientras tanto.
+
+```bash
+docker compose exec app python -m backend.market_updates   # bajar los precios ahora, sin esperar a las 3:00 p. m.
+```
+
 ## Seguridad de la cuenta
 
 - Toda respuesta lleva `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy` y,

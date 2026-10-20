@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # Dónde está el dataset publicado por el pipeline (Parquet y manifest.json). Solo se lee.
     data_dir: Path = Field(Path("data/published"), validation_alias="AGROSENSE_DATA_DIR")
 
+    # Precios de SIPSA al día (HU-222): la API los baja del DANE cada día a las 3:00 p. m. y los guarda aquí. Apagado por
+    # defecto (pruebas, un equipo sin red); Docker Compose lo enciende.
+    market_refresh: bool = Field(False, validation_alias="AGROSENSE_MARKET_REFRESH")
+    market_dir: Path = Field(Path("data/market"), validation_alias="AGROSENSE_MARKET_DIR")
+
     # Logs de la terminal (HU-177): DEBUG solo en desarrollo; `console` con color o `json` (una línea por evento).
     log_level: str = Field("INFO", validation_alias="AGROSENSE_LOG_LEVEL")
     log_format: str = Field("console", validation_alias="AGROSENSE_LOG_FORMAT")

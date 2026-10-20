@@ -105,9 +105,15 @@ SAMPLE_REGION = {
 def no_dataset(tmp_path_factory, monkeypatch):
     """Cada prueba parte sin dataset publicado: nada depende de lo que haya en data/published."""
     monkeypatch.setenv("AGROSENSE_DATA_DIR", str(tmp_path_factory.mktemp("sin-dataset")))
+    # Las pruebas no bajan precios del DANE (HU-222): las que lo prueban usan una descarga de ejemplo.
+    monkeypatch.setenv("AGROSENSE_MARKET_REFRESH", "false")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+    # Los precios bajados viven en memoria: cada prueba parte sin ninguna versión.
+    from backend import market_updates
+
+    market_updates._serve(None)
 
 
 @pytest.fixture

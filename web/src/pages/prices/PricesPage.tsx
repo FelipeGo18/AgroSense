@@ -12,6 +12,7 @@ import {
   changeText,
   formatDay,
   formatPesos,
+  formatUpdated,
   monthName,
   searchKey,
   seasonExtremes,
@@ -101,7 +102,9 @@ export function PricesPage() {
               />
             </div>
             <p className="mt-4 text-[15px] text-texto-secundario">
-              Precios del {formatDay(prices.data.date)} en {prices.data.market.name}. {SOURCE}
+              Precios del {formatDay(prices.data.date)} en {prices.data.market.name}.
+              {prices.data.updated_at && ` Actualizados del DANE el ${formatUpdated(prices.data.updated_at)}; se actualizan cada día.`}{" "}
+              {SOURCE}
             </p>
 
             <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
