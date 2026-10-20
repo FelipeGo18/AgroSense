@@ -183,7 +183,8 @@ def topbar(w, active=None, user=None, light_on=False):
     body = [poly(chamfer(32, 26, w - 64, 64, 14), BORDE), poly(chamfer(32, 20, w - 64, 64, 14), WHITE)]
     body += logo(56, 30)
     x = 300
-    for item in ("Consultar", "Mi finca", "Cómo funciona"):
+    # «Precios» (HU-221) va en la barra desde 1280 px: a 1024 px no caben cuatro enlaces (web/src/components/layout/navLinks.ts).
+    for item in ("Consultar", "Mi finca", "Precios", "Cómo funciona"):
         on = item == active
         body.append(text(x, 60, item, 18, 700 if on else 400))
         if on:

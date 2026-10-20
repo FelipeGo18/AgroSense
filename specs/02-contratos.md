@@ -28,6 +28,8 @@ Los identificadores del código van en inglés y en `snake_case` para evitar til
 | `crop_stages` | `crop_id`, `stage` | `days`, `kc`, `gdd` (grados-día que cierran la etapa; nulo si no hay fuente), `frost_sensitive` (la helada daña en esta etapa), `heat_sensitive` (el calor por encima de `heat_max_c` daña en esta etapa), `source_id` | Catálogo (FAO-56 o fuente local) |
 | `supply_semester` | `municipality_id`, `crop_id`, `year`, `semester`, `source_id` | `planted_ha`, `harvested_ha`, `production_t`, `yield_t_ha`, `planted_change_pct`, `dept_share_pct`, `preliminary`, `quality` | EVA |
 | `market_month` (P1) | `crop_id`, `market_id`, `month` | `price_cop_kg`, `volume_t`, `seasonal_index`, `quality`, `source_id` | SIPSA |
+| `market_price_day` (HU-221; agregada el 20 de octubre de 2026, **por aprobar**) | `product_id`, `market_id`, `date` | `product` (nombre del DANE sin asterisco), `group`, `several_varieties` (el asterisco de SIPSA: junta variedades), `market`, `municipality_id` (de la central), `min_cop_kg` y `max_cop_kg` (nulos si el DANE no los da), `avg_cop_kg`, `source_id`. Solo las centrales de `region.yaml` | SIPSA (servicio web del DANE) |
+| `market_price_season` (HU-221; **por aprobar**) | `product_id`, `market_id`, `month` | `seasonal_index` (precio del mes sobre el promedio de su mismo año, promediado entre años; 1 = un mes como cualquiera), `years`, `first_year`, `last_year`, `source_id`. Solo productos con 3 o más años completos | SIPSA |
 | `municipality_boundaries` | `municipality_id` | `geometry` (polígono WGS84 simplificado), `source_id` | DANE (Marco Geoestadístico Nacional) |
 | `soil_grid` | `cell_id` | `lon`, `lat`, `ph`, `ph_p05`, `ph_p95`, `soc_g_kg` (carbono orgánico), `nitrogen_g_kg`, `clay_pct`, `sand_pct`, `silt_pct`, `texture_class`; promedio ponderado de 0 a 30 cm de cada celda de 250 m de la región; `source_id` | SoilGrids de ISRIC (HU-181) |
 | `soil_municipality` | `municipality_id` | Las mismas propiedades que `soil_grid`, como mediana de las celdas dentro del municipio, más `cells`, `quality` y `source_id` | SoilGrids (HU-181) |
@@ -164,6 +166,8 @@ Nunca se escriben: contraseñas, tokens, cookies, la cabecera `Authorization`, p
 | Endpoint | Uso | Prioridad |
 |---|---|---|
 | `GET /api/v1/catalogs/municipalities` | Municipios habilitados de la región: una lista de `municipality_id`, `name`, `department`, `lat`, `lon`, por departamento y nombre. Sin dataset publicado, `503` `dataset_unavailable` | P0 |
+| `GET /api/v1/market/prices?market_id=` (HU-221, **por aprobar**) | El último precio de cada producto en la central (por defecto, la primera de la región), con `week_ago` (el último precio hasta 7 días antes) y `change_pct`, ambos nulos si no hay con qué comparar; `markets`, `date` y `source_id`. Sin precios publicados, `503` `market_unavailable`; una central que no está, `404` `unknown_market` | P1 |
+| `GET /api/v1/market/prices/{product_id}?market_id=` (HU-221, **por aprobar**) | Los precios del último año del producto en la central (`days`) y su temporada (`season`, nula sin años completos suficientes). Un producto sin precios en esa central, `404` `unknown_product` | P1 |
 | `GET /api/v1/catalogs/crops` | Cultivos habilitados: `crop_id`, `name_es`, `kind`, `archetype` (cómo se dibuja, HU-187), `family`, `cycle_months`. El diagnóstico solo acepta `kind = crop`; las rotaciones aceptan los tres | P0 |
 | `GET /api/v1/catalogs/municipalities/{municipality_id}/soil` | Suelo estimado del municipio (`soil_municipality`) con su incertidumbre y `source_id` | P0 |
 | `GET /api/v1/trends?municipality_id=&crop_id=&sowing_date=` | Series para las gráficas: agua, área sembrada y verdor (ver «Cuerpos y respuestas») | P0 |
@@ -283,6 +287,7 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 | Cultivo que no es apto para la zona | `200` con `suitability.level = not_suitable`, luz `red` y acción `rotate`; sin ventanas |
 | Las cuentas no se pueden atender (agregado el 12 de octubre de 2026; aprobado por Felipe): la base de datos no responde, o su esquema no está en la última migración que trae el código | `503` en los endpoints de cuenta, con `code = accounts_database_down` o `accounts_migration_pending`. El mensaje para la persona es el mismo en los dos casos («Las cuentas no están disponibles en este momento. Puede seguir consultando sin cuenta.»); el motivo exacto va al log de la terminal. Los endpoints que no usan la base de datos siguen respondiendo |
 | El dataset publicado no está o no se puede leer (agregado el 15 de octubre de 2026; aprobado por Felipe) | `503` `dataset_unavailable` en los endpoints que lo leen (catálogos y crear o editar un lote); el motivo va al log. `GET /version` responde igual, con los campos del dataset nulos |
+| El dataset publicado no trae precios (HU-221, **por aprobar**) | `503` `market_unavailable` en `/market/*` |
 | Fallo interno | `500` con `{"error": {"code": "...", "message": "...", "request_id": "..."}}` |
 
 ## Cuerpos y respuestas
