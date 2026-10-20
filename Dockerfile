@@ -30,7 +30,8 @@ COPY data/published ./data/published
 COPY tests ./tests
 
 # Sin privilegios dentro del contenedor.
-RUN useradd --create-home agrosense && mkdir -p /app/backups && chown -R agrosense /app
+# data/market: los precios que la API baja cada día (HU-222); el volumen de Compose hereda este dueño.
+RUN useradd --create-home agrosense && mkdir -p /app/backups /app/data/market && chown -R agrosense /app
 USER agrosense
 
 EXPOSE 8000

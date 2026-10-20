@@ -40,6 +40,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-189 | Lluvia en años de El Niño y La Niña | P1 | M | pendiente | |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | pendiente | |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-221 | Precios en la central de abastos | P1 | L | hecha | Nueva (20 oct). Falta aprobar el contrato y el diseño |
+| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | hecha | Nueva (20 oct). La API baja SIPSA cada día. Falta aprobar el contrato |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | pendiente | Fichas de los 7 cultivos del MVP |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-199 | Límites óptimos y absolutos de cada cultivo | P0 | M | pendiente | |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | en curso | Archivo con pesos provisionales y `GET /version`; falta la propuesta de Producto y agro y su aprobación |

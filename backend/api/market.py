@@ -4,12 +4,14 @@ Lee las tablas `market_price_day` y `market_price_season` del dataset publicado 
 central: nunca un pronóstico de precio (decisión 4). No usa la base de datos ni guarda nada (R9).
 """
 
-from datetime import date, timedelta
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 
 import polars as pl
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 
+from backend import market_updates
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
 from backend.dataset import Dataset
@@ -53,6 +55,9 @@ class ProductPrice(BaseModel):
 
 
 class MarketPrices(BaseModel):
+    # Qué versión de los precios se usó (R4): la del dataset publicado o la que la API bajó del DANE (HU-222).
+    version: str
+    updated_at: datetime | None
     market: Market
     markets: list[Market]
     # El último día con precios en esta central.
@@ -75,6 +80,8 @@ class Season(BaseModel):
 
 
 class ProductHistory(BaseModel):
+    version: str
+    updated_at: datetime | None
     product_id: str
     product: str
     group: str
@@ -88,10 +95,23 @@ class ProductHistory(BaseModel):
     source_id: str
 
 
-def _prices(dataset: Dataset) -> pl.DataFrame:
-    if dataset.market_prices is None or dataset.market_prices.is_empty():
+@dataclass(frozen=True)
+class Tables:
+    version: str
+    updated_at: datetime | None
+    prices: pl.DataFrame
+    season: pl.DataFrame | None
+
+
+def _tables(dataset: Dataset) -> Tables:
+    """Los precios que se sirven: los que la API bajó hoy del DANE (HU-222) si son más nuevos que los publicados."""
+    fresh = market_updates.current()
+    published = dataset.market_prices
+    if fresh is not None and (published is None or published.is_empty() or fresh.prices["date"].max() >= published["date"].max()):
+        return Tables(version=fresh.version, updated_at=fresh.updated_at, prices=fresh.prices, season=fresh.season)
+    if published is None or published.is_empty():
         raise ApiError(503, "market_unavailable", MARKET_UNAVAILABLE, log=f"El dataset {dataset.version} no trae market_price_day")
-    return dataset.market_prices
+    return Tables(version=dataset.version, updated_at=None, prices=published, season=dataset.market_season)
 
 
 def _markets(prices: pl.DataFrame) -> list[Market]:
@@ -127,7 +147,8 @@ def _latest(rows: pl.DataFrame) -> tuple[Price, Price | None, float | None]:
 @router.get("/prices")
 def market_prices(request: Request, market_id: str | None = Query(None), dataset: Dataset = Depends(require_dataset)) -> MarketPrices:
     """El último precio de cada producto en la central, con su cambio frente a hace una semana."""
-    prices = _prices(dataset)
+    tables = _tables(dataset)
+    prices = tables.prices
     markets = _markets(prices)
     market = _market(markets, market_id)
     rows = prices.filter(pl.col("market_id") == market.market_id)
@@ -142,8 +163,10 @@ def market_prices(request: Request, market_id: str | None = Query(None), dataset
         for product in rows.partition_by("product_id", maintain_order=True)
     ]
     products.sort(key=lambda p: (GROUP_ORDER.index(p.group) if p.group in GROUP_ORDER else len(GROUP_ORDER), p.group, p.product))
-    explain(request, f"Precios consultados: {len(products)} productos en {market.name}, dataset {dataset.version}")
+    explain(request, f"Precios consultados: {len(products)} productos en {market.name}, versión {tables.version}")
     return MarketPrices(
+        version=tables.version,
+        updated_at=tables.updated_at,
         market=market,
         markets=markets,
         date=max(p.latest.date for p in products),
@@ -157,7 +180,8 @@ def product_history(
     request: Request, product_id: str, market_id: str | None = Query(None), dataset: Dataset = Depends(require_dataset)
 ) -> ProductHistory:
     """Los precios del último año de un producto en la central y en qué meses suele estar más caro o más barato."""
-    prices = _prices(dataset)
+    tables = _tables(dataset)
+    prices = tables.prices
     market = _market(_markets(prices), market_id)
     rows = prices.filter((pl.col("market_id") == market.market_id) & (pl.col("product_id") == product_id))
     if rows.is_empty():
@@ -165,8 +189,8 @@ def product_history(
     latest = rows.row(rows.height - 1, named=True)
     days = rows.filter(pl.col("date") > latest["date"] - timedelta(days=SERIES_DAYS))
     season = None
-    if dataset.market_season is not None:
-        months = dataset.market_season.filter((pl.col("market_id") == market.market_id) & (pl.col("product_id") == product_id))
+    if tables.season is not None:
+        months = tables.season.filter((pl.col("market_id") == market.market_id) & (pl.col("product_id") == product_id))
         if months.height:
             first = months.row(0, named=True)
             season = Season(
@@ -175,8 +199,10 @@ def product_history(
                 last_year=first["last_year"],
                 months=[SeasonMonth(month=m, seasonal_index=i) for m, i in months.select("month", "seasonal_index").iter_rows()],
             )
-    explain(request, f"Precios de {product_id} consultados en {market.name}: {days.height} días, dataset {dataset.version}")
+    explain(request, f"Precios de {product_id} consultados en {market.name}: {days.height} días, versión {tables.version}")
     return ProductHistory(
+        version=tables.version,
+        updated_at=tables.updated_at,
         product_id=product_id,
         product=latest["product"],
         group=latest["group"],

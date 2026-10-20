@@ -15,6 +15,8 @@ const MARKETS = [
 const day = (date: string, avg: number) => ({ date, min_cop_kg: avg - 100, avg_cop_kg: avg, max_cop_kg: avg + 100 });
 
 const CORABASTOS: MarketPrices = {
+  version: "sipsa-20261021T1505",
+  updated_at: "2026-10-21T15:05:00-05:00",
   market: MARKETS[0],
   markets: MARKETS,
   date: "2026-10-19",
@@ -43,6 +45,8 @@ const CORABASTOS: MarketPrices = {
 const TUNJA: MarketPrices = { ...CORABASTOS, market: MARKETS[1], products: [CORABASTOS.products[0]] };
 
 const PAPA: ProductHistory = {
+  version: "sipsa-20261021T1505",
+  updated_at: "2026-10-21T15:05:00-05:00",
   product_id: "papa-negra",
   product: "Papa negra",
   group: "Tubérculos, raíces y plátanos",
@@ -89,6 +93,8 @@ describe("Precios en la central de abastos (HU-221)", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "¿A cuánto se paga en la central?" })).toBeInTheDocument();
     expect(await screen.findByText(/Precios del 19 de octubre de 2026 en Corabastos \(Bogotá\)/)).toBeInTheDocument();
     expect(screen.getByText(/Fuente: DANE, Sistema de Información de Precios \(SIPSA\)/)).toBeInTheDocument();
+    // Los precios se bajan del DANE cada día (HU-222): la pantalla dice cuándo, en la hora de Colombia.
+    expect(screen.getByText(/Actualizados del DANE el 21 de octubre(,| a las) 3:05 p\.\s?m\.; se actualizan cada día/)).toBeInTheDocument();
     const tubers = screen.getByRole("heading", { level: 2, name: "Tubérculos, raíces y plátanos" }).closest("section")!;
     const papa = within(tubers).getByRole("link", { name: /Papa negra/ });
     expect(papa).toHaveTextContent(/2\.925/);

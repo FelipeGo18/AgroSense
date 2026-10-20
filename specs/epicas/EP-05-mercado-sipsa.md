@@ -50,3 +50,17 @@ SIPSA es de Colombia: es la fuente supuesta para la región piloto (decisión 11
   - [x] Generador `design/pantallas/precios.py` con sus SVG (escritorio, móvil y producto abierto en móvil), con cifras reales de SIPSA
   - [ ] Láminas enviadas a Figma y aprobadas (la pantalla se programó antes del diseño, por pedido del equipo)
   - [ ] Licencia de SIPSA verificada en los términos y condiciones del DANE
+
+### HU-222 · Precios al día
+
+- **Historia:** Como agricultor, quiero que los precios de la central sean los del último día que publicó el DANE, sin que nadie tenga que volver a publicar el dataset, para decidir con el precio de hoy.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** hecha (falta aprobar el contrato)
+- **Notas:** Es la excepción a «datos precalculados» que registra `docs/registro-de-decisiones.md` (20 de octubre de 2026): solo para los precios, que cambian cada día. Sigue siendo historia de precios, no pronóstico.
+- **Criterios de aceptación:**
+  - [x] Con `AGROSENSE_MARKET_REFRESH=true`, la API baja SIPSA al arrancar si lo que tiene es anterior a la última publicación y después cada día a las 3:00 p. m. de Bogotá (el DANE publica a las 2:00)
+  - [x] Usa el mismo adaptador y las mismas validaciones del pipeline; cada descarga buena es una versión nueva e inmutable (`sipsa-AAAAMMDDTHHMM`) en `AGROSENSE_MARKET_DIR`, y se guardan las dos últimas
+  - [x] Si la descarga o la validación fallan, se sigue sirviendo la última versión buena, el log dice por qué y se reintenta en una hora (R1)
+  - [x] Una versión bajada solo se sirve si es igual o más nueva que lo publicado en `data/published`
+  - [x] Las respuestas de `/market/*` dicen su `version` y su `updated_at` (R4); la pantalla dice cuándo se actualizaron
+  - [x] La API sigue atendiendo mientras baja (otro hilo); las pruebas no usan la red
+  - [ ] Contrato aprobado por Haider o Felipe

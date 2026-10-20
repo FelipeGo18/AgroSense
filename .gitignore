@@ -1,5 +1,7 @@
 # Datos crudos y cachés (no van a git)
 data/raw/
+# Precios que la API baja cada día del DANE (HU-222)
+data/market/
 
 # Python
 __pycache__/
