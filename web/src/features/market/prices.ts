@@ -48,6 +48,16 @@ const asDate = (day: string) => new Date(`${day}T00:00:00Z`);
 
 /** «19 de octubre de 2026». */
 export const formatDay = (day: string) => DAY.format(asDate(day));
+
+const UPDATED = new Intl.DateTimeFormat("es-CO", {
+  day: "numeric",
+  month: "long",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/Bogota",
+});
+/** «20 de octubre, 3:05 p. m.»: cuándo bajó la API los precios del DANE (HU-222), en la hora de Colombia. */
+export const formatUpdated = (instant: string) => UPDATED.format(new Date(instant));
 /** «19 oct». */
 export const formatShortDay = (day: string) => SHORT_DAY.format(asDate(day));
 /** «octubre», con el número de mes de 1 a 12. */

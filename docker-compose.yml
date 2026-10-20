@@ -49,11 +49,16 @@ services:
       AGROSENSE_LOG_FORMAT: ${AGROSENSE_LOG_FORMAT:-console}
       # Compose es para desarrollo y pruebas: la documentación de la API queda encendida. En producción, false.
       AGROSENSE_API_DOCS: ${AGROSENSE_API_DOCS:-true}
+      # Precios de SIPSA al día (HU-222): la API los baja cada día a las 3:00 p. m. de Bogotá. false para no usar la red.
+      AGROSENSE_MARKET_REFRESH: ${AGROSENSE_MARKET_REFRESH:-true}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     volumes:
       # Las copias de seguridad que se hacen antes de cada migración quedan en su máquina, no dentro del contenedor.
       - ./backups:/app/backups
+      # Los precios que baja la API sobreviven a reiniciar o reconstruir el contenedor.
+      - market_data:/app/data/market
 
 volumes:
   db_data:
+  market_data:

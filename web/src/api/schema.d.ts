@@ -509,6 +509,10 @@ export interface components {
         };
         /** MarketPrices */
         MarketPrices: {
+            /** Version */
+            version: string;
+            /** Updated At */
+            updated_at: string | null;
             market: components["schemas"]["Market"];
             /** Markets */
             markets: components["schemas"]["Market"][];
@@ -561,6 +565,10 @@ export interface components {
         };
         /** ProductHistory */
         ProductHistory: {
+            /** Version */
+            version: string;
+            /** Updated At */
+            updated_at: string | null;
             /** Product Id */
             product_id: string;
             /** Product */
