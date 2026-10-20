@@ -3,7 +3,8 @@
     uv run python -m pipeline.build              # lee la caché de data/raw/ y publica
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
 
-Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `sources` y `manifest.json`. Cada tabla pasa por las
+Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `market_price_day` y `market_price_season` (SIPSA del
+DANE, HU-221), `sources` y `manifest.json`. Cada tabla pasa por las
 validaciones antes de escribirse: si una falla, no se publica nada (R7, R8).
 """
 
@@ -17,7 +18,7 @@ from typing import Any
 import polars as pl
 import yaml
 
-from pipeline.sources import dane
+from pipeline.sources import dane, sipsa
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 PUBLISHED = Path("data/published")
@@ -53,12 +54,45 @@ def validate(municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
         raise ValidationError(f"Filas sin fuente o con una fuente que no está en `sources`: {sorted(cited - known) or 'sin source_ids'}")
 
 
-def publish(region: dict[str, Any], municipalities: pl.DataFrame, sources: pl.DataFrame, folder: Path = PUBLISHED) -> dict[str, Any]:
+def validate_market(prices: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """La llave (producto, central, día) no se repite; hay precio medio, y el mínimo y el máximo, si están, lo encierran
+    (R1, R8). Se tolera un peso: el DANE redondea el medio («1563» con mínimo y máximo de 1562,5)."""
+    if prices.is_empty():
+        raise ValidationError("`market_price_day` quedó vacía: revise las centrales de region.yaml.")
+    repeated = prices.filter(pl.struct("product_id", "market_id", "date").is_duplicated())
+    if not repeated.is_empty():
+        raise ValidationError(f"Precios repetidos para un mismo producto, central y día: {repeated.head(3).to_dicts()}")
+    bad = prices.filter(
+        pl.col("avg_cop_kg").is_null()
+        | (pl.col("avg_cop_kg") <= 0)
+        | (pl.col("min_cop_kg") > pl.col("avg_cop_kg") + 1).fill_null(False)
+        | (pl.col("avg_cop_kg") > pl.col("max_cop_kg") + 1).fill_null(False)
+    )
+    if not bad.is_empty():
+        raise ValidationError(f"Precios sin promedio o con el medio fuera del mínimo y el máximo: {bad.head(3).to_dicts()}")
+    unknown = set(prices["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"Precios con una fuente que no está en `sources`: {sorted(unknown)}")
+
+
+def publish(
+    region: dict[str, Any],
+    municipalities: pl.DataFrame,
+    sources: pl.DataFrame,
+    folder: Path = PUBLISHED,
+    prices: pl.DataFrame | None = None,
+) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4)."""
     validate(municipalities, sources)
+    if prices is not None:
+        validate_market(prices, sources)
     folder.mkdir(parents=True, exist_ok=True)
     municipalities.write_parquet(folder / "municipalities.parquet")
     sources.sort("source_id").write_parquet(folder / "sources.parquet")
+    if prices is not None:
+        season = sipsa.seasonal(prices)
+        prices.write_parquet(folder / "market_price_day.parquet")
+        season.write_parquet(folder / "market_price_season.parquet")
     manifest = {
         "dataset_version": region["dataset_version"],
         # Las reglas agronómicas (catálogo) todavía no existen: no hay versión que decir.
@@ -72,18 +106,29 @@ def publish(region: dict[str, Any], municipalities: pl.DataFrame, sources: pl.Da
             "sources": {"rows": sources.height, "coverage": "todas las fuentes de lo publicado"},
         },
     }
+    if prices is not None:
+        manifest["tables"]["market_price_day"] = {
+            "rows": prices.height,
+            "coverage": f"{' · '.join(sorted(set(prices['market'].to_list())))}; del {prices['date'].min()} al {prices['date'].max()}",
+        }
+        manifest["tables"]["market_price_season"] = {
+            "rows": season.height,
+            "coverage": f"Productos con al menos {sipsa.MIN_YEARS} años completos de precios",
+        }
     (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return manifest
 
 
-def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE) -> dict[str, Any]:
+def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE, market_cache: Path = sipsa.CACHE) -> dict[str, Any]:
     region = load_region()
     if download:
         dane.download(cache)
+        sipsa.download(market_cache)
     rows, meta = dane.read_cache(cache)
     municipalities = dane.municipalities(rows, region["region"]["departments"])
-    sources = pl.DataFrame([dane.source(meta)])
-    return publish(region, municipalities, sources, folder)
+    prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache)
+    sources = pl.DataFrame([dane.source(meta), sipsa.source(prices, downloaded_at)])
+    return publish(region, municipalities, sources, folder, prices)
 
 
 def main() -> None:

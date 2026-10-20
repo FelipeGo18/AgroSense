@@ -39,6 +39,9 @@ class Dataset:
     # Por `municipality_id`, en el orden de la tabla (por código).
     municipalities: dict[str, Municipality]
     sources: list[dict[str, Any]]
+    # Precios mayoristas de SIPSA (HU-221). Nulos si el dataset publicado no los trae: no se inventan.
+    market_prices: pl.DataFrame | None = None
+    market_season: pl.DataFrame | None = None
 
 
 def load(folder: Path) -> Dataset:
@@ -49,6 +52,9 @@ def load(folder: Path) -> Dataset:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         municipalities = pl.read_parquet(folder / "municipalities.parquet")
         sources = pl.read_parquet(folder / "sources.parquet")
+        prices_path, season_path = folder / "market_price_day.parquet", folder / "market_price_season.parquet"
+        market_prices = pl.read_parquet(prices_path) if prices_path.exists() else None
+        market_season = pl.read_parquet(season_path) if season_path.exists() else None
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -68,6 +74,8 @@ def load(folder: Path) -> Dataset:
             for row in municipalities.iter_rows(named=True)
         },
         sources=sources.to_dicts(),
+        market_prices=market_prices,
+        market_season=market_season,
     )
 
 

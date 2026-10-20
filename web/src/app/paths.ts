@@ -13,6 +13,7 @@ export const PATHS = {
   password: "/mi-cuenta/contrasena",
   activity: "/mi-cuenta/actividad",
   dataPolicy: "/politica-de-datos",
+  prices: "/precios",
   // Páginas de prueba de la fase 0: no se enlazan desde la app; se entra escribiendo la dirección.
   lab: "/pruebas",
   kit: "/kit",
