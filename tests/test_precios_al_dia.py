@@ -124,3 +124,77 @@ def test_apagada_la_actualizacion_diaria_no_arranca(monkeypatch):
     monkeypatch.setattr(market_updates, "run_daily", lambda *a: pytest.fail("no debe arrancar"))
     with TestClient(app) as client:
         assert client.get("/api/v1/health").status_code in (200, 503)
+
+
+def run(coroutine):
+    import asyncio
+
+    return asyncio.run(coroutine)
+
+
+def test_al_pasar_las_3_pm_se_pone_al_dia_en_la_siguiente_revision(tmp_path):
+    """Lo que falló el 20 de octubre: con el equipo suspendido, una espera larga se atrasaba horas. Cada revisión mira la
+    hora real, así que a las 7:18 p. m. baja lo de las 3:00 p. m."""
+    morning = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM - timedelta(hours=3))
+    evening = AT_3_05_PM + timedelta(hours=4, minutes=13)
+    assert run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, now=evening, download=fake_download(TODAY))) is None
+    assert market_updates.current() is not morning
+    # Ya al día: la siguiente revisión no vuelve a bajar.
+    fresh = market_updates.current()
+    assert run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, now=evening + timedelta(minutes=5), download=failing_download)) is None
+    assert market_updates.current() is fresh
+
+
+def test_un_fallo_espera_una_hora_antes_de_reintentar(tmp_path):
+    retry = run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, now=AT_3_05_PM, download=failing_download))
+    assert retry == AT_3_05_PM + timedelta(hours=1)
+    # Antes de la hora no se intenta (la descarga de ejemplo fallaría si se llamara).
+    assert (
+        run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, retry, now=AT_3_05_PM + timedelta(minutes=30), download=failing_download))
+        == retry
+    )
+    # Pasada la hora, sí.
+    assert run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, retry, now=retry, download=fake_download(TODAY))) is None
+    assert market_updates.current() is not None
+
+
+@pytest.fixture(autouse=True)
+def no_pause(monkeypatch):
+    """Los reintentos de la descarga no esperan en las pruebas."""
+    monkeypatch.setattr(market_updates, "DOWNLOAD_PAUSE", 0)
+
+
+def test_una_descarga_cortada_se_reintenta_enseguida(tmp_path):
+    """El 20 de octubre el DANE cortó la conexión a los 0,9 MB; el segundo intento bajó todo."""
+    calls = []
+
+    def cut_once(cache):
+        calls.append(cache)
+        if len(calls) == 1:
+            raise OSError("IncompleteRead(906256 bytes read)")
+        return fake_download(TODAY)(cache)
+
+    data = market_updates.refresh(tmp_path, SAMPLE_MARKETS, cut_once, now=AT_3_05_PM)
+    assert len(calls) == 2 and data.prices["date"].max().isoformat() == "2026-10-21"
+
+
+def test_tres_cortes_seguidos_son_un_fallo(tmp_path):
+    calls = []
+
+    def always_cut(cache):
+        calls.append(cache)
+        raise OSError("cortada")
+
+    with pytest.raises(OSError):
+        market_updates.refresh(tmp_path, SAMPLE_MARKETS, always_cut, now=AT_3_05_PM)
+    assert len(calls) == market_updates.DOWNLOAD_ATTEMPTS
+
+
+def test_la_api_sirve_la_version_que_dejo_otro_proceso(tmp_path):
+    """`python -m backend.market_updates` corre aparte: la API la ve en su siguiente revisión, sin volver a bajar."""
+    old = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM - timedelta(hours=3))
+    manual = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM + timedelta(hours=4))
+    market_updates._serve(old)  # la API todavía tiene en memoria la de la mañana
+    later = AT_3_05_PM + timedelta(hours=4, minutes=5)
+    assert run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, now=later, download=failing_download)) is None
+    assert market_updates.current().version == manual.version

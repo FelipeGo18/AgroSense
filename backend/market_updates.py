@@ -20,6 +20,7 @@ import asyncio
 import json
 import shutil
 import threading
+import time as time_module
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, time, timedelta, timezone
@@ -86,8 +87,48 @@ def load_latest(folder: Path) -> MarketData | None:
     return data
 
 
+def reload_if_newer(folder: Path) -> None:
+    """Si otro proceso dejó una versión nueva (por ejemplo, `python -m backend.market_updates` a mano), se sirve esa.
+
+    Solo lee `current.json`, que es chico; las tablas se leen si la versión cambió.
+    """
+    try:
+        version = json.loads((folder / CURRENT).read_text(encoding="utf-8"))["version"]
+    except (OSError, ValueError, KeyError):
+        return
+    served = current()
+    if served is None or served.version != version:
+        data = load_latest(folder)
+        if data is not None:
+            log.info("market_version_loaded", detail=f"Se sirve la versión de precios {data.version}, que dejó otro proceso")
+
+
+# Una descarga cortada (el DANE a veces cierra la conexión a mitad de los 300 MB) se reintenta enseguida, unas veces.
+DOWNLOAD_ATTEMPTS = 3
+DOWNLOAD_PAUSE = 30
+
+
+def _download_with_retries(download: Callable[[Path], Path], raw: Path, pause: float) -> None:
+    for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
+        try:
+            download(raw)
+            return
+        except OSError as error:  # incluye los cortes de red (`IncompleteRead`, `URLError`, tiempo agotado)
+            if attempt == DOWNLOAD_ATTEMPTS:
+                raise
+            log.warning(
+                "market_download_retry",
+                detail=f"La descarga de SIPSA se cortó ({type(error).__name__}); intento {attempt + 1} de {DOWNLOAD_ATTEMPTS}",
+            )
+            time_module.sleep(pause)
+
+
 def refresh(
-    folder: Path, markets: dict[str, str], download: Callable[[Path], Path] = sipsa.download, now: datetime | None = None
+    folder: Path,
+    markets: dict[str, str],
+    download: Callable[[Path], Path] = sipsa.download,
+    now: datetime | None = None,
+    pause: float | None = None,
 ) -> MarketData:
     """Baja los precios, los valida y, solo si todo sale bien, los deja como la versión que se sirve.
 
@@ -98,7 +139,7 @@ def refresh(
         version = f"sipsa-{updated_at:%Y%m%dT%H%M}"
         raw = folder / "raw"
         try:
-            download(raw)
+            _download_with_retries(download, raw, DOWNLOAD_PAUSE if pause is None else pause)
             prices, _ = sipsa.read_cache(markets, raw)
             validate_market(prices, pl.DataFrame({"source_id": [sipsa.SOURCE_ID]}))
             season = sipsa.seasonal(prices)
@@ -147,27 +188,55 @@ def is_stale(data: MarketData | None, now: datetime) -> bool:
 
 
 async def run_daily(folder: Path, markets: dict[str, str]) -> None:
-    """El bucle de la API: al arrancar, baja si lo que hay es viejo; después, cada día a las 3:00 p. m."""
+    """El bucle de la API: al arrancar, baja si lo que hay es viejo; después, cada día a las 3:00 p. m.
+
+    Mira el reloj de pared cada `CHECK_EVERY` segundos en vez de dormir hasta las 3:00 p. m. de una vez: una espera
+    larga se mide con el reloj interno, que se detiene si el equipo (o la máquina virtual de Docker) se suspende, y la
+    actualización se atrasaba horas. Así, al despertar, se pone al día en minutos.
+    """
     load_latest(folder)
+    retry_at: datetime | None = None
     while True:
-        now = datetime.now(UTC)
-        if is_stale(current(), now):
-            try:
-                # En otro hilo: la API sigue atendiendo mientras baja y lee los 300 MB.
-                await asyncio.to_thread(refresh, folder, markets)
-            # Cualquier fallo (red, XML roto, validación): el bucle no se cae y la API sigue con lo que tenía.
-            except Exception as error:
-                served = current()
-                log.warning(
-                    "market_refresh_failed",
-                    detail=f"No se pudieron actualizar los precios de SIPSA ({type(error).__name__}: {error}); "
-                    f"se sigue sirviendo {served.version if served else 'el dataset publicado'}",
-                )
-                # Se reintenta en una hora, no al día siguiente: el DANE a veces publica tarde.
-                await asyncio.sleep(3600)
-                continue
-        wait = (next_run(datetime.now(UTC)) - datetime.now(UTC)).total_seconds()
-        await asyncio.sleep(max(wait, 1))
+        retry_at = await check_once(folder, markets, retry_at)
+        await asyncio.sleep(CHECK_EVERY)
+
+
+# Cada cuánto se mira el reloj, y cuánto se espera para reintentar después de un fallo (el DANE a veces publica tarde).
+CHECK_EVERY = 300
+RETRY_AFTER = timedelta(hours=1)
+
+
+async def check_once(
+    folder: Path,
+    markets: dict[str, str],
+    retry_at: datetime | None = None,
+    now: datetime | None = None,
+    download: Callable[[Path], Path] = sipsa.download,
+) -> datetime | None:
+    """Una vuelta del bucle: si lo servido es viejo (y no toca esperar un reintento), baja los precios.
+
+    Devuelve cuándo reintentar si falló, o nada.
+    """
+    now = now or datetime.now(UTC)
+    reload_if_newer(folder)
+    if not is_stale(current(), now) or (retry_at is not None and now < retry_at):
+        return retry_at
+    served = current()
+    showing = served.version if served else "el dataset publicado"
+    log.info("market_refresh_started", detail=f"Bajando los precios de SIPSA del DANE; mientras tanto se sirve {showing}")
+    try:
+        # En otro hilo: la API sigue atendiendo mientras baja y lee los 300 MB.
+        await asyncio.to_thread(refresh, folder, markets, download, now)
+    # Cualquier fallo (red, XML roto, validación): el bucle no se cae y la API sigue con lo que tenía.
+    except Exception as error:
+        retry = now + RETRY_AFTER
+        log.warning(
+            "market_refresh_failed",
+            detail=f"No se pudieron actualizar los precios de SIPSA ({type(error).__name__}: {error}); se sigue sirviendo "
+            f"{showing} y se reintenta a las {retry.astimezone(BOGOTA):%H:%M} de Bogotá",
+        )
+        return retry
+    return None
 
 
 def main() -> None:
