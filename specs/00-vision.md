@@ -29,7 +29,7 @@ Hackatón: 14 y 15 de noviembre de 2026. Enunciado completo, con los datos recom
 | Presión: extremos | El riesgo grave de clima (agua, helada o calor críticos) cuenta siempre y descarta la estrategia que lo tiene | HU-074, HU-081 |
 | Presión: deterioro del suelo | La salud del suelo de cada estrategia, con abonos verdes y descanso como ciclos | HU-212, HU-063 |
 
-**La sede y la región todavía no están confirmadas.** Si la sede del equipo es Moquegua (Perú), hay que decidir si la región piloto pasa a la región de la sede. Hasta entonces, la región piloto es el altiplano colombiano, como supuesto (decisión 11, HU-002). Lo propio de Colombia vive en los adaptadores de cada fuente.
+**Sede y región confirmadas (28 de octubre de 2026):** La sede del equipo es **Duitama (Boyacá, Colombia)** y la región piloto es el altiplano de **Boyacá y Cundinamarca, Colombia** (HU-002). Lo propio de Colombia vive en los adaptadores de cada fuente (R7).
 
 ## Problema
 
@@ -109,7 +109,7 @@ El impacto se presenta como **potencial**: la herramienta apoya decisiones, no g
 
 | Dimensión | MVP (P0) | Ideal (P1) |
 |---|---|---|
-| Región | Una región piloto con buena cobertura en EVA, por ejemplo el altiplano de Cundinamarca o Boyacá. **Supuesto** hasta confirmar la sede y el enunciado del 28 de octubre (HU-002) | Una segunda región con otro piso térmico |
+| Región | Altiplano de Boyacá y Cundinamarca, Colombia (sede **Duitama**, confirmada el 28 de octubre de 2026 en HU-002) | Una segunda región con otro piso térmico |
 | Cultivos | 7 cultivos del altiplano con ficha completa y con fuente: papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia (abono verde); más el descanso | Más cultivos y variedades |
 | Estrategias de rotación | Hasta 3 ciclos (2 o 3), con filtros entre ciclos, 4 criterios de puntuación (agua, suelo, ingreso y riesgo) y la salud del suelo con 4 criterios por reglas con fuente | Rotaciones ponderadas por el área de cada cultivo |
 | Diagnóstico de un ciclo | Aptitud por altitud; seis señales calificadas de 0 a 100; con y sin riego; prioridades del agricultor con las dos luces cuando difieren; mejores ventanas de los próximos doce meses, por mes | Cultivos alternativos cuando conviene rotar; ventanas por semana; tres señales más: exceso de lluvia, enfermedades por clima y clima de cosecha |

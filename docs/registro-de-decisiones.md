@@ -6,6 +6,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 
 | Decisión | Elegida | Fecha |
 |---|---|---|
+| Sede del equipo y región piloto (HU-002) | Sede confirmada: **Duitama (Boyacá, Colombia)**. Se confirma la región piloto en el altiplano de **Boyacá y Cundinamarca, Colombia** (`co-boyaca-cundinamarca`), con los adaptadores de DANE (DIVIPOLA y SIPSA en Tunja y Corabastos) y EVA/UPRA, manteniendo intacto el enfoque de no pronóstico y las reglas R1–R10 | 28 oct 2026 |
 | Herramienta de backlog | GitHub Projects | 10 oct 2026 |
 | Precios al día (HU-222) | Solo para los precios de SIPSA, la API los baja del DANE cada día a las 3:00 p. m. de Bogotá, en vez de esperar a que se publique un dataset. Es la excepción a «datos precalculados»: cada descarga es una versión inmutable que la respuesta nombra (R4), se valida con las reglas del pipeline y, si falla, se sigue sirviendo la última buena (R1). Se descartó consultar al DANE en cada petición: el servicio solo entrega la base completa (unos 300 MB) | 20 oct 2026 |
 | Pantalla de precios de Corabastos (HU-221) | Se adelanta con precios reales de SIPSA (Corabastos y Tunja) por pedido del equipo, antes de su diseño en Figma. Es historia de precios, no pronóstico (decisión 4). El contrato nuevo (`market_price_day`, `market_price_season`, `/market/*`) queda **por aprobar** por Haider o Felipe | 20 oct 2026 |
@@ -85,12 +86,10 @@ No se deciden por preferencia: se resuelven con el resultado de la HU indicada y
 |---|---|---|---|
 | Tamaño del equipo | Confirmación de los integrantes | 17 oct | Todos |
 | Fuente del clima histórico | HU-002 (enunciado del 28 de octubre) | 30 oct | Datos |
-| Región del reto (Colombia es un supuesto, decisión 11) | HU-002 (enunciado del 28 de octubre) | 30 oct | Producto y Datos |
 | Fuente de los rangos óptimos y absolutos de cada cultivo (candidata FAO EcoCrop) | HU-199 | 13 nov (fin de la fase 0) | Producto y agro |
-| Región piloto | HU-001 (cobertura de EVA) | 31 oct | Producto y Datos |
+| Región piloto (municipios habilitados según cobertura de EVA) | HU-001 (cobertura de EVA) | 31 oct | Producto y Datos |
 | SIPSA en el P0 | HU-003 | 1 nov | Datos |
 | Qué código preparado se puede llevar al evento | HU-004 (términos de Space Apps 2026 y respuesta de la sede). **Urgente: define todo el plan** | 17 oct | Producto |
-| Sede del equipo y región piloto (si es Moquegua, ¿pasa la región piloto a Perú?) | HU-002 | 30 oct | Producto y Datos |
 | Productos NASA que recomienda el enunciado | HU-002 (enunciado del 28 de octubre); cada uno entra por su adaptador | 30 oct | Datos |
 | Acceso con cuenta de NASA Earthdata y tamaño de las descargas de IMERG, NASADEM, MODIS y SMAP | HU-206 a HU-210 | 24 oct | Datos |
 | Capas, resolución y condiciones de uso de NASA GIBS | HU-211 | 31 oct | Web |

@@ -33,8 +33,9 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 - **Antes de la demo:** el pipeline descarga y limpia los datos, calcula los indicadores y guarda Parquet versionado.
 - **Cuando el agricultor consulta:** la API solo lee esos indicadores ya calculados y aplica las reglas (milisegundos).
+- **Excepción acotada para precios mayoristas (HU-222, 20 de octubre de 2026):** como SIPSA publica precios nuevos cada día hábil hacia las 2:00 p. m., la API con `AGROSENSE_MARKET_REFRESH=true` descarga y valida en segundo plano la última versión del servicio SOAP del DANE a las 3:00 p. m. (hora de Bogotá) y la guarda como Parquet versionado en `data/market/`. Las consultas de los usuarios siguen leyendo únicamente Parquet local en memoria, nunca el servicio externo en vivo.
 
-**Por qué:** descargar 20 años de lluvia diaria tarda minutos; si se hiciera en cada consulta, la app sería lentísima. Si la API de NASA se cae durante la presentación, la demo sigue. Y con la versión del dataset se puede reproducir cualquier resultado.
+**Por qué:** descargar 20 años de lluvia diaria o 300 MB de precios tarda minutos; si se hiciera en cada consulta, la app sería lentísima. Si la API de NASA o la del DANE se caen durante la presentación, la demo sigue con la última versión local validada. Y con la versión del dataset se puede reproducir cualquier resultado.
 
 **Analogía:** cocinar en casa antes de un viaje en lugar de buscar restaurante en carretera.
 
@@ -170,7 +171,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **Juntas, nunca mezcladas.** Las fuentes se muestran lado a lado para contrastarlas. Cada una dice de dónde viene, de qué fecha es y qué cubre (`coverage`). No se promedian ni una rellena a otra.
 - **Una calcula la señal.** `sources.yaml` dice, para cada región, qué fuente calcula cada señal; la respuesta dice cuál fue. Las demás son de contraste.
 - **Las siembras de AgroSense, con cuidado.** Solo se muestran como totales por municipio y cultivo, y nunca cuando hay menos de 5 cuentas, para que nadie pueda deducir lo de un vecino (R9).
-- **La región está por confirmar.** El reto todavía no dice qué datos ni qué región. Colombia es un supuesto: el P0 se prepara con una región piloto colombiana (EVA, DIVIPOLA, SIPSA, IDEAM, UPRA, IGAC) hasta que el enunciado del 28 de octubre la confirme o la cambie (HU-002). El modelo no supone Colombia fuera de los adaptadores de cada fuente (R7).
+- **Sede y región confirmadas (HU-002, 28 de octubre de 2026):** el equipo participa en la sede **Duitama (Boyacá, Colombia)** y la región del proyecto es **Boyacá y Cundinamarca, Colombia** (`co-boyaca-cundinamarca`, con fuentes locales EVA, DIVIPOLA, SIPSA, IDEAM, UPRA, IGAC). Aun así, el modelo no supone Colombia fuera de los adaptadores de cada fuente (R7).
 
 **Analogía:** preguntar la hora a varias personas. Si dos relojes no coinciden, no se saca el promedio: se dice qué marca cada uno y cuál se está usando.
 

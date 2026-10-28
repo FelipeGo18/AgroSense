@@ -9,8 +9,7 @@ uv run python -m pipeline.build               # publica otra vez desde la caché
 ```
 
 - `data/raw/` es caché y no va a git. `data/published/` sí va a git y entra en la imagen de Docker: es el dataset de la demo.
-- `pipeline/region.yaml` dice la región y la versión del dataset. **La región es un supuesto** (Boyacá y Cundinamarca)
-  hasta el enunciado del 28 de octubre de 2026. `dataset_version` sube a mano cada vez que cambia lo publicado (R4).
+- `pipeline/region.yaml` dice la región y la versión del dataset: **Boyacá y Cundinamarca, Colombia** (confirmada el 28 de octubre de 2026 con la sede de Duitama, HU-002). `dataset_version` sube a mano cada vez que cambia lo publicado (R4).
 - Antes de escribir se valida todo: `municipality_id` de 5 dígitos y sin repetir (R7), nombre, coordenadas en rango y
   que cada fila cite una fuente que está en `sources` (R8). Si algo falla, no se publica nada.
 - Lo que todavía no tiene fuente va nulo, nunca inventado (R1).
