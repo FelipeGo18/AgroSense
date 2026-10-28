@@ -2,7 +2,7 @@
 
 Todo dato y toda regla del proyecto debe apuntar a una entrada de la tabla `sources` (R8). Esta lista es el punto de partida; el estado de verificación se actualiza conforme se confirma.
 
-Un indicador puede tener varias fuentes: se muestran juntas para contrastarlas y nunca se mezclan. `sources.yaml` dice qué fuente calcula cada señal en cada región (decisión 11). Las fuentes de Colombia (EVA, SIPSA, IDEAM, UPRA, DANE, IGAC) son de la región piloto, que es un supuesto hasta que el reto confirme la región (HU-002).
+Un indicador puede tener varias fuentes: se muestran juntas para contrastarlas y nunca se mezclan. `sources.yaml` dice qué fuente calcula cada señal en cada región (decisión 11). Las fuentes de Colombia (EVA, SIPSA, IDEAM, UPRA, DANE, IGAC) cubren la región confirmada del proyecto para la sede de Duitama: **Boyacá y Cundinamarca, Colombia** (`co-boyaca-cundinamarca`, HU-002).
 
 ## Productos de la NASA del MVP (decisión 12)
 

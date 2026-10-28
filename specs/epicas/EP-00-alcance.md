@@ -15,7 +15,7 @@ estado: pendiente
 
 **Resultado esperado:** Región, cultivos, periodos y fuentes elegidos con base en la cobertura real comprobada.
 
-**La región es un supuesto (decisión 11).** El reto aún no dice qué datos ni qué región. Colombia, y dentro de ella el altiplano de Cundinamarca o Boyacá, es la región piloto supuesta. El P0 sigue con ella hasta que el enunciado del 28 de octubre (HU-002) la confirme o la cambie. Mientras tanto, lo propio de Colombia (EVA, DIVIPOLA, SIPSA, IDEAM, UPRA, IGAC, Ley 1581) vive en los adaptadores de cada fuente y en `sources.yaml`, no en el modelo (R7).
+**Sede y región confirmadas (28 de octubre de 2026).** La sede oficial del equipo es **Duitama (Boyacá, Colombia)** y la región piloto queda confirmada en el altiplano de **Boyacá y Cundinamarca, Colombia** (`co-boyaca-cundinamarca`). Lo propio de Colombia (EVA, DIVIPOLA, SIPSA, IDEAM, UPRA, IGAC, Ley 1581) sigue viviendo en los adaptadores de cada fuente y en `sources.yaml`, no en el modelo (R7).
 
 ## Historias de usuario
 
@@ -31,14 +31,14 @@ estado: pendiente
 ### HU-002 · Confirmar los datasets NASA del enunciado
 
 - **Historia:** Como equipo, quiero confirmar los datasets NASA que propone el enunciado, para no construir sobre datos que no aplican.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Variables, resolución, periodo y forma de acceso documentados
   - [ ] Descarga de prueba para un municipio
-  - [ ] Dice si el enunciado fija una región o unos datos. Si no es compatible con la región piloto supuesta, se registra en `docs/registro-de-decisiones.md` y se lista qué adaptadores y entradas de `sources.yaml` hay que cambiar
+  - [ ] Dice si el enunciado fija una región o unos datos. Si no es compatible con la región piloto, se registra en `docs/registro-de-decisiones.md` y se lista qué adaptadores y entradas de `sources.yaml` hay que cambiar
   - [ ] Cada producto NASA que recomiende el enunciado y no esté en el MVP (POWER, NASADEM, IMERG, MODIS NDVI, SMAP, GIBS) queda listado con su HU nueva, que entra por su propio adaptador (decisión 12)
-  - [ ] La sede del equipo queda confirmada. Si es Moquegua (Perú, según la imagen del reto local) u otra fuera de Colombia, se decide por escrito si la región piloto sigue en el altiplano colombiano o pasa a la región de la sede, y se registra en `docs/registro-de-decisiones.md` con la lista de adaptadores (oferta, límites, código territorial) que cambiarían
-- **Notas:** El enunciado completo sale el 28 de octubre. Hasta entonces la región es un supuesto (decisión 11). El reto local de la sede de Moquegua dice: «Crea una herramienta que combine datos satelitales, suelo y cultivos para ayudar a los agricultores a tomar mejores decisiones» (`specs/00-vision.md`). Que esa sea la sede del equipo es un supuesto por confirmar. Criterios de los productos NASA y de la sede agregados el 11 de octubre de 2026.
+  - [x] La sede del equipo queda confirmada (**Duitama, Boyacá, Colombia**, confirmada el 28 de octubre de 2026) y la región piloto se mantiene en el altiplano de Boyacá y Cundinamarca, registrada en `docs/registro-de-decisiones.md`
+- **Notas:** El 28 de octubre de 2026 se confirmó la sede **Duitama (Boyacá)** y la región piloto en Boyacá y Cundinamarca, manteniendo intacto el enfoque de no pronóstico (R1–R10). Queda por documentar la lista final de datasets NASA del enunciado oficial.
 
 ### HU-003 · Verificar SIPSA y decidir si entra al P0
 

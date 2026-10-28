@@ -19,7 +19,7 @@ Condicionada a HU-003: solo entra si SIPSA cubre la región; si no, el P0 cubre 
 
 **SIPSA verificado el 20 de octubre de 2026 (insumo de HU-003):** el servicio web del DANE (SOAP 1.2, operación `promediosSipsaParcial`) responde sin cuenta y trae el precio mínimo, medio y máximo por kilo de cada producto, central y día desde el 1 de febrero de 2020 (unos 300 MB). Corabastos tiene 36 productos y Tunja 33, con datos hasta el día anterior. La decisión de si la señal `market` entra al P0 sigue siendo de HU-003.
 
-SIPSA es de Colombia: es la fuente supuesta para la región piloto (decisión 11). Si la región cambia, `sources.yaml` dice qué fuente de precios calcula la señal `market` en la nueva región. Con varias fuentes de precios, se muestran juntas y nunca se mezclan.
+SIPSA es de Colombia y cubre las centrales de referencia de la región confirmada para la sede de Duitama (**Boyacá y Cundinamarca**, decisión 11, HU-002). Si se configura otra región, `sources.yaml` dice qué fuente de precios calcula la señal `market` en ella. Con varias fuentes de precios, se muestran juntas y nunca se mezclan.
 
 ## Historias de usuario
 
