@@ -7,6 +7,10 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Decisión | Elegida | Fecha |
 |---|---|---|
 | Herramienta de backlog | GitHub Projects | 10 oct 2026 |
+| Aptitud del cultivo | Por temperatura media anual (UPRA y FAO EcoCrop), no por altitud: decisión 13 | 16 oct 2026 |
+| Identificadores de los cultivos | `papa`, `arveja`, `haba`, `maiz`, `zanahoria`, `cebolla_bulbo`, `avena_vicia` y `descanso`. Un `crop_id` es un cultivo con ficha propia (especie o tipo con sus etapas, temperaturas y precio), no una variedad: papa pastusa o capira son `papa`; la papa criolla y la cebolla larga serían otros cultivos (`papa_criolla`, `cebolla_larga`), como los separa SIPSA. Cambiado el 8 de noviembre de 2026, aprobado por Felipe: antes `cebolla` y `abono`, que eran ambiguos (en Boyacá la cebolla larga es un cultivo grande). Las láminas de `design/` siguen con sus claves internas | 16 oct 2026; 8 nov 2026 |
+| Límites municipales | Servicio MGN 2025 del geoportal del DANE, por departamento, simplificado a unos 10 m; un lote dibujado se valida contra él con ese margen | 15 oct 2026 |
+| Área de un lote dibujado | La calcula la API sobre el elipsoide WGS84 (pyproj); la web muestra al dibujar una estimación sobre una esfera de igual área | 15 oct 2026 |
 | Catálogo de municipios antes que los lotes | Se adelanta la parte de municipios de HU-044 con DIVIPOLA del DANE (datos reales, Boyacá y Cundinamarca) en vez de un catálogo de ejemplo: si el 28 de octubre cambia la región, cambia el adaptador | 15 oct 2026 |
 | Diseños de Mi finca y «Lote sin dibujar» (tanda 11) | Aprobados por Felipe para la entrega 1 de Mis lotes, sin el mapa | 15 oct 2026 |
 | Límites de las cuentas | En la API y en memoria, sin guardar la IP: 5 contraseñas malas por usuario y conexión, 20 por usuario desde cualquier conexión (en la base), 30 inicios de sesión y 10 registros por conexión, 4 cálculos de Argon2 a la vez. Se prefirió a un límite en el proxy porque el despliegue todavía no está definido | 15 oct 2026 |

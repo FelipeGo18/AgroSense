@@ -103,13 +103,13 @@ Criterios: el dato es abierto y tiene fuente (R8); el cálculo es una regla expl
 Aprobado por Felipe. Explicación en la decisión 9 de `docs/decisiones.md`; reglas en `specs/01-reglas.md`.
 
 1. **La decisión se evalúa por ventana de siembra**: una fecha de siembra más lo que dura el cultivo. Las ventanas se comparan por mes y por semana. Responde a lo que dicen los estudios de la sección 2: el cambio más común con información agroclimática es la **fecha de siembra**.
-2. **Aptitud del cultivo en la zona**, antes de todo: la altitud del municipio frente al rango de la ficha. Es un filtro (R3).
+2. **Aptitud del cultivo en la zona**, antes de todo: la temperatura media anual del municipio frente al rango de la ficha (por altitud hasta la decisión 13). Es un filtro (R3).
 3. **Seis señales en el P0**: agua, heladas, calor, suelo, oferta y mercado. El agua reemplaza a la señal que solo miraba la lluvia y sale del balance hídrico de EP-14; el calor es nueva. En el P1: exceso de lluvia, enfermedades por clima (la gota, punto 5 de la sección 3) y clima de cosecha (punto 7).
 4. **El riego cuenta**: los lotes guardan si tienen riego, y con riego la falta de lluvia no es un riesgo.
 5. **Orden de las ventanas**: un orden con las prioridades del agricultor reemplaza al «mejor mes» del punto 4 de la sección 3. Una ventana con una señal crítica es de alto riesgo y no se compensa. El mismo día el orden pasó a ir primero por el factor que más limita y después por el balance (sección 5c).
 6. **La señal de heladas** ya no depende del calendario: evalúa las semanas de la ventana en que el cultivo está en una etapa sensible. Es el calendario el que reutiliza las señales.
 7. **Sigue siendo historia de la zona, no pronóstico.** El semestre solo queda en la oferta de EVA, que se publica así.
-8. **Por confirmar con fuente (R8):** la temperatura máxima que aguanta cada cultivo y su rango de altitud. Sin fuente, el calor y la aptitud quedan en «datos insuficientes» (`docs/riesgos.md`).
+8. **Por confirmar con fuente (R8):** la temperatura máxima que aguanta cada cultivo y su rango de temperatura media anual (decisión 13). Sin fuente, el calor y la aptitud quedan en «datos insuficientes» (`docs/riesgos.md`).
 
 ## 5c. Qué cambió después, el mismo 11 de octubre: prioridades y fuentes
 
