@@ -39,7 +39,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 ### HU-220 · Etapas de una ventana por calendario
 
 - **Historia:** Como motor, quiero las etapas de un cultivo y su cosecha estimada desde una fecha de siembra con la duración de su ficha, para evaluar cualquier ventana sin depender de grados-día.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Con `sowing_date` y los `days` de `crop_stages`, da la etapa de cada día de la ventana, los meses que caen en etapas sensibles a la helada y al calor, y `harvest_estimate` con `harvest_basis = calendar`
   - [ ] Lo usan las señales de la ventana (HU-071, HU-077 y HU-190), el orden de ventanas (HU-192), los ciclos de las estrategias (HU-213), «Qué cambió» (HU-217) y la etapa de las temporadas en curso del lote (`stage_method = calendar`)
@@ -48,7 +48,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
   - [ ] Prueba: un cultivo cuyas etapas suman 150 días, sembrado el 3 de agosto, da la cosecha estimada el 31 de diciembre
 - **Reglas que aplican:** R1, R4, R6, R8
 - **Contrato que toca:** `harvest_basis` (`calendar`), `stage_method`, `crop_stages`
-- **Notas:** Decisión 12. Reemplaza en el MVP al cálculo por temperatura acumulada (HU-150 y HU-186, que pasaron a P1): cuando existan, la duración sale del clima de la zona y la base cambia a `normal_year`. Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. Reemplaza en el MVP al cálculo por temperatura acumulada (HU-150 y HU-186, que pasaron a P1): cuando existan, la duración sale del clima de la zona y la base cambia a `normal_year`. Agregada el 11 de octubre de 2026. Avance del 17 de octubre de 2026: `backend/engine/stages.py` (`stage_today`) da la etapa de hoy, su avance y la cosecha estimada de las temporadas en curso (`stage_method = calendar`); falta la etapa de cada día de una ventana y los meses sensibles, para las señales.
 
 ### HU-143 · Lluvia y ET0 mensuales por municipio
 
