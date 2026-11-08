@@ -13,6 +13,9 @@ uv run python -m pipeline.build               # publica otra vez desde la caché
 - Antes de escribir se valida todo: `municipality_id` de 5 dígitos y sin repetir (R7), nombre, coordenadas en rango y
   que cada fila cite una fuente que está en `sources` (R8). Si algo falla, no se publica nada.
 - Lo que todavía no tiene fuente va nulo, nunca inventado (R1).
+- `pipeline/sipsa_crops.yaml` dice qué producto de SIPSA da el precio de cada cultivo del MVP (HU-003). Un cultivo sin
+  producto lleva su porqué. Antes de publicar se valida contra los precios: si un producto no está, si dos cultivos
+  usan el mismo o si falta el porqué, no se publica nada.
 - Los precios de SIPSA, además, los baja la API cada día por su cuenta (HU-222, `backend/README.md`): lo publicado
   aquí es el punto de partida.
 - `--descargar` baja también SIPSA: unos 300 MB que tardan un par de minutos. Sin `--descargar` hace falta su caché en

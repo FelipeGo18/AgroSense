@@ -5,11 +5,13 @@
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `market_price_day` y `market_price_season` (SIPSA del
 DANE, HU-221), `sources` y `manifest.json`. Cada tabla pasa por las
-validaciones antes de escribirse: si una falla, no se publica nada (R7, R8).
+validaciones antes de escribirse: si una falla, no se publica nada (R7, R8). También se valida el mapeo de los
+productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que se publican.
 """
 
 import argparse
 import json
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -21,7 +23,12 @@ import yaml
 from pipeline.sources import dane, sipsa
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
+CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
 PUBLISHED = Path("data/published")
+
+# Como pide el catálogo de cultivos (HU-061): `snake_case`, sin tildes.
+CROP_ID = re.compile(r"^[a-z][a-z0-9_]*$")
+CROP_FIELDS = {"product_id", "notes", "reason"}
 
 
 class ValidationError(ValueError):
@@ -30,6 +37,11 @@ class ValidationError(ValueError):
 
 def load_region(path: Path = REGION_FILE) -> dict[str, Any]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def load_crops(path: Path = CROPS_FILE) -> dict[str, Any]:
+    """Qué producto de SIPSA da el precio de cada cultivo (HU-003): `crop_id` → `product_id`, `notes` y `reason`."""
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("crops")
 
 
 def validate(municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
@@ -75,17 +87,52 @@ def validate_market(prices: pl.DataFrame, sources: pl.DataFrame) -> None:
         raise ValidationError(f"Precios con una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def validate_crops(crops: Any, prices: pl.DataFrame) -> None:
+    """El mapeo de `sipsa_crops.yaml` (HU-003): cada cultivo tiene un producto que SIPSA publica en la región, o ninguno y
+    el porqué (R1). Un producto no da el precio de dos cultivos: dos productos tampoco se promedian (decisión 11)."""
+    if not isinstance(crops, dict) or not crops:
+        raise ValidationError("`sipsa_crops.yaml` no trae cultivos en `crops`.")
+    published = set(prices["product_id"].unique().to_list())
+    owners: dict[str, str] = {}
+    for crop_id, entry in crops.items():
+        if not isinstance(crop_id, str) or not CROP_ID.match(crop_id):
+            raise ValidationError(f"`crop_id` inválido en `sipsa_crops.yaml`: {crop_id!r}. Va en snake_case y sin tildes.")
+        if not isinstance(entry, dict) or "product_id" not in entry:
+            raise ValidationError(f"{crop_id}: falta `product_id` en `sipsa_crops.yaml` (nulo si SIPSA no tiene el cultivo).")
+        unknown = set(entry) - CROP_FIELDS
+        if unknown:
+            raise ValidationError(f"{crop_id}: campos que no se conocen en `sipsa_crops.yaml`: {sorted(unknown)}.")
+        product = entry["product_id"]
+        if product is None:
+            if not str(entry.get("reason") or "").strip():
+                raise ValidationError(f"{crop_id}: sin producto de SIPSA hay que decir por qué en `reason` (R1).")
+            continue
+        if not isinstance(product, str) or product not in published:
+            raise ValidationError(f"{crop_id}: el producto {product!r} no está en los precios de SIPSA que se publican.")
+        if product in owners:
+            raise ValidationError(f"El producto {product!r} da el precio de dos cultivos: {owners[product]} y {crop_id}.")
+        owners[product] = crop_id
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
     sources: pl.DataFrame,
     folder: Path = PUBLISHED,
     prices: pl.DataFrame | None = None,
+    crops: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4)."""
+    """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
+
+    Con `crops` (el mapeo de `sipsa_crops.yaml`), lo valida contra los precios antes de escribir nada.
+    """
     validate(municipalities, sources)
     if prices is not None:
         validate_market(prices, sources)
+    if crops is not None:
+        if prices is None:
+            raise ValidationError("El mapeo de `sipsa_crops.yaml` se valida contra los precios de SIPSA, y no hay precios.")
+        validate_crops(crops, prices)
     folder.mkdir(parents=True, exist_ok=True)
     municipalities.write_parquet(folder / "municipalities.parquet")
     sources.sort("source_id").write_parquet(folder / "sources.parquet")
@@ -128,7 +175,7 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
     municipalities = dane.municipalities(rows, region["region"]["departments"])
     prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache)
     sources = pl.DataFrame([dane.source(meta), sipsa.source(prices, downloaded_at)])
-    return publish(region, municipalities, sources, folder, prices)
+    return publish(region, municipalities, sources, folder, prices, load_crops())
 
 
 def main() -> None:

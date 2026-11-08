@@ -8,7 +8,7 @@
 |---|---|---|---|---|---|---|
 | [EP-00](epicas/EP-00-alcance.md) | HU-001 | Comparar la cobertura de EVA y elegir región | P0 | M | pendiente | |
 | [EP-00](epicas/EP-00-alcance.md) | HU-002 | Confirmar los datasets NASA del enunciado | P0 | S | en curso | Sede Duitama y región Boyacá/Cundinamarca confirmadas (28 oct); falta documentar los datasets del enunciado |
-| [EP-00](epicas/EP-00-alcance.md) | HU-003 | Verificar SIPSA y decidir si entra al P0 | P0 | S | pendiente | |
+| [EP-00](epicas/EP-00-alcance.md) | HU-003 | Verificar SIPSA y decidir si entra al P0 | P0 | S | en curso | Verificado y mapeado (7 nov): SIPSA cubre papa, arveja, cebolla de bulbo y zanahoria. Propuesta «entra», por aprobar |
 | [EP-00](epicas/EP-00-alcance.md) | HU-004 | Confirmar qué se puede preparar antes del evento | P0 | S | pendiente | Urgente: esta semana |
 | [EP-01](epicas/EP-01-contratos.md) | HU-011 | Esquema de las tablas publicadas | P0 | M | pendiente | |
 | [EP-01](epicas/EP-01-contratos.md) | HU-012 | OpenAPI con ejemplos de cada estado | P0 | M | pendiente | |
@@ -38,7 +38,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-046 | Aguaceros, ventanas secas y gota por mes | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-188 | Riesgos que cubre un seguro, por municipio | P1 | S | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-189 | Lluvia en años de El Niño y La Niña | P1 | M | pendiente | |
-| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | pendiente | |
+| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | en curso | Índice y fuente hechos en HU-221; mapeo propuesto en HU-003; falta `market_month` |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-221 | Precios en la central de abastos | P1 | L | hecha | Nueva (20 oct). Falta aprobar el contrato y el diseño |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | hecha | Nueva (20 oct). La API baja SIPSA cada día. Falta aprobar el contrato |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | pendiente | Fichas de los 7 cultivos del MVP |

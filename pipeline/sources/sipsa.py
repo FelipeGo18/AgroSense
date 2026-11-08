@@ -4,8 +4,9 @@ Fuente: el servicio web del Sistema de Información de Precios y Abastecimiento 
 DANE. Es SOAP 1.2 y la operación `promediosSipsaParcial` devuelve, de una vez y sin filtros, el precio mínimo, medio y
 máximo por kilo de cada producto en cada central de abastos y cada día desde febrero de 2020 (unos 300 MB de XML).
 
-Lo propio de Colombia (SIPSA, sus centrales y sus nombres de producto) vive solo en este adaptador (R7). Los productos
-no se mapean todavía a `crop_id`: el catálogo de cultivos no existe (HU-061). Se publican con el nombre del DANE.
+Lo propio de Colombia (SIPSA, sus centrales y sus nombres de producto) vive solo en este adaptador y en la configuración
+del pipeline (R7). Los productos se publican con el nombre del DANE. Qué producto da el precio de cada cultivo lo dice
+`pipeline/sipsa_crops.yaml` (HU-003), que `pipeline.build` valida contra estos precios.
 """
 
 import re

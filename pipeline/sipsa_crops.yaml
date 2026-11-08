@@ -1,0 +1,40 @@
+# Qué producto de SIPSA da el precio de cada cultivo del MVP (HU-003). Lo usará `market_month` (HU-051) y, con ella,
+# la señal `market` (HU-073).
+#
+# Es lo propio de Colombia (R7): los productos son los de SIPSA, con la llave de `market_price_day` (`product_id`). Los
+# `crop_id` son los del catálogo (HU-061), que todavía no existe: si allí cambia uno, cambia aquí.
+#
+# Un cultivo tiene un solo producto o ninguno: dos productos no se promedian (decisión 11). Sin producto, `reason` dice
+# por qué, y la señal `market` de ese cultivo será `insufficient_data` (R1). `pipeline.build` falla si un producto no
+# está en los precios publicados, si dos cultivos usan el mismo producto o si falta el porqué.
+#
+# Verificado el 7 de noviembre de 2026 contra la descarga de SIPSA del 20 de octubre (las 23 centrales del servicio).
+# Es la propuesta de Datos: falta la revisión de Producto y agro (HU-051).
+
+crops:
+  papa:
+    product_id: papa-negra
+    notes: >-
+      «Papa negra*» junta las variedades de papa común, que es el cultivo del MVP. «Papa criolla» es otra papa, con
+      otro ciclo: no entra. En Tunja, SIPSA no publica papa negra desde el 27 de julio de 2021: desde entonces su precio
+      solo está en Corabastos.
+  arveja:
+    product_id: arveja-verde-en-vaina
+    notes: La arveja como se vende en fresco, en vaina.
+  cebolla_bulbo:
+    product_id: cebolla-cabezona-blanca
+    notes: La cebolla cabezona es la de bulbo. «Cebolla junca» es la de rama, otro cultivo, y no entra.
+  zanahoria:
+    product_id: zanahoria
+  haba:
+    product_id: null
+    reason: >-
+      SIPSA no publica haba en ninguna central. «Habichuela» y «Fríjol verde» son otros cultivos.
+  maiz:
+    product_id: null
+    reason: >-
+      SIPSA no publica maíz en grano en ninguna central. «Chócolo mazorca» es maíz cosechado tierno: serviría solo si
+      el maíz del MVP se vende como chócolo, y eso cambia su cosecha. Por decidir con Producto y agro.
+  avena_vicia:
+    product_id: null
+    reason: Es abono verde. Se incorpora al suelo y no se vende en la central.
