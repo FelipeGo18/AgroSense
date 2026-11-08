@@ -22,7 +22,8 @@ from ui import BORDE, D, DIR, FONT_TITLE, MOBILE, P, SEC, WHITE, button, card, c
 
 DATE = "19 de octubre de 2026"
 MARKET = "Corabastos (Bogotá)"
-SOURCE = "Fuente: DANE, Sistema de Información de Precios (SIPSA), precios mayoristas diarios."
+# La cita textual que piden los términos del DANE (HU-221), igual que en la pantalla.
+SOURCE = "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co. Datos de SIPSA, precios mayoristas diarios."
 NOT_FORECAST = "Así se ha movido el precio en la central. No es un pronóstico."
 
 # (producto, junta variedades, precio medio por kilo, cambio en una semana en %, fecha del último precio si no es hoy).
