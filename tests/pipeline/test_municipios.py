@@ -4,9 +4,11 @@ import json
 
 import polars as pl
 import pytest
+import shapely
+from shapely.geometry import box, mapping
 
 from pipeline import build
-from pipeline.sources import dane
+from pipeline.sources import dane, dane_mgn
 from tests.conftest import SAMPLE_META, SAMPLE_MUNICIPALITIES, SAMPLE_REGION
 
 
@@ -103,6 +105,9 @@ def test_reconstruye_desde_la_cache_sin_usar_la_red(tmp_path, monkeypatch):
     cache.mkdir()
     (cache / dane.ROWS_FILE).write_text(json.dumps(SAMPLE_MUNICIPALITIES), encoding="utf-8")
     (cache / dane.META_FILE).write_text(json.dumps(SAMPLE_META), encoding="utf-8")
+    for department, ids in (("15", ["15407", "15646"]), ("25", ["25899"])):
+        (cache / dane_mgn._file(department)).write_text(json.dumps(feature_collection(ids)), encoding="utf-8")
+    monkeypatch.setattr(build, "load_region", lambda: {**SAMPLE_REGION})
 
     def no_network(*args, **kwargs):
         raise AssertionError("no debe usar la red")
@@ -110,6 +115,7 @@ def test_reconstruye_desde_la_cache_sin_usar_la_red(tmp_path, monkeypatch):
     monkeypatch.setattr(dane.urllib.request, "urlopen", no_network)
     manifest = build.build(folder=tmp_path / "published", cache=cache)
     assert manifest["tables"]["municipalities"]["rows"] == 3
+    assert manifest["tables"]["municipality_boundaries"]["rows"] == 3
 
 
 def test_lo_publicado_en_el_repositorio_cumple_el_contrato():
@@ -118,5 +124,64 @@ def test_lo_publicado_en_el_repositorio_cumple_el_contrato():
     if not (folder / "manifest.json").exists():
         pytest.skip("data/published no está en esta imagen")
     municipalities = pl.read_parquet(folder / "municipalities.parquet")
-    build.validate(municipalities, pl.read_parquet(folder / "sources.parquet"))
+    sources = pl.read_parquet(folder / "sources.parquet")
+    build.validate(municipalities, sources)
     assert dict(municipalities.group_by("department_id").len().iter_rows()) == {"15": 123, "25": 116}
+    build.validate_boundaries(pl.read_parquet(folder / "municipality_boundaries.parquet"), municipalities, sources)
+
+
+# ---------- Límites municipales (MGN del DANE) ----------
+
+
+def feature_collection(ids):
+    """Como lo devuelve el geoportal del DANE: propiedades en minúscula y un cuadrado por municipio (ejemplo, R5)."""
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {"type": "Feature", "properties": {"mpio_cdpmp": mid, "mpio_cnmbre": "X"}, "geometry": mapping(box(i, 0, i + 0.5, 0.5))}
+            for i, mid in enumerate(ids)
+        ],
+    }
+
+
+def test_los_limites_se_guardan_por_codigo_validos_y_con_su_fuente():
+    table = dane_mgn.boundaries(feature_collection(["25899", "15646"])["features"])
+    assert table["municipality_id"].to_list() == ["15646", "25899"]
+    assert set(table["source_id"].to_list()) == {"dane_mgn_2025"}
+    assert all(shapely.from_wkb(wkb).is_valid for wkb in table["geometry"].to_list())
+
+
+def test_un_limite_que_se_cruza_se_corrige_al_leerlo():
+    bow = {"type": "Polygon", "coordinates": [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]]}
+    table = dane_mgn.boundaries([{"type": "Feature", "properties": {"MPIO_CDPMP": "15646"}, "geometry": bow}])
+    assert shapely.from_wkb(table["geometry"][0]).is_valid
+
+
+def boundary_table(ids):
+    return dane_mgn.boundaries(feature_collection(ids)["features"])
+
+
+def publish_with(tmp_path, boundaries):
+    municipalities = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
+    sources = pl.DataFrame([dane.source(SAMPLE_META), dane_mgn.source(SAMPLE_META)])
+    return build.publish(SAMPLE_REGION, municipalities, sources, tmp_path, boundaries)
+
+
+def test_publica_los_limites_y_los_cuenta_en_el_manifiesto(tmp_path):
+    manifest = publish_with(tmp_path, boundary_table(["15407", "15646", "25899"]))
+    assert manifest["tables"]["municipality_boundaries"]["rows"] == 3
+    assert (tmp_path / "municipality_boundaries.parquet").exists()
+
+
+@pytest.mark.parametrize(
+    ("ids", "message"),
+    [
+        (["15407", "15646"], "faltan \\['25899'\\]"),
+        (["15407", "15646", "25899", "99999"], "sobran \\['99999'\\]"),
+        (["15407", "15646", "25899", "25899"], "repetidos"),
+    ],
+)
+def test_limites_que_no_cuadran_con_los_municipios_no_se_publican(tmp_path, ids, message):
+    with pytest.raises(build.ValidationError, match=message):
+        publish_with(tmp_path, boundary_table(ids))
+    assert not (tmp_path / "manifest.json").exists()

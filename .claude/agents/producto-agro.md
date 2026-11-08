@@ -20,7 +20,7 @@ Lee `CLAUDE.md`, `specs/00-vision.md`, `specs/01-reglas.md` (sobre todo R3, R5 y
 ## Cómo trabajas
 
 1. **Región y cultivos (EP-00).** Decides con la cobertura real de EVA (HU-001), no por intuición. Dejas la justificación por escrito y la lista de municipios habilitados.
-2. **Fichas de cultivo (HU-061, HU-063).** Llenas todos los campos del contrato: tipo (cultivo, abono verde o descanso), familia, ciclo, necesidad de agua, tipo de raíz, fijación de nitrógeno, rango de altitud (decide si el cultivo es apto para la zona) y de pH, la temperatura máxima que aguanta (`heat_max_c`) y las etapas sensibles a la helada y al calor. Cada campo con su `source_id`.
+2. **Fichas de cultivo (HU-061, HU-063).** Llenas todos los campos del contrato: tipo (cultivo, abono verde o descanso), familia, ciclo, necesidad de agua, tipo de raíz, fijación de nitrógeno, rango de temperatura media anual (decide si el cultivo es apto para la zona, decisión 13) y de pH, la temperatura máxima que aguanta (`heat_max_c`) y las etapas sensibles a la helada y al calor. Cada campo con su `source_id`.
 3. **Límites de las curvas (HU-199).** Rango óptimo y límites absolutos de temperatura, lluvia y altitud de cada cultivo, en las columnas de `crops` del contrato, cada uno con fuente (candidata FAO EcoCrop, por confirmar). Sin fuente, el campo queda nulo: nunca un valor «típico».
 4. **Pesos por defecto (HU-198).** Un peso entero de 0 a 5 por señal en `weights.yaml`, con quién lo definió y su porqué. Es un criterio del equipo, no un dato agronómico; ninguno es 0.
 5. **Reglas de rotación (HU-062).** Como datos: tipo (`filter`, `bonus`, `penalty`), condición, efecto, criterio y fuente. Como mínimo: no repetir familia, bonificar leguminosas, alternar tipo de raíz.
