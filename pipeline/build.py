@@ -18,6 +18,7 @@ import polars as pl
 import shapely
 import yaml
 
+from pipeline import catalog as crops_catalog
 from pipeline.sources import dane, dane_mgn
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
@@ -77,6 +78,7 @@ def publish(
     sources: pl.DataFrame,
     folder: Path = PUBLISHED,
     boundaries: pl.DataFrame | None = None,
+    crops: tuple[str, pl.DataFrame, pl.DataFrame] | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4)."""
     validate(municipalities, sources)
@@ -87,10 +89,14 @@ def publish(
     sources.sort("source_id").write_parquet(folder / "sources.parquet")
     if boundaries is not None:
         boundaries.write_parquet(folder / "municipality_boundaries.parquet")
+    if crops is not None:
+        _, crops_table, stages_table = crops
+        crops_table.write_parquet(folder / "crops.parquet")
+        stages_table.write_parquet(folder / "crop_stages.parquet")
     manifest = {
         "dataset_version": region["dataset_version"],
-        # Las reglas agronómicas (catálogo) todavía no existen: no hay versión que decir.
-        "rules_version": None,
+        # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
+        "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "region": region["region"],
         # Los periodos de «Qué cambió» llegan con HU-216.
@@ -102,6 +108,9 @@ def publish(
     }
     if boundaries is not None:
         manifest["tables"]["municipality_boundaries"] = {"rows": boundaries.height, "coverage": region["region"]["name"]}
+    if crops is not None:
+        manifest["tables"]["crops"] = {"rows": crops[1].height, "coverage": "cultivos del MVP"}
+        manifest["tables"]["crop_stages"] = {"rows": crops[2].height, "coverage": "cultivos del MVP"}
     (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return manifest
 
@@ -116,8 +125,10 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
     municipalities = dane.municipalities(rows, departments)
     features, mgn_meta = dane_mgn.read_cache(departments, cache)
     boundaries = dane_mgn.boundaries(features)
-    sources = pl.DataFrame([dane.source(meta), dane_mgn.source(mgn_meta)])
-    return publish(region, municipalities, sources, folder, boundaries)
+    catalog = crops_catalog.load()
+    crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
+    sources = pl.concat([pl.DataFrame([dane.source(meta), dane_mgn.source(mgn_meta)]), catalog_sources], how="diagonal_relaxed")
+    return publish(region, municipalities, sources, folder, boundaries, (catalog["version"], crops_table, stages_table))
 
 
 def main() -> None:
@@ -126,7 +137,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         manifest = build(download=args.descargar)
-    except (FileNotFoundError, ValidationError) as error:
+    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError) as error:
         sys.exit(f"No se publicó nada: {error}")
     tables = ", ".join(f"{name} ({info['rows']} filas)" for name, info in manifest["tables"].items())
     print(f"Dataset {manifest['dataset_version']} publicado en {PUBLISHED}: {tables}.")

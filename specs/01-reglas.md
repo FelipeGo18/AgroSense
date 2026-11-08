@@ -44,12 +44,13 @@ Todo se evalúa sobre una **ventana de siembra**: una fecha de siembra más lo q
 
 Antes de evaluar ventanas, el motor comprueba que el cultivo se puede dar en ese municipio. Es un filtro, no una señal (R3).
 
-- Un cultivo **no es apto** si la altitud queda fuera de `altitude_min_m`–`altitude_max_m` de su ficha. Ejemplo: papa en un municipio de la costa.
-- La altitud sale de NASADEM (30 m): la del lote, si se consulta con un lote dibujado; si no, la del municipio. La respuesta dice cuál se usó.
+- Un cultivo **no es apto** si la temperatura media anual queda fuera de `tmean_min_c`–`tmean_max_c` de su ficha. Ejemplo: papa en un municipio de la costa. (Cambiado el 16 de octubre de 2026, decisión 13: antes se decidía por la altitud, pero ninguna fuente da bien la altitud de estos cultivos en Colombia y el criterio oficial de la UPRA es la temperatura media anual.)
+- La temperatura media anual es la de NASA POWER corregida por altitud con NASADEM (HU-044): la del municipio o, si se consulta con un lote dibujado, corregida a la altitud del lote. La respuesta dice cuál se usó, con la temperatura y la altitud.
 - Si no es apto, la luz es `red`, la acción es `rotate` («este cultivo no se da en su zona: elija otro»), la razón cita el dato de la ficha y su fuente, y **no se evalúan ventanas**.
 - Si la ficha no tiene ese rango con fuente, la aptitud es `insufficient_data`: no bloquea y se agrega a las limitaciones (R1, R8).
-- La aptitud se decide **solo por la altitud**. Solo la altitud fuera del rango absoluto da `not_suitable`.
-- `suitability.score` es una nota informativa de 0 a 100 con la curva de altitud: 100 dentro del rango óptimo (`altitude_opt_min_m`–`altitude_opt_max_m`) y 0 fuera del absoluto. No es una señal: no entra al semáforo ni al orden de las ventanas.
+- La aptitud se decide **solo por la temperatura media anual**. Solo una temperatura fuera del rango absoluto da `not_suitable`.
+- `suitability.score` es una nota informativa de 0 a 100 con la curva de temperatura media: 100 dentro del rango óptimo (`tmean_opt_min_c`–`tmean_opt_max_c`) y 0 fuera del absoluto. No es una señal: no entra al semáforo ni al orden de las ventanas.
+- Con la zonificación de la UPRA, el rango óptimo es la aptitud alta (A1) y el absoluto va de la baja a la alta (A3 a A1); fuera de él es no apta (N1).
 
 ## Señales de una ventana
 

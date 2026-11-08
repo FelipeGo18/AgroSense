@@ -61,7 +61,7 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 **Por qué:** «no sabemos» y «está mal» son cosas distintas. Mostrar la falta de datos como rojo haría creer que hay riesgo; rellenarla haría parecer sólida una recomendación que no lo es.
 
-Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decisión 9): una ficha sin rango de altitud con fuente deja la aptitud en «datos insuficientes» y no descarta el cultivo, y una señal sin datos no puntúa en el balance de una ventana.
+Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decisión 9): una ficha sin rango de temperatura media con fuente deja la aptitud en «datos insuficientes» y no descarta el cultivo, y una señal sin datos no puntúa en el balance de una ventana.
 
 **Ejemplo de error que esta regla evita:** decir que, si SIPSA falla, el mercado se apoya solo en EVA. EVA no tiene precios; sería mezclar oferta con mercado.
 
@@ -114,7 +114,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Qué es:** la decisión se evalúa sobre una **ventana de siembra**: una fecha de siembra más lo que dura ese cultivo en campo, de la siembra a la cosecha estimada. Las ventanas se comparan por mes y, dentro de un mes, por semana.
 
-- **Primero, la aptitud.** Antes de mirar fechas, el motor comprueba que el cultivo se da en ese municipio: la altitud debe caer en el rango de su ficha. Si no (papa en la costa), la respuesta lo dice con su razón y no evalúa ventanas. Es un filtro, no una señal, y se decide solo por la altitud; trae una nota informativa de 0 a 100 que no entra al semáforo ni al orden.
+- **Primero, la aptitud.** Antes de mirar fechas, el motor comprueba que el cultivo se da en ese municipio: la temperatura media anual debe caer en el rango de su ficha (por altitud hasta el 16 de octubre de 2026, decisión 13). Si no (papa en la costa), la respuesta lo dice con su razón y no evalúa ventanas. Es un filtro, no una señal, y se decide solo por la temperatura media anual; trae una nota informativa de 0 a 100 que no entra al semáforo ni al orden.
 - **Seis señales por ventana.** Agua, heladas, calor, suelo, oferta y mercado. Cada una se mide contra lo que ese cultivo necesita o aguanta: un cultivo que pide poca agua rara vez sale mal en agua. En el P1 se suman exceso de lluvia, enfermedades por clima y clima de cosecha.
 - **El riego cuenta.** El agricultor dice si tiene riego. Con riego, la falta de lluvia no es un riesgo: la señal de agua informa cuánto riego haría falta.
 - **Un orden para comparar.** Las ventanas se ordenan primero por el factor que más limita y después por un balance de 0 a 100, ponderado por las prioridades del agricultor (de 0 a 5 por señal); el método está en la decisión 10. Una ventana con una señal crítica desfavorable es de **alto riesgo**: el balance no la rescata, va después de las demás y nunca entra entre las mejores.
@@ -131,7 +131,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Lo que no cambia:** sigue siendo historia de la zona, no pronóstico (decisión 4); una señal sin datos no puntúa ni se rellena (decisión 5); el semáforo se decide por reglas, nunca por el balance (R2).
 
-**Lo que exige:** fichas con rango de altitud y temperatura máxima con fuente (R8), datos de clima por semana, y que el balance hídrico esté listo antes que el diagnóstico.
+**Lo que exige:** fichas con rango de temperatura media anual y temperatura máxima con fuente (R8), datos de clima por semana, y que el balance hídrico esté listo antes que el diagnóstico.
 
 **Reglas asociadas:** R1, R2, R3, R4, R5 y R8. Detalle en `specs/01-reglas.md`. Aprobada por Felipe el 11 de octubre de 2026.
 
@@ -215,6 +215,14 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 **Orden de recorte de los productos NASA:** primero SMAP, luego GIBS, luego el NDVI por lote (queda por municipio). POWER, NASADEM e IMERG no se recortan.
 
 **Reglas asociadas:** R1, R2, R3, R4, R5, R6, R8, R9 y R10. R9 suma `/changes` a los endpoints de cálculo y R10 suma la humedad del suelo y el verdor como datos de la zona. Detalle en `specs/01-reglas.md` («Estrategias de rotación» y «Qué cambió en la zona»). Decidida por Felipe el 11 de octubre de 2026.
+
+## 13. La aptitud se decide por la temperatura media anual
+
+**Decidido el 16 de octubre de 2026 por Felipe.** Antes, un cultivo era apto para la zona si la altitud del municipio caía en el rango de su ficha. Al armar el catálogo (HU-061) se vio que ninguna fuente da bien ese rango para el altiplano: FAO EcoCrop solo trae una altitud máxima y es baja para Colombia (2800 m para la papa, 2000 m para la cebolla de bulbo, 1600 m para la vicia), y con ella el motor diría «no apta» en zonas paperas y cebolleras reales. La UPRA, que hace la zonificación oficial de aptitud en Colombia, no usa la altitud sino la **temperatura media anual** (por ejemplo, papa Diacol Capiro: apta alta de 12 a 15 °C, no apta por debajo de 8 °C o por encima de 16 °C).
+
+- La aptitud compara la temperatura media anual de NASA POWER, corregida por altitud con NASADEM, con `tmean_min_c`–`tmean_max_c` de la ficha. Con un lote dibujado, se corrige a la altitud del lote.
+- Rangos de la UPRA donde hay zonificación (papa, cebolla de bulbo, maíz tradicional): el óptimo es la aptitud alta (A1) y el absoluto, de A3 a A1. Donde no la hay (arveja, haba, zanahoria, avena con vicia), el rango de temperatura de FAO EcoCrop, con un supuesto que se dice: en el trópico alto la temperatura media del ciclo es casi la media anual, porque varía poco entre meses.
+- La NASA queda más en el núcleo: la aptitud usa su temperatura, no solo la altitud.
 
 ## Cómo se conectan
 

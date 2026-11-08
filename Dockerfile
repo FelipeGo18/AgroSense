@@ -25,6 +25,8 @@ RUN uv sync --frozen
 COPY alembic.ini ./
 COPY backend ./backend
 COPY pipeline ./pipeline
+# El catálogo agronómico con fuentes (EP-06): el pipeline lo valida y lo publica.
+COPY catalog ./catalog
 # El dataset publicado por el pipeline: la API solo lo lee (AGROSENSE_DATA_DIR).
 COPY data/published ./data/published
 COPY tests ./tests

@@ -115,13 +115,18 @@ def dataset(tmp_path, monkeypatch):
     """Un dataset de ejemplo publicado con el mismo código del pipeline."""
     import polars as pl
 
+    from pipeline import catalog as crops_catalog
     from pipeline.build import publish
     from pipeline.sources import dane, dane_mgn
 
     folder = tmp_path / "published"
     sources = pl.DataFrame([dane.source(SAMPLE_META), dane_mgn.source(SAMPLE_META)])
     municipalities = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
-    publish(SAMPLE_REGION, municipalities, sources, folder, sample_boundaries(municipalities))
+    # El catálogo es el real (catalog/crops.yaml): son datos con fuente, no de ejemplo.
+    catalog = crops_catalog.load()
+    crops, stages, catalog_sources = crops_catalog.build(catalog)
+    sources = pl.concat([sources, catalog_sources], how="diagonal_relaxed")
+    publish(SAMPLE_REGION, municipalities, sources, folder, sample_boundaries(municipalities), (catalog["version"], crops, stages))
     monkeypatch.setenv("AGROSENSE_DATA_DIR", str(folder))
     get_settings.cache_clear()
     return folder
