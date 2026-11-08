@@ -17,7 +17,7 @@ estado: pendiente
 
 Condicionada a HU-003: solo entra si SIPSA cubre la región; si no, el P0 cubre la ausencia con HU-073.
 
-**SIPSA verificado el 20 de octubre de 2026 (insumo de HU-003):** el servicio web del DANE (SOAP 1.2, operación `promediosSipsaParcial`) responde sin cuenta y trae el precio mínimo, medio y máximo por kilo de cada producto, central y día desde el 1 de febrero de 2020 (unos 300 MB). Corabastos tiene 36 productos y Tunja 33, con datos hasta el día anterior. La decisión de si la señal `market` entra al P0 sigue siendo de HU-003.
+**SIPSA verificado el 20 de octubre de 2026 (insumo de HU-003):** el servicio web del DANE (SOAP 1.2, operación `promediosSipsaParcial`) responde sin cuenta y trae el precio mínimo, medio y máximo por kilo de cada producto, central y día desde el 1 de febrero de 2020 (unos 300 MB). Corabastos tiene 36 productos y Tunja 33, con datos hasta el día anterior. El 7 de noviembre se cruzó con los 7 cultivos del MVP: cubre papa, arveja, cebolla de bulbo y zanahoria, y no publica haba ni maíz en grano (`pipeline/sipsa_crops.yaml`). La decisión de si la señal `market` entra al P0 sigue siendo de HU-003, que tiene la propuesta de Datos.
 
 SIPSA es de Colombia y cubre las centrales de referencia de la región confirmada para la sede de Duitama (**Boyacá y Cundinamarca**, decisión 11, HU-002). Si se configura otra región, `sources.yaml` dice qué fuente de precios calcula la señal `market` en ella. Con varias fuentes de precios, se muestran juntas y nunca se mezclan.
 
@@ -26,18 +26,19 @@ SIPSA es de Colombia y cubre las centrales de referencia de la región confirmad
 ### HU-051 · Índice estacional de precio
 
 - **Historia:** Como agricultor, quiero saber si el precio suele estar bajo en el mes en que saldría la cosecha de mi ventana de siembra, para evitar vender barato.
-- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** en curso (falta `market_month`)
 - **Criterios de aceptación:**
   - [ ] Precio mensual por producto y central
-  - [ ] Índice estacional documentado
-  - [ ] Mapeo de producto a cultivo revisado
-  - [ ] Entrada de SIPSA en `sources` con `coverage` (mercados y país que cubre)
+  - [x] Índice estacional documentado (`market_price_season` en `specs/02-contratos.md`, hecho en HU-221)
+  - [ ] Mapeo de producto a cultivo revisado (propuesta de Datos en `pipeline/sipsa_crops.yaml`, HU-003; falta la revisión de Producto y agro)
+  - [x] Entrada de SIPSA en `sources` con `coverage` (mercados y país que cubre), hecha en HU-221
+- **Notas:** `market_month` se arma por `crop_id` con el producto que dice `pipeline/sipsa_crops.yaml`. Un cultivo sin producto no tiene filas (R1). `promediosSipsaParcial` no trae volumen: `volume_t` pide otra parte de SIPSA (el abastecimiento) o queda nulo (R1). Se decide con Haider o Felipe, porque toca el contrato.
 
 ### HU-221 · Precios en la central de abastos
 
 - **Historia:** Como agricultor de Boyacá, quiero ver a cuánto se paga hoy por kilo cada producto en Corabastos y en Tunja, cómo se movió en el último año y en qué meses suele estar más caro o más barato, para decidir qué sembrar y cuándo vender.
 - **Prioridad:** P1 · **Tamaño:** L · **Estado:** hecha (falta aprobar el contrato y el diseño)
-- **Notas:** Es lo que pasó en la central, nunca un pronóstico de precio (decisión 4): la pantalla lo dice. Los productos van con el nombre del DANE; el mapeo a `crop_id` es de HU-051, cuando exista el catálogo. Es la base de la que saldrá `market_month` (HU-051).
+- **Notas:** Es lo que pasó en la central, nunca un pronóstico de precio (decisión 4): la pantalla lo dice. Los productos van con el nombre del DANE; el mapeo a `crop_id` está en `pipeline/sipsa_crops.yaml` (HU-003). Es la base de la que saldrá `market_month` (HU-051).
 - **Criterios de aceptación:**
   - [x] Adaptador `pipeline/sources/sipsa.py`: baja la respuesta del servicio a `data/raw/sipsa/` y publica solo las centrales de `region.yaml` (Corabastos y Tunja)
   - [x] Tabla `market_price_day` (producto, central, día; mínimo, medio y máximo en pesos enteros por kilo). Un 0 o un vacío del DANE es nulo, nunca un precio (R1); un día sin precio medio no se publica

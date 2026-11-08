@@ -43,10 +43,24 @@ estado: pendiente
 ### HU-003 · Verificar SIPSA y decidir si entra al P0
 
 - **Historia:** Como equipo, quiero verificar SIPSA (productos, mercados, frecuencia y última fecha), para decidir si la señal de mercado entra al P0.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso (verificación y mapeo hechos; falta aprobar la decisión)
 - **Criterios de aceptación:**
-  - [ ] Decisión «entra» o «no entra» documentada
-  - [ ] Si entra, mapeo de producto SIPSA a `crop_id`
+  - [ ] Decisión «entra» o «no entra» documentada (propuesta de Datos abajo, **por aprobar** por el equipo)
+  - [x] Si entra, mapeo de producto SIPSA a `crop_id`: `pipeline/sipsa_crops.yaml`, validado por `pipeline.build` contra los precios publicados (`tests/pipeline/test_cultivos_sipsa.py`)
+- **Verificación (7 de noviembre de 2026, con la descarga de SIPSA del 20 de octubre):** el servicio web del DANE (`promediosSipsaParcial`, sin cuenta) trae el precio mínimo, medio y máximo por kilo de cada producto, central y día desde el 1 de febrero de 2020, hasta el día anterior a la descarga. Corabastos publica 36 productos unos seis días por semana; Tunja, 33, unos tres. Para los 7 cultivos del MVP:
+
+  | `crop_id` | Producto de SIPSA | Corabastos | Tunja |
+  |---|---|---|---|
+  | `papa` | Papa negra* | Precios e índice estacional (2021–2025) | Sin precios desde el 27 de julio de 2021: sin índice |
+  | `arveja` | Arveja verde en vaina | Precios e índice (2021–2025) | Precios e índice (2021–2025) |
+  | `cebolla_bulbo` | Cebolla cabezona blanca | Precios e índice (2021–2025) | Precios e índice (2021–2025) |
+  | `zanahoria` | Zanahoria | Precios e índice (2021–2025) | Precios e índice (2021–2025) |
+  | `haba` | — | SIPSA no publica haba en ninguna central | — |
+  | `maiz` | — | SIPSA no publica maíz en grano en ninguna central; «Chócolo mazorca» es maíz tierno (por decidir con Producto y agro) | — |
+  | `avena_vicia` | — | Abono verde: no se vende ni tiene diagnóstico | — |
+
+  «Papa criolla» y «Cebolla junca» son otros cultivos y no entran. El porqué de cada fila está en `pipeline/sipsa_crops.yaml`.
+- **Propuesta de Datos (por aprobar):** **entra.** Los datos de SIPSA alimentan la señal `market` del P0 en 4 de los 6 cultivos con diagnóstico (papa, arveja, cebolla de bulbo y zanahoria). En haba y maíz la señal es `insufficient_data` (R1): no cambia la luz y queda en las limitaciones (regla 5 de «Agregación del semáforo»). Por qué: el adaptador, sus validaciones y la actualización diaria ya existen (HU-221, HU-222); cubre las dos centrales de referencia de la región con más de seis años de precios; el índice estacional ya se calcula. Lo que falta es `market_month` por cultivo (HU-051, M) y la parte de datos de la señal (HU-073). Si se aprueba, HU-051 pasa a P0. Si no, la señal `market` queda en `insufficient_data` en el MVP y `/precios` sigue como P1. Pendiente aparte: la licencia de SIPSA (HU-221).
 
 ### HU-004 · Confirmar qué se puede preparar antes del evento
 

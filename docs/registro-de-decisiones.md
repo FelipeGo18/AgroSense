@@ -88,7 +88,7 @@ No se deciden por preferencia: se resuelven con el resultado de la HU indicada y
 | Fuente del clima histórico | HU-002 (enunciado del 28 de octubre) | 30 oct | Datos |
 | Fuente de los rangos óptimos y absolutos de cada cultivo (candidata FAO EcoCrop) | HU-199 | 13 nov (fin de la fase 0) | Producto y agro |
 | Región piloto (municipios habilitados según cobertura de EVA) | HU-001 (cobertura de EVA) | 31 oct | Producto y Datos |
-| SIPSA en el P0 | HU-003 | 1 nov | Datos |
+| SIPSA en el P0 | HU-003. Verificado el 7 nov: cubre papa, arveja, cebolla de bulbo y zanahoria, no haba ni maíz en grano. **Propuesta de Datos: entra** (detalle en EP-00) | 1 nov | Datos y Producto |
 | Qué código preparado se puede llevar al evento | HU-004 (términos de Space Apps 2026 y respuesta de la sede). **Urgente: define todo el plan** | 17 oct | Producto |
 | Productos NASA que recomienda el enunciado | HU-002 (enunciado del 28 de octubre); cada uno entra por su adaptador | 30 oct | Datos |
 | Acceso con cuenta de NASA Earthdata y tamaño de las descargas de IMERG, NASADEM, MODIS y SMAP | HU-206 a HU-210 | 24 oct | Datos |
