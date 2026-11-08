@@ -1,5 +1,5 @@
-# Qué producto de SIPSA da el precio de cada cultivo del MVP (HU-003). Lo usará `market_month` (HU-051) y, con ella,
-# la señal `market` (HU-073).
+# Qué producto de SIPSA da el precio de cada cultivo del MVP (HU-003). Con él se arma `market_month` (HU-051) y, con
+# ella, la señal `market` (HU-073).
 #
 # Es lo propio de Colombia (R7): los productos son los de SIPSA, con la llave de `market_price_day` (`product_id`). Los
 # `crop_id` son los del catálogo (HU-061), que todavía no existe: si allí cambia uno, cambia aquí.

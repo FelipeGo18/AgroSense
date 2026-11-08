@@ -1,7 +1,7 @@
 {
-  "dataset_version": "2026.10.2",
+  "dataset_version": "2026.11.1",
   "rules_version": null,
-  "created_at": "2026-10-20T16:26:33+00:00",
+  "created_at": "2026-11-08T03:37:16+00:00",
   "region": {
     "id": "co-boyaca-cundinamarca",
     "name": "Boyacá y Cundinamarca, Colombia",
@@ -32,6 +32,10 @@
     "market_price_season": {
       "rows": 756,
       "coverage": "Productos con al menos 3 años completos de precios"
+    },
+    "market_month": {
+      "rows": 84,
+      "coverage": "arveja, cebolla_bulbo, papa, zanahoria: índice estacional y precio de cada mes del último año completo, por central"
     }
   }
 }

@@ -4,7 +4,7 @@
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `market_price_day` y `market_price_season` (SIPSA del
-DANE, HU-221), `sources` y `manifest.json`. Cada tabla pasa por las
+DANE, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla pasa por las
 validaciones antes de escribirse: si una falla, no se publica nada (R7, R8). También se valida el mapeo de los
 productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que se publican.
 """
@@ -114,6 +114,31 @@ def validate_crops(crops: Any, prices: pl.DataFrame) -> None:
         owners[product] = crop_id
 
 
+def validate_market_month(month: pl.DataFrame, crops: dict[str, Any], sources: pl.DataFrame) -> None:
+    """`market_month` (HU-051): llave sin repetir, meses de 1 a 12, índice y precio presentes y positivos, el producto que
+    dice el mapeo y una fuente que existe (R1, R8). Vacía es válida: sin años completos no hay índice que publicar."""
+    repeated = month.filter(pl.struct("crop_id", "market_id", "month").is_duplicated())
+    if not repeated.is_empty():
+        raise ValidationError(f"`market_month` repite cultivo, central y mes: {repeated.head(3).to_dicts()}")
+    bad = month.filter(
+        ~pl.col("month").is_between(1, 12)
+        | pl.col("seasonal_index").is_null()
+        | (pl.col("seasonal_index") <= 0)
+        | pl.col("price_cop_kg").is_null()
+        | (pl.col("price_cop_kg") <= 0)
+        | ~pl.col("quality").is_in(["ok", "partial"])
+    )
+    if not bad.is_empty():
+        raise ValidationError(f"`market_month` con mes, índice, precio o calidad fuera de lo permitido: {bad.head(3).to_dicts()}")
+    expected = {crop_id: entry.get("product_id") for crop_id, entry in crops.items()}
+    wrong = [row for row in month.select("crop_id", "product_id").unique().iter_rows() if expected.get(row[0]) != row[1]]
+    if wrong:
+        raise ValidationError(f"`market_month` con un producto que no es el de `sipsa_crops.yaml`: {sorted(wrong)[:3]}")
+    unknown = set(month["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`market_month` con una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -124,22 +149,28 @@ def publish(
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
-    Con `crops` (el mapeo de `sipsa_crops.yaml`), lo valida contra los precios antes de escribir nada.
+    Con `crops` (el mapeo de `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051).
+    Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
+    season = month = None
     if prices is not None:
         validate_market(prices, sources)
+        season = sipsa.seasonal(prices)
     if crops is not None:
         if prices is None:
             raise ValidationError("El mapeo de `sipsa_crops.yaml` se valida contra los precios de SIPSA, y no hay precios.")
         validate_crops(crops, prices)
+        month = sipsa.monthly(prices, season, crops)
+        validate_market_month(month, crops, sources)
     folder.mkdir(parents=True, exist_ok=True)
     municipalities.write_parquet(folder / "municipalities.parquet")
     sources.sort("source_id").write_parquet(folder / "sources.parquet")
     if prices is not None:
-        season = sipsa.seasonal(prices)
         prices.write_parquet(folder / "market_price_day.parquet")
         season.write_parquet(folder / "market_price_season.parquet")
+    if month is not None:
+        month.write_parquet(folder / "market_month.parquet")
     manifest = {
         "dataset_version": region["dataset_version"],
         # Las reglas agronómicas (catálogo) todavía no existen: no hay versión que decir.
@@ -161,6 +192,12 @@ def publish(
         manifest["tables"]["market_price_season"] = {
             "rows": season.height,
             "coverage": f"Productos con al menos {sipsa.MIN_YEARS} años completos de precios",
+        }
+    if month is not None:
+        crops_with_rows = ", ".join(sorted(set(month["crop_id"].to_list()))) or "ningún cultivo"
+        manifest["tables"]["market_month"] = {
+            "rows": month.height,
+            "coverage": f"{crops_with_rows}: índice estacional y precio de cada mes del último año completo, por central",
         }
     (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return manifest

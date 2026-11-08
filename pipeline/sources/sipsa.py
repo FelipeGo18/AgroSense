@@ -173,6 +173,59 @@ def seasonal(prices: pl.DataFrame) -> pl.DataFrame:
     )
 
 
+MONTH_SCHEMA = {
+    "crop_id": pl.String,
+    "market_id": pl.String,
+    "month": pl.Int8,
+    "product_id": pl.String,
+    "price_cop_kg": pl.Int64,
+    "price_year": pl.Int32,
+    "volume_t": pl.Float64,
+    "seasonal_index": pl.Float64,
+    "years": pl.Int16,
+    "quality": pl.String,
+    "source_id": pl.String,
+}
+
+
+def monthly(prices: pl.DataFrame, season: pl.DataFrame, crops: dict[str, Any]) -> pl.DataFrame:
+    """La tabla `market_month` (HU-051): por cultivo, central y mes, el índice estacional y el precio de ese mes.
+
+    - El cultivo sale de `crops` (`sipsa_crops.yaml`, HU-003). Un cultivo sin producto no tiene filas (R1).
+    - `seasonal_index` y `years` son los de `market_price_season`: sin 3 años completos no hay filas (R1).
+    - `price_cop_kg` es el precio medio de ese mes en `price_year`, el último año completo del producto en esa central.
+      Es lo que se pagó, no un precio estimado: los 12 meses salen del mismo año, así que se comparan sin inflación.
+    - `volume_t` va nulo: `promediosSipsaParcial` no trae volumen (R1).
+    - `quality` es `partial` cuando el último año completo es anterior al año pasado: SIPSA dejó de publicar ese
+      producto en esa central o le faltan meses recientes. Si no, `ok`.
+    """
+    mapping = pl.DataFrame(
+        [{"crop_id": crop_id, "product_id": entry["product_id"]} for crop_id, entry in crops.items() if entry.get("product_id")],
+        schema={"crop_id": pl.String, "product_id": pl.String},
+    )
+    if prices.is_empty() or mapping.is_empty() or season.is_empty():
+        return pl.DataFrame(schema=MONTH_SCHEMA)
+    last_year_expected = prices["date"].max().year - 1
+    month_prices = (
+        prices.with_columns(pl.col("date").dt.year().alias("price_year"), pl.col("date").dt.month().cast(pl.Int8).alias("month"))
+        .group_by("product_id", "market_id", "price_year", "month")
+        .agg(pl.col("avg_cop_kg").mean().round(0).cast(pl.Int64).alias("price_cop_kg"))
+    )
+    return (
+        season.join(mapping, on="product_id")
+        .with_columns(pl.col("last_year").cast(pl.Int32).alias("price_year"))
+        .join(month_prices, on=["product_id", "market_id", "price_year", "month"], how="left")
+        .with_columns(
+            pl.lit(None, dtype=pl.Float64).alias("volume_t"),
+            pl.when(pl.col("price_year") >= last_year_expected).then(pl.lit("ok")).otherwise(pl.lit("partial")).alias("quality"),
+            pl.lit(SOURCE_ID).alias("source_id"),
+        )
+        .select(list(MONTH_SCHEMA))
+        .cast(MONTH_SCHEMA)
+        .sort("crop_id", "market_id", "month")
+    )
+
+
 def source(table: pl.DataFrame, downloaded_at: str) -> dict[str, Any]:
     """La fila de `sources` de esta fuente (R8)."""
     period = f"Del {table['date'].min()} al {table['date'].max()}" if table.height else None

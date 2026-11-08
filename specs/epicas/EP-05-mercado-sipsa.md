@@ -26,13 +26,14 @@ SIPSA es de Colombia y cubre las centrales de referencia de la región confirmad
 ### HU-051 · Índice estacional de precio
 
 - **Historia:** Como agricultor, quiero saber si el precio suele estar bajo en el mes en que saldría la cosecha de mi ventana de siembra, para evitar vender barato.
-- **Prioridad:** P1 · **Tamaño:** M · **Estado:** en curso (falta `market_month`)
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** hecha (falta aprobar el contrato y revisar el mapeo)
 - **Criterios de aceptación:**
-  - [ ] Precio mensual por producto y central
-  - [x] Índice estacional documentado (`market_price_season` en `specs/02-contratos.md`, hecho en HU-221)
+  - [x] Precio mensual por producto y central: `market_month` (`pipeline/sources/sipsa.py`, `monthly`), con el precio de cada mes del último año completo, publicada en el dataset `2026.11.1`
+  - [x] Índice estacional documentado (`market_price_season` y `market_month` en `specs/02-contratos.md`)
   - [ ] Mapeo de producto a cultivo revisado (propuesta de Datos en `pipeline/sipsa_crops.yaml`, HU-003; falta la revisión de Producto y agro)
   - [x] Entrada de SIPSA en `sources` con `coverage` (mercados y país que cubre), hecha en HU-221
-- **Notas:** `market_month` se arma por `crop_id` con el producto que dice `pipeline/sipsa_crops.yaml`. Un cultivo sin producto no tiene filas (R1). `promediosSipsaParcial` no trae volumen: `volume_t` pide otra parte de SIPSA (el abastecimiento) o queda nulo (R1). Se decide con Haider o Felipe, porque toca el contrato.
+  - [ ] Columnas de `market_month` aprobadas por Haider o Felipe (`specs/02-contratos.md`)
+- **Notas:** `market_month` se arma por `crop_id` con el producto que dice `pipeline/sipsa_crops.yaml`: arveja, cebolla de bulbo y zanahoria en Corabastos y Tunja, y papa solo en Corabastos (84 filas). Un cultivo sin producto, o sin 3 años completos en una central, no tiene filas allí (R1). El precio de cada mes es el que se pagó en el último año completo (`price_year`), no un promedio entre años, que mezclaría la inflación. Al contrato se sumaron `product_id`, `price_year` y `years`, para saber de dónde y de qué año sale cada número (R4, R8). `promediosSipsaParcial` no trae volumen: `volume_t` va nulo (R1) hasta que se agregue el abastecimiento de SIPSA. Qué central usa la señal `market` de un municipio es de HU-073. Pruebas: `tests/pipeline/test_precio_mensual.py`.
 
 ### HU-221 · Precios en la central de abastos
 
