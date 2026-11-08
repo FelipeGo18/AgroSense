@@ -70,7 +70,8 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
 ### HU-123 · Reconstruir el dataset con un comando
 
 - **Historia:** Como equipo, quiero reconstruir el dataset con un comando, para repetir la demo con los mismos datos.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Un comando regenera `data/published` desde la caché
-  - [ ] El resultado coincide con el manifiesto
+  - [x] Un comando regenera `data/published` desde la caché: `uv run python -m pipeline.build` (con `--descargar`, antes baja las fuentes)
+  - [x] El resultado coincide con el manifiesto: al terminar de publicar, `pipeline.build` revisa que cada tabla que nombra el manifiesto exista y tenga sus filas, que no haya tablas que no nombre y que la versión sea la de `region.yaml`. `uv run python -m pipeline.build --verificar` hace solo esa revisión, sin publicar, y termina con error si no coincide
+- **Notas:** Hecha el 8 de noviembre de 2026 (`verify` en `pipeline/build.py`; pruebas en `tests/pipeline/test_reconstruir.py`). Reconstruir dos veces desde la misma caché da los mismos archivos byte a byte (R4); solo cambia la fecha de `created_at` del manifiesto.
