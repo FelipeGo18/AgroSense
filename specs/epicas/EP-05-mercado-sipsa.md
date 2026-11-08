@@ -51,7 +51,7 @@ SIPSA es de Colombia y cubre las centrales de referencia de la región confirmad
   - [ ] Contrato aprobado por Haider o Felipe (`specs/02-contratos.md`)
   - [x] Generador `design/pantallas/precios.py` con sus SVG (escritorio, móvil y producto abierto en móvil), con cifras reales de SIPSA
   - [ ] Láminas enviadas a Figma y aprobadas (la pantalla se programó antes del diseño, por pedido del equipo)
-  - [ ] Licencia de SIPSA verificada en los términos y condiciones del DANE
+  - [x] Licencia de SIPSA verificada en los términos y condiciones del DANE (8 de noviembre de 2026): autorizan usar y transformar la información con la cita «Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co». La pantalla, las láminas y la fila de `sources` la llevan
 
 ### HU-222 · Precios al día
 

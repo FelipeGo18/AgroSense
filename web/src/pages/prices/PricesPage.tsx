@@ -29,7 +29,8 @@ import { PriceChart, SeasonChart } from "./charts";
 const shortName = (name: string) => name.split(" (")[0];
 
 const NOT_FORECAST = "Así se ha movido el precio en la central. No es un pronóstico.";
-const SOURCE = "Fuente: DANE, Sistema de Información de Precios (SIPSA), precios mayoristas diarios.";
+// La cita textual que piden los términos del DANE para usar sus datos (HU-221), y después qué datos son.
+const SOURCE = "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co. Datos de SIPSA, precios mayoristas diarios.";
 
 /**
  * Precios en la central de abastos (HU-221): el último precio por kilo de cada producto en Corabastos o en Tunja, según

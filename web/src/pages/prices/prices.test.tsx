@@ -92,7 +92,10 @@ describe("Precios en la central de abastos (HU-221)", () => {
     open();
     expect(await screen.findByRole("heading", { level: 1, name: "¿A cuánto se paga en la central?" })).toBeInTheDocument();
     expect(await screen.findByText(/Precios del 19 de octubre de 2026 en Corabastos \(Bogotá\)/)).toBeInTheDocument();
-    expect(screen.getByText(/Fuente: DANE, Sistema de Información de Precios \(SIPSA\)/)).toBeInTheDocument();
+    // La cita textual que piden los términos del DANE (HU-221).
+    expect(
+      screen.getByText(/Fuente: Departamento Administrativo Nacional de Estadística: www\.dane\.gov\.co\. Datos de SIPSA/),
+    ).toBeInTheDocument();
     // Los precios se bajan del DANE cada día (HU-222): la pantalla dice cuándo, en la hora de Colombia.
     expect(screen.getByText(/Actualizados del DANE el 21 de octubre(,| a las) 3:05 p\.\s?m\.; se actualizan cada día/)).toBeInTheDocument();
     const tubers = screen.getByRole("heading", { level: 2, name: "Tubérculos, raíces y plátanos" }).closest("section")!;

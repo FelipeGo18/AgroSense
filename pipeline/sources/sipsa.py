@@ -25,6 +25,9 @@ PAGE_URL = (
     "https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa/"
     "servicio-web-para-consulta-de-la-base-de-datos-de-sipsa"
 )
+# Licencia de uso (HU-221): los términos del portal del DANE y la cita textual que piden a quien use sus datos.
+TERMS_URL = "https://www.dane.gov.co/index.php/terminos-y-condiciones"
+CITATION = "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co"
 ENVELOPE = (
     '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ser="http://servicios.sipsa.co.gov.dane/">'
     "<soap:Body><ser:promediosSipsaParcial/></soap:Body></soap:Envelope>"
@@ -238,8 +241,12 @@ def source(table: pl.DataFrame, downloaded_at: str) -> dict[str, Any]:
         "downloaded_at": downloaded_at,
         "period_covered": period,
         "coverage": f"Colombia; publicadas: {markets}" if markets else "Colombia",
-        # Sin verificar: el DANE publica sus «Términos y condiciones» aparte y nadie del equipo los ha revisado.
-        "license": "Por verificar en los términos y condiciones del DANE",
+        # Revisados el 8 de noviembre de 2026: la página del servicio web no trae condiciones propias, así que valen las
+        # del portal del DANE. Permiten usar y transformar los datos con una cita textual (CITATION), que la web muestra.
+        "license": (
+            f"Términos y condiciones del DANE ({TERMS_URL}): se autoriza el uso, aprovechamiento, transformación y análisis "
+            f"de la información citando «{CITATION}». Se rigen por la ley colombiana y el DANE puede cambiarlos sin aviso."
+        ),
         "notes": (
             "Precio mínimo, medio y máximo por kilo de cada producto en la central de abastos, por día. Es el precio "
             "mayorista (lo que se paga en la central), no el de la tienda. Los nombres con asterisco en SIPSA juntan "
