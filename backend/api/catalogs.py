@@ -1,6 +1,6 @@
 """Catálogos del dataset publicado: `/api/v1/catalogs/*` (HU-078; specs/02-contratos.md, «Endpoints»).
 
-Por ahora, los municipios de la región. Los cultivos, el límite y el suelo de cada municipio llegan con sus tablas.
+Los municipios de la región, su límite y los cultivos del catálogo agronómico. El suelo llega con su tabla (HU-181).
 """
 
 from typing import Any
@@ -71,3 +71,23 @@ def boundary(municipality_id: str, request: Request, dataset: Dataset = Depends(
         "properties": {"municipality_id": municipality_id, "name": municipality.name, "source_id": BOUNDARY_SOURCE},
         "geometry": shapely.geometry.mapping(geometry),
     }
+
+
+class CropItem(BaseModel):
+    crop_id: str
+    name_es: str
+    kind: str
+    archetype: str | None
+    family: str | None
+    cycle_months: float | None
+
+
+@router.get("/crops")
+def crops(request: Request, dataset: Dataset = Depends(require_dataset)) -> list[CropItem]:
+    """Los cultivos del catálogo, con lo que la web necesita para elegir y dibujar. La ficha completa la usa el motor."""
+    if not dataset.crops:
+        detail = f"Datos no disponibles (503) porque el dataset {dataset.version} no trae el catálogo de cultivos"
+        log.warning("dataset_unavailable", detail=detail)
+        raise ApiError(503, "dataset_unavailable", DATASET_UNAVAILABLE, log=detail)
+    explain(request, f"Cultivos consultados: {len(dataset.crops)} del catálogo {dataset.rules_version}")
+    return [CropItem(**{field: crop.get(field) for field in CropItem.model_fields}) for crop in dataset.crops.values()]

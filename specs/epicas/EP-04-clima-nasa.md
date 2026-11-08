@@ -79,7 +79,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Sin celdas válidas, `altitude_m` queda nulo y la aptitud es `insufficient_data` (R1)
 - **Reglas que aplican:** R1, R7, R8, R9
 - **Contrato que toca:** `municipalities.altitude_m`, `elevation_grid`
-- **Notas:** Decisión 12. Reemplaza al «modelo de elevación por elegir» de HU-044. La altitud del lote no se guarda: la API la calcula al vuelo (R9). Con un lote dibujado, la aptitud usa la altitud del lote (`specs/01-reglas.md`, «Aptitud del cultivo en la zona»). Supuesto por confirmar: en el MVP la corrección de la temperatura sigue usando la altitud del municipio, porque los indicadores de clima se precalculan por municipio; corregir por la altitud del lote necesita una decisión. No se recorta. Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. Reemplaza al «modelo de elevación por elegir» de HU-044. La altitud del lote no se guarda: la API la calcula al vuelo (R9). Con un lote dibujado, la aptitud usa la temperatura media corregida a la altitud del lote (`specs/01-reglas.md`, «Aptitud del cultivo en la zona», decisión 13). Supuesto por confirmar: en el MVP la corrección de la temperatura sigue usando la altitud del municipio, porque los indicadores de clima se precalculan por municipio; corregir por la altitud del lote necesita una decisión. No se recorta. Agregada el 11 de octubre de 2026.
 
 ### HU-207 · Lluvia por satélite con GPM IMERG
 

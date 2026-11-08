@@ -27,8 +27,8 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores (`previous_crop_ids`) y el primer ciclo; una que se viola excluye la estrategia (R3)
-  - [ ] Un ciclo con un cultivo que no es apto para la zona (HU-191) excluye la estrategia; el motivo cita el ciclo, el rango de altitud de la ficha y su fuente
-  - [ ] Un cultivo sin rango de altitud con fuente no se excluye por aptitud: se agrega a las limitaciones (R1)
+  - [ ] Un ciclo con un cultivo que no es apto para la zona (HU-191) excluye la estrategia; el motivo cita el ciclo, el rango de temperatura media de la ficha y su fuente
+  - [ ] Un cultivo sin rango de temperatura media con fuente no se excluye por aptitud: se agrega a las limitaciones (R1)
   - [ ] Un ciclo cuya ventana es de alto riesgo por clima (`water`, `frost` o `heat` desfavorable y crítica) excluye la estrategia; el motivo cita el ciclo, la señal crítica y su razón (R2)
   - [ ] La oferta y el mercado nunca excluyen una estrategia: un ciclo con `supply` o `market` desfavorable, aunque sea crítico, baja el criterio `income` y se dice en las razones
   - [ ] Un cultivo excluido por pH (HU-184) excluye la estrategia, con la regla citada
