@@ -9,6 +9,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Plate } from "@/components/ui/Plate";
 import { bbox, type LotPolygon } from "@/features/farm/geo";
 import { byId, formatHa, useBoundary, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
+import { cropNames, useCrops } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { Eyebrow } from "./common";
 
@@ -21,7 +22,13 @@ export function FarmPage() {
   return <RequireSession>{() => <Farm />}</RequireSession>;
 }
 
-const crops = (count: number) => (count === 0 ? "Sin siembra en curso" : count === 1 ? "1 siembra en curso" : `${count} siembras en curso`);
+/** «Papa y arveja en curso», con los nombres del catálogo. */
+function cropsText(ids: string[], names: Map<string, string>) {
+  if (ids.length === 0) return "Sin siembra en curso";
+  const named = [...new Set(ids)].map((id) => names.get(id) ?? id);
+  const list = named.length === 1 ? named[0] : `${named.slice(0, -1).join(", ")} y ${named.at(-1)!.toLowerCase()}`;
+  return `${list} en curso`;
+}
 
 function Farm() {
   const navigate = useNavigate();
@@ -169,6 +176,7 @@ function Thumb({ children }: { children: ReactNode }) {
 }
 
 function DrawnRow({ lot, place }: { lot: LotListItem; place: string | undefined }) {
+  const names = cropNames(useCrops().data);
   return (
     <Link to={PATHS.lot(lot.lot_id)} className="relative flex min-h-11 items-center gap-4 px-3 py-3 hover:brightness-[0.98]">
       <Plate c={12} fill="var(--color-superficie-panel)" stroke="var(--color-superficie-borde)" strokeWidth={2} />
@@ -181,7 +189,7 @@ function DrawnRow({ lot, place }: { lot: LotListItem; place: string | undefined 
           <span className="text-[14px] text-texto-secundario">{formatHa(lot.area_ha)}</span>
         </span>
         <span className="text-[14px] text-texto-secundario">
-          {crops(lot.current_crop_ids.length)}
+          {cropsText(lot.current_crop_ids, names)}
           {place ? ` · ${place}` : ""}
         </span>
       </span>
@@ -191,6 +199,7 @@ function DrawnRow({ lot, place }: { lot: LotListItem; place: string | undefined 
 
 /** Un lote sin dibujar: borde punteado y su contorno sin trazar. Tocarlo abre el lote; «Dibujar en el mapa», el dibujo. */
 function UndrawnRow({ lot, place }: { lot: LotListItem; place: string | undefined }) {
+  const names = cropNames(useCrops().data);
   return (
     <div className="relative flex items-start gap-4 px-3 py-3">
       <Plate c={12} fill="var(--color-superficie-panel)" stroke="var(--color-oscuro-cielo)" strokeWidth={2} dash="6 5" />
@@ -213,7 +222,7 @@ function UndrawnRow({ lot, place }: { lot: LotListItem; place: string | undefine
             <span className="text-[14px] text-texto-secundario">{formatHa(lot.area_ha)}</span>
           </span>
           <span className="text-[14px] text-texto-secundario">
-            {crops(lot.current_crop_ids.length)}
+            {cropsText(lot.current_crop_ids, names)}
             {place ? ` · ${place}` : ""}
           </span>
           <span className="text-[13px] text-texto-secundario">Área escrita a mano</span>

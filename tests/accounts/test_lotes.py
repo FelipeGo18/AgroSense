@@ -194,8 +194,10 @@ def test_el_detalle_trae_las_temporadas_en_curso_y_el_suelo_nulo(rosa, db):
         ("papa", 1.5, 30),
         ("arveja", 0.5, 30),
     ]
-    # Sin las etapas del cultivo con fuente, la etapa es nula.
-    assert detail["current_seasons"][0]["stage"] is None
+    # Con las etapas del catálogo (FAO-56 «Idaho»: 45 días de etapa inicial), la papa del día 30 va en la inicial.
+    papa = detail["current_seasons"][0]
+    assert (papa["stage"], papa["stage_method"], papa["harvest_basis"]) == ("initial", "calendar", "calendar")
+    assert papa["harvest_estimate"] == (sown + timedelta(days=165)).isoformat()
     assert rosa.get("/api/v1/lots").json()[0]["current_crop_ids"] == ["papa", "arveja"]
 
 

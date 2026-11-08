@@ -92,6 +92,57 @@ const LOT = {
 const DRAWN_LOT = { ...LOT, lot_id: "d1", name: "La Vega", geometry: INSIDE, area_ha: 0.99 };
 const DETAIL = { ...LOT, soil: null, current_seasons: [] };
 
+const CROPS = [
+  { crop_id: "papa", name_es: "Papa", kind: "crop", archetype: "tuber", family: "solanaceae", cycle_months: 5.4 },
+  { crop_id: "arveja", name_es: "Arveja", kind: "crop", archetype: "legume", family: "fabaceae", cycle_months: 3.6 },
+  { crop_id: "haba", name_es: "Haba", kind: "crop", archetype: "legume", family: "fabaceae", cycle_months: 4.6 },
+];
+// Las fechas de las siembras de ejemplo van contadas desde hoy: las pantallas no dejan fechas posteriores a hoy.
+const ago = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+};
+const SEASON = {
+  season_id: "s1",
+  lot_id: "a1",
+  crop_id: "papa",
+  area_ha: 1.5,
+  follows_season_ids: [],
+  sowing_date: ago(60),
+  harvest_date: null,
+  diagnosis_light: null,
+  diagnosis_light_default: null,
+  diagnosis_action: null,
+  diagnosis_weights: null,
+  diagnosis_irrigated: null,
+  dataset_version: null,
+  rules_version: null,
+  created_at: "2026-08-01T10:00:00Z",
+  updated_at: "2026-08-01T10:00:00Z",
+  days_since_sowing: 60,
+  stage: "development",
+  stage_progress_pct: 50,
+  stage_method: "calendar",
+  harvest_estimate: ago(-105),
+  harvest_basis: "calendar",
+  harvest_due: false,
+};
+const CURRENT = {
+  season_id: "s1",
+  crop_id: "papa",
+  area_ha: 1.5,
+  follows_season_ids: [],
+  sowing_date: SEASON.sowing_date,
+  days_since_sowing: 60,
+  stage: "development",
+  stage_progress_pct: 50,
+  stage_method: "calendar",
+  harvest_estimate: SEASON.harvest_estimate,
+  harvest_basis: "calendar",
+  harvest_due: false,
+};
+
 type Reply = { status: number; body?: unknown };
 
 function fakeApi(replies: Record<string, Reply>) {
@@ -109,6 +160,9 @@ const BASE = {
   "GET /api/v1/me": { status: 200, body: ROSA },
   "GET /api/v1/catalogs/municipalities": { status: 200, body: MUNICIPALITIES },
   "GET /api/v1/catalogs/municipalities/15646/boundary": { status: 200, body: SAMACA },
+  "GET /api/v1/catalogs/crops": { status: 200, body: CROPS },
+  "GET /api/v1/lots/a1/seasons": { status: 200, body: [] },
+  "GET /api/v1/lots/d1/seasons": { status: 200, body: [] },
 };
 const open = (path: string) => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />);
 
@@ -136,7 +190,7 @@ describe("Mi finca (HU-169)", () => {
     expect(within(map).getByRole("button", { name: "En el mapa: La Vega" })).toBeInTheDocument();
     expect(within(map).queryByText(/El Alto/)).toBeNull();
     const onMap = within(screen.getByRole("region", { name: "En el mapa" }));
-    expect(await onMap.findByText("1 siembra en curso · Samacá")).toBeInTheDocument();
+    expect(await onMap.findByText("Papa en curso · Samacá")).toBeInTheDocument();
     const undrawn = within(screen.getByRole("region", { name: "Sin dibujar · No están en el mapa" }));
     expect(undrawn.getByRole("link", { name: /El Alto/ })).toHaveAttribute("href", PATHS.lot("a1"));
     expect(undrawn.getByRole("link", { name: "Dibujar en el mapa" })).toHaveAttribute("href", PATHS.drawLot("a1"));
@@ -174,12 +228,16 @@ describe("En modo ligero se ven completas, sin tocar nada (HU-158)", () => {
     ...BASE,
     "GET /api/v1/lots": { status: 200, body: [{ ...LOT, current_crop_ids: [] }] },
     "GET /api/v1/lots/a1": { status: 200, body: DETAIL },
+    "GET /api/v1/lots/a1/seasons": { status: 200, body: [SEASON] },
   };
   it.each([
     [PATHS.farm, "Sus lotes", "link", "Agregar lote"],
     [PATHS.addLot, "¿Dónde está el lote nuevo?", "button", "Seguir: dibujar el lote"],
     [PATHS.lot("a1"), "El Alto", "link", "Editar lote"],
     [PATHS.editLot("a1"), "El Alto", "button", "Guardar cambios"],
+    [PATHS.sow("a1"), "Registrar la siembra", "button", "Guardar siembra"],
+    [PATHS.harvest("a1", "s1"), "Registrar la cosecha", "button", "Guardar solo la cosecha"],
+    [PATHS.editSeason("a1", "s1"), "Corregir la papa", "button", "Borrar esta siembra"],
   ] as const)("%s", async (path, title, role, action) => {
     setLightMode(true);
     fakeApi(replies);
@@ -487,6 +545,115 @@ describe("Editar lote (HU-164)", () => {
     await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Sí, borrar el lote" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
     expect(calls.some((call) => call.key === "DELETE /api/v1/lots/a1")).toBe(true);
+  });
+});
+
+describe("Siembras y cosechas (HU-165, HU-220)", () => {
+  const WITH_PAPA = { ...DETAIL, current_seasons: [CURRENT] };
+
+  it("el lote muestra cada siembra con su cultivo, etapa, día y cosecha estimada", async () => {
+    const harvested = {
+      ...SEASON,
+      season_id: "s0",
+      crop_id: "arveja",
+      area_ha: 1,
+      sowing_date: ago(300),
+      harvest_date: ago(200),
+      stage: null,
+    };
+    fakeApi({
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: WITH_PAPA },
+      "GET /api/v1/lots/a1/seasons": { status: 200, body: [SEASON, harvested] },
+    });
+    open(PATHS.lot("a1"));
+    expect(await screen.findByText("Papa")).toBeInTheDocument();
+    expect(screen.getByText(/Desarrollo · día 60/)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Desarrollo: lleva el 50 % de la etapa" })).toBeInTheDocument();
+    expect(screen.getByText(/Cosecha estimada: .* Sale de la duración de las etapas del cultivo/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Registrar cosecha" })).toHaveAttribute("href", PATHS.harvest("a1", "s1"));
+    // 2,5 ha del lote con 1,5 sembradas: queda 1 ha libre para otra siembra.
+    expect(screen.getByRole("link", { name: "Registrar siembra" })).toHaveAttribute("href", PATHS.sow("a1"));
+    const done = within(await screen.findByRole("region", { name: "Ya cosechado" }));
+    expect(done.getByText("Arveja")).toBeInTheDocument();
+    expect(done.getByRole("link", { name: "Corregir" })).toHaveAttribute("href", PATHS.editSeason("a1", "s0"));
+  });
+
+  it("con todo el lote sembrado no ofrece registrar otra siembra", async () => {
+    fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: { ...DETAIL, current_seasons: [{ ...CURRENT, area_ha: 2.5 }] } } });
+    open(PATHS.lot("a1"));
+    expect(await screen.findByText("Todo el lote está sembrado. Registre una cosecha para sembrar de nuevo.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Registrar siembra" })).toBeNull();
+  });
+
+  it("registrar una siembra manda cultivo, área, fecha y lo de antes, y vuelve al lote", async () => {
+    const calls = fakeApi({
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: WITH_PAPA },
+      "GET /api/v1/lots/a1/seasons": { status: 200, body: [SEASON] },
+      "POST /api/v1/lots/a1/seasons": { status: 201, body: { ...SEASON, season_id: "s2", crop_id: "arveja", area_ha: 1 } },
+    });
+    open(PATHS.sow("a1"));
+    expect(await screen.findByRole("heading", { level: 1, name: "Registrar la siembra" })).toBeInTheDocument();
+    // Lo libre es lo que no ocupa la papa en curso.
+    expect(screen.getByText("Hay 1,00 ha libres en el lote.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Guardar siembra" }));
+    expect(await screen.findByText("Elija el cultivo.")).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Cultivo"), "arveja");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar siembra" }));
+    expect(await screen.findByText("Siembra de arveja registrada.")).toBeInTheDocument();
+    const post = calls.find((call) => call.key === "POST /api/v1/lots/a1/seasons");
+    expect(post?.body).toEqual({ crop_id: "arveja", sowing_date: ago(0), area_ha: 1, follows_season_ids: [] });
+  });
+
+  it("no deja sembrar más de lo libre", async () => {
+    const calls = fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: WITH_PAPA } });
+    open(PATHS.sow("a1"));
+    const area = await screen.findByLabelText("Área que siembra (ha)");
+    await userEvent.clear(area);
+    await userEvent.type(area, "2");
+    await userEvent.selectOptions(screen.getByLabelText("Cultivo"), "haba");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar siembra" }));
+    expect(await screen.findByText("No cabe: en el lote quedan 1,00 ha libres.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("POST"))).toBe(false);
+  });
+
+  it("registrar la cosecha y seguir lleva a la siembra con esa cosecha marcada", async () => {
+    const harvestedPapa = { ...SEASON, harvest_date: ago(0), stage: null };
+    const replies: Record<string, Reply> = {
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: WITH_PAPA },
+      "GET /api/v1/lots/a1/seasons": { status: 200, body: [SEASON] },
+      "PATCH /api/v1/seasons/s1": { status: 200, body: harvestedPapa },
+    };
+    const calls = fakeApi(replies);
+    open(PATHS.harvest("a1", "s1"));
+    expect(await screen.findByRole("heading", { level: 1, name: "Registrar la cosecha" })).toBeInTheDocument();
+    expect(screen.getByText(/La cosecha estimada era el/)).toBeInTheDocument();
+    // Después de guardar, el lote y su historial ya vienen con la papa cosechada.
+    replies["GET /api/v1/lots/a1"] = { status: 200, body: DETAIL };
+    replies["GET /api/v1/lots/a1/seasons"] = { status: 200, body: [harvestedPapa] };
+    await userEvent.click(screen.getByRole("button", { name: "Guardar cosecha y registrar la siembra" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Registrar la siembra" })).toBeInTheDocument();
+    expect(calls.find((call) => call.key === "PATCH /api/v1/seasons/s1")?.body).toEqual({ harvest_date: ago(0) });
+    expect(await screen.findByRole("checkbox", { name: /Papa/ })).toBeChecked();
+    // El área sugerida es la de la papa cosechada.
+    expect(screen.getByLabelText("Área que siembra (ha)")).toHaveValue("1,5");
+  });
+
+  it("«Borrar esta siembra» pide confirmar y vuelve al lote", async () => {
+    const calls = fakeApi({
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: WITH_PAPA },
+      "GET /api/v1/lots/a1/seasons": { status: 200, body: [SEASON] },
+      "DELETE /api/v1/seasons/s1": { status: 204 },
+    });
+    open(PATHS.editSeason("a1", "s1"));
+    await userEvent.click(await screen.findByRole("button", { name: "Borrar esta siembra" }));
+    const dialog = await screen.findByRole("dialog", { name: "¿Borrar la papa?" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sí, borrar la siembra" }));
+    expect(await screen.findByText("Siembra borrada.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key === "DELETE /api/v1/seasons/s1")).toBe(true);
   });
 });
 
