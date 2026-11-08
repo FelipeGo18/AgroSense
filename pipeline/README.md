@@ -27,6 +27,7 @@ uv run python -m pipeline.build               # publica otra vez desde la caché
 |---|---|---|
 | `municipalities` (sin altitud todavía) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`) | HU-044 |
 | `market_price_day`, `market_price_season` | SIPSA del DANE, servicio web (`pipeline/sources/sipsa.py`): precios de Corabastos y Tunja desde 2020 y su temporada | HU-221 |
+| `market_month` | Lo mismo por cultivo, con el producto de `pipeline/sipsa_crops.yaml`: índice estacional y precio de cada mes del último año completo | HU-051 |
 | `sources` | Una fila por fuente | HU-122 |
 | `manifest.json` | Versión, región, filas y cobertura por tabla | HU-122 |
 
