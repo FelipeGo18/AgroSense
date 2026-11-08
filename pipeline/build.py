@@ -2,17 +2,25 @@
 
     uv run python -m pipeline.build              # lee la caché de data/raw/ y publica
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
+    uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `market_price_day` y `market_price_season` (SIPSA del
 DANE, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla pasa por las
 validaciones antes de escribirse: si una falla, no se publica nada (R7, R8). También se valida el mapeo de los
-productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que se publican.
+productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que se publican. Al terminar, lo
+publicado se revisa contra su manifiesto (HU-123).
+
+Cada paso deja una línea en la terminal con la fuente, las filas leídas y las descartadas con su motivo (HU-177). Usa la
+misma configuración de logs que la API (`backend/config/logging.py`): nivel y formato con `AGROSENSE_LOG_LEVEL` y
+`AGROSENSE_LOG_FORMAT`, sin depender de la base de datos.
 """
 
 import argparse
 import json
+import os
 import re
 import sys
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -20,11 +28,14 @@ from typing import Any
 import polars as pl
 import yaml
 
+from backend.config.logging import configure, get_logger
 from pipeline.sources import dane, sipsa
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
 PUBLISHED = Path("data/published")
+
+log = get_logger("agrosense.pipeline")
 
 # Como pide el catálogo de cultivos (HU-061): `snake_case`, sin tildes.
 CROP_ID = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -164,13 +175,14 @@ def publish(
         month = sipsa.monthly(prices, season, crops)
         validate_market_month(month, crops, sources)
     folder.mkdir(parents=True, exist_ok=True)
-    municipalities.write_parquet(folder / "municipalities.parquet")
-    sources.sort("source_id").write_parquet(folder / "sources.parquet")
+    tables = {"municipalities": municipalities, "sources": sources.sort("source_id")}
     if prices is not None:
-        prices.write_parquet(folder / "market_price_day.parquet")
-        season.write_parquet(folder / "market_price_season.parquet")
+        tables |= {"market_price_day": prices, "market_price_season": season}
     if month is not None:
-        month.write_parquet(folder / "market_month.parquet")
+        tables["market_month"] = month
+    for name, table in tables.items():
+        table.write_parquet(folder / f"{name}.parquet")
+        log.info("table_written", table=name, rows=table.height, detail=f"{name}: {table.height} filas escritas en {folder}")
     manifest = {
         "dataset_version": region["dataset_version"],
         # Las reglas agronómicas (catálogo) todavía no existen: no hay versión que decir.
@@ -203,14 +215,71 @@ def publish(
     return manifest
 
 
+def verify(folder: Path = PUBLISHED, dataset_version: str | None = None) -> dict[str, Any]:
+    """HU-123: lo publicado en `folder` coincide con su manifiesto. Cada tabla que nombra existe y tiene las filas que dice,
+    no hay tablas que no nombre y, con `dataset_version`, la versión es esa (la de `region.yaml`). Devuelve el manifiesto.
+
+    Así se sabe que una carpeta copiada o reconstruida es la de la demo, y no una a medias o mezclada con otra (R4).
+    """
+    manifest_path = folder / "manifest.json"
+    if not manifest_path.exists():
+        raise ValidationError(f"No hay `manifest.json` en {folder}: publique con `uv run python -m pipeline.build`.")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    listed = manifest.get("tables") or {}
+    problems = []
+    if dataset_version is not None and manifest.get("dataset_version") != dataset_version:
+        problems.append(f"el manifiesto es de la versión {manifest.get('dataset_version')} y `region.yaml` dice {dataset_version}")
+    for name, info in listed.items():
+        path = folder / f"{name}.parquet"
+        if not path.exists():
+            problems.append(f"falta `{name}.parquet`")
+            continue
+        rows = pl.scan_parquet(path).select(pl.len()).collect().item()
+        if rows != info.get("rows"):
+            problems.append(f"`{name}` tiene {rows} filas y el manifiesto dice {info.get('rows')}")
+    extra = sorted(path.name for path in folder.glob("*.parquet") if path.stem not in listed)
+    if extra:
+        problems.append(f"tablas que el manifiesto no nombra: {extra}")
+    if problems:
+        raise ValidationError(f"Lo publicado en {folder} no coincide con su manifiesto: {'; '.join(problems)}.")
+    return manifest
+
+
 def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE, market_cache: Path = sipsa.CACHE) -> dict[str, Any]:
     region = load_region()
+    version, name = region["dataset_version"], region["region"]["name"]
+    log.info("pipeline_started", dataset_version=version, detail=f"Reconstruyendo el dataset {version} de {name}")
     if download:
+        log.info("source_downloading", source=dane.SOURCE_ID, detail=f"Bajando DIVIPOLA del DANE a {cache}")
         dane.download(cache)
+        log.info("source_downloading", source=sipsa.SOURCE_ID, detail=f"Bajando SIPSA del DANE a {market_cache} (unos 300 MB)")
         sipsa.download(market_cache)
     rows, meta = dane.read_cache(cache)
     municipalities = dane.municipalities(rows, region["region"]["departments"])
-    prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache)
+    outside = len(rows) - municipalities.height
+    log.info(
+        "source_read",
+        source=dane.SOURCE_ID,
+        rows_read=len(rows),
+        rows_kept=municipalities.height,
+        rows_rejected=outside,
+        reasons={"outside_region": outside},
+        detail=f"DIVIPOLA: {len(rows)} filas leídas, {municipalities.height} de la región y {outside} descartadas por ser de "
+        "otros departamentos",
+    )
+    counts: Counter[str] = Counter()
+    prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache, counts)
+    rejected = counts["other_market"] + counts["no_average"]
+    log.info(
+        "source_read",
+        source=sipsa.SOURCE_ID,
+        rows_read=counts["read"],
+        rows_kept=prices.height,
+        rows_rejected=rejected,
+        reasons={"other_market": counts["other_market"], "no_average": counts["no_average"]},
+        detail=f"SIPSA: {counts['read']} filas leídas, {prices.height} de las centrales de la región y {rejected} descartadas: "
+        f"{counts['other_market']} de otras centrales y {counts['no_average']} sin precio medio ese día (R1)",
+    )
     sources = pl.DataFrame([dane.source(meta), sipsa.source(prices, downloaded_at)])
     return publish(region, municipalities, sources, folder, prices, load_crops())
 
@@ -218,13 +287,27 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reconstruye data/published desde la caché.")
     parser.add_argument("--descargar", action="store_true", help="Baja otra vez las fuentes a data/raw/ antes de publicar.")
+    parser.add_argument("--verificar", action="store_true", help="No publica: solo revisa que data/published coincida con su manifiesto.")
     args = parser.parse_args()
+    # El pipeline no usa la base de datos: lee solo el nivel y el formato de los logs, no toda la configuración de la API.
+    configure(os.environ.get("AGROSENSE_LOG_LEVEL", "INFO"), os.environ.get("AGROSENSE_LOG_FORMAT", "console"))
+    expected = load_region()["dataset_version"]
     try:
-        manifest = build(download=args.descargar)
+        if not args.verificar:
+            build(download=args.descargar)
+        manifest = verify(PUBLISHED, expected)
     except (FileNotFoundError, ValidationError) as error:
-        sys.exit(f"No se publicó nada: {error}")
+        event = "dataset_mismatch" if args.verificar else "dataset_not_published"
+        log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")
+        sys.exit(1)
     tables = ", ".join(f"{name} ({info['rows']} filas)" for name, info in manifest["tables"].items())
-    print(f"Dataset {manifest['dataset_version']} publicado en {PUBLISHED}: {tables}.")
+    verb = "revisado: coincide con su manifiesto" if args.verificar else "publicado y revisado contra su manifiesto"
+    log.info(
+        "dataset_verified" if args.verificar else "dataset_published",
+        dataset_version=manifest["dataset_version"],
+        tables=len(manifest["tables"]),
+        detail=f"Dataset {manifest['dataset_version']} {verb} en {PUBLISHED}: {tables}",
+    )
 
 
 if __name__ == "__main__":

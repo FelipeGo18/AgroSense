@@ -13,6 +13,7 @@ import re
 import unicodedata
 import urllib.request
 import xml.etree.ElementTree as ET
+from collections import Counter
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import IO, Any
@@ -92,19 +93,24 @@ def _pesos(value: str | None) -> int | None:
     return pesos if pesos > 0 else None
 
 
-def read_cache(markets: dict[str, str], cache: Path = CACHE) -> tuple[pl.DataFrame, str]:
+def read_cache(markets: dict[str, str], cache: Path = CACHE, counts: Counter[str] | None = None) -> tuple[pl.DataFrame, str]:
     """Las filas de las centrales de `markets` (código de SIPSA → nombre que se muestra) y la fecha de descarga.
 
-    Recorre el XML por partes: no lo carga entero en memoria.
+    Recorre el XML por partes: no lo carga entero en memoria. Con `counts`, cuenta lo leído y lo descartado (ver `prices`).
     """
     rows_path, meta_path = cache / ROWS_FILE, cache / META_FILE
     if not rows_path.exists() or not meta_path.exists():
         raise FileNotFoundError(f"No está la caché de SIPSA en {cache}. Bájela con: uv run python -m pipeline.build --descargar")
-    return prices(rows_path, markets), meta_path.read_text(encoding="utf-8").strip()
+    return prices(rows_path, markets, counts), meta_path.read_text(encoding="utf-8").strip()
 
 
-def prices(xml: Path | IO[bytes], markets: dict[str, str]) -> pl.DataFrame:
-    """La tabla `market_price_day` a partir de la respuesta del servicio, ordenada por su llave (R4)."""
+def prices(xml: Path | IO[bytes], markets: dict[str, str], counts: Counter[str] | None = None) -> pl.DataFrame:
+    """La tabla `market_price_day` a partir de la respuesta del servicio, ordenada por su llave (R4).
+
+    Con `counts`, suma ahí las filas leídas (`read`) y las descartadas por motivo, para el log del pipeline (HU-177):
+    `other_market` (una central que no está en la región) y `no_average` (sin precio medio ese día, R1).
+    """
+    counts = Counter() if counts is None else counts
     records = []
     # La respuesta viene de una dirección fija del DANE. El expat de Python 3.12 no carga entidades externas y limita la
     # expansión de entidades, así que un XML hostil no lee archivos ni agota la memoria.
@@ -113,10 +119,15 @@ def prices(xml: Path | IO[bytes], markets: dict[str, str]) -> pl.DataFrame:
             continue
         row = {child.tag: child.text for child in element}
         element.clear()
+        counts["read"] += 1
         market_id = row.get("fuenId")
+        if market_id not in markets:
+            counts["other_market"] += 1
+            continue
         average = _pesos(row.get("promedioKg"))
         # Sin precio medio no hay precio de ese día: la fila no se publica (R1).
-        if market_id not in markets or average is None:
+        if average is None:
+            counts["no_average"] += 1
             continue
         name = (row.get("artiNombre") or "").strip()
         # El asterisco del DANE quiere decir que el precio junta varias variedades del producto.

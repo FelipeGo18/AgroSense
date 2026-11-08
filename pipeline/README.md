@@ -6,7 +6,15 @@ Descarga las fuentes a una caché, las valida y publica el dataset que lee la AP
 ```bash
 uv run python -m pipeline.build --descargar   # baja las fuentes a data/raw/ y publica
 uv run python -m pipeline.build               # publica otra vez desde la caché, sin red
+uv run python -m pipeline.build --verificar   # solo revisa que data/published coincida con su manifiesto
 ```
+
+- Al terminar de publicar, el comando revisa lo publicado contra su manifiesto (HU-123): cada tabla que nombra existe y
+  tiene sus filas, no hay tablas que no nombre y la versión es la de `region.yaml`. Si algo no coincide, termina con
+  error. Desde la misma caché, reconstruir da los mismos archivos byte a byte (R4); solo cambia `created_at`.
+- Cada paso deja una línea en la terminal (HU-177): por fuente, las filas leídas, las que quedan y las descartadas con su
+  motivo; por tabla, las filas escritas; al final, si se publicó o por qué no. Nivel y formato con `AGROSENSE_LOG_LEVEL`
+  y `AGROSENSE_LOG_FORMAT` (`console` o `json`), igual que la API.
 
 - `data/raw/` es caché y no va a git. `data/published/` sí va a git y entra en la imagen de Docker: es el dataset de la demo.
 - `pipeline/region.yaml` dice la región y la versión del dataset: **Boyacá y Cundinamarca, Colombia** (confirmada el 28 de octubre de 2026 con la sede de Duitama, HU-002). `dataset_version` sube a mano cada vez que cambia lo publicado (R4).
