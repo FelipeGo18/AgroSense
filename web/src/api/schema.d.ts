@@ -208,6 +208,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalogs/municipalities/{municipality_id}/soil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Soil
+         * @description El suelo estimado del municipio (`soil_municipality`): una estimación de 250 m, no del lote (R10).
+         */
+        get: operations["soil_api_v1_catalogs_municipalities__municipality_id__soil_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/lots": {
         parameters: {
             query?: never;
@@ -308,6 +328,106 @@ export interface paths {
         patch: operations["update_season_api_v1_seasons__season_id__patch"];
         trace?: never;
     };
+    "/api/v1/diagnostics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Diagnostics
+         * @description Diagnóstico de una ventana de siembra (HU-076). Es historia de la zona, no un pronóstico.
+         */
+        post: operations["diagnostics_api_v1_diagnostics_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotations
+         * @description Estrategias de rotación de hasta 3 ciclos, comparadas contra la rotación actual (HU-084, HU-223).
+         */
+        post: operations["rotations_api_v1_rotations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/water-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Water Plans
+         * @description Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10).
+         */
+        post: operations["water_plans_api_v1_water_plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Changes
+         * @description «Qué cambió en su zona» (HU-218): historia comparada, nunca pronóstico.
+         */
+        get: operations["changes_api_v1_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trends
+         * @description Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad.
+         */
+        get: operations["trends_api_v1_trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -371,6 +491,56 @@ export interface components {
             /** Next Before */
             next_before: string | null;
         };
+        /** BestWindowsByPeriod */
+        BestWindowsByPeriod: {
+            /** Before */
+            before: components["schemas"]["MonthWindow"][];
+            /** After */
+            after: components["schemas"]["MonthWindow"][];
+        };
+        /** Change */
+        Change: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "insufficient_data" | "not_applicable";
+            /** Before */
+            before: number | null;
+            /** After */
+            after: number | null;
+            /** Change */
+            change: number | null;
+        };
+        /** ChangesRequestEcho */
+        ChangesRequestEcho: {
+            /** Municipality Id */
+            municipality_id: string;
+            /** Crop Id */
+            crop_id: string;
+            /** Irrigated */
+            irrigated: boolean | null;
+        };
+        /** ChangesResponse */
+        ChangesResponse: {
+            request: components["schemas"]["ChangesRequestEcho"];
+            periods: components["schemas"]["Periods"];
+            precip_periods?: components["schemas"]["Periods"] | null;
+            suitability: components["schemas"]["SuitabilityResult"];
+            /** Months */
+            months: components["schemas"]["MonthChange"][];
+            best_windows: components["schemas"]["BestWindowsByPeriod"];
+            /**
+             * Weights Basis
+             * @enum {string}
+             */
+            weights_basis: "default" | "farmer";
+            /** Reasons */
+            reasons: string[];
+            /** Limitations */
+            limitations: string[];
+            versions: components["schemas"]["Versions"];
+        };
         /** CropItem */
         CropItem: {
             /** Crop Id */
@@ -421,6 +591,37 @@ export interface components {
             /** Harvest Due */
             harvest_due?: boolean | null;
         };
+        /** Cycle */
+        Cycle: {
+            /** Cycle */
+            cycle: number;
+            /** Crop Id */
+            crop_id: string;
+            /**
+             * Sowing Date
+             * Format: date
+             */
+            sowing_date: string;
+            /**
+             * Harvest Estimate
+             * Format: date
+             */
+            harvest_estimate: string;
+            /**
+             * Harvest Basis
+             * @enum {string}
+             */
+            harvest_basis: "calendar" | "normal_year";
+            /** Light */
+            light: ("green" | "yellow" | "red" | "not_evaluable") | null;
+            /** Light Default */
+            light_default: ("green" | "yellow" | "red" | "not_evaluable") | null;
+            /** Limiting Signal */
+            limiting_signal: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** High Risk */
+            high_risk: boolean;
+            diagnosis?: components["schemas"]["DiagnosisCore"] | null;
+        };
         /**
          * DeleteBody
          * @description Borrar la cuenta pide la contraseña: una sesión abierta en un equipo prestado no basta para borrarlo todo.
@@ -429,10 +630,190 @@ export interface components {
             /** Password */
             password: string;
         };
+        /**
+         * DiagnosisCore
+         * @description Lo que trae el diagnóstico de una ventana; un ciclo de una estrategia lo trae igual (HU-213).
+         */
+        DiagnosisCore: {
+            suitability: components["schemas"]["SuitabilityResult"];
+            window: components["schemas"]["Window"] | null;
+            overall: components["schemas"]["LightResult"];
+            overall_default: components["schemas"]["LightResult"];
+            weights: components["schemas"]["SignalWeights"];
+            /** Signals */
+            signals: {
+                [key: string]: components["schemas"]["Signal"];
+            } | null;
+            /** Limitations */
+            limitations: string[];
+            versions: components["schemas"]["Versions"];
+        };
+        /** DiagnosisRequest */
+        DiagnosisRequest: {
+            /**
+             * Municipality Id
+             * @example 15646
+             */
+            municipality_id: string;
+            /**
+             * Crop Id
+             * @example papa
+             */
+            crop_id: string;
+            /**
+             * Sowing Date
+             * Format: date
+             */
+            sowing_date: string;
+            /** Irrigated */
+            irrigated?: boolean | null;
+            priorities?: components["schemas"]["SignalWeights"] | null;
+            /** Lot Id */
+            lot_id?: string | null;
+        };
+        /** DiagnosisRequestEcho */
+        DiagnosisRequestEcho: {
+            /** Municipality Id */
+            municipality_id: string;
+            /** Crop Id */
+            crop_id: string;
+            /**
+             * Sowing Date
+             * Format: date
+             */
+            sowing_date: string;
+            /** Irrigated */
+            irrigated: boolean | null;
+            /** Lot Id */
+            lot_id: string | null;
+        };
+        /** DiagnosisResponse */
+        DiagnosisResponse: {
+            suitability: components["schemas"]["SuitabilityResult"];
+            window: components["schemas"]["Window"] | null;
+            overall: components["schemas"]["LightResult"];
+            overall_default: components["schemas"]["LightResult"];
+            weights: components["schemas"]["SignalWeights"];
+            /** Signals */
+            signals: {
+                [key: string]: components["schemas"]["Signal"];
+            } | null;
+            /** Limitations */
+            limitations: string[];
+            versions: components["schemas"]["Versions"];
+            request: components["schemas"]["DiagnosisRequestEcho"];
+            /** Best Windows */
+            best_windows?: components["schemas"]["WindowSummary"][] | null;
+        };
+        /**
+         * ErrorBody
+         * @description La forma de todo error de la API (contrato, «Errores»).
+         */
+        ErrorBody: {
+            error: components["schemas"]["ErrorDetail"];
+        };
+        /** ErrorDetail */
+        ErrorDetail: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Request Id */
+            request_id: string;
+        };
+        /** Exclusion */
+        Exclusion: {
+            /** Cycle */
+            cycle: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "rule" | "not_suitable" | "soil_ph" | "high_risk";
+            /** Rule Id */
+            rule_id?: string | null;
+            /** Signal */
+            signal?: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Reason */
+            reason: string;
+            /** Crop Ids */
+            crop_ids: string[];
+        };
+        /** FarmMonth */
+        FarmMonth: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            volume_m3: components["schemas"]["YearRange"];
+        };
+        /** FarmWater */
+        FarmWater: {
+            /** Months */
+            months: components["schemas"]["FarmMonth"][];
+            total_volume_m3: components["schemas"]["YearRange"];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HealthCriterion */
+        HealthCriterion: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "insufficient_data" | "not_applicable";
+            /** Level */
+            level: ("favorable" | "moderate" | "unfavorable") | null;
+            /** Rule Ids */
+            rule_ids: string[];
+            /** Reasons */
+            reasons: string[];
+        };
+        /**
+         * Issue
+         * @description Por qué una estrategia no cumple: la regla que viola, el cultivo no apto, el pH o el ciclo de alto riesgo.
+         */
+        Issue: {
+            /** Cycle */
+            cycle: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "rule" | "not_suitable" | "soil_ph" | "high_risk";
+            /** Rule Id */
+            rule_id?: string | null;
+            /** Signal */
+            signal?: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Reason */
+            reason: string;
+        };
+        /** LightResult */
+        LightResult: {
+            /**
+             * Light
+             * @enum {string}
+             */
+            light: "green" | "yellow" | "red" | "not_evaluable";
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "sow" | "other_window" | "rotate" | "review_data";
+            /** High Risk */
+            high_risk: boolean;
+            /**
+             * Weights Basis
+             * @enum {string}
+             */
+            weights_basis: "default" | "farmer";
+            /** Limiting Signal */
+            limiting_signal: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Reasons */
+            reasons: string[];
         };
         /** LoginBody */
         LoginBody: {
@@ -572,6 +953,25 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** MonthChange */
+        MonthChange: {
+            /** Month */
+            month: number;
+            frost_freq_pct: components["schemas"]["Change"];
+            precip_normal_mm: components["schemas"]["Change"];
+            tmax_p90_c: components["schemas"]["Change"];
+        };
+        /** MonthWindow */
+        MonthWindow: {
+            /** Month */
+            month: number;
+            /** Limiting Signal */
+            limiting_signal: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Limiting Score */
+            limiting_score: number | null;
+            /** High Risk */
+            high_risk: boolean;
+        };
         /** MunicipalityItem */
         MunicipalityItem: {
             /** Municipality Id */
@@ -585,12 +985,81 @@ export interface components {
             /** Lon */
             lon: number | null;
         };
+        /**
+         * MunicipalitySoil
+         * @description El suelo estimado del municipio (`soil_municipality`): una estimación de 250 m, no del lote (R10).
+         */
+        MunicipalitySoil: {
+            /** Municipality Id */
+            municipality_id: string;
+            ph: components["schemas"]["SoilRange"];
+            soc_g_kg: components["schemas"]["SoilRange"];
+            /** Nitrogen G Kg */
+            nitrogen_g_kg: number | null;
+            /** Clay Pct */
+            clay_pct: number | null;
+            /** Sand Pct */
+            sand_pct: number | null;
+            /** Silt Pct */
+            silt_pct: number | null;
+            /** Texture Class */
+            texture_class: string | null;
+            /** Slope Pct */
+            slope_pct: number | null;
+            /** Cells */
+            cells: number | null;
+            /**
+             * Quality
+             * @enum {string}
+             */
+            quality: "ok" | "partial";
+            /** Source Id */
+            source_id: string;
+            versions: components["schemas"]["Versions"];
+        };
+        /** NdviPoint */
+        NdviPoint: {
+            /** Period */
+            period: number;
+            /** Ndvi Normal */
+            ndvi_normal: number | null;
+        };
+        /** NdviSeries */
+        NdviSeries: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "insufficient_data" | "not_applicable";
+            /** Source Id */
+            source_id: string | null;
+            /** Quality */
+            quality: ("ok" | "partial") | null;
+            /** Points */
+            points: components["schemas"]["NdviPoint"][];
+        };
         /** PasswordBody */
         PasswordBody: {
             /** Current Password */
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** Period */
+        Period: {
+            /** Period Id */
+            period_id: string;
+            /** Start Year */
+            start_year: number;
+            /** End Year */
+            end_year: number;
+            /** Source Id */
+            source_id: string;
+        };
+        /** Periods */
+        Periods: {
+            before: components["schemas"]["Period"];
+            after: components["schemas"]["Period"];
         };
         /**
          * Profile
@@ -639,6 +1108,13 @@ export interface components {
                 [key: string]: number;
             } | null;
         };
+        /** RainYear */
+        RainYear: {
+            /** Normal */
+            normal: number | null;
+            /** Dry */
+            dry: number | null;
+        };
         /** RegisterBody */
         RegisterBody: {
             /** Username */
@@ -651,6 +1127,86 @@ export interface components {
             consent_version: number;
             /** Consent Accepted */
             consent_accepted: boolean;
+        };
+        /** RotationRequest */
+        RotationRequest: {
+            /**
+             * Municipality Id
+             * @example 15646
+             */
+            municipality_id: string;
+            /**
+             * Sowing Date
+             * Format: date
+             */
+            sowing_date: string;
+            /** Previous Crop Ids */
+            previous_crop_ids?: string[];
+            /** Current Crop Ids */
+            current_crop_ids?: string[] | null;
+            /**
+             * Cycles
+             * @default 3
+             * @enum {integer}
+             */
+            cycles: 2 | 3;
+            priorities: components["schemas"]["RotationWeights"];
+            signal_priorities?: components["schemas"]["SignalWeights"] | null;
+            /** Irrigated */
+            irrigated?: boolean | null;
+            /** Lot Id */
+            lot_id?: string | null;
+        };
+        /** RotationResponse */
+        RotationResponse: {
+            /** Strategies */
+            strategies: components["schemas"]["Strategy"][];
+            current_strategy: components["schemas"]["Strategy"] | null;
+            /** Excluded */
+            excluded: components["schemas"]["Exclusion"][];
+            /** Excluded Counts */
+            excluded_counts: {
+                [key: string]: number;
+            };
+            weights: components["schemas"]["RotationWeights"];
+            /**
+             * Soil Basis
+             * @enum {string}
+             */
+            soil_basis: "lot" | "municipality";
+            /**
+             * Slope Basis
+             * @enum {string}
+             */
+            slope_basis: "lot" | "municipality";
+            /** Limitations */
+            limitations: string[];
+            versions: components["schemas"]["Versions"];
+        };
+        /**
+         * RotationWeights
+         * @description El peso de 0 a 5 de cada criterio de las estrategias. Todos en 0 responde 422.
+         */
+        RotationWeights: {
+            /** Water */
+            water: number;
+            /** Soil */
+            soil: number;
+            /** Income */
+            income: number;
+            /** Risk */
+            risk: number;
+        };
+        /** Scores */
+        Scores: {
+            /** Water */
+            water: number | null;
+            /** Soil */
+            soil: number | null;
+            /** Income */
+            income: number | null;
+            /** Risk */
+            risk: number | null;
         };
         /** SeasonCreate */
         SeasonCreate: {
@@ -759,6 +1315,198 @@ export interface components {
             /** Follows Season Ids */
             follows_season_ids?: string[] | null;
         };
+        /** Signal */
+        Signal: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "insufficient_data" | "not_applicable";
+            /** Level */
+            level: ("favorable" | "moderate" | "unfavorable") | null;
+            /** Critical */
+            critical: boolean;
+            /** Score */
+            score: number | null;
+            /** Counts */
+            counts: boolean;
+            /** Indicators */
+            indicators: string[];
+            /** Reasons */
+            reasons: string[];
+            /** Sources */
+            sources?: components["schemas"]["SourceValue"][] | null;
+        };
+        /**
+         * SignalWeights
+         * @description El peso de 0 a 5 de cada señal del P0. Todas en 0 responde 422.
+         */
+        SignalWeights: {
+            /** Water */
+            water: number;
+            /** Frost */
+            frost: number;
+            /** Heat */
+            heat: number;
+            /** Soil */
+            soil: number;
+            /** Supply */
+            supply: number;
+            /** Market */
+            market: number;
+        };
+        /** SoilMoisture */
+        SoilMoisture: {
+            /** Month */
+            month: number;
+            /** Source Id */
+            source_id: string;
+            /** Indicator */
+            indicator: string;
+            /** Value */
+            value: number | null;
+            /** Unit */
+            unit: string;
+        };
+        /** SoilRange */
+        SoilRange: {
+            /** Value */
+            value: number | null;
+            /** P05 */
+            p05: number | null;
+            /** P95 */
+            p95: number | null;
+        };
+        /**
+         * SourceValue
+         * @description Una fuente de un indicador, para contrastar. `used` dice cuál calculó la señal; nunca se mezclan.
+         */
+        SourceValue: {
+            /** Source Id */
+            source_id: string;
+            /** Indicator */
+            indicator: string;
+            /** Value */
+            value: number | null;
+            /** Unit */
+            unit: string;
+            /** Period */
+            period?: string | null;
+            /** Preliminary */
+            preliminary?: boolean | null;
+            /** Used */
+            used: boolean;
+        };
+        /** Strategy */
+        Strategy: {
+            /** Rank */
+            rank: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "current" | "suggested";
+            /** Crop Ids */
+            crop_ids: string[];
+            /** Total Score */
+            total_score: number | null;
+            scores: components["schemas"]["Scores"];
+            vs_current?: components["schemas"]["VsCurrent"] | null;
+            /** Cycles */
+            cycles: components["schemas"]["Cycle"][];
+            /** Soil Health */
+            soil_health: {
+                [key: string]: components["schemas"]["HealthCriterion"];
+            };
+            /** Issues */
+            issues?: components["schemas"]["Issue"][];
+            /** Reasons */
+            reasons: string[];
+            /** Limitations */
+            limitations: string[];
+        };
+        /** SuitabilityResult */
+        SuitabilityResult: {
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "suitable" | "not_suitable" | "insufficient_data";
+            /** Score */
+            score: number | null;
+            /**
+             * Basis
+             * @enum {string}
+             */
+            basis: "lot" | "municipality";
+            /** Tmean Annual C */
+            tmean_annual_c: number | null;
+            /** Altitude M */
+            altitude_m: number | null;
+            /** Reasons */
+            reasons: string[];
+        };
+        /** SupplyPoint */
+        SupplyPoint: {
+            /** Year */
+            year: number;
+            /** Planted Ha */
+            planted_ha: number | null;
+            /** Preliminary */
+            preliminary: boolean | null;
+        };
+        /** SupplySemester */
+        SupplySemester: {
+            /** Year */
+            year: number;
+            /**
+             * Semester
+             * @enum {string}
+             */
+            semester: "A" | "B";
+            /** Preliminary */
+            preliminary: boolean;
+        };
+        /** SupplySeries */
+        SupplySeries: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "insufficient_data" | "not_applicable";
+            /** Source Id */
+            source_id: string | null;
+            /**
+             * Unit
+             * @default ha
+             * @constant
+             */
+            unit: "ha";
+            /** Semester */
+            semester: ("A" | "B") | null;
+            /** Points */
+            points: components["schemas"]["SupplyPoint"][];
+        };
+        /** TrendsRequestEcho */
+        TrendsRequestEcho: {
+            /** Municipality Id */
+            municipality_id: string;
+            /** Crop Id */
+            crop_id: string;
+            /**
+             * Sowing Date
+             * Format: date
+             */
+            sowing_date: string;
+        };
+        /** TrendsResponse */
+        TrendsResponse: {
+            request: components["schemas"]["TrendsRequestEcho"];
+            water: components["schemas"]["WaterSeries"];
+            supply: components["schemas"]["SupplySeries"];
+            ndvi: components["schemas"]["NdviSeries"];
+            versions: components["schemas"]["Versions"];
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -799,6 +1547,199 @@ export interface components {
             sources: {
                 [key: string]: unknown;
             }[];
+        };
+        /**
+         * Versions
+         * @description Las versiones del dataset y de las reglas con que se calculó (R4).
+         */
+        Versions: {
+            /** Dataset */
+            dataset: string | null;
+            /** Rules */
+            rules: string | null;
+        };
+        /**
+         * VsCurrent
+         * @description Cuánto gana (positivo) o pierde una estrategia frente a la rotación actual. Nulo si no califica en alguna.
+         */
+        VsCurrent: {
+            /** Water */
+            water: number | null;
+            /** Soil */
+            soil: number | null;
+            /** Income */
+            income: number | null;
+            /** Risk */
+            risk: number | null;
+            /** Total */
+            total: number | null;
+        };
+        /** WaterMonth */
+        WaterMonth: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /**
+             * Status
+             * @default available
+             * @enum {string}
+             */
+            status: "available" | "insufficient_data" | "not_applicable";
+            /** Stage */
+            stage: string | null;
+            /** Need Mm */
+            need_mm: number | null;
+            rain_mm: components["schemas"]["RainYear"];
+            deficit_mm: components["schemas"]["YearRange"];
+            volume_m3: components["schemas"]["YearRange"];
+        };
+        /** WaterPlanCrop */
+        WaterPlanCrop: {
+            /**
+             * Crop Id
+             * @example papa
+             */
+            crop_id: string;
+            /** Area Pct */
+            area_pct: number;
+            /**
+             * Sowing Date
+             * Format: date
+             */
+            sowing_date: string;
+        };
+        /** WaterPlanCropResult */
+        WaterPlanCropResult: {
+            /** Crop Id */
+            crop_id: string;
+            /** Area Ha */
+            area_ha: number;
+            /**
+             * Sowing Date
+             * Format: date
+             */
+            sowing_date: string;
+            /** Harvest Estimate */
+            harvest_estimate: string | null;
+            /** Harvest Basis */
+            harvest_basis: ("calendar" | "normal_year") | null;
+            /** Months */
+            months: components["schemas"]["WaterMonth"][];
+            total_volume_m3: components["schemas"]["YearRange"];
+        };
+        /** WaterPlanRequest */
+        WaterPlanRequest: {
+            /**
+             * Municipality Id
+             * @example 15646
+             */
+            municipality_id: string;
+            /** Total Area Ha */
+            total_area_ha: number;
+            /** Crops */
+            crops: components["schemas"]["WaterPlanCrop"][];
+        };
+        /** WaterPlanResponse */
+        WaterPlanResponse: {
+            request: components["schemas"]["WaterPlanRequest"];
+            /** Crops */
+            crops: components["schemas"]["WaterPlanCropResult"][];
+            farm: components["schemas"]["FarmWater"];
+            /** Soil Moisture */
+            soil_moisture: components["schemas"]["SoilMoisture"][];
+            sources: components["schemas"]["WaterSources"];
+            /**
+             * Soil Basis
+             * @enum {string}
+             */
+            soil_basis: "lot" | "municipality";
+            /** Limitations */
+            limitations: string[];
+            versions: components["schemas"]["Versions"];
+        };
+        /** WaterPoint */
+        WaterPoint: {
+            /** Year */
+            year: number;
+            /** Precip Mm */
+            precip_mm: number | null;
+            /** Need Mm */
+            need_mm: number | null;
+        };
+        /** WaterSeries */
+        WaterSeries: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "insufficient_data" | "not_applicable";
+            /** Source Id */
+            source_id: string | null;
+            /**
+             * Unit
+             * @default mm
+             * @constant
+             */
+            unit: "mm";
+            /** Points */
+            points: components["schemas"]["WaterPoint"][];
+        };
+        /** WaterSources */
+        WaterSources: {
+            /** Rain */
+            rain: string | null;
+            /** Et0 */
+            et0: string | null;
+            /** Soil */
+            soil: string | null;
+        };
+        /** Window */
+        Window: {
+            /**
+             * Sowing Start
+             * Format: date
+             */
+            sowing_start: string;
+            /**
+             * Harvest Estimate
+             * Format: date
+             */
+            harvest_estimate: string;
+            /**
+             * Harvest Basis
+             * @enum {string}
+             */
+            harvest_basis: "calendar" | "normal_year";
+            supply_semester: components["schemas"]["SupplySemester"] | null;
+        };
+        /** WindowSummary */
+        WindowSummary: {
+            /**
+             * Sowing Start
+             * Format: date
+             */
+            sowing_start: string;
+            /**
+             * Harvest Estimate
+             * Format: date
+             */
+            harvest_estimate: string;
+            /** Limiting Signal */
+            limiting_signal: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Limiting Score */
+            limiting_score: number | null;
+            /** Weighted Score */
+            weighted_score: number | null;
+            /** High Risk */
+            high_risk: boolean;
+        };
+        /** YearRange */
+        YearRange: {
+            /** Normal */
+            normal: number[] | null;
+            /** Dry */
+            dry: number[] | null;
         };
     };
     responses: never;
@@ -891,6 +1832,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     me_api_v1_me_get: {
@@ -909,6 +1859,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Profile"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -932,6 +1891,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -966,6 +1934,15 @@ export interface operations {
                     "application/json": components["schemas"]["Profile"];
                 };
             };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -997,6 +1974,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -1027,6 +2013,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityPage"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             /** @description Validation Error */
@@ -1133,6 +2128,92 @@ export interface operations {
             };
         };
     };
+    soil_api_v1_catalogs_municipalities__municipality_id__soil_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                municipality_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "municipality_id": "15646",
+                     *       "ph": {
+                     *         "value": 5.5,
+                     *         "p05": 5.1,
+                     *         "p95": 5.9
+                     *       },
+                     *       "soc_g_kg": {
+                     *         "value": 31,
+                     *         "p05": 22,
+                     *         "p95": 42
+                     *       },
+                     *       "nitrogen_g_kg": 2.4,
+                     *       "clay_pct": 28,
+                     *       "sand_pct": 40,
+                     *       "silt_pct": 32,
+                     *       "texture_class": "franco arcilloso",
+                     *       "slope_pct": 9,
+                     *       "cells": 9,
+                     *       "quality": "ok",
+                     *       "source_id": "soilgrids",
+                     *       "versions": {
+                     *         "dataset": "ejemplo",
+                     *         "rules": "ejemplo"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["MunicipalitySoil"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "dataset_unavailable",
+                     *         "message": "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde.",
+                     *         "request_id": "00000000-0000-4000-8000-000000000000"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     list_lots_api_v1_lots_get: {
         parameters: {
             query?: never;
@@ -1149,6 +2230,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LotListItem"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -1175,13 +2274,22 @@ export interface operations {
                     "application/json": components["schemas"]["LotOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -1206,13 +2314,31 @@ export interface operations {
                     "application/json": components["schemas"]["LotDetail"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -1235,13 +2361,31 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -1270,13 +2414,31 @@ export interface operations {
                     "application/json": components["schemas"]["LotOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -1301,13 +2463,31 @@ export interface operations {
                     "application/json": components["schemas"]["SeasonOut"][];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -1336,13 +2516,31 @@ export interface operations {
                     "application/json": components["schemas"]["SeasonOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -1365,13 +2563,31 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };
@@ -1400,13 +2616,322 @@ export interface operations {
                     "application/json": components["schemas"]["SeasonOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    diagnostics_api_v1_diagnostics_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    rotations_api_v1_rotations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RotationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotationResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    water_plans_api_v1_water_plans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaterPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaterPlanResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    changes_api_v1_changes_get: {
+        parameters: {
+            query: {
+                municipality_id: string;
+                crop_id: string;
+                irrigated?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangesResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    trends_api_v1_trends_get: {
+        parameters: {
+            query: {
+                municipality_id: string;
+                crop_id: string;
+                sowing_date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendsResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };

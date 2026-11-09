@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session as Db
 from backend.accounts import activity
 from backend.accounts.farm_models import Lot, Season
 from backend.accounts.models import User
+from backend.api import calc_examples
 from backend.api.auth import current_user, require_accounts
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain, request_id_of
@@ -27,7 +28,7 @@ from backend.dataset import Dataset, DatasetUnavailable, get_dataset
 from backend.db.session import get_db
 from backend.engine.stages import stage_today
 
-router = APIRouter(prefix="/api/v1", tags=["finca"], dependencies=[Depends(require_accounts)])
+router = APIRouter(prefix="/api/v1", tags=["finca"], dependencies=[Depends(require_accounts)], responses=calc_examples.responses(401, 422))
 
 LotName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
 # Mayor que cero y con tope: nadie tiene un lote de más de 100 000 ha, y la columna guarda 4 decimales.
@@ -186,7 +187,7 @@ def create_lot(
     return LotOut(**_out(lot))
 
 
-@router.get("/lots/{lot_id}")
+@router.get("/lots/{lot_id}", responses=calc_examples.responses(404))
 def get_lot(lot_id: uuid.UUID, request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> LotDetail:
     lot = _own_lot(db, user, lot_id)
     today = datetime.now(UTC).date()
@@ -219,7 +220,7 @@ def get_lot(lot_id: uuid.UUID, request: Request, user: User = Depends(current_us
     return LotDetail(**_out(lot), soil=None, current_seasons=seasons)
 
 
-@router.patch("/lots/{lot_id}")
+@router.patch("/lots/{lot_id}", responses=calc_examples.responses(404))
 def update_lot(
     lot_id: uuid.UUID,
     body: LotPatch,
@@ -277,7 +278,7 @@ def update_lot(
     return LotOut(**_out(lot))
 
 
-@router.delete("/lots/{lot_id}", status_code=204)
+@router.delete("/lots/{lot_id}", status_code=204, responses=calc_examples.responses(404))
 def delete_lot(lot_id: uuid.UUID, request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> Response:
     """Borra el lote y sus temporadas: se marcan con la misma hora, para restaurarlos juntos durante 30 días (HU-204)."""
     lot = _own_lot(db, user, lot_id)

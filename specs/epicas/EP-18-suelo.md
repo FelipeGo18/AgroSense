@@ -24,8 +24,8 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 - **Historia:** Como motor, quiero el suelo de la región en tablas publicadas, para evaluarlo sin consultar servicios externos.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Adaptador de SoilGrids (ISRIC, CC BY 4.0) con caché: pH, carbono orgánico, nitrógeno, arcilla, arena y limo de 0 a 30 cm, con el intervalo del 90 % del pH
-  - [ ] `soil_grid` (celdas de 250 m de la región) y `soil_municipality` (mediana por municipio, con `cells` y `quality`) según el contrato
+  - [ ] Adaptador de SoilGrids (ISRIC, CC BY 4.0) con caché: pH, carbono orgánico, nitrógeno, arcilla, arena y limo de 0 a 30 cm, con el intervalo del 90 % del pH y del carbono orgánico
+  - [ ] El suelo en `grid_cells` (la rejilla común de 250 m, decisión 15) y `soil_municipality` (mediana por municipio, con `cells` y `quality`) según el contrato
   - [ ] Entrada en `sources` con licencia y versión de SoilGrids
   - [ ] Comprobación manual en 2 municipios contra un estudio de suelos del IGAC, si lo hay (IGAC es de la región piloto supuesta en Colombia; con otra región, el estudio oficial que corresponda)
 - **Reglas que aplican:** R7, R8
@@ -36,11 +36,11 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 - **Historia:** Como agricultor, quiero ver el suelo estimado de mi lote, para entender qué le conviene.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] La API calcula el suelo del lote como mediana de las celdas de `soil_grid` que toca el polígono; sin polígono, usa `soil_municipality`, y lo dice en `basis`
+  - [ ] La API calcula el suelo del lote como la mediana de las celdas de `grid_cells` de su polígono (ver «La rejilla de 250 m» en el contrato); sin polígono, usa `soil_municipality`, y lo dice en `basis`
   - [ ] `soil` en la respuesta de `GET /lots/{lot_id}`
   - [ ] El suelo del lote no se guarda en la base de datos
   - [ ] `lot_id` opcional en `/diagnostics` y `/rotations` (y en `/calendar`, P1): usan el suelo del lote; sin sesión responde 401 y un lote ajeno, 404. `/water-plans` no recibe `lot_id` y usa siempre el suelo del municipio, también con cuenta
-  - [ ] Con el mismo método (mediana de las celdas que toca el polígono), la API calcula la altitud del lote (`elevation_grid`, HU-206) y su verdor (`ndvi_grid`, HU-209), sin guardarlos (R9)
+  - [ ] Con el mismo método, la API calcula la altitud y la pendiente del lote (`terrain`, de `grid_cells`, HU-206), sin guardarlas (R9). El verdor del lote es P1 (HU-209)
 - **Reglas que aplican:** R6, R9, R10
 - **Notas:** Depende de HU-164 (polígono del lote) y HU-181. Si se recorta, queda el suelo del municipio (HU-183).
 
@@ -68,7 +68,7 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
   - [ ] La respuesta dice qué suelo se usó (`lot` o `municipality`) y lleva el rótulo de estimación (R10)
   - [ ] Las razones citan la propiedad del suelo y la regla
 - **Reglas que aplican:** R3, R5, R8, R10
-- **Contrato que toca:** `POST /api/v1/rotations`; `soil_grid`, `soil_municipality`
+- **Contrato que toca:** `POST /api/v1/rotations`; `grid_cells`, `soil_municipality`
 - **Notas:** Depende de HU-081 y HU-181; con HU-182, usa el suelo del lote. El 11 de octubre de 2026 la bonificación por carbono orgánico pasó al criterio `organic_carbon` de HU-212 (decisión 12).
 
 ### HU-212 · Salud del suelo de cada estrategia
@@ -87,7 +87,7 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
   - [ ] Función pura del motor: recibe el suelo y el NDVI ya leídos (R6)
   - [ ] Prueba: dos estrategias iguales salvo una leguminosa dan `nitrogen` mejor a la que la tiene; con carbono bajo, la que tiene abono verde da `organic_carbon` mejor
 - **Reglas que aplican:** R1, R3, R5, R6, R8, R10
-- **Contrato que toca:** `strategies[].soil_health` de `POST /api/v1/rotations`; `rotation_rules`; `soil_grid`, `soil_municipality`, `ndvi_grid`, `ndvi_municipality_normal`
+- **Contrato que toca:** `strategies[].soil_health` de `POST /api/v1/rotations`; `rotation_rules`; `grid_cells`, `soil_municipality`, `ndvi_grid`, `ndvi_municipality_normal`
 - **Notas:** Decisión 12. No hay modelo de suelo: es una comparación entre estrategias según reglas con fuente, no una predicción. Depende de HU-062, HU-063, HU-181 y HU-213. Supuesto por confirmar: cómo entra el NDVI al nivel de `soil_cover` (hoy solo en la razón, como contraste). Agregada el 11 de octubre de 2026.
 
 ### HU-224 · Erosión en la salud del suelo
@@ -102,7 +102,7 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
   - [ ] Ninguna razón dice cuánto suelo se va a perder: compara estrategias según reglas (decisión 4)
   - [ ] Prueba: en un terreno con pendiente, una estrategia con abono verde en los meses de lluvia da `erosion` mejor que una con descanso desnudo
 - **Reglas que aplican:** R1, R5, R6, R8, R10
-- **Contrato que toca:** `strategies[].soil_health.erosion` de `POST /api/v1/rotations`; `municipalities.slope_pct`; `elevation_grid`; `rotation_rules`
+- **Contrato que toca:** `strategies[].soil_health.erosion` de `POST /api/v1/rotations`; `municipalities.slope_pct`; `grid_cells`; `rotation_rules`
 - **Notas:** Decisión 14: el enunciado completo nombra la erosión entre las prioridades del agricultor. Depende de HU-206 (pendiente), HU-062 (la regla con fuente; candidatas: el factor de cobertura C de la ecuación universal de pérdida de suelo y las guías de conservación de suelos de la FAO) y HU-212. Agregada el 8 de noviembre de 2026.
 
 ### HU-185 · Ver el suelo en la web

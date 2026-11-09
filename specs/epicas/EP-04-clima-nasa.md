@@ -73,13 +73,13 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 - **Criterios de aceptación:**
   - [ ] Adaptador `nasadem` con caché: descarga los mosaicos de NASADEM (30 m) que cubren la región
   - [ ] `municipalities.altitude_m` sale de NASADEM con un método documentado (supuesto por confirmar: la mediana de las celdas dentro del polígono municipal o la altitud de la cabecera)
-  - [ ] Publica `elevation_grid` para la región, con la resolución que quede documentada (30 m o remuestreada si el tamaño no cabe en memoria), para que la API calcule la altitud de un lote como la mediana de las celdas que toca su polígono, igual que el suelo (HU-182)
+  - [ ] Publica la altitud (promedio de los píxeles de 30 m) en `grid_cells`, la rejilla común de 250 m (decisión 15), para que la API calcule la altitud de un lote como la mediana de las celdas de su polígono, igual que el suelo (HU-182)
   - [ ] Entrada de NASADEM en `sources` con producto, versión, resolución, acceso y licencia
   - [ ] Comprobación manual en 2 municipios contra la altitud oficial de la cabecera
-  - [ ] **Pendiente (decisión 14):** `elevation_grid` trae `slope_pct` por celda y `municipalities.slope_pct` la mediana del municipio, con el método documentado; la de un lote la calcula la API al vuelo, como la altitud. La usa el criterio `erosion` (HU-224)
+  - [ ] **Pendiente (decisión 14):** la pendiente se calcula a 30 m y `grid_cells.slope_pct` guarda la mediana de cada celda; `municipalities.slope_pct`, la del municipio. La de un lote la calcula la API al vuelo, como la altitud. La usa el criterio `erosion` (HU-224)
   - [ ] Sin celdas válidas, `altitude_m` queda nulo y la aptitud es `insufficient_data` (R1)
 - **Reglas que aplican:** R1, R7, R8, R9
-- **Contrato que toca:** `municipalities.altitude_m`, `elevation_grid`
+- **Contrato que toca:** `municipalities.altitude_m`, `municipalities.slope_pct`, `grid_cells`
 - **Notas:** Decisión 12. Reemplaza al «modelo de elevación por elegir» de HU-044. La altitud del lote no se guarda: la API la calcula al vuelo (R9). Con un lote dibujado, la aptitud usa la temperatura media corregida a la altitud del lote (`specs/01-reglas.md`, «Aptitud del cultivo en la zona», decisión 13). Supuesto por confirmar: en el MVP la corrección de la temperatura sigue usando la altitud del municipio, porque los indicadores de clima se precalculan por municipio; corregir por la altitud del lote necesita una decisión. No se recorta. Agregada el 11 de octubre de 2026.
 
 ### HU-207 · Lluvia por satélite con GPM IMERG
@@ -118,16 +118,16 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-209 · Verdor por lote con MODIS NDVI
 
 - **Historia:** Como motor, quiero el verdor normal de las celdas de 250 m que toca un lote, para estimar en qué meses ha tenido el suelo cubierto.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] `ndvi_grid` por `cell_id` y `period`, con `lon`, `lat`, `ndvi_normal`, `years`, `valid_pct`, `quality` y `source_id`, desde los mismos datos de HU-208
+  - [ ] `ndvi_grid` por `cell_id` (el de `grid_cells`) y `period`, con `ndvi_normal`, `years`, `valid_pct`, `quality` y `source_id`, desde los mismos datos de HU-208, solo para las celdas de los municipios con lotes
   - [ ] La API calcula el verdor del lote como la mediana de las celdas que toca su polígono, igual que el suelo (HU-182); sin polígono usa el del municipio y lo dice en `basis`
   - [ ] Se dice siempre que una celda mide 250 m por 250 m (6,25 ha), más que muchos lotes, y que puede mezclar el lote con sus vecinos (R10)
   - [ ] El verdor del lote no se guarda en la base de datos (R9)
   - [ ] Prueba: un lote más chico que una celda usa la celda que lo contiene y lo dice
 - **Reglas que aplican:** R6, R9, R10
 - **Contrato que toca:** `ndvi_grid`
-- **Notas:** Decisión 12. Es lo tercero que se recorta si falta tiempo; queda el del municipio (HU-208). El verdor por lote a 30 m es HU-043 (P1). El tamaño de la tabla se mide en esta HU. Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. **Pasó a P1 el 8 de noviembre de 2026 (decisión 15):** a 250 m y con 23 periodos, toda la región serían unos 14 millones de filas; en el P0 el verdor es el del municipio (HU-208). El verdor por lote a 30 m es HU-043 (P1). Agregada el 11 de octubre de 2026.
 
 ### HU-210 · Humedad del suelo por satélite con SMAP
 

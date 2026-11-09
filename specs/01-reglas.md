@@ -164,7 +164,8 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 
 **Cómo se arman:**
 
-1. El primer ciclo se siembra en `sowing_date`. Cada ciclo siguiente se siembra el lunes de la semana siguiente a la cosecha estimada del anterior (supuesto por confirmar, HU-213).
+0. **Candidatas:** todas las secuencias de `cycles` ciclos con los cultivos del catálogo (cultivos, abonos verdes y descanso), sin el mismo `crop_id` en dos ciclos seguidos y sin dos descansos seguidos (decisión 15).
+1. El primer ciclo se siembra en `sowing_date`. Cada ciclo siguiente se siembra el lunes siguiente a la cosecha estimada del anterior (decisión 15). Un descanso dura lo que dice su ficha.
 2. Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores del terreno y el primer ciclo. Una regla violada **excluye** la estrategia, con su motivo (R3).
 3. Un ciclo con un cultivo que no es apto para la zona excluye la estrategia. Un ciclo cuya ventana es de alto riesgo por clima (`water`, `frost` o `heat` desfavorable y crítica) también: ningún otro criterio lo compensa (R2).
 4. Un cultivo cuyo pH tolerado queda fuera de todo el intervalo estimado del suelo excluye la estrategia.
@@ -183,12 +184,17 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 
 | Criterio | De dónde sale |
 |---|---|
-| `water` (agua) | La calificación de la señal `water` de sus ciclos |
+| `water` (agua) | El promedio de la calificación de la señal `water` de sus ciclos con diagnóstico |
 | `soil` (suelo) | Los cinco criterios de salud del suelo: `favorable` vale 100, `moderate` 50 y `unfavorable` 0; el criterio es su promedio entre los disponibles |
-| `income` (ingreso) | Las señales `supply` y `market` de sus ciclos. Es el único lugar donde la oferta entra a las estrategias |
-| `risk` (riesgo) | El factor que más limita entre todos sus ciclos (ley del mínimo) |
+| `income` (ingreso) | El promedio, ciclo por ciclo, de la calificación de `supply` y de `market` que tengan dato; un abono verde o un descanso no deja cosecha y vale 0. Es el único lugar donde la oferta entra a las estrategias |
+| `risk` (riesgo) | El factor que más limita entre todos sus ciclos: el menor `limiting_score` (ley del mínimo) |
 
-Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). La fórmula exacta de cada criterio es un supuesto por confirmar (HU-082). El ranking ordena estrategias ya filtradas: nunca rescata una excluida.
+Decisión 15 (antes era un supuesto de HU-082):
+
+- `total_score` es el promedio de los criterios que califican, ponderado por las prioridades de la rotación. Con todas las prioridades de los criterios que califican en 0, la estrategia no tiene total y va al final.
+- Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). En `water` y `risk`, un ciclo sin dato no cuenta y se dice; si ninguno tiene, el criterio no califica. En `income`, un ciclo de cultivo sin oferta ni mercado no cuenta; si ningún ciclo de cultivo tiene, no califica.
+- Hasta 10 estrategias. Empate de `total_score`: gana la de `risk` más alto y, si sigue el empate, la de `crop_ids` primero en orden alfabético (R4).
+- El ranking ordena estrategias ya filtradas: nunca rescata una excluida.
 
 **Salud del suelo (`soil_health`).** Cada estrategia trae cinco criterios. Cada uno tiene un nivel (`favorable`, `moderate`, `unfavorable`, o nulo con `insufficient_data`), su razón y la regla de `rotation_rules` que lo decide, con fuente (R8):
 
