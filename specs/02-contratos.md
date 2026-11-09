@@ -41,6 +41,7 @@ Los identificadores del código van en inglés y en `snake_case` para evitar til
 - NASA POWER es un **reanálisis** (un modelo con observaciones asimiladas), no una observación directa; su entrada en `sources` lo dice. Es la serie larga (desde 1981).
 - La lluvia tiene dos fuentes: NASA POWER (`climate_month`) y GPM IMERG (`precip_month`). `sources.yaml` dice cuál calcula la señal `water` en cada región; la otra se muestra para contrastar. Nunca se promedian ni una rellena a la otra.
 - La humedad del suelo tiene dos fuentes con unidades distintas: la de POWER (`soil_wetness_*`, fracción de 0 a 1) y la de SMAP (`sm_*_m3_m3`). No se convierten una en otra.
+- La pendiente (`slope_pct`, decisión 14) sale de `elevation_grid` en el pipeline: la del municipio, en `municipalities.slope_pct` (la mediana de sus celdas), y la de un lote, la mediana de las celdas que toca su polígono, calculada al vuelo como su altitud. Por aprobar.
 - El suelo, la altitud y el verdor de un lote **no se guardan**: la API los calcula al vuelo como la mediana de las celdas de `soil_grid`, `elevation_grid` y `ndvi_grid` que toca su polígono.
 - En el MVP las señales de heladas y calor leen `climate_risk_month`; `climate_risk_week` llega en P1.
 
@@ -270,7 +271,7 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 
 | Situación | Respuesta |
 |---|---|
-| Entrada inválida (municipio o cultivo fuera del catálogo, diagnóstico de un cultivo con `kind` distinto de `crop`, prioridades fuera de rango o todas en 0, `sowing_date` con formato inválido, anterior a hoy o a más de doce meses (salvo en «Mi cultivo»), `month` fuera de 1 a 12, `cycles` distinto de 2 o 3, más de 3 cultivos en `previous_crop_ids`, `/changes` con un cultivo que no es `kind = crop`, porcentajes de finca que pasan de 100, registro sin consentimiento, temporadas en curso que pasan del área del lote, lote editado más chico que sus temporadas en curso, `follows_season_ids` inválido, nombre vacío, contraseña nueva de menos de 8 caracteres o igual a la actual) | `422` |
+| Entrada inválida (municipio o cultivo fuera del catálogo, diagnóstico de un cultivo con `kind` distinto de `crop`, prioridades fuera de rango o todas en 0, `sowing_date` con formato inválido, anterior a hoy o a más de doce meses (salvo en «Mi cultivo»), `month` fuera de 1 a 12, `cycles` distinto de 2 o 3, más de 3 cultivos en `previous_crop_ids`, `current_crop_ids` con menos de 2 o más de 3 cultivos, `/changes` con un cultivo que no es `kind = crop`, porcentajes de finca que pasan de 100, registro sin consentimiento, temporadas en curso que pasan del área del lote, lote editado más chico que sus temporadas en curso, `follows_season_ids` inválido, nombre vacío, contraseña nueva de menos de 8 caracteres o igual a la actual) | `422` |
 | Endpoint de cuenta sin sesión válida, usuario y contraseña incorrectos, o `lot_id` en `/diagnostics`, `/rotations` o `/calendar` sin sesión | `401` |
 | Contraseña actual incorrecta al cambiarla, o contraseña incorrecta al borrar la cuenta | `403` `wrong_password` (la sesión sigue abierta) |
 | Rol sin permiso para el endpoint, o cuenta bloqueada al iniciar sesión | `403` |
@@ -329,6 +330,7 @@ Sin datos para una serie, la serie viene vacía con `status = insufficient_data`
   "municipality_id": "MUNICIPIO_ID",
   "sowing_date": "2027-01-04",
   "previous_crop_ids": ["papa"],
+  "current_crop_ids": ["papa", "arveja"],
   "cycles": 3,
   "priorities": { "water": 3, "soil": 5, "income": 2, "risk": 4 },
   "signal_priorities": null,
@@ -342,6 +344,7 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - `cycles`: 2 o 3; sin él, 3. Otro valor responde 422.
 - `sowing_date`: la fecha en que se sembraría el primer ciclo. Anterior a hoy o a más de doce meses responde 422. Los ciclos siguientes pueden caer después de esos doce meses.
 - `previous_crop_ids`: de 0 a 3 cultivos del catálogo (de cualquier `kind`), el más reciente primero. Vacía es la primera siembra del terreno.
+- `current_crop_ids` (decisión 14, por aprobar): opcional; la rotación que el agricultor viene haciendo, de 2 a 3 cultivos del catálogo en el orden en que los siembra. Se evalúa como la estrategia de referencia (`current_strategy`); si tiene menos cultivos que `cycles`, se repite desde el primero. Sin ella no hay referencia y `limitations` lo dice. Con menos de 2 o más de 3 cultivos, o alguno fuera del catálogo, responde 422.
 - `priorities`: las cuatro prioridades de la rotación (`water`, `soil`, `income`, `risk`), un entero de 0 a 5 cada una.
 - `signal_priorities`: opcional; los pesos de 0 a 5 por señal para el diagnóstico de cada ciclo, igual que `priorities` de `/diagnostics`. Sin él, los de `weights.yaml`.
 - `irrigated`: igual que en el diagnóstico. `lot_id` es opcional y exige sesión: con él, el suelo, la altitud, el verdor e `irrigated` salen del lote.
@@ -352,9 +355,11 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
   "strategies": [
     {
       "rank": 1,
+      "kind": "suggested",
       "crop_ids": ["avena_vicia", "arveja", "papa"],
       "total_score": 76,
       "scores": { "water": 74, "soil": 88, "income": 60, "risk": 71 },
+      "vs_current": { "water": 6, "soil": 38, "income": -9, "risk": 12, "total": 15 },
       "cycles": [
         { "cycle": 1, "crop_id": "avena_vicia", "sowing_date": "2027-01-04", "harvest_estimate": "2027-04-19",
           "harvest_basis": "calendar", "light": "green", "light_default": "green", "limiting_signal": "water", "high_risk": false },
@@ -371,12 +376,29 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
         "soil_cover": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"],
           "reasons": ["El suelo queda cubierto 11 de los 13 meses de la estrategia"] },
         "pest_break": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"],
-          "reasons": ["La papa vuelve al terreno después de dos ciclos de otras familias"] }
+          "reasons": ["La papa vuelve al terreno después de dos ciclos de otras familias"] },
+        "erosion": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"],
+          "reasons": ["El lote tiene una pendiente de 14 % y el suelo queda descubierto 2 meses"] }
       },
       "reasons": ["Empieza con un abono verde y su suelo tiene poco carbono orgánico", "Ningún ciclo tiene un riesgo alto de clima"],
       "limitations": ["Suelo estimado para el municipio, no para su lote"]
     }
   ],
+  "current_strategy": {
+    "rank": null,
+    "kind": "current",
+    "crop_ids": ["papa", "arveja", "papa"],
+    "total_score": 61,
+    "scores": { "water": 68, "soil": 50, "income": 69, "risk": 59 },
+    "cycles": [],
+    "soil_health": {},
+    "issues": [
+      { "cycle": 3, "kind": "rule", "rule_id": "REGLA_ID",
+        "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia" }
+    ],
+    "reasons": ["Es la rotación que usted viene haciendo: las demás se comparan contra ella"],
+    "limitations": []
+  },
   "excluded": [
     { "crop_ids": ["papa", "arveja", "haba"], "cycle": 1, "kind": "rule", "rule_id": "REGLA_ID",
       "reason": "Repite la familia de la papa, que había antes en el terreno" },
@@ -392,7 +414,9 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 
 - `strategies`: hasta 10, en orden (`rank`). `scores` trae el puntaje de 0 a 100 de cada criterio (nulo si no califica) y `total_score` el total ponderado por `weights`.
 - Cada ciclo trae además `diagnosis`: el diagnóstico de esa ventana, con la misma forma de «Respuesta de diagnóstico» (sin `request`, `best_windows` ni `alternatives`). El ejemplo lo omite por brevedad. `light` es la luz con los pesos de quien consulta y `light_default` con los de AgroSense. En un ciclo de descanso, `light`, `light_default`, `limiting_signal` y `diagnosis` vienen nulos.
-- `soil_health`: los cuatro criterios de salud del suelo, cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons` y `rule_ids` (reglas de `rotation_rules`, con fuente). **No es una predicción de cuánto mejora el suelo.**
+- `kind`: `suggested` en las estrategias del ranking y `current` en la de referencia. `vs_current`: en cada sugerida, la diferencia de cada criterio y del total frente a la actual (positivo es mejor); nulo sin rotación actual o si el criterio no califica en alguna de las dos.
+- `current_strategy` (decisión 14, por aprobar): la rotación actual evaluada con la misma forma de una estrategia (el ejemplo omite sus ciclos y su salud del suelo por brevedad), con `rank` nulo. **Nunca se excluye:** si viola una regla, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, `issues` lo dice con la misma forma de `excluded` (sin `crop_ids`). Nula sin `current_crop_ids`. Una estrategia sugerida igual a la actual no se repite en `strategies`.
+- `soil_health`: los cinco criterios de salud del suelo (`erosion` desde la decisión 14), cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons` y `rule_ids` (reglas de `rotation_rules`, con fuente). **No es una predicción de cuánto mejora el suelo.**
 - `excluded`: las estrategias descartadas, con el ciclo y el motivo. `kind` es `rule` (viola una regla de filtro; trae `rule_id`), `not_suitable` (un cultivo no se da en la zona), `soil_ph` (el pH queda fuera de todo el intervalo) o `high_risk` (un ciclo con `water`, `frost` o `heat` desfavorable y crítica; trae `signal`).
 - La oferta y el mercado no excluyen estrategias: entran solo por `income`.
 - `soil_basis`: `lot` o `municipality`.
@@ -401,6 +425,8 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 Con cuenta, la web arma `previous_crop_ids` con los cultivos de las temporadas de las que viene el terreno que se va a sembrar (`follows_season_ids`). Con el suelo (del lote o del municipio): un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` excluye la estrategia por regla (R3); el carbono orgánico entra al criterio `organic_carbon` de `soil_health`, con reglas de `rotation_rules` con fuente. Cada estrategia trae de 2 a 4 razones.
 
 Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 2 ciclos sin `soil_health`, y `previous_crop_ids` pedía al menos un cultivo.
+
+> **8 de noviembre de 2026 (decisión 14, por aprobar por Felipe o Haider):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta. Hay que avisarle a Haider.
 
 ### Cuerpo de `POST /api/v1/water-plans`
 

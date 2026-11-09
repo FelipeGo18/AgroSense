@@ -171,18 +171,26 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 5. La oferta y el mercado nunca excluyen: bajan el criterio de ingreso.
 6. Cada ciclo se revisa con el **mismo cálculo del diagnóstico de ventana**: sus seis señales, sus dos luces y su factor limitante. El descanso no tiene diagnóstico.
 
+**La rotación actual (decisión 14).** La rotación que el agricultor viene haciendo (`current_crop_ids`) entra como **estrategia de referencia** (`kind = current`). El reto pide comparar al menos tres estrategias, incluida la actual.
+
+- Se arma y se evalúa igual que las demás: mismos ciclos desde `sowing_date`, mismo diagnóstico por ciclo, mismos criterios y misma salud del suelo. Si tiene menos ciclos que `cycles`, se repite desde su primer cultivo hasta completarlos.
+- **Nunca se excluye en silencio.** Si viola una regla de filtro, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, se muestra igual, con esos motivos en `issues`: es lo que el agricultor ya hace y tiene que ver por qué no conviene (R3 sigue valiendo para las sugeridas).
+- No entra al ranking (`rank` nulo), y cada estrategia sugerida dice cuánto gana o pierde frente a ella en cada criterio (`vs_current`).
+- Con cuenta sale del historial del terreno (HU-165): los cultivos de las temporadas de las que viene, del más antiguo al más reciente. Sin cuenta, el agricultor la escribe. Si no hay rotación actual, no hay referencia y se agrega a las limitaciones (R1).
+- Una estrategia sugerida igual a la actual no se repite.
+
 **Cómo se ordenan.** Cuatro criterios, cada uno de 0 a 100, ponderados por las prioridades de la rotación (un peso de 0 a 5 por criterio). Son prioridades distintas de las de las señales:
 
 | Criterio | De dónde sale |
 |---|---|
 | `water` (agua) | La calificación de la señal `water` de sus ciclos |
-| `soil` (suelo) | Los cuatro criterios de salud del suelo: `favorable` vale 100, `moderate` 50 y `unfavorable` 0; el criterio es su promedio entre los disponibles |
+| `soil` (suelo) | Los cinco criterios de salud del suelo: `favorable` vale 100, `moderate` 50 y `unfavorable` 0; el criterio es su promedio entre los disponibles |
 | `income` (ingreso) | Las señales `supply` y `market` de sus ciclos. Es el único lugar donde la oferta entra a las estrategias |
 | `risk` (riesgo) | El factor que más limita entre todos sus ciclos (ley del mínimo) |
 
 Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). La fórmula exacta de cada criterio es un supuesto por confirmar (HU-082). El ranking ordena estrategias ya filtradas: nunca rescata una excluida.
 
-**Salud del suelo (`soil_health`).** Cada estrategia trae cuatro criterios. Cada uno tiene un nivel (`favorable`, `moderate`, `unfavorable`, o nulo con `insufficient_data`), su razón y la regla de `rotation_rules` que lo decide, con fuente (R8):
+**Salud del suelo (`soil_health`).** Cada estrategia trae cinco criterios. Cada uno tiene un nivel (`favorable`, `moderate`, `unfavorable`, o nulo con `insufficient_data`), su razón y la regla de `rotation_rules` que lo decide, con fuente (R8):
 
 | Criterio | Qué mira | Con qué datos |
 |---|---|---|
@@ -190,6 +198,7 @@ Un criterio sin datos no califica, no entra al total y se agrega a las limitacio
 | `organic_carbon` (carbono orgánico) | Si incluye abono verde, descanso o cultivos que dejan residuos, según qué tan bajo está el carbono orgánico del suelo | Carbono orgánico de SoilGrids, del lote o del municipio |
 | `soil_cover` (suelo cubierto) | Cuántos meses queda el suelo cubierto mientras dura la estrategia | La duración de cada ciclo y, cuando existe, el NDVI para contrastar |
 | `pest_break` (corte de plagas) | Si una familia vuelve al mismo terreno demasiado pronto, contando los cultivos anteriores | `family` de la ficha y el historial del terreno |
+| `erosion` (erosión, decisión 14) | Si la estrategia deja el suelo descubierto en un terreno con pendiente | La pendiente del lote o del municipio (NASADEM, HU-206) y los meses descubiertos de `soil_cover` |
 
 - **No es una predicción.** No hay modelo de suelo: `soil_health` compara estrategias entre sí según reglas con fuente. Nunca dice cuánto va a mejorar el suelo, cuánto nitrógeno queda ni cuánto se va a cosechar (decisión 4). La web lo dice junto al resultado: «Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo».
 - Un criterio sin regla con fuente, o sin su dato (por ejemplo, sin carbono orgánico), es `insufficient_data`: no se inventa un corte ni se pinta como malo (R1, R8).
@@ -228,5 +237,6 @@ Las siembras registradas en AgroSense solo se muestran como totales por municipi
 | `weights_basis` | `default`, `farmer` |
 | `harvest_basis` | `calendar` (duración de la ficha), `normal_year` (clima de un año normal, P1) |
 | `cycles` | `2`, `3` |
-| Criterios de `soil_health` | `nitrogen`, `organic_carbon`, `soil_cover`, `pest_break`; cada uno con `status` y `level` |
+| Criterios de `soil_health` | `nitrogen`, `organic_carbon`, `soil_cover`, `pest_break`, `erosion`; cada uno con `status` y `level` |
+| `kind` de una estrategia | `current` (la rotación actual del agricultor, la referencia), `suggested` |
 | Criterios del ranking de estrategias | `water`, `soil`, `income`, `risk` |

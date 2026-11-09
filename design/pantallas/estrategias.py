@@ -4,11 +4,15 @@ EP-10 (HU-214, HU-101, HU-102) sobre `specs/01-reglas.md`, «Estrategias de rota
 de 2 o 3 ciclos sobre un mismo terreno; cada ciclo es un cultivo, un abono verde o un descanso con su ventana.
 Reemplaza, para el MVP, a «Qué sembrar después» de dos ciclos (rotaciones.py), que queda como referencia.
 
-- **Entrada (HU-214).** Sin cuenta: municipio, área, qué había antes (de 0 a 3 cultivos), cuándo sembrar el primer
-  ciclo, riego y número de ciclos. Con cuenta se entra desde el lote y esos datos ya vienen de él.
+- **Entrada (HU-214).** Sin cuenta: municipio, área, qué había antes (de 0 a 3 cultivos), qué viene sembrando (su
+  rotación de siempre, de 2 a 3 cultivos, opcional), cuándo sembrar el primer ciclo, riego y número de ciclos. Con
+  cuenta se entra desde el lote y esos datos ya vienen de él y de su historial.
+- **La rotación actual (HU-223, decisión 14).** Va primero, rotulada «Lo que usted siembra hoy», evaluada igual que
+  las demás y sin puesto en el orden. Cada sugerida dice cuánto gana o pierde frente a ella.
 - **Estrategias (HU-102).** Cada tarjeta trae sus ciclos en orden con su luz (forma y texto), el desglose por
-  criterio (agua, suelo, ingreso y riesgo) y el bloque «Salud del suelo» con sus cuatro criterios, cada uno con su
-  nivel, su razón y su regla con fuente. Un criterio sin datos se ve «Sin datos suficientes», nunca como malo (R1).
+  criterio (agua, suelo, ingreso y riesgo) y el bloque «Salud del suelo» con sus cinco criterios (con la erosión,
+  HU-224), cada uno con su nivel, su razón y su regla con fuente. Un criterio sin datos se ve «Sin datos
+  suficientes», nunca como malo (R1).
 - **Descartadas, a pedido.** La regla que violan, «No se da en su zona» o «Alto riesgo en el ciclo 2» (R2, R3).
 - **Sin estrategias válidas.** Estado vacío con las descartadas a la vista y qué cambiar.
 
@@ -52,6 +56,8 @@ RULE_OC = "Regla: materia orgánica según el carbono del suelo · SoilGrids, 25
 RULE_COVER = "Sin regla con fuente todavía para este criterio"
 RULE_PEST = "Regla: no repetir la familia · catálogo de rotación"
 COVER_NODATA = (NOD, "Aún no hay una regla con fuente que diga cuántos meses bastan.", RULE_COVER)
+RULE_EROSION = "Regla: suelo descubierto en pendiente · NASADEM, 30 m"
+SLOPE = "pendiente de 9 %"  # la del municipio de muestra, de NASADEM (HU-206)
 
 STRATEGIES = (
     dict(cycles=(("Arveja", "cultivo", "2 ago 2027", "~29 nov 2027", "verde", None),
@@ -61,8 +67,9 @@ STRATEGIES = (
          health=dict(nitrogen=(FAV, "La arveja y la vicia son leguminosas: fijan nitrógeno.", RULE_N),
                      organic_carbon=(FAV, "La avena con vicia se incorpora como abono verde.", RULE_OC),
                      soil_cover=COVER_NODATA,
-                     pest_break=(FAV, "La papa vuelve después de dos ciclos de otras familias.", RULE_PEST)),
-         reasons=["Es la rotación de referencia: papa, avena y arveja (Agrosavia, Tibaitatá).", "El abono verde no deja cosecha en su ciclo."]),
+                     pest_break=(FAV, "La papa vuelve después de dos ciclos de otras familias.", RULE_PEST),
+                     erosion=(FAV, f"Con {SLOPE}, el suelo queda cubierto casi todo el plan.", RULE_EROSION)),
+         reasons=["Papa, avena y arveja: la rotación evaluada por Agrosavia en Tibaitatá.", "El abono verde no deja cosecha en su ciclo."]),
     dict(cycles=(("Descanso", "descanso", "2 ago 2027", "hasta el 28 nov 2027", None, None),
                  ("Arveja", "cultivo", "29 nov 2027", "~27 mar 2028", "amarillo", "heladas"),
                  ("Papa", "cultivo", "3 abr 2028", "~28 ago 2028", "verde", None)),
@@ -70,7 +77,8 @@ STRATEGIES = (
          health=dict(nitrogen=(FAV, "La arveja es leguminosa: fija nitrógeno.", RULE_N),
                      organic_carbon=(FAV, "El descanso deja rastrojo sobre el suelo.", RULE_OC),
                      soil_cover=COVER_NODATA,
-                     pest_break=(FAV, "El descanso y la arveja cortan el ciclo de plagas de la papa.", RULE_PEST)),
+                     pest_break=(FAV, "El descanso y la arveja cortan el ciclo de plagas de la papa.", RULE_PEST),
+                     erosion=(MOD, f"El descanso deja el suelo descubierto 4 meses, con {SLOPE}.", RULE_EROSION)),
          reasons=["El terreno descansa el primer ciclo y corta las plagas de la papa.", "No deja ingreso hasta la cosecha de la arveja."]),
     dict(cycles=(("Avena con vicia", "abono", "2 ago 2027", "~31 oct 2027", "verde", None),
                  ("Papa", "cultivo", "8 nov 2027", "~3 abr 2028", "amarillo", "agua"),
@@ -79,7 +87,8 @@ STRATEGIES = (
          health=dict(nitrogen=(FAV, "La vicia y la arveja son leguminosas: fijan nitrógeno.", RULE_N),
                      organic_carbon=(FAV, "La avena con vicia se incorpora como abono verde.", RULE_OC),
                      soil_cover=COVER_NODATA,
-                     pest_break=(MOD, "La papa vuelve después de un solo ciclo de otra familia.", RULE_PEST)),
+                     pest_break=(MOD, "La papa vuelve después de un solo ciclo de otra familia.", RULE_PEST),
+                     erosion=(FAV, f"Con {SLOPE}, el abono verde cubre el suelo en los meses de lluvia.", RULE_EROSION)),
          reasons=["El abono verde prepara el suelo para la papa.", "La papa de noviembre arranca en meses de poca lluvia."]),
     dict(cycles=(("Zanahoria", "cultivo", "2 ago 2027", "~29 nov 2027", "verde", None),
                  ("Arveja", "cultivo", "6 dic 2027", "~3 abr 2028", "amarillo", "heladas"),
@@ -88,10 +97,25 @@ STRATEGIES = (
          health=dict(nitrogen=(FAV, "La arveja es leguminosa: fija nitrógeno.", RULE_N),
                      organic_carbon=(MOD, "Ningún ciclo devuelve materia orgánica; su carbono es medio.", RULE_OC),
                      soil_cover=COVER_NODATA,
-                     pest_break=(FAV, "Tres familias distintas, ninguna repite.", RULE_PEST)),
+                     pest_break=(FAV, "Tres familias distintas, ninguna repite.", RULE_PEST),
+                     erosion=(MOD, f"Entre cosechas el suelo queda descubierto 2 meses, con {SLOPE}.", RULE_EROSION)),
          reasons=["Tres cosechas con ingreso en cada ciclo.", "No incluye abono verde ni descanso."]),
 )
-HEALTH_ORDER = (("nitrogen", "Nitrógeno"), ("organic_carbon", "Carbono orgánico"), ("soil_cover", "Suelo cubierto"), ("pest_break", "Corte de plagas"))
+# La rotación actual (HU-223): lo que viene sembrando, papa y arveja, repetida hasta completar los tres ciclos.
+CURRENT = dict(
+    cycles=(("Papa", "cultivo", "2 ago 2027", "~27 dic 2027", "amarillo", "heladas"),
+            ("Arveja", "cultivo", "3 ene 2028", "~1 may 2028", "verde", None),
+            ("Papa", "cultivo", "8 may 2028", "~2 oct 2028", "amarillo", "agua")),
+    scores=dict(water=68, income=70, risk=50),
+    health=dict(nitrogen=(MOD, "Solo la arveja fija nitrógeno.", RULE_N),
+                organic_carbon=(MOD, "Ningún ciclo devuelve materia orgánica; su carbono es medio.", RULE_OC),
+                soil_cover=COVER_NODATA,
+                pest_break=(UNF, "La papa vuelve después de un solo ciclo: sus plagas se quedan en el terreno.", RULE_PEST),
+                erosion=(MOD, f"Entre cosechas el suelo queda descubierto 2 meses, con {SLOPE}.", RULE_EROSION)),
+    reasons=["Es lo que usted viene sembrando: las demás se comparan contra ella.", "Deja ingreso en los tres ciclos."])
+CURRENT_LABEL = "Papa → Arveja (se repite)"
+HEALTH_ORDER = (("nitrogen", "Nitrógeno"), ("organic_carbon", "Carbono orgánico"), ("soil_cover", "Suelo cubierto"), ("pest_break", "Corte de plagas"),
+                ("erosion", "Erosión"))
 HEALTH_VALUE = {FAV: 100, MOD: 50, UNF: 0}
 
 EXCLUDED = (
@@ -185,7 +209,7 @@ def cycle_box(x, y, w, n, cycle, compact=False):
 
 
 def health_block(x, y, w, health, compact=False):
-    """«Salud del suelo»: cuatro criterios con nivel (forma y texto), razón y regla con fuente."""
+    """«Salud del suelo»: cinco criterios con nivel (forma y texto), razón y regla con fuente."""
     out = [text(0, 0, "Salud del suelo", 17, 700), text(w, 0, "Comparación, no predicción", 12, 700, D["cielo"], anchor="end")]
     yy = 14
     limit = 40 if compact else int((w - 190) / 6.6)
@@ -209,11 +233,26 @@ def health_block(x, y, w, health, compact=False):
     return [group("salud-del-suelo", out, x, y)], yy
 
 
+def versus_current(x, y, delta, anchor="end"):
+    """Cuánto gana o pierde frente a lo que siembra hoy (`vs_current`), con forma y texto: nunca solo color."""
+    up = delta >= 0
+    label = f"{'+' if up else '−'}{abs(delta)} frente a lo de hoy"
+    tw = width_of(label, 13, True)
+    x0 = x - tw - 20 if anchor == "end" else x
+    shape = [(x0, y - 2), (x0 + 12, y - 2), (x0 + 6, y - 12)] if up else [(x0, y - 12), (x0 + 12, y - 12), (x0 + 6, y - 2)]
+    return [poly(shape, D["oliva"] if up else D["cielo"]), text(x0 + 18, y, label, 13, 700, D["oliva"] if up else D["cielo"])]
+
+
 def strategy_card(x, y, w, rank, s, mobile=False):
+    """Una estrategia. `rank` nulo es la rotación actual (HU-223): sin puesto, rotulada «Lo que usted siembra hoy»."""
+    current = rank is None
     scores = scores_of(s)
     body = []
-    body += [poly([(34, 14), (54, 34), (34, 54), (14, 34)], P["calabaza"] if rank == 1 else P["niebla"], P["noche"], 2), text(34, 41, f"{rank}", 20, 700, anchor="middle")]
-    title = title_of(s)
+    if current:
+        body += [poly(chamfer(14, 18, 44, 32, 6), D["cielo"]), text(36, 39, "HOY", 13, 700, WHITE, anchor="middle")]
+    else:
+        body += [poly([(34, 14), (54, 34), (34, 54), (14, 34)], P["calabaza"] if rank == 1 else P["niebla"], P["noche"], 2), text(34, 41, f"{rank}", 20, 700, anchor="middle")]
+    title = ("Lo que siembra hoy: " if current and not mobile else "") + title_of(s)
     if mobile:
         rows = wrap(title, 22)
         body += paragraph(70, 36, rows, 18, 24, weight=600, font=FONT_TITLE)
@@ -222,6 +261,16 @@ def strategy_card(x, y, w, rank, s, mobile=False):
         body.append(text(70, 42, title, 24 if len(title) < 34 else 21, 600, font=FONT_TITLE))
         yy = 62
     body += [text(w - 24, 44, f"{total(s)}", 34, 600, P["noche"], FONT_TITLE, anchor="end"), text(w - 24, 64, "de 100", 13, fill=SEC, anchor="end")]
+    if current:
+        note = "Se evalúa igual que las demás y no entra al orden." if not mobile else "Se evalúa igual, sin puesto."
+        body.append(text(70 if not mobile else 24, yy + 8 if not mobile else yy + 4, note, 13, 700, D["cielo"]))
+        yy += 18
+    elif mobile:  # en el celular va debajo del título, para no chocar con él
+        body += versus_current(24, yy + 12, total(s) - total(CURRENT), anchor="start")
+        yy += 22
+    else:
+        body += versus_current(w - 24, 86, total(s) - total(CURRENT))
+        yy = max(yy, 92)
     # ciclos
     yy += 18
     if mobile:
@@ -257,8 +306,9 @@ def strategy_card(x, y, w, rank, s, mobile=False):
     label = f"Ver el ciclo 1: {first[0].lower()}"
     body += button(24, yy, min(w - 48, 330), label, "secondary", h=44)
     h = yy + 70
-    frame_ = [poly(chamfer(0, 8, w, h, 16), BORDE), poly(chamfer(0, 0, w, h, 16), WHITE, P["calabaza"] if rank == 1 else None, 3 if rank == 1 else 0)]
-    return [group(f"estrategia-{rank}", frame_ + body, x, y)], h
+    edge = D["cielo"] if current else (P["calabaza"] if rank == 1 else None)
+    frame_ = [poly(chamfer(0, 8, w, h, 16), BORDE), poly(chamfer(0, 0, w, h, 16), WHITE, edge, 3 if edge else 0)]
+    return [group("estrategia-actual" if current else f"estrategia-{rank}", frame_ + body, x, y)], h
 
 
 def excluded_box(x, y, w, items, opened, mobile, always=False):
@@ -327,7 +377,8 @@ def entry(mobile=False, lot=False):
     if lot:
         # Con cuenta: el lote, su riego y lo que había antes salen del lote y de su historial (`lot_id`, `follows_season_ids`).
         rows = (("Lote", "El Alto · Samacá, Boyacá", None), ("Riego del lote", "Sin riego", "Cambiar en el lote"),
-                ("Terreno que va a sembrar", "Donde estuvo la papa · 1,26 ha", "Elegir otra parte"), ("Lo que había antes, según su historial", "Papa · cosechada el 22 dic 2026", None))
+                ("Terreno que va a sembrar", "Donde estuvo la papa · 1,26 ha", "Elegir otra parte"), ("Lo que había antes, según su historial", "Papa · cosechada el 22 dic 2026", None),
+                ("Lo que viene sembrando, según su historial", "Papa → Arveja → Papa", "Corregir"))
         cr, chh = context_rows(pad, yy, fw, rows)
         c += cr
         yy += chh + 30
@@ -350,6 +401,29 @@ def entry(mobile=False, lot=False):
         c += [poly(chamfer(cx, yy + 38, width_of(add, 16, True) + 32, 44, 9), WHITE, BORDE, 2, "5 4"), text(cx + 16, yy + 66, add, 16, 700, D["oliva"])]
         yy += 100
         c += ui.checkbox(pad, yy, False, name="casilla-nada") + [text(pad + 44, yy + 22, "Nada: es la primera siembra aquí", 16)]
+        yy += 62
+        # la rotación actual (HU-223): su rotación de siempre, en el orden en que la siembra; se compara con las sugeridas
+        c += [text(pad, yy, "¿Qué viene sembrando en este terreno?", 18, 700)]
+        hint = (["Su rotación de siempre, en orden. Las", "estrategias se comparan contra ella."] if mobile else
+                ["Su rotación de siempre, en el orden en que la siembra. Las estrategias se comparan contra ella."])
+        c += paragraph(pad, yy + 22, hint, 14, 19, fill=SEC)
+        cy = yy + 22 + (len(hint) - 1) * 19 + 16
+        cx = pad
+        for i, crop in enumerate(("Papa", "Arveja")):
+            if i:
+                c.append(text(cx, cy + 28, "→", 18, 700))
+                cx += 24
+            cwid = width_of(crop, 16, True) + 62
+            c += [poly(chamfer(cx, cy, cwid, 44, 9), "#E6F0F5", D["cielo"], 2.5), text(cx + 16, cy + 28, crop, 16, 700),
+                  f'<path d="M{cx + cwid - 30} {cy + 15} l12 12 M{cx + cwid - 18} {cy + 15} l-12 12" stroke="{P["noche"]}" stroke-width="2.5" stroke-linecap="round"/>']
+            cx += cwid + 10
+        add = "+ Agregar"
+        aw = width_of(add, 16, True) + 32
+        if cx + aw > pad + fw:  # no cabe en la fila: baja a la siguiente
+            cx, cy = pad, cy + 54
+        c += [poly(chamfer(cx, cy, aw, 44, 9), WHITE, BORDE, 2, "5 4"), text(cx + 16, cy + 28, add, 16, 700, D["cielo"])]
+        yy = cy + 62
+        c += ui.checkbox(pad, yy, False, name="casilla-sin-rotacion") + [text(pad + 44, yy + 22, "No tengo una rotación fija", 16)]
         yy += 62
     # cuándo sembrar el primer ciclo
     c += [text(pad, yy, "¿Cuándo sembrar el primer ciclo?", 18, 700), text(pad, yy + 22, "Un mes de los próximos doce. Los demás ciclos salen de él.", 14, fill=SEC)]
@@ -407,6 +481,7 @@ def strategies(mobile=False, opened=False, empty=False):
     cy0 = (86 + len(title) * 32 - 8) if mobile else 120
     ctx_w = fw if mobile else 540
     rows = (("Terreno y lo que había antes", ("1,26 ha · antes: maíz" if empty else "1,26 ha · antes: papa") + (" · sin cuenta" if not mobile else ""), "Cambiar"),
+            ("Lo que viene sembrando", "Maíz → Papa" if empty else CURRENT_LABEL, "Cambiar"),
             ("Primer ciclo y riego", ("1 de marzo de 2027 · sin riego" if empty else f"{SOWING} · sin riego"), "Cambiar"),
             (f"Suelo estimado de {town.split(',')[0]} · 250 m", "pH 5,3 a 5,9 · carbono medio" if empty else ("pH 5,2 a 5,8 · carbono medio" if mobile else SOIL_USED), "Ver suelo"))
     cr, chh = context_rows(pad, cy0, ctx_w, rows)
@@ -452,6 +527,14 @@ def strategies(mobile=False, opened=False, empty=False):
         s += box
         yy += bh
     else:
+        # la rotación actual va primero, como referencia (HU-223); no entra al orden
+        s.append(text(pad2, yy + 26, "Lo que usted siembra hoy", 24 if mobile else 32, 600, font=FONT_TITLE))
+        s += paragraph(pad2, yy + 56, ["Su rotación de siempre, evaluada igual.", "Las demás dicen cuánto ganan o pierden."] if mobile else
+                       ["Su rotación de siempre, evaluada con los mismos criterios. Cada estrategia de abajo dice cuánto gana o pierde frente a ella."], 16, 22, fill=SEC)
+        yy += 110 if mobile else 92
+        cc, chc = strategy_card(pad2, yy, iw, None, CURRENT, mobile)
+        s += cc
+        yy += chc + 44
         s.append(text(pad2, yy + 26, "Ordenadas por lo que le importa" if mobile else "Estrategias ordenadas por lo que le importa", 24 if mobile else 32, 600, font=FONT_TITLE))
         s += paragraph(pad2, yy + 56, ["Solo las que cumplen las reglas. Puntaje", "de 0 a 100 por criterio."] if mobile else
                        ["Solo las que cumplen las reglas de rotación. Puntaje de 0 a 100 por criterio, ponderado por sus prioridades."], 16, 22, fill=SEC)

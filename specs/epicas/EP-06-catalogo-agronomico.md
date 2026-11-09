@@ -78,7 +78,7 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
 - **Criterios de aceptación:**
   - [ ] Como mínimo: no repetir familia en ciclos seguidos (filtro), bonificar leguminosas y alternar tipo de raíz
   - [ ] Cubren todos los pares posibles entre los 7 cultivos del MVP y el descanso: para cada par de ciclos seguidos se puede decir qué reglas aplican
-  - [ ] Reglas de los cuatro criterios de salud del suelo (`criterion`: `nitrogen`, `organic_carbon`, `soil_cover`, `pest_break`), con los cortes que dan cada nivel, para HU-212
+  - [ ] Reglas de los cinco criterios de salud del suelo (`criterion`: `nitrogen`, `organic_carbon`, `soil_cover`, `pest_break`, `erosion`), con los cortes que dan cada nivel, para HU-212 y HU-224. La de `erosion` cruza la pendiente con los meses de suelo descubierto (decisión 14)
   - [ ] Cada regla con tipo, condición, efecto, criterio y fuente (R8)
   - [ ] Revisión cruzada por otro integrante
 - **Reglas que aplican:** R3, R8
@@ -98,3 +98,15 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
   - [ ] Revisión cruzada por otro integrante
 - **Reglas que aplican:** R3, R8
 - **Notas:** Punto de partida: las rotaciones papa-avena-arveja evaluadas por Agrosavia en Tibaitatá (`docs/investigacion-decisiones.md`). Ese punto de partida es de la región piloto supuesta en Colombia (decisión 11). **16 de octubre de 2026:** pH con fuente (EcoCrop) en los 7. La sensibilidad a la helada por etapa sale de la temperatura que mata la planta en EcoCrop (papa, arveja, zanahoria y avena con vicia), con un supuesto por confirmar: sensible en todas las etapas. Haba, maíz y cebolla quedan sin dato (EcoCrop no lo trae) y la sensibilidad al calor queda nula en todos: falta fuente por etapa. La duración de la avena con vicia sale de FAO-56 (avena); la del descanso la elige quien arma la estrategia. Las reglas de suelo son de HU-062.
+
+### HU-227 · Valor como forraje en el catálogo
+
+- **Historia:** Como agricultor con ganado, quiero saber qué ciclos de una estrategia me dan forraje, para elegir una rotación que también alimente a mis animales.
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] La ficha de cada cultivo dice si sirve de forraje (`forage`), con fuente (R8); sin fuente, nulo
+  - [ ] Las razones de una estrategia lo dicen cuando un ciclo da forraje (por ejemplo, la avena con vicia)
+  - [ ] No entra a ningún criterio del ranking hasta que se decida cómo (supuesto por confirmar: un peso propio o dentro de `income`)
+- **Reglas que aplican:** R5, R8
+- **Contrato que toca:** `crops`
+- **Notas:** Decisión 14: el enunciado completo nombra el valor como forraje entre las prioridades del agricultor. Agregada el 8 de noviembre de 2026.
