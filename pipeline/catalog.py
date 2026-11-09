@@ -134,7 +134,14 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
         raise CatalogError("El catálogo no tiene cultivos.")
     numeric = [f for f in FIELDS if f.endswith(("_c", "_mm")) or f.startswith("ph_")]
     # Las cifras van todas como decimales, aunque la fuente las dé enteras (mismo tipo en cada columna, R4).
-    crops_table = pl.DataFrame(crops, infer_schema_length=None).with_columns(pl.col(numeric).cast(pl.Float64)).sort("crop_id")
+    # Un texto sin fuente en todos los cultivos queda nulo, pero su columna sigue siendo texto (HU-011: el tipo es el del
+    # contrato, no el que adivina Polars de una columna vacía).
+    text = ["name_es", "kind", "archetype", "family", "water_need", "root_type"]
+    crops_table = (
+        pl.DataFrame(crops, infer_schema_length=None)
+        .with_columns(pl.col(numeric).cast(pl.Float64), pl.col(text).cast(pl.String), pl.col("fixes_nitrogen").cast(pl.Boolean))
+        .sort("crop_id")
+    )
     stages_schema = {
         "crop_id": pl.String, "stage": pl.String, "order": pl.Int8, "days": pl.Int32, "kc": pl.Float64, "gdd": pl.Float64,
         "frost_sensitive": pl.Boolean, "heat_sensitive": pl.Boolean, "source_id": pl.String,

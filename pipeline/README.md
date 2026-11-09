@@ -25,4 +25,18 @@ uv run python -m pipeline.build               # publica otra vez desde la caché
 | `sources` | Una fila por fuente | HU-122 |
 | `manifest.json` | Versión, región, filas y cobertura por tabla | HU-122 |
 
-Pruebas: `tests/pipeline/` (sin red: usan una caché de ejemplo).
+Antes de publicar, cada tabla se revisa contra su esquema del contrato (`pipeline/schema.py`, HU-011): columnas, orden,
+tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
+
+## Datos de ejemplo (HU-011)
+
+```bash
+uv run python -m pipeline.examples   # escribe data/examples/: todas las tablas del contrato
+```
+
+Tres municipios reales (Samacá, Toca y Tunja) con **cifras inventadas**: cada fila inventada cita la fuente `ejemplo` y
+el manifiesto dice `"example": true` (R5). El catálogo de cultivos y los límites municipales son los reales. Sirven para
+programar y probar el motor, la API y la web antes de que lleguen los datos. Nunca se publican en `data/published/`.
+
+Pruebas: `tests/pipeline/` (sin red: usan una caché de ejemplo). `tests/pipeline/test_esquema.py` revisa que el esquema
+coincida con el contrato y que lo publicado y los ejemplos lo cumplan.

@@ -1,0 +1,116 @@
+{
+  "example": true,
+  "dataset_version": "ejemplo",
+  "rules_version": "0.1.0",
+  "created_at": "2026-11-08T00:00:00+00:00",
+  "region": {
+    "id": "co-boyaca-cundinamarca",
+    "name": "Ejemplo: Samacá, Toca y Tunja (Boyacá)",
+    "country": "CO",
+    "departments": [
+      "15",
+      "25"
+    ]
+  },
+  "periods": [
+    {
+      "period_id": "p1981_2000",
+      "start_year": 1981,
+      "end_year": 2000,
+      "source_id": "ejemplo"
+    },
+    {
+      "period_id": "p2005_2024",
+      "start_year": 2005,
+      "end_year": 2024,
+      "source_id": "ejemplo"
+    }
+  ],
+  "tables": {
+    "municipalities": {
+      "rows": 3,
+      "coverage": "ejemplo"
+    },
+    "municipality_boundaries": {
+      "rows": 3,
+      "coverage": "ejemplo"
+    },
+    "crops": {
+      "rows": 8,
+      "coverage": "catálogo real"
+    },
+    "crop_stages": {
+      "rows": 27,
+      "coverage": "catálogo real"
+    },
+    "rotation_rules": {
+      "rows": 6,
+      "coverage": "ejemplo"
+    },
+    "climate_day": {
+      "rows": 10959,
+      "coverage": "ejemplo"
+    },
+    "climate_month": {
+      "rows": 360,
+      "coverage": "ejemplo"
+    },
+    "climate_risk_month": {
+      "rows": 36,
+      "coverage": "ejemplo"
+    },
+    "precip_month": {
+      "rows": 360,
+      "coverage": "ejemplo"
+    },
+    "soil_moisture_month": {
+      "rows": 360,
+      "coverage": "ejemplo"
+    },
+    "ndvi_municipality": {
+      "rows": 690,
+      "coverage": "ejemplo"
+    },
+    "ndvi_municipality_normal": {
+      "rows": 69,
+      "coverage": "ejemplo"
+    },
+    "climate_change_month": {
+      "rows": 72,
+      "coverage": "ejemplo"
+    },
+    "supply_semester": {
+      "rows": 216,
+      "coverage": "ejemplo"
+    },
+    "grid_cells": {
+      "rows": 27,
+      "coverage": "ejemplo"
+    },
+    "soil_municipality": {
+      "rows": 3,
+      "coverage": "ejemplo"
+    },
+    "market_month": {
+      "rows": 48,
+      "coverage": "ejemplo"
+    },
+    "climate_risk_week": {
+      "rows": 156,
+      "coverage": "ejemplo"
+    },
+    "climate_normal_doy": {
+      "rows": 1098,
+      "coverage": "ejemplo"
+    },
+    "ndvi_grid": {
+      "rows": 621,
+      "coverage": "ejemplo"
+    },
+    "sources": {
+      "rows": 9,
+      "coverage": "ejemplo"
+    }
+  },
+  "notes": "Datos de ejemplo con la forma del contrato (HU-011). Las cifras con la fuente `ejemplo` son inventadas; el catálogo de cultivos y los límites municipales son los reales."
+}
