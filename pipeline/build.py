@@ -99,31 +99,25 @@ def validate_boundaries(boundaries: pl.DataFrame, municipalities: pl.DataFrame, 
 
 
 def validate_market(prices: pl.DataFrame, sources: pl.DataFrame) -> None:
-    """La llave (producto, central, día) no se repite; hay precio medio, y el mínimo y el máximo, si están, lo encierran
-    (R1, R8). Se tolera un peso: el DANE redondea el medio («1563» con mínimo y máximo de 1562,5)."""
-    if prices.is_empty():
-        raise ValidationError("`market_price_day` quedó vacía: revise las centrales de region.yaml.")
-    repeated = prices.filter(pl.struct("product_id", "market_id", "date").is_duplicated())
-    if not repeated.is_empty():
-        raise ValidationError(f"Precios repetidos para un mismo producto, central y día: {repeated.head(3).to_dicts()}")
-    bad = prices.filter(
-        pl.col("avg_cop_kg").is_null()
-        | (pl.col("avg_cop_kg") <= 0)
-        | (pl.col("min_cop_kg") > pl.col("avg_cop_kg") + 1).fill_null(False)
-        | (pl.col("avg_cop_kg") > pl.col("max_cop_kg") + 1).fill_null(False)
-    )
-    if not bad.is_empty():
-        raise ValidationError(f"Precios sin promedio o con el medio fuera del mínimo y el máximo: {bad.head(3).to_dicts()}")
-    unknown = set(prices["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
-    if unknown:
-        raise ValidationError(f"Precios con una fuente que no está en `sources`: {sorted(unknown)}")
+    """Las reglas de los precios (`sipsa.validate`), con las fuentes de lo que se publica (R1, R8)."""
+    try:
+        sipsa.validate(prices, set(sources["source_id"].to_list()))
+    except sipsa.PricesError as error:
+        raise ValidationError(str(error)) from error
 
 
-def validate_crops(crops: Any, prices: pl.DataFrame) -> None:
+def validate_crops(crops: Any, prices: pl.DataFrame, catalog_ids: set[str] | None = None) -> None:
     """El mapeo de `sipsa_crops.yaml` (HU-003): cada cultivo tiene un producto que SIPSA publica en la región, o ninguno y
-    el porqué (R1). Un producto no da el precio de dos cultivos: dos productos tampoco se promedian (decisión 11)."""
+    el porqué (R1). Un producto no da el precio de dos cultivos: dos productos tampoco se promedian (decisión 11).
+
+    Con `catalog_ids` (los `crop_id` de `catalog/crops.yaml`), cada cultivo del mapeo tiene que estar en el catálogo: los
+    identificadores salen de un solo lugar y un `crop_id` mal escrito no se publica."""
     if not isinstance(crops, dict) or not crops:
         raise ValidationError("`sipsa_crops.yaml` no trae cultivos en `crops`.")
+    if catalog_ids is not None:
+        unknown = sorted(set(crops) - catalog_ids)
+        if unknown:
+            raise ValidationError(f"Cultivos de `sipsa_crops.yaml` que no están en `catalog/crops.yaml`: {unknown}.")
     published = set(prices["product_id"].unique().to_list())
     owners: dict[str, str] = {}
     for crop_id, entry in crops.items():
@@ -197,7 +191,7 @@ def publish(
     if crop_products is not None:
         if prices is None:
             raise ValidationError("El mapeo de `sipsa_crops.yaml` se valida contra los precios de SIPSA, y no hay precios.")
-        validate_crops(crop_products, prices)
+        validate_crops(crop_products, prices, set(crops[1]["crop_id"].to_list()) if crops is not None else None)
         month = sipsa.monthly(prices, season, crop_products)
         validate_market_month(month, crop_products, sources)
     # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
@@ -316,23 +310,32 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
     boundaries = dane_mgn.boundaries(features)
     catalog = crops_catalog.load()
     crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
+    own = [dane.source(meta), dane_mgn.source(mgn_meta)]
+    prices = crop_products = None
     counts: Counter[str] = Counter()
-    prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache, counts)
-    rejected = counts["other_market"] + counts["no_average"]
-    log.info(
-        "source_read",
-        source=sipsa.SOURCE_ID,
-        rows_read=counts["read"],
-        rows_kept=prices.height,
-        rows_rejected=rejected,
-        reasons={"other_market": counts["other_market"], "no_average": counts["no_average"]},
-        detail=f"SIPSA: {counts['read']} filas leídas, {prices.height} de las centrales de la región y {rejected} descartadas: "
-        f"{counts['other_market']} de otras centrales y {counts['no_average']} sin precio medio ese día (R1)",
-    )
-    own = pl.DataFrame([dane.source(meta), dane_mgn.source(mgn_meta), sipsa.source(prices, downloaded_at)])
-    sources = pl.concat([own, catalog_sources], how="diagonal_relaxed")
+    try:
+        prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache, counts)
+    except FileNotFoundError as error:
+        # Sin la caché de SIPSA (unos 300 MB) se publica lo demás, sin las tablas de precios: no se inventan (R1), y el
+        # manifiesto dice qué trae. Así reconstruir los municipios no obliga a bajar los precios.
+        log.warning("source_missing", source=sipsa.SOURCE_ID, detail=f"Se publica sin los precios de SIPSA: {error}")
+    else:
+        rejected = counts["other_market"] + counts["no_average"]
+        log.info(
+            "source_read",
+            source=sipsa.SOURCE_ID,
+            rows_read=counts["read"],
+            rows_kept=prices.height,
+            rows_rejected=rejected,
+            reasons={"other_market": counts["other_market"], "no_average": counts["no_average"]},
+            detail=f"SIPSA: {counts['read']} filas leídas, {prices.height} de las centrales de la región y {rejected} "
+            f"descartadas: {counts['other_market']} de otras centrales y {counts['no_average']} sin precio medio ese día (R1)",
+        )
+        own.append(sipsa.source(prices, downloaded_at))
+        crop_products = load_crops()
+    sources = pl.concat([pl.DataFrame(own), catalog_sources], how="diagonal_relaxed")
     crops = (catalog["version"], crops_table, stages_table)
-    return publish(region, municipalities, sources, folder, boundaries, crops, prices, load_crops())
+    return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products)
 
 
 def main() -> None:
