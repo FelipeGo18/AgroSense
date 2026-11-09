@@ -80,7 +80,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
   - [ ] Sin lluvia de la fuente elegida, sin ET0 o sin Kc de alguna etapa, no devuelve un déficit: quien lo llama responde `insufficient_data` (R1)
   - [ ] Prueba: con la misma lluvia y el mismo cultivo, un suelo arenoso da un déficit mayor o igual que uno arcilloso
 - **Reglas que aplican:** R1, R4, R6, R8, R10
-- **Contrato que toca:** `climate_month`, `precip_month`, `crop_stages`, `soil_grid`, `soil_municipality`
+- **Contrato que toca:** `climate_month`, `precip_month`, `crop_stages`, `grid_cells`, `soil_municipality`
 - **Notas:** Va antes del diagnóstico. La lluvia efectiva y el agua que retiene cada textura necesitan un método con fuente: por confirmar con fuente (R8); la candidata para la retención es FAO-56, por verificar. La textura entró al balance el 11 de octubre de 2026 (decisión 10) y la lluvia de IMERG el mismo día (decisión 12). Lluvia y ET0 son variables distintas: usar IMERG para una y POWER para la otra no es mezclar fuentes de un mismo indicador (decisión 11).
 
 ### HU-146 · Endpoint del plan de agua
@@ -88,6 +88,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 - **Historia:** Como desarrollador web, quiero el endpoint del plan de agua, para mostrar el agua de cada ciclo de una estrategia.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
+  - [ ] Responde con la forma del contrato: por cultivo y por finca, el déficit y el volumen por mes en rangos, en año normal y año seco, con `sources`, `soil_basis` y `versions`
   - [ ] 422 si los porcentajes pasan de 100 o el cultivo no existe
   - [ ] Trae, por mes, la humedad del suelo de la zona (POWER y, si existe, SMAP) como contraste, cada una en su unidad y con su fuente; no cambia el déficit (decisión 11)
   - [ ] No persiste los datos de la finca (R9)
