@@ -1,200 +1,321 @@
-"""Precios de SIPSA al día (HU-222): la API los baja del DANE cada día, los valida y sirve la última versión buena.
+"""Precios de SIPSA al día (HU-222): las dos actualizaciones (boletín diario y servicio semanal), sus versiones y la API,
+que solo las lee.
 
-Ninguna prueba usa la red: la «descarga» escribe una respuesta de ejemplo del servicio.
+Ninguna prueba usa la red: las «descargas» escriben un anexo o una respuesta del servicio de ejemplo (R5).
 """
 
+import io
 import json
-from datetime import UTC, datetime, timedelta
+import urllib.error
+from datetime import date, datetime, timedelta
 
+import polars as pl
 import pytest
 from fastapi.testclient import TestClient
+from openpyxl import Workbook
 
-from backend import market_updates
 from backend.api.main import app
-from backend.market_updates import BOGOTA
-from pipeline.build import ValidationError
-from pipeline.sources import sipsa
-from tests.conftest import SAMPLE_MARKETS, SAMPLE_SIPSA_ROWS, sipsa_row, sipsa_xml
+from backend.config.settings import get_settings
+from backend.market import store, updates
+from backend.market.updates import BOGOTA, UpdateError
+from pipeline.build import publish
+from pipeline.sources import dane, fetch, sipsa, sipsa_boletin
+from tests.conftest import SAMPLE_MARKETS, SAMPLE_META, SAMPLE_MUNICIPALITIES, SAMPLE_REGION, SAMPLE_SIPSA_ROWS, sipsa_row, sipsa_xml
 
-AT_3_05_PM = datetime(2026, 10, 21, 15, 5, tzinfo=BOGOTA)
+REGION = {**SAMPLE_REGION, "region": {**SAMPLE_REGION["region"], "markets": SAMPLE_MARKETS}}
+# Los precios publicados de ejemplo llegan hasta el lunes 19 de octubre de 2026.
+THURSDAY_3PM = datetime(2026, 10, 22, 15, 0, tzinfo=BOGOTA)
+WEEKDAYS = ("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
+MONTHS = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
 
 
-def fake_download(rows):
-    """Una descarga de ejemplo: escribe la respuesta del servicio donde la escribiría `sipsa.download`."""
+def bulletin(day: date, products: dict[str, tuple], columns=("Barranquilla", "Bogotá, Corabastos", "Tunja"), header="Precio $/Kg") -> bytes:
+    """Un anexo de ejemplo (R5) con la forma del boletín diario del DANE: el día arriba, una fila de centrales con dos
+    columnas cada una (precio y variación) y los productos por grupo. `products`: nombre → precio en cada central."""
+    book = Workbook()
+    sheet = book.active
+    sheet.title = "Boletín diario"
+    sheet.append([None])
+    sheet.append([f"{WEEKDAYS[day.weekday()]} {day.day} de {MONTHS[day.month - 1]} de {day.year}"])
+    row = [header]
+    for name in columns:
+        row += [name, None]
+    sheet.append(row)
+    sheet.append([None] + ["Precio", "Var %"] * len(columns))
+    sheet.append(["Tubérculos, raíces y plátanos"])
+    for name, prices in products.items():
+        row = [name]
+        for price in prices:
+            row += [price, 0.01]
+        sheet.append(row)
+    sheet.append(["*Variedad predominante en el mercado"])
+    sheet.append(["n.d. : no disponible"])
+    out = io.BytesIO()
+    book.save(out)
+    return out.getvalue()
+
+
+def bulletins(by_day: dict[date, bytes]):
+    """Una descarga del boletín de ejemplo: el anexo de ese día, o nada si ese día no hubo boletín (como un 404)."""
+    asked = []
+
+    def download(day, folder):
+        asked.append(day)
+        if day not in by_day:
+            return None
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / f"boletin-{day:%Y%m%d}.xlsx"
+        path.write_bytes(by_day[day])
+        return path
+
+    download.asked = asked
+    return download
+
+
+def service(rows):
+    """Una descarga del servicio de ejemplo: escribe la respuesta donde la escribiría `sipsa.download`."""
 
     def download(cache):
         cache.mkdir(parents=True, exist_ok=True)
         (cache / sipsa.ROWS_FILE).write_text(sipsa_xml(rows), encoding="utf-8")
-        (cache / sipsa.META_FILE).write_text("2026-10-21T20:05:00+00:00", encoding="utf-8")
+        (cache / sipsa.META_FILE).write_text("2026-10-25T20:00:00+00:00", encoding="utf-8")
         return cache / sipsa.ROWS_FILE
 
     return download
 
 
-def failing_download(cache):
-    raise OSError("el DANE no respondió")
+@pytest.fixture
+def published(tmp_path, monkeypatch):
+    """El dataset publicado de ejemplo, con sus precios hasta el 19 de octubre y las centrales en la región."""
+    folder = tmp_path / "published"
+    prices = sipsa.prices(io.BytesIO(sipsa_xml(SAMPLE_SIPSA_ROWS).encode()), SAMPLE_MARKETS)
+    sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
+    publish(REGION, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), sources, folder, prices=prices)
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(folder))
+    get_settings.cache_clear()
+    return folder
 
 
-TODAY = [*SAMPLE_SIPSA_ROWS, sipsa_row("1", "Papa negra*", "2026-10-21", 2900, 3010, 3100)]
+@pytest.fixture
+def market(tmp_path, monkeypatch):
+    folder = tmp_path / "market"
+    monkeypatch.setenv("AGROSENSE_MARKET_DIR", str(folder))
+    get_settings.cache_clear()
+    return folder
 
 
-@pytest.mark.parametrize(
-    ("now", "expected"),
-    [
-        (datetime(2026, 10, 21, 10, 0, tzinfo=BOGOTA), datetime(2026, 10, 21, 15, 0, tzinfo=BOGOTA)),
-        (datetime(2026, 10, 21, 15, 0, tzinfo=BOGOTA), datetime(2026, 10, 22, 15, 0, tzinfo=BOGOTA)),
-        # A las 21:00 UTC ya son las 4:00 p. m. en Bogotá: la de hoy ya pasó.
-        (datetime(2026, 10, 21, 21, 0, tzinfo=UTC), datetime(2026, 10, 22, 15, 0, tzinfo=BOGOTA)),
-    ],
-)
-def test_se_baja_cada_dia_a_las_3_pm_de_bogota(now, expected):
-    assert market_updates.next_run(now) == expected
+PAPA = {"Papa negra*": (2400, 3010, 2700)}
 
 
-def test_hace_falta_bajar_si_no_hay_version_o_si_es_de_antes_de_la_ultima_publicacion(tmp_path):
-    data = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM)
-    assert market_updates.is_stale(None, AT_3_05_PM)
-    assert not market_updates.is_stale(data, AT_3_05_PM + timedelta(hours=20))  # mañana a las 11:05 a. m.
-    assert market_updates.is_stale(data, AT_3_05_PM + timedelta(days=1))  # mañana a las 3:05 p. m.
+# ---------- Boletín diario ----------
 
 
-def test_una_actualizacion_buena_queda_como_version_nueva_y_borra_la_descarga(tmp_path):
-    data = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM)
-    assert data.version == "sipsa-20261021T1505"
-    assert market_updates.current() is data
-    assert json.loads((tmp_path / "current.json").read_text(encoding="utf-8"))["version"] == data.version
-    assert {p.name for p in (tmp_path / data.version).iterdir()} == {"market_price_day.parquet", "market_price_season.parquet"}
-    assert not (tmp_path / "raw").exists()
-    # Al reiniciar la API, se lee la misma versión.
-    market_updates._serve(None)
-    assert market_updates.load_latest(tmp_path).version == data.version
+def test_el_boletin_suma_los_dias_habiles_que_faltan_sin_minimo_ni_maximo(published, market):
+    download = bulletins({date(2026, 10, 20): bulletin(date(2026, 10, 20), PAPA), date(2026, 10, 22): bulletin(date(2026, 10, 22), PAPA)})
+    data = updates.daily(market, published, now=THURSDAY_3PM, download=download)
+    # Del martes 20 al jueves 22; el miércoles no hubo boletín (festivo, por ejemplo).
+    assert download.asked == [date(2026, 10, 20), date(2026, 10, 21), date(2026, 10, 22)]
+    new = data.prices.filter(pl.col("source_id") == sipsa_boletin.SOURCE_ID).sort("market_id", "date")
+    assert new.select("market_id", "date", "avg_cop_kg").rows() == [
+        ("1", date(2026, 10, 20), 3010),
+        ("1", date(2026, 10, 22), 3010),
+        ("9", date(2026, 10, 20), 2700),
+        ("9", date(2026, 10, 22), 2700),
+    ]
+    assert new["min_cop_kg"].null_count() == new["max_cop_kg"].null_count() == new.height
+    assert data.version.endswith("-boletin") and json.loads((market / store.CURRENT).read_text())["version"] == data.version
 
 
-@pytest.mark.parametrize(
-    ("download", "error"),
-    [
-        (failing_download, OSError),
-        # Un precio medio fuera del mínimo y el máximo: no pasa la validación del pipeline.
-        (fake_download([sipsa_row("1", "Papa negra*", "2026-10-22", 3000, 2000, 3100)]), ValidationError),
-    ],
-)
-def test_si_falla_se_sigue_sirviendo_la_ultima_version_buena(tmp_path, download, error):
-    good = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM)
-    with pytest.raises(error):
-        market_updates.refresh(tmp_path, SAMPLE_MARKETS, download, now=AT_3_05_PM + timedelta(days=1))
-    assert market_updates.current() is good
-    assert json.loads((tmp_path / "current.json").read_text(encoding="utf-8"))["version"] == good.version
-    assert not (tmp_path / "raw").exists()
+def test_cada_fila_dice_de_donde_salio_y_las_dos_fuentes_quedan_citadas(published, market):
+    data = updates.daily(market, published, now=THURSDAY_3PM, download=bulletins({date(2026, 10, 22): bulletin(date(2026, 10, 22), PAPA)}))
+    assert set(data.prices["source_id"].unique().to_list()) == {sipsa.SOURCE_ID, sipsa_boletin.SOURCE_ID}
+    cited = {row["source_id"]: row for row in data.sources}
+    assert set(cited) == {sipsa.SOURCE_ID, sipsa_boletin.SOURCE_ID}
+    assert cited[sipsa_boletin.SOURCE_ID]["period_covered"] == "Del 2026-10-22 al 2026-10-22"
 
 
-def test_se_guardan_solo_las_dos_ultimas_versiones(tmp_path):
-    for day in range(3):
-        market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM + timedelta(days=day))
-    assert sorted(p.name for p in tmp_path.glob("sipsa-*")) == ["sipsa-20261022T1505", "sipsa-20261023T1505"]
-
-
-def test_la_api_sirve_los_precios_de_hoy_y_dice_su_version(market_dataset, tmp_path):
-    published = TestClient(app).get("/api/v1/market/prices").json()
-    assert (published["version"], published["updated_at"], published["date"]) == ("0.0.0-pruebas", None, "2026-10-19")
-
-    market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM)
-    body = TestClient(app).get("/api/v1/market/prices").json()
-    assert body["version"] == "sipsa-20261021T1505" and body["updated_at"].startswith("2026-10-21T15:05")
-    assert body["date"] == "2026-10-21"
-    papa = next(p for p in body["products"] if p["product_id"] == "papa-negra")
-    assert papa["latest"]["avg_cop_kg"] == 3010
-    history = TestClient(app).get("/api/v1/market/prices/papa-negra").json()
-    assert history["version"] == "sipsa-20261021T1505" and history["days"][-1]["date"] == "2026-10-21"
-
-
-def test_una_version_bajada_mas_vieja_que_la_publicada_no_se_sirve(market_dataset, tmp_path):
-    """Si alguien publica un dataset más nuevo que lo bajado, gana lo publicado: nunca se retrocede."""
-    market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download([sipsa_row("1", "Papa negra*", "2026-10-01", 1, 2, 3)]), now=AT_3_05_PM)
-    assert TestClient(app).get("/api/v1/market/prices").json()["version"] == "0.0.0-pruebas"
-
-
-def test_sin_dataset_publicado_igual_sirve_lo_bajado(dataset, tmp_path):
-    """El dataset de ejemplo no trae precios: con una versión bajada, la pantalla funciona igual."""
-    market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM)
-    response = TestClient(app).get("/api/v1/market/prices")
-    assert response.status_code == 200 and response.json()["version"] == "sipsa-20261021T1505"
-
-
-def test_apagada_la_actualizacion_diaria_no_arranca(monkeypatch):
-    monkeypatch.setattr(market_updates, "run_daily", lambda *a: pytest.fail("no debe arrancar"))
-    with TestClient(app) as client:
-        assert client.get("/api/v1/health").status_code in (200, 503)
-
-
-def run(coroutine):
-    import asyncio
-
-    return asyncio.run(coroutine)
-
-
-def test_al_pasar_las_3_pm_se_pone_al_dia_en_la_siguiente_revision(tmp_path):
-    """Lo que falló el 20 de octubre: con el equipo suspendido, una espera larga se atrasaba horas. Cada revisión mira la
-    hora real, así que a las 7:18 p. m. baja lo de las 3:00 p. m."""
-    morning = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM - timedelta(hours=3))
-    evening = AT_3_05_PM + timedelta(hours=4, minutes=13)
-    assert run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, now=evening, download=fake_download(TODAY))) is None
-    assert market_updates.current() is not morning
-    # Ya al día: la siguiente revisión no vuelve a bajar.
-    fresh = market_updates.current()
-    assert run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, now=evening + timedelta(minutes=5), download=failing_download)) is None
-    assert market_updates.current() is fresh
-
-
-def test_un_fallo_espera_una_hora_antes_de_reintentar(tmp_path):
-    retry = run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, now=AT_3_05_PM, download=failing_download))
-    assert retry == AT_3_05_PM + timedelta(hours=1)
-    # Antes de la hora no se intenta (la descarga de ejemplo fallaría si se llamara).
-    assert (
-        run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, retry, now=AT_3_05_PM + timedelta(minutes=30), download=failing_download))
-        == retry
+def test_un_producto_conocido_conserva_su_nombre_aunque_el_boletin_lo_escriba_distinto(published, market):
+    data = updates.daily(
+        market,
+        published,
+        now=THURSDAY_3PM,
+        download=bulletins({date(2026, 10, 22): bulletin(date(2026, 10, 22), {"Papa Negra *": (1, 3010, 2700)})}),
     )
-    # Pasada la hora, sí.
-    assert run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, retry, now=retry, download=fake_download(TODAY))) is None
-    assert market_updates.current() is not None
+    names = data.prices.filter(pl.col("product_id") == "papa-negra")["product"].unique().to_list()
+    assert names == ["Papa negra"]
 
 
-@pytest.fixture(autouse=True)
-def no_pause(monkeypatch):
-    """Los reintentos de la descarga no esperan en las pruebas."""
-    monkeypatch.setattr(market_updates, "DOWNLOAD_PAUSE", 0)
+def test_n_d_no_es_precio(published, market):
+    data = updates.daily(
+        market,
+        published,
+        now=THURSDAY_3PM,
+        download=bulletins({date(2026, 10, 22): bulletin(date(2026, 10, 22), {"Arracacha*": (1, "n.d.", 1800)})}),
+    )
+    new = data.prices.filter(pl.col("product_id") == "arracacha")
+    assert new.select("market_id", "avg_cop_kg", "group", "several_varieties").rows() == [
+        ("9", 1800, "Tubérculos, raíces y plátanos", True)
+    ]
 
 
-def test_una_descarga_cortada_se_reintenta_enseguida(tmp_path):
-    """El 20 de octubre el DANE cortó la conexión a los 0,9 MB; el segundo intento bajó todo."""
+def test_sin_dias_nuevos_no_escribe_nada(published, market):
+    assert updates.daily(market, published, now=THURSDAY_3PM, download=bulletins({})) is None
+    assert not (market / store.CURRENT).exists()
+
+
+def test_un_fin_de_semana_no_se_pide_boletin(published, market):
+    sunday = datetime(2026, 10, 25, 15, 0, tzinfo=BOGOTA)
+    download = bulletins({})
+    updates.daily(market, published, now=sunday, download=download)
+    assert all(day.weekday() < 5 for day in download.asked) and date(2026, 10, 24) not in download.asked
+
+
+def test_un_anexo_de_otro_dia_no_cambia_lo_que_se_sirve(published, market):
+    with pytest.raises(UpdateError, match="dice ser del 2026-10-21"):
+        updates.daily(market, published, now=THURSDAY_3PM, download=bulletins({date(2026, 10, 22): bulletin(date(2026, 10, 21), PAPA)}))
+    assert not (market / store.CURRENT).exists() and not (market / "raw").exists()
+
+
+def test_un_anexo_sin_su_fila_de_centrales_no_se_lee(published, market):
+    """Si el DANE cambia el formato, falla en vez de leer mal (R1)."""
+    broken = bulletin(date(2026, 10, 22), PAPA, header="Precios en $/Kg")
+    with pytest.raises(UpdateError):
+        updates.daily(market, published, now=THURSDAY_3PM, download=bulletins({date(2026, 10, 22): broken}))
+    assert not (market / store.CURRENT).exists()
+
+
+def test_una_central_que_no_reporto_ese_dia_no_tiene_precios_y_no_es_un_error(published, market):
+    """Cada boletín trae solo las centrales que reportaron ese día: Tunja sale unos tres días por semana."""
+    day = date(2026, 10, 22)
+    data = updates.daily(
+        market, published, now=THURSDAY_3PM, download=bulletins({day: bulletin(day, PAPA, columns=("Barranquilla", "Bogotá, Corabastos"))})
+    )
+    new = data.prices.filter(pl.col("source_id") == sipsa_boletin.SOURCE_ID)
+    assert new.select("market_id", "date", "avg_cop_kg").rows() == [("1", day, 3010)]
+
+
+def test_la_direccion_del_anexo_lleva_el_dia_y_el_mes_como_los_escribe_el_dane():
+    assert sipsa_boletin.url(date(2026, 9, 15)).endswith("/anex-SIPSADiario-15sep2026.xlsx")
+    assert sipsa_boletin.url(date(2026, 11, 6)).endswith("/anex-SIPSADiario-06nov2026.xlsx")
+
+
+def test_un_404_del_dane_es_un_dia_sin_boletin(tmp_path, monkeypatch):
+    def not_found(request, timeout):
+        raise urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(fetch.urllib.request, "urlopen", not_found)
+    assert sipsa_boletin.download(date(2026, 11, 2), tmp_path) is None
+
+
+# ---------- Servicio semanal ----------
+
+
+def test_el_servicio_reemplaza_los_dias_del_boletin_y_conserva_los_posteriores(published, market):
+    updates.daily(
+        market,
+        published,
+        now=THURSDAY_3PM,
+        download=bulletins({day: bulletin(day, PAPA) for day in (date(2026, 10, 20), date(2026, 10, 21), date(2026, 10, 22))}),
+    )
+    # El servicio llega hasta el miércoles 21 en Corabastos y hasta el martes 20 en Tunja.
+    rows = [
+        *SAMPLE_SIPSA_ROWS,
+        sipsa_row("1", "Papa negra*", "2026-10-21", 2900, 3000, 3100),
+        sipsa_row("9", "Papa negra*", "2026-10-20", 2600, 2650, 2700),
+    ]
+    data = updates.weekly(market, published, now=THURSDAY_3PM + timedelta(days=3), download=service(rows), pause=0)
+    papa = data.prices.filter(pl.col("product_id") == "papa-negra").sort("market_id", "date")
+    after = papa.filter(pl.col("date") >= date(2026, 10, 20)).select("market_id", "date", "avg_cop_kg", "source_id").rows()
+    assert after == [
+        ("1", date(2026, 10, 21), 3000, sipsa.SOURCE_ID),
+        ("1", date(2026, 10, 22), 3010, sipsa_boletin.SOURCE_ID),
+        ("9", date(2026, 10, 20), 2650, sipsa.SOURCE_ID),
+        ("9", date(2026, 10, 21), 2700, sipsa_boletin.SOURCE_ID),
+        ("9", date(2026, 10, 22), 2700, sipsa_boletin.SOURCE_ID),
+    ]
+    assert data.version.endswith("-servicio") and {row["source_id"] for row in data.sources} == {sipsa.SOURCE_ID, sipsa_boletin.SOURCE_ID}
+    assert not (market / "raw").exists()
+
+
+def test_una_descarga_cortada_se_reintenta(published, market):
     calls = []
 
-    def cut_once(cache):
-        calls.append(cache)
-        if len(calls) == 1:
-            raise OSError("IncompleteRead(906256 bytes read)")
-        return fake_download(TODAY)(cache)
+    def flaky(cache):
+        calls.append(1)
+        if len(calls) < 3:
+            raise fetch.DownloadError("la descarga pasó de 900 s")
+        return service(SAMPLE_SIPSA_ROWS)(cache)
 
-    data = market_updates.refresh(tmp_path, SAMPLE_MARKETS, cut_once, now=AT_3_05_PM)
-    assert len(calls) == 2 and data.prices["date"].max().isoformat() == "2026-10-21"
-
-
-def test_tres_cortes_seguidos_son_un_fallo(tmp_path):
-    calls = []
-
-    def always_cut(cache):
-        calls.append(cache)
-        raise OSError("cortada")
-
-    with pytest.raises(OSError):
-        market_updates.refresh(tmp_path, SAMPLE_MARKETS, always_cut, now=AT_3_05_PM)
-    assert len(calls) == market_updates.DOWNLOAD_ATTEMPTS
+    updates.weekly(market, published, now=THURSDAY_3PM, download=flaky, pause=0)
+    assert len(calls) == 3
 
 
-def test_la_api_sirve_la_version_que_dejo_otro_proceso(tmp_path):
-    """`python -m backend.market_updates` corre aparte: la API la ve en su siguiente revisión, sin volver a bajar."""
-    old = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM - timedelta(hours=3))
-    manual = market_updates.refresh(tmp_path, SAMPLE_MARKETS, fake_download(TODAY), now=AT_3_05_PM + timedelta(hours=4))
-    market_updates._serve(old)  # la API todavía tiene en memoria la de la mañana
-    later = AT_3_05_PM + timedelta(hours=4, minutes=5)
-    assert run(market_updates.check_once(tmp_path, SAMPLE_MARKETS, now=later, download=failing_download)) is None
-    assert market_updates.current().version == manual.version
+def test_tres_fallos_no_cambian_lo_que_se_sirve(published, market):
+    updates.daily(market, published, now=THURSDAY_3PM, download=bulletins({date(2026, 10, 22): bulletin(date(2026, 10, 22), PAPA)}))
+    before = json.loads((market / store.CURRENT).read_text())
+
+    def failing(cache):
+        raise OSError("el DANE no respondió")
+
+    with pytest.raises(UpdateError, match="falló 3 veces"):
+        updates.weekly(market, published, now=THURSDAY_3PM, download=failing, pause=0)
+    assert json.loads((market / store.CURRENT).read_text()) == before and not (market / "raw").exists()
+
+
+def test_dos_actualizaciones_a_la_vez_no_se_pisan(published, market):
+    market.mkdir()
+    (market / ".lock").write_text("")
+    with pytest.raises(UpdateError, match="otra actualización"):
+        updates.daily(market, published, now=THURSDAY_3PM, download=bulletins({}))
+
+
+def test_el_comando_sin_dataset_publicado_termina_con_error(market, monkeypatch, tmp_path):
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(tmp_path / "nada"))
+    get_settings.cache_clear()
+    with pytest.raises(SystemExit) as exit_info:
+        updates.main(["diario"])
+    assert exit_info.value.code == 1
+
+
+# ---------- Versiones ----------
+
+
+def test_se_guardan_solo_las_dos_ultimas_versiones(published, market):
+    for days in range(3):
+        updates.weekly(market, published, now=THURSDAY_3PM + timedelta(days=days), download=service(SAMPLE_SIPSA_ROWS), pause=0)
+    assert len([p for p in market.glob("sipsa-*") if p.is_dir()]) == store.KEEP
+
+
+def test_la_api_mira_si_hay_version_nueva_como_mucho_cada_minuto(published, market):
+    served = store.Served()
+    assert served.get(market, now=0) is None
+    data = updates.weekly(market, published, now=THURSDAY_3PM, download=service(SAMPLE_SIPSA_ROWS), pause=0)
+    assert served.get(market, now=30) is None
+    assert served.get(market, now=61).version == data.version
+
+
+# ---------- La API ----------
+
+
+def test_la_api_sirve_la_ultima_version_con_su_fuente_y_la_cita(published, market):
+    data = updates.daily(market, published, now=THURSDAY_3PM, download=bulletins({date(2026, 10, 22): bulletin(date(2026, 10, 22), PAPA)}))
+    body = TestClient(app).get("/api/v1/market/prices").json()
+    assert (body["version"], body["date"], body["source_id"]) == (data.version, "2026-10-22", sipsa_boletin.SOURCE_ID)
+    assert body["citation"] == sipsa.CITATION and body["updated_at"].startswith("2026-10-22T15:00")
+    papa = next(p for p in body["products"] if p["product_id"] == "papa-negra")
+    assert papa["latest"] == {"date": "2026-10-22", "min_cop_kg": None, "avg_cop_kg": 3010, "max_cop_kg": None}
+
+
+def test_la_temporada_sale_siempre_del_dataset_publicado(published, market):
+    updates.daily(market, published, now=THURSDAY_3PM, download=bulletins({date(2026, 10, 22): bulletin(date(2026, 10, 22), PAPA)}))
+    body = TestClient(app).get("/api/v1/market/prices/papa-negra").json()
+    assert body["citation"] == sipsa.CITATION and body["source_id"] == sipsa_boletin.SOURCE_ID
+    # Los precios de ejemplo no tienen 3 años completos: sin temporada, no se inventa (R1).
+    assert body["season"] is None
+
+
+def test_una_version_mas_vieja_que_la_publicada_no_se_sirve(published, market):
+    old = sipsa.prices(io.BytesIO(sipsa_xml(SAMPLE_SIPSA_ROWS[:1]).encode()), SAMPLE_MARKETS)
+    store.write_version(market, "servicio", old, [], THURSDAY_3PM)
+    body = TestClient(app).get("/api/v1/market/prices").json()
+    assert body["version"] == REGION["dataset_version"] and body["updated_at"] is None

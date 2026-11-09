@@ -49,15 +49,48 @@ services:
       AGROSENSE_LOG_FORMAT: ${AGROSENSE_LOG_FORMAT:-console}
       # Compose es para desarrollo y pruebas: la documentación de la API queda encendida. En producción, false.
       AGROSENSE_API_DOCS: ${AGROSENSE_API_DOCS:-true}
-      # Precios de SIPSA al día (HU-222): la API los baja cada día a las 3:00 p. m. de Bogotá. false para no usar la red.
-      AGROSENSE_MARKET_REFRESH: ${AGROSENSE_MARKET_REFRESH:-true}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     volumes:
       # Las copias de seguridad que se hacen antes de cada migración quedan en su máquina, no dentro del contenedor.
       - ./backups:/app/backups
-      # Los precios que baja la API sobreviven a reiniciar o reconstruir el contenedor.
+      # Las versiones de precios que deja el servicio `market`: la API solo las lee (HU-222).
+      - market_data:/app/data/market:ro
+
+  # Precios de SIPSA al día (HU-222): dos crons con supercronic, en la hora de Bogotá. El diario baja el anexo del boletín
+  # del DANE (unos 340 KB) y el semanal la serie completa del servicio web (unos 300 MB). Con el perfil `market` no
+  # arranca con `docker compose up`, para no usar la red en cada equipo:
+  #   docker compose --profile market up -d market                            # encenderlo
+  #   docker compose --profile market run --rm market python -m backend.market.updates diario   # correr uno ya
+  market:
+    build: .
+    profiles: ["market"]
+    restart: unless-stopped
+    environment:
+      # La configuración del backend las exige, aunque este servicio no use la base de datos.
+      POSTGRES_DB: ${POSTGRES_DB:?falta POSTGRES_DB en .env}
+      POSTGRES_USER: ${POSTGRES_USER:?falta POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      AGROSENSE_LOG_LEVEL: ${AGROSENSE_LOG_LEVEL:-INFO}
+      AGROSENSE_LOG_FORMAT: ${AGROSENSE_LOG_FORMAT:-console}
+      AGROSENSE_MARKET_DAILY_SCHEDULE: ${AGROSENSE_MARKET_DAILY_SCHEDULE:-0 15 * * 1-5}
+      AGROSENSE_MARKET_WEEKLY_SCHEDULE: ${AGROSENSE_MARKET_WEEKLY_SCHEDULE:-0 15 * * 0}
+      AGROSENSE_MARKET_TIMEOUT_S: ${AGROSENSE_MARKET_TIMEOUT_S:-900}
+      AGROSENSE_MARKET_MAX_MB: ${AGROSENSE_MARKET_MAX_MB:-600}
+      TZ: America/Bogota
+    volumes:
       - market_data:/app/data/market
+    # Al arrancar: quita un candado que haya quedado de un reinicio, se pone al día con el boletín (es liviano) y deja
+    # los dos horarios del .env en el crontab de supercronic.
+    command:
+      - sh
+      - -c
+      - >-
+        rm -f data/market/.lock;
+        python -m backend.market.updates diario;
+        printf '%s python -m backend.market.updates diario\n%s python -m backend.market.updates semanal\n'
+        "$$AGROSENSE_MARKET_DAILY_SCHEDULE" "$$AGROSENSE_MARKET_WEEKLY_SCHEDULE" > /tmp/precios.cron
+        && exec supercronic /tmp/precios.cron
 
 volumes:
   db_data:

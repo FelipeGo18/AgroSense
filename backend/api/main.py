@@ -3,19 +3,16 @@
 uv run uvicorn backend.api.main:app --reload
 """
 
-import asyncio
 from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 
-from backend import market_updates
 from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, version
 from backend.config import logging
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
-from backend.dataset import DatasetUnavailable, get_dataset
 from backend.db.session import get_db
 from backend.db.state import accounts_state
 
@@ -28,22 +25,6 @@ OPENAPI_URL = "/api/openapi.json"
 PRIVATE_PREFIXES = ("/api/v1/auth/", "/api/v1/me", "/api/v1/lots", "/api/v1/seasons")
 
 
-def _start_market_updates(settings) -> asyncio.Task | None:
-    """Los precios de SIPSA al día (HU-222), si `AGROSENSE_MARKET_REFRESH` está encendido y hay centrales que bajar."""
-    if not settings.market_refresh:
-        return None
-    try:
-        markets = get_dataset().region.get("markets") or {}
-    except DatasetUnavailable as error:
-        log.warning("market_refresh_off", detail=f"Los precios no se actualizan solos porque {error}")
-        return None
-    if not markets:
-        log.warning("market_refresh_off", detail="Los precios no se actualizan solos: region.yaml no dice qué centrales")
-        return None
-    log.info("market_refresh_on", detail=f"Los precios de SIPSA se actualizan cada día a las 3:00 p. m. de Bogotá en {settings.market_dir}")
-    return asyncio.create_task(market_updates.run_daily(settings.market_dir, markets))
-
-
 def create_app() -> FastAPI:
     settings = get_settings()
     logging.configure(settings.log_level, settings.log_format)
@@ -53,11 +34,7 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         log.info("api_started", detail="La API de AgroSense arrancó y ya atiende peticiones")
-        # La configuración de este momento, no la del import: las pruebas la cambian.
-        daily = _start_market_updates(get_settings())
         yield
-        if daily:
-            daily.cancel()
         log.info("api_stopped", detail="La API de AgroSense se apagó")
 
     docs = settings.api_docs
