@@ -181,7 +181,7 @@ Reglas del registro:
 - El evento se escribe **en la misma transacción** que el cambio: no hay cambio sin traza ni traza de un cambio que no ocurrió. Los intentos `denied` y `failed` se escriben aparte.
 - Un bloqueo por demasiados intentos (429) deja **un** evento `denied` por ventana de 15 minutos, no uno por petición; con un usuario que no existe, ninguno (14 de octubre de 2026, revisión de seguridad; aprobado por Felipe).
 - **Solo se agrega.** El usuario de base de datos de la API tiene `INSERT` y `SELECT` sobre `activity_log`, no `UPDATE` ni `DELETE`; solo la tarea de limpieza y el borrado de cuenta usan otro rol.
-- Se conserva **180 días** y luego se borra. La limpieza corre al arrancar la API y en cada inicio de sesión correcto.
+- Se conserva **180 días** y luego se borra. La limpieza la hace el mantenimiento de las cuentas (`python -m backend.accounts.maintenance`), que también borra las sesiones vencidas: corre al arrancar la API y se puede programar una vez al día. **Ningún endpoint la hace** (cambiado el 9 de noviembre de 2026, aprobado por Felipe: antes corría también en cada inicio de sesión).
 - **Los endpoints de cálculo no escriben aquí** (R9): consultar un diagnóstico, una rotación o un plan de agua no deja ningún evento. Desde HU-170 (P1) solo suma 1 al contador anónimo `usage_daily`, que no dice quién consultó.
 - **Al borrar la cuenta** se borran los eventos del agricultor. Las acciones de administradores sobre sus datos se conservan, pero con `subject_user_id`, `object_id` y `reason` en nulo, para no perder quién hizo qué sin guardar de quién era.
 - Lo dice el consentimiento desde la versión 2 (vigente: 3, HU-163): «registramos lo que hace con su cuenta durante 180 días para su seguridad».

@@ -348,9 +348,8 @@ def login(
         activity.record_rejected(db, "auth.login_failed", request_id=request_id, actor=user, outcome="denied")
         raise ApiError(403, "account_blocked", "Esta cuenta está bloqueada.", log="Inicio de sesión rechazado: la cuenta está bloqueada")
     check.succeeded()
-    # De paso se limpia lo vencido: sesiones de este usuario y eventos de más de 180 días.
-    db.execute(delete(Session).where(Session.user_id == user.user_id, Session.expires_at <= _now()))
-    activity.purge_old(db)
+    # Solo inicia sesión. Lo vencido (sesiones y actividad de más de 180 días) lo borra el mantenimiento de las cuentas
+    # (`backend/accounts/maintenance.py`), nunca una petición.
     session = _open_session(db, user, response, settings)
     activity.record(db, "auth.login", request_id=request_id, actor=user, object_type="session", object_id=session.session_id)
     db.commit()
