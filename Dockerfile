@@ -14,7 +14,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends postgresql-clie
 # suma SHA-1 fijas, las que publica su página de versiones (https://github.com/aptible/supercronic/releases/tag/v0.2.51).
 ARG TARGETARCH=amd64
 ARG SUPERCRONIC_VERSION=v0.2.51
-RUN set -eu;     case "$TARGETARCH" in       amd64) sha1=1692066e350a88ff4d7d6474fe3c7a6c41ec5e89 ;;       arm64) sha1=9d4c2000493215a1898502b2fc2dada3e8ea8c7a ;;       *) echo "No hay supercronic para $TARGETARCH" >&2; exit 1 ;;     esac;     curl -fsSLo /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-${TARGETARCH}";     echo "$sha1  /usr/local/bin/supercronic" | sha1sum -c -;     chmod +x /usr/local/bin/supercronic
+# La descarga se reintenta: GitHub a veces corta la conexión a mitad.
+RUN set -eu; \
+    case "$TARGETARCH" in \
+      amd64) sha1=1692066e350a88ff4d7d6474fe3c7a6c41ec5e89 ;; \
+      arm64) sha1=9d4c2000493215a1898502b2fc2dada3e8ea8c7a ;; \
+      *) echo "No hay supercronic para $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o /usr/local/bin/supercronic \
+      "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-${TARGETARCH}"; \
+    echo "$sha1  /usr/local/bin/supercronic" | sha1sum -c -; \
+    chmod +x /usr/local/bin/supercronic
 
 WORKDIR /app
 # El entorno vive fuera de /app: en desarrollo el código se monta encima y no debe tapar las dependencias.
