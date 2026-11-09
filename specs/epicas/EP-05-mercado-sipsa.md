@@ -39,13 +39,15 @@ SIPSA es de Colombia y cubre las centrales de referencia de la región confirmad
 
 - **Historia:** Como agricultor de Boyacá, quiero ver a cuánto se paga hoy por kilo cada producto en Corabastos y en Tunja, cómo se movió en el último año y en qué meses suele estar más caro o más barato, para decidir qué sembrar y cuándo vender.
 - **Prioridad:** P1 · **Tamaño:** L · **Estado:** en curso (faltan aprobar el contrato y el diseño)
-- **Notas:** Es lo que pasó en la central, nunca un pronóstico de precio (decisión 4): la pantalla lo dice. Los productos van con el nombre del DANE; el mapeo a `crop_id` está en `pipeline/sipsa_crops.yaml` (HU-003). Es la base de la que saldrá `market_month` (HU-051).
+- **Notas:** Es lo que pasó en la central, nunca un pronóstico de precio (decisión 4): la pantalla lo dice. Los productos van con el nombre del DANE; el mapeo a `crop_id` está en `pipeline/sipsa_crops.yaml` (HU-003). Es la base de la que saldrá `market_month` (HU-051). **9 de noviembre de 2026 (segunda revisión de Felipe del PR #12):** las rutas `GET` solo traen datos. El último precio de cada producto, el de hace una semana, el cambio y el orden los calcula quien escribe los datos (el pipeline y cada actualización de precios) en la tabla `market_price_latest`; la ruta filtra y devuelve. La cita del DANE pasa a la columna `citation` de `sources`, para que la API no importe el pipeline.
 - **Criterios de aceptación:**
   - [x] Adaptador `pipeline/sources/sipsa.py`: baja la respuesta del servicio a `data/raw/sipsa/` y publica solo las centrales de `region.yaml` (Corabastos y Tunja)
   - [x] Tabla `market_price_day` (producto, central, día; mínimo, medio y máximo en pesos enteros por kilo). Un 0 o un vacío del DANE es nulo, nunca un precio (R1); un día sin precio medio no se publica
   - [x] Tabla `market_price_season`: índice estacional por producto, central y mes, que compara cada mes con el promedio de su mismo año (así no cuenta la inflación); solo con 3 o más años completos. Sin ellos no hay temporada (R1)
   - [x] Validaciones antes de publicar: llave sin repetir, precio medio presente y dentro del mínimo y el máximo (con un peso de tolerancia por el redondeo del DANE), fuente en `sources` (R8)
   - [x] `GET /api/v1/market/prices` y `GET /api/v1/market/prices/{product_id}`, sin base de datos ni guardar nada (R9)
+  - [x] Tabla `market_price_latest` (último precio por central y producto, con el de hace una semana, el cambio y el orden), escrita por el pipeline y por cada actualización de precios con la misma función (`sipsa.latest`). Las rutas `GET` solo filtran y devuelven; qué versión se sirve lo decide la dependencia `market_tables`
+  - [x] La cita textual va en la columna `citation` de `sources` (nula si la fuente no pide una, R1) y la API la lee de ahí: `backend/api` no importa `pipeline` ni `pipeline` importa `backend` (`tests/test_dependencias.py`)
   - [x] Pantalla `/precios`, sin cuenta: central, búsqueda, último precio con su cambio frente a hace una semana (con forma y texto) y, al abrir un producto, su último año y su temporada, con el rótulo «No es un pronóstico» y la fuente
   - [x] Modo ligero y diseño adaptable de 320 a 1920 px (`npm run test:responsive`)
   - [ ] Contrato aprobado por Haider o Felipe (`specs/02-contratos.md`)
@@ -65,6 +67,9 @@ SIPSA es de Colombia y cubre las centrales de referencia de la región confirmad
   - [x] Semanal (domingos, 3:00 p. m.): baja la serie completa del servicio, que reemplaza los días del boletín; solo quedan los días del boletín posteriores al último día del servicio en cada central
   - [x] Cada actualización buena es una versión nueva e inmutable (`sipsa-AAAAMMDDTHHMMSS-boletin` o `-servicio`) con sus fuentes, y se guardan las dos últimas. Si algo falla, no se toca la versión que se sirve (R1), el log dice por qué y el comando termina con error
   - [x] Las descargas cortan por tiempo total y por tamaño (`AGROSENSE_MARKET_TIMEOUT_S`, `AGROSENSE_MARKET_MAX_MB`); la del servicio se reintenta 3 veces
+  - [x] Cada versión trae también `market_price_latest`, calculada al escribirla: la API no calcula nada al responder
+  - [x] El servicio `market` no usa la base de datos: lee su configuración de `pipeline/settings.py` y no recibe `POSTGRES_*`
+  - [x] El candado no se borra al arrancar el servicio: uno que quedó de un proceso muerto se da por muerto a las 6 horas (`LOCK_STALE_S`)
   - [x] Una versión bajada solo se sirve si es igual o más nueva que lo publicado en `data/published`. La temporada sale siempre de lo publicado
   - [x] Las respuestas de `/market/*` dicen su `version`, su `updated_at`, la fuente del último día y la cita del DANE (R4, R8); la pantalla dice cuándo se actualizaron y muestra la cita tal cual
   - [x] Las pruebas no usan la red
