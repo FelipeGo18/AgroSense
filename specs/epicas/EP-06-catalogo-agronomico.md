@@ -76,7 +76,7 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
 - **Historia:** Como motor, quiero las reglas de rotación como datos, para filtrar y puntuar estrategias de hasta 3 ciclos y evaluar su salud del suelo sin cambiar código.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Como mínimo: no repetir familia en ciclos seguidos (filtro), bonificar leguminosas y alternar tipo de raíz
+  - [ ] `catalog/rotation_rules.yaml` con la forma del contrato («Reglas de rotación como datos»): cada regla con `kind` (`filter` o `health`), `condition_type` de la lista cerrada, `params`, `levels`, `reason_template` y `source_id`. Como mínimo: no repetir familia en ciclos seguidos (filtro) y las reglas `health` de los cinco criterios
   - [ ] Cubren todos los pares posibles entre los 7 cultivos del MVP y el descanso: para cada par de ciclos seguidos se puede decir qué reglas aplican
   - [ ] Reglas de los cinco criterios de salud del suelo (`criterion`: `nitrogen`, `organic_carbon`, `soil_cover`, `pest_break`, `erosion`), con los cortes que dan cada nivel, para HU-212 y HU-224. La de `erosion` cruza la pendiente con los meses de suelo descubierto (decisión 14)
   - [ ] Cada regla con tipo, condición, efecto, criterio y fuente (R8)

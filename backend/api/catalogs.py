@@ -1,6 +1,6 @@
 """Catálogos del dataset publicado: `/api/v1/catalogs/*` (HU-078; specs/02-contratos.md, «Endpoints»).
 
-Los municipios de la región, su límite y los cultivos del catálogo agronómico. El suelo llega con su tabla (HU-181).
+Los municipios de la región, su límite, su suelo estimado (HU-181) y los cultivos del catálogo agronómico.
 """
 
 from typing import Any
@@ -9,6 +9,8 @@ import shapely.geometry
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
+from backend.api import calc_examples
+from backend.api.calc_models import ErrorBody, MunicipalitySoil, SoilRange, Versions
 from backend.api.errors import ApiError, explain
 from backend.config.logging import get_logger
 from backend.dataset import Dataset, DatasetUnavailable, get_dataset
@@ -91,3 +93,45 @@ def crops(request: Request, dataset: Dataset = Depends(require_dataset)) -> list
         raise ApiError(503, "dataset_unavailable", DATASET_UNAVAILABLE, log=detail)
     explain(request, f"Cultivos consultados: {len(dataset.crops)} del catálogo {dataset.rules_version}")
     return [CropItem(**{field: crop.get(field) for field in CropItem.model_fields}) for crop in dataset.crops.values()]
+
+
+@router.get(
+    "/municipalities/{municipality_id}/soil",
+    response_model=MunicipalitySoil,
+    responses={
+        200: {"content": {"application/json": {"example": calc_examples.SOIL}}},
+        404: {"model": ErrorBody},
+        503: {"model": ErrorBody, "content": {"application/json": {"example": calc_examples.ERRORS[503]}}},
+    },
+)
+def soil(municipality_id: str, request: Request, dataset: Dataset = Depends(require_dataset)) -> MunicipalitySoil:
+    """El suelo estimado del municipio (`soil_municipality`): una estimación de 250 m, no del lote (R10)."""
+    municipality = dataset.municipalities.get(municipality_id)
+    if municipality is None:
+        raise ApiError(
+            404,
+            "not_found",
+            "Ese municipio no está entre los de la región de AgroSense.",
+            log="Suelo pedido de un municipio fuera del catálogo",
+        )
+    row = dataset.soil.get(municipality_id)
+    if row is None:
+        detail = f"Datos no disponibles (503) porque el dataset {dataset.version} no trae el suelo de ese municipio (HU-181)"
+        log.warning("dataset_unavailable", detail=detail)
+        raise ApiError(503, "dataset_unavailable", DATASET_UNAVAILABLE, log=detail)
+    explain(request, f"Suelo del municipio consultado (dataset {dataset.version})")
+    return MunicipalitySoil(
+        municipality_id=municipality_id,
+        ph=SoilRange(value=row["ph"], p05=row["ph_p05"], p95=row["ph_p95"]),
+        soc_g_kg=SoilRange(value=row["soc_g_kg"], p05=row["soc_p05"], p95=row["soc_p95"]),
+        nitrogen_g_kg=row["nitrogen_g_kg"],
+        clay_pct=row["clay_pct"],
+        sand_pct=row["sand_pct"],
+        silt_pct=row["silt_pct"],
+        texture_class=row["texture_class"],
+        slope_pct=municipality.slope_pct,
+        cells=row["cells"],
+        quality=row["quality"],
+        source_id=row["source_id"],
+        versions=Versions(dataset=dataset.version, rules=dataset.rules_version),
+    )
