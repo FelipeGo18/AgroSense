@@ -97,7 +97,7 @@ def publish(folder, xml_rows, crops=None):
     prices = read(xml_rows)
     sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
     municipalities = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
-    return build.publish(SAMPLE_REGION, municipalities, sources, folder, prices, crops)
+    return build.publish(SAMPLE_REGION, municipalities, sources, folder, prices=prices, crop_products=crops)
 
 
 def test_publica_market_month_con_su_cobertura(tmp_path):
@@ -116,7 +116,7 @@ def test_mismos_precios_dan_la_misma_tabla(tmp_path):
 def test_sin_mapeo_no_se_publica_market_month(tmp_path):
     prices = read(PAPA + JANUARY_2024)
     sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
-    manifest = build.publish(SAMPLE_REGION, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), sources, tmp_path, prices)
+    manifest = build.publish(SAMPLE_REGION, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), sources, tmp_path, prices=prices)
     assert "market_month" not in manifest["tables"]
     assert not (tmp_path / "market_month.parquet").exists()
 

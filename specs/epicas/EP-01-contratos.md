@@ -8,7 +8,7 @@ agentes: [motor-api, web]
 subsistemas: [D4, M6, W6, S5]
 depende_de: [EP-00]
 reglas: [R4, R5, R7]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-01 · Contratos congelados y datos de ejemplo
@@ -20,22 +20,22 @@ estado: pendiente
 ### HU-011 · Esquema de las tablas publicadas
 
 - **Historia:** Como desarrollador, quiero el esquema de las tablas publicadas, para que pipeline y motor trabajen en paralelo.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Llaves, tipos y unidades documentados
-  - [ ] Un Parquet de ejemplo por tabla, rotulado como ejemplo
-  - [ ] Unicidad de llaves comprobada
-- **Notas:** Se hace en la fase 0.
+  - [x] Llaves, tipos y unidades documentados: en el contrato y en código, en `pipeline/schema.py`. Una prueba revisa que los dos nombren las mismas tablas y columnas
+  - [x] Un Parquet de ejemplo por tabla, rotulado como ejemplo: `data/examples/` (`uv run python -m pipeline.examples`), con tres municipios reales y cifras inventadas que citan la fuente `ejemplo`, y `"example": true` en el manifiesto (R5)
+  - [x] Unicidad de llaves comprobada: `schema.check` revisa columnas, tipos, nulos, llave y `quality` antes de publicar, y las pruebas lo corren sobre lo publicado y sobre los ejemplos
+- **Notas:** Se hace en la fase 0. **8 de noviembre de 2026:** hecha sobre el contrato congelado (decisión 15). El pipeline ya no publica una tabla que no cumpla su esquema. Lo publicado subió a `2026.11.0`: `municipalities` suma `tmean_annual_c` y `slope_pct` (nulas hasta HU-044 y HU-206), y `crops` da tipo de texto a `water_need` y `root_type`, que estaban vacías y sin tipo.
 
 ### HU-012 · OpenAPI con ejemplos de cada estado
 
 - **Historia:** Como desarrollador web, quiero el OpenAPI con ejemplos de cada estado, para construir la interfaz sin esperar al motor.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] OpenAPI generado de los modelos Pydantic
-  - [ ] Tipos TypeScript generados
-  - [ ] Ejemplos de `available`, `insufficient_data`, `not_applicable` y error 422
-  - [ ] Incluye los endpoints de cuenta del P0 (con ejemplos de 401 y 404), `/rotations` con una estrategia excluida y `/changes` con un periodo en `insufficient_data`
+  - [x] OpenAPI generado de los modelos Pydantic: `backend/api/calc_models.py`, con las rutas de `backend/api/calculations.py` (responden `501` hasta su HU del motor) y el suelo del municipio en `backend/api/catalogs.py`
+  - [x] Tipos TypeScript generados (`web/src/api/schema.d.ts`)
+  - [x] Ejemplos de `available`, `insufficient_data`, `not_applicable` y error 422 (`backend/api/calc_examples.py`); una prueba revisa que cada ejemplo cumpla su modelo
+  - [x] Incluye los endpoints de cuenta del P0 (con ejemplos de 401 y 404), `/rotations` con una estrategia excluida y la rotación actual, y `/changes` con un periodo en `insufficient_data`
 
 ### HU-013 · Respuestas simuladas (MSW)
 

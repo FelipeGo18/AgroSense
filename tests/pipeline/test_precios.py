@@ -34,7 +34,10 @@ def test_solo_entran_las_centrales_de_la_region_ordenadas_por_su_llave():
 def test_el_asterisco_del_dane_dice_que_junta_variedades():
     papa = read(SAMPLE_SIPSA_ROWS).filter(pl.col("product_id") == "papa-negra").row(0, named=True)
     assert (papa["product"], papa["several_varieties"], papa["group"]) == ("Papa negra", True, "Tubérculos, raíces y plátanos")
-    assert papa["municipality_id"] == "11001" and papa["source_id"] == "dane_sipsa"
+    assert papa["market"] == "Corabastos (Bogotá)" and papa["source_id"] == "dane_sipsa"
+    # Sin municipio: Corabastos está en Bogotá, que no es de la región, y toda columna `municipality_id` publicada se une
+    # con `municipalities` (R7).
+    assert "municipality_id" not in papa
 
 
 def test_los_precios_van_en_pesos_enteros_y_un_cero_es_sin_dato():
@@ -73,7 +76,7 @@ def test_sin_anos_completos_suficientes_no_hay_temporada():
 
 def publish(folder, prices):
     sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
-    return build.publish(SAMPLE_REGION, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), sources, folder, prices)
+    return build.publish(SAMPLE_REGION, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), sources, folder, prices=prices)
 
 
 def test_publica_los_precios_su_temporada_y_su_fuente(tmp_path):

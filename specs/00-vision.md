@@ -10,24 +10,38 @@ Texto oficial, leído el 11 de octubre de 2026 en <https://www.spaceappschalleng
 
 Una versión local del reto (sede de Moquegua, según una imagen) dice: «Crea una herramienta que combine datos satelitales, suelo y cultivos para ayudar a los agricultores a tomar mejores decisiones».
 
-Hackatón: 14 y 15 de noviembre de 2026. Enunciado completo, con los datos recomendados: 28 de octubre (HU-002). Guías de entrega y de jurado: 13 de noviembre.
+Hackatón: 14 y 15 de noviembre de 2026. Guías de entrega y de jurado: 13 de noviembre.
+
+**Enunciado completo** (publicado el 28 de octubre, leído el 8 de noviembre de 2026 en <https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/>; decisión 14). Lo que suma al texto corto:
+
+- **Datos de la NASA que sugiere:** SMAP, ECOSTRESS, GPM, Landsat, MODIS, NASA POWER, GRACE y GRACE-FO, y SRTM u otro modelo de elevación; nombra GEDI (biomasa) como ejemplo.
+- **Qué analizar:** temperatura, estrés por calor, lluvia, humedad del suelo, evaporación, riesgo de helada, lluvias extremas, estrés de la vegetación y tendencias del agua de largo plazo.
+- **Prioridades del agricultor que nombra:** uso del agua, valor como forraje, fijación de nitrógeno, menos erosión, más materia orgánica y mercado.
+- **Comparar al menos tres estrategias de rotación, incluida la actual.** Para cada una: por qué se sugiere, qué evidencia la respalda, qué beneficios puede tener, dónde faltan datos y qué riesgos debe revisar el agricultor o un experto local.
+- Señalar las épocas en que el campo suele quedar descubierto, cuándo los cultivos son más vulnerables y qué rotaciones cortan plagas, bajan la demanda de agua, mejoran la infiltración o suman ingreso.
+- Explicar los términos (evapotranspiración, NDVI, riesgo de helada, balance hídrico) y en qué se diferencia el satélite de la medición en el campo. La IA es opcional («you may»).
+- **Que apoye y no reemplace** el criterio del agricultor ni el saber agronómico local.
+- **Los recursos del reto se publican el viernes 13 de noviembre** (HU-002).
 
 ### Cómo cubre el MVP cada parte del enunciado
 
 | Parte del enunciado | Cómo la cubre el MVP | Dónde |
 |---|---|---|
-| NASA Earth observations | La NASA es el núcleo de los datos: NASA POWER (lluvia, temperatura, humedad del suelo modelada y ET0; es un reanálisis y se dice), NASADEM (altitud), GPM IMERG (lluvia por satélite), MODIS NDVI (verdor), SMAP (humedad del suelo por satélite) y la capa GIBS en el mapa del lote. Cada producto por su adaptador | EP-04, HU-211, `docs/fuentes.md` |
+| NASA Earth observations | La NASA es el núcleo de los datos: NASA POWER (lluvia, temperatura, humedad del suelo modelada y ET0; es un reanálisis y se dice), NASADEM (altitud y pendiente; sale de SRTM), GPM IMERG (lluvia por satélite), MODIS NDVI (verdor), SMAP (humedad del suelo por satélite) y la capa GIBS en el mapa del lote. En P1: GRACE-FO (tendencia del agua), ECOSTRESS (calor y evapotranspiración) y Landsat (HLS, verdor a 30 m). Cada producto por su adaptador | EP-04, HU-211, HU-225, HU-226, HU-043, `docs/fuentes.md` |
 | Local soil information | pH, carbono orgánico y textura de SoilGrids, del municipio o del lote dibujado, con su rango y el aviso de que es una estimación (R10) | EP-18 |
 | Crop characteristics | Fichas con fuente de 7 cultivos del altiplano: altitud, temperatura, etapas sensibles a la helada, Kc por etapa, duración, pH, familia, tipo de raíz y reglas de rotación entre ellos | EP-06, HU-142 |
 | Farmer priorities | Dos juegos de pesos de 0 a 5: los de la rotación (agua, suelo, ingreso y riesgo) y los de las señales de cada ventana. Si su criterio da otra luz que el de AgroSense, se muestran las dos | HU-101, HU-202, HU-074 |
-| Explore rotation strategies | Es la entrada del producto: estrategias de rotación de hasta 3 ciclos, comparadas lado a lado, con las descartadas y su motivo | EP-08, EP-10 |
-| Strengthen soil health | Cada estrategia trae su salud del suelo con cuatro criterios por reglas con fuente: nitrógeno, carbono orgánico, suelo cubierto y corte de plagas. Es una comparación entre estrategias, no una predicción de cuánto mejora el suelo | HU-212 |
+| Explore rotation strategies | Es la entrada del producto: estrategias de rotación de hasta 3 ciclos, comparadas lado a lado **contra la rotación que el agricultor ya hace** (al menos tres, incluida la actual), con las descartadas y su motivo | EP-08, EP-10, HU-223 |
+| Strengthen soil health | Cada estrategia trae su salud del suelo con cinco criterios por reglas con fuente: nitrógeno, carbono orgánico, suelo cubierto, corte de plagas y erosión (con la pendiente de NASADEM). Es una comparación entre estrategias, no una predicción de cuánto mejora el suelo | HU-212, HU-224 |
 | Adapt to changing conditions | «Qué cambió en su zona»: dos periodos de la misma fuente (1981–2000 y 2005–2024 con POWER), por mes, y cómo se movieron las mejores ventanas del cultivo. Es historia comparada, nunca pronóstico | HU-216 a HU-219 |
 | Presión: temperatura | Señales de heladas y de calor de cada ciclo; temperatura corregida por altitud | HU-077, HU-190 |
 | Presión: lluvia | Señal de agua con la lluvia de IMERG o de POWER y el balance hídrico por etapa | HU-071, HU-144 |
 | Presión: escasez de agua | El agua del plan de cada ciclo: déficit mensual y volumen, en año normal y año seco, con o sin riego | HU-144, HU-146, HU-215 |
 | Presión: extremos | El riesgo grave de clima (agua, helada o calor críticos) cuenta siempre y descarta la estrategia que lo tiene | HU-074, HU-081 |
 | Presión: deterioro del suelo | La salud del suelo de cada estrategia, con abonos verdes y descanso como ciclos | HU-212, HU-063 |
+| Por qué, evidencia, beneficios, vacíos y riesgos de cada estrategia | Razones de plantillas que citan la regla o el indicador evaluado (R5), limitaciones y «datos insuficientes» (R1), la fuente de cada regla (R8) y el rótulo «La decisión es suya» | HU-083, HU-102 |
+| Prioridades: forraje | El valor como forraje en la ficha del cultivo (P1) | HU-227 |
+| IA («SI», opcional) | Reglas con fuente y explicables, no aprendizaje automático (decisión 4): la entrega explica por qué | HU-132 |
 
 **Sede y región confirmadas (28 de octubre de 2026):** La sede del equipo es **Duitama (Boyacá, Colombia)** y la región piloto es el altiplano de **Boyacá y Cundinamarca, Colombia** (HU-002). Lo propio de Colombia vive en los adaptadores de cada fuente (R7).
 
@@ -41,8 +55,8 @@ Una herramienta web, usable desde el celular, que con datos de la NASA, el suelo
 
 **lote (o municipio y área, sin cuenta) → estrategias de rotación de 3 ciclos → un ciclo con su diagnóstico de ventana → agua del plan → qué cambió.**
 
-1. **Estrategias de rotación:** secuencias de hasta 3 ciclos (cultivos, abonos verdes y descanso) que cumplen las reglas agronómicas, se dan en la zona y no tienen ningún ciclo de alto riesgo de clima. Se ordenan según las prioridades del agricultor (agua, suelo, ingreso y riesgo) y cada una dice cómo cuida el suelo con cuatro criterios: nitrógeno, carbono orgánico, suelo cubierto y corte de plagas. Es una comparación según reglas con fuente, no una predicción de cuánto mejora el suelo.
-2. **Diagnóstico de cada ciclo:** primero dice si el cultivo se da en esa zona (por la altitud). Si se da, evalúa su **ventana de siembra** (de la siembra a la cosecha estimada) con un semáforo (verde, amarillo, rojo o no evaluable) construido con seis señales: agua, heladas, calor, suelo, oferta y mercado. Cada señal se califica de 0 a 100 contra lo que ese cultivo necesita o aguanta. El agricultor puede decir qué le importa más; si su criterio da otra luz que el de AgroSense, se muestran las dos. Si la fecha no conviene, muestra las mejores ventanas de los próximos doce meses. El diagnóstico sigue disponible como consulta suelta.
+1. **Estrategias de rotación:** secuencias de hasta 3 ciclos (cultivos, abonos verdes y descanso) que cumplen las reglas agronómicas, se dan en la zona y no tienen ningún ciclo de alto riesgo de clima. Se ordenan según las prioridades del agricultor (agua, suelo, ingreso y riesgo) y cada una dice cómo cuida el suelo con cinco criterios: nitrógeno, carbono orgánico, suelo cubierto, corte de plagas y erosión. Todas se comparan contra la rotación que el agricultor ya hace (decisión 14). Es una comparación según reglas con fuente, no una predicción de cuánto mejora el suelo.
+2. **Diagnóstico de cada ciclo:** primero dice si el cultivo se da en esa zona (por la temperatura media anual, decisión 13). Si se da, evalúa su **ventana de siembra** (de la siembra a la cosecha estimada) con un semáforo (verde, amarillo, rojo o no evaluable) construido con seis señales: agua, heladas, calor, suelo, oferta y mercado. Cada señal se califica de 0 a 100 contra lo que ese cultivo necesita o aguanta. El agricultor puede decir qué le importa más; si su criterio da otra luz que el de AgroSense, se muestran las dos. Si la fecha no conviene, muestra las mejores ventanas de los próximos doce meses. El diagnóstico sigue disponible como consulta suelta.
 3. **Agua del plan:** cuánta agua necesitará cada ciclo, mes a mes, y en qué meses es probable regar o la lluvia no alcanza. Es una estimación (R10).
 4. **Qué cambió en su zona:** cómo cambiaron las heladas, la lluvia y el calor de cada mes entre dos periodos de la historia de la zona, y cómo se movieron las mejores fechas de siembra del cultivo. Es historia comparada, no un pronóstico.
 
@@ -113,7 +127,7 @@ El impacto se presenta como **potencial**: la herramienta apoya decisiones, no g
 | Cultivos | 7 cultivos del altiplano con ficha completa y con fuente: papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia (abono verde); más el descanso | Más cultivos y variedades |
 | Estrategias de rotación | Hasta 3 ciclos (2 o 3), con filtros entre ciclos, 4 criterios de puntuación (agua, suelo, ingreso y riesgo) y la salud del suelo con 4 criterios por reglas con fuente | Rotaciones ponderadas por el área de cada cultivo |
 | Diagnóstico de un ciclo | Aptitud por altitud; seis señales calificadas de 0 a 100; con y sin riego; prioridades del agricultor con las dos luces cuando difieren; mejores ventanas de los próximos doce meses, por mes | Cultivos alternativos cuando conviene rotar; ventanas por semana; tres señales más: exceso de lluvia, enfermedades por clima y clima de cosecha |
-| Datos de la NASA | NASA POWER ampliado (lluvia, temperatura, humedad del suelo modelada, y radiación, viento y humedad para la ET0 por Penman-Monteith), NASADEM (altitud), GPM IMERG (lluvia por satélite), MODIS NDVI por municipio y por lote, SMAP (humedad del suelo) y la capa GIBS en el mapa. Orden de recorte: SMAP, GIBS, NDVI por lote | NDVI por lote a 30 m (HLS); riesgo climático por semana; aguaceros, ventanas secas y gota; lo que recomiende el enunciado y no alcance a entrar |
+| Datos de la NASA | NASA POWER ampliado (lluvia, temperatura, humedad del suelo modelada, y radiación, viento y humedad para la ET0 por Penman-Monteith), NASADEM (altitud), GPM IMERG (lluvia por satélite), MODIS NDVI por municipio y por lote, SMAP (humedad del suelo) y la capa GIBS en el mapa. Orden de recorte: GIBS y después SMAP; el NDVI por lote pasó a P1 (decisión 15) | NDVI por lote a 30 m (HLS); riesgo climático por semana; aguaceros, ventanas secas y gota; lo que recomiende el enunciado y no alcance a entrar |
 | Suelo | pH, carbono orgánico y textura de SoilGrids por municipio y por lote dibujado | Contraste con los estudios de suelos del IGAC |
 | Qué cambió | Dos periodos de la misma fuente, por mes: heladas, lluvia y temperatura máxima, y las mejores ventanas de cada periodo | Lluvia en años de El Niño y La Niña |
 | Agua | El agua del plan de cada ciclo: déficit mensual y volumen, en año normal y año seco | Finca temporal con varios cultivos; calendario de riego de la finca; aviso de riego semanal |

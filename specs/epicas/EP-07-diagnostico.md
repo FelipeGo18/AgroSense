@@ -46,7 +46,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Sin `climate_month` para el municipio o sin etapas con Kc para el cultivo: `insufficient_data`, nivel y `score` nulos (R1)
   - [ ] Caso de referencia: la misma ventana con déficit alto da `unfavorable` sin riego y no da `unfavorable` con riego
 - **Reglas que aplican:** R1, R2, R4, R5, R6, R10
-- **Contrato que toca:** `signals.water` (con `sources`) de la respuesta de diagnóstico; `climate_month`, `precip_month`, `soil_moisture_month`, `crop_stages`, `soil_grid`, `soil_municipality`
+- **Contrato que toca:** `signals.water` (con `sources`) de la respuesta de diagnóstico; `climate_month`, `precip_month`, `soil_moisture_month`, `crop_stages`, `grid_cells`, `soil_municipality`
 - **Notas:** Reemplaza a la señal anterior, que solo miraba la lluvia frente a lo normal; cambió el 11 de octubre de 2026. El mismo día sumó la textura del suelo (decisión 10) y, después, la lluvia de IMERG y la humedad del suelo como contraste (decisión 12). Que la humedad del suelo entre a la calificación necesita una regla con fuente: queda por decidir. Depende de HU-142, HU-143, HU-144 y HU-196. Con riego, `water` es `favorable` aunque el déficit sea alto, y la razón dice cuánto riego haría falta (`specs/01-reglas.md`, «Agregación del semáforo»). Sin la textura del suelo, el agua se calcula sin retención y se agrega a las limitaciones (`specs/01-reglas.md`, «Cómo se califica cada señal»).
 
 ### HU-072 · Señal de oferta
@@ -173,18 +173,18 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Historia:** Como agricultor, quiero saber de entrada si mi cultivo se da en mi municipio, para no planear una siembra que no va a prosperar.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Antes de evaluar señales, el motor compara la altitud con `altitude_min_m`–`altitude_max_m` de la ficha: la del lote (mediana de `elevation_grid` en su polígono, que calcula la API, HU-206) si viene `lot_id` con polígono; si no, `altitude_m` del municipio. La razón dice cuál se usó
+  - [ ] Antes de evaluar señales, el motor compara la temperatura media anual con `tmean_min_c`–`tmean_max_c` de la ficha: la del municipio (`tmean_annual_c`) o, si viene `lot_id` con polígono, corregida a la altitud del lote (mediana de `grid_cells` en su polígono, que calcula la API, HU-206) con el gradiente de HU-044. La razón dice cuál se usó, con la temperatura y la altitud
   - [ ] Fuera del rango: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y la razón cita el dato de la ficha y su fuente. No se evalúa ninguna ventana
-  - [ ] Dentro del rango, incluidos los dos límites: `suitable`, y la razón dice la altitud del municipio y el rango del cultivo
-  - [ ] Si la ficha no tiene el rango con fuente, o el municipio no tiene `altitude_m`: `insufficient_data`; no bloquea y se agrega a las limitaciones (R1, R8)
+  - [ ] Dentro del rango, incluidos los dos límites: `suitable`, y la razón dice la temperatura media de la zona y el rango del cultivo
+  - [ ] Si la ficha no tiene el rango con fuente, o el municipio no tiene `tmean_annual_c`: `insufficient_data`; no bloquea y se agrega a las limitaciones (R1, R8)
   - [ ] Es un filtro: no es una señal ni entra al orden; trae un `score` informativo (R3)
-  - [ ] `suitability.score`: nota informativa de 0 a 100 con la curva de altitud (la función de HU-196): 100 dentro del rango óptimo (`altitude_opt_min_m`–`altitude_opt_max_m`) y 0 fuera del absoluto. No entra al semáforo ni al orden de las ventanas
-  - [ ] La aptitud se decide solo por la altitud: solo fuera del rango absoluto es `not_suitable`; una nota baja dentro del rango sigue siendo `suitable`
+  - [ ] `suitability.score`: nota informativa de 0 a 100 con la curva de temperatura media (la función de HU-196): 100 dentro del rango óptimo (`tmean_opt_min_c`–`tmean_opt_max_c`) y 0 fuera del absoluto. No entra al semáforo ni al orden de las ventanas
+  - [ ] La aptitud se decide solo por la temperatura media anual: solo fuera del rango absoluto es `not_suitable`; una nota baja dentro del rango sigue siendo `suitable`
   - [ ] Las estrategias de rotación (HU-081, HU-213), «Qué cambió» (HU-217) y, en P1, el calendario (HU-179) y las alternativas (HU-197) usan esta misma función
   - [ ] Caso de referencia: un cultivo de clima frío en un municipio a nivel del mar da `not_suitable` sin ventanas
 - **Reglas que aplican:** R1, R3, R4, R5, R6, R8
-- **Contrato que toca:** `suitability` (con `score`) en las respuestas de `/diagnostics`, `/rotations` y `/changes`; `crops.altitude_min_m`, `crops.altitude_max_m`, `crops.altitude_opt_min_m`, `crops.altitude_opt_max_m`, `municipalities.altitude_m`, `elevation_grid`
-- **Notas:** Depende de HU-044 y HU-206 (altitud del municipio y del lote con NASADEM), HU-061 (rango de altitud con fuente) y HU-199 (rango óptimo de altitud, para la nota). El motor recibe la altitud ya calculada: no lee `elevation_grid` (R6). Agregada el 11 de octubre de 2026; la altitud del lote se sumó el mismo día (decisión 12).
+- **Contrato que toca:** `suitability` (con `score`) en las respuestas de `/diagnostics`, `/rotations` y `/changes`; `crops.tmean_min_c`, `crops.tmean_max_c`, `crops.tmean_opt_min_c`, `crops.tmean_opt_max_c`, `municipalities.tmean_annual_c`, `municipalities.altitude_m`, `grid_cells`
+- **Notas:** Depende de HU-044 y HU-206 (temperatura media corregida por altitud con NASADEM, del municipio y del lote), HU-061 (rango de temperatura media con fuente) y HU-199 (rango óptimo, para la nota). Cambiada el 16 de octubre de 2026 (decisión 13): antes se decidía por la altitud. El motor recibe la altitud ya calculada: no lee `grid_cells` (R6). Agregada el 11 de octubre de 2026; la altitud del lote se sumó el mismo día (decisión 12).
 
 ### HU-192 · Orden de las ventanas por factor limitante y prioridades
 
@@ -213,7 +213,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Archivos YAML con número de versión
-  - [ ] `thresholds.yaml` fija los cortes de calificación a nivel (70 y 40), el umbral crítico de cada señal y los límites de las curvas que no dependen del cultivo (HU-196); la señal de suelo no tiene umbral crítico (R10)
+  - [ ] `thresholds.yaml` con la forma del contrato («Configuración versionada»): los cortes de nivel (70 y 40) y, por señal, `variable`, `unit`, `curve` (puntos o `crop`), `critical_below` y `source_id`; la señal de suelo no tiene umbral crítico (R10)
   - [x] `weights.yaml` fija el peso por defecto de 0 a 5 de cada señal del P0; su contenido y su porqué salen de HU-198
   - [ ] El motor recibe la configuración ya leída: no abre los archivos (R6)
   - [x] Si falta una señal en `weights.yaml` o un peso está fuera de 0 a 5, la API no arranca y dice por qué (hecho para `weights.yaml`; `thresholds.yaml` todavía no existe)
@@ -245,7 +245,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] `/trends` recibe `sowing_date` y devuelve tres series: `water` (por año, `precip_mm` de los meses de la ventana, de la fuente de lluvia que calcula la señal, y `need_mm` del cultivo), `supply` (por año, `planted_ha` y `preliminary` del semestre de EVA en que cae la fecha) y `ndvi` (por periodo de 16 días, `ndvi_normal` del municipio, HU-208)
   - [ ] Solo leen el dataset publicado; sin datos, la serie viene vacía con `insufficient_data` (R1)
 - **Reglas que aplican:** R1, R4, R7
-- **Notas:** La serie `ndvi` se sumó el 11 de octubre de 2026 (decisión 12): sirve para contrastar la ventana con la época en que el campo suele estar verde. **15 de octubre de 2026:** hecho `GET /catalogs/municipalities` (`backend/api/catalogs.py`): lee el dataset publicado y, sin él, responde 503 `dataset_unavailable` con el motivo en el log. Faltan los cultivos, el límite, el suelo y `/trends`.
+- **Notas:** La serie `ndvi` se sumó el 11 de octubre de 2026 (decisión 12): sirve para contrastar la ventana con la época en que el campo suele estar verde. **15 de octubre de 2026:** hecho `GET /catalogs/municipalities` (`backend/api/catalogs.py`): lee el dataset publicado y, sin él, responde 503 `dataset_unavailable` con el motivo en el log. El 15 de octubre de 2026, también `GET /catalogs/municipalities/{id}/boundary`. Faltan los cultivos, el suelo y `/trends`.
 
 ### HU-217 · Comparar dos periodos de la historia de la zona
 

@@ -62,7 +62,7 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 **Por qué:** «no sabemos» y «está mal» son cosas distintas. Mostrar la falta de datos como rojo haría creer que hay riesgo; rellenarla haría parecer sólida una recomendación que no lo es.
 
-Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decisión 9): una ficha sin rango de altitud con fuente deja la aptitud en «datos insuficientes» y no descarta el cultivo, y una señal sin datos no puntúa en el balance de una ventana.
+Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decisión 9): una ficha sin rango de temperatura media con fuente deja la aptitud en «datos insuficientes» y no descarta el cultivo, y una señal sin datos no puntúa en el balance de una ventana.
 
 **Ejemplo de error que esta regla evita:** decir que, si SIPSA falla, el mercado se apoya solo en EVA. EVA no tiene precios; sería mezclar oferta con mercado.
 
@@ -115,7 +115,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Qué es:** la decisión se evalúa sobre una **ventana de siembra**: una fecha de siembra más lo que dura ese cultivo en campo, de la siembra a la cosecha estimada. Las ventanas se comparan por mes y, dentro de un mes, por semana.
 
-- **Primero, la aptitud.** Antes de mirar fechas, el motor comprueba que el cultivo se da en ese municipio: la altitud debe caer en el rango de su ficha. Si no (papa en la costa), la respuesta lo dice con su razón y no evalúa ventanas. Es un filtro, no una señal, y se decide solo por la altitud; trae una nota informativa de 0 a 100 que no entra al semáforo ni al orden.
+- **Primero, la aptitud.** Antes de mirar fechas, el motor comprueba que el cultivo se da en ese municipio: la temperatura media anual debe caer en el rango de su ficha (por altitud hasta el 16 de octubre de 2026, decisión 13). Si no (papa en la costa), la respuesta lo dice con su razón y no evalúa ventanas. Es un filtro, no una señal, y se decide solo por la temperatura media anual; trae una nota informativa de 0 a 100 que no entra al semáforo ni al orden.
 - **Seis señales por ventana.** Agua, heladas, calor, suelo, oferta y mercado. Cada una se mide contra lo que ese cultivo necesita o aguanta: un cultivo que pide poca agua rara vez sale mal en agua. En el P1 se suman exceso de lluvia, enfermedades por clima y clima de cosecha.
 - **El riego cuenta.** El agricultor dice si tiene riego. Con riego, la falta de lluvia no es un riesgo: la señal de agua informa cuánto riego haría falta.
 - **Un orden para comparar.** Las ventanas se ordenan primero por el factor que más limita y después por un balance de 0 a 100, ponderado por las prioridades del agricultor (de 0 a 5 por señal); el método está en la decisión 10. Una ventana con una señal crítica desfavorable es de **alto riesgo**: el balance no la rescata, va después de las demás y nunca entra entre las mejores.
@@ -132,7 +132,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Lo que no cambia:** sigue siendo historia de la zona, no pronóstico (decisión 4); una señal sin datos no puntúa ni se rellena (decisión 5); el semáforo se decide por reglas, nunca por el balance (R2).
 
-**Lo que exige:** fichas con rango de altitud y temperatura máxima con fuente (R8), datos de clima por semana, y que el balance hídrico esté listo antes que el diagnóstico.
+**Lo que exige:** fichas con rango de temperatura media anual y temperatura máxima con fuente (R8), datos de clima por semana, y que el balance hídrico esté listo antes que el diagnóstico.
 
 **Reglas asociadas:** R1, R2, R3, R4, R5 y R8. Detalle en `specs/01-reglas.md`. Aprobada por Felipe el 11 de octubre de 2026.
 
@@ -213,10 +213,42 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Lo que exige:** cuenta de NASA Earthdata y descargas recortadas a la región; fichas de los 7 cultivos y reglas de rotación con fuente en la fase 0; tablas nuevas en el contrato; diseñar en Figma las pantallas nuevas antes de programarlas; y confirmar esta semana qué se puede llevar preparado al evento (HU-004).
 
-**Orden de recorte de los productos NASA:** primero SMAP, luego GIBS, luego el NDVI por lote (queda por municipio). POWER, NASADEM e IMERG no se recortan.
+**Orden de recorte de los productos NASA:** primero SMAP, luego GIBS, luego el NDVI por lote (queda por municipio). POWER, NASADEM e IMERG no se recortan. *(Cambiado por las decisiones 14 y 15: primero GIBS y después SMAP; el NDVI por lote pasó a P1.)*
 
 **Reglas asociadas:** R1, R2, R3, R4, R5, R6, R8, R9 y R10. R9 suma `/changes` a los endpoints de cálculo y R10 suma la humedad del suelo y el verdor como datos de la zona. Detalle en `specs/01-reglas.md` («Estrategias de rotación» y «Qué cambió en la zona»). Decidida por Felipe el 11 de octubre de 2026.
 
+## 13. La aptitud se decide por la temperatura media anual
+
+**Decidido el 16 de octubre de 2026 por Felipe.** Antes, un cultivo era apto para la zona si la altitud del municipio caía en el rango de su ficha. Al armar el catálogo (HU-061) se vio que ninguna fuente da bien ese rango para el altiplano: FAO EcoCrop solo trae una altitud máxima y es baja para Colombia (2800 m para la papa, 2000 m para la cebolla de bulbo, 1600 m para la vicia), y con ella el motor diría «no apta» en zonas paperas y cebolleras reales. La UPRA, que hace la zonificación oficial de aptitud en Colombia, no usa la altitud sino la **temperatura media anual** (por ejemplo, papa Diacol Capiro: apta alta de 12 a 15 °C, no apta por debajo de 8 °C o por encima de 16 °C).
+
+- La aptitud compara la temperatura media anual de NASA POWER, corregida por altitud con NASADEM, con `tmean_min_c`–`tmean_max_c` de la ficha. Con un lote dibujado, se corrige a la altitud del lote.
+- Rangos de la UPRA donde hay zonificación (papa, cebolla de bulbo, maíz tradicional): el óptimo es la aptitud alta (A1) y el absoluto, de A3 a A1. Donde no la hay (arveja, haba, zanahoria, avena con vicia), el rango de temperatura de FAO EcoCrop, con un supuesto que se dice: en el trópico alto la temperatura media del ciclo es casi la media anual, porque varía poco entre meses.
+- La NASA queda más en el núcleo: la aptitud usa su temperatura, no solo la altitud.
+
+## 14. El enunciado completo: la rotación actual como referencia, la erosión y más productos de la NASA
+
+**Decidido el 8 de noviembre de 2026 por Felipe**, al leer el enunciado completo del reto, publicado el 28 de octubre en <https://www.spaceappschallenge.org/2026/challenges/adapting-farms-with-nasa-data/>. La pestaña de recursos del reto se publica el 13 de noviembre: ese día se revisa otra vez (HU-002).
+
+- **La rotación actual es la referencia.** El reto pide comparar «al menos tres estrategias de rotación, incluida la actual». La rotación que el agricultor viene haciendo entra como una estrategia más (`kind = current`), evaluada con los mismos criterios, y cada estrategia sugerida dice en qué gana o pierde frente a ella. La actual **nunca se excluye en silencio**: si viola una regla o tiene un ciclo de alto riesgo, se muestra igual, con ese motivo, porque es lo que el agricultor ya hace (R3 sigue valiendo para las sugeridas). Con cuenta sale del historial del lote (HU-165); sin cuenta, el agricultor la escribe.
+- **La erosión es el quinto criterio de la salud del suelo** (`erosion`): la pendiente del lote o del municipio, de NASADEM, y los meses que la estrategia deja el suelo descubierto. El reto la nombra entre las prioridades del agricultor. Sin una regla con fuente, el criterio es `insufficient_data` (R1, R8).
+- **SMAP deja de ser lo primero que se recorta.** El reto lo nombra primero entre los datos sugeridos. Pasa al último lugar de lo recortable de la NASA.
+- **Más productos de la NASA, en P1, cada uno por su adaptador (decisión 12):** GRACE-FO (tendencia del agua almacenada, para «Qué cambió»; sus celdas miden cientos de kilómetros, así que es la tendencia de la región, nunca del lote) y ECOSTRESS (temperatura de la superficie y evapotranspiración a 70 m, con pasadas irregulares). Landsat sigue en P1 con HLS (HU-043). GEDI (biomasa) no entra: el reto lo nombra solo como ejemplo.
+- **El valor como forraje** entra al catálogo en P1: el reto lo nombra entre las prioridades del agricultor.
+- **Seguimos con reglas, no con aprendizaje automático (decisión 4).** El reto sugiere técnicas de IA como opción («you may»). Las reglas con fuente dan lo que el reto pide para cada estrategia: por qué se sugiere, qué evidencia la respalda, qué beneficios tiene, dónde faltan datos y qué debe revisar el agricultor. La entrega lo explica (HU-132).
+
+## 15. El contrato se congela sin huecos
+
+**Decidido el 8 de noviembre de 2026; Felipe lo dejó en manos del equipo de diseño y lo aprobó.** Antes de congelar el contrato (HU-011 y HU-012) se revisó completo, tabla por tabla y endpoint por endpoint, con cuatro preguntas: quién produce y quién usa cada cosa, si cabe, si cuadra con las reglas y qué quedaba «por confirmar». Lo que se decidió:
+
+- **Una sola rejilla de 250 m (`grid_cells`).** La altitud de NASADEM a 30 m en toda la región serían unos 52 millones de celdas: no cabe en el repositorio ni en la memoria de la API. La rejilla común, en grados (0,0025°), lleva la altitud (promedio de los píxeles de 30 m), la pendiente (mediana calculada a 30 m, para no perder el relieve) y el suelo de SoilGrids, con el mismo `cell_id`. Un lote se resuelve con una sola tabla.
+- **El NDVI por lote pasa a P1** (HU-209): con 23 periodos serían unos 14 millones de filas. En el P0, el verdor es el del municipio.
+- **Las reglas de rotación son datos que el motor puede leer:** una lista cerrada de tipos de condición, con sus números y sus cortes, en vez de texto libre.
+- **`thresholds.yaml` y `sources.yaml` tienen forma escrita:** las curvas se dan como puntos y cada señal dice qué fuente la calcula por región.
+- **Las fórmulas de las estrategias quedan decididas** (antes eran un supuesto de HU-082): agua y riesgo por los ciclos, el ingreso con un abono verde o un descanso valiendo 0, el desempate y el encadenamiento de los ciclos.
+- **`/rotations` trae hasta 10 descartadas** y el conteo por motivo: con 8 cultivos y 3 ciclos puede haber cientos.
+- **`/water-plans` y `/trends` tienen respuesta escrita**, el suelo trae el rango del carbono orgánico (R10), `quality` solo vale `ok` o `partial`, y un endpoint que no está construido responde `501`.
+- **Ejemplos corregidos:** la aptitud se explica por la temperatura media anual (decisión 13) y la respuesta dice cuál se usó; las siembras registradas en AgroSense son P1.
+
 ## Cómo se conectan
 
-La NASA es el núcleo de los datos y las estrategias de rotación son el centro del producto (12). Los datos se calculan antes (3), con un formato acordado desde el inicio (2) y sin una única fuente de verdad (11). Un motor separado de la web (1) aplica reglas explicables (4) y dice honestamente cuando le falta información (5). Lo que el usuario registra vive aparte, en su cuenta, y solo llega al cálculo a través de la API (6). El clima de ahora decora la escena, pero nunca entra al cálculo (7). El suelo y las heladas son señales del mismo semáforo (8), que se evalúa sobre una ventana de siembra: primero la aptitud del cultivo, luego sus señales y, para comparar fechas, un orden que deja decidir al agricultor (9). Cada señal se califica con una curva por cultivo, el agricultor pondera, y el riesgo grave cuenta siempre (10).
+La NASA es el núcleo de los datos y las estrategias de rotación son el centro del producto (12). Los datos se calculan antes (3), con un formato acordado desde el inicio (2) y sin una única fuente de verdad (11). Un motor separado de la web (1) aplica reglas explicables (4) y dice honestamente cuando le falta información (5). Lo que el usuario registra vive aparte, en su cuenta, y solo llega al cálculo a través de la API (6). El clima de ahora decora la escena, pero nunca entra al cálculo (7). El suelo y las heladas son señales del mismo semáforo (8), que se evalúa sobre una ventana de siembra: primero la aptitud del cultivo, luego sus señales y, para comparar fechas, un orden que deja decidir al agricultor (9). Cada señal se califica con una curva por cultivo, el agricultor pondera, y el riesgo grave cuenta siempre (10). Las estrategias se comparan contra la rotación que el agricultor ya hace, y la salud del suelo suma la erosión (14).

@@ -22,6 +22,18 @@ La API lee el dataset del pipeline de `AGROSENSE_DATA_DIR` (por defecto `data/pu
 Solo lo lee. Si no está, los catálogos y crear o editar un lote responden 503 `dataset_unavailable` y el log dice por qué;
 lo demás sigue. Se publica con `uv run python -m pipeline.build` (`pipeline/README.md`).
 
+Para programar contra datos sin esperar el pipeline: `AGROSENSE_DATA_DIR=data/examples` usa el dataset de ejemplo del
+contrato (`uv run python -m pipeline.examples`, HU-011): tres municipios con cifras inventadas que citan la fuente `ejemplo`.
+
+## Endpoints de cálculo (HU-012)
+
+`/diagnostics`, `/rotations`, `/water-plans`, `/changes` y `/trends` ya tienen la forma del contrato
+(`backend/api/calc_models.py`) y sus ejemplos de cada estado en el OpenAPI (`backend/api/calc_examples.py`). Validan la
+entrada como dice el contrato (422, y 401 o 404 con `lot_id`) y, mientras el motor no exista, responden `501`
+`not_implemented`. Cuando llega la HU del motor de cada uno, la ruta devuelve su modelo y la forma no cambia.
+
+Los tipos de la web salen de este OpenAPI: con la API arriba y `AGROSENSE_API_DOCS=true`, `npm --prefix web run api:types`.
+
 ## Precios de SIPSA al día (HU-222)
 
 Con `AGROSENSE_MARKET_REFRESH=true` (Docker Compose lo trae encendido), la API baja los precios del DANE al arrancar si
@@ -203,7 +215,8 @@ backend/
 ├── db/              # de toda la base de datos: Base, conexión y migraciones de Alembic
 │   └── migrations/  #     env.py y versions/: una sola historia para todas las tablas
 ├── accounts/        # M8: tablas (cuentas, finca, soporte y trazabilidad), contraseñas, sesiones y bitácora
-├── api/             # M6: rutas, errores y la app de FastAPI
+├── api/             # M6: rutas, errores y la app de FastAPI; calc_models.py y calc_examples.py: el contrato de cálculo
+├── engine/          # M1–M11: el motor puro, sin FastAPI ni archivos (R6)
 └── config/          # configuración por variables de entorno
 tests/               # pytest; las de cuentas usan la base `<POSTGRES_DB>_test`
 ```

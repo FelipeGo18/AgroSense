@@ -39,7 +39,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 ### HU-220 · Etapas de una ventana por calendario
 
 - **Historia:** Como motor, quiero las etapas de un cultivo y su cosecha estimada desde una fecha de siembra con la duración de su ficha, para evaluar cualquier ventana sin depender de grados-día.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Con `sowing_date` y los `days` de `crop_stages`, da la etapa de cada día de la ventana, los meses que caen en etapas sensibles a la helada y al calor, y `harvest_estimate` con `harvest_basis = calendar`
   - [ ] Lo usan las señales de la ventana (HU-071, HU-077 y HU-190), el orden de ventanas (HU-192), los ciclos de las estrategias (HU-213), «Qué cambió» (HU-217) y la etapa de las temporadas en curso del lote (`stage_method = calendar`)
@@ -48,7 +48,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
   - [ ] Prueba: un cultivo cuyas etapas suman 150 días, sembrado el 3 de agosto, da la cosecha estimada el 31 de diciembre
 - **Reglas que aplican:** R1, R4, R6, R8
 - **Contrato que toca:** `harvest_basis` (`calendar`), `stage_method`, `crop_stages`
-- **Notas:** Decisión 12. Reemplaza en el MVP al cálculo por temperatura acumulada (HU-150 y HU-186, que pasaron a P1): cuando existan, la duración sale del clima de la zona y la base cambia a `normal_year`. Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. Reemplaza en el MVP al cálculo por temperatura acumulada (HU-150 y HU-186, que pasaron a P1): cuando existan, la duración sale del clima de la zona y la base cambia a `normal_year`. Agregada el 11 de octubre de 2026. Avance del 17 de octubre de 2026: `backend/engine/stages.py` (`stage_today`) da la etapa de hoy, su avance y la cosecha estimada de las temporadas en curso (`stage_method = calendar`); falta la etapa de cada día de una ventana y los meses sensibles, para las señales.
 
 ### HU-143 · Lluvia y ET0 mensuales por municipio
 
@@ -80,7 +80,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
   - [ ] Sin lluvia de la fuente elegida, sin ET0 o sin Kc de alguna etapa, no devuelve un déficit: quien lo llama responde `insufficient_data` (R1)
   - [ ] Prueba: con la misma lluvia y el mismo cultivo, un suelo arenoso da un déficit mayor o igual que uno arcilloso
 - **Reglas que aplican:** R1, R4, R6, R8, R10
-- **Contrato que toca:** `climate_month`, `precip_month`, `crop_stages`, `soil_grid`, `soil_municipality`
+- **Contrato que toca:** `climate_month`, `precip_month`, `crop_stages`, `grid_cells`, `soil_municipality`
 - **Notas:** Va antes del diagnóstico. La lluvia efectiva y el agua que retiene cada textura necesitan un método con fuente: por confirmar con fuente (R8); la candidata para la retención es FAO-56, por verificar. La textura entró al balance el 11 de octubre de 2026 (decisión 10) y la lluvia de IMERG el mismo día (decisión 12). Lluvia y ET0 son variables distintas: usar IMERG para una y POWER para la otra no es mezclar fuentes de un mismo indicador (decisión 11).
 
 ### HU-146 · Endpoint del plan de agua
@@ -88,6 +88,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 - **Historia:** Como desarrollador web, quiero el endpoint del plan de agua, para mostrar el agua de cada ciclo de una estrategia.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
+  - [ ] Responde con la forma del contrato: por cultivo y por finca, el déficit y el volumen por mes en rangos, en año normal y año seco, con `sources`, `soil_basis` y `versions`
   - [ ] 422 si los porcentajes pasan de 100 o el cultivo no existe
   - [ ] Trae, por mes, la humedad del suelo de la zona (POWER y, si existe, SMAP) como contraste, cada una en su unidad y con su fuente; no cambia el déficit (decisión 11)
   - [ ] No persiste los datos de la finca (R9)

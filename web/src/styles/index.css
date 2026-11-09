@@ -317,3 +317,58 @@
 .modo-ligero :is(.cloud-shadow, .star-twinkle, .firefly, .drizzle, .mascot-zzz) {
   animation: none;
 }
+
+/* Etiquetas sobre el mapa del lote (MapCanvas). El área no recibe el puntero: no estorba al mover los puntos. */
+.map-label {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 2px solid var(--color-paleta-noche);
+  background: var(--color-superficie-panel);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  clip-path: polygon(
+    6px 0,
+    calc(100% - 6px) 0,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    0 calc(100% - 6px),
+    0 6px
+  );
+}
+.map-area {
+  pointer-events: none;
+  padding: 4px 12px;
+  background: var(--color-paleta-noche);
+  color: var(--color-texto-sobre-oscuro);
+  font-weight: 700;
+  font-size: 15px;
+  clip-path: polygon(
+    6px 0,
+    calc(100% - 6px) 0,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    0 calc(100% - 6px),
+    0 6px
+  );
+}
+.map-area-outside {
+  background: var(--color-oscuro-rojo);
+}
+
+/* Objetivos táctiles del mapa (HU-096): los enlaces de la atribución y el nombre de cada lote se pueden tocar. */
+.maplibregl-ctrl-attrib a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+@media (max-width: 1023px) {
+  .maplibregl-ctrl-attrib a,
+  .map-label {
+    min-height: 44px;
+  }
+}

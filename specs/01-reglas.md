@@ -44,12 +44,13 @@ Todo se evalúa sobre una **ventana de siembra**: una fecha de siembra más lo q
 
 Antes de evaluar ventanas, el motor comprueba que el cultivo se puede dar en ese municipio. Es un filtro, no una señal (R3).
 
-- Un cultivo **no es apto** si la altitud queda fuera de `altitude_min_m`–`altitude_max_m` de su ficha. Ejemplo: papa en un municipio de la costa.
-- La altitud sale de NASADEM (30 m): la del lote, si se consulta con un lote dibujado; si no, la del municipio. La respuesta dice cuál se usó.
+- Un cultivo **no es apto** si la temperatura media anual queda fuera de `tmean_min_c`–`tmean_max_c` de su ficha. Ejemplo: papa en un municipio de la costa. (Cambiado el 16 de octubre de 2026, decisión 13: antes se decidía por la altitud, pero ninguna fuente da bien la altitud de estos cultivos en Colombia y el criterio oficial de la UPRA es la temperatura media anual.)
+- La temperatura media anual es la de NASA POWER corregida por altitud con NASADEM (HU-044): la del municipio o, si se consulta con un lote dibujado, corregida a la altitud del lote. La respuesta dice cuál se usó, con la temperatura y la altitud.
 - Si no es apto, la luz es `red`, la acción es `rotate` («este cultivo no se da en su zona: elija otro»), la razón cita el dato de la ficha y su fuente, y **no se evalúan ventanas**.
 - Si la ficha no tiene ese rango con fuente, la aptitud es `insufficient_data`: no bloquea y se agrega a las limitaciones (R1, R8).
-- La aptitud se decide **solo por la altitud**. Solo la altitud fuera del rango absoluto da `not_suitable`.
-- `suitability.score` es una nota informativa de 0 a 100 con la curva de altitud: 100 dentro del rango óptimo (`altitude_opt_min_m`–`altitude_opt_max_m`) y 0 fuera del absoluto. No es una señal: no entra al semáforo ni al orden de las ventanas.
+- La aptitud se decide **solo por la temperatura media anual**. Solo una temperatura fuera del rango absoluto da `not_suitable`.
+- `suitability.score` es una nota informativa de 0 a 100 con la curva de temperatura media: 100 dentro del rango óptimo (`tmean_opt_min_c`–`tmean_opt_max_c`) y 0 fuera del absoluto. No es una señal: no entra al semáforo ni al orden de las ventanas.
+- Con la zonificación de la UPRA, el rango óptimo es la aptitud alta (A1) y el absoluto va de la baja a la alta (A3 a A1); fuera de él es no apta (N1).
 
 ## Señales de una ventana
 
@@ -163,25 +164,39 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 
 **Cómo se arman:**
 
-1. El primer ciclo se siembra en `sowing_date`. Cada ciclo siguiente se siembra el lunes de la semana siguiente a la cosecha estimada del anterior (supuesto por confirmar, HU-213).
+0. **Candidatas:** todas las secuencias de `cycles` ciclos con los cultivos del catálogo (cultivos, abonos verdes y descanso), sin el mismo `crop_id` en dos ciclos seguidos y sin dos descansos seguidos (decisión 15).
+1. El primer ciclo se siembra en `sowing_date`. Cada ciclo siguiente se siembra el lunes siguiente a la cosecha estimada del anterior (decisión 15). Un descanso dura lo que dice su ficha.
 2. Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores del terreno y el primer ciclo. Una regla violada **excluye** la estrategia, con su motivo (R3).
 3. Un ciclo con un cultivo que no es apto para la zona excluye la estrategia. Un ciclo cuya ventana es de alto riesgo por clima (`water`, `frost` o `heat` desfavorable y crítica) también: ningún otro criterio lo compensa (R2).
 4. Un cultivo cuyo pH tolerado queda fuera de todo el intervalo estimado del suelo excluye la estrategia.
 5. La oferta y el mercado nunca excluyen: bajan el criterio de ingreso.
 6. Cada ciclo se revisa con el **mismo cálculo del diagnóstico de ventana**: sus seis señales, sus dos luces y su factor limitante. El descanso no tiene diagnóstico.
 
+**La rotación actual (decisión 14).** La rotación que el agricultor viene haciendo (`current_crop_ids`) entra como **estrategia de referencia** (`kind = current`). El reto pide comparar al menos tres estrategias, incluida la actual.
+
+- Se arma y se evalúa igual que las demás: mismos ciclos desde `sowing_date`, mismo diagnóstico por ciclo, mismos criterios y misma salud del suelo. Si tiene menos ciclos que `cycles`, se repite desde su primer cultivo hasta completarlos.
+- **Nunca se excluye en silencio.** Si viola una regla de filtro, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, se muestra igual, con esos motivos en `issues`: es lo que el agricultor ya hace y tiene que ver por qué no conviene (R3 sigue valiendo para las sugeridas).
+- No entra al ranking (`rank` nulo), y cada estrategia sugerida dice cuánto gana o pierde frente a ella en cada criterio (`vs_current`).
+- Con cuenta sale del historial del terreno (HU-165): los cultivos de las temporadas de las que viene, del más antiguo al más reciente. Sin cuenta, el agricultor la escribe. Si no hay rotación actual, no hay referencia y se agrega a las limitaciones (R1).
+- Una estrategia sugerida igual a la actual no se repite.
+
 **Cómo se ordenan.** Cuatro criterios, cada uno de 0 a 100, ponderados por las prioridades de la rotación (un peso de 0 a 5 por criterio). Son prioridades distintas de las de las señales:
 
 | Criterio | De dónde sale |
 |---|---|
-| `water` (agua) | La calificación de la señal `water` de sus ciclos |
-| `soil` (suelo) | Los cuatro criterios de salud del suelo: `favorable` vale 100, `moderate` 50 y `unfavorable` 0; el criterio es su promedio entre los disponibles |
-| `income` (ingreso) | Las señales `supply` y `market` de sus ciclos. Es el único lugar donde la oferta entra a las estrategias |
-| `risk` (riesgo) | El factor que más limita entre todos sus ciclos (ley del mínimo) |
+| `water` (agua) | El promedio de la calificación de la señal `water` de sus ciclos con diagnóstico |
+| `soil` (suelo) | Los cinco criterios de salud del suelo: `favorable` vale 100, `moderate` 50 y `unfavorable` 0; el criterio es su promedio entre los disponibles |
+| `income` (ingreso) | El promedio, ciclo por ciclo, de la calificación de `supply` y de `market` que tengan dato; un abono verde o un descanso no deja cosecha y vale 0. Es el único lugar donde la oferta entra a las estrategias |
+| `risk` (riesgo) | El factor que más limita entre todos sus ciclos: el menor `limiting_score` (ley del mínimo) |
 
-Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). La fórmula exacta de cada criterio es un supuesto por confirmar (HU-082). El ranking ordena estrategias ya filtradas: nunca rescata una excluida.
+Decisión 15 (antes era un supuesto de HU-082):
 
-**Salud del suelo (`soil_health`).** Cada estrategia trae cuatro criterios. Cada uno tiene un nivel (`favorable`, `moderate`, `unfavorable`, o nulo con `insufficient_data`), su razón y la regla de `rotation_rules` que lo decide, con fuente (R8):
+- `total_score` es el promedio de los criterios que califican, ponderado por las prioridades de la rotación. Con todas las prioridades de los criterios que califican en 0, la estrategia no tiene total y va al final.
+- Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). En `water` y `risk`, un ciclo sin dato no cuenta y se dice; si ninguno tiene, el criterio no califica. En `income`, un ciclo de cultivo sin oferta ni mercado no cuenta; si ningún ciclo de cultivo tiene, no califica.
+- Hasta 10 estrategias. Empate de `total_score`: gana la de `risk` más alto y, si sigue el empate, la de `crop_ids` primero en orden alfabético (R4).
+- El ranking ordena estrategias ya filtradas: nunca rescata una excluida.
+
+**Salud del suelo (`soil_health`).** Cada estrategia trae cinco criterios. Cada uno tiene un nivel (`favorable`, `moderate`, `unfavorable`, o nulo con `insufficient_data`), su razón y la regla de `rotation_rules` que lo decide, con fuente (R8):
 
 | Criterio | Qué mira | Con qué datos |
 |---|---|---|
@@ -189,6 +204,7 @@ Un criterio sin datos no califica, no entra al total y se agrega a las limitacio
 | `organic_carbon` (carbono orgánico) | Si incluye abono verde, descanso o cultivos que dejan residuos, según qué tan bajo está el carbono orgánico del suelo | Carbono orgánico de SoilGrids, del lote o del municipio |
 | `soil_cover` (suelo cubierto) | Cuántos meses queda el suelo cubierto mientras dura la estrategia | La duración de cada ciclo y, cuando existe, el NDVI para contrastar |
 | `pest_break` (corte de plagas) | Si una familia vuelve al mismo terreno demasiado pronto, contando los cultivos anteriores | `family` de la ficha y el historial del terreno |
+| `erosion` (erosión, decisión 14) | Si la estrategia deja el suelo descubierto en un terreno con pendiente | La pendiente del lote o del municipio (NASADEM, HU-206) y los meses descubiertos de `soil_cover` |
 
 - **No es una predicción.** No hay modelo de suelo: `soil_health` compara estrategias entre sí según reglas con fuente. Nunca dice cuánto va a mejorar el suelo, cuánto nitrógeno queda ni cuánto se va a cosechar (decisión 4). La web lo dice junto al resultado: «Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo».
 - Un criterio sin regla con fuente, o sin su dato (por ejemplo, sin carbono orgánico), es `insufficient_data`: no se inventa un corte ni se pinta como malo (R1, R8).
@@ -227,5 +243,6 @@ Las siembras registradas en AgroSense solo se muestran como totales por municipi
 | `weights_basis` | `default`, `farmer` |
 | `harvest_basis` | `calendar` (duración de la ficha), `normal_year` (clima de un año normal, P1) |
 | `cycles` | `2`, `3` |
-| Criterios de `soil_health` | `nitrogen`, `organic_carbon`, `soil_cover`, `pest_break`; cada uno con `status` y `level` |
+| Criterios de `soil_health` | `nitrogen`, `organic_carbon`, `soil_cover`, `pest_break`, `erosion`; cada uno con `status` y `level` |
+| `kind` de una estrategia | `current` (la rotación actual del agricultor, la referencia), `suggested` |
 | Criterios del ranking de estrategias | `water`, `soil`, `income`, `risk` |

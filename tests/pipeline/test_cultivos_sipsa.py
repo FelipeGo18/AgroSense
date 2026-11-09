@@ -26,7 +26,7 @@ def publish(folder, crops):
     prices = sample_prices()
     sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
     municipalities = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
-    return build.publish(SAMPLE_REGION, municipalities, sources, folder, prices, crops)
+    return build.publish(SAMPLE_REGION, municipalities, sources, folder, prices=prices, crop_products=crops)
 
 
 def test_el_mapeo_trae_cada_cultivo_del_mvp():
@@ -88,4 +88,4 @@ def test_el_mapeo_sin_precios_no_se_puede_validar(tmp_path):
     sources = pl.DataFrame([dane.source(SAMPLE_META)])
     municipalities = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
     with pytest.raises(build.ValidationError, match="no hay precios"):
-        build.publish(SAMPLE_REGION, municipalities, sources, tmp_path, None, {"papa": {"product_id": "papa-negra"}})
+        build.publish(SAMPLE_REGION, municipalities, sources, tmp_path, crop_products={"papa": {"product_id": "papa-negra"}})

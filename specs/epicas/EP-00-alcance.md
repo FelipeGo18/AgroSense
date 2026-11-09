@@ -36,9 +36,10 @@ estado: pendiente
   - [ ] Variables, resolución, periodo y forma de acceso documentados
   - [ ] Descarga de prueba para un municipio
   - [ ] Dice si el enunciado fija una región o unos datos. Si no es compatible con la región piloto, se registra en `docs/registro-de-decisiones.md` y se lista qué adaptadores y entradas de `sources.yaml` hay que cambiar
-  - [ ] Cada producto NASA que recomiende el enunciado y no esté en el MVP (POWER, NASADEM, IMERG, MODIS NDVI, SMAP, GIBS) queda listado con su HU nueva, que entra por su propio adaptador (decisión 12)
+  - [x] Cada producto NASA que recomiende el enunciado y no esté en el MVP (POWER, NASADEM, IMERG, MODIS NDVI, SMAP, GIBS) queda listado con su HU nueva, que entra por su propio adaptador (decisión 12). **8 de noviembre de 2026 (decisión 14):** el enunciado sugiere SMAP, ECOSTRESS, GPM, Landsat, MODIS, NASA POWER, GRACE y GRACE-FO, y SRTM u otro modelo de elevación (y nombra GEDI como ejemplo). Faltaban GRACE-FO (HU-225) y ECOSTRESS (HU-226); Landsat sigue en HU-043 (HLS); GEDI no entra
+  - [ ] Revisar la pestaña de recursos del reto el viernes 13 de noviembre, cuando se publica, y agregar lo que traiga
   - [x] La sede del equipo queda confirmada (**Duitama, Boyacá, Colombia**, confirmada el 28 de octubre de 2026) y la región piloto se mantiene en el altiplano de Boyacá y Cundinamarca, registrada en `docs/registro-de-decisiones.md`
-- **Notas:** El 28 de octubre de 2026 se confirmó la sede **Duitama (Boyacá)** y la región piloto en Boyacá y Cundinamarca, manteniendo intacto el enfoque de no pronóstico (R1–R10). Queda por documentar la lista final de datasets NASA del enunciado oficial.
+- **Notas:** El 28 de octubre de 2026 se confirmó la sede **Duitama (Boyacá)** y la región piloto en Boyacá y Cundinamarca, manteniendo intacto el enfoque de no pronóstico (R1–R10). El enunciado completo se leyó el 8 de noviembre de 2026 (decisión 14). Faltan los recursos del 13 de noviembre y la descarga de prueba. Criterios de los productos NASA y de la sede agregados el 11 de octubre de 2026.
 
 ### HU-003 · Verificar SIPSA y decidir si entra al P0
 
@@ -65,9 +66,9 @@ estado: pendiente
 ### HU-004 · Confirmar qué se puede preparar antes del evento
 
 - **Historia:** Como equipo, quiero confirmar en los términos de 2026 y con el evento local qué se puede preparar antes, para no arriesgar la entrega.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Regla citada con enlace
-  - [ ] Respuesta escrita de la sede local sobre si se puede llevar código preparado (pipeline, motor, web) o solo diseños, guías y datos
-  - [ ] Plan ajustado si cambia lo permitido (`docs/plan-48h.md`, los dos casos)
+  - [x] Respuesta escrita de la sede local sobre si se puede llevar código preparado (pipeline, motor, web) o solo diseños, guías y datos. **Sí se puede llevar código preparado:** confirmado por Felipe el 8 de noviembre de 2026
+  - [x] Plan ajustado si cambia lo permitido (`docs/plan-48h.md`, los dos casos): aplica el escenario «Se puede llevar código y datos preparados»; el orden de recorte no se aplica desde el inicio
 - **Notas:** **Urgente: se hace esta semana (antes del 17 de octubre de 2026).** Define todo el plan: si se puede llevar código, los datos NASA y las fichas llegan hechos al evento; si no, el P0 del evento supera de lejos las horas del equipo (`docs/plan-48h.md`). Marcada urgente el 11 de octubre de 2026.

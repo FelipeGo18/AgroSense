@@ -58,10 +58,96 @@ def test_un_municipio_que_no_esta_en_la_region_responde_422(rosa):
     assert response.status_code == 422 and "región" in response.json()["error"]["message"]
 
 
-def test_dibujar_el_lote_todavia_no_se_puede_y_lo_dice(rosa):
-    polygon = {"type": "Polygon", "coordinates": [[[-73.49, 5.49], [-73.48, 5.49], [-73.48, 5.50], [-73.49, 5.49]]]}
-    response = create(rosa, geometry=polygon)
-    assert response.status_code == 422 and response.json()["error"]["code"] == "geometry_not_available"
+# ---------- El lote dibujado (entrega 2) ----------
+
+# Samacá en el dataset de ejemplo: un cuadrado de 0,1° alrededor de (-73.4856, 5.4925).
+LON, LAT = -73.4856, 5.4925
+# Unos 100 m de lado a esta latitud: 1 ha.
+SIDE_LAT = 100 / 110_574
+SIDE_LON = 100 / (111_320 * 0.99541)
+
+
+def square(lon=LON, lat=LAT, dlon=SIDE_LON, dlat=SIDE_LAT):
+    return {"type": "Polygon", "coordinates": [[[lon, lat], [lon + dlon, lat], [lon + dlon, lat + dlat], [lon, lat + dlat], [lon, lat]]]}
+
+
+def test_un_lote_dibujado_guarda_su_contorno_y_la_api_calcula_el_area(rosa, db):
+    # El área que mande la web se ignora: la del lote es la de su dibujo.
+    response = create(rosa, geometry=square(), area_ha=99)
+    assert response.status_code == 201
+    lot = response.json()
+    assert lot["area_ha"] == pytest.approx(1.0, rel=0.01)
+    assert lot["geometry"]["type"] == "Polygon" and len(lot["geometry"]["coordinates"][0]) == 5
+    assert db.get(Lot, uuid.UUID(lot["lot_id"])).geometry == lot["geometry"]
+
+
+def test_sin_dibujo_ni_area_no_se_crea(rosa):
+    response = rosa.post("/api/v1/lots", json={"name": "El Alto", "municipality_id": "15646"})
+    assert response.status_code == 422 and "Dibuje" in response.json()["error"]["message"]
+
+
+def test_un_lote_que_se_sale_de_su_municipio_responde_422_y_dice_cual(rosa):
+    # Villa de Leyva queda a unos 15 km: fuera del límite de Samacá.
+    response = create(rosa, geometry=square(lon=-73.5249, lat=5.6339))
+    error = response.json()["error"]
+    assert response.status_code == 422 and error["code"] == "geometry_outside_municipality"
+    assert error["message"].startswith("Su lote se sale de Samacá")
+
+
+@pytest.mark.parametrize(
+    ("geometry", "why"),
+    [
+        # Un moño: las líneas se cruzan.
+        (
+            {
+                "type": "Polygon",
+                "coordinates": [[[LON, LAT], [LON + 0.001, LAT + 0.001], [LON + 0.001, LAT], [LON, LAT + 0.001], [LON, LAT]]],
+            },
+            "cruzan",
+        ),
+        ({"type": "Polygon", "coordinates": [square()["coordinates"][0], square(dlon=0.0001, dlat=0.0001)["coordinates"][0]]}, "huecos"),
+        ({"type": "Polygon", "coordinates": [[[LON, LAT], [LON + 0.001, LAT], [LON, LAT]]]}, "puntos"),
+        ({"type": "Point", "coordinates": [LON, LAT]}, "polígono"),
+        ({"type": "Polygon", "coordinates": [[[LON, LAT], ["x", LAT], [LON, LAT + 0.001], [LON, LAT]]]}, "mal formado"),
+    ],
+)
+def test_un_contorno_que_no_sirve_responde_422_y_dice_por_que(rosa, geometry, why):
+    response = create(rosa, geometry=geometry)
+    assert response.status_code == 422 and response.json()["error"]["code"] == "invalid_geometry"
+    assert why in response.json()["error"]["message"]
+
+
+def test_un_lote_sin_dibujar_se_puede_dibujar_despues(rosa, db):
+    lot = create(rosa, area_ha=7).json()
+    response = rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"geometry": square()})
+    assert response.status_code == 200
+    assert response.json()["area_ha"] == pytest.approx(1.0, rel=0.01)
+    event = db.scalar(select(ActivityEvent).where(ActivityEvent.action == "lot.updated"))
+    # Solo los nombres de los campos, nunca el polígono (HU-178).
+    assert event.details == {"fields": ["area_ha", "geometry"]}
+
+
+def test_un_lote_dibujado_tiene_el_area_de_su_dibujo_y_el_dibujo_no_se_quita(rosa):
+    lot = create(rosa, geometry=square()).json()
+    # Mandar un área no la cambia.
+    assert rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"area_ha": 50}).json()["area_ha"] == lot["area_ha"]
+    assert rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"geometry": None}).status_code == 422
+    bigger = rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"geometry": square(dlon=2 * SIDE_LON)})
+    assert bigger.json()["area_ha"] == pytest.approx(2.0, rel=0.01)
+
+
+def test_cambiar_de_municipio_un_lote_dibujado_valida_el_dibujo_en_el_nuevo(rosa):
+    lot = create(rosa, geometry=square()).json()
+    response = rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"municipality_id": "15407"})
+    assert response.status_code == 422 and response.json()["error"]["code"] == "geometry_outside_municipality"
+
+
+def test_el_contorno_dibujado_no_puede_quedar_mas_chico_que_lo_sembrado(rosa, db):
+    lot = create(rosa, geometry=square(dlon=3 * SIDE_LON)).json()
+    db.add(Season(lot_id=uuid.UUID(lot["lot_id"]), crop_id="papa", area_ha=Decimal("2"), sowing_date=date.today()))
+    db.commit()
+    response = rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"geometry": square()})
+    assert response.status_code == 422 and response.json()["error"]["code"] == "area_below_seasons"
 
 
 def test_la_lista_trae_solo_los_lotes_propios_y_sin_borrar(rosa, client):
@@ -108,8 +194,10 @@ def test_el_detalle_trae_las_temporadas_en_curso_y_el_suelo_nulo(rosa, db):
         ("papa", 1.5, 30),
         ("arveja", 0.5, 30),
     ]
-    # Sin las etapas del cultivo con fuente, la etapa es nula.
-    assert detail["current_seasons"][0]["stage"] is None
+    # Con las etapas del catálogo (FAO-56 «Idaho»: 45 días de etapa inicial), la papa del día 30 va en la inicial.
+    papa = detail["current_seasons"][0]
+    assert (papa["stage"], papa["stage_method"], papa["harvest_basis"]) == ("initial", "calendar", "calendar")
+    assert papa["harvest_estimate"] == (sown + timedelta(days=165)).isoformat()
     assert rosa.get("/api/v1/lots").json()[0]["current_crop_ids"] == ["papa", "arveja"]
 
 

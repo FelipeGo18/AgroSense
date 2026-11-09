@@ -12,8 +12,9 @@ import pytest
 from structlog.testing import capture_logs
 
 from pipeline import build
-from pipeline.sources import dane, sipsa
+from pipeline.sources import dane, dane_mgn, sipsa
 from tests.conftest import SAMPLE_MARKETS, SAMPLE_META, SAMPLE_MUNICIPALITIES, SAMPLE_REGION, SAMPLE_SIPSA_ROWS, sipsa_xml
+from tests.pipeline.test_municipios import feature_collection
 
 REGION = {**SAMPLE_REGION, "region": {**SAMPLE_REGION["region"], "markets": SAMPLE_MARKETS}}
 CROPS = {"papa": {"product_id": "papa-negra"}, "haba": {"product_id": None, "reason": "Ejemplo: sin producto en SIPSA."}}
@@ -21,12 +22,15 @@ CROPS = {"papa": {"product_id": "papa-negra"}, "haba": {"product_id": None, "rea
 
 @pytest.fixture
 def caches(tmp_path, monkeypatch):
-    """Las cachés de ejemplo de DIVIPOLA y SIPSA, y la región y el mapeo de ejemplo en lugar de los del repositorio."""
+    """Las cachés de ejemplo de DIVIPOLA, los límites del MGN y SIPSA, y la región y el mapeo de ejemplo en lugar de los del
+    repositorio. El catálogo de cultivos es el real (`catalog/crops.yaml`)."""
     cache, market_cache = tmp_path / "raw", tmp_path / "raw-sipsa"
     cache.mkdir()
     market_cache.mkdir()
     (cache / dane.ROWS_FILE).write_text(json.dumps(SAMPLE_MUNICIPALITIES), encoding="utf-8")
     (cache / dane.META_FILE).write_text(json.dumps(SAMPLE_META), encoding="utf-8")
+    for department, ids in (("15", ["15407", "15646"]), ("25", ["25899"])):
+        (cache / dane_mgn._file(department)).write_text(json.dumps(feature_collection(ids)), encoding="utf-8")
     (market_cache / sipsa.ROWS_FILE).write_text(sipsa_xml(SAMPLE_SIPSA_ROWS), encoding="utf-8")
     (market_cache / sipsa.META_FILE).write_text("2026-10-20T15:34:00+00:00", encoding="utf-8")
     monkeypatch.setattr(build, "load_region", lambda: REGION)
@@ -47,7 +51,8 @@ def rebuild(tmp_path, caches):
 def test_lo_que_se_acaba_de_publicar_coincide_con_su_manifiesto(tmp_path, caches):
     folder = rebuild(tmp_path, caches)
     manifest = build.verify(folder, REGION["dataset_version"])
-    assert set(manifest["tables"]) == {"municipalities", "sources", "market_price_day", "market_price_season", "market_month"}
+    expected = {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
+    assert set(manifest["tables"]) == expected | {"market_price_day", "market_price_season", "market_month"}
 
 
 def test_reconstruir_dos_veces_da_las_mismas_tablas(tmp_path, caches):
@@ -156,7 +161,8 @@ def test_cada_tabla_escrita_deja_su_linea(tmp_path, caches):
         rebuild(tmp_path, caches)
     written = {line["table"]: line["rows"] for line in logs if line["event"] == "table_written"}
     assert written["municipalities"] == 3 and written["market_price_day"] == 7
-    assert set(written) == {"municipalities", "sources", "market_price_day", "market_price_season", "market_month"}
+    expected = {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
+    assert set(written) == expected | {"market_price_day", "market_price_season", "market_month"}
 
 
 def test_si_no_se_publica_el_log_dice_por_que(tmp_path, caches, monkeypatch):

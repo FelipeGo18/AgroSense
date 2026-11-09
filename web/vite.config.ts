@@ -11,6 +11,8 @@ export default defineConfig({
   ssr: { noExternal: ["gsap", "@gsap/react", "lenis"] },
   // El manifiesto dice qué archivos necesita cada página: con él se piden por adelantado en el HTML.
   build: { manifest: true },
+  // El worker de MapLibre es un módulo (import/export): se empaqueta como módulo.
+  worker: { format: "es" },
   // Los tokens viven en design/tokens, fuera de web/ (HU-152).
   server: {
     fs: { allow: [".."] },

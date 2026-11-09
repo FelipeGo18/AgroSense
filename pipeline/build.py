@@ -4,11 +4,12 @@
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
     uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
-Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `market_price_day` y `market_price_season` (SIPSA del
-DANE, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla pasa por las
-validaciones antes de escribirse: si una falla, no se publica nada (R7, R8). También se valida el mapeo de los
-productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que se publican. Al terminar, lo
-publicado se revisa contra su manifiesto (HU-123).
+Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `municipality_boundaries` (MGN del DANE, HU-044), el
+catálogo (`crops` y `crop_stages`, HU-061), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221),
+`market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla pasa por las validaciones y por su
+esquema del contrato (`pipeline/schema.py`, HU-011) antes de escribirse: si una falla, no se publica nada (R7, R8).
+También se valida el mapeo de los productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que
+se publican. Al terminar, lo publicado se revisa contra su manifiesto (HU-123).
 
 Cada paso deja una línea en la terminal con la fuente, las filas leídas y las descartadas con su motivo (HU-177). Usa la
 misma configuración de logs que la API (`backend/config/logging.py`): nivel y formato con `AGROSENSE_LOG_LEVEL` y
@@ -26,10 +27,13 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
+import shapely
 import yaml
 
 from backend.config.logging import configure, get_logger
-from pipeline.sources import dane, sipsa
+from pipeline import catalog as crops_catalog
+from pipeline import schema
+from pipeline.sources import dane, dane_mgn, sipsa
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
@@ -75,6 +79,23 @@ def validate(municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     cited = {source_id for ids in municipalities["source_ids"].to_list() for source_id in ids}
     if not cited or cited - known:
         raise ValidationError(f"Filas sin fuente o con una fuente que no está en `sources`: {sorted(cited - known) or 'sin source_ids'}")
+
+
+def validate_boundaries(boundaries: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """Cada municipio publicado tiene un solo límite, válido, de área mayor que cero, y con una fuente que existe (R7, R8)."""
+    ids, wanted = boundaries["municipality_id"].to_list(), set(municipalities["municipality_id"].to_list())
+    if len(ids) != len(set(ids)):
+        raise ValidationError("`municipality_boundaries` tiene municipios repetidos.")
+    missing, extra = sorted(wanted - set(ids)), sorted(set(ids) - wanted)
+    if missing or extra:
+        raise ValidationError(f"Límites que no cuadran con `municipalities`: faltan {missing[:5]}, sobran {extra[:5]}")
+    for municipality_id, wkb in boundaries.select("municipality_id", "geometry").iter_rows():
+        geometry = shapely.from_wkb(wkb)
+        if geometry.geom_type not in ("Polygon", "MultiPolygon") or not geometry.is_valid or geometry.area <= 0:
+            raise ValidationError(f"El límite de {municipality_id} no es un polígono válido.")
+    unknown = set(boundaries["source_id"].to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"Límites con una fuente que no está en `sources`: {sorted(unknown)}")
 
 
 def validate_market(prices: pl.DataFrame, sources: pl.DataFrame) -> None:
@@ -155,38 +176,54 @@ def publish(
     municipalities: pl.DataFrame,
     sources: pl.DataFrame,
     folder: Path = PUBLISHED,
+    boundaries: pl.DataFrame | None = None,
+    crops: tuple[str, pl.DataFrame, pl.DataFrame] | None = None,
     prices: pl.DataFrame | None = None,
-    crops: dict[str, Any] | None = None,
+    crop_products: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
-    Con `crops` (el mapeo de `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051).
-    Todo se valida antes de escribir nada.
+    `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
+    `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). Todo se valida antes de
+    escribir nada.
     """
     validate(municipalities, sources)
+    if boundaries is not None:
+        validate_boundaries(boundaries, municipalities, sources)
     season = month = None
     if prices is not None:
         validate_market(prices, sources)
         season = sipsa.seasonal(prices)
-    if crops is not None:
+    if crop_products is not None:
         if prices is None:
             raise ValidationError("El mapeo de `sipsa_crops.yaml` se valida contra los precios de SIPSA, y no hay precios.")
-        validate_crops(crops, prices)
-        month = sipsa.monthly(prices, season, crops)
-        validate_market_month(month, crops, sources)
-    folder.mkdir(parents=True, exist_ok=True)
+        validate_crops(crop_products, prices)
+        month = sipsa.monthly(prices, season, crop_products)
+        validate_market_month(month, crop_products, sources)
+    # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
     tables = {"municipalities": municipalities, "sources": sources.sort("source_id")}
+    if boundaries is not None:
+        tables["municipality_boundaries"] = boundaries
+    if crops is not None:
+        tables["crops"], tables["crop_stages"] = crops[1], crops[2]
     if prices is not None:
         tables |= {"market_price_day": prices, "market_price_season": season}
     if month is not None:
         tables["market_month"] = month
     for name, table in tables.items():
+        tables[name] = schema.typed(name, table)
+        try:
+            schema.check(name, tables[name])
+        except schema.SchemaError as error:
+            raise ValidationError(str(error)) from error
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, table in tables.items():
         table.write_parquet(folder / f"{name}.parquet")
         log.info("table_written", table=name, rows=table.height, detail=f"{name}: {table.height} filas escritas en {folder}")
     manifest = {
         "dataset_version": region["dataset_version"],
-        # Las reglas agronómicas (catálogo) todavía no existen: no hay versión que decir.
-        "rules_version": None,
+        # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
+        "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "region": region["region"],
         # Los periodos de «Qué cambió» llegan con HU-216.
@@ -196,6 +233,11 @@ def publish(
             "sources": {"rows": sources.height, "coverage": "todas las fuentes de lo publicado"},
         },
     }
+    if boundaries is not None:
+        manifest["tables"]["municipality_boundaries"] = {"rows": boundaries.height, "coverage": region["region"]["name"]}
+    if crops is not None:
+        manifest["tables"]["crops"] = {"rows": crops[1].height, "coverage": "cultivos del MVP"}
+        manifest["tables"]["crop_stages"] = {"rows": crops[2].height, "coverage": "cultivos del MVP"}
     if prices is not None:
         manifest["tables"]["market_price_day"] = {
             "rows": prices.height,
@@ -248,14 +290,17 @@ def verify(folder: Path = PUBLISHED, dataset_version: str | None = None) -> dict
 def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE, market_cache: Path = sipsa.CACHE) -> dict[str, Any]:
     region = load_region()
     version, name = region["dataset_version"], region["region"]["name"]
+    departments = region["region"]["departments"]
     log.info("pipeline_started", dataset_version=version, detail=f"Reconstruyendo el dataset {version} de {name}")
     if download:
         log.info("source_downloading", source=dane.SOURCE_ID, detail=f"Bajando DIVIPOLA del DANE a {cache}")
         dane.download(cache)
+        log.info("source_downloading", source=dane_mgn.SOURCE_ID, detail=f"Bajando los límites municipales del DANE a {cache}")
+        dane_mgn.download(departments, cache)
         log.info("source_downloading", source=sipsa.SOURCE_ID, detail=f"Bajando SIPSA del DANE a {market_cache} (unos 300 MB)")
         sipsa.download(market_cache)
     rows, meta = dane.read_cache(cache)
-    municipalities = dane.municipalities(rows, region["region"]["departments"])
+    municipalities = dane.municipalities(rows, departments)
     outside = len(rows) - municipalities.height
     log.info(
         "source_read",
@@ -267,6 +312,10 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
         detail=f"DIVIPOLA: {len(rows)} filas leídas, {municipalities.height} de la región y {outside} descartadas por ser de "
         "otros departamentos",
     )
+    features, mgn_meta = dane_mgn.read_cache(departments, cache)
+    boundaries = dane_mgn.boundaries(features)
+    catalog = crops_catalog.load()
+    crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
     counts: Counter[str] = Counter()
     prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache, counts)
     rejected = counts["other_market"] + counts["no_average"]
@@ -280,8 +329,10 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
         detail=f"SIPSA: {counts['read']} filas leídas, {prices.height} de las centrales de la región y {rejected} descartadas: "
         f"{counts['other_market']} de otras centrales y {counts['no_average']} sin precio medio ese día (R1)",
     )
-    sources = pl.DataFrame([dane.source(meta), sipsa.source(prices, downloaded_at)])
-    return publish(region, municipalities, sources, folder, prices, load_crops())
+    own = pl.DataFrame([dane.source(meta), dane_mgn.source(mgn_meta), sipsa.source(prices, downloaded_at)])
+    sources = pl.concat([own, catalog_sources], how="diagonal_relaxed")
+    crops = (catalog["version"], crops_table, stages_table)
+    return publish(region, municipalities, sources, folder, boundaries, crops, prices, load_crops())
 
 
 def main() -> None:
@@ -296,7 +347,7 @@ def main() -> None:
         if not args.verificar:
             build(download=args.descargar)
         manifest = verify(PUBLISHED, expected)
-    except (FileNotFoundError, ValidationError) as error:
+    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError) as error:
         event = "dataset_mismatch" if args.verificar else "dataset_not_published"
         log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")
         sys.exit(1)
