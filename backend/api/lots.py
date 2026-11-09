@@ -148,8 +148,18 @@ def _drawn(dataset: Dataset, municipality_id: str, geometry: dict[str, Any]):
 def list_lots(request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> list[LotListItem]:
     """Los lotes del usuario, del más antiguo al más nuevo. Los borrados no salen (restaurarlos es HU-204, P1)."""
     lots = list(db.scalars(select(Lot).where(Lot.user_id == user.user_id, Lot.deleted_at.is_(None)).order_by(Lot.created_at, Lot.name)))
+    # Los cultivos en curso de todos los lotes en una sola consulta (antes era una por lote), en el mismo orden que el detalle.
+    crops: dict[uuid.UUID, list[str]] = {lot.lot_id: [] for lot in lots}
+    if lots:
+        rows = db.execute(
+            select(Season.lot_id, Season.crop_id)
+            .where(Season.lot_id.in_(crops), Season.harvest_date.is_(None), Season.deleted_at.is_(None))
+            .order_by(Season.lot_id, Season.area_ha.desc(), Season.sowing_date, Season.season_id)
+        )
+        for lot_id, crop_id in rows:
+            crops[lot_id].append(crop_id)
     explain(request, f"Lotes consultados: {len(lots)}")
-    return [LotListItem(**_out(lot), current_crop_ids=[season.crop_id for season in _current(db, lot)]) for lot in lots]
+    return [LotListItem(**_out(lot), current_crop_ids=crops[lot.lot_id]) for lot in lots]
 
 
 @router.post("/lots", status_code=201)
