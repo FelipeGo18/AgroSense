@@ -11,7 +11,7 @@ from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 
 from backend import market_updates
-from backend.api import auth, catalogs, errors, lots, market, version
+from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, version
 from backend.config import logging
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
@@ -25,7 +25,7 @@ SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 DOCS_URL = "/api/docs"
 OPENAPI_URL = "/api/openapi.json"
 # Lo que es de una cuenta: nunca se guarda en caché.
-PRIVATE_PREFIXES = ("/api/v1/auth/", "/api/v1/me", "/api/v1/lots")
+PRIVATE_PREFIXES = ("/api/v1/auth/", "/api/v1/me", "/api/v1/lots", "/api/v1/seasons")
 
 
 def _start_market_updates(settings) -> asyncio.Task | None:
@@ -113,6 +113,8 @@ def create_app() -> FastAPI:
     app.include_router(version.router)
     app.include_router(catalogs.router)
     app.include_router(lots.router)
+    app.include_router(seasons.router)
+    app.include_router(calculations.router)
     app.include_router(market.router)
 
     @app.get("/api/v1/health", tags=["estado"])

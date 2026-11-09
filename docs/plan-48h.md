@@ -29,7 +29,7 @@ Un equipo de 6 personas rinde unas **168 horas útiles** en el evento (unas 28 p
 
 **El P0 no cabe en el evento en ningún escenario sin adelantar más o recortar.** Para que quepa hay que llegar con unas 192 horas de HU ya hechas (338 menos 146). Con código permitido, eso es el pipeline, los contratos y unas 68 horas más del motor puro (calificación, aptitud, balance hídrico, señales, estrategias) y de las pantallas en 2D, que se pueden construir contra datos de ejemplo. Si no se permite código, el orden de recorte se aplica desde el inicio. **Qué se adelanta y qué se recorta se decide con el equipo.**
 
-Por eso **HU-004 es urgente: se resuelve esta semana (antes del 17 de octubre).** Define todo el plan.
+**HU-004 resuelta el 8 de noviembre de 2026: sí se puede llevar código preparado** (confirmado por Felipe). Aplica la última fila: el pipeline, los contratos, el motor puro y las pantallas en 2D se adelantan en la fase 0, y el orden de recorte no se aplica desde el inicio. Falta citar la regla con su enlace.
 
 | Equipo | Horas útiles | ¿Cabe el P0 sin preparar nada antes? |
 |---|---|---|
@@ -68,16 +68,15 @@ Supone que los datos y el catálogo llegan preparados. Si no, el bloque de las h
 Se aplica en la hora 34 si hay retraso, o desde el inicio si HU-004 no permite llevar código:
 
 1. Todo el P1
-2. SMAP (HU-210): queda la humedad del suelo de POWER
-3. Capa GIBS en el mapa del lote (HU-211): queda OpenStreetMap
-4. NDVI por lote (HU-209): queda el NDVI por municipio (HU-208)
-5. Suelo por lote (HU-182 y su parte de HU-185): queda el suelo del municipio (HU-183)
-6. Plan de agua solo con año normal, sin año seco
-7. Explicaciones reducidas a una razón por estrategia
-8. Pruebas en CI: se ejecutan a mano
-9. Último recurso: las cuentas (EP-16, ≈ 40 h sin la capa GIBS). La demo queda en modo sin cuenta, que funciona completo con municipio, área y cultivo anterior
+2. Capa GIBS en el mapa del lote (HU-211): queda OpenStreetMap
+3. SMAP (HU-210): queda la humedad del suelo de POWER. Va después de lo anterior porque el reto lo nombra primero entre los datos sugeridos (decisión 14)
+4. Suelo por lote (HU-182 y su parte de HU-185): queda el suelo del municipio (HU-183)
+5. Plan de agua solo con año normal, sin año seco
+6. Explicaciones reducidas a una razón por estrategia
+7. Pruebas en CI: se ejecutan a mano
+8. Último recurso: las cuentas (EP-16, ≈ 40 h sin la capa GIBS). La demo queda en modo sin cuenta, que funciona completo con municipio, área y cultivo anterior
 
-Los pasos 2 a 5 liberan unas 16 horas; no bastan solos. Lo que de verdad hace caber el P0 es lo que se adelanta en la fase 0.
+Los pasos 2 a 4 liberan unas 12 horas; no bastan solos. Lo que de verdad hace caber el P0 es lo que se adelanta en la fase 0.
 
 ## Lo que nunca se recorta
 

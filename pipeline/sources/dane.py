@@ -93,6 +93,8 @@ def municipalities(rows: list[dict[str, Any]], departments: list[str]) -> pl.Dat
             # Llegan con NASADEM (HU-206) y NASA POWER (HU-044): todavía no hay dato, así que van nulas.
             "altitude_m": None,
             "climate_cell_elevation_m": None,
+            "tmean_annual_c": None,
+            "slope_pct": None,
             "source_ids": [SOURCE_ID],
         }
         for row in rows
@@ -107,6 +109,8 @@ def municipalities(rows: list[dict[str, Any]], departments: list[str]) -> pl.Dat
         "lon": pl.Float64,
         "altitude_m": pl.Float64,
         "climate_cell_elevation_m": pl.Float64,
+        "tmean_annual_c": pl.Float64,
+        "slope_pct": pl.Float64,
         "source_ids": pl.List(pl.String),
     }
     return pl.DataFrame(records, schema=schema).sort("municipality_id")

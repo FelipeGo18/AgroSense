@@ -15,7 +15,7 @@ estado: en curso
 
 **Resultado esperado:** El equipo llega al evento con la identidad visual, el sistema de animación, los assets y un prototipo navegable decididos y probados, para construir la demo sin improvisar el diseño.
 
-Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `web/` de este repositorio; la app del evento va en un repositorio nuevo (ver HU-004).
+Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `web/` de este repositorio.
 
 **Recorte del MVP (11 de octubre de 2026):** quedan en P0 el kit visual y los tokens (HU-151 a HU-153, hechos) y el modo ligero 2D (HU-158), que es el modo por defecto de la web del MVP. La escena 3D, el descenso de cámara, el sistema de motion y el prototipo navegable (HU-154, HU-155, HU-156 y HU-159) pasaron a P1.
 

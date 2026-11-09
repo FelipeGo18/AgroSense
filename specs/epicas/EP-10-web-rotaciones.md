@@ -28,6 +28,7 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
 - **Criterios de aceptación:**
   - [ ] Sin cuenta, la pantalla pide: municipio (buscador), área en hectáreas (mayor que cero), qué había antes en el terreno (de 0 a 3 cultivos del catálogo, o «Nada: es la primera siembra aquí»), cuándo sembrar el primer ciclo (un mes de los próximos doce), «¿Tiene riego?» («Sí», «No», «No sé») y cuántos ciclos (2 o 3; por defecto 3)
   - [ ] Con cuenta, se entra desde el lote: la web toma `lot_id`, el riego del lote y, en `previous_crop_ids`, los cultivos de las temporadas de las que viene el terreno (`follows_season_ids`); el área es la parte libre o la de la temporada cosechada que se va a sembrar
+  - [ ] **La rotación actual (HU-223):** sin cuenta, la pantalla pregunta «¿Qué viene sembrando en este terreno?» (de 2 a 3 cultivos en orden, opcional, con «No tengo una rotación fija»). Con cuenta, la web la arma con el historial del terreno, del más antiguo al más reciente, y deja corregirla antes de consultar
   - [ ] Envía `POST /api/v1/rotations` con los campos del contrato, incluidas las prioridades de la rotación (HU-101) y las de las señales (`signal_priorities`, HU-202)
   - [ ] Sin cuenta, el área solo se usa en el navegador para el agua del plan (HU-215) y no se guarda en el servidor (R9)
   - [ ] Validación inmediata en pantalla; un 422 de la API se explica en palabras sencillas
@@ -55,7 +56,8 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
 - **Criterios de aceptación:**
   - [ ] Cada estrategia es una tarjeta con sus ciclos en orden: cultivo, fecha de siembra, cosecha estimada con su base y la luz del ciclo con forma y texto. El descanso se ve como «Descanso»
   - [ ] Desglose por criterio (agua, suelo, ingreso y riesgo) con su puntaje y el total
-  - [ ] Bloque «Salud del suelo» con sus cuatro criterios (nitrógeno, carbono orgánico, suelo cubierto y corte de plagas), cada uno con su nivel en forma y texto, su razón y su fuente; un criterio `insufficient_data` se ve «Sin datos suficientes», no como malo (R1)
+  - [ ] **La rotación actual va primero**, rotulada «Lo que usted siembra hoy», con sus mismos ciclos, criterios y salud del suelo, y sus problemas a la vista (`issues`: la regla que viola o el ciclo de alto riesgo). Cada estrategia sugerida dice en qué gana o pierde frente a ella (`vs_current`), con forma y texto. Sin rotación actual, la web lo dice y ofrece escribirla (HU-223)
+  - [ ] Bloque «Salud del suelo» con sus cinco criterios (nitrógeno, carbono orgánico, suelo cubierto, corte de plagas y erosión), cada uno con su nivel en forma y texto, su razón y su fuente; un criterio `insufficient_data` se ve «Sin datos suficientes», no como malo (R1)
   - [ ] Rótulo visible: «Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo»
   - [ ] El suelo usado lleva su rango y el rótulo de estimación (R10)
   - [ ] Las estrategias excluidas y su motivo se ven a pedido: la regla que viola, «No se da en su zona» con el dato de la ficha y su fuente, o «Alto riesgo en el ciclo 2: heladas» con la razón
@@ -63,8 +65,8 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
   - [ ] Tocar un ciclo abre su detalle (HU-215)
   - [ ] Rótulo visible: «Es información para decidir. La decisión es suya»
 - **Reglas que aplican:** R1, R2, R3, R5, R10
-- **Contrato que toca:** respuesta de `POST /api/v1/rotations` (`strategies`, `cycles`, `scores`, `soil_health`, `excluded`)
-- **Notas:** Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos con salud del suelo (decisión 12); pasó de M a L. El resaltado de un cultivo alternativo del diagnóstico se fue con HU-197 a P1.
+- **Contrato que toca:** respuesta de `POST /api/v1/rotations` (`strategies`, `current_strategy`, `vs_current`, `cycles`, `scores`, `soil_health`, `excluded`)
+- **Notas:** Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos con salud del suelo (decisión 12); pasó de M a L. El resaltado de un cultivo alternativo del diagnóstico se fue con HU-197 a P1. **8 de noviembre de 2026 (decisión 14):** suma la rotación actual como referencia y la erosión; el diseño de «Estrategias de rotación» cambia en Figma antes de programarla.
 
 ### HU-215 · Ciclo de una estrategia
 

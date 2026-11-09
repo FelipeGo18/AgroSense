@@ -34,9 +34,25 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 | Tabla | Fuente | HU |
 |---|---|---|
 | `municipalities` (sin altitud todavía) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`) | HU-044 |
+| `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
+| `crops` y `crop_stages` | Catálogo agronómico de `catalog/crops.yaml`: FAO EcoCrop, FAO-56, UPRA y FAO, con fuente por valor (`pipeline/catalog.py`) | HU-061, HU-199, HU-063 |
 | `market_price_day`, `market_price_season` | SIPSA del DANE, servicio web (`pipeline/sources/sipsa.py`): precios de Corabastos y Tunja desde 2020 y su temporada | HU-221 |
 | `market_month` | Lo mismo por cultivo, con el producto de `pipeline/sipsa_crops.yaml`: índice estacional y precio de cada mes del último año completo | HU-051 |
 | `sources` | Una fila por fuente | HU-122 |
 | `manifest.json` | Versión, región, filas y cobertura por tabla | HU-122 |
 
-Pruebas: `tests/pipeline/` (sin red: usan una caché de ejemplo).
+Antes de publicar, cada tabla se revisa contra su esquema del contrato (`pipeline/schema.py`, HU-011): columnas, orden,
+tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
+
+## Datos de ejemplo (HU-011)
+
+```bash
+uv run python -m pipeline.examples   # escribe data/examples/: todas las tablas del contrato
+```
+
+Tres municipios reales (Samacá, Toca y Tunja) con **cifras inventadas**: cada fila inventada cita la fuente `ejemplo` y
+el manifiesto dice `"example": true` (R5). El catálogo de cultivos y los límites municipales son los reales. Sirven para
+programar y probar el motor, la API y la web antes de que lleguen los datos. Nunca se publican en `data/published/`.
+
+Pruebas: `tests/pipeline/` (sin red: usan una caché de ejemplo). `tests/pipeline/test_esquema.py` revisa que el esquema
+coincida con el contrato y que lo publicado y los ejemplos lo cumplan.
