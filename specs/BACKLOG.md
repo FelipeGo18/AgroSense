@@ -9,7 +9,7 @@
 | [EP-00](epicas/EP-00-alcance.md) | HU-001 | Comparar la cobertura de EVA y elegir región | P0 | M | pendiente | |
 | [EP-00](epicas/EP-00-alcance.md) | HU-002 | Confirmar los datasets NASA del enunciado | P0 | S | en curso | Enunciado leído (8 nov, decisión 14); faltan los recursos del 13 de noviembre, la sede y la descarga de prueba |
 | [EP-00](epicas/EP-00-alcance.md) | HU-003 | Verificar SIPSA y decidir si entra al P0 | P0 | S | pendiente | |
-| [EP-00](epicas/EP-00-alcance.md) | HU-004 | Confirmar qué se puede preparar antes del evento | P0 | S | pendiente | Urgente: esta semana |
+| [EP-00](epicas/EP-00-alcance.md) | HU-004 | Confirmar qué se puede preparar antes del evento | P0 | S | en curso | Sí se puede llevar código (8 nov); falta citar la regla con su enlace |
 | [EP-01](epicas/EP-01-contratos.md) | HU-011 | Esquema de las tablas publicadas | P0 | M | hecha | `pipeline/schema.py` y los ejemplos en `data/examples/` (8 nov) |
 | [EP-01](epicas/EP-01-contratos.md) | HU-012 | OpenAPI con ejemplos de cada estado | P0 | M | hecha | Modelos y ejemplos de los endpoints de cálculo; responden 501 hasta su HU del motor (8 nov) |
 | [EP-01](epicas/EP-01-contratos.md) | HU-013 | Respuestas simuladas (MSW) | P0 | S | pendiente | |
