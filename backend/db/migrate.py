@@ -27,7 +27,7 @@ from sqlalchemy import URL, create_engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from backend.accounts import activity
+from backend.accounts import maintenance
 from backend.config import logging
 from backend.config.logging import get_logger
 from backend.config.settings import get_settings
@@ -180,21 +180,23 @@ def on_startup(url: URL, config: Config) -> None:
 
 
 def purge_activity(url: URL) -> None:
-    """Borra los eventos de actividad de más de 180 días (HU-178). Corre al arrancar, aparte de los inicios de sesión,
-    para que la retención se cumpla aunque nadie entre. Si falla, lo registra y la API sube igual."""
+    """El mantenimiento de las cuentas al arrancar (`backend/accounts/maintenance.py`): sesiones vencidas y actividad de
+    más de 180 días (HU-178). Ningún endpoint lo hace: cada uno hace solo lo suyo. Si falla, lo registra y la API sube igual."""
     log = get_logger("agrosense.migrate")
     engine = create_engine(url, hide_parameters=True, connect_args={"connect_timeout": 3})
     try:
         with Session(engine) as db:
-            purged = activity.purge_old(db)
+            cleaned = maintenance.run(db)
             db.commit()
     except Exception as error:  # noqa: BLE001 - la limpieza no tumba la API
-        log.warning("activity_purge_failed", detail=f"No se pudo borrar la actividad de más de 180 días: {type(error).__name__}")
+        log.warning("activity_purge_failed", detail=f"No se pudo hacer el mantenimiento de las cuentas: {type(error).__name__}")
         return
     finally:
         engine.dispose()
-    if purged:
-        log.info("activity_purged", purged=purged, detail=f"Se borraron {purged} eventos de actividad de más de 180 días")
+    if cleaned.events:
+        log.info("activity_purged", purged=cleaned.events, detail=f"Se borraron {cleaned.events} eventos de actividad de más de 180 días")
+    if cleaned.sessions:
+        log.info("sessions_purged", purged=cleaned.sessions, detail=f"Se borraron {cleaned.sessions} sesiones vencidas")
 
 
 def main() -> None:
