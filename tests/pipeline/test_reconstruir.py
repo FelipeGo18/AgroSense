@@ -174,3 +174,16 @@ def test_si_no_se_publica_el_log_dice_por_que(tmp_path, caches, monkeypatch):
     assert logs[-1]["event"] == "dataset_not_published" and logs[-1]["log_level"] == "error"
     assert "arveja" in logs[-1]["detail"]
     assert not (tmp_path / "published").exists()
+
+
+def test_sin_la_cache_de_sipsa_se_publica_lo_demas_y_el_log_dice_por_que(tmp_path, caches):
+    """Reconstruir los municipios no obliga a bajar los 300 MB de SIPSA: las tablas de precios no se publican (R1)."""
+    cache, _ = caches
+    folder = tmp_path / "published"
+    with capture_logs() as logs:
+        manifest = build.build(folder=folder, cache=cache, market_cache=tmp_path / "sin-sipsa")
+    assert set(manifest["tables"]) == {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
+    assert "dane_sipsa" not in pl.read_parquet(folder / "sources.parquet")["source_id"].to_list()
+    missing = [line for line in logs if line["event"] == "source_missing"]
+    assert missing and missing[0]["source"] == "dane_sipsa" and missing[0]["log_level"] == "warning"
+    build.verify(folder, REGION["dataset_version"])

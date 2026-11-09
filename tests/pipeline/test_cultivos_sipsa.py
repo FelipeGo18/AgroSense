@@ -89,3 +89,17 @@ def test_el_mapeo_sin_precios_no_se_puede_validar(tmp_path):
     municipalities = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
     with pytest.raises(build.ValidationError, match="no hay precios"):
         build.publish(SAMPLE_REGION, municipalities, sources, tmp_path, crop_products={"papa": {"product_id": "papa-negra"}})
+
+
+def test_los_cultivos_del_mapeo_son_los_del_catalogo():
+    """Los `crop_id` salen de un solo lugar: el mapeo real usa los de `catalog/crops.yaml` (decisión del 8 de noviembre)."""
+    from pipeline import catalog
+
+    catalog_ids = {crop["crop_id"] for crop in catalog.load()["crops"]}
+    assert set(build.load_crops()) <= catalog_ids
+
+
+def test_un_cultivo_que_no_esta_en_el_catalogo_no_se_publica():
+    crops = {"papa": {"product_id": "papa-negra"}, "cebolla": {"product_id": None, "reason": "Ejemplo."}}
+    with pytest.raises(build.ValidationError, match=r"no están en `catalog/crops.yaml`: \['cebolla'\]"):
+        build.validate_crops(crops, sample_prices(), {"papa"})
