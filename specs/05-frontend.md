@@ -9,9 +9,9 @@ Se ajusta mientras se prototipa. Si un cambio toca las reglas R1–R10 o el cont
 | Momento | Qué se hace | Dónde |
 |---|---|---|
 | Fase 0 (10 oct – 13 nov) | Identidad visual, animaciones, audio, assets 3D y un prototipo navegable del frontend contra datos de ejemplo (EP-15) | Este repositorio, carpeta `web/` y Figma |
-| Evento (14 y 15 nov) | La aplicación de la demo, integrada con la API real | Un repositorio nuevo, creado en el evento |
+| Evento (14 y 15 nov) | La aplicación de la demo, integrada con la API real | Este repositorio |
 
-El prototipo sirve para decidir y ensayar el estilo. Qué se puede reutilizar en el evento depende de los términos de Space Apps 2026 (HU-004): hasta confirmarlo, se asume que el código se reescribe y que lo reutilizable son decisiones, diseños en Figma, guías y assets con licencia.
+El prototipo sirve para decidir y ensayar el estilo.
 
 ### Diseño: los generadores son la fuente y Figma es la vitrina
 

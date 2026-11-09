@@ -29,7 +29,7 @@ Un equipo de 6 personas rinde unas **168 horas útiles** en el evento (unas 28 p
 
 **El P0 no cabe en el evento en ningún escenario sin adelantar más o recortar.** Para que quepa hay que llegar con unas 192 horas de HU ya hechas (338 menos 146). Con código permitido, eso es el pipeline, los contratos y unas 68 horas más del motor puro (calificación, aptitud, balance hídrico, señales, estrategias) y de las pantallas en 2D, que se pueden construir contra datos de ejemplo. Si no se permite código, el orden de recorte se aplica desde el inicio. **Qué se adelanta y qué se recorta se decide con el equipo.**
 
-Por eso **HU-004 es urgente: se resuelve esta semana (antes del 17 de octubre).** Define todo el plan.
+**HU-004 resuelta el 8 de noviembre de 2026: sí se puede llevar código preparado** (confirmado por Felipe). Aplica la última fila: el pipeline, los contratos, el motor puro y las pantallas en 2D se adelantan en la fase 0, y el orden de recorte no se aplica desde el inicio. Falta citar la regla con su enlace.
 
 | Equipo | Horas útiles | ¿Cabe el P0 sin preparar nada antes? |
 |---|---|---|

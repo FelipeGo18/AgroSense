@@ -9,6 +9,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Herramienta de backlog | GitHub Projects | 10 oct 2026 |
 | Aptitud del cultivo | Por temperatura media anual (UPRA y FAO EcoCrop), no por altitud: decisión 13 | 16 oct 2026 |
 | Contrato congelado | Revisado completo y sin huecos: rejilla común de 250 m, reglas de rotación como datos, forma de `thresholds.yaml` y `sources.yaml`, fórmulas de las estrategias, NDVI por lote a P1. Decisión 15, aprobada por Felipe | 8 nov 2026 |
+| Código preparado en el evento | Sí se puede llevar código preparado (pipeline, motor y web), confirmado por Felipe (HU-004). Aplica el escenario «Se puede llevar código y datos preparados» de `docs/plan-48h.md`. Falta citar la regla con su enlace | 8 nov 2026 |
 | Enunciado completo del reto | La rotación actual entra como estrategia de referencia; la erosión es el quinto criterio de la salud del suelo; SMAP pasa al final del orden de recorte; GRACE-FO, ECOSTRESS y el valor como forraje entran en P1; seguimos con reglas y no con IA. Decisión 14, aprobada por Felipe | 8 nov 2026 |
 | Identificadores de los cultivos | `papa`, `arveja`, `haba`, `maiz`, `zanahoria`, `cebolla_bulbo`, `avena_vicia` y `descanso`. Un `crop_id` es un cultivo con ficha propia (especie o tipo con sus etapas, temperaturas y precio), no una variedad: papa pastusa o capira son `papa`; la papa criolla y la cebolla larga serían otros cultivos (`papa_criolla`, `cebolla_larga`), como los separa SIPSA. Cambiado el 8 de noviembre de 2026, aprobado por Felipe: antes `cebolla` y `abono`, que eran ambiguos (en Boyacá la cebolla larga es un cultivo grande). Las láminas de `design/` siguen con sus claves internas | 16 oct 2026; 8 nov 2026 |
 | Límites municipales | Servicio MGN 2025 del geoportal del DANE, por departamento, simplificado a unos 10 m; un lote dibujado se valida contra él con ese margen | 15 oct 2026 |
@@ -25,7 +26,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Base de datos | PostgreSQL propio en Docker, sin servicios gestionados (Supabase descartado) | 10 oct 2026 |
 | Inicio de sesión | Autenticación propia: usuario y contraseña (Argon2), sesión en cookie; recuperar la contraseña en P1 | 10 oct 2026 |
 | Condiciones actuales | Open-Meteo, solo el «ahora», sin pronóstico | 10 oct 2026 |
-| Dónde se prepara el frontend | Fase 0 en este repositorio (`web/`, EP-15); la app de la demo, en un repositorio nuevo durante el evento | 10 oct 2026 |
+| Dónde se prepara el frontend | En este repositorio (`web/`, EP-15) | 10 oct 2026 |
 | Estilo | Inspiración de estilo en *The Farmer Was Replaced* y la web de GTA VI, sin copiar sus elementos (`specs/05-frontend.md`) | 10 oct 2026 |
 | Inicio | Mascota satélite; habla de AgroSense, no del problema ni de NASA | 10 oct 2026 |
 | Navegación | Una experiencia continua con URL por nivel y por lote; quien vuelve con sesión entra directo a Mi finca | 10 oct 2026 |
@@ -93,7 +94,6 @@ No se deciden por preferencia: se resuelven con el resultado de la HU indicada y
 | Fuente de los rangos óptimos y absolutos de cada cultivo (candidata FAO EcoCrop) | HU-199 | 13 nov (fin de la fase 0) | Producto y agro |
 | Región piloto | HU-001 (cobertura de EVA) | 31 oct | Producto y Datos |
 | SIPSA en el P0 | HU-003 | 1 nov | Datos |
-| Qué código preparado se puede llevar al evento | HU-004 (términos de Space Apps 2026 y respuesta de la sede). **Urgente: define todo el plan** | 17 oct | Producto |
 | Sede del equipo y región piloto (si es Moquegua, ¿pasa la región piloto a Perú?) | HU-002 | 30 oct | Producto y Datos |
 | Productos NASA que recomienda el enunciado | HU-002 (enunciado del 28 de octubre); cada uno entra por su adaptador | 30 oct | Datos |
 | Acceso con cuenta de NASA Earthdata y tamaño de las descargas de IMERG, NASADEM, MODIS y SMAP | HU-206 a HU-210 | 24 oct | Datos |
