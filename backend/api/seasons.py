@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session as Db
 from backend.accounts import activity
 from backend.accounts.farm_models import Lot, Season
 from backend.accounts.models import User
+from backend.api import calc_examples
 from backend.api.auth import current_user, require_accounts
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain, request_id_of
@@ -30,7 +31,7 @@ from backend.dataset import Dataset
 from backend.db.session import get_db
 from backend.engine.stages import stage_today
 
-router = APIRouter(prefix="/api/v1", tags=["finca"], dependencies=[Depends(require_accounts)])
+router = APIRouter(prefix="/api/v1", tags=["finca"], dependencies=[Depends(require_accounts)], responses=calc_examples.responses(401, 422))
 
 Area = Annotated[float, Field(gt=0, le=100_000)]
 LIGHTS = {"green", "yellow", "red", "not_evaluable"}
@@ -192,7 +193,7 @@ def _check_diagnosis(body: Diagnosis) -> None:
         raise _invalid("El diagnóstico guardado no es válido.", "acción desconocida")
 
 
-@router.get("/lots/{lot_id}/seasons")
+@router.get("/lots/{lot_id}/seasons", responses=calc_examples.responses(404))
 def list_seasons(
     lot_id: uuid.UUID,
     request: Request,
@@ -212,7 +213,7 @@ def list_seasons(
     return result
 
 
-@router.post("/lots/{lot_id}/seasons", status_code=201)
+@router.post("/lots/{lot_id}/seasons", status_code=201, responses=calc_examples.responses(404))
 def create_season(
     lot_id: uuid.UUID,
     body: SeasonCreate,
@@ -251,7 +252,7 @@ def create_season(
     return season_out(season, dataset)
 
 
-@router.patch("/seasons/{season_id}")
+@router.patch("/seasons/{season_id}", responses=calc_examples.responses(404))
 def update_season(
     season_id: uuid.UUID,
     body: SeasonPatch,
@@ -315,7 +316,7 @@ def update_season(
     return season_out(season, dataset)
 
 
-@router.delete("/seasons/{season_id}", status_code=204)
+@router.delete("/seasons/{season_id}", status_code=204, responses=calc_examples.responses(404))
 def delete_season(season_id: uuid.UUID, request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> Response:
     """Borra la siembra: se marca y deja de verse; restaurarla durante 30 días es HU-204 (P1)."""
     season, _ = _own_season(db, user, season_id)
