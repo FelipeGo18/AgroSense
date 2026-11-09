@@ -1,0 +1,3130 @@
+{
+  "_aviso": "Generado con `npm run api:examples`; no se edita a mano. Las respuestas de cálculo y de suelo son de ejemplo, con cifras inventadas (R5). Los catálogos y las versiones son los del dataset publicado.",
+  "routes": {
+    "GET /catalogs/municipalities/{municipality_id}/soil": {
+      "ok": {
+        "ejemplo": {
+          "municipality_id": "15646",
+          "ph": {
+            "value": 5.5,
+            "p05": 5.1,
+            "p95": 5.9
+          },
+          "soc_g_kg": {
+            "value": 31,
+            "p05": 22,
+            "p95": 42
+          },
+          "nitrogen_g_kg": 2.4,
+          "clay_pct": 28,
+          "sand_pct": 40,
+          "silt_pct": 32,
+          "texture_class": "franco arcilloso",
+          "slope_pct": 9,
+          "cells": 9,
+          "quality": "ok",
+          "source_id": "soilgrids",
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        }
+      },
+      "errors": {
+        "503": {
+          "error": {
+            "code": "dataset_unavailable",
+            "message": "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        }
+      }
+    },
+    "POST /diagnostics": {
+      "ok": {
+        "favorable": {
+          "request": {
+            "municipality_id": "15646",
+            "crop_id": "papa",
+            "sowing_date": "2027-08-02",
+            "irrigated": false
+          },
+          "suitability": {
+            "level": "suitable",
+            "score": 100,
+            "basis": "municipality",
+            "tmean_annual_c": 12.8,
+            "altitude_m": 2660,
+            "reasons": [
+              "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+            ]
+          },
+          "window": {
+            "sowing_start": "2027-08-02",
+            "harvest_estimate": "2027-12-27",
+            "harvest_basis": "calendar",
+            "supply_semester": {
+              "year": 2025,
+              "semester": "B",
+              "preliminary": true
+            }
+          },
+          "overall": {
+            "light": "green",
+            "action": "sow",
+            "high_risk": false,
+            "weights_basis": "farmer",
+            "limiting_signal": "frost",
+            "reasons": [
+              "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+            ]
+          },
+          "overall_default": {
+            "light": "yellow",
+            "action": "rotate",
+            "high_risk": false,
+            "weights_basis": "default",
+            "limiting_signal": "supply",
+            "reasons": [
+              "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+            ]
+          },
+          "weights": {
+            "water": 5,
+            "frost": 3,
+            "heat": 3,
+            "soil": 3,
+            "supply": 0,
+            "market": 3
+          },
+          "signals": {
+            "water": {
+              "status": "available",
+              "level": "favorable",
+              "critical": false,
+              "score": 86,
+              "counts": true,
+              "indicators": [
+                "water_deficit_mm"
+              ],
+              "reasons": [
+                "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+              ],
+              "sources": [
+                {
+                  "source_id": "imerg",
+                  "indicator": "precip_mm",
+                  "value": 410,
+                  "unit": "mm",
+                  "period": "2015-2024",
+                  "used": true
+                },
+                {
+                  "source_id": "nasa_power",
+                  "indicator": "precip_mm",
+                  "value": 380,
+                  "unit": "mm",
+                  "period": "2015-2024",
+                  "used": false
+                },
+                {
+                  "source_id": "nasa_power",
+                  "indicator": "soil_wetness_root",
+                  "value": 0.61,
+                  "unit": "fracción",
+                  "used": false
+                }
+              ]
+            },
+            "frost": {
+              "status": "available",
+              "level": "moderate",
+              "critical": false,
+              "score": 58,
+              "counts": true,
+              "indicators": [
+                "frost_freq_pct"
+              ],
+              "reasons": [
+                "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+              ]
+            },
+            "heat": {
+              "status": "available",
+              "level": "favorable",
+              "critical": false,
+              "score": 94,
+              "counts": true,
+              "indicators": [
+                "tmax_p90_c"
+              ],
+              "reasons": [
+                "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+              ]
+            },
+            "soil": {
+              "status": "available",
+              "level": "favorable",
+              "critical": false,
+              "score": 80,
+              "counts": true,
+              "indicators": [
+                "ph"
+              ],
+              "reasons": [
+                "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+              ]
+            },
+            "supply": {
+              "status": "available",
+              "level": "unfavorable",
+              "critical": false,
+              "score": 30,
+              "counts": false,
+              "indicators": [
+                "planted_change_pct"
+              ],
+              "reasons": [
+                "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+              ],
+              "sources": [
+                {
+                  "source_id": "eva",
+                  "indicator": "planted_change_pct",
+                  "value": 35,
+                  "unit": "%",
+                  "period": "2025-B",
+                  "preliminary": true,
+                  "used": true
+                }
+              ]
+            },
+            "market": {
+              "status": "insufficient_data",
+              "critical": false,
+              "counts": true,
+              "indicators": [],
+              "reasons": [
+                "Sin datos de mercado para la zona"
+              ]
+            }
+          },
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+            "Datos EVA del último año son preliminares",
+            "Suelo estimado para el municipio, no para su lote"
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        },
+        "no_apto": {
+          "request": {
+            "municipality_id": "25307",
+            "crop_id": "papa",
+            "sowing_date": "2027-08-02",
+            "irrigated": false
+          },
+          "suitability": {
+            "level": "not_suitable",
+            "score": 0,
+            "basis": "municipality",
+            "tmean_annual_c": 28.4,
+            "altitude_m": 289,
+            "reasons": [
+              "La temperatura media anual del municipio (28,4 °C) pasa de la que aguanta la papa (hasta 16 °C)"
+            ]
+          },
+          "overall": {
+            "light": "red",
+            "action": "rotate",
+            "high_risk": false,
+            "weights_basis": "default",
+            "reasons": [
+              "Este cultivo no se da en su zona: elija otro"
+            ]
+          },
+          "overall_default": {
+            "light": "red",
+            "action": "rotate",
+            "high_risk": false,
+            "weights_basis": "default",
+            "reasons": [
+              "Este cultivo no se da en su zona: elija otro"
+            ]
+          },
+          "weights": {
+            "water": 4,
+            "frost": 4,
+            "heat": 3,
+            "soil": 2,
+            "supply": 2,
+            "market": 2
+          },
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido."
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        },
+        "sin_agua": {
+          "request": {
+            "municipality_id": "15646",
+            "crop_id": "cebolla_bulbo",
+            "sowing_date": "2027-08-02",
+            "irrigated": false
+          },
+          "suitability": {
+            "level": "suitable",
+            "score": 28,
+            "basis": "municipality",
+            "tmean_annual_c": 12.8,
+            "altitude_m": 2660,
+            "reasons": [
+              "La temperatura media anual del municipio (12,8 °C) está dentro del rango de la cebolla de bulbo (desde 10 °C), lejos de su óptimo (20 a 28 °C)"
+            ]
+          },
+          "window": {
+            "sowing_start": "2027-08-02",
+            "harvest_estimate": "2027-12-27",
+            "harvest_basis": "calendar",
+            "supply_semester": {
+              "year": 2025,
+              "semester": "B",
+              "preliminary": true
+            }
+          },
+          "overall": {
+            "light": "not_evaluable",
+            "action": "review_data",
+            "high_risk": false,
+            "weights_basis": "default",
+            "reasons": [
+              "No hay datos de lluvia para esta zona: no se puede evaluar el agua"
+            ]
+          },
+          "overall_default": {
+            "light": "not_evaluable",
+            "action": "review_data",
+            "high_risk": false,
+            "weights_basis": "default",
+            "reasons": [
+              "No hay datos de lluvia para esta zona: no se puede evaluar el agua"
+            ]
+          },
+          "weights": {
+            "water": 4,
+            "frost": 4,
+            "heat": 3,
+            "soil": 2,
+            "supply": 2,
+            "market": 2
+          },
+          "signals": {
+            "water": {
+              "status": "insufficient_data",
+              "critical": false,
+              "counts": true,
+              "indicators": [],
+              "reasons": [
+                "La fuente de lluvia de la región no tiene datos para este municipio"
+              ]
+            },
+            "frost": {
+              "status": "insufficient_data",
+              "critical": false,
+              "counts": true,
+              "indicators": [],
+              "reasons": [
+                "La ficha de la cebolla de bulbo no dice qué etapas son sensibles a la helada"
+              ]
+            },
+            "heat": {
+              "status": "available",
+              "level": "favorable",
+              "critical": false,
+              "score": 94,
+              "counts": true,
+              "indicators": [
+                "tmax_p90_c"
+              ],
+              "reasons": [
+                "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+              ]
+            },
+            "soil": {
+              "status": "available",
+              "level": "favorable",
+              "critical": false,
+              "score": 80,
+              "counts": true,
+              "indicators": [
+                "ph"
+              ],
+              "reasons": [
+                "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+              ]
+            },
+            "supply": {
+              "status": "available",
+              "level": "unfavorable",
+              "critical": false,
+              "score": 30,
+              "counts": false,
+              "indicators": [
+                "planted_change_pct"
+              ],
+              "reasons": [
+                "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+              ],
+              "sources": [
+                {
+                  "source_id": "eva",
+                  "indicator": "planted_change_pct",
+                  "value": 35,
+                  "unit": "%",
+                  "period": "2025-B",
+                  "preliminary": true,
+                  "used": true
+                }
+              ]
+            },
+            "market": {
+              "status": "insufficient_data",
+              "critical": false,
+              "counts": true,
+              "indicators": [],
+              "reasons": [
+                "Sin datos de mercado para la zona"
+              ]
+            }
+          },
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+            "Sin datos de lluvia para el municipio",
+            "Sin datos de helada por etapa para este cultivo"
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        },
+        "no_aplica": {
+          "request": {
+            "municipality_id": "15646",
+            "crop_id": "cultivo_de_ejemplo",
+            "sowing_date": "2027-08-02",
+            "irrigated": false
+          },
+          "suitability": {
+            "level": "suitable",
+            "score": 100,
+            "basis": "municipality",
+            "tmean_annual_c": 12.8,
+            "altitude_m": 2660,
+            "reasons": [
+              "Cultivo inventado para mostrar una señal que no aplica"
+            ]
+          },
+          "window": {
+            "sowing_start": "2027-08-02",
+            "harvest_estimate": "2027-12-27",
+            "harvest_basis": "calendar",
+            "supply_semester": {
+              "year": 2025,
+              "semester": "B",
+              "preliminary": true
+            }
+          },
+          "overall": {
+            "light": "green",
+            "action": "sow",
+            "high_risk": false,
+            "weights_basis": "farmer",
+            "limiting_signal": "frost",
+            "reasons": [
+              "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+            ]
+          },
+          "overall_default": {
+            "light": "yellow",
+            "action": "rotate",
+            "high_risk": false,
+            "weights_basis": "default",
+            "limiting_signal": "supply",
+            "reasons": [
+              "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+            ]
+          },
+          "weights": {
+            "water": 5,
+            "frost": 3,
+            "heat": 3,
+            "soil": 3,
+            "supply": 0,
+            "market": 3
+          },
+          "signals": {
+            "water": {
+              "status": "available",
+              "level": "favorable",
+              "critical": false,
+              "score": 86,
+              "counts": true,
+              "indicators": [
+                "water_deficit_mm"
+              ],
+              "reasons": [
+                "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+              ],
+              "sources": [
+                {
+                  "source_id": "imerg",
+                  "indicator": "precip_mm",
+                  "value": 410,
+                  "unit": "mm",
+                  "period": "2015-2024",
+                  "used": true
+                },
+                {
+                  "source_id": "nasa_power",
+                  "indicator": "precip_mm",
+                  "value": 380,
+                  "unit": "mm",
+                  "period": "2015-2024",
+                  "used": false
+                },
+                {
+                  "source_id": "nasa_power",
+                  "indicator": "soil_wetness_root",
+                  "value": 0.61,
+                  "unit": "fracción",
+                  "used": false
+                }
+              ]
+            },
+            "frost": {
+              "status": "not_applicable",
+              "critical": false,
+              "counts": true,
+              "indicators": [],
+              "reasons": [
+                "Según su ficha, ninguna etapa de este cultivo es sensible a la helada"
+              ]
+            },
+            "heat": {
+              "status": "available",
+              "level": "favorable",
+              "critical": false,
+              "score": 94,
+              "counts": true,
+              "indicators": [
+                "tmax_p90_c"
+              ],
+              "reasons": [
+                "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+              ]
+            },
+            "soil": {
+              "status": "available",
+              "level": "favorable",
+              "critical": false,
+              "score": 80,
+              "counts": true,
+              "indicators": [
+                "ph"
+              ],
+              "reasons": [
+                "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+              ]
+            },
+            "supply": {
+              "status": "available",
+              "level": "unfavorable",
+              "critical": false,
+              "score": 30,
+              "counts": false,
+              "indicators": [
+                "planted_change_pct"
+              ],
+              "reasons": [
+                "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+              ],
+              "sources": [
+                {
+                  "source_id": "eva",
+                  "indicator": "planted_change_pct",
+                  "value": 35,
+                  "unit": "%",
+                  "period": "2025-B",
+                  "preliminary": true,
+                  "used": true
+                }
+              ]
+            },
+            "market": {
+              "status": "insufficient_data",
+              "critical": false,
+              "counts": true,
+              "indicators": [],
+              "reasons": [
+                "Sin datos de mercado para la zona"
+              ]
+            }
+          },
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+            "El cultivo de este ejemplo es inventado"
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        }
+      },
+      "errors": {
+        "401": {
+          "error": {
+            "code": "unauthorized",
+            "message": "Inicie sesión para continuar.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "404": {
+          "error": {
+            "code": "not_found",
+            "message": "Ese lote no existe o no es suyo.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "422": {
+          "error": {
+            "code": "invalid_input",
+            "message": "Hay datos que no son válidos. Revise: priorities.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "501": {
+          "error": {
+            "code": "not_implemented",
+            "message": "Este cálculo todavía no está disponible.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "503": {
+          "error": {
+            "code": "dataset_unavailable",
+            "message": "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        }
+      }
+    },
+    "POST /rotations": {
+      "ok": {
+        "estrategias": {
+          "strategies": [
+            {
+              "rank": 1,
+              "kind": "suggested",
+              "crop_ids": [
+                "avena_vicia",
+                "arveja",
+                "papa"
+              ],
+              "total_score": 76,
+              "scores": {
+                "water": 74,
+                "soil": 88,
+                "income": 60,
+                "risk": 71
+              },
+              "vs_current": {
+                "water": 6,
+                "soil": 38,
+                "income": -9,
+                "risk": 12,
+                "total": 15
+              },
+              "cycles": [
+                {
+                  "cycle": 1,
+                  "crop_id": "avena_vicia",
+                  "sowing_date": "2027-01-04",
+                  "harvest_estimate": "2027-04-19",
+                  "harvest_basis": "calendar",
+                  "light": "green",
+                  "light_default": "green",
+                  "limiting_signal": "water",
+                  "high_risk": false
+                },
+                {
+                  "cycle": 2,
+                  "crop_id": "arveja",
+                  "sowing_date": "2027-04-26",
+                  "harvest_estimate": "2027-08-23",
+                  "harvest_basis": "calendar",
+                  "light": "yellow",
+                  "light_default": "yellow",
+                  "limiting_signal": "frost",
+                  "high_risk": false
+                },
+                {
+                  "cycle": 3,
+                  "crop_id": "papa",
+                  "sowing_date": "2027-08-30",
+                  "harvest_estimate": "2028-01-24",
+                  "harvest_basis": "calendar",
+                  "light": "green",
+                  "light_default": "green",
+                  "limiting_signal": "frost",
+                  "high_risk": false
+                }
+              ],
+              "soil_health": {
+                "nitrogen": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "leguminosas"
+                  ],
+                  "reasons": [
+                    "Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"
+                  ]
+                },
+                "organic_carbon": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "materia_organica"
+                  ],
+                  "reasons": [
+                    "El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"
+                  ]
+                },
+                "soil_cover": {
+                  "status": "insufficient_data",
+                  "rule_ids": [],
+                  "reasons": [
+                    "Aún no hay una regla con fuente que diga cuántos meses bastan"
+                  ]
+                },
+                "pest_break": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "papa_espera"
+                  ],
+                  "reasons": [
+                    "La papa vuelve al terreno después de dos ciclos de otras familias"
+                  ]
+                },
+                "erosion": {
+                  "status": "available",
+                  "level": "moderate",
+                  "rule_ids": [
+                    "suelo_descubierto"
+                  ],
+                  "reasons": [
+                    "Con pendiente de 9 %, el suelo queda descubierto 2 meses"
+                  ]
+                }
+              },
+              "reasons": [
+                "Empieza con un abono verde y su suelo tiene poco carbono orgánico",
+                "Gana 15 puntos frente a lo que siembra hoy, sobre todo en suelo"
+              ],
+              "limitations": [
+                "Suelo estimado para el municipio, no para su lote"
+              ]
+            }
+          ],
+          "current_strategy": {
+            "kind": "current",
+            "crop_ids": [
+              "papa",
+              "arveja",
+              "papa"
+            ],
+            "total_score": 61,
+            "scores": {
+              "water": 68,
+              "soil": 50,
+              "income": 69,
+              "risk": 59
+            },
+            "cycles": [
+              {
+                "cycle": 1,
+                "crop_id": "papa",
+                "sowing_date": "2027-01-04",
+                "harvest_estimate": "2027-05-31",
+                "harvest_basis": "calendar",
+                "light": "yellow",
+                "light_default": "yellow",
+                "limiting_signal": "frost",
+                "high_risk": false
+              },
+              {
+                "cycle": 2,
+                "crop_id": "arveja",
+                "sowing_date": "2027-06-07",
+                "harvest_estimate": "2027-10-04",
+                "harvest_basis": "calendar",
+                "light": "green",
+                "light_default": "green",
+                "limiting_signal": "water",
+                "high_risk": false
+              },
+              {
+                "cycle": 3,
+                "crop_id": "papa",
+                "sowing_date": "2027-10-11",
+                "harvest_estimate": "2028-03-06",
+                "harvest_basis": "calendar",
+                "light": "yellow",
+                "light_default": "yellow",
+                "limiting_signal": "water",
+                "high_risk": false
+              }
+            ],
+            "soil_health": {
+              "nitrogen": {
+                "status": "available",
+                "level": "favorable",
+                "rule_ids": [
+                  "leguminosas"
+                ],
+                "reasons": [
+                  "Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"
+                ]
+              },
+              "organic_carbon": {
+                "status": "available",
+                "level": "favorable",
+                "rule_ids": [
+                  "materia_organica"
+                ],
+                "reasons": [
+                  "El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"
+                ]
+              },
+              "soil_cover": {
+                "status": "insufficient_data",
+                "rule_ids": [],
+                "reasons": [
+                  "Aún no hay una regla con fuente que diga cuántos meses bastan"
+                ]
+              },
+              "pest_break": {
+                "status": "available",
+                "level": "unfavorable",
+                "rule_ids": [
+                  "papa_espera"
+                ],
+                "reasons": [
+                  "La papa vuelve después de un solo ciclo de otra familia"
+                ]
+              },
+              "erosion": {
+                "status": "available",
+                "level": "moderate",
+                "rule_ids": [
+                  "suelo_descubierto"
+                ],
+                "reasons": [
+                  "Con pendiente de 9 %, el suelo queda descubierto 2 meses"
+                ]
+              }
+            },
+            "issues": [
+              {
+                "cycle": 3,
+                "kind": "rule",
+                "rule_id": "papa_espera",
+                "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia"
+              }
+            ],
+            "reasons": [
+              "Es la rotación que usted viene haciendo: las demás se comparan contra ella"
+            ],
+            "limitations": []
+          },
+          "excluded": [
+            {
+              "crop_ids": [
+                "papa",
+                "arveja",
+                "haba"
+              ],
+              "cycle": 1,
+              "kind": "rule",
+              "rule_id": "familia_seguida",
+              "reason": "Repite la familia de la papa, que había antes en el terreno"
+            },
+            {
+              "crop_ids": [
+                "arveja",
+                "papa",
+                "maiz"
+              ],
+              "cycle": 2,
+              "kind": "high_risk",
+              "signal": "frost",
+              "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa"
+            }
+          ],
+          "excluded_counts": {
+            "rule": 212,
+            "high_risk": 48,
+            "not_suitable": 30,
+            "soil_ph": 0
+          },
+          "weights": {
+            "water": 3,
+            "soil": 5,
+            "income": 2,
+            "risk": 4
+          },
+          "soil_basis": "municipality",
+          "slope_basis": "municipality",
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+            "Compara estrategias según reglas con fuente. No predice cuánto va a mejorar el suelo"
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        }
+      },
+      "errors": {
+        "401": {
+          "error": {
+            "code": "unauthorized",
+            "message": "Inicie sesión para continuar.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "404": {
+          "error": {
+            "code": "not_found",
+            "message": "Ese lote no existe o no es suyo.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "422": {
+          "error": {
+            "code": "invalid_input",
+            "message": "Hay datos que no son válidos. Revise: priorities.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "501": {
+          "error": {
+            "code": "not_implemented",
+            "message": "Este cálculo todavía no está disponible.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "503": {
+          "error": {
+            "code": "dataset_unavailable",
+            "message": "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        }
+      }
+    },
+    "POST /water-plans": {
+      "ok": {
+        "plan": {
+          "request": {
+            "municipality_id": "15646",
+            "total_area_ha": 1.26,
+            "crops": [
+              {
+                "crop_id": "papa",
+                "area_pct": 100,
+                "sowing_date": "2027-08-02"
+              }
+            ]
+          },
+          "crops": [
+            {
+              "crop_id": "papa",
+              "area_ha": 1.26,
+              "sowing_date": "2027-08-02",
+              "harvest_estimate": "2027-12-27",
+              "harvest_basis": "calendar",
+              "months": [
+                {
+                  "year": 2027,
+                  "month": 9,
+                  "status": "available",
+                  "stage": "development",
+                  "need_mm": 95,
+                  "rain_mm": {
+                    "normal": 70,
+                    "dry": 41
+                  },
+                  "deficit_mm": {
+                    "normal": [
+                      20,
+                      30
+                    ],
+                    "dry": [
+                      48,
+                      62
+                    ]
+                  },
+                  "volume_m3": {
+                    "normal": [
+                      252,
+                      378
+                    ],
+                    "dry": [
+                      605,
+                      781
+                    ]
+                  }
+                },
+                {
+                  "year": 2027,
+                  "month": 10,
+                  "status": "insufficient_data",
+                  "stage": "mid",
+                  "need_mm": 120,
+                  "rain_mm": {},
+                  "deficit_mm": {},
+                  "volume_m3": {}
+                }
+              ],
+              "total_volume_m3": {
+                "normal": [
+                  900,
+                  1300
+                ],
+                "dry": [
+                  2100,
+                  2700
+                ]
+              }
+            }
+          ],
+          "farm": {
+            "months": [
+              {
+                "year": 2027,
+                "month": 9,
+                "volume_m3": {
+                  "normal": [
+                    252,
+                    378
+                  ],
+                  "dry": [
+                    605,
+                    781
+                  ]
+                }
+              }
+            ],
+            "total_volume_m3": {
+              "normal": [
+                900,
+                1300
+              ],
+              "dry": [
+                2100,
+                2700
+              ]
+            }
+          },
+          "soil_moisture": [
+            {
+              "month": 9,
+              "source_id": "nasa_power",
+              "indicator": "soil_wetness_root",
+              "value": 0.61,
+              "unit": "fracción"
+            }
+          ],
+          "sources": {
+            "rain": "imerg",
+            "et0": "nasa_power",
+            "soil": "soilgrids"
+          },
+          "soil_basis": "municipality",
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+            "Es una estimación con el clima de la zona: verifique la humedad del suelo en su lote"
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        }
+      },
+      "errors": {
+        "422": {
+          "error": {
+            "code": "invalid_input",
+            "message": "Hay datos que no son válidos. Revise: priorities.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "501": {
+          "error": {
+            "code": "not_implemented",
+            "message": "Este cálculo todavía no está disponible.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "503": {
+          "error": {
+            "code": "dataset_unavailable",
+            "message": "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        }
+      }
+    },
+    "GET /changes": {
+      "ok": {
+        "cambios": {
+          "request": {
+            "municipality_id": "15646",
+            "crop_id": "papa",
+            "irrigated": false
+          },
+          "periods": {
+            "before": {
+              "period_id": "p1981_2000",
+              "start_year": 1981,
+              "end_year": 2000,
+              "source_id": "nasa_power"
+            },
+            "after": {
+              "period_id": "p2005_2024",
+              "start_year": 2005,
+              "end_year": 2024,
+              "source_id": "nasa_power"
+            }
+          },
+          "suitability": {
+            "level": "suitable",
+            "score": 100,
+            "basis": "municipality",
+            "tmean_annual_c": 12.8,
+            "altitude_m": 2660,
+            "reasons": [
+              "La temperatura media anual del municipio (12,8 °C) está dentro del rango de la papa (8 a 16 °C)"
+            ]
+          },
+          "months": [
+            {
+              "month": 1,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 30,
+                "after": 18,
+                "change": -12
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 28,
+                "after": 35,
+                "change": 7
+              },
+              "tmax_p90_c": {
+                "status": "insufficient_data",
+                "after": 21.4
+              }
+            }
+          ],
+          "best_windows": {
+            "before": [
+              {
+                "month": 3,
+                "limiting_signal": "frost",
+                "limiting_score": 64,
+                "high_risk": false
+              }
+            ],
+            "after": [
+              {
+                "month": 4,
+                "limiting_signal": "water",
+                "limiting_score": 68,
+                "high_risk": false
+              }
+            ]
+          },
+          "weights_basis": "default",
+          "reasons": [
+            "Entre 1981 y 2000 heló en enero en 30 de cada 100 años; entre 2005 y 2024, en 18"
+          ],
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+            "NASA POWER es un reanálisis, no una observación directa",
+            "La oferta, el mercado y el suelo son los mismos en los dos periodos"
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        }
+      },
+      "errors": {
+        "422": {
+          "error": {
+            "code": "invalid_input",
+            "message": "Hay datos que no son válidos. Revise: priorities.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "501": {
+          "error": {
+            "code": "not_implemented",
+            "message": "Este cálculo todavía no está disponible.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "503": {
+          "error": {
+            "code": "dataset_unavailable",
+            "message": "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        }
+      }
+    },
+    "GET /trends": {
+      "ok": {
+        "series": {
+          "request": {
+            "municipality_id": "15646",
+            "crop_id": "papa",
+            "sowing_date": "2027-08-02"
+          },
+          "water": {
+            "status": "available",
+            "source_id": "imerg",
+            "unit": "mm",
+            "points": [
+              {
+                "year": 2015,
+                "precip_mm": 410,
+                "need_mm": 465
+              }
+            ]
+          },
+          "supply": {
+            "status": "insufficient_data",
+            "source_id": "eva",
+            "unit": "ha",
+            "semester": "B",
+            "points": []
+          },
+          "ndvi": {
+            "status": "available",
+            "source_id": "modis_ndvi",
+            "quality": "ok",
+            "points": [
+              {
+                "period": 1,
+                "ndvi_normal": 0.52
+              }
+            ]
+          },
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        }
+      },
+      "errors": {
+        "422": {
+          "error": {
+            "code": "invalid_input",
+            "message": "Hay datos que no son válidos. Revise: priorities.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "501": {
+          "error": {
+            "code": "not_implemented",
+            "message": "Este cálculo todavía no está disponible.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        },
+        "503": {
+          "error": {
+            "code": "dataset_unavailable",
+            "message": "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde.",
+            "request_id": "00000000-0000-4000-8000-000000000000"
+          }
+        }
+      }
+    }
+  },
+  "catalogs": {
+    "municipalities": [
+      {
+        "municipality_id": "15022",
+        "name": "Almeida",
+        "department": "Boyacá",
+        "lat": 4.970857,
+        "lon": -73.378933
+      },
+      {
+        "municipality_id": "15047",
+        "name": "Aquitania",
+        "department": "Boyacá",
+        "lat": 5.518602,
+        "lon": -72.88399
+      },
+      {
+        "municipality_id": "15051",
+        "name": "Arcabuco",
+        "department": "Boyacá",
+        "lat": 5.755673,
+        "lon": -73.437503
+      },
+      {
+        "municipality_id": "15087",
+        "name": "Belén",
+        "department": "Boyacá",
+        "lat": 5.98923,
+        "lon": -72.911641
+      },
+      {
+        "municipality_id": "15090",
+        "name": "Berbeo",
+        "department": "Boyacá",
+        "lat": 5.227451,
+        "lon": -73.12721
+      },
+      {
+        "municipality_id": "15092",
+        "name": "Betéitiva",
+        "department": "Boyacá",
+        "lat": 5.909978,
+        "lon": -72.809014
+      },
+      {
+        "municipality_id": "15097",
+        "name": "Boavita",
+        "department": "Boyacá",
+        "lat": 6.330703,
+        "lon": -72.584905
+      },
+      {
+        "municipality_id": "15104",
+        "name": "Boyacá",
+        "department": "Boyacá",
+        "lat": 5.454578,
+        "lon": -73.361945
+      },
+      {
+        "municipality_id": "15106",
+        "name": "Briceño",
+        "department": "Boyacá",
+        "lat": 5.690879,
+        "lon": -73.92326
+      },
+      {
+        "municipality_id": "15109",
+        "name": "Buenavista",
+        "department": "Boyacá",
+        "lat": 5.512594,
+        "lon": -73.94217
+      },
+      {
+        "municipality_id": "15114",
+        "name": "Busbanzá",
+        "department": "Boyacá",
+        "lat": 5.831393,
+        "lon": -72.884158
+      },
+      {
+        "municipality_id": "15131",
+        "name": "Caldas",
+        "department": "Boyacá",
+        "lat": 5.55458,
+        "lon": -73.865553
+      },
+      {
+        "municipality_id": "15135",
+        "name": "Campohermoso",
+        "department": "Boyacá",
+        "lat": 5.031676,
+        "lon": -73.104173
+      },
+      {
+        "municipality_id": "15162",
+        "name": "Cerinza",
+        "department": "Boyacá",
+        "lat": 5.955939,
+        "lon": -72.947918
+      },
+      {
+        "municipality_id": "15172",
+        "name": "Chinavita",
+        "department": "Boyacá",
+        "lat": 5.167486,
+        "lon": -73.368476
+      },
+      {
+        "municipality_id": "15176",
+        "name": "Chiquinquirá",
+        "department": "Boyacá",
+        "lat": 5.61379,
+        "lon": -73.818745
+      },
+      {
+        "municipality_id": "15180",
+        "name": "Chiscas",
+        "department": "Boyacá",
+        "lat": 6.553136,
+        "lon": -72.500957
+      },
+      {
+        "municipality_id": "15183",
+        "name": "Chita",
+        "department": "Boyacá",
+        "lat": 6.187083,
+        "lon": -72.471892
+      },
+      {
+        "municipality_id": "15185",
+        "name": "Chitaraque",
+        "department": "Boyacá",
+        "lat": 6.027425,
+        "lon": -73.4471
+      },
+      {
+        "municipality_id": "15187",
+        "name": "Chivatá",
+        "department": "Boyacá",
+        "lat": 5.558949,
+        "lon": -73.282529
+      },
+      {
+        "municipality_id": "15236",
+        "name": "Chivor",
+        "department": "Boyacá",
+        "lat": 4.888173,
+        "lon": -73.368398
+      },
+      {
+        "municipality_id": "15232",
+        "name": "Chíquiza",
+        "department": "Boyacá",
+        "lat": 5.639834,
+        "lon": -73.449463
+      },
+      {
+        "municipality_id": "15189",
+        "name": "Ciénega",
+        "department": "Boyacá",
+        "lat": 5.408694,
+        "lon": -73.296049
+      },
+      {
+        "municipality_id": "15212",
+        "name": "Coper",
+        "department": "Boyacá",
+        "lat": 5.475074,
+        "lon": -74.045636
+      },
+      {
+        "municipality_id": "15215",
+        "name": "Corrales",
+        "department": "Boyacá",
+        "lat": 5.828064,
+        "lon": -72.844795
+      },
+      {
+        "municipality_id": "15218",
+        "name": "Covarachía",
+        "department": "Boyacá",
+        "lat": 6.500177,
+        "lon": -72.738978
+      },
+      {
+        "municipality_id": "15223",
+        "name": "Cubará",
+        "department": "Boyacá",
+        "lat": 6.997275,
+        "lon": -72.107939
+      },
+      {
+        "municipality_id": "15224",
+        "name": "Cucaita",
+        "department": "Boyacá",
+        "lat": 5.544452,
+        "lon": -73.454338
+      },
+      {
+        "municipality_id": "15226",
+        "name": "Cuítiva",
+        "department": "Boyacá",
+        "lat": 5.580367,
+        "lon": -72.965923
+      },
+      {
+        "municipality_id": "15204",
+        "name": "Cómbita",
+        "department": "Boyacá",
+        "lat": 5.634545,
+        "lon": -73.323957
+      },
+      {
+        "municipality_id": "15238",
+        "name": "Duitama",
+        "department": "Boyacá",
+        "lat": 5.822964,
+        "lon": -73.03063
+      },
+      {
+        "municipality_id": "15244",
+        "name": "El Cocuy",
+        "department": "Boyacá",
+        "lat": 6.407738,
+        "lon": -72.444537
+      },
+      {
+        "municipality_id": "15248",
+        "name": "El Espino",
+        "department": "Boyacá",
+        "lat": 6.483027,
+        "lon": -72.497007
+      },
+      {
+        "municipality_id": "15272",
+        "name": "Firavitoba",
+        "department": "Boyacá",
+        "lat": 5.668885,
+        "lon": -72.993392
+      },
+      {
+        "municipality_id": "15276",
+        "name": "Floresta",
+        "department": "Boyacá",
+        "lat": 5.859519,
+        "lon": -72.918111
+      },
+      {
+        "municipality_id": "15293",
+        "name": "Gachantivá",
+        "department": "Boyacá",
+        "lat": 5.751891,
+        "lon": -73.549092
+      },
+      {
+        "municipality_id": "15299",
+        "name": "Garagoa",
+        "department": "Boyacá",
+        "lat": 5.083234,
+        "lon": -73.364413
+      },
+      {
+        "municipality_id": "15317",
+        "name": "Guacamayas",
+        "department": "Boyacá",
+        "lat": 6.459667,
+        "lon": -72.500812
+      },
+      {
+        "municipality_id": "15322",
+        "name": "Guateque",
+        "department": "Boyacá",
+        "lat": 5.007321,
+        "lon": -73.471207
+      },
+      {
+        "municipality_id": "15325",
+        "name": "Guayatá",
+        "department": "Boyacá",
+        "lat": 4.967122,
+        "lon": -73.489698
+      },
+      {
+        "municipality_id": "15296",
+        "name": "Gámeza",
+        "department": "Boyacá",
+        "lat": 5.802333,
+        "lon": -72.80553
+      },
+      {
+        "municipality_id": "15332",
+        "name": "Güicán de la Sierra",
+        "department": "Boyacá",
+        "lat": 6.462864,
+        "lon": -72.411763
+      },
+      {
+        "municipality_id": "15362",
+        "name": "Iza",
+        "department": "Boyacá",
+        "lat": 5.611577,
+        "lon": -72.979559
+      },
+      {
+        "municipality_id": "15367",
+        "name": "Jenesano",
+        "department": "Boyacá",
+        "lat": 5.385813,
+        "lon": -73.363738
+      },
+      {
+        "municipality_id": "15368",
+        "name": "Jericó",
+        "department": "Boyacá",
+        "lat": 6.145735,
+        "lon": -72.571122
+      },
+      {
+        "municipality_id": "15380",
+        "name": "La Capilla",
+        "department": "Boyacá",
+        "lat": 5.095687,
+        "lon": -73.444347
+      },
+      {
+        "municipality_id": "15403",
+        "name": "La Uvita",
+        "department": "Boyacá",
+        "lat": 6.31616,
+        "lon": -72.559982
+      },
+      {
+        "municipality_id": "15401",
+        "name": "La Victoria",
+        "department": "Boyacá",
+        "lat": 5.523792,
+        "lon": -74.234393
+      },
+      {
+        "municipality_id": "15377",
+        "name": "Labranzagrande",
+        "department": "Boyacá",
+        "lat": 5.562687,
+        "lon": -72.57777
+      },
+      {
+        "municipality_id": "15425",
+        "name": "Macanal",
+        "department": "Boyacá",
+        "lat": 4.972464,
+        "lon": -73.319593
+      },
+      {
+        "municipality_id": "15442",
+        "name": "Maripí",
+        "department": "Boyacá",
+        "lat": 5.550091,
+        "lon": -74.00405
+      },
+      {
+        "municipality_id": "15455",
+        "name": "Miraflores",
+        "department": "Boyacá",
+        "lat": 5.196515,
+        "lon": -73.14563
+      },
+      {
+        "municipality_id": "15464",
+        "name": "Mongua",
+        "department": "Boyacá",
+        "lat": 5.754242,
+        "lon": -72.79809
+      },
+      {
+        "municipality_id": "15466",
+        "name": "Monguí",
+        "department": "Boyacá",
+        "lat": 5.723486,
+        "lon": -72.849292
+      },
+      {
+        "municipality_id": "15469",
+        "name": "Moniquirá",
+        "department": "Boyacá",
+        "lat": 5.876331,
+        "lon": -73.573374
+      },
+      {
+        "municipality_id": "15476",
+        "name": "Motavita",
+        "department": "Boyacá",
+        "lat": 5.5777,
+        "lon": -73.367841
+      },
+      {
+        "municipality_id": "15480",
+        "name": "Muzo",
+        "department": "Boyacá",
+        "lat": 5.532758,
+        "lon": -74.10269
+      },
+      {
+        "municipality_id": "15491",
+        "name": "Nobsa",
+        "department": "Boyacá",
+        "lat": 5.768046,
+        "lon": -72.937042
+      },
+      {
+        "municipality_id": "15494",
+        "name": "Nuevo Colón",
+        "department": "Boyacá",
+        "lat": 5.355317,
+        "lon": -73.456759
+      },
+      {
+        "municipality_id": "15500",
+        "name": "Oicatá",
+        "department": "Boyacá",
+        "lat": 5.595235,
+        "lon": -73.308399
+      },
+      {
+        "municipality_id": "15507",
+        "name": "Otanche",
+        "department": "Boyacá",
+        "lat": 5.657536,
+        "lon": -74.180965
+      },
+      {
+        "municipality_id": "15511",
+        "name": "Pachavita",
+        "department": "Boyacá",
+        "lat": 5.140065,
+        "lon": -73.396953
+      },
+      {
+        "municipality_id": "15516",
+        "name": "Paipa",
+        "department": "Boyacá",
+        "lat": 5.779894,
+        "lon": -73.11782
+      },
+      {
+        "municipality_id": "15518",
+        "name": "Pajarito",
+        "department": "Boyacá",
+        "lat": 5.293783,
+        "lon": -72.703231
+      },
+      {
+        "municipality_id": "15522",
+        "name": "Panqueba",
+        "department": "Boyacá",
+        "lat": 6.443416,
+        "lon": -72.459424
+      },
+      {
+        "municipality_id": "15531",
+        "name": "Pauna",
+        "department": "Boyacá",
+        "lat": 5.656323,
+        "lon": -73.978449
+      },
+      {
+        "municipality_id": "15533",
+        "name": "Paya",
+        "department": "Boyacá",
+        "lat": 5.625699,
+        "lon": -72.423775
+      },
+      {
+        "municipality_id": "15537",
+        "name": "Paz de Río",
+        "department": "Boyacá",
+        "lat": 5.987645,
+        "lon": -72.749137
+      },
+      {
+        "municipality_id": "15542",
+        "name": "Pesca",
+        "department": "Boyacá",
+        "lat": 5.558808,
+        "lon": -73.050872
+      },
+      {
+        "municipality_id": "15550",
+        "name": "Pisba",
+        "department": "Boyacá",
+        "lat": 5.72141,
+        "lon": -72.486023
+      },
+      {
+        "municipality_id": "15572",
+        "name": "Puerto Boyacá",
+        "department": "Boyacá",
+        "lat": 5.976646,
+        "lon": -74.587782
+      },
+      {
+        "municipality_id": "15514",
+        "name": "Páez",
+        "department": "Boyacá",
+        "lat": 5.097319,
+        "lon": -73.052737
+      },
+      {
+        "municipality_id": "15580",
+        "name": "Quípama",
+        "department": "Boyacá",
+        "lat": 5.52055,
+        "lon": -74.180033
+      },
+      {
+        "municipality_id": "15599",
+        "name": "Ramiriquí",
+        "department": "Boyacá",
+        "lat": 5.400303,
+        "lon": -73.334839
+      },
+      {
+        "municipality_id": "15621",
+        "name": "Rondón",
+        "department": "Boyacá",
+        "lat": 5.357378,
+        "lon": -73.208474
+      },
+      {
+        "municipality_id": "15600",
+        "name": "Ráquira",
+        "department": "Boyacá",
+        "lat": 5.539136,
+        "lon": -73.632543
+      },
+      {
+        "municipality_id": "15632",
+        "name": "Saboyá",
+        "department": "Boyacá",
+        "lat": 5.697756,
+        "lon": -73.764456
+      },
+      {
+        "municipality_id": "15646",
+        "name": "Samacá",
+        "department": "Boyacá",
+        "lat": 5.492161,
+        "lon": -73.485589
+      },
+      {
+        "municipality_id": "15660",
+        "name": "San Eduardo",
+        "department": "Boyacá",
+        "lat": 5.22401,
+        "lon": -73.077747
+      },
+      {
+        "municipality_id": "15664",
+        "name": "San José de Pare",
+        "department": "Boyacá",
+        "lat": 6.018924,
+        "lon": -73.545397
+      },
+      {
+        "municipality_id": "15667",
+        "name": "San Luis de Gaceno",
+        "department": "Boyacá",
+        "lat": 4.81976,
+        "lon": -73.168076
+      },
+      {
+        "municipality_id": "15673",
+        "name": "San Mateo",
+        "department": "Boyacá",
+        "lat": 6.401683,
+        "lon": -72.555264
+      },
+      {
+        "municipality_id": "15676",
+        "name": "San Miguel de Sema",
+        "department": "Boyacá",
+        "lat": 5.518083,
+        "lon": -73.722009
+      },
+      {
+        "municipality_id": "15681",
+        "name": "San Pablo de Borbur",
+        "department": "Boyacá",
+        "lat": 5.650743,
+        "lon": -74.069963
+      },
+      {
+        "municipality_id": "15690",
+        "name": "Santa María",
+        "department": "Boyacá",
+        "lat": 4.857193,
+        "lon": -73.263518
+      },
+      {
+        "municipality_id": "15693",
+        "name": "Santa Rosa de Viterbo",
+        "department": "Boyacá",
+        "lat": 5.874547,
+        "lon": -72.982461
+      },
+      {
+        "municipality_id": "15696",
+        "name": "Santa Sofía",
+        "department": "Boyacá",
+        "lat": 5.713269,
+        "lon": -73.602707
+      },
+      {
+        "municipality_id": "15686",
+        "name": "Santana",
+        "department": "Boyacá",
+        "lat": 6.056866,
+        "lon": -73.481639
+      },
+      {
+        "municipality_id": "15720",
+        "name": "Sativanorte",
+        "department": "Boyacá",
+        "lat": 6.131132,
+        "lon": -72.708458
+      },
+      {
+        "municipality_id": "15723",
+        "name": "Sativasur",
+        "department": "Boyacá",
+        "lat": 6.093183,
+        "lon": -72.712435
+      },
+      {
+        "municipality_id": "15740",
+        "name": "Siachoque",
+        "department": "Boyacá",
+        "lat": 5.511811,
+        "lon": -73.24466
+      },
+      {
+        "municipality_id": "15753",
+        "name": "Soatá",
+        "department": "Boyacá",
+        "lat": 6.331945,
+        "lon": -72.684051
+      },
+      {
+        "municipality_id": "15757",
+        "name": "Socha",
+        "department": "Boyacá",
+        "lat": 5.996717,
+        "lon": -72.691963
+      },
+      {
+        "municipality_id": "15755",
+        "name": "Socotá",
+        "department": "Boyacá",
+        "lat": 6.041162,
+        "lon": -72.636653
+      },
+      {
+        "municipality_id": "15759",
+        "name": "Sogamoso",
+        "department": "Boyacá",
+        "lat": 5.723976,
+        "lon": -72.924355
+      },
+      {
+        "municipality_id": "15761",
+        "name": "Somondoco",
+        "department": "Boyacá",
+        "lat": 4.985726,
+        "lon": -73.433393
+      },
+      {
+        "municipality_id": "15762",
+        "name": "Sora",
+        "department": "Boyacá",
+        "lat": 5.56684,
+        "lon": -73.450153
+      },
+      {
+        "municipality_id": "15764",
+        "name": "Soracá",
+        "department": "Boyacá",
+        "lat": 5.500898,
+        "lon": -73.332804
+      },
+      {
+        "municipality_id": "15763",
+        "name": "Sotaquirá",
+        "department": "Boyacá",
+        "lat": 5.764986,
+        "lon": -73.246585
+      },
+      {
+        "municipality_id": "15774",
+        "name": "Susacón",
+        "department": "Boyacá",
+        "lat": 6.230332,
+        "lon": -72.690289
+      },
+      {
+        "municipality_id": "15776",
+        "name": "Sutamarchán",
+        "department": "Boyacá",
+        "lat": 5.619781,
+        "lon": -73.620536
+      },
+      {
+        "municipality_id": "15778",
+        "name": "Sutatenza",
+        "department": "Boyacá",
+        "lat": 5.022989,
+        "lon": -73.452317
+      },
+      {
+        "municipality_id": "15638",
+        "name": "Sáchica",
+        "department": "Boyacá",
+        "lat": 5.584305,
+        "lon": -73.542539
+      },
+      {
+        "municipality_id": "15790",
+        "name": "Tasco",
+        "department": "Boyacá",
+        "lat": 5.909821,
+        "lon": -72.781011
+      },
+      {
+        "municipality_id": "15798",
+        "name": "Tenza",
+        "department": "Boyacá",
+        "lat": 5.076781,
+        "lon": -73.421176
+      },
+      {
+        "municipality_id": "15804",
+        "name": "Tibaná",
+        "department": "Boyacá",
+        "lat": 5.317251,
+        "lon": -73.396457
+      },
+      {
+        "municipality_id": "15806",
+        "name": "Tibasosa",
+        "department": "Boyacá",
+        "lat": 5.74723,
+        "lon": -72.999449
+      },
+      {
+        "municipality_id": "15808",
+        "name": "Tinjacá",
+        "department": "Boyacá",
+        "lat": 5.579713,
+        "lon": -73.646847
+      },
+      {
+        "municipality_id": "15810",
+        "name": "Tipacoque",
+        "department": "Boyacá",
+        "lat": 6.419203,
+        "lon": -72.691729
+      },
+      {
+        "municipality_id": "15814",
+        "name": "Toca",
+        "department": "Boyacá",
+        "lat": 5.566464,
+        "lon": -73.184794
+      },
+      {
+        "municipality_id": "15816",
+        "name": "Togüí",
+        "department": "Boyacá",
+        "lat": 5.937438,
+        "lon": -73.513655
+      },
+      {
+        "municipality_id": "15822",
+        "name": "Tota",
+        "department": "Boyacá",
+        "lat": 5.560497,
+        "lon": -72.985898
+      },
+      {
+        "municipality_id": "15001",
+        "name": "Tunja",
+        "department": "Boyacá",
+        "lat": 5.53988,
+        "lon": -73.355539
+      },
+      {
+        "municipality_id": "15832",
+        "name": "Tununguá",
+        "department": "Boyacá",
+        "lat": 5.730582,
+        "lon": -73.933155
+      },
+      {
+        "municipality_id": "15835",
+        "name": "Turmequé",
+        "department": "Boyacá",
+        "lat": 5.323261,
+        "lon": -73.491825
+      },
+      {
+        "municipality_id": "15837",
+        "name": "Tuta",
+        "department": "Boyacá",
+        "lat": 5.689082,
+        "lon": -73.230285
+      },
+      {
+        "municipality_id": "15839",
+        "name": "Tutazá",
+        "department": "Boyacá",
+        "lat": 6.032608,
+        "lon": -72.856035
+      },
+      {
+        "municipality_id": "15820",
+        "name": "Tópaga",
+        "department": "Boyacá",
+        "lat": 5.768201,
+        "lon": -72.832245
+      },
+      {
+        "municipality_id": "15861",
+        "name": "Ventaquemada",
+        "department": "Boyacá",
+        "lat": 5.368739,
+        "lon": -73.522368
+      },
+      {
+        "municipality_id": "15407",
+        "name": "Villa de Leyva",
+        "department": "Boyacá",
+        "lat": 5.632455,
+        "lon": -73.524948
+      },
+      {
+        "municipality_id": "15879",
+        "name": "Viracachá",
+        "department": "Boyacá",
+        "lat": 5.436833,
+        "lon": -73.296894
+      },
+      {
+        "municipality_id": "15897",
+        "name": "Zetaquira",
+        "department": "Boyacá",
+        "lat": 5.283443,
+        "lon": -73.17098
+      },
+      {
+        "municipality_id": "15842",
+        "name": "Úmbita",
+        "department": "Boyacá",
+        "lat": 5.221176,
+        "lon": -73.456917
+      },
+      {
+        "municipality_id": "25001",
+        "name": "Agua de Dios",
+        "department": "Cundinamarca",
+        "lat": 4.375309,
+        "lon": -74.669221
+      },
+      {
+        "municipality_id": "25019",
+        "name": "Albán",
+        "department": "Cundinamarca",
+        "lat": 4.878022,
+        "lon": -74.438261
+      },
+      {
+        "municipality_id": "25035",
+        "name": "Anapoima",
+        "department": "Cundinamarca",
+        "lat": 4.562737,
+        "lon": -74.528676
+      },
+      {
+        "municipality_id": "25040",
+        "name": "Anolaima",
+        "department": "Cundinamarca",
+        "lat": 4.7617,
+        "lon": -74.46384
+      },
+      {
+        "municipality_id": "25599",
+        "name": "Apulo",
+        "department": "Cundinamarca",
+        "lat": 4.520304,
+        "lon": -74.593926
+      },
+      {
+        "municipality_id": "25053",
+        "name": "Arbeláez",
+        "department": "Cundinamarca",
+        "lat": 4.272534,
+        "lon": -74.414901
+      },
+      {
+        "municipality_id": "25086",
+        "name": "Beltrán",
+        "department": "Cundinamarca",
+        "lat": 4.802832,
+        "lon": -74.741666
+      },
+      {
+        "municipality_id": "25095",
+        "name": "Bituima",
+        "department": "Cundinamarca",
+        "lat": 4.872171,
+        "lon": -74.539609
+      },
+      {
+        "municipality_id": "25099",
+        "name": "Bojacá",
+        "department": "Cundinamarca",
+        "lat": 4.737205,
+        "lon": -74.344594
+      },
+      {
+        "municipality_id": "25120",
+        "name": "Cabrera",
+        "department": "Cundinamarca",
+        "lat": 3.985164,
+        "lon": -74.484549
+      },
+      {
+        "municipality_id": "25123",
+        "name": "Cachipay",
+        "department": "Cundinamarca",
+        "lat": 4.730957,
+        "lon": -74.435711
+      },
+      {
+        "municipality_id": "25126",
+        "name": "Cajicá",
+        "department": "Cundinamarca",
+        "lat": 4.920009,
+        "lon": -74.02298
+      },
+      {
+        "municipality_id": "25148",
+        "name": "Caparrapí",
+        "department": "Cundinamarca",
+        "lat": 5.34758,
+        "lon": -74.491045
+      },
+      {
+        "municipality_id": "25154",
+        "name": "Carmen de Carupa",
+        "department": "Cundinamarca",
+        "lat": 5.349119,
+        "lon": -73.901357
+      },
+      {
+        "municipality_id": "25168",
+        "name": "Chaguaní",
+        "department": "Cundinamarca",
+        "lat": 4.948916,
+        "lon": -74.593455
+      },
+      {
+        "municipality_id": "25178",
+        "name": "Chipaque",
+        "department": "Cundinamarca",
+        "lat": 4.442671,
+        "lon": -74.044876
+      },
+      {
+        "municipality_id": "25181",
+        "name": "Choachí",
+        "department": "Cundinamarca",
+        "lat": 4.527048,
+        "lon": -73.922894
+      },
+      {
+        "municipality_id": "25183",
+        "name": "Chocontá",
+        "department": "Cundinamarca",
+        "lat": 5.145224,
+        "lon": -73.683533
+      },
+      {
+        "municipality_id": "25175",
+        "name": "Chía",
+        "department": "Cundinamarca",
+        "lat": 4.866508,
+        "lon": -74.05
+      },
+      {
+        "municipality_id": "25200",
+        "name": "Cogua",
+        "department": "Cundinamarca",
+        "lat": 5.061842,
+        "lon": -73.978497
+      },
+      {
+        "municipality_id": "25214",
+        "name": "Cota",
+        "department": "Cundinamarca",
+        "lat": 4.812564,
+        "lon": -74.102569
+      },
+      {
+        "municipality_id": "25224",
+        "name": "Cucunubá",
+        "department": "Cundinamarca",
+        "lat": 5.249795,
+        "lon": -73.766113
+      },
+      {
+        "municipality_id": "25151",
+        "name": "Cáqueza",
+        "department": "Cundinamarca",
+        "lat": 4.404112,
+        "lon": -73.946473
+      },
+      {
+        "municipality_id": "25245",
+        "name": "El Colegio",
+        "department": "Cundinamarca",
+        "lat": 4.577951,
+        "lon": -74.442261
+      },
+      {
+        "municipality_id": "25258",
+        "name": "El Peñón",
+        "department": "Cundinamarca",
+        "lat": 5.248747,
+        "lon": -74.290207
+      },
+      {
+        "municipality_id": "25260",
+        "name": "El Rosal",
+        "department": "Cundinamarca",
+        "lat": 4.850589,
+        "lon": -74.263103
+      },
+      {
+        "municipality_id": "25269",
+        "name": "Facatativá",
+        "department": "Cundinamarca",
+        "lat": 4.813353,
+        "lon": -74.350085
+      },
+      {
+        "municipality_id": "25281",
+        "name": "Fosca",
+        "department": "Cundinamarca",
+        "lat": 4.339093,
+        "lon": -73.93902
+      },
+      {
+        "municipality_id": "25286",
+        "name": "Funza",
+        "department": "Cundinamarca",
+        "lat": 4.710412,
+        "lon": -74.201528
+      },
+      {
+        "municipality_id": "25290",
+        "name": "Fusagasugá",
+        "department": "Cundinamarca",
+        "lat": 4.336723,
+        "lon": -74.37543
+      },
+      {
+        "municipality_id": "25279",
+        "name": "Fómeque",
+        "department": "Cundinamarca",
+        "lat": 4.485474,
+        "lon": -73.892523
+      },
+      {
+        "municipality_id": "25288",
+        "name": "Fúquene",
+        "department": "Cundinamarca",
+        "lat": 5.403997,
+        "lon": -73.795855
+      },
+      {
+        "municipality_id": "25293",
+        "name": "Gachalá",
+        "department": "Cundinamarca",
+        "lat": 4.693579,
+        "lon": -73.520161
+      },
+      {
+        "municipality_id": "25295",
+        "name": "Gachancipá",
+        "department": "Cundinamarca",
+        "lat": 4.990947,
+        "lon": -73.873464
+      },
+      {
+        "municipality_id": "25297",
+        "name": "Gachetá",
+        "department": "Cundinamarca",
+        "lat": 4.816411,
+        "lon": -73.636377
+      },
+      {
+        "municipality_id": "25299",
+        "name": "Gama",
+        "department": "Cundinamarca",
+        "lat": 4.763325,
+        "lon": -73.611037
+      },
+      {
+        "municipality_id": "25307",
+        "name": "Girardot",
+        "department": "Cundinamarca",
+        "lat": 4.313069,
+        "lon": -74.798201
+      },
+      {
+        "municipality_id": "25312",
+        "name": "Granada",
+        "department": "Cundinamarca",
+        "lat": 4.519763,
+        "lon": -74.350766
+      },
+      {
+        "municipality_id": "25317",
+        "name": "Guachetá",
+        "department": "Cundinamarca",
+        "lat": 5.383378,
+        "lon": -73.686972
+      },
+      {
+        "municipality_id": "25320",
+        "name": "Guaduas",
+        "department": "Cundinamarca",
+        "lat": 5.072076,
+        "lon": -74.603402
+      },
+      {
+        "municipality_id": "25322",
+        "name": "Guasca",
+        "department": "Cundinamarca",
+        "lat": 4.866719,
+        "lon": -73.877143
+      },
+      {
+        "municipality_id": "25324",
+        "name": "Guataquí",
+        "department": "Cundinamarca",
+        "lat": 4.517517,
+        "lon": -74.790058
+      },
+      {
+        "municipality_id": "25326",
+        "name": "Guatavita",
+        "department": "Cundinamarca",
+        "lat": 4.935211,
+        "lon": -73.83293
+      },
+      {
+        "municipality_id": "25328",
+        "name": "Guayabal de Síquima",
+        "department": "Cundinamarca",
+        "lat": 4.877968,
+        "lon": -74.467437
+      },
+      {
+        "municipality_id": "25335",
+        "name": "Guayabetal",
+        "department": "Cundinamarca",
+        "lat": 4.215306,
+        "lon": -73.815107
+      },
+      {
+        "municipality_id": "25339",
+        "name": "Gutiérrez",
+        "department": "Cundinamarca",
+        "lat": 4.254679,
+        "lon": -74.003042
+      },
+      {
+        "municipality_id": "25368",
+        "name": "Jerusalén",
+        "department": "Cundinamarca",
+        "lat": 4.562273,
+        "lon": -74.695474
+      },
+      {
+        "municipality_id": "25372",
+        "name": "Junín",
+        "department": "Cundinamarca",
+        "lat": 4.79057,
+        "lon": -73.662961
+      },
+      {
+        "municipality_id": "25377",
+        "name": "La Calera",
+        "department": "Cundinamarca",
+        "lat": 4.721104,
+        "lon": -73.968161
+      },
+      {
+        "municipality_id": "25386",
+        "name": "La Mesa",
+        "department": "Cundinamarca",
+        "lat": 4.631028,
+        "lon": -74.461588
+      },
+      {
+        "municipality_id": "25394",
+        "name": "La Palma",
+        "department": "Cundinamarca",
+        "lat": 5.358816,
+        "lon": -74.391022
+      },
+      {
+        "municipality_id": "25398",
+        "name": "La Peña",
+        "department": "Cundinamarca",
+        "lat": 5.198945,
+        "lon": -74.394105
+      },
+      {
+        "municipality_id": "25402",
+        "name": "La Vega",
+        "department": "Cundinamarca",
+        "lat": 4.997768,
+        "lon": -74.336885
+      },
+      {
+        "municipality_id": "25407",
+        "name": "Lenguazaque",
+        "department": "Cundinamarca",
+        "lat": 5.306131,
+        "lon": -73.711512
+      },
+      {
+        "municipality_id": "25426",
+        "name": "Machetá",
+        "department": "Cundinamarca",
+        "lat": 5.08007,
+        "lon": -73.608226
+      },
+      {
+        "municipality_id": "25430",
+        "name": "Madrid",
+        "department": "Cundinamarca",
+        "lat": 4.732791,
+        "lon": -74.265854
+      },
+      {
+        "municipality_id": "25436",
+        "name": "Manta",
+        "department": "Cundinamarca",
+        "lat": 5.009008,
+        "lon": -73.540444
+      },
+      {
+        "municipality_id": "25438",
+        "name": "Medina",
+        "department": "Cundinamarca",
+        "lat": 4.506298,
+        "lon": -73.348449
+      },
+      {
+        "municipality_id": "25473",
+        "name": "Mosquera",
+        "department": "Cundinamarca",
+        "lat": 4.70653,
+        "lon": -74.221154
+      },
+      {
+        "municipality_id": "25483",
+        "name": "Nariño",
+        "department": "Cundinamarca",
+        "lat": 4.399837,
+        "lon": -74.824732
+      },
+      {
+        "municipality_id": "25486",
+        "name": "Nemocón",
+        "department": "Cundinamarca",
+        "lat": 5.068705,
+        "lon": -73.877888
+      },
+      {
+        "municipality_id": "25488",
+        "name": "Nilo",
+        "department": "Cundinamarca",
+        "lat": 4.305838,
+        "lon": -74.620009
+      },
+      {
+        "municipality_id": "25489",
+        "name": "Nimaima",
+        "department": "Cundinamarca",
+        "lat": 5.125992,
+        "lon": -74.38604
+      },
+      {
+        "municipality_id": "25491",
+        "name": "Nocaima",
+        "department": "Cundinamarca",
+        "lat": 5.069466,
+        "lon": -74.379093
+      },
+      {
+        "municipality_id": "25513",
+        "name": "Pacho",
+        "department": "Cundinamarca",
+        "lat": 5.136907,
+        "lon": -74.156132
+      },
+      {
+        "municipality_id": "25518",
+        "name": "Paime",
+        "department": "Cundinamarca",
+        "lat": 5.370487,
+        "lon": -74.152213
+      },
+      {
+        "municipality_id": "25524",
+        "name": "Pandi",
+        "department": "Cundinamarca",
+        "lat": 4.190393,
+        "lon": -74.486641
+      },
+      {
+        "municipality_id": "25530",
+        "name": "Paratebueno",
+        "department": "Cundinamarca",
+        "lat": 4.374832,
+        "lon": -73.212825
+      },
+      {
+        "municipality_id": "25535",
+        "name": "Pasca",
+        "department": "Cundinamarca",
+        "lat": 4.308979,
+        "lon": -74.302276
+      },
+      {
+        "municipality_id": "25572",
+        "name": "Puerto Salgar",
+        "department": "Cundinamarca",
+        "lat": 5.465413,
+        "lon": -74.653695
+      },
+      {
+        "municipality_id": "25580",
+        "name": "Pulí",
+        "department": "Cundinamarca",
+        "lat": 4.682022,
+        "lon": -74.71438
+      },
+      {
+        "municipality_id": "25592",
+        "name": "Quebradanegra",
+        "department": "Cundinamarca",
+        "lat": 5.118076,
+        "lon": -74.48014
+      },
+      {
+        "municipality_id": "25594",
+        "name": "Quetame",
+        "department": "Cundinamarca",
+        "lat": 4.329884,
+        "lon": -73.863214
+      },
+      {
+        "municipality_id": "25596",
+        "name": "Quipile",
+        "department": "Cundinamarca",
+        "lat": 4.74481,
+        "lon": -74.533705
+      },
+      {
+        "municipality_id": "25612",
+        "name": "Ricaurte",
+        "department": "Cundinamarca",
+        "lat": 4.282113,
+        "lon": -74.772861
+      },
+      {
+        "municipality_id": "25645",
+        "name": "San Antonio del Tequendama",
+        "department": "Cundinamarca",
+        "lat": 4.616138,
+        "lon": -74.351443
+      },
+      {
+        "municipality_id": "25649",
+        "name": "San Bernardo",
+        "department": "Cundinamarca",
+        "lat": 4.179433,
+        "lon": -74.42296
+      },
+      {
+        "municipality_id": "25653",
+        "name": "San Cayetano",
+        "department": "Cundinamarca",
+        "lat": 5.332938,
+        "lon": -74.024754
+      },
+      {
+        "municipality_id": "25658",
+        "name": "San Francisco",
+        "department": "Cundinamarca",
+        "lat": 4.972917,
+        "lon": -74.289672
+      },
+      {
+        "municipality_id": "25662",
+        "name": "San Juan de Rioseco",
+        "department": "Cundinamarca",
+        "lat": 4.847575,
+        "lon": -74.621919
+      },
+      {
+        "municipality_id": "25718",
+        "name": "Sasaima",
+        "department": "Cundinamarca",
+        "lat": 4.962167,
+        "lon": -74.432628
+      },
+      {
+        "municipality_id": "25736",
+        "name": "Sesquilé",
+        "department": "Cundinamarca",
+        "lat": 5.04476,
+        "lon": -73.796099
+      },
+      {
+        "municipality_id": "25740",
+        "name": "Sibaté",
+        "department": "Cundinamarca",
+        "lat": 4.492625,
+        "lon": -74.257874
+      },
+      {
+        "municipality_id": "25743",
+        "name": "Silvania",
+        "department": "Cundinamarca",
+        "lat": 4.381981,
+        "lon": -74.405534
+      },
+      {
+        "municipality_id": "25745",
+        "name": "Simijaca",
+        "department": "Cundinamarca",
+        "lat": 5.505231,
+        "lon": -73.850703
+      },
+      {
+        "municipality_id": "25754",
+        "name": "Soacha",
+        "department": "Cundinamarca",
+        "lat": 4.579268,
+        "lon": -74.215463
+      },
+      {
+        "municipality_id": "25758",
+        "name": "Sopó",
+        "department": "Cundinamarca",
+        "lat": 4.915395,
+        "lon": -73.943328
+      },
+      {
+        "municipality_id": "25769",
+        "name": "Subachoque",
+        "department": "Cundinamarca",
+        "lat": 4.929118,
+        "lon": -74.172773
+      },
+      {
+        "municipality_id": "25772",
+        "name": "Suesca",
+        "department": "Cundinamarca",
+        "lat": 5.103495,
+        "lon": -73.798227
+      },
+      {
+        "municipality_id": "25777",
+        "name": "Supatá",
+        "department": "Cundinamarca",
+        "lat": 5.06162,
+        "lon": -74.235403
+      },
+      {
+        "municipality_id": "25779",
+        "name": "Susa",
+        "department": "Cundinamarca",
+        "lat": 5.455291,
+        "lon": -73.813938
+      },
+      {
+        "municipality_id": "25781",
+        "name": "Sutatausa",
+        "department": "Cundinamarca",
+        "lat": 5.247482,
+        "lon": -73.853159
+      },
+      {
+        "municipality_id": "25785",
+        "name": "Tabio",
+        "department": "Cundinamarca",
+        "lat": 4.916832,
+        "lon": -74.096461
+      },
+      {
+        "municipality_id": "25793",
+        "name": "Tausa",
+        "department": "Cundinamarca",
+        "lat": 5.196333,
+        "lon": -73.887813
+      },
+      {
+        "municipality_id": "25797",
+        "name": "Tena",
+        "department": "Cundinamarca",
+        "lat": 4.655286,
+        "lon": -74.389193
+      },
+      {
+        "municipality_id": "25799",
+        "name": "Tenjo",
+        "department": "Cundinamarca",
+        "lat": 4.872014,
+        "lon": -74.143724
+      },
+      {
+        "municipality_id": "25805",
+        "name": "Tibacuy",
+        "department": "Cundinamarca",
+        "lat": 4.348605,
+        "lon": -74.452662
+      },
+      {
+        "municipality_id": "25807",
+        "name": "Tibirita",
+        "department": "Cundinamarca",
+        "lat": 5.052278,
+        "lon": -73.504514
+      },
+      {
+        "municipality_id": "25815",
+        "name": "Tocaima",
+        "department": "Cundinamarca",
+        "lat": 4.459279,
+        "lon": -74.636296
+      },
+      {
+        "municipality_id": "25817",
+        "name": "Tocancipá",
+        "department": "Cundinamarca",
+        "lat": 4.964641,
+        "lon": -73.91207
+      },
+      {
+        "municipality_id": "25823",
+        "name": "Topaipí",
+        "department": "Cundinamarca",
+        "lat": 5.336224,
+        "lon": -74.300626
+      },
+      {
+        "municipality_id": "25839",
+        "name": "Ubalá",
+        "department": "Cundinamarca",
+        "lat": 4.74762,
+        "lon": -73.531489
+      },
+      {
+        "municipality_id": "25841",
+        "name": "Ubaque",
+        "department": "Cundinamarca",
+        "lat": 4.483788,
+        "lon": -73.933477
+      },
+      {
+        "municipality_id": "25845",
+        "name": "Une",
+        "department": "Cundinamarca",
+        "lat": 4.40245,
+        "lon": -74.025183
+      },
+      {
+        "municipality_id": "25506",
+        "name": "Venecia",
+        "department": "Cundinamarca",
+        "lat": 4.089056,
+        "lon": -74.478301
+      },
+      {
+        "municipality_id": "25862",
+        "name": "Vergara",
+        "department": "Cundinamarca",
+        "lat": 5.117258,
+        "lon": -74.346163
+      },
+      {
+        "municipality_id": "25867",
+        "name": "Vianí",
+        "department": "Cundinamarca",
+        "lat": 4.875208,
+        "lon": -74.56132
+      },
+      {
+        "municipality_id": "25843",
+        "name": "Villa de San Diego de Ubaté",
+        "department": "Cundinamarca",
+        "lat": 5.307463,
+        "lon": -73.814367
+      },
+      {
+        "municipality_id": "25871",
+        "name": "Villagómez",
+        "department": "Cundinamarca",
+        "lat": 5.273024,
+        "lon": -74.195145
+      },
+      {
+        "municipality_id": "25873",
+        "name": "Villapinzón",
+        "department": "Cundinamarca",
+        "lat": 5.216393,
+        "lon": -73.595704
+      },
+      {
+        "municipality_id": "25875",
+        "name": "Villeta",
+        "department": "Cundinamarca",
+        "lat": 5.012754,
+        "lon": -74.469686
+      },
+      {
+        "municipality_id": "25878",
+        "name": "Viotá",
+        "department": "Cundinamarca",
+        "lat": 4.43935,
+        "lon": -74.523131
+      },
+      {
+        "municipality_id": "25885",
+        "name": "Yacopí",
+        "department": "Cundinamarca",
+        "lat": 5.459272,
+        "lon": -74.33806
+      },
+      {
+        "municipality_id": "25898",
+        "name": "Zipacón",
+        "department": "Cundinamarca",
+        "lat": 4.759932,
+        "lon": -74.379566
+      },
+      {
+        "municipality_id": "25899",
+        "name": "Zipaquirá",
+        "department": "Cundinamarca",
+        "lat": 5.025477,
+        "lon": -73.994444
+      },
+      {
+        "municipality_id": "25851",
+        "name": "Útica",
+        "department": "Cundinamarca",
+        "lat": 5.19055,
+        "lon": -74.483154
+      }
+    ],
+    "crops": [
+      {
+        "crop_id": "arveja",
+        "name_es": "Arveja",
+        "kind": "crop",
+        "archetype": "climbing_legume",
+        "family": "Leguminosae",
+        "cycle_months": 3.6
+      },
+      {
+        "crop_id": "avena_vicia",
+        "name_es": "Avena con vicia (abono verde)",
+        "kind": "cover",
+        "archetype": "cover",
+        "family": "Gramineae",
+        "cycle_months": 4.9
+      },
+      {
+        "crop_id": "cebolla_bulbo",
+        "name_es": "Cebolla de bulbo",
+        "kind": "crop",
+        "archetype": "bulb",
+        "family": "Alliaceae",
+        "cycle_months": 4.9
+      },
+      {
+        "crop_id": "descanso",
+        "name_es": "Descanso",
+        "kind": "fallow",
+        "archetype": "fallow",
+        "family": null,
+        "cycle_months": null
+      },
+      {
+        "crop_id": "haba",
+        "name_es": "Haba",
+        "kind": "crop",
+        "archetype": "bush_legume",
+        "family": "Leguminosae",
+        "cycle_months": 5.7
+      },
+      {
+        "crop_id": "maiz",
+        "name_es": "Maíz",
+        "kind": "crop",
+        "archetype": "cereal",
+        "family": "Gramineae",
+        "cycle_months": 5.9
+      },
+      {
+        "crop_id": "papa",
+        "name_es": "Papa",
+        "kind": "crop",
+        "archetype": "tuber",
+        "family": "Solanaceae",
+        "cycle_months": 5.4
+      },
+      {
+        "crop_id": "zanahoria",
+        "name_es": "Zanahoria",
+        "kind": "crop",
+        "archetype": "root",
+        "family": "Umbelliferae",
+        "cycle_months": 4.9
+      }
+    ],
+    "version": {
+      "dataset_version": "2026.11.0",
+      "rules_version": "0.1.0",
+      "created_at": "2026-11-09T03:29:17Z",
+      "region": "Boyacá y Cundinamarca, Colombia (supuesto hasta el 28 de octubre de 2026)",
+      "default_weights": {
+        "water": 3,
+        "frost": 3,
+        "heat": 3,
+        "soil": 2,
+        "supply": 3,
+        "market": 2
+      },
+      "weights_version": "0.1.0",
+      "weights_reasons": {
+        "water": "Importancia normal. Un riesgo grave de agua cuenta siempre, tenga el peso que tenga.",
+        "frost": "Importancia normal. Un riesgo grave de heladas cuenta siempre, tenga el peso que tenga.",
+        "heat": "Importancia normal. Un riesgo grave de calor cuenta siempre, tenga el peso que tenga.",
+        "soil": "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición del lote.",
+        "supply": "Importancia normal. Dice si en la zona se está sembrando mucho o poco del cultivo.",
+        "market": "Pesa menos: los precios por mes todavía no tienen datos en el P0."
+      },
+      "sources": [
+        {
+          "source_id": "agrosense_diseno",
+          "name": "Catálogo visual de AgroSense (design/finca/cultivos.py)",
+          "institution": "Equipo RealE4Life",
+          "url": "https://github.com/FelipeGo18/AgroSense/blob/desarrollo/design/finca/cultivos.py",
+          "downloaded_at": "2026-10-16",
+          "period_covered": null,
+          "coverage": "AgroSense",
+          "license": "Del proyecto",
+          "notes": "Solo para cómo se dibuja cada cultivo (`archetype`) y su nombre en la web. No es un dato agronómico."
+        },
+        {
+          "source_id": "dane_divipola",
+          "name": "DIVIPOLA- Códigos municipios",
+          "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
+          "url": "https://www.datos.gov.co/d/gdxc-w37w",
+          "downloaded_at": "2026-10-15T21:20:13+00:00",
+          "period_covered": "Actualizada por el DANE el 2025-01-24",
+          "coverage": "Colombia",
+          "license": "Creative Commons Attribution | Share Alike 4.0 International",
+          "notes": "Códigos DIVIPOLA de municipio y departamento, nombre y coordenadas de referencia del municipio. Los nombres se escriben en mayúscula inicial a partir del nombre oficial, que viene en mayúsculas."
+        },
+        {
+          "source_id": "dane_mgn_2025",
+          "name": "Marco Geoestadístico Nacional 2025 · Municipios",
+          "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
+          "url": "https://geoportal.dane.gov.co/mparcgis/rest/services/Divipola/Serv_DIVIPOLA_MGN_2025/FeatureServer/317",
+          "downloaded_at": "2026-10-15T21:20:33+00:00",
+          "period_covered": "Versión 2025 del Marco Geoestadístico Nacional",
+          "coverage": "Colombia",
+          "license": "Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122)",
+          "notes": "Límite de cada municipio, simplificado a unos 10 m para dibujarlo en el mapa y validar que un lote cae dentro de su municipio."
+        },
+        {
+          "source_id": "fao_56",
+          "name": "FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Tablas 11 y 12",
+          "institution": "FAO",
+          "url": "https://www.fao.org/4/x0490e/x0490e0b.htm",
+          "downloaded_at": "2026-10-16",
+          "period_covered": "1998",
+          "coverage": "Mundial (cada fila de la tabla 11 dice su región)",
+          "license": "Publicación de la FAO, uso con cita",
+          "notes": "Duración de las 4 etapas (inicial, desarrollo, media y final) y coeficientes de cultivo Kc. El Kc inicial que no aparece en la fila del cultivo es el de su grupo (por ejemplo, raíces y tubérculos 0,5)."
+        },
+        {
+          "source_id": "fao_ecocrop",
+          "name": "FAO EcoCrop · fichas de datos por especie",
+          "institution": "Organización de las Naciones Unidas para la Alimentación y la Agricultura (FAO)",
+          "url": "https://ecocrop.apps.fao.org/ecocrop/srv/en/home",
+          "downloaded_at": "2026-10-16",
+          "period_covered": "Base descontinuada hacia 2015; se consulta por la plataforma GAEZ",
+          "coverage": "Mundial",
+          "license": "CC BY 4.0 (catálogo de datos de la FAO)",
+          "notes": "Rangos óptimos y absolutos de temperatura, lluvia anual y pH; temperaturas que matan la planta; duración del ciclo; familia. La propia FAO advierte que son opinión experta. Cada ficha se cita con su URL."
+        },
+        {
+          "source_id": "fao_iyp_2019",
+          "name": "FAO: The International Year of Pulses, final report (2019)",
+          "institution": "FAO",
+          "url": "https://openknowledge.fao.org/items/a5ba05a4-314c-4d73-a47e-1dd8c6021258",
+          "downloaded_at": "2026-10-16",
+          "period_covered": "2016-2019",
+          "coverage": "Mundial",
+          "license": "Publicación de la FAO, uso con cita",
+          "notes": "Las legumbres, y las leguminosas en general, fijan nitrógeno del aire y mejoran el suelo."
+        },
+        {
+          "source_id": "upra_cebolla_bulbo",
+          "name": "UPRA: Cultivo comercial de cebolla de bulbo, identificación de zonas aptas en Colombia, escala 1:100.000",
+          "institution": "Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura",
+          "url": "https://upra.gov.co/sites/default/files/2025-07/Zonas_aptas_cebollabulbo.pdf",
+          "downloaded_at": "2026-10-16",
+          "period_covered": "Temperatura del Ideam, promedio 1981-2010",
+          "coverage": "Colombia",
+          "license": "Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita",
+          "notes": "Anexo 1.1.1.1, temperatura media anual (p. 145): alta > 20 y < 28 °C, media de 10 a 20 °C, baja ≥ 28 °C, no apta < 10 °C. No pone límite superior de exclusión."
+        },
+        {
+          "source_id": "upra_papa_diacol",
+          "name": "UPRA: Cultivo de papa Diacol Capiro para uso industrial, identificación de zonas aptas en Colombia, escala 1:100.000",
+          "institution": "Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura",
+          "url": "https://upra.gov.co/sites/default/files/2025-07/Zonas_aptas_papa_Diacol.pdf",
+          "downloaded_at": "2026-10-16",
+          "period_covered": "Temperatura del Ideam, promedio 1981-2010",
+          "coverage": "Colombia",
+          "license": "Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita",
+          "notes": "Anexo 1.1.1, temperatura media anual (p. 127): alta 12-15 °C, media 10-12 y 15-16 °C, baja 8-10 °C, no apta < 8 y > 16 °C."
+        }
+      ]
+    }
+  }
+}

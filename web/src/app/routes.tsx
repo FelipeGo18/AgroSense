@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Outlet, ScrollRestoration, createBrowserRouter, useLocation, type RouteObject } from "react-router";
+import { SimulationStrip } from "@/components/layout/SimulationStrip";
+import { SIMULATION } from "./config";
 import { PATHS } from "./paths";
 
 function Root() {
@@ -17,6 +19,7 @@ function Root() {
         <Outlet />
       </div>
       <ScrollRestoration />
+      {SIMULATION && <SimulationStrip />}
     </QueryClientProvider>
   );
 }
