@@ -14,7 +14,15 @@ initLightMode();
  * la aplicación: en un teléfono lento, lo que la persona vino a ver no espera al JavaScript ni comparte con él la
  * conexión. Lo que se escriba en un campo antes de que arranque la aplicación no se pierde (lib/firstLoad.ts, `rememberTyped`).
  */
-const start = () => void import("./main");
+const start = () => {
+  // Respuestas simuladas (HU-013). Es la misma condición que `SIMULATION` de app/config.ts, pero escrita aquí: así el
+  // empaquetador la ve falsa y quita MSW del build. Importada de config.ts no la quita (se probó con `npm run build`).
+  if (import.meta.env.VITE_SIMULATION === "true" && import.meta.env.DEV) {
+    void import("@/mocks/browser").then(({ startSimulation }) => startSimulation()).then(() => import("./main"));
+    return;
+  }
+  void import("./main");
+};
 
 /** Corre `run` cuando el navegador ya pintó el contenido; de inmediato si no hay cómo saberlo o la pestaña no se ve. */
 function afterFirstPaint(run: () => void) {

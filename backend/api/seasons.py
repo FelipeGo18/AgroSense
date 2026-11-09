@@ -27,9 +27,9 @@ from backend.api.auth import current_user, require_accounts
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain, request_id_of
 from backend.api.lots import _area, _own_lot
+from backend.api.season_stage import dataset_or_none, stage_fields, today
 from backend.dataset import Dataset
 from backend.db.session import get_db
-from backend.engine.stages import stage_today
 
 router = APIRouter(prefix="/api/v1", tags=["finca"], dependencies=[Depends(require_accounts)], responses=calc_examples.responses(401, 422))
 
@@ -99,27 +99,10 @@ class SeasonOut(BaseModel):
     harvest_due: bool | None = None
 
 
-def _today() -> date:
-    return datetime.now(UTC).date()
-
-
-def season_out(season: Season, dataset: Dataset | None, today: date | None = None) -> SeasonOut:
+def season_out(season: Season, dataset: Dataset | None, on: date | None = None) -> SeasonOut:
     data = {field: getattr(season, field) for field in SeasonOut.model_fields if hasattr(season, field)}
     data |= {"area_ha": _area(season.area_ha), "follows_season_ids": list(season.follows_season_ids or [])}
-    if season.harvest_date is None and dataset is not None and season.crop_id in dataset.stages:
-        state = stage_today(dataset.stages[season.crop_id], season.sowing_date, today or _today())
-        data |= {
-            "stage": state.stage,
-            "stage_progress_pct": state.stage_progress_pct,
-            "stage_method": state.stage_method,
-            "days_since_sowing": state.days_since_sowing,
-            "harvest_estimate": state.harvest_estimate,
-            "harvest_basis": "calendar",
-            "harvest_due": state.harvest_due,
-        }
-    elif season.harvest_date is None:
-        data["days_since_sowing"] = max(((today or _today()) - season.sowing_date).days, 0)
-    return SeasonOut(**data)
+    return SeasonOut(**data | stage_fields(season, dataset, on or today()))
 
 
 def _invalid(message: str, why: str, code: str = "invalid_input") -> ApiError:
@@ -153,12 +136,12 @@ def _check_crop(dataset: Dataset, crop_id: str) -> None:
 
 
 def _check_dates(sowing: date, harvest: date | None) -> None:
-    today = _today()
-    if sowing > today:
+    now = today()
+    if sowing > now:
         raise _invalid("La fecha de siembra no puede ser posterior a hoy: registre lo que ya sembró.", "siembra en el futuro")
     if harvest is not None and harvest < sowing:
         raise _invalid("La cosecha no puede ser antes de la siembra.", "cosecha antes de la siembra")
-    if harvest is not None and harvest > today:
+    if harvest is not None and harvest > now:
         raise _invalid("La fecha de cosecha no puede ser posterior a hoy.", "cosecha en el futuro")
 
 
@@ -199,9 +182,10 @@ def list_seasons(
     request: Request,
     user: User = Depends(current_user),
     db: Db = Depends(get_db),
-    dataset: Dataset = Depends(require_dataset),
+    dataset: Dataset | None = Depends(dataset_or_none),
 ) -> list[SeasonOut]:
-    """El historial del lote: las temporadas sin borrar, de la siembra más reciente a la más antigua."""
+    """El historial del lote: las temporadas sin borrar, de la siembra más reciente a la más antigua. Solo lee: sin
+    dataset se ve igual, con la etapa nula (R1), como en el detalle del lote."""
     lot = _own_lot(db, user, lot_id)
     seasons = db.scalars(
         select(Season)

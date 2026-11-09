@@ -81,7 +81,7 @@ Sin el perfil `market` no arranca: en desarrollo no se usa la red y la API sirve
   `X-Forwarded-For`; si no, todas las personas parecen una sola conexión y se bloquean juntas.
 - Borrar la cuenta (`DELETE /me`) pide la contraseña.
 - Un bloqueo por intentos deja un solo evento `denied` en la actividad por ventana de 15 minutos, no uno por petición.
-- Los eventos de más de 180 días se borran al arrancar la API y en cada inicio de sesión correcto.
+- Los eventos de más de 180 días y las sesiones vencidas los borra el mantenimiento de las cuentas: corre al arrancar la API y se puede programar una vez al día con `uv run python -m backend.accounts.maintenance`. Ningún endpoint limpia: cada uno hace solo lo suyo.
 - Las copias de `backups/` quedan solo para el dueño (carpeta 700 y archivos 600; en Windows valen los permisos de su carpeta).
 - El log nunca repite una dirección que no existe en la API (`route=[sin ruta]`) y escribe los caracteres de control
   como `\x1b`. Las trazas de errores de base de datos no llevan los valores de la consulta.

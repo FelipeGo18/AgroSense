@@ -11,12 +11,13 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import sessionmaker
 from structlog.testing import capture_logs
 
-from backend.accounts import security
+from backend.accounts import maintenance, security
 from backend.accounts.limits import FAILED_PER_IP_AND_USER, LIMITER, LOGIN_PER_IP, REGISTER_PER_IP, Limiter
-from backend.accounts.models import LoginAttempt, User
+from backend.accounts.models import LoginAttempt, Session, User
 from backend.accounts.security import MAX_ATTEMPTS, clear_attempts, take_attempt
 from backend.accounts.trace_models import ActivityEvent
 from backend.api import main
+from backend.api.auth import SESSION_COOKIE
 from backend.config.settings import Settings, get_settings
 from backend.db import migrate
 from backend.db.session import get_engine
@@ -256,6 +257,49 @@ def test_al_arrancar_se_borra_la_actividad_de_mas_de_180_dias(client, db, engine
     # Lo de menos de 180 días se queda.
     assert db.scalar(select(func.count()).select_from(ActivityEvent)) == 2
     assert [entry["purged"] for entry in logs if entry["event"] == "activity_purged"] == [1]
+
+
+def test_al_arrancar_se_borran_las_sesiones_vencidas(client, db, database_url):
+    client.post("/api/v1/auth/register", json=ROSA)
+    client.post("/api/v1/auth/logout")
+    client.post("/api/v1/auth/login", json=LOGIN)
+    # Dos sesiones (la de salir ya se borró; queda la de antes en otra conexión): vence la que no es la de ahora.
+    current = security.hash_token(client.cookies[SESSION_COOKIE])
+    db.add(Session(user_id=db.scalar(select(User.user_id)), token_hash="vieja", expires_at=datetime.now(UTC) - timedelta(seconds=1)))
+    db.commit()
+    assert db.scalar(select(func.count()).select_from(Session).where(Session.token_hash != current)) == 1
+    with capture_logs() as logs:
+        migrate.on_startup(database_url, alembic_config(database_url))
+    db.expire_all()
+    assert db.scalar(select(func.count()).select_from(Session)) == 1
+    assert client.get("/api/v1/me").status_code == 200
+    assert [entry["purged"] for entry in logs if entry["event"] == "sessions_purged"] == [1]
+
+
+def test_entrar_solo_inicia_sesion_y_no_limpia(client, db):
+    """Cada endpoint hace solo lo suyo: lo vencido lo borra el mantenimiento, no el inicio de sesión."""
+    client.post("/api/v1/auth/register", json=ROSA)
+    db.execute(update(Session).values(expires_at=datetime.now(UTC) - timedelta(seconds=1)))
+    db.execute(
+        update(ActivityEvent).where(ActivityEvent.action == "auth.registered").values(occurred_at=datetime.now(UTC) - timedelta(days=181))
+    )
+    db.commit()
+    assert client.post("/api/v1/auth/login", json=LOGIN).status_code == 200
+    db.expire_all()
+    assert db.scalar(select(func.count()).select_from(Session)) == 2
+    assert db.scalar(select(func.count()).select_from(ActivityEvent).where(ActivityEvent.action == "auth.registered")) == 1
+
+
+def test_el_mantenimiento_dice_cuanto_borro(client, db):
+    client.post("/api/v1/auth/register", json=ROSA)
+    db.execute(update(Session).values(expires_at=datetime.now(UTC) - timedelta(seconds=1)))
+    db.execute(
+        update(ActivityEvent).where(ActivityEvent.action == "auth.registered").values(occurred_at=datetime.now(UTC) - timedelta(days=181))
+    )
+    db.commit()
+    assert maintenance.run(db) == maintenance.Cleaned(sessions=1, events=1)
+    db.commit()
+    assert maintenance.run(db) == maintenance.Cleaned(sessions=0, events=0)
 
 
 # ---------- Mi actividad: páginas sin huecos ----------

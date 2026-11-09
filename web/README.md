@@ -31,8 +31,16 @@ Copie `.env.example` como `.env`. Las variables `VITE_*` quedan a la vista en el
 | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `VITE_SOCIAL_GITHUB`, `VITE_SOCIAL_INSTAGRAM`, `VITE_SOCIAL_LINKEDIN`, `VITE_SOCIAL_YOUTUBE` | Redes del pie de página. Una red sin dirección no se dibuja                                                                            |
 | `VITE_MUSIC_URL`                                                                             | Archivo de la música de fondo (por ejemplo `/audio/tema.mp3`, puesto en `public/audio/`). Vacío: suena una melodía generada por la web |
+| `VITE_SIMULATION`                                                                            | `true` en `npm run dev`: respuestas simuladas, sin el motor (ver «Respuestas simuladas»). Nunca en producción                          |
 
 Se leen en un solo lugar, `src/app/config.ts`. Ninguna dirección externa se escribe en el código.
+
+## Respuestas simuladas (HU-013)
+
+Con `VITE_SIMULATION=true` en `.env`, `npm run dev` responde con ejemplos el diagnóstico, las estrategias, el plan de agua, «Qué cambió», las tendencias, el suelo y los catálogos (`src/mocks/`). Una franja al pie lo rotula como ejemplo (R5). Las cuentas, los lotes y las temporadas siguen yendo a la API real. El build no incluye MSW.
+
+- **Forzar un estado:** `?estado=` en la dirección de la página. Vale el nombre del ejemplo (`no_apto`, `sin_agua`, `no_aplica`) o el del contrato (`not_suitable`, `insufficient_data`, `not_applicable`); un error de la ruta por su número o su código (`503`, `dataset_unavailable`, `unauthorized`…); y en cualquier ruta `cargando` (no responde nunca) o `sin_conexion`. Un estado que la ruta no tiene responde el de siempre y lo avisa en la consola. La lista está en `SIMULATION_STATES` (`src/mocks/handlers.ts`).
+- **De dónde salen:** de los ejemplos del OpenAPI (`backend/api/calc_examples.py`). Con la API arriba, `npm run api:examples` regenera `src/mocks/examples.json`; nunca se edita a mano.
 
 ## Carpetas
 
@@ -57,7 +65,7 @@ src/
 
 Carpetas que se crean cuando haga falta su primera pieza, no antes:
 
-- `src/api/`: el cliente (`client.ts`) y los tipos del contrato (`schema.d.ts`), que se generan con `npm run api:types` con la API arriba; nunca se escriben a mano. Faltan las respuestas simuladas de MSW (HU-013).
+- `src/api/`: el cliente (`client.ts`) y los tipos del contrato (`schema.d.ts`), que se generan con `npm run api:types` con la API arriba; nunca se escriben a mano.
 - `src/features/<dominio>/` (`auth` ya existe; `lots`, `strategies`… cuando lleguen): lo que es de un solo dominio y lo usan varias páginas: sus hooks de datos, su estado y sus componentes.
 
 Para entrar y crear cuenta hace falta la API: `docker compose up app` en la raíz. Vite le pasa lo que llegue a `/api`, así la web y la API comparten origen. La web debe abrirse en `http://localhost:5173` (el origen que la API acepta, `WEB_ORIGINS`).
