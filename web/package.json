@@ -15,7 +15,8 @@
     "test:scroll": "node e2e/scroll-stress.mjs",
     "perf": "node e2e/perf.mjs",
     "test:responsive": "node e2e/responsive-check.mjs",
-    "api:types": "npx --yes openapi-typescript@7.13.0 http://127.0.0.1:8000/api/openapi.json -o src/api/schema.d.ts"
+    "api:types": "npx --yes openapi-typescript@7.13.0 http://127.0.0.1:8000/api/openapi.json -o src/api/schema.d.ts",
+    "api:examples": "node scripts/api-examples.mjs"
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "5.3.0",
@@ -48,6 +49,7 @@
     "globals": "17.12.0",
     "jsdom": "30.1.1",
     "lighthouse": "12.8.2",
+    "msw": "3.0.3",
     "playwright-core": "1.63.0",
     "prettier": "3.9.9",
     "prettier-plugin-tailwindcss": "0.8.1",
