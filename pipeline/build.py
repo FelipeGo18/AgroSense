@@ -12,7 +12,7 @@ También se valida el mapeo de los productos de SIPSA a los cultivos (`sipsa_cro
 se publican. Al terminar, lo publicado se revisa contra su manifiesto (HU-123).
 
 Cada paso deja una línea en la terminal con la fuente, las filas leídas y las descartadas con su motivo (HU-177). Usa la
-misma configuración de logs que la API (`backend/config/logging.py`): nivel y formato con `AGROSENSE_LOG_LEVEL` y
+misma configuración de logs que la API (`common/logging.py`): nivel y formato con `AGROSENSE_LOG_LEVEL` y
 `AGROSENSE_LOG_FORMAT`, sin depender de la base de datos.
 """
 
@@ -30,7 +30,7 @@ import polars as pl
 import shapely
 import yaml
 
-from backend.config.logging import configure, get_logger
+from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
 from pipeline import schema
 from pipeline.sources import dane, dane_mgn, sipsa

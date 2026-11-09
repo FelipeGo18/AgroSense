@@ -17,10 +17,10 @@ from backend.accounts.models import LoginAttempt, User
 from backend.accounts.security import MAX_ATTEMPTS, clear_attempts, take_attempt
 from backend.accounts.trace_models import ActivityEvent
 from backend.api import main
-from backend.config.logging import escape_control
 from backend.config.settings import Settings, get_settings
 from backend.db import migrate
 from backend.db.session import get_engine
+from common.logging import escape_control
 from tests.conftest import alembic_config
 
 ROSA = {"username": "rosa.samaca", "password": "papa-criolla-2026", "display_name": "Rosa", "consent_version": 3, "consent_accepted": True}

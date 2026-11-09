@@ -80,6 +80,7 @@ AgroSense/
 │   ├── accounts/            # M8: usuarios, lotes, temporadas (PostgreSQL)
 │   ├── conditions/          # M9: condiciones actuales con caché
 │   └── config/              # thresholds.yaml, weights.yaml (versionados)
+├── common/                  # lo que comparten backend y pipeline sin importarse: logs (common/logging.py)
 ├── web/                     # W1–W10: React + Vite; src/api con tipos generados
 ├── data/
 │   ├── raw/                 # caché de descargas (fuera de git)

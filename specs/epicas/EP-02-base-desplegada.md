@@ -38,7 +38,7 @@ estado: pendiente
 - **Historia:** Como equipo, queremos logs claros en la terminal del backend y del pipeline, para saber qué pasa en el servidor y diagnosticar un fallo durante la demo.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [x] `structlog` configurado una vez y usado por la API, el pipeline y los avisos de Uvicorn (el log de acceso propio de Uvicorn se apaga): `backend/config/logging.py`, también para las migraciones y, desde el 8 de noviembre de 2026, para `pipeline.build`, que lee solo `AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT` (no necesita la base de datos)
+  - [x] `structlog` configurado una vez y usado por la API, el pipeline y los avisos de Uvicorn (el log de acceso propio de Uvicorn se apaga): `common/logging.py` (antes `backend/config/logging.py`; se movió el 9 de noviembre de 2026 para que el pipeline no importe el backend), también para las migraciones y, desde el 8 de noviembre de 2026, para `pipeline.build`, que lee solo `AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT` (no necesita la base de datos)
   - [x] En desarrollo, líneas legibles con color; en producción, una línea JSON por evento a la salida estándar (Docker la recoge). Sin archivos de log
   - [x] Cada petición deja una línea con los campos de «Logs de la terminal» del contrato; el `request_id` sale en la cabecera `X-Request-ID`
   - [x] Niveles: `DEBUG` solo en desarrollo; `INFO` por defecto; `WARNING` para todo lo rechazado (`400` a `499`) y `503`; `ERROR` para `500`, con la traza del error

@@ -40,6 +40,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
 COPY alembic.ini ./
+COPY common ./common
 COPY backend ./backend
 COPY pipeline ./pipeline
 # El catálogo agronómico con fuentes (EP-06): el pipeline lo valida y lo publica.

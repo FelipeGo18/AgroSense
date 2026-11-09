@@ -26,10 +26,10 @@ from backend.accounts.security import (
 )
 from backend.api import calc_examples
 from backend.api.errors import ACCOUNTS_UNAVAILABLE, ApiError, explain, request_id_of
-from backend.config.logging import get_logger
 from backend.config.settings import Settings, get_settings
 from backend.db.session import get_db
 from backend.db.state import accounts_state
+from common.logging import get_logger
 
 log = get_logger("agrosense.api")
 
