@@ -259,9 +259,8 @@ def current_session(request: Request, db: Db = Depends(get_db)) -> Session:
     token = request.cookies.get(SESSION_COOKIE)
     session = db.scalar(select(Session).where(Session.token_hash == hash_token(token))) if token else None
     why = "no trae cookie de sesión" if not token else "la sesión no existe o ya fue cerrada"
+    # Solo se lee: una sesión vencida no sirve, pero no se borra aquí (un GET no escribe). La borra el mantenimiento.
     if session is not None and session.expires_at <= _now():
-        db.delete(session)
-        db.commit()
         session, why = None, "la sesión venció (duran 30 días)"
     if session is not None and session.user.blocked_at is not None:
         session, why = None, "la cuenta está bloqueada"
