@@ -36,10 +36,13 @@ Los tipos de la web salen de este OpenAPI: con la API arriba y `AGROSENSE_API_DO
 
 ## Precios de SIPSA al día (HU-222)
 
-La API **no baja nada**: lee la última versión de precios de `AGROSENSE_MARKET_DIR` (por defecto `data/market`, en el
-volumen `market_data`) y vuelve a mirar `current.json` como mucho cada minuto, sin reiniciarse. Si no hay una versión al
-menos tan nueva como el dataset publicado, sirve el publicado. Cada respuesta de `/market/*` dice su `version`, su
-`updated_at`, la fuente del último día y la cita del DANE (R4, R8).
+La API **no baja nada ni calcula precios**: las rutas `GET /market/*` solo filtran por central o por producto y
+devuelven. El último precio, el de hace una semana, el cambio y el orden vienen hechos en `market_price_latest`, que
+escriben el pipeline y cada actualización. Qué versión se sirve lo decide el acceso a los datos, la dependencia
+`market_tables` (`backend/market/store.py`): lee la última versión de `AGROSENSE_MARKET_DIR` (por defecto `data/market`,
+en el volumen `market_data`) y vuelve a mirar `current.json` como mucho cada minuto, sin reiniciarse. Si no hay una
+versión al menos tan nueva como el dataset publicado, sirve el publicado. Cada respuesta de `/market/*` dice su
+`version`, su `updated_at`, la fuente del último día y su cita, que sale de la columna `citation` de `sources` (R4, R8).
 
 Las versiones las escribe el servicio `market` de Docker Compose con dos crons (supercronic, hora de Bogotá, horarios del
 `.env`), en `backend/market/updates.py`:
@@ -51,6 +54,10 @@ Las versiones las escribe el servicio `market` de Docker Compose con dos crons (
 
 Las descargas cortan por tiempo total y por tamaño (`AGROSENSE_MARKET_TIMEOUT_S`, `AGROSENSE_MARKET_MAX_MB`). Si algo falla,
 se sigue sirviendo la última versión buena y el log dice por qué. La temporada no se recalcula aquí: sale del dataset.
+
+El servicio `market` **no usa la base de datos**: lee su configuración de `pipeline/settings.py`, no de
+`backend/config/settings.py`, y no recibe las variables `POSTGRES_*`. Un candado (`data/market/.lock`) evita dos
+actualizaciones a la vez; no se borra al arrancar: si un proceso murió con él puesto, se da por muerto a las 6 horas.
 
 ```bash
 docker compose --profile market up -d market                                      # encender los crons
