@@ -17,6 +17,9 @@ const SOCIAL_ENV: { brand: Brand; label: string; key: string }[] = [
   { brand: "youtube", label: "YouTube", key: "VITE_SOCIAL_YOUTUBE" },
 ];
 
+/** Respuestas simuladas activas (HU-013): solo en `npm run dev` con `VITE_SIMULATION=true`. */
+export const SIMULATION = import.meta.env.VITE_SIMULATION === "true" && import.meta.env.DEV;
+
 /** Redes del equipo que tienen dirección. Una red sin dirección no aparece: no se dibuja un enlace sin destino. */
 export const SOCIAL_LINKS = SOCIAL_ENV.flatMap(({ brand, label, key }) => {
   const href = env(key);
