@@ -2,7 +2,7 @@
 
 | Riesgo | Efecto | Mitigación |
 |---|---|---|
-| Los términos de 2026 o el evento local limitan lo preparado antes | La fase 0 solo puede incluir investigación, diseño y assets; el P0 no cabe completo | HU-004; plan con los dos casos en `docs/plan-48h.md`; versión 2D primero y orden de recorte |
+| Los términos de 2026 o el evento local limitan lo preparado antes | La fase 0 solo puede incluir investigación, diseño y assets; el P0 no cabe completo | HU-004; plan con los dos casos en `docs/plan-48h.md`; versión 2D primero y orden de recorte. **Resuelto el 8 de noviembre de 2026: sí se puede llevar código preparado** |
 | El enunciado del 28 de octubre recomienda productos NASA que no están en el MVP | Hay que sumar ingesta a última hora | Un adaptador por producto (D1, decisión 12): el nuevo entra con sus tablas y `sources.yaml`, sin tocar el motor; HU-002 lista cada uno con su HU |
 | No hay acceso a NASA Earthdata a tiempo (cuenta, permisos o caída del servicio) | IMERG, NASADEM, MODIS y SMAP no se pueden descargar; `water` queda con POWER y la altitud sin fuente | Crear la cuenta y hacer una descarga de prueba de cada producto en la fase 0; caché de lo descargado para reconstruir sin red (HU-123); credenciales en variables de entorno; si un producto falta, su señal o indicador es `insufficient_data` y se dice (R1) |
 | Las descargas de IMERG y de MODIS son muy grandes | No caben en el tiempo del evento o en el disco; el pipeline no termina | Descargar solo el recuadro de la región y el producto mensual o diario que baste; medir el tamaño en la fase 0 (HU-207, HU-208); descargar antes del evento si HU-004 lo permite; NDVI por lote es recortable |
