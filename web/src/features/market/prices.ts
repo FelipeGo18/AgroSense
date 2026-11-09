@@ -7,15 +7,18 @@ export type ProductHistory = Schemas["ProductHistory"];
 export type Price = Schemas["Price"];
 export type Season = Schemas["Season"];
 
+/** Una hora: los precios cambian una vez al día, y la API mira si hay una versión nueva cada minuto. */
+const FRESH_FOR = 60 * 60 * 1000;
+
 /**
- * Los precios cambian solo con un dataset nuevo (el pipeline los publica): se piden una vez por central. Sin
- * `marketId`, la API responde la primera central (Corabastos).
+ * Los precios cambian de lunes a viernes, con el boletín del DANE (HU-222): una pestaña abierta de un día para otro los
+ * vuelve a pedir cuando pasan `FRESH_FOR`. Sin `marketId`, la API responde la primera central (Corabastos).
  */
 export function useMarketPrices(marketId: string | null) {
   return useQuery({
     queryKey: ["market", "prices", marketId],
     queryFn: () => api<MarketPrices>(`/market/prices${marketId ? `?market_id=${encodeURIComponent(marketId)}` : ""}`),
-    staleTime: Infinity,
+    staleTime: FRESH_FOR,
     retry: false,
   });
 }
@@ -28,7 +31,7 @@ export function useProductHistory(productId: string | null, marketId: string | n
         `/market/prices/${encodeURIComponent(productId!)}${marketId ? `?market_id=${encodeURIComponent(marketId)}` : ""}`,
       ),
     enabled: productId !== null,
-    staleTime: Infinity,
+    staleTime: FRESH_FOR,
     retry: false,
   });
 }
