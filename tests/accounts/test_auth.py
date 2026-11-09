@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 
 from backend.accounts.models import Session, User
 from backend.accounts.security import hash_token
@@ -150,7 +150,10 @@ def test_una_sesion_vencida_no_sirve(client, db):
     db.execute(update(Session).values(expires_at=datetime.now(UTC) - timedelta(seconds=1)))
     db.commit()
     assert client.get("/api/v1/me").status_code == 401
-    assert db.scalar(select(Session)) is None
+    # Rechazarla no escribe: la sesión sigue en la tabla hasta el mantenimiento, y sigue sin servir.
+    db.expire_all()
+    assert db.scalar(select(func.count()).select_from(Session)) == 1
+    assert client.get("/api/v1/me").status_code == 401
 
 
 def test_sin_sesion_los_endpoints_de_cuenta_responden_401(client):

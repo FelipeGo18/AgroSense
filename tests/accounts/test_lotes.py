@@ -201,6 +201,43 @@ def test_el_detalle_trae_las_temporadas_en_curso_y_el_suelo_nulo(rosa, db):
     assert rosa.get("/api/v1/lots").json()[0]["current_crop_ids"] == ["papa", "arveja"]
 
 
+def test_la_lista_de_lotes_no_hace_una_consulta_por_lote(rosa, db, engine):
+    """Con un lote o con cinco, las mismas consultas: los cultivos en curso salen de una sola (no N+1)."""
+    from sqlalchemy import event
+
+    def count_queries() -> tuple[int, list]:
+        statements = []
+
+        def note(*_args):
+            statements.append(1)
+
+        event.listen(engine, "before_cursor_execute", note)
+        try:
+            body = rosa.get("/api/v1/lots").json()
+        finally:
+            event.remove(engine, "before_cursor_execute", note)
+        return len(statements), body
+
+    sown = date.today() - timedelta(days=10)
+    first = uuid.UUID(create(rosa, name="Lote 1").json()["lot_id"])
+    db.add_all(
+        [
+            Season(lot_id=first, crop_id="arveja", area_ha=Decimal("0.5"), sowing_date=sown),
+            Season(lot_id=first, crop_id="papa", area_ha=Decimal("1.5"), sowing_date=sown),
+        ]
+    )
+    db.commit()
+    with_one, _ = count_queries()
+    for n in range(2, 6):
+        lot_id = uuid.UUID(create(rosa, name=f"Lote {n}").json()["lot_id"])
+        db.add(Season(lot_id=lot_id, crop_id="haba", area_ha=Decimal("1"), sowing_date=sown))
+    db.commit()
+    with_five, body = count_queries()
+    assert with_five == with_one
+    # Cada lote con sus cultivos en curso, de mayor a menor área.
+    assert [lot["current_crop_ids"] for lot in body] == [["papa", "arveja"], ["haba"], ["haba"], ["haba"], ["haba"]]
+
+
 def test_editar_el_nombre_el_area_y_el_riego(rosa, db):
     lot = create(rosa).json()
     response = rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"name": "El Alto de abajo", "area_ha": 3.25, "irrigated": None})
@@ -244,3 +281,27 @@ def test_sin_dataset_no_se_puede_crear_un_lote(client):
     client.post("/api/v1/auth/register", json=ROSA)
     response = create(client)
     assert response.status_code == 503 and response.json()["error"]["code"] == "dataset_unavailable"
+
+
+def test_sin_dataset_el_lote_y_su_historial_se_leen_igual_con_la_etapa_nula(rosa, db, monkeypatch, tmp_path):
+    """Los GET solo leen lo guardado: sin datos publicados no fallan; la etapa de hoy va nula (R1), igual en los dos."""
+    from backend.config.settings import get_settings
+
+    lot = create(rosa).json()
+    sown = date.today() - timedelta(days=30)
+    db.add(Season(lot_id=uuid.UUID(lot["lot_id"]), crop_id="papa", area_ha=Decimal("1"), sowing_date=sown))
+    db.commit()
+    with_data = rosa.get(f"/api/v1/lots/{lot['lot_id']}").json()["current_seasons"][0]
+    history = rosa.get(f"/api/v1/lots/{lot['lot_id']}/seasons").json()[0]
+    # Con datos, el detalle y el historial dicen lo mismo de la etapa de hoy.
+    shared = set(with_data) & set(history)
+    assert shared >= {"stage", "stage_progress_pct", "days_since_sowing", "harvest_estimate", "harvest_due"}
+    assert {k: history[k] for k in shared} == {k: with_data[k] for k in shared}
+
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(tmp_path / "no-hay"))
+    get_settings.cache_clear()
+    detail = rosa.get(f"/api/v1/lots/{lot['lot_id']}")
+    history = rosa.get(f"/api/v1/lots/{lot['lot_id']}/seasons")
+    assert detail.status_code == 200 and history.status_code == 200
+    for season in (detail.json()["current_seasons"][0], history.json()[0]):
+        assert (season["stage"], season["harvest_estimate"], season["harvest_basis"], season["days_since_sowing"]) == (None, None, None, 30)

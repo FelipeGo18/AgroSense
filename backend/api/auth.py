@@ -259,9 +259,8 @@ def current_session(request: Request, db: Db = Depends(get_db)) -> Session:
     token = request.cookies.get(SESSION_COOKIE)
     session = db.scalar(select(Session).where(Session.token_hash == hash_token(token))) if token else None
     why = "no trae cookie de sesión" if not token else "la sesión no existe o ya fue cerrada"
+    # Solo se lee: una sesión vencida no sirve, pero no se borra aquí (un GET no escribe). La borra el mantenimiento.
     if session is not None and session.expires_at <= _now():
-        db.delete(session)
-        db.commit()
         session, why = None, "la sesión venció (duran 30 días)"
     if session is not None and session.user.blocked_at is not None:
         session, why = None, "la cuenta está bloqueada"
@@ -348,9 +347,8 @@ def login(
         activity.record_rejected(db, "auth.login_failed", request_id=request_id, actor=user, outcome="denied")
         raise ApiError(403, "account_blocked", "Esta cuenta está bloqueada.", log="Inicio de sesión rechazado: la cuenta está bloqueada")
     check.succeeded()
-    # De paso se limpia lo vencido: sesiones de este usuario y eventos de más de 180 días.
-    db.execute(delete(Session).where(Session.user_id == user.user_id, Session.expires_at <= _now()))
-    activity.purge_old(db)
+    # Solo inicia sesión. Lo vencido (sesiones y actividad de más de 180 días) lo borra el mantenimiento de las cuentas
+    # (`backend/accounts/maintenance.py`), nunca una petición.
     session = _open_session(db, user, response, settings)
     activity.record(db, "auth.login", request_id=request_id, actor=user, object_type="session", object_id=session.session_id)
     db.commit()

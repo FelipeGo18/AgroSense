@@ -260,7 +260,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Lot */
+        /**
+         * Get Lot
+         * @description El lote con sus temporadas en curso y la etapa de hoy de cada una. Solo lee: sin dataset se ve igual, con la
+         *     etapa nula (R1).
+         */
         get: operations["get_lot_api_v1_lots__lot_id__get"];
         put?: never;
         post?: never;
@@ -288,7 +292,8 @@ export interface paths {
         };
         /**
          * List Seasons
-         * @description El historial del lote: las temporadas sin borrar, de la siembra más reciente a la más antigua.
+         * @description El historial del lote: las temporadas sin borrar, de la siembra más reciente a la más antigua. Solo lee: sin
+         *     dataset se ve igual, con la etapa nula (R1), como en el detalle del lote.
          */
         get: operations["list_seasons_api_v1_lots__lot_id__seasons_get"];
         put?: never;
