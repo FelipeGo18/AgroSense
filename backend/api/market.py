@@ -1,7 +1,8 @@
 """Precios mayoristas de las centrales de abastos: `/api/v1/market/*` (HU-221; specs/02-contratos.md, «Endpoints»).
 
-Lee las tablas `market_price_day` y `market_price_season` del dataset publicado (SIPSA del DANE). Es lo que pasó en la
-central: nunca un pronóstico de precio (decisión 4). No usa la base de datos ni guarda nada (R9).
+Lee `market_price_day` de la última versión que dejaron las actualizaciones (HU-222, `backend/market/`) o, si no hay
+una más nueva, del dataset publicado; la temporada (`market_price_season`) sale siempre del dataset publicado. Es lo que
+pasó en la central: nunca un pronóstico de precio (decisión 4). No baja nada, no usa la base de datos ni guarda nada (R9).
 """
 
 from dataclasses import dataclass
@@ -11,10 +12,12 @@ import polars as pl
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 
-from backend import market_updates
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
+from backend.config.settings import get_settings
 from backend.dataset import Dataset
+from backend.market.store import served
+from pipeline.sources.sipsa import CITATION
 
 router = APIRouter(prefix="/api/v1/market", tags=["precios"])
 
@@ -63,7 +66,10 @@ class MarketPrices(BaseModel):
     # El último día con precios en esta central.
     date: date
     products: list[ProductPrice]
+    # La fuente del último día (`dane_sipsa` o, entre descargas del servicio, `dane_sipsa_boletin`) y la cita textual
+    # que piden los términos del DANE: la web la muestra tal cual.
     source_id: str
+    citation: str
 
 
 class SeasonMonth(BaseModel):
@@ -93,6 +99,7 @@ class ProductHistory(BaseModel):
     # Nulo con menos años completos de los necesarios: no se inventa una temporada (R1).
     season: Season | None
     source_id: str
+    citation: str
 
 
 @dataclass(frozen=True)
@@ -104,11 +111,12 @@ class Tables:
 
 
 def _tables(dataset: Dataset) -> Tables:
-    """Los precios que se sirven: los que la API bajó hoy del DANE (HU-222) si son más nuevos que los publicados."""
-    fresh = market_updates.current()
+    """Los precios que se sirven: la última versión de las actualizaciones (HU-222) si es al menos tan nueva como la
+    publicada; si no, la publicada. La temporada es siempre la publicada."""
+    fresh = served.get(get_settings().market_dir)
     published = dataset.market_prices
     if fresh is not None and (published is None or published.is_empty() or fresh.prices["date"].max() >= published["date"].max()):
-        return Tables(version=fresh.version, updated_at=fresh.updated_at, prices=fresh.prices, season=fresh.season)
+        return Tables(version=fresh.version, updated_at=fresh.updated_at, prices=fresh.prices, season=dataset.market_season)
     if published is None or published.is_empty():
         raise ApiError(503, "market_unavailable", MARKET_UNAVAILABLE, log=f"El dataset {dataset.version} no trae market_price_day")
     return Tables(version=dataset.version, updated_at=None, prices=published, season=dataset.market_season)
@@ -171,7 +179,8 @@ def market_prices(request: Request, market_id: str | None = Query(None), dataset
         markets=markets,
         date=max(p.latest.date for p in products),
         products=products,
-        source_id=rows["source_id"][0],
+        source_id=rows.sort("date")["source_id"][-1],
+        citation=CITATION,
     )
 
 
@@ -212,4 +221,5 @@ def product_history(
         days=[_price(row) for row in days.iter_rows(named=True)],
         season=season,
         source_id=latest["source_id"],
+        citation=CITATION,
     )

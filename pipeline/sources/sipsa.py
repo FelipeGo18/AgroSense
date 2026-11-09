@@ -20,6 +20,9 @@ from typing import IO, Any
 
 import polars as pl
 
+from pipeline.settings import get_settings
+from pipeline.sources.fetch import fetch
+
 SOURCE_ID = "dane_sipsa"
 SERVICE_URL = "https://appweb.dane.gov.co/sipsaWS/SrvSipsaUpraBeanService"
 PAGE_URL = (
@@ -61,18 +64,44 @@ GROUPS = {
 
 
 def download(cache: Path = CACHE) -> Path:
-    """Baja la respuesta completa del servicio a la caché, por partes (pesa unos 300 MB y tarda un par de minutos)."""
-    cache.mkdir(parents=True, exist_ok=True)
+    """Baja la respuesta completa del servicio a la caché, por partes (pesa unos 300 MB y tarda de 2 a 5 minutos).
+
+    Corta por tiempo total y por tamaño (`AGROSENSE_MARKET_TIMEOUT_S`, `AGROSENSE_MARKET_MAX_MB`): una respuesta rara del
+    DANE no llena el disco ni deja la descarga colgada.
+    """
+    settings = get_settings()
     request = urllib.request.Request(  # noqa: S310 - dirección fija del DANE
         SERVICE_URL, data=ENVELOPE.encode(), headers={"Content-Type": "application/soap+xml; charset=utf-8"}
     )
-    partial = cache / f"{ROWS_FILE}.part"
-    with urllib.request.urlopen(request, timeout=600) as response, partial.open("wb") as out:  # noqa: S310
-        while chunk := response.read(1 << 20):
-            out.write(chunk)
-    partial.replace(cache / ROWS_FILE)
+    fetch(request, cache / ROWS_FILE, settings.market_timeout_s, int(settings.market_max_mb * 2**20))
     (cache / META_FILE).write_text(datetime.now(UTC).isoformat(timespec="seconds"), encoding="utf-8")
     return cache / ROWS_FILE
+
+
+class PricesError(ValueError):
+    """Unos precios no cumplen las reglas de `market_price_day`. El mensaje dice qué falla."""
+
+
+def validate(prices: pl.DataFrame, known_sources: set[str]) -> None:
+    """La llave (producto, central, día) no se repite; hay precio medio, y el mínimo y el máximo, si están, lo encierran
+    (R1); cada fila cita una fuente conocida (R8). Se tolera un peso: el DANE redondea el medio («1563» con mínimo y
+    máximo de 1562,5). La usan el pipeline y las actualizaciones de precios (HU-222)."""
+    if prices.is_empty():
+        raise PricesError("`market_price_day` quedó vacía: revise las centrales de region.yaml.")
+    repeated = prices.filter(pl.struct("product_id", "market_id", "date").is_duplicated())
+    if not repeated.is_empty():
+        raise PricesError(f"Precios repetidos para un mismo producto, central y día: {repeated.head(3).to_dicts()}")
+    bad = prices.filter(
+        pl.col("avg_cop_kg").is_null()
+        | (pl.col("avg_cop_kg") <= 0)
+        | (pl.col("min_cop_kg") > pl.col("avg_cop_kg") + 1).fill_null(False)
+        | (pl.col("avg_cop_kg") > pl.col("max_cop_kg") + 1).fill_null(False)
+    )
+    if not bad.is_empty():
+        raise PricesError(f"Precios sin promedio o con el medio fuera del mínimo y el máximo: {bad.head(3).to_dicts()}")
+    unknown = set(prices["source_id"].unique().to_list()) - known_sources
+    if unknown:
+        raise PricesError(f"Precios con una fuente que no está en `sources`: {sorted(unknown)}")
 
 
 def product_id(name: str) -> str:
