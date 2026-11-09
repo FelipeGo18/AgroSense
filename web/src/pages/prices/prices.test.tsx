@@ -21,6 +21,7 @@ const CORABASTOS: MarketPrices = {
   markets: MARKETS,
   date: "2026-10-19",
   source_id: "dane_sipsa",
+  citation: "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co",
   products: [
     {
       product_id: "papa-negra",
@@ -61,6 +62,7 @@ const PAPA: ProductHistory = {
     months: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, seasonal_index: i === 8 ? 0.77 : i === 4 ? 1.18 : 1 })),
   },
   source_id: "dane_sipsa",
+  citation: "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co",
 };
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -92,12 +94,14 @@ describe("Precios en la central de abastos (HU-221)", () => {
     open();
     expect(await screen.findByRole("heading", { level: 1, name: "¿A cuánto se paga en la central?" })).toBeInTheDocument();
     expect(await screen.findByText(/Precios del 19 de octubre de 2026 en Corabastos \(Bogotá\)/)).toBeInTheDocument();
-    // La cita textual que piden los términos del DANE (HU-221).
+    // La cita textual que piden los términos del DANE (HU-221), tal como la manda la API.
     expect(
       screen.getByText(/Fuente: Departamento Administrativo Nacional de Estadística: www\.dane\.gov\.co\. Datos de SIPSA/),
     ).toBeInTheDocument();
-    // Los precios se bajan del DANE cada día (HU-222): la pantalla dice cuándo, en la hora de Colombia.
-    expect(screen.getByText(/Actualizados del DANE el 21 de octubre(,| a las) 3:05 p\.\s?m\.; se actualizan cada día/)).toBeInTheDocument();
+    // Los precios se actualizan con el boletín del DANE (HU-222): la pantalla dice cuándo, en la hora de Colombia.
+    expect(
+      screen.getByText(/Actualizados del DANE el 21 de octubre(,| a las) 3:05 p\.\s?m\.; se actualizan de lunes a viernes/),
+    ).toBeInTheDocument();
     const tubers = screen.getByRole("heading", { level: 2, name: "Tubérculos, raíces y plátanos" }).closest("section")!;
     const papa = within(tubers).getByRole("link", { name: /Papa negra/ });
     expect(papa).toHaveTextContent(/2\.925/);

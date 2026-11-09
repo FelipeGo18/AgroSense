@@ -22,15 +22,15 @@ import {
   type Price,
   type ProductPrice,
 } from "@/features/market/prices";
-import { Eyebrow } from "@/pages/farm/common";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { PriceChart, SeasonChart } from "./charts";
 
 /** «Corabastos (Bogotá)» → «Corabastos»: el nombre corto va en el botón y el completo, debajo. */
 const shortName = (name: string) => name.split(" (")[0];
 
 const NOT_FORECAST = "Así se ha movido el precio en la central. No es un pronóstico.";
-// La cita textual que piden los términos del DANE para usar sus datos (HU-221), y después qué datos son.
-const SOURCE = "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co. Datos de SIPSA, precios mayoristas diarios.";
+/** La cita textual que piden los términos del DANE (HU-221) llega de la API tal cual; después, qué datos son. */
+const sourceText = (citation: string) => `${citation}. Datos de SIPSA, precios mayoristas diarios.`;
 
 /**
  * Precios en la central de abastos (HU-221): el último precio por kilo de cada producto en Corabastos o en Tunja, según
@@ -104,8 +104,9 @@ export function PricesPage() {
             </div>
             <p className="mt-4 text-[15px] text-texto-secundario">
               Precios del {formatDay(prices.data.date)} en {prices.data.market.name}.
-              {prices.data.updated_at && ` Actualizados del DANE el ${formatUpdated(prices.data.updated_at)}; se actualizan cada día.`}{" "}
-              {SOURCE}
+              {prices.data.updated_at &&
+                ` Actualizados del DANE el ${formatUpdated(prices.data.updated_at)}; se actualizan de lunes a viernes.`}{" "}
+              {sourceText(prices.data.citation)}
             </p>
 
             <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
@@ -210,7 +211,7 @@ function ProductRow({ product, marketDate, selected, to }: { product: ProductPri
       preventScrollReset
       aria-current={selected ? "true" : undefined}
       className={`flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-2 px-4 py-3 hover:brightness-[0.98] ${
-        selected ? "border-oscuro-oliva bg-[#E9F2D8]" : "border-superficie-borde bg-superficie-panel"
+        selected ? "border-oscuro-oliva bg-oliva-claro" : "border-superficie-borde bg-superficie-panel"
       }`}
     >
       <span className="flex min-w-0 flex-col">
@@ -305,7 +306,7 @@ function ProductDetail({ productId, marketId, onClose }: { productId: string; ma
           <p role="note" className="border-l-8 border-paleta-calabaza bg-superficie-panel-suave px-4 py-3 font-bold">
             {NOT_FORECAST}
           </p>
-          <p className="text-[14px] text-texto-secundario">{SOURCE}</p>
+          <p className="text-[14px] text-texto-secundario">{sourceText(history.data.citation)}</p>
           <Button variant="secondary" className="self-start" onClick={onClose}>
             Ver todos los productos
           </Button>

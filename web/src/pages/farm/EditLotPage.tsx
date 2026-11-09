@@ -25,7 +25,8 @@ import {
 } from "@/features/farm/lots";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { DRAW_STEPS } from "./AddLotPage";
-import { AREA_ERROR, DrawSteps, DrawnArea, Eyebrow, IRRIGATION, IRRIGATION_HINT, NAME_ERROR, OutsideWarning, placeName } from "./common";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { AREA_ERROR, DrawSteps, DrawnArea, IRRIGATION, IRRIGATION_HINT, NAME_ERROR, OutsideWarning, placeName } from "./common";
 
 /**
  * Editar lote (HU-164). Figma: «D1 · Editar lote» y «confirmar borrar». El contorno se corrige moviendo sus puntos en

@@ -13,12 +13,12 @@ import { TextField } from "@/components/ui/TextField";
 import { areaHa, areaM2, formatM2, pointsOutside, type LotPolygon } from "@/features/farm/geo";
 import { byId, formatHa, parseHa, useBoundary, useCreateLot, useLots, useMunicipalities, type Municipality } from "@/features/farm/lots";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import {
   AREA_ERROR,
   AREA_HINT,
   DrawSteps,
   DrawnArea,
-  Eyebrow,
   IRRIGATION,
   IRRIGATION_HINT,
   NAME_ERROR,

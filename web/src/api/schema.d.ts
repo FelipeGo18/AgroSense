@@ -1018,6 +1018,8 @@ export interface components {
             products: components["schemas"]["ProductPrice"][];
             /** Source Id */
             source_id: string;
+            /** Citation */
+            citation: string;
         };
         /** MonthChange */
         MonthChange: {
@@ -1165,6 +1167,8 @@ export interface components {
             season: components["schemas"]["Season"] | null;
             /** Source Id */
             source_id: string;
+            /** Citation */
+            citation: string;
         };
         /** ProductPrice */
         ProductPrice: {
