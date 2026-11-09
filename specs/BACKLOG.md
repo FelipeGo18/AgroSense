@@ -40,9 +40,9 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-189 | Lluvia en años de El Niño y La Niña | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-225 | Tendencia del agua almacenada con GRACE-FO | P1 | M | pendiente | Nueva (8 nov, decisión 14) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-226 | Temperatura de la superficie y evapotranspiración con ECOSTRESS | P1 | M | pendiente | Nueva (8 nov, decisión 14) |
-| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | hecha | `market_month` publicada (7 nov, dataset 2026.11.1). Falta aprobar sus columnas y revisar el mapeo |
-| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-221 | Precios en la central de abastos | P1 | L | hecha | Nueva (20 oct). Falta aprobar el contrato y el diseño |
-| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | hecha | Nueva (20 oct). La API baja SIPSA cada día. Falta aprobar el contrato |
+| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | en curso | `market_month` publicada (7 nov). Faltan aprobar sus columnas y revisar el mapeo |
+| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-221 | Precios en la central de abastos | P1 | L | en curso | Nueva (20 oct). Faltan aprobar el contrato y el diseño |
+| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | en curso | Dos crons del servicio `market` (9 nov): boletín diario y serie completa semanal; la API solo lee. Falta aprobar el contrato |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | en curso | Fichas de los 7 cultivos y el descanso con fuente por valor; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-199 | Límites óptimos y absolutos de cada cultivo | P0 | M | en curso | Rangos de EcoCrop y UPRA con validación; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | en curso | Archivo con pesos provisionales y `GET /version`; falta la propuesta de Producto y agro y su aprobación |
