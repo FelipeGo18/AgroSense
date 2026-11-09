@@ -244,3 +244,27 @@ def test_sin_dataset_no_se_puede_crear_un_lote(client):
     client.post("/api/v1/auth/register", json=ROSA)
     response = create(client)
     assert response.status_code == 503 and response.json()["error"]["code"] == "dataset_unavailable"
+
+
+def test_sin_dataset_el_lote_y_su_historial_se_leen_igual_con_la_etapa_nula(rosa, db, monkeypatch, tmp_path):
+    """Los GET solo leen lo guardado: sin datos publicados no fallan; la etapa de hoy va nula (R1), igual en los dos."""
+    from backend.config.settings import get_settings
+
+    lot = create(rosa).json()
+    sown = date.today() - timedelta(days=30)
+    db.add(Season(lot_id=uuid.UUID(lot["lot_id"]), crop_id="papa", area_ha=Decimal("1"), sowing_date=sown))
+    db.commit()
+    with_data = rosa.get(f"/api/v1/lots/{lot['lot_id']}").json()["current_seasons"][0]
+    history = rosa.get(f"/api/v1/lots/{lot['lot_id']}/seasons").json()[0]
+    # Con datos, el detalle y el historial dicen lo mismo de la etapa de hoy.
+    shared = set(with_data) & set(history)
+    assert shared >= {"stage", "stage_progress_pct", "days_since_sowing", "harvest_estimate", "harvest_due"}
+    assert {k: history[k] for k in shared} == {k: with_data[k] for k in shared}
+
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(tmp_path / "no-hay"))
+    get_settings.cache_clear()
+    detail = rosa.get(f"/api/v1/lots/{lot['lot_id']}")
+    history = rosa.get(f"/api/v1/lots/{lot['lot_id']}/seasons")
+    assert detail.status_code == 200 and history.status_code == 200
+    for season in (detail.json()["current_seasons"][0], history.json()[0]):
+        assert (season["stage"], season["harvest_estimate"], season["harvest_basis"], season["days_since_sowing"]) == (None, None, None, 30)
