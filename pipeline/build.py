@@ -19,6 +19,7 @@ import shapely
 import yaml
 
 from pipeline import catalog as crops_catalog
+from pipeline import schema
 from pipeline.sources import dane, dane_mgn
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
@@ -84,15 +85,21 @@ def publish(
     validate(municipalities, sources)
     if boundaries is not None:
         validate_boundaries(boundaries, municipalities, sources)
-    folder.mkdir(parents=True, exist_ok=True)
-    municipalities.write_parquet(folder / "municipalities.parquet")
-    sources.sort("source_id").write_parquet(folder / "sources.parquet")
+    # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
+    tables = {"municipalities": municipalities, "sources": sources.sort("source_id")}
     if boundaries is not None:
-        boundaries.write_parquet(folder / "municipality_boundaries.parquet")
+        tables["municipality_boundaries"] = boundaries
     if crops is not None:
-        _, crops_table, stages_table = crops
-        crops_table.write_parquet(folder / "crops.parquet")
-        stages_table.write_parquet(folder / "crop_stages.parquet")
+        tables["crops"], tables["crop_stages"] = crops[1], crops[2]
+    for name, table in tables.items():
+        tables[name] = schema.typed(name, table)
+        try:
+            schema.check(name, tables[name])
+        except schema.SchemaError as error:
+            raise ValidationError(str(error)) from error
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, table in tables.items():
+        table.write_parquet(folder / f"{name}.parquet")
     manifest = {
         "dataset_version": region["dataset_version"],
         # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
