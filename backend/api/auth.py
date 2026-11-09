@@ -24,6 +24,7 @@ from backend.accounts.security import (
     take_attempt,
     verify_password,
 )
+from backend.api import calc_examples
 from backend.api.errors import ACCOUNTS_UNAVAILABLE, ApiError, explain, request_id_of
 from backend.config.logging import get_logger
 from backend.config.settings import Settings, get_settings
@@ -356,7 +357,7 @@ def login(
     return user
 
 
-@router.post("/auth/logout", status_code=204)
+@router.post("/auth/logout", status_code=204, responses=calc_examples.responses(401))
 def logout(
     request: Request,
     response: Response,
@@ -373,12 +374,12 @@ def logout(
     _close_cookie(response, settings)
 
 
-@router.get("/me", response_model=Profile)
+@router.get("/me", response_model=Profile, responses=calc_examples.responses(401))
 def me(user: User = Depends(current_user)) -> User:
     return user
 
 
-@router.patch("/me", response_model=Profile)
+@router.patch("/me", response_model=Profile, responses=calc_examples.responses(401))
 def update_me(body: ProfilePatch, request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> User:
     """Edita el nombre, el usuario o las prioridades. Cambiar el usuario no cierra la sesión."""
     changes = {field: getattr(body, field) for field in body.model_fields_set}
@@ -411,7 +412,7 @@ def update_me(body: ProfilePatch, request: Request, user: User = Depends(current
     return user
 
 
-@router.post("/me/password", status_code=204)
+@router.post("/me/password", status_code=204, responses=calc_examples.responses(401))
 def change_password(
     body: PasswordBody,
     request: Request,
@@ -449,7 +450,7 @@ def change_password(
     db.commit()
 
 
-@router.get("/me/activity", response_model=ActivityPage)
+@router.get("/me/activity", response_model=ActivityPage, responses=calc_examples.responses(401))
 def my_activity(
     before: datetime | None = None,
     limit: int = Query(20, ge=1, le=50),
@@ -461,7 +462,7 @@ def my_activity(
     return ActivityPage(items=[ActivityItem.model_validate(event) for event in events], next_before=next_before)
 
 
-@router.delete("/me", status_code=204)
+@router.delete("/me", status_code=204, responses=calc_examples.responses(401))
 def delete_me(
     body: DeleteBody,
     request: Request,
