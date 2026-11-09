@@ -20,7 +20,7 @@ from typing import Any
 
 import polars as pl
 
-from backend.config.logging import get_logger
+from common.logging import get_logger
 
 log = get_logger("agrosense.market")
 

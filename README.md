@@ -156,6 +156,7 @@ AgroSense/
 ├── design/            # generadores de pantallas, kit, mascota y tokens (fuente del diseño)
 ├── web/               # la web: React + Vite (web/README.md)
 ├── backend/           # API, cuentas y migraciones de la base de datos (backend/README.md)
+├── common/            # lo que comparten el backend y el pipeline sin importarse (la configuración de los logs)
 ├── tests/             # pruebas del backend (pytest, en Docker)
 └── docker-compose.yml # PostgreSQL y la API para desarrollo y pruebas
 ```

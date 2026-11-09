@@ -7,9 +7,9 @@ from sqlalchemy.orm import sessionmaker
 from structlog.testing import capture_logs
 
 from backend.api.main import app
-from backend.config.logging import REDACTED, redact
 from backend.db import migrate, state
 from backend.db.session import get_db
+from common.logging import REDACTED, redact
 from tests.conftest import alembic_config
 
 ROSA = {"username": "rosa.samaca", "password": "papa-criolla-2026", "display_name": "Rosa", "consent_version": 3, "consent_accepted": True}

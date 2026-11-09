@@ -31,9 +31,9 @@ from typing import Any
 
 import polars as pl
 
-from backend.config import logging
 from backend.config.settings import get_settings
 from backend.market.store import MarketData, load_latest, write_version
+from common import logging
 from pipeline.sources import sipsa, sipsa_boletin
 
 log = logging.get_logger("agrosense.market")

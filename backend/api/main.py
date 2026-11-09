@@ -10,11 +10,11 @@ from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 
 from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, version
-from backend.config import logging
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
 from backend.db.session import get_db
 from backend.db.state import accounts_state
+from common import logging
 
 log = logging.get_logger("agrosense.api")
 

@@ -56,7 +56,7 @@ Antes de aceptar, se baja la rama, se corre y se hace el recorrido de punta a pu
 
 ## 5. Backend, API y logs
 
-- [ ] La API sigue dejando logs como ya lo hace (HU-177, `backend/config/logging.py`):
+- [ ] La API sigue dejando logs como ya lo hace (HU-177, `common/logging.py`):
   - [ ] Se usa `get_logger("agrosense.<módulo>")`, nunca `print` ni `logging` suelto.
   - [ ] Los eventos son nombres en `snake_case` con sus datos como campos (`log.warning("dataset_unavailable", detail=…)`), no frases armadas.
   - [ ] Lo nuevo que puede fallar deja su log: errores de fuentes externas, descargas y tareas en segundo plano (cuándo empieza, cuándo termina y por qué falla).
