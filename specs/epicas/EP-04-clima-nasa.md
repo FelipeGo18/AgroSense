@@ -76,6 +76,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Publica `elevation_grid` para la región, con la resolución que quede documentada (30 m o remuestreada si el tamaño no cabe en memoria), para que la API calcule la altitud de un lote como la mediana de las celdas que toca su polígono, igual que el suelo (HU-182)
   - [ ] Entrada de NASADEM en `sources` con producto, versión, resolución, acceso y licencia
   - [ ] Comprobación manual en 2 municipios contra la altitud oficial de la cabecera
+  - [ ] **Pendiente (decisión 14):** `elevation_grid` trae `slope_pct` por celda y `municipalities.slope_pct` la mediana del municipio, con el método documentado; la de un lote la calcula la API al vuelo, como la altitud. La usa el criterio `erosion` (HU-224)
   - [ ] Sin celdas válidas, `altitude_m` queda nulo y la aptitud es `insufficient_data` (R1)
 - **Reglas que aplican:** R1, R7, R8, R9
 - **Contrato que toca:** `municipalities.altitude_m`, `elevation_grid`
@@ -141,7 +142,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Comprobación manual en un municipio
 - **Reglas que aplican:** R1, R8, R10
 - **Contrato que toca:** `soil_moisture_month`, `signals.water.sources`
-- **Notas:** Decisión 12. Es lo primero que se recorta si falta tiempo. La serie es corta (desde 2015): no sirve para normales largas ni para «Qué cambió». Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. **Desde el 8 de noviembre de 2026 (decisión 14) ya no es lo primero que se recorta:** el enunciado completo lo nombra primero entre los datos sugeridos, así que va al final de lo recortable de la NASA. La serie es corta (desde 2015): no sirve para normales largas ni para «Qué cambió». Agregada el 11 de octubre de 2026.
 
 ### HU-216 · Clima de dos periodos para «Qué cambió»
 
@@ -239,3 +240,30 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] No dice en qué fase estamos ni la presenta como pronóstico propio: la fase actual solo se cita del boletín oficial
 - **Reglas que aplican:** R5, R8
 - **Notas:** Ver `docs/investigacion-decisiones.md`, decisión 10. Cómo mostrar la fase actual sigue por decidir. Agregada el 11 de octubre de 2026.
+
+### HU-225 · Tendencia del agua almacenada con GRACE-FO
+
+- **Historia:** Como agricultor, quiero ver si el agua almacenada de mi región viene bajando o subiendo, para entender si el agua que tengo hoy es la que tendré.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `grace` con caché: anomalía mensual del agua almacenada (TWS) de GRACE y GRACE-FO, producto y versión verificados (candidato: las soluciones mascon del JPL), desde 2002, con el hueco de 2017–2018 entre las dos misiones dicho, no rellenado (R1)
+  - [ ] Publica una tabla por municipio con la celda que lo contiene, el mes y la anomalía, y la tendencia de largo plazo con su periodo
+  - [ ] Se muestra en «Qué cambió» (HU-219) como **tendencia de la región**, con su resolución (celdas de cientos de kilómetros) y el rótulo de que no es del lote (R10)
+  - [ ] Es historia comparada, nunca pronóstico (decisión 4); no cambia ninguna señal ni ningún resultado
+  - [ ] Entrada en `sources` con producto, versión, resolución, acceso y licencia (R8)
+- **Reglas que aplican:** R1, R4, R8, R10
+- **Contrato que toca:** tabla nueva, por definir en esta HU; `GET /api/v1/changes`
+- **Notas:** Decisión 14: el enunciado completo sugiere GRACE y GRACE-FO para las tendencias del agua de largo plazo. Agregada el 8 de noviembre de 2026.
+
+### HU-226 · Temperatura de la superficie y evapotranspiración con ECOSTRESS
+
+- **Historia:** Como agricultor, quiero ver el estrés por calor y el agua que pierde el campo de mi zona según ECOSTRESS, para contrastarlos con la señal de calor y el agua del plan.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `ecostress` con caché: temperatura de la superficie y evapotranspiración (70 m), producto y versión verificados, con las fechas de cada pasada (son irregulares)
+  - [ ] Publica agregados por municipio y mes con cuántas pasadas tiene cada mes; un mes sin pasadas no aparece (R1)
+  - [ ] Se muestra junto a la señal de calor y al agua del plan como contraste, con su fuente y su resolución, nunca mezclada con POWER (decisión 11) y sin cambiar la calificación
+  - [ ] Entrada en `sources` (R8)
+- **Reglas que aplican:** R1, R8, R10
+- **Contrato que toca:** tabla nueva, por definir en esta HU
+- **Notas:** Decisión 14: el enunciado completo sugiere ECOSTRESS para el estrés por calor y la evaporación. La serie empieza en 2018 y las pasadas no son regulares: sirve de contraste, no para normales. Agregada el 8 de noviembre de 2026.

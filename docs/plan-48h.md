@@ -68,9 +68,9 @@ Supone que los datos y el catálogo llegan preparados. Si no, el bloque de las h
 Se aplica en la hora 34 si hay retraso, o desde el inicio si HU-004 no permite llevar código:
 
 1. Todo el P1
-2. SMAP (HU-210): queda la humedad del suelo de POWER
-3. Capa GIBS en el mapa del lote (HU-211): queda OpenStreetMap
-4. NDVI por lote (HU-209): queda el NDVI por municipio (HU-208)
+2. Capa GIBS en el mapa del lote (HU-211): queda OpenStreetMap
+3. NDVI por lote (HU-209): queda el NDVI por municipio (HU-208)
+4. SMAP (HU-210): queda la humedad del suelo de POWER. Va después de lo anterior porque el reto lo nombra primero entre los datos sugeridos (decisión 14)
 5. Suelo por lote (HU-182 y su parte de HU-185): queda el suelo del municipio (HU-183)
 6. Plan de agua solo con año normal, sin año seco
 7. Explicaciones reducidas a una razón por estrategia

@@ -46,6 +46,8 @@ El guion se escribe desde la hora 0; el video y la entrega se cierran a partir d
   - [ ] Cumple la guía publicada el 13 de noviembre
   - [ ] Cita todas las fuentes de datos, con cada producto NASA por su nombre
   - [ ] La descripción incluye la tabla de cómo cubre el MVP cada parte del enunciado (`specs/00-vision.md`)
+  - [ ] Explica por qué AgroSense usa reglas con fuente y no aprendizaje automático (decisión 4 y 14): el reto sugiere la IA como opción, y las reglas dan lo que pide para cada estrategia (por qué, evidencia, beneficios, vacíos y riesgos a revisar)
+  - [ ] Muestra la comparación contra la rotación actual, que el reto pide de forma explícita (HU-223)
 
 ### HU-133 · Impacto económico, social y ambiental
 
