@@ -36,16 +36,30 @@ Los tipos de la web salen de este OpenAPI: con la API arriba y `AGROSENSE_API_DO
 
 ## Precios de SIPSA al día (HU-222)
 
-Con `AGROSENSE_MARKET_REFRESH=true` (Docker Compose lo trae encendido), la API baja los precios del DANE al arrancar si
-lo que tiene es viejo y después cada día a las 3:00 p. m. de Bogotá (el DANE publica a las 2:00). Los valida con las
-reglas del pipeline y los guarda como una versión nueva en `AGROSENSE_MARKET_DIR` (por defecto `data/market`, en el
-volumen `market_data`). Si algo falla, sigue sirviendo la última versión buena y reintenta en una hora. Cada respuesta
-de `/market/*` dice su `version` y su `updated_at` (R4). La descarga pesa unos 300 MB y tarda un par de minutos; la
-API sigue atendiendo mientras tanto.
+La API **no baja nada**: lee la última versión de precios de `AGROSENSE_MARKET_DIR` (por defecto `data/market`, en el
+volumen `market_data`) y vuelve a mirar `current.json` como mucho cada minuto, sin reiniciarse. Si no hay una versión al
+menos tan nueva como el dataset publicado, sirve el publicado. Cada respuesta de `/market/*` dice su `version`, su
+`updated_at`, la fuente del último día y la cita del DANE (R4, R8).
+
+Las versiones las escribe el servicio `market` de Docker Compose con dos crons (supercronic, hora de Bogotá, horarios del
+`.env`), en `backend/market/updates.py`:
+
+- **Diario** (`AGROSENSE_MARKET_DAILY_SCHEDULE`, de lunes a viernes a las 3:00 p. m.): el anexo del boletín diario del DANE,
+  unos 340 KB, con el precio medio del día. Sin el mínimo ni el máximo (`source_id = dane_sipsa_boletin`).
+- **Semanal** (`AGROSENSE_MARKET_WEEKLY_SCHEDULE`, los domingos a las 3:00 p. m.): la serie completa del servicio web de
+  SIPSA, unos 300 MB, con el mínimo y el máximo. Reemplaza los días del boletín.
+
+Las descargas cortan por tiempo total y por tamaño (`AGROSENSE_MARKET_TIMEOUT_S`, `AGROSENSE_MARKET_MAX_MB`). Si algo falla,
+se sigue sirviendo la última versión buena y el log dice por qué. La temporada no se recalcula aquí: sale del dataset.
 
 ```bash
-docker compose exec app python -m backend.market_updates   # bajar los precios ahora, sin esperar a las 3:00 p. m.
+docker compose --profile market up -d market                                      # encender los crons
+docker compose --profile market run --rm market python -m backend.market.updates diario    # el boletín, ya
+docker compose --profile market run --rm market python -m backend.market.updates semanal   # la serie completa, ya
+docker compose --profile market logs -f market                                    # ver qué hicieron
 ```
+
+Sin el perfil `market` no arranca: en desarrollo no se usa la red y la API sirve los precios publicados.
 
 ## Seguridad de la cuenta
 

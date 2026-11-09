@@ -71,13 +71,13 @@ En todas las tablas: `ok` (el dato está completo para lo que se calcula) o `par
 - **Índice estacional (`market_price_season`):** para cada `(product_id, market_id)` se filtran los años calendario con los 12 meses completos. En cada año completo se divide el promedio de cada mes entre el promedio de su propio año (así la inflación entre años no distorsiona la curva) y luego se promedian esos cocientes por mes (`1` a `12`) para obtener `seasonal_index` (donde `1.0` representa un mes igual al promedio del año). Solo se publica la temporada de los productos con **3 o más años completos** (`MIN_YEARS = 3`); con menos años no se publica temporada (R1).
 - **Precio y temporada por cultivo (`market_month`, HU-051):** `pipeline/sipsa_crops.yaml` dice qué producto de SIPSA da el precio de cada cultivo (HU-003), y `pipeline.build` lo valida contra los precios antes de publicar. Para cada cultivo con producto y cada central, los 12 meses llevan el `seasonal_index` de `market_price_season` y el precio que se pagó ese mes en el último año completo (`price_year`). No es un promedio entre años, que mezclaría la inflación, ni un precio estimado. La señal `market` del motor usará `seasonal_index` del mes de cosecha (HU-073). `market_month` sale del dataset publicado: la actualización diaria (HU-222) no la recalcula.
 - **Almacenamiento local en dos capas (nunca se consulta al DANE por petición del usuario):**
-  1. **Base publicada (`data/published/`):** generada por `python -m pipeline.build` y versionada en el repositorio (`market_price_day.parquet` y `market_price_season.parquet`). Garantiza que el sistema funcione sin conexión ni esperas apenas se despliega (decisión 3).
-  2. **Actualización diaria en segundo plano (`data/market/`, volumen Docker `market_data`, HU-222):** excepción acotada a la decisión 3 para que los precios reflejen el último día publicado por el DANE sin reconstruir el dataset. Cuando `AGROSENSE_MARKET_REFRESH=true`:
-     - Al arrancar la API y luego cada **5 minutos de reloj** (`CHECK_EVERY = 300` s en `backend/market_updates.py`, para que suspender o hibernar el equipo no atrase la revisión), el servidor comprueba si la versión descargada en `AGROSENSE_MARKET_DIR` (`data/market/current.json`) es posterior al último corte diario de las **3:00 p. m. hora de Bogotá** (`DAILY_AT = 15:00` en `America/Bogota`, una hora después de que el DANE actualiza hacia las 2:00 p. m.).
-     - Si no hay versión descargada o su `updated_at` es anterior al último corte, lanza `refresh()` en un hilo de fondo (`asyncio.to_thread`) mientras la API sigue respondiendo sin bloqueo.
-     - La descarga guarda el XML temporal en `data/market/raw/promedios_parcial.xml` con hasta **3 intentos seguidos** (`DOWNLOAD_ATTEMPTS = 3`, pausa de 30 s) por si la conexión de 300 MB se corta, ejecuta el mismo adaptador y las mismas validaciones del pipeline, escribe los Parquet en una carpeta temporal `sipsa-AAAAMMDDTHHMM.tmp`, la renombra de forma atómica a `sipsa-AAAAMMDDTHHMM`, actualiza atómicamente `current.json` (`version`, `updated_at`, `max_date`, `rows`), borra el XML crudo de 300 MB y conserva solo las **2 últimas versiones** (`KEEP = 2`).
-     - Si la descarga o alguna validación falla, **no se toca la versión vigente** (R1), se registra `market_refresh_failed` en el log de la terminal y se programa un nuevo intento en **1 hora** (`RETRY_AFTER = 1 h`).
-- **Servicio en memoria y regla de frescura (`backend/api/market.py`):** la API mantiene los DataFrames de Polars en memoria RAM y verifica en cada ciclo si `current.json` cambió en disco (`reload_if_newer`, útil si se corre `python -m backend.market_updates` manualmente). En cada consulta de `/api/v1/market/*`, compara la fecha máxima (`max(date)`) de la versión descargada en `data/market/` con la de `data/published/`: usa la descargada solo si su fecha máxima es mayor o igual que la publicada; de lo contrario sirve `data/published/` con `version = dataset_version` y `updated_at = null`. No usa PostgreSQL ni registra quién consultó (R9).
+  1. **Base publicada (`data/published/`):** generada por `python -m pipeline.build` y versionada en el repositorio (`market_price_day`, `market_price_season` y `market_month`). Garantiza que el sistema funcione sin conexión ni esperas apenas se despliega (decisión 3). Sin la caché de SIPSA, el pipeline publica lo demás sin estas tablas y lo dice en el log (`source_missing`).
+  2. **Versiones de los crons (`data/market/`, volumen Docker `market_data`, HU-222):** excepción acotada a la decisión 3 para que los precios reflejen el último día publicado por el DANE sin reconstruir el dataset. Las escribe el servicio `market` de Docker Compose (perfil `market`: no arranca con `docker compose up`), con supercronic, en la hora de Bogotá y con los horarios del `.env`:
+     - **Diario** (`AGROSENSE_MARKET_DAILY_SCHEDULE`, por defecto de lunes a viernes a las 3:00 p. m.; el DANE publica hacia las 2:00): `python -m backend.market.updates diario` baja el **anexo del boletín diario** del DANE (`pipeline/sources/sipsa_boletin.py`, `https://www.dane.gov.co/files/operaciones/SIPSA/anex-SIPSADiario-DDmmmAAAA.xlsx`, unos 340 KB) de cada día hábil que falte, hasta 10 días atrás, y lo suma a la última versión. Trae solo el precio medio: `min_cop_kg` y `max_cop_kg` van nulos (R1) y `source_id = dane_sipsa_boletin` (R8). Es la misma serie del servicio web (el 6 de noviembre de 2026 los 63 precios de Corabastos y Tunja eran iguales). Un día sin boletín (festivo) responde 404 y no es un error; sin días nuevos no se escribe nada. Si el DANE cambia el formato del anexo, falla en vez de leer mal.
+     - **Semanal** (`AGROSENSE_MARKET_WEEKLY_SCHEDULE`, por defecto los domingos a las 3:00 p. m.): `python -m backend.market.updates semanal` baja la serie completa del servicio web (unos 300 MB), con hasta 3 intentos. Reemplaza los días del boletín: solo se conservan los del boletín posteriores al último día del servicio en cada central.
+     - Las dos descargas cortan por tiempo total y por tamaño (`AGROSENSE_MARKET_TIMEOUT_S`, por defecto 900 s; `AGROSENSE_MARKET_MAX_MB`, por defecto 600). Cada actualización buena se valida con las mismas reglas del pipeline (`sipsa.validate`), se escribe en una carpeta aparte `sipsa-AAAAMMDDTHHMMSS-boletin` o `-servicio` con `market_price_day.parquet` y `sources.json`, y se publica al final cambiando `current.json` (`version`, `updated_at`). Se guardan las 2 últimas. Si algo falla, **no se toca la versión vigente** (R1), el log dice `market_refresh_failed` y el comando termina con error. Un candado evita dos actualizaciones a la vez.
+     - La temporada (`market_price_season`) y el precio por cultivo (`market_month`) **no** se recalculan en los crons: solo cambian cuando cierra un año completo y salen del dataset publicado.
+- **Lectura en la API (`backend/api/market.py`, `backend/market/store.py`):** la API nunca baja nada. Mira `current.json` como mucho cada minuto y, si cambió, lee la versión nueva en memoria, sin reiniciarse. En cada consulta de `/api/v1/market/*` usa la versión de `data/market/` solo si su fecha máxima es mayor o igual que la de `data/published/`; si no, sirve `data/published/` con `version = dataset_version` y `updated_at = null`. La temporada es siempre la de `data/published/`. No usa PostgreSQL ni registra quién consultó (R9).
 
 ### Lo que depende de verificar una fuente
 
@@ -260,8 +260,8 @@ Los endpoints de cálculo ya existen con esta forma y sus ejemplos en el OpenAPI
 | Endpoint | Uso | Prioridad |
 |---|---|---|
 | `GET /api/v1/catalogs/municipalities` | Municipios habilitados de la región: una lista de `municipality_id`, `name`, `department`, `lat`, `lon`, por departamento y nombre. Sin dataset publicado, `503` `dataset_unavailable` | P0 |
-| `GET /api/v1/market/prices?market_id=` (HU-221, **por aprobar**) | El último precio de cada producto en la central (por defecto, la primera de la región), con `week_ago` (el último precio hasta 7 días antes) y `change_pct`, ambos nulos si no hay con qué comparar; `markets`, `date`, `source_id`, y `version` y `updated_at` de los precios usados (la versión del dataset publicado con `updated_at` nulo, o la que la API bajó del DANE, HU-222). Sin precios publicados, `503` `market_unavailable`; una central que no está, `404` `unknown_market` | P1 |
-| `GET /api/v1/market/prices/{product_id}?market_id=` (HU-221, **por aprobar**) | Los precios del último año del producto en la central (`days`) y su temporada (`season`, nula sin años completos suficientes), con `version` y `updated_at`. Un producto sin precios en esa central, `404` `unknown_product` | P1 |
+| `GET /api/v1/market/prices?market_id=` (HU-221, **por aprobar**) | El último precio de cada producto en la central (por defecto, la primera de la región), con `week_ago` (el último precio hasta 7 días antes) y `change_pct`, ambos nulos si no hay con qué comparar; `markets`, `date`, `source_id` (la fuente del último día: `dane_sipsa` o `dane_sipsa_boletin`), `citation` (la cita textual que piden los términos del DANE; la web la muestra tal cual), y `version` y `updated_at` de los precios usados (la versión del dataset publicado con `updated_at` nulo, o la última que dejaron los crons, HU-222). Sin precios publicados, `503` `market_unavailable`; una central que no está, `404` `unknown_market` | P1 |
+| `GET /api/v1/market/prices/{product_id}?market_id=` (HU-221, **por aprobar**) | Los precios del último año del producto en la central (`days`) y su temporada (`season`, nula sin años completos suficientes; siempre del dataset publicado), con `version`, `updated_at`, `source_id` (la del último día) y `citation`. Un producto sin precios en esa central, `404` `unknown_product` | P1 |
 | `GET /api/v1/catalogs/crops` | Cultivos habilitados: `crop_id`, `name_es`, `kind`, `archetype` (cómo se dibuja, HU-187), `family`, `cycle_months`. El diagnóstico solo acepta `kind = crop`; las rotaciones aceptan los tres | P0 |
 | `GET /api/v1/catalogs/municipalities/{municipality_id}/soil` | Suelo estimado del municipio (`soil_municipality`): cada propiedad con su valor y, el pH y el carbono orgánico, con su rango del 5 al 95 %; más `slope_pct`, `cells`, `quality` y `source_id`. Sin suelo publicado, `503` `dataset_unavailable` | P0 |
 | `GET /api/v1/trends?municipality_id=&crop_id=&sowing_date=` | Series para las gráficas: agua, área sembrada y verdor (ver «Cuerpos y respuestas») | P0 |
@@ -436,89 +436,74 @@ Sin datos para una serie, la serie viene vacía con `status = insufficient_data`
 
 ### Respuestas de `GET /api/v1/market/prices` y `GET /api/v1/market/prices/{product_id}` (HU-221, HU-222)
 
-Consultan los precios mayoristas diarios y la estacionalidad histórica de SIPSA servidos desde memoria a partir de los Parquet locales (`data/market/` o `data/published/`; ver «Ingestión, almacenamiento y actualización diaria de precios de SIPSA» más arriba). **Es historia de precios mayoristas, nunca pronóstico (R2, decisión 4).** No usan PostgreSQL ni guardan quién consultó (R9).
+Consultan los precios mayoristas diarios y la estacionalidad histórica de SIPSA servidos desde memoria a partir de los Parquet locales (`data/market/` o `data/published/`; ver «Ingestión, almacenamiento y actualización diaria de precios de SIPSA» más arriba). **Es historia de precios mayoristas, nunca pronóstico (decisión 4).** No usan PostgreSQL ni guardan quién consultó (R9). Los ejemplos son respuestas reales con el dataset `2026.11.3`, recortadas a un producto.
 
 **1. `GET /api/v1/market/prices?market_id=1`** (`market_id` opcional; sin él se usa la primera central de la región):
 
 ```json
 {
-  "market": {
-    "market_id": "1",
-    "name": "Corabastos (Bogotá)",
-    "municipality_id": "11001"
-  },
+  "version": "2026.11.3",
+  "updated_at": null,
+  "market": { "market_id": "1", "name": "Corabastos (Bogotá)" },
   "markets": [
-    { "market_id": "1", "name": "Corabastos (Bogotá)", "municipality_id": "11001" },
-    { "market_id": "9", "name": "Tunja (Complejo de Servicios del Sur)", "municipality_id": "15001" }
+    { "market_id": "1", "name": "Corabastos (Bogotá)" },
+    { "market_id": "9", "name": "Tunja (Complejo de Servicios del Sur)" }
   ],
-  "date": "2026-10-27",
-  "version": "sipsa-20261028T0755",
-  "updated_at": "2026-10-28T07:55:58Z",
-  "source_id": "sipsa",
-  "items": [
+  "date": "2026-10-19",
+  "products": [
     {
-      "product_id": "110",
-      "product": "Papa única",
+      "product_id": "papa-negra",
+      "product": "Papa negra",
       "group": "Tubérculos, raíces y plátanos",
       "several_varieties": true,
-      "date": "2026-10-27",
-      "min_cop_kg": 1200,
-      "avg_cop_kg": 1350,
-      "max_cop_kg": 1500,
-      "week_ago": {
-        "date": "2026-10-20",
-        "avg_cop_kg": 1280
-      },
-      "change_pct": 5.5
+      "latest": { "date": "2026-10-19", "min_cop_kg": 2800, "avg_cop_kg": 2925, "max_cop_kg": 3000 },
+      "week_ago": { "date": "2026-10-12", "min_cop_kg": 3000, "avg_cop_kg": 3150, "max_cop_kg": 3200 },
+      "change_pct": -7.1
     }
-  ]
+  ],
+  "source_id": "dane_sipsa",
+  "citation": "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co"
 }
 ```
 
-- `date`: la fecha más reciente con datos en esa central (`max(date)`).
-- `version` y `updated_at`: cuando se sirve una descarga diaria de `data/market/` (HU-222), traen el identificador `sipsa-AAAAMMDDTHHMM` y la marca UTC de descarga (`updated_at`); cuando se sirve el dataset base de `data/published/`, `version` es `dataset_version` y `updated_at` es `null`.
-- `items`: un elemento por producto presente en la central, ordenado alfabéticamente por `product`, con su último día publicado (`date`, `min_cop_kg`, `avg_cop_kg`, `max_cop_kg`).
-- `week_ago`: el último registro del producto con fecha menor o igual a `date - 7 días` en esa misma central. Si no existe ningún registro previo a 7 o más días, `week_ago` y `change_pct` van en `null` (R1).
+- `date`: el último día con precios en esa central.
+- `version` y `updated_at`: con una versión de los crons (HU-222), `sipsa-AAAAMMDDTHHMMSS-boletin` o `-servicio` y cuándo se escribió; con el dataset publicado, `dataset_version` y `null`.
+- `products`: un elemento por producto de la central, por grupo (primero tubérculos, raíces y plátanos; las frutas al final) y por nombre, con su último precio (`latest`). En un día del boletín, `min_cop_kg` y `max_cop_kg` van `null` (R1).
+- `week_ago`: el último precio del producto con fecha menor o igual a `latest.date - 7 días` en esa central. Si no hay, `week_ago` y `change_pct` van `null` (R1).
+- `source_id`: la fuente del último día (`dane_sipsa` o `dane_sipsa_boletin`); `citation`: la cita del DANE, que la web muestra tal cual.
 
 **2. `GET /api/v1/market/prices/{product_id}?market_id=1`**:
 
 ```json
 {
-  "product_id": "110",
-  "product": "Papa única",
+  "version": "2026.11.3",
+  "updated_at": null,
+  "product_id": "papa-negra",
+  "product": "Papa negra",
   "group": "Tubérculos, raíces y plátanos",
   "several_varieties": true,
-  "market": {
-    "market_id": "1",
-    "name": "Corabastos (Bogotá)",
-    "municipality_id": "11001"
-  },
-  "version": "sipsa-20261028T0755",
-  "updated_at": "2026-10-28T07:55:58Z",
-  "source_id": "sipsa",
+  "market": { "market_id": "1", "name": "Corabastos (Bogotá)" },
+  "latest": { "date": "2026-10-19", "min_cop_kg": 2800, "avg_cop_kg": 2925, "max_cop_kg": 3000 },
   "days": [
-    {
-      "date": "2025-10-27",
-      "min_cop_kg": 1800,
-      "avg_cop_kg": 1950,
-      "max_cop_kg": 2100
-    }
+    { "date": "2026-10-17", "min_cop_kg": 2800, "avg_cop_kg": 2925, "max_cop_kg": 3000 },
+    { "date": "2026-10-19", "min_cop_kg": 2800, "avg_cop_kg": 2925, "max_cop_kg": 3000 }
   ],
   "season": {
-    "years": 6,
-    "first_year": 2020,
+    "years": 5,
+    "first_year": 2021,
     "last_year": 2025,
-    "low_months": [5, 6],
-    "high_months": [11, 12],
     "months": [
-      { "month": 1, "seasonal_index": 1.04 }
+      { "month": 1, "seasonal_index": 1.063 },
+      { "month": 2, "seasonal_index": 1.066 }
     ]
-  }
+  },
+  "source_id": "dane_sipsa",
+  "citation": "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co"
 }
 ```
 
-- `days`: la serie diaria del último año (desde `max(date) - 365 días` hasta `max(date)`) ordenada por fecha ascendente.
-- `season`: la estacionalidad histórica del producto en esa central (`market_price_season`), o `null` si el producto no cuenta con al menos 3 años calendario completos (R1). `low_months` son los dos meses con menor `seasonal_index` y `high_months` los dos meses con mayor `seasonal_index`.
+- `days`: los precios del último año (desde `latest.date - 365 días`), del más viejo al más nuevo.
+- `season`: la estacionalidad del producto en esa central (`market_price_season`, del dataset publicado), o `null` si no tiene al menos 3 años calendario completos (R1). Los meses más caros y más baratos los calcula la web.
 
 ### Cuerpo y respuesta de `POST /api/v1/rotations`
 
