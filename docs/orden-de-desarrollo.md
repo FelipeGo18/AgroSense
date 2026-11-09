@@ -42,7 +42,7 @@ Al terminar esta etapa las estrategias deben funcionar de punta a punta, aunque 
 | 8 | Ciclo de una estrategia con el agua del plan (HU-215, HU-146, HU-078, HU-093) | Necesita el endpoint de estrategias y el balance hídrico. |
 | 9 | «Qué cambió» (HU-217, HU-218, HU-219) | Necesita el clima de dos periodos (HU-216) y el orden de ventanas (HU-192). |
 | 10 | EP-16 Cuentas y lotes: lotes con polígono, temporadas, Mi finca con una zona y borrar la cuenta (HU-164 a HU-166, HU-168, HU-169); después, el suelo del lote (HU-182) y su vista (HU-185) | Desde el lote se entra a las estrategias. |
-| 11 | Lo recortable de la NASA, en este orden: SMAP (HU-210), NDVI por lote (HU-209) y capa GIBS (HU-211) | Si falta tiempo, se recorta al revés: primero GIBS, luego el NDVI por lote y al final SMAP, que el reto nombra primero (decisión 14). |
+| 11 | Lo recortable de la NASA, en este orden: SMAP (HU-210) y capa GIBS (HU-211). El NDVI por lote (HU-209) pasó a P1 (decisión 15) | Si falta tiempo, se recorta al revés: primero GIBS y al final SMAP, que el reto nombra primero (decisión 14). |
 | 12 | EP-12 Calidad y trazabilidad | Transversal: empieza pequeño en la etapa 1 y se cierra aquí. |
 
 ## Etapa 3: cierre
