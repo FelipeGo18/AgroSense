@@ -4,9 +4,11 @@ que solo las lee.
 Ninguna prueba usa la red: las «descargas» escriben un anexo o una respuesta del servicio de ejemplo (R5).
 """
 
+import http.client
 import io
 import json
 import urllib.error
+import urllib.request
 from datetime import date, datetime, timedelta
 
 import polars as pl
@@ -319,3 +321,28 @@ def test_una_version_mas_vieja_que_la_publicada_no_se_sirve(published, market):
     store.write_version(market, "servicio", old, [], THURSDAY_3PM)
     body = TestClient(app).get("/api/v1/market/prices").json()
     assert body["version"] == REGION["dataset_version"] and body["updated_at"] is None
+
+
+# ---------- Descargas ----------
+
+
+class CutResponse(io.BytesIO):
+    """Una respuesta que el servidor corta a mitad, como hace a veces el DANE con los 300 MB."""
+
+    def read(self, size=-1):
+        raise http.client.IncompleteRead(b"x" * 10, 100)
+
+
+def test_un_corte_a_mitad_de_la_respuesta_es_un_error_de_red_y_no_deja_archivo(tmp_path, monkeypatch):
+    monkeypatch.setattr(fetch.urllib.request, "urlopen", lambda request, timeout: CutResponse())
+    with pytest.raises(OSError, match="se cortó a mitad"):
+        fetch.fetch(urllib.request.Request("https://example.org"), tmp_path / "x.xml", 10, 2**20)
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(("size", "seconds", "message"), [(4096, 0, "pasó de 0 MB"), (10, -1, "pasó de -1 s")])
+def test_una_descarga_corta_por_tamano_o_por_tiempo_total(tmp_path, monkeypatch, size, seconds, message):
+    monkeypatch.setattr(fetch.urllib.request, "urlopen", lambda request, timeout: io.BytesIO(b"x" * size))
+    with pytest.raises(fetch.DownloadError, match=message):
+        fetch.fetch(urllib.request.Request("https://example.org"), tmp_path / "x.xml", seconds, 1024)
+    assert list(tmp_path.iterdir()) == []

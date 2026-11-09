@@ -5,6 +5,7 @@ byte cada pocos minutos nunca terminaría. Aquí se corta al pasar el tiempo tot
 completo: lo que se bajaba se borra (R1).
 """
 
+import http.client
 import time
 import urllib.request
 from pathlib import Path
@@ -13,14 +14,16 @@ CHUNK = 1 << 20
 
 
 class DownloadError(OSError):
-    """Una descarga se cortó por tiempo o por tamaño. Es un `OSError` como los cortes de red: se reintenta igual."""
+    """Una descarga se cortó: por tiempo, por tamaño o porque el servidor cerró la conexión a mitad. Es un `OSError`
+    como los demás cortes de red: se reintenta igual."""
 
 
 def fetch(request: urllib.request.Request, dest: Path, timeout_s: float, max_bytes: int) -> Path:
     """Baja `request` a `dest` por partes. Corta si pasa de `max_bytes` o de `timeout_s` segundos de punta a punta.
 
     TLS se verifica (el contexto por defecto de `urllib`). Los errores HTTP (`HTTPError`, por ejemplo un 404) y de red
-    pasan tal cual a quien llama.
+    pasan tal cual a quien llama. Un corte a mitad de la respuesta (`IncompleteRead`, que no es un `OSError`) sale como
+    `DownloadError`, para que se reintente como los demás cortes de red.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     partial = dest.with_name(dest.name + ".part")
@@ -36,6 +39,8 @@ def fetch(request: urllib.request.Request, dest: Path, timeout_s: float, max_byt
                     raise DownloadError(f"la descarga pasó de {timeout_s:.0f} s")
                 out.write(chunk)
         partial.replace(dest)
+    except http.client.HTTPException as error:
+        raise DownloadError(f"la conexión se cortó a mitad de la respuesta ({type(error).__name__})") from error
     finally:
         partial.unlink(missing_ok=True)
     return dest
