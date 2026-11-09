@@ -2,17 +2,19 @@
 
 Los identificadores del código van en inglés y en `snake_case` para evitar tildes; los textos de la interfaz van en español. En lugar de una tabla larga de indicadores, se usan pocas tablas por granularidad: así cada fila tiene una llave clara y cada columna una unidad fija.
 
-> **Estado:** propuesta congelable. Se congela en HU-011 y HU-012. **Responsables: Haider y Felipe.** Después de congelado, cualquier cambio lo hace o lo aprueba uno de los dos, porque rompe el trabajo en paralelo.
+> **Estado: congelado el 8 de noviembre de 2026** (decisión 15, aprobado por Felipe). Se revisó completo y se llenaron sus huecos: una sola rejilla de 250 m (`grid_cells`), la forma de `rotation_rules`, `thresholds.yaml` y `sources.yaml`, las respuestas de `/water-plans` y `/trends`, las fórmulas de las estrategias, el tope de `excluded`, los valores de `quality` y el error `501`. **Responsables: Haider y Felipe.** Desde aquí, cualquier cambio lo hace o lo aprueba uno de los dos, se registra en `docs/decisiones.md` y se avisa antes, porque rompe el trabajo en paralelo.
 
-> **Cambios del 11 de octubre de 2026 (decisión 12, MVP):** tablas de los productos NASA (`precip_month`, `soil_moisture_month`, `elevation_grid`, `ndvi_municipality`, `ndvi_municipality_normal`, `ndvi_grid`, `climate_change_month`), humedad del suelo en `climate_month`, `/rotations` con estrategias de hasta 3 ciclos y `soil_health`, y `GET /api/v1/changes`. Las decisiones son de Felipe; los nombres de las tablas y de los campos nuevos son una propuesta del especificador y **quedan pendientes de que Felipe o Haider los revisen antes de congelar**. Hay que avisarle a Haider.
+> **Cambios del 11 de octubre de 2026 (decisión 12, MVP):** tablas de los productos NASA (`precip_month`, `soil_moisture_month`, `grid_cells`, `ndvi_municipality`, `ndvi_municipality_normal`, `ndvi_grid`, `climate_change_month`), humedad del suelo en `climate_month`, `/rotations` con estrategias de hasta 3 ciclos y `soil_health`, y `GET /api/v1/changes`. Las decisiones son de Felipe; los nombres de las tablas y de los campos nuevos son una propuesta del especificador y **Aprobados por Felipe el 8 de noviembre de 2026, al congelar el contrato (HU-011 y HU-012).**
 
 ## Tablas publicadas (Parquet)
 
+El esquema en código está en `pipeline/schema.py` (HU-011): el pipeline no publica una tabla que no lo cumpla, y una prueba revisa que coincida con esta tabla. Un dataset de ejemplo con todas las tablas está en `data/examples/` (`uv run python -m pipeline.examples`): tres municipios reales con cifras inventadas, rotuladas con la fuente `ejemplo` (R5).
+
 | Tabla | Llave primaria | Columnas principales | Origen |
 |---|---|---|---|
-| `municipalities` | `municipality_id` (DIVIPOLA, 5 dígitos) | `name`, `department_id`, `department`, `lat`, `lon`, `altitude_m` (de NASADEM, HU-206), `climate_cell_elevation_m` (altura de la celda de NASA POWER que lo cubre), `tmean_annual_c` (temperatura media anual de NASA POWER corregida por altitud, para la aptitud; agregada el 16 de octubre de 2026, decisión 13), `source_ids` | DANE, NASADEM y NASA POWER |
+| `municipalities` | `municipality_id` (DIVIPOLA, 5 dígitos) | `name`, `department_id`, `department`, `lat`, `lon`, `altitude_m` (de NASADEM, HU-206), `climate_cell_elevation_m` (altura de la celda de NASA POWER que lo cubre), `tmean_annual_c` (temperatura media anual de NASA POWER corregida por altitud, para la aptitud; agregada el 16 de octubre de 2026, decisión 13), `slope_pct` (mediana de la pendiente de sus celdas de `grid_cells`, en %; decisión 14), `source_ids` | DANE, NASADEM y NASA POWER |
 | `crops` | `crop_id` | `name_es`, `kind` (`crop`, `cover` para abono verde o cobertura, `fallow` para descanso), `archetype` (cómo se dibuja: `tuber`, `root`, `bulb`, `leafy`, `cereal`, `climbing_legume`, `bush_legume`, `creeping`, `tall_grass`, `shrub_fruit`, `tree_fruit`, y `cover` y `fallow` para el abono verde y el descanso, como en el diseño; agregados el 16 de octubre de 2026, aprobado por Felipe), `family`, `cycle_months`, `water_need`, `root_type`, `fixes_nitrogen`, `tmean_min_c`, `tmean_max_c` (temperatura media anual en que se da; fuera de ella no es apto para la zona; reemplazan a `altitude_min_m` y `altitude_max_m` desde el 16 de octubre de 2026, decisión 13, aprobado por Felipe), `base_temp_c`, `heat_max_c` (temperatura máxima que aguanta), los límites de sus curvas de calificación (`temp_min_c`, `temp_opt_min_c`, `temp_opt_max_c`; `tmean_opt_min_c`, `tmean_opt_max_c`, el rango óptimo de temperatura media anual, que da la nota informativa de aptitud; y `rain_min_mm`, `rain_opt_min_mm`, `rain_opt_max_mm`, `rain_max_mm`, la lluvia anual que pide el cultivo, de referencia y contraste: la curva de `water` usa `thresholds.yaml`), `ph_min`, `ph_max` (rango que tolera), `ph_opt_min`, `ph_opt_max` (rango óptimo) — nulos si no hay fuente —, `frost_killing_c` (temperatura que mata la planta en crecimiento, de EcoCrop; agregada el 16 de octubre de 2026, aprobado por Felipe), `source_ids`. `cycle_months` es la suma de los días de sus etapas dividida por 30,44 | Catálogo (`catalog/crops.yaml`) |
-| `rotation_rules` | `rule_id` | `kind` (`filter`, `bonus`, `penalty`), `condition`, `effect`, `criterion`, `source_id` | Catálogo |
+| `rotation_rules` | `rule_id` | `kind` (`filter` o `health`), `criterion` (nulo en un `filter`; en un `health`, el criterio de `soil_health` que decide), `condition_type` (de la lista cerrada de «Reglas de rotación como datos»), `params` (JSON con los números de la regla), `levels` (JSON con los cortes de cada nivel; nulo en un `filter`), `reason_template` (la razón en español, con `{marcadores}` que llena el motor), `source_id` | Catálogo (`catalog/rotation_rules.yaml`, HU-062) |
 | `climate_risk_week` (P1, HU-193) | `municipality_id`, `week` (1 a 52; los días 365 y 366 van a la semana 52) | Los indicadores de `climate_risk_month` y las normales de `climate_month`, por semana del año y suavizados con las semanas vecinas: `frost_freq_pct`, `tmax_p90_c`, `precip_normal_mm`, `precip_dry_mm`, `et0_normal_mm` y, en P1, `heavy_rain_days_mean`, `dry_window_freq_pct` y `blight_days_mean`; más `years`, `quality`, `source_id` | NASA (para comparar ventanas por semana) |
 | `climate_day` | `municipality_id`, `date` | `temp_min_c`, `temp_max_c`, `quality`, `source_id` | NASA POWER (de aquí salen las heladas, el calor y «Qué cambió»; en P1, la etapa del cultivo, HU-150) |
 | `climate_normal_doy` (P1, HU-186) | `municipality_id`, `doy` (1 a 366) | `temp_min_c`, `temp_max_c` normales de ese día del año (promedio 1991–2020, suavizado), `source_id` | NASA (para estimar el crecimiento después de hoy, HU-186) |
@@ -20,19 +22,31 @@ Los identificadores del código van en inglés y en `snake_case` para evitar til
 | `climate_month` | `municipality_id`, `year`, `month` | `precip_mm`, `precip_normal_mm`, `precip_dry_mm` (año seco), `et0_mm`, `et0_normal_mm` (ET0 por Penman-Monteith, FAO-56), `soil_wetness_top`, `soil_wetness_root` (humedad del suelo modelada, superficial y de raíces, fracción de 0 a 1), `quality`, `source_id` | NASA POWER (reanálisis; HU-042, HU-143, HU-205) |
 | `precip_month` | `municipality_id`, `year`, `month`, `source_id` | `precip_mm` (promedio de las celdas que tocan el municipio), `precip_normal_mm`, `precip_dry_mm`, `normal_period` (los años de la normal), `quality` | GPM IMERG, lluvia por satélite de unos 10 km (HU-207). La lluvia de NASA POWER sigue en `climate_month` |
 | `soil_moisture_month` | `municipality_id`, `year`, `month`, `source_id` | `sm_surface_m3_m3`, `sm_rootzone_m3_m3` (humedad superficial y de raíces, en m³/m³), `quality` | SMAP nivel 4, 9 km, desde 2015 (HU-210). Solo para contrastar; unidad distinta de la de POWER |
-| `elevation_grid` | `cell_id` | `lon`, `lat`, `altitude_m`, `source_id`; resolución por confirmar en HU-206 (30 m o remuestreada) | NASADEM (HU-206); para la altitud de un lote |
 | `ndvi_municipality` | `municipality_id`, `year`, `period` (1 a 23: el compuesto de 16 días del año) | `ndvi_median`, `valid_pixels_pct` (píxeles sin nubes), `quality`, `source_id` | MODIS MOD13Q1, 250 m (HU-208) |
 | `ndvi_municipality_normal` | `municipality_id`, `period` (1 a 23) | `ndvi_normal`, `years`, `quality`, `source_id` | MODIS MOD13Q1 (HU-208) |
-| `ndvi_grid` | `cell_id`, `period` (1 a 23) | `lon`, `lat`, `ndvi_normal`, `years`, `valid_pct`, `quality`, `source_id`; celdas de 250 m de la región | MODIS MOD13Q1 (HU-209); para el verdor de un lote |
+| `ndvi_grid` (P1, HU-209) | `cell_id` (el de `grid_cells`), `period` (1 a 23) | `ndvi_normal`, `years`, `valid_pct`, `quality`, `source_id`. Solo las celdas de los municipios con lotes, para que no pase de unos cientos de miles de filas | MODIS MOD13Q1; para el verdor de un lote. En el P0 el verdor es el del municipio |
 | `climate_change_month` | `municipality_id`, `period_id`, `month` (1 a 12), `source_id` | `frost_freq_pct`, `tmax_p90_c` (nulos en las filas de una fuente de lluvia), `precip_normal_mm`, `years`, `quality` | NASA POWER y GPM IMERG (HU-216); para «Qué cambió» |
 | `crop_stages` | `crop_id`, `stage` (`initial`, `development`, `mid`, `late`, las de FAO-56) | `days`, `kc` (nulo en `development`: en FAO-56 sube en línea recta de la inicial a la media), `gdd` (grados-día que cierran la etapa; nulo si no hay fuente), `frost_sensitive` (la helada daña en esta etapa), `heat_sensitive` (el calor por encima de `heat_max_c` daña en esta etapa), `source_id` | Catálogo (FAO-56 o fuente local) |
 | `supply_semester` | `municipality_id`, `crop_id`, `year`, `semester`, `source_id` | `planted_ha`, `harvested_ha`, `production_t`, `yield_t_ha`, `planted_change_pct`, `dept_share_pct`, `preliminary`, `quality` | EVA |
 | `market_month` (P1) | `crop_id`, `market_id`, `month` | `price_cop_kg`, `volume_t`, `seasonal_index`, `quality`, `source_id` | SIPSA |
 | `municipality_boundaries` | `municipality_id` | `geometry` (polígono WGS84 simplificado a unos 10 m, en WKB; aprobado por Felipe el 16 de octubre de 2026), `source_id` | DANE (Marco Geoestadístico Nacional 2025, servicio del geoportal) |
-| `soil_grid` | `cell_id` | `lon`, `lat`, `ph`, `ph_p05`, `ph_p95`, `soc_g_kg` (carbono orgánico), `nitrogen_g_kg`, `clay_pct`, `sand_pct`, `silt_pct`, `texture_class`; promedio ponderado de 0 a 30 cm de cada celda de 250 m de la región; `source_id` | SoilGrids de ISRIC (HU-181) |
-| `soil_municipality` | `municipality_id` | Las mismas propiedades que `soil_grid`, como mediana de las celdas dentro del municipio, más `cells`, `quality` y `source_id` | SoilGrids (HU-181) |
+| `grid_cells` | `cell_id` (ver «La rejilla de 250 m») | `lat`, `lon` (centro de la celda), `municipality_id` (el municipio que contiene el centro), `altitude_m` (promedio de los píxeles de NASADEM de 30 m dentro de la celda), `slope_pct` (mediana de la pendiente de esos píxeles, en %), `ph`, `ph_p05`, `ph_p95`, `soc_g_kg` (carbono orgánico), `soc_p05`, `soc_p95`, `nitrogen_g_kg`, `clay_pct`, `sand_pct`, `silt_pct`, `texture_class` (clase USDA); el suelo es el promedio ponderado de 0 a 30 cm; `quality`, `source_ids`. Unas 600.000 celdas en la región | NASADEM (HU-206) y SoilGrids de ISRIC (HU-181); para la altitud, la pendiente y el suelo de un lote |
+| `soil_municipality` | `municipality_id` | Las propiedades de suelo de `grid_cells` (`ph`, `ph_p05`, `ph_p95`, `soc_g_kg`, `soc_p05`, `soc_p95`, `nitrogen_g_kg`, `clay_pct`, `sand_pct`, `silt_pct`, `texture_class`), como mediana de las celdas del municipio (los percentiles 5 y 95 también, como mediana de los de cada celda; la textura, la clase más frecuente), más `cells`, `quality` y `source_id` | SoilGrids (HU-181) |
 | `sources` | `source_id` | `name`, `institution`, `url`, `downloaded_at`, `period_covered`, `coverage` (país o región que cubre), `license`, `notes` | Todas. Un indicador puede tener varias fuentes; `sources.yaml` dice cuál usa cada señal en cada región y las demás se muestran para contrastar |
 | `manifest.json` | — | `dataset_version`, `rules_version`, `created_at`, `region`, `periods` (los periodos de «Qué cambió»: `period_id`, `start_year`, `end_year`, `source_id`), filas y cobertura por tabla | Pipeline |
+
+### La rejilla de 250 m (`grid_cells`)
+
+Decisión 15. Los datos que vienen como cuadrícula se publican en **una sola rejilla común**, para que un lote se resuelva con una sola tabla:
+
+- Rejilla regular en grados WGS84 de **0,0025°** (unos 277 m de lado en el altiplano). `cell_id` es `"{fila}_{columna}"`, con `fila = floor((90 − lat) / 0,0025)` y `columna = floor((lon + 180) / 0,0025)`: cualquier punto se ubica en su celda sin consultar la tabla.
+- Cada fuente se lleva a esa rejilla en el pipeline. NASADEM (30 m): la altitud es el promedio de sus píxeles dentro de la celda, y la pendiente se calcula a 30 m y se guarda la mediana, para no perder el relieve. SoilGrids (250 m, en otra proyección): el valor del píxel que contiene el centro de la celda. MODIS (250 m, en otra proyección): igual, en `ndvi_grid` (P1).
+- Una celda sin dato de una fuente queda con esas columnas nulas y `quality = partial` (R1).
+- El suelo, la altitud y la pendiente de un **lote** son la mediana de las celdas cuyo centro cae dentro de su polígono. Un lote más chico que una celda usa la celda que contiene su centro y lo dice (`cells = 1`). La API los calcula al vuelo y no los guarda (R9). Un lote sin polígono usa los de su municipio.
+
+### Valores de `quality`
+
+En todas las tablas: `ok` (el dato está completo para lo que se calcula) o `partial` (faltan días, años, píxeles o una fuente; la tabla dice cuántos en `years`, `cells` o `valid_pct`). Una fila sin ningún dato no se publica: no se rellena (R1).
 
 ### Decisiones sobre el clima publicado
 
@@ -41,16 +55,74 @@ Los identificadores del código van en inglés y en `snake_case` para evitar til
 - NASA POWER es un **reanálisis** (un modelo con observaciones asimiladas), no una observación directa; su entrada en `sources` lo dice. Es la serie larga (desde 1981).
 - La lluvia tiene dos fuentes: NASA POWER (`climate_month`) y GPM IMERG (`precip_month`). `sources.yaml` dice cuál calcula la señal `water` en cada región; la otra se muestra para contrastar. Nunca se promedian ni una rellena a la otra.
 - La humedad del suelo tiene dos fuentes con unidades distintas: la de POWER (`soil_wetness_*`, fracción de 0 a 1) y la de SMAP (`sm_*_m3_m3`). No se convierten una en otra.
-- La pendiente (`slope_pct`, decisión 14) sale de `elevation_grid` en el pipeline: la del municipio, en `municipalities.slope_pct` (la mediana de sus celdas), y la de un lote, la mediana de las celdas que toca su polígono, calculada al vuelo como su altitud. Por aprobar.
-- El suelo, la altitud y el verdor de un lote **no se guardan**: la API los calcula al vuelo como la mediana de las celdas de `soil_grid`, `elevation_grid` y `ndvi_grid` que toca su polígono.
+- La pendiente (`slope_pct`, decisión 14) sale de NASADEM en el pipeline: la de cada celda en `grid_cells` y la del municipio en `municipalities.slope_pct`. La de un lote se calcula como en «La rejilla de 250 m».
 - En el MVP las señales de heladas y calor leen `climate_risk_month`; `climate_risk_week` llega en P1.
 
-### Supuestos por confirmar en la fase 0
+### Lo que depende de verificar una fuente
 
-- Que EVA trae código DIVIPOLA (HU-001).
-- Que, en EVA, el semestre A va de enero a junio y el B de julio a diciembre. La metodología EVA define periodos de recolección que hay que mapear con cuidado. El semestre solo existe en `supply_semester`: la decisión se toma sobre ventanas de siembra (ver `specs/01-reglas.md`) y la oferta se lee del semestre en que cae la fecha de siembra.
-- `planted_change_pct` compara contra el promedio de los tres mismos semestres anteriores.
-- `quality` toma valores como `ok` o `partial` (por ejemplo, cuando faltan semestres previos o hay pocos días válidos). La lista exacta se fija en HU-011.
+Ninguno cambia la forma de las tablas:
+
+- Si EVA trae el código DIVIPOLA y cómo son sus semestres (HU-001). Se toma A = enero a junio y B = julio a diciembre. El semestre solo existe en `supply_semester`: la decisión se toma sobre ventanas de siembra (ver `specs/01-reglas.md`) y la oferta se lee del semestre en que cae la fecha de siembra. **Si EVA no sirve, la señal `supply` queda en `insufficient_data` (R1) y el diagnóstico sigue: no se calcula sin ella** (regla 1 de la agregación).
+- `planted_change_pct` compara contra el promedio de los tres mismos semestres anteriores; con menos de tres, `quality = partial` y, sin ninguno, la fila no trae el cambio (nulo).
+
+## Configuración versionada
+
+Decisión 15. El motor la recibe ya leída (R6). Cada archivo tiene `version`, que va en `versions.rules` de cada respuesta (R4), y la API no arranca si un archivo no cumple su forma.
+
+### `backend/config/weights.yaml` (hecho, HU-075 y HU-198)
+
+`version` y, por señal del P0, `weight` (0 a 5) y `reason`.
+
+### `backend/config/thresholds.yaml` (HU-075)
+
+```yaml
+version: "1.0.0"
+levels: { favorable: 70, moderate: 40 }   # calificación desde la que una señal es favorable o moderada
+signals:
+  water:  { variable: coverage_pct,    unit: "%",  curve: [[0, 0], [50, 40], [100, 100]], critical_below: 20, source_id: "…" }
+  frost:  { variable: frost_freq_pct,  unit: "%",  curve: [[0, 100], [10, 70], [40, 0]],  critical_below: 25, source_id: "…" }
+  heat:   { variable: tmax_p90_c,      unit: "°C", curve: crop,                          critical_below: 25, source_id: "…" }
+  soil:   { variable: ph,              unit: "pH", curve: crop,                          critical_below: null }
+  supply: { variable: planted_change_pct, unit: "%", curve: [[-20, 100], [10, 100], [40, 0]], critical_below: 10, source_id: "…" }
+  market: { variable: seasonal_index,  unit: "",   curve: [[0.8, 0], [1.0, 70], [1.2, 100]], critical_below: 10, source_id: "…" }
+```
+
+- `curve`: puntos `[valor, calificación]` en orden de valor; entre dos puntos la calificación va en línea recta, y fuera de ellos vale la del punto más cercano. `crop` quiere decir que la curva sale de la ficha del cultivo: `heat` va de 100 en `temp_opt_max_c` a 0 en `heat_max_c`, y `soil` de 0 en `ph_min` a 100 entre `ph_opt_min` y `ph_opt_max` y a 0 en `ph_max`.
+- `critical_below`: una señal es crítica si su calificación baja de ese número (R2). `soil` nunca es crítica (R10).
+- **Los números de este ejemplo son ilustrativos.** Los de verdad los fija HU-075, cada curva con su `source_id` (R8). Sin fuente para una curva, la señal es `insufficient_data` (R1).
+
+### `catalog/sources.yaml` (HU-122)
+
+```yaml
+version: "1.0.0"
+regions:
+  co-boyaca-cundinamarca:
+    water:  { rain: imerg, rain_contrast: [nasa_power], et0: nasa_power, soil_moisture_contrast: [nasa_power, smap] }
+    frost:  { used: nasa_power }
+    heat:   { used: nasa_power }
+    soil:   { used: soilgrids }
+    supply: { used: eva, contrast: [] }
+    market: { used: dane_sipsa }
+```
+
+Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources` hace fallar el pipeline (R8). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
+
+### Reglas de rotación como datos (`rotation_rules`, HU-062)
+
+Cada regla es una fila con un `condition_type` de esta lista cerrada. El motor solo sabe evaluar estos tipos; una regla con otro tipo hace fallar el pipeline. Una estrategia se evalúa sobre su secuencia de ciclos con los cultivos anteriores delante (`previous_crop_ids`).
+
+| `condition_type` | `kind` | Qué mira | `params` | `levels` |
+|---|---|---|---|---|
+| `same_family_consecutive` | `filter` | Dos ciclos seguidos (o el último anterior y el primero) de la misma familia | `{"families": null}` (nulo: todas) | — |
+| `family_return_min_cycles` | `filter` o `health` (`pest_break`) | Una familia vuelve antes de `min_cycles` ciclos de otras familias | `{"family": "solanaceae", "min_cycles": 2}` | Cortes por ciclos de espera, por ejemplo `{"favorable": 2, "moderate": 1}` |
+| `legume_cycles` | `health` (`nitrogen`) | Cuántos ciclos tienen un cultivo con `fixes_nitrogen` (o un abono verde con leguminosa) | `{}` | Por número de ciclos, `{"favorable": 2, "moderate": 1}` |
+| `organic_matter_cycles` | `health` (`organic_carbon`) | Cuántos ciclos devuelven materia orgánica (abono verde o descanso), según el carbono del suelo | `{"soc_low_g_kg": 20}` | Por número de ciclos, con el suelo bajo y con el suelo normal |
+| `covered_months_pct` | `health` (`soil_cover`) | Porcentaje de los meses de la estrategia con el suelo cubierto por un ciclo | `{}` | `{"favorable": 80, "moderate": 60}` |
+| `bare_months_on_slope` | `health` (`erosion`) | Meses descubiertos cuando la pendiente pasa de `slope_pct_from` | `{"slope_pct_from": 8}` | Menos es mejor: `{"favorable": 1, "moderate": 3}` |
+
+- `levels` dice desde qué valor un criterio es `favorable` o `moderate` (menos que eso, `unfavorable`). En `bare_months_on_slope` los cortes son máximos. En un terreno con menos pendiente que `slope_pct_from`, `erosion` es `favorable`.
+- Un criterio de `soil_health` sin una regla `health` con fuente es `insufficient_data` (R1, R8).
+- Los números de los ejemplos son ilustrativos: los fija HU-062, cada regla con su `source_id`.
 
 ## Base de datos de cuentas (PostgreSQL)
 
@@ -69,7 +141,7 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, apa
 - `activity_log`: trazabilidad de lo que hacen agricultores y administradores. Ver «Trazabilidad» más abajo.
 - `login_attempts` (agregada el 12 de octubre de 2026; aprobada por Felipe): `attempt_id`, `username_hash` y `attempted_at`. Una fila por intento fallido de entrar, de cambiar la contraseña o de borrar la cuenta, solo para el **tope general** de 20 intentos en 15 minutos por usuario desde cualquier conexión (cambiado el 15 de octubre de 2026; aprobado por Felipe: antes era el único tope, de 5). El tope de 5 por conexión vive en memoria (ver «Cómo viaja la credencial»). Guarda el hash del usuario que se intentó, nunca el texto (podría ser una contraseña escrita en el campo equivocado), ni la IP. Las filas de más de 15 minutos se borran solas. La fila se anota **antes** de verificar la contraseña y se quita si era la buena, para que varias peticiones a la vez no se salten el tope; un intento rechazado con 429 no se anota, así que no alarga el bloqueo. Está en la base de datos para que el tope sobreviva a un reinicio.
 - `usage_daily` (P1, HU-170): contador anónimo de uso para las métricas. En el P0 la tabla no existe y los endpoints de cálculo no escriben nada en la base de datos. Columnas: `day` (fecha), `endpoint` (`diagnostics`, `rotations`, `changes`, `calendar`, `water_plans`, `scenarios`), `municipality_id`, `crop_id` y `count`; llave (`day`, `endpoint`, `municipality_id`, `crop_id`). Cada consulta de cálculo suma 1 a su fila. El `crop_id` que se cuenta: en `/diagnostics`, `/changes`, `/calendar` y `/scenarios`, el cultivo consultado; en `/water-plans`, una fila por cultivo; en `/rotations`, el primer cultivo de `previous_crop_ids` (el más reciente). No tiene usuario, sesión, IP, hora, fecha de siembra, prioridades, área ni riego, ni se puede unir con `activity_log`. Se conserva como estadística. No cambia ningún resultado (R4). Si falla, la consulta responde igual.
-- El suelo de un lote **no se guarda**: la API lo calcula al vuelo como la mediana de las celdas de `soil_grid` que toca su polígono. Un lote sin polígono usa `soil_municipality`.
+- El suelo, la altitud y la pendiente de un lote **no se guardan**: la API los calcula al vuelo con `grid_cells` (ver «La rejilla de 250 m»). Un lote sin polígono usa los de su municipio.
 - `support_tickets` (P1): `ticket_id`, `user_id`, `lot_id` (opcional), `message`, `status` (`open`, `in_progress`, `closed`), `created_at`, `closed_at`.
 - `crop_id` y `municipality_id` deben existir en el catálogo publicado; si no, 422.
 - Un lote puede tener varias temporadas en curso a la vez, cada una en una parte del lote. Las partes son de área, no de forma: no se dibujan. La suma de `area_ha` de las temporadas en curso no puede pasar del `area_ha` del lote; si pasa, 422. Vale también al editar el lote: un `PATCH` que lo deja más chico que lo que ocupan sus temporadas en curso responde 422. Sin `area_ha`, la temporada ocupa todo lo que queda libre.
@@ -162,11 +234,13 @@ Nunca se escriben: contraseñas, tokens, cookies, la cabecera `Authorization`, p
 
 ## Endpoints
 
+Los endpoints de cálculo ya existen con esta forma y sus ejemplos en el OpenAPI (HU-012): validan la entrada y responden `501` `not_implemented` hasta que llega su HU del motor.
+
 | Endpoint | Uso | Prioridad |
 |---|---|---|
 | `GET /api/v1/catalogs/municipalities` | Municipios habilitados de la región: una lista de `municipality_id`, `name`, `department`, `lat`, `lon`, por departamento y nombre. Sin dataset publicado, `503` `dataset_unavailable` | P0 |
 | `GET /api/v1/catalogs/crops` | Cultivos habilitados: `crop_id`, `name_es`, `kind`, `archetype` (cómo se dibuja, HU-187), `family`, `cycle_months`. El diagnóstico solo acepta `kind = crop`; las rotaciones aceptan los tres | P0 |
-| `GET /api/v1/catalogs/municipalities/{municipality_id}/soil` | Suelo estimado del municipio (`soil_municipality`) con su incertidumbre y `source_id` | P0 |
+| `GET /api/v1/catalogs/municipalities/{municipality_id}/soil` | Suelo estimado del municipio (`soil_municipality`): cada propiedad con su valor y, el pH y el carbono orgánico, con su rango del 5 al 95 %; más `slope_pct`, `cells`, `quality` y `source_id`. Sin suelo publicado, `503` `dataset_unavailable` | P0 |
 | `GET /api/v1/trends?municipality_id=&crop_id=&sowing_date=` | Series para las gráficas: agua, área sembrada y verdor (ver «Cuerpos y respuestas») | P0 |
 | `POST /api/v1/diagnostics` | Diagnóstico de una ventana de siembra | P0 |
 | `POST /api/v1/rotations` | Estrategias de rotación de hasta 3 ciclos, ordenadas según las prioridades, con la salud del suelo y el diagnóstico de cada ciclo | P0 |
@@ -285,6 +359,7 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 | Cultivo que no es apto para la zona | `200` con `suitability.level = not_suitable`, luz `red` y acción `rotate`; sin ventanas |
 | Las cuentas no se pueden atender (agregado el 12 de octubre de 2026; aprobado por Felipe): la base de datos no responde, o su esquema no está en la última migración que trae el código | `503` en los endpoints de cuenta, con `code = accounts_database_down` o `accounts_migration_pending`. El mensaje para la persona es el mismo en los dos casos («Las cuentas no están disponibles en este momento. Puede seguir consultando sin cuenta.»); el motivo exacto va al log de la terminal. Los endpoints que no usan la base de datos siguen respondiendo |
 | El dataset publicado no está o no se puede leer (agregado el 15 de octubre de 2026; aprobado por Felipe) | `503` `dataset_unavailable` en los endpoints que lo leen (catálogos y crear o editar un lote); el motivo va al log. `GET /version` responde igual, con los campos del dataset nulos |
+| Endpoint del contrato que todavía no está construido (decisión 15) | `501` `not_implemented`, con el mismo formato de error. El OpenAPI ya trae su forma y sus ejemplos |
 | Fallo interno | `500` con `{"error": {"code": "...", "message": "...", "request_id": "..."}}` |
 
 ## Cuerpos y respuestas
@@ -315,7 +390,19 @@ Tres series separadas, cada una con su unidad, para no mezclar unidades en un ej
 - `supply`: por año, `planted_ha` (ha) y `preliminary` del semestre en que cae la fecha de siembra.
 - `ndvi`: por `period` (1 a 23), `ndvi_normal` del municipio, con `source_id` y `quality` (HU-208). Sirve para ver cuándo suele estar verde el campo junto a la ventana.
 
-Sin datos para una serie, la serie viene vacía con `status = insufficient_data`.
+Sin datos para una serie, la serie viene vacía con `status = insufficient_data`. No guarda nada (R9).
+
+```json
+{
+  "request": { "municipality_id": "MUNICIPIO_ID", "crop_id": "papa", "sowing_date": "2027-08-02" },
+  "water": { "status": "available", "source_id": "imerg", "unit": "mm",
+             "points": [ { "year": 2015, "precip_mm": 410, "need_mm": 465 } ] },
+  "supply": { "status": "insufficient_data", "source_id": "eva", "unit": "ha", "semester": "B", "points": [] },
+  "ndvi": { "status": "available", "source_id": "modis_ndvi", "quality": "ok",
+            "points": [ { "period": 1, "ndvi_normal": 0.52 } ] },
+  "versions": { "dataset": "2026.11.0", "rules": "1.0.0" }
+}
+```
 
 ### Respuesta de `GET /api/v1/version`
 
@@ -344,7 +431,7 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - `cycles`: 2 o 3; sin él, 3. Otro valor responde 422.
 - `sowing_date`: la fecha en que se sembraría el primer ciclo. Anterior a hoy o a más de doce meses responde 422. Los ciclos siguientes pueden caer después de esos doce meses.
 - `previous_crop_ids`: de 0 a 3 cultivos del catálogo (de cualquier `kind`), el más reciente primero. Vacía es la primera siembra del terreno.
-- `current_crop_ids` (decisión 14, por aprobar): opcional; la rotación que el agricultor viene haciendo, de 2 a 3 cultivos del catálogo en el orden en que los siembra. Se evalúa como la estrategia de referencia (`current_strategy`); si tiene menos cultivos que `cycles`, se repite desde el primero. Sin ella no hay referencia y `limitations` lo dice. Con menos de 2 o más de 3 cultivos, o alguno fuera del catálogo, responde 422.
+- `current_crop_ids` (decisión 14, aprobado por Felipe el 8 de noviembre de 2026): opcional; la rotación que el agricultor viene haciendo, de 2 a 3 cultivos del catálogo en el orden en que los siembra. Se evalúa como la estrategia de referencia (`current_strategy`); si tiene menos cultivos que `cycles`, se repite desde el primero. Sin ella no hay referencia y `limitations` lo dice. Con menos de 2 o más de 3 cultivos, o alguno fuera del catálogo, responde 422.
 - `priorities`: las cuatro prioridades de la rotación (`water`, `soil`, `income`, `risk`), un entero de 0 a 5 cada una.
 - `signal_priorities`: opcional; los pesos de 0 a 5 por señal para el diagnóstico de cada ciclo, igual que `priorities` de `/diagnostics`. Sin él, los de `weights.yaml`.
 - `irrigated`: igual que en el diagnóstico. `lot_id` es opcional y exige sesión: con él, el suelo, la altitud, el verdor e `irrigated` salen del lote.
@@ -412,21 +499,21 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 }
 ```
 
-- `strategies`: hasta 10, en orden (`rank`). `scores` trae el puntaje de 0 a 100 de cada criterio (nulo si no califica) y `total_score` el total ponderado por `weights`.
+- `strategies`: hasta 10, en orden (`rank`). `scores` trae el puntaje de 0 a 100 de cada criterio (nulo si no califica) y `total_score` el total ponderado por `weights`. Cómo se calcula cada criterio está en `specs/01-reglas.md` («Estrategias de rotación»).
 - Cada ciclo trae además `diagnosis`: el diagnóstico de esa ventana, con la misma forma de «Respuesta de diagnóstico» (sin `request`, `best_windows` ni `alternatives`). El ejemplo lo omite por brevedad. `light` es la luz con los pesos de quien consulta y `light_default` con los de AgroSense. En un ciclo de descanso, `light`, `light_default`, `limiting_signal` y `diagnosis` vienen nulos.
 - `kind`: `suggested` en las estrategias del ranking y `current` en la de referencia. `vs_current`: en cada sugerida, la diferencia de cada criterio y del total frente a la actual (positivo es mejor); nulo sin rotación actual o si el criterio no califica en alguna de las dos.
-- `current_strategy` (decisión 14, por aprobar): la rotación actual evaluada con la misma forma de una estrategia (el ejemplo omite sus ciclos y su salud del suelo por brevedad), con `rank` nulo. **Nunca se excluye:** si viola una regla, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, `issues` lo dice con la misma forma de `excluded` (sin `crop_ids`). Nula sin `current_crop_ids`. Una estrategia sugerida igual a la actual no se repite en `strategies`.
+- `current_strategy` (decisión 14, aprobado por Felipe el 8 de noviembre de 2026): la rotación actual evaluada con la misma forma de una estrategia (el ejemplo omite sus ciclos y su salud del suelo por brevedad), con `rank` nulo. **Nunca se excluye:** si viola una regla, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, `issues` lo dice con la misma forma de `excluded` (sin `crop_ids`). Nula sin `current_crop_ids`. Una estrategia sugerida igual a la actual no se repite en `strategies`.
 - `soil_health`: los cinco criterios de salud del suelo (`erosion` desde la decisión 14), cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons` y `rule_ids` (reglas de `rotation_rules`, con fuente). **No es una predicción de cuánto mejora el suelo.**
-- `excluded`: las estrategias descartadas, con el ciclo y el motivo. `kind` es `rule` (viola una regla de filtro; trae `rule_id`), `not_suitable` (un cultivo no se da en la zona), `soil_ph` (el pH queda fuera de todo el intervalo) o `high_risk` (un ciclo con `water`, `frost` o `heat` desfavorable y crítica; trae `signal`).
+- `excluded`: las estrategias descartadas, con el ciclo y el motivo. **Trae hasta 10** (decisión 15): primero las que quedaron fuera por un solo motivo, y entre ellas, en el orden en que se habrían ordenado. `excluded_counts` cuenta todas las descartadas por `kind` (por ejemplo `{"rule": 212, "high_risk": 48, "not_suitable": 30, "soil_ph": 0}`), para que la web diga cuántas son sin traerlas todas. `kind` es `rule` (viola una regla de filtro; trae `rule_id`), `not_suitable` (un cultivo no se da en la zona), `soil_ph` (el pH queda fuera de todo el intervalo) o `high_risk` (un ciclo con `water`, `frost` o `heat` desfavorable y crítica; trae `signal`).
 - La oferta y el mercado no excluyen estrategias: entran solo por `income`.
-- `soil_basis`: `lot` o `municipality`.
+- `soil_basis` y `slope_basis`: `lot` o `municipality`, de dónde salen el suelo y la pendiente.
 - Sin estrategias válidas, `strategies` viene vacía y `excluded` dice por qué.
 
 Con cuenta, la web arma `previous_crop_ids` con los cultivos de las temporadas de las que viene el terreno que se va a sembrar (`follows_season_ids`). Con el suelo (del lote o del municipio): un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` excluye la estrategia por regla (R3); el carbono orgánico entra al criterio `organic_carbon` de `soil_health`, con reglas de `rotation_rules` con fuente. Cada estrategia trae de 2 a 4 razones.
 
 Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 2 ciclos sin `soil_health`, y `previous_crop_ids` pedía al menos un cultivo.
 
-> **8 de noviembre de 2026 (decisión 14, por aprobar por Felipe o Haider):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta. Hay que avisarle a Haider.
+> **8 de noviembre de 2026 (decisión 14, aprobado por Felipe):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta.
 
 ### Cuerpo de `POST /api/v1/water-plans`
 
@@ -445,6 +532,31 @@ La suma de `area_pct` no puede pasar de 100. Lo que falta es terreno en descanso
 
 La lluvia es la de la fuente que define `sources.yaml` y la ET0 es la de `climate_month`; la respuesta dice la fuente de cada una. Trae además `soil_moisture`: por mes, la humedad del suelo normal de la zona según cada fuente (`source_id`, `indicator`, `value`, `unit`), la de POWER y, si existe, la de SMAP. Es contraste: no cambia el déficit.
 
+```json
+{
+  "request": { "municipality_id": "MUNICIPIO_ID", "total_area_ha": 1.26,
+               "crops": [ { "crop_id": "papa", "area_pct": 100, "sowing_date": "2027-08-02" } ] },
+  "crops": [
+    { "crop_id": "papa", "area_ha": 1.26, "sowing_date": "2027-08-02", "harvest_estimate": "2027-12-27", "harvest_basis": "calendar",
+      "months": [
+        { "year": 2027, "month": 9, "stage": "development", "need_mm": 95, "rain_mm": { "normal": 70, "dry": 41 },
+          "deficit_mm": { "normal": [20, 30], "dry": [48, 62] }, "volume_m3": { "normal": [252, 378], "dry": [605, 781] } }
+      ],
+      "total_volume_m3": { "normal": [900, 1300], "dry": [2100, 2700] } }
+  ],
+  "farm": { "months": [ { "year": 2027, "month": 9, "volume_m3": { "normal": [252, 378], "dry": [605, 781] } } ],
+            "total_volume_m3": { "normal": [900, 1300], "dry": [2100, 2700] } },
+  "soil_moisture": [ { "month": 9, "source_id": "nasa_power", "indicator": "soil_wetness_root", "value": 0.61, "unit": "fracción" } ],
+  "sources": { "rain": "imerg", "et0": "nasa_power", "soil": "soilgrids" },
+  "soil_basis": "municipality",
+  "limitations": ["Es una estimación con el clima de la zona: verifique la humedad del suelo en su lote"],
+  "versions": { "dataset": "2026.11.0", "rules": "1.0.0" }
+}
+```
+
+- `deficit_mm` y `volume_m3` son rangos `[mínimo, máximo]` (R10): el rango sale de la retención de agua del suelo con sus percentiles 5 y 95. Un mes sin déficit trae `[0, 0]`.
+- `dry` es el año seco de la lluvia (`precip_dry_mm`). Sin lluvia de la fuente usada para un mes, ese mes trae `status = insufficient_data` y valores nulos (R1).
+
 ### Respuesta de `GET /api/v1/changes`
 
 `GET /api/v1/changes?municipality_id=MUNICIPIO_ID&crop_id=papa&irrigated=false`. Compara dos periodos de la misma fuente (ver «Qué cambió en la zona» en `specs/01-reglas.md`). **Es historia comparada, nunca pronóstico.** No guarda nada (R9). `irrigated` es opcional; sin él se compara sin riego y se dice en las limitaciones.
@@ -456,7 +568,8 @@ La lluvia es la de la fuente que define `sources.yaml` y la ET0 es la de `climat
     "before": { "period_id": "p1981_2000", "start_year": 1981, "end_year": 2000, "source_id": "nasa_power" },
     "after": { "period_id": "p2005_2024", "start_year": 2005, "end_year": 2024, "source_id": "nasa_power" }
   },
-  "suitability": { "level": "suitable", "score": 92, "reasons": ["La altitud del municipio (2.660 m) está dentro del rango de la papa"] },
+  "suitability": { "level": "suitable", "score": 92, "basis": "municipality", "tmean_annual_c": 12.8, "altitude_m": 2660,
+                   "reasons": ["La temperatura media anual del municipio (12,8 °C) está dentro del rango de la papa (8 a 16 °C)"] },
   "months": [
     { "month": 1,
       "frost_freq_pct": { "status": "available", "before": 30, "after": 18, "change": -12 },
@@ -514,11 +627,11 @@ Más `harvest_estimate` y `harvest_basis`. El cruce entre el riesgo y la etapa l
 - `POST /api/v1/me/password`: `current_password` y `new_password` (al menos 8 caracteres y distinta de la actual). Responde `204`.
 - `POST /api/v1/lots` y `PATCH /api/v1/lots/{lot_id}`: `name`, `municipality_id`, `irrigated` (opcional: si el lote tiene riego) y `geometry` (polígono GeoJSON). Sin `geometry`, `area_ha` (mayor que cero) es obligatoria; con `geometry`, `area_ha` la calcula la API y se ignora la enviada.
 - Con `geometry` (desde el 15 de octubre de 2026, entrega 2; aprobado por Felipe): un polígono GeoJSON en WGS84 de un solo anillo, sin huecos, de 3 a 500 puntos, sin cruces y de área mayor que cero; si no, `422` `invalid_geometry`. Debe caer dentro del límite publicado de su municipio, con un margen de unos 10 m por la simplificación del límite; si no, `422` `geometry_outside_municipality`, con el nombre del municipio. El área la calcula la API sobre el elipsoide WGS84 y la enviada se ignora. Sin `geometry` ni `area_ha`, `422`. En un `PATCH`, el dibujo no se quita (`geometry` nulo responde `422`), se corrige; cambiar de municipio un lote dibujado vuelve a validar su contorno en el nuevo. La API guarda el contorno en sentido antihorario y con 7 decimales (R4).
-- Respuesta de `GET /api/v1/lots/{lot_id}`: el lote, `soil` (las propiedades de `soil_grid` como mediana del polígono, con `basis`: `lot` o `municipality`, y `cells`; nulo mientras no esté publicado el suelo, HU-181) y `current_seasons` (lista, vacía si no hay temporadas en curso; de mayor a menor área) con `season_id`, `crop_id`, `area_ha`, `follows_season_ids`, `sowing_date`, `days_since_sowing`, `stage`, `stage_progress_pct`, `stage_method` (`thermal_time` si se usó la temperatura acumulada del municipio, `calendar` si se usó la duración por días porque faltan datos de temperatura o grados-día con fuente), `thermal_data_until` (fecha del último dato de temperatura usado; nula con `calendar`), `harvest_estimate` con su `harvest_basis` y `harvest_due` (ya pasó la cosecha estimada y no se ha registrado: la etapa se queda en la última, al 100 %) y `versions`. En el MVP la etapa sale del calendario (HU-220): `stage_method = calendar` y `harvest_basis = calendar`. Un cultivo sin etapas (el descanso) trae `stage`, `stage_progress_pct` y `harvest_estimate` nulos. `harvest_estimate`, `harvest_basis` y `harvest_due`: por aprobar (Felipe), 17 de octubre de 2026. Es una estimación con el clima del municipio, no una observación del lote (HU-150).
+- Respuesta de `GET /api/v1/lots/{lot_id}`: el lote, `soil` (las propiedades de suelo de `grid_cells` como mediana del polígono, con `basis`: `lot` o `municipality`, y `cells`; nulo mientras no esté publicado el suelo, HU-181), `terrain` (`altitude_m`, `slope_pct`, `basis` y `cells`, de `grid_cells`; nulo mientras no esté publicada la rejilla, HU-206) y `current_seasons` (lista, vacía si no hay temporadas en curso; de mayor a menor área) con `season_id`, `crop_id`, `area_ha`, `follows_season_ids`, `sowing_date`, `days_since_sowing`, `stage`, `stage_progress_pct`, `stage_method` (`thermal_time` si se usó la temperatura acumulada del municipio, `calendar` si se usó la duración por días porque faltan datos de temperatura o grados-día con fuente), `thermal_data_until` (fecha del último dato de temperatura usado; nula con `calendar`), `harvest_estimate` con su `harvest_basis` y `harvest_due` (ya pasó la cosecha estimada y no se ha registrado: la etapa se queda en la última, al 100 %) y `versions`. En el MVP la etapa sale del calendario (HU-220): `stage_method = calendar` y `harvest_basis = calendar`. Un cultivo sin etapas (el descanso) trae `stage`, `stage_progress_pct` y `harvest_estimate` nulos. `harvest_estimate`, `harvest_basis` y `harvest_due`: aprobado por Felipe el 8 de noviembre de 2026. Es una estimación con el clima del municipio, no una observación del lote (HU-150).
 - Respuesta de `GET /api/v1/seasons/{season_id}/growth`: `points` (uno por semana, de la siembra a la cosecha estimada) con `date`, `stage`, `stage_progress_pct`, `gdd_accumulated` y `basis`: `observed` mientras hay temperatura real (`climate_day`, hasta `thermal_data_until`) y `normal_year` después (`climate_normal_doy`). Más `today`, `harvest_estimate` (fecha, siempre con `harvest_basis`) y `versions`. Lo `normal_year` es una estimación con un año normal, **no un pronóstico**: la web lo rotula así. Sin temperatura con fuente o sin grados-día del cultivo, se usa la duración por calendario y se dice (R1). No guarda nada.
 - `POST /api/v1/lots/{lot_id}/seasons`: `crop_id`, `sowing_date`, `area_ha` (opcional: sin ella ocupa lo que queda libre del lote), `follows_season_ids` (opcional: qué había antes en ese terreno) y el diagnóstico que vio el usuario al sembrar (`diagnosis_light`, `diagnosis_light_default`, `diagnosis_action`, `diagnosis_weights`, `diagnosis_irrigated`, `dataset_version`, `rules_version`), que la web toma de la respuesta de `/diagnostics`. Si no consultó el diagnóstico, esos campos van nulos.
 - `PATCH /api/v1/seasons/{season_id}`: `harvest_date` o correcciones de `crop_id`, `sowing_date`, `area_ha` y `follows_season_ids`, con las mismas validaciones. Las dos rutas responden la temporada con su etapa de hoy (los mismos campos de `current_seasons`); `GET /api/v1/lots/{lot_id}/seasons` también, con la etapa nula en las cosechadas.
-- Validaciones de las temporadas (422): el cultivo está en el catálogo; `sowing_date` no es posterior a hoy; `harvest_date` va entre `sowing_date` y hoy; una cosecha no se deshace ni se mueve a después de la siembra de una temporada que viene de ella; `follows_season_ids` sin repetidas. El área de una temporada en curso no pasa de lo libre del lote (el área menos las demás temporadas en curso; el terreno de una cosechada ya está libre): `area_exceeds_free`, «No cabe: en el lote quedan X ha libres.». Por aprobar (Felipe), 17 de octubre de 2026.
+- Validaciones de las temporadas (422): el cultivo está en el catálogo; `sowing_date` no es posterior a hoy; `harvest_date` va entre `sowing_date` y hoy; una cosecha no se deshace ni se mueve a después de la siembra de una temporada que viene de ella; `follows_season_ids` sin repetidas. El área de una temporada en curso no pasa de lo libre del lote (el área menos las demás temporadas en curso; el terreno de una cosechada ya está libre): `area_exceeds_free`, «No cabe: en el lote quedan X ha libres.». aprobado por Felipe el 8 de noviembre de 2026.
 - Respuesta de `GET /api/v1/lots/{lot_id}/progress`: `seasons_count`, `valid_rotations_count`, `rotations` (una por cada relación entre una temporada y una de sus sucesoras, con `from_season_id`, `to_season_id`, `valid` y `violated_rule_ids`, la lista de reglas de `rotation_rules` que viola; vacía si cumple) y `milestones` (cada uno con `milestone_id`, `achieved_at` y `basis`: la regla de `rotation_rules` o el hecho registrado que lo produce), más `versions`.
 
 ### Respuesta de diagnóstico
@@ -535,7 +648,10 @@ Más `harvest_estimate` y `harvest_basis`. El cruce entre el riesgo y la etapa l
   "suitability": {
     "level": "suitable",
     "score": 92,
-    "reasons": ["La altitud del municipio (2.660 m) está dentro del rango de la papa (2.000 a 3.500 m)"]
+    "basis": "municipality",
+    "tmean_annual_c": 12.8,
+    "altitude_m": 2660,
+    "reasons": ["La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"]
   },
   "window": {
     "sowing_start": "2026-08-03",
@@ -605,8 +721,7 @@ Más `harvest_estimate` y `harvest_basis`. El cruce entre el riesgo y la etapa l
       "counts": false,
       "indicators": ["planted_change_pct"],
       "sources": [
-        { "source_id": "eva", "indicator": "planted_change_pct", "value": 35, "unit": "%", "period": "2025-B", "preliminary": true, "used": true },
-        { "source_id": "agrosense", "indicator": "active_plantings_ha", "value": 38, "unit": "ha", "period": "2026-10-11", "accounts": 14, "used": false }
+        { "source_id": "eva", "indicator": "planted_change_pct", "value": 35, "unit": "%", "period": "2025-B", "preliminary": true, "used": true }
       ],
       "reasons": ["En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"]
     },
@@ -630,7 +745,8 @@ Más `harvest_estimate` y `harvest_basis`. El cruce entre el riesgo y la etapa l
 
 - `overall` usa los pesos de quien consulta y `overall_default` los de AgroSense; la web muestra las dos luces cuando difieren. `counts` dice si la señal cuenta para la luz con los pesos de quien consulta, `score` es su calificación de 0 a 100 y cada luz trae su `limiting_signal`, la señal que más limita con esos pesos.
 - `sources` aparece en una señal cuando hay más de una fuente: todas se muestran para contrastar y `used` dice cuál calculó la señal. En `water` trae la lluvia de GPM IMERG y la de NASA POWER (una con `used = true`) y, con `used = false`, la humedad del suelo de la zona: `soil_wetness_root` de POWER y, si existe, `sm_rootzone_m3_m3` de SMAP, cada una en su unidad. El ejemplo no lo muestra.
-- Con `lot_id`, la aptitud usa la altitud del lote (NASADEM) y la razón lo dice.
+- `suitability` trae `basis` (`lot` o `municipality`), `tmean_annual_c` y `altitude_m`: la temperatura media anual que se usó y la altitud a la que se corrigió. Con `lot_id`, es la del lote (`grid_cells`) y la razón lo dice.
+- En P1 (HU-200), `supply.sources` suma las siembras registradas en AgroSense (`source_id = agrosense`, `used = false`, solo con 5 cuentas o más). En el MVP no viene.
 - `alternatives` es P1 (HU-197): en el MVP no viene. Cuando exista, viene cuando la acción, con alguno de los dos juegos de pesos, es `rotate`: hasta tres cultivos aptos para la zona que en esta ventana salen bien en clima y tienen mejor oferta. Nunca uno no apto ni uno que sale mal en clima. Se ordenan igual que las ventanas (factor limitante y después prioridades). Un candidato con aptitud `insufficient_data` puede aparecer, con esa limitación. También vienen cuando el cultivo consultado no es apto.
 - `best_windows` viene cuando la acción de `overall` o de `overall_default` es `other_window`: hasta tres ventanas de los próximos doce meses, sin las de alto riesgo, cada una con `sowing_start`, `harvest_estimate`, `limiting_signal`, `limiting_score`, `weighted_score` y `high_risk`. Puede venir vacío. En el ejemplo no viene, porque sus acciones son `sow` y `rotate`.
 - `harvest_estimate` es siempre una fecha y su base va al lado, en `harvest_basis`: `calendar` cuando sale de la duración de la ficha (el MVP, HU-220) y `normal_year` cuando sale del clima de un año normal (P1, HU-150 y HU-186). Así en `window`, en los ciclos de `/rotations` y, en P1, en «Mi cultivo» de `/calendar` y en `/growth`.

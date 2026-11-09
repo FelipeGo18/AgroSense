@@ -31,6 +31,8 @@ class Municipality:
     department: str
     lat: float | None
     lon: float | None
+    # Mediana de la pendiente de sus celdas de `grid_cells` (decisión 14); nula hasta HU-206.
+    slope_pct: float | None = None
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,9 @@ class Dataset:
     crops: dict[str, dict[str, Any]]
     # Las etapas de cada cultivo en orden (`crop_stages`), para la etapa por calendario (HU-220). Vacío sin catálogo.
     stages: dict[str, list[StageSpan]]
+    # El suelo estimado de cada municipio (`soil_municipality`, HU-181), por `municipality_id`. Vacío si el dataset no
+    # lo trae: entonces el suelo es `insufficient_data` (R1).
+    soil: dict[str, dict[str, Any]]
 
 
 def load(folder: Path) -> Dataset:
@@ -65,6 +70,8 @@ def load(folder: Path) -> Dataset:
         crops = pl.read_parquet(crops_path).to_dicts() if crops_path.exists() else []
         stages_path = folder / "crop_stages.parquet"
         stage_rows = pl.read_parquet(stages_path).to_dicts() if stages_path.exists() else []
+        soil_path = folder / "soil_municipality.parquet"
+        soil = pl.read_parquet(soil_path).to_dicts() if soil_path.exists() else []
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -80,6 +87,7 @@ def load(folder: Path) -> Dataset:
                 department=row["department"],
                 lat=row["lat"],
                 lon=row["lon"],
+                slope_pct=row.get("slope_pct"),
             )
             for row in municipalities.iter_rows(named=True)
         },
@@ -87,6 +95,7 @@ def load(folder: Path) -> Dataset:
         boundaries={} if boundaries is None else _geometries(boundaries),
         crops={crop["crop_id"]: crop for crop in crops},
         stages=_stages(stage_rows),
+        soil={row["municipality_id"]: row for row in soil},
     )
 
 

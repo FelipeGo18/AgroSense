@@ -212,7 +212,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 **Lo que exige:** cuenta de NASA Earthdata y descargas recortadas a la región; fichas de los 7 cultivos y reglas de rotación con fuente en la fase 0; tablas nuevas en el contrato; diseñar en Figma las pantallas nuevas antes de programarlas; y confirmar esta semana qué se puede llevar preparado al evento (HU-004).
 
-**Orden de recorte de los productos NASA:** primero SMAP, luego GIBS, luego el NDVI por lote (queda por municipio). POWER, NASADEM e IMERG no se recortan.
+**Orden de recorte de los productos NASA:** primero SMAP, luego GIBS, luego el NDVI por lote (queda por municipio). POWER, NASADEM e IMERG no se recortan. *(Cambiado por las decisiones 14 y 15: primero GIBS y después SMAP; el NDVI por lote pasó a P1.)*
 
 **Reglas asociadas:** R1, R2, R3, R4, R5, R6, R8, R9 y R10. R9 suma `/changes` a los endpoints de cálculo y R10 suma la humedad del suelo y el verdor como datos de la zona. Detalle en `specs/01-reglas.md` («Estrategias de rotación» y «Qué cambió en la zona»). Decidida por Felipe el 11 de octubre de 2026.
 
@@ -234,6 +234,19 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **Más productos de la NASA, en P1, cada uno por su adaptador (decisión 12):** GRACE-FO (tendencia del agua almacenada, para «Qué cambió»; sus celdas miden cientos de kilómetros, así que es la tendencia de la región, nunca del lote) y ECOSTRESS (temperatura de la superficie y evapotranspiración a 70 m, con pasadas irregulares). Landsat sigue en P1 con HLS (HU-043). GEDI (biomasa) no entra: el reto lo nombra solo como ejemplo.
 - **El valor como forraje** entra al catálogo en P1: el reto lo nombra entre las prioridades del agricultor.
 - **Seguimos con reglas, no con aprendizaje automático (decisión 4).** El reto sugiere técnicas de IA como opción («you may»). Las reglas con fuente dan lo que el reto pide para cada estrategia: por qué se sugiere, qué evidencia la respalda, qué beneficios tiene, dónde faltan datos y qué debe revisar el agricultor. La entrega lo explica (HU-132).
+
+## 15. El contrato se congela sin huecos
+
+**Decidido el 8 de noviembre de 2026; Felipe lo dejó en manos del equipo de diseño y lo aprobó.** Antes de congelar el contrato (HU-011 y HU-012) se revisó completo, tabla por tabla y endpoint por endpoint, con cuatro preguntas: quién produce y quién usa cada cosa, si cabe, si cuadra con las reglas y qué quedaba «por confirmar». Lo que se decidió:
+
+- **Una sola rejilla de 250 m (`grid_cells`).** La altitud de NASADEM a 30 m en toda la región serían unos 52 millones de celdas: no cabe en el repositorio ni en la memoria de la API. La rejilla común, en grados (0,0025°), lleva la altitud (promedio de los píxeles de 30 m), la pendiente (mediana calculada a 30 m, para no perder el relieve) y el suelo de SoilGrids, con el mismo `cell_id`. Un lote se resuelve con una sola tabla.
+- **El NDVI por lote pasa a P1** (HU-209): con 23 periodos serían unos 14 millones de filas. En el P0, el verdor es el del municipio.
+- **Las reglas de rotación son datos que el motor puede leer:** una lista cerrada de tipos de condición, con sus números y sus cortes, en vez de texto libre.
+- **`thresholds.yaml` y `sources.yaml` tienen forma escrita:** las curvas se dan como puntos y cada señal dice qué fuente la calcula por región.
+- **Las fórmulas de las estrategias quedan decididas** (antes eran un supuesto de HU-082): agua y riesgo por los ciclos, el ingreso con un abono verde o un descanso valiendo 0, el desempate y el encadenamiento de los ciclos.
+- **`/rotations` trae hasta 10 descartadas** y el conteo por motivo: con 8 cultivos y 3 ciclos puede haber cientos.
+- **`/water-plans` y `/trends` tienen respuesta escrita**, el suelo trae el rango del carbono orgánico (R10), `quality` solo vale `ok` o `partial`, y un endpoint que no está construido responde `501`.
+- **Ejemplos corregidos:** la aptitud se explica por la temperatura media anual (decisión 13) y la respuesta dice cuál se usó; las siembras registradas en AgroSense son P1.
 
 ## Cómo se conectan
 

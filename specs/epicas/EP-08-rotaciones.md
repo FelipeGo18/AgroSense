@@ -54,7 +54,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
   - [ ] Un ciclo que cae más de doce meses después de hoy se evalúa igual, con la historia de la zona; la oferta usa el último dato de su semestre y la razón lo dice
 - **Reglas que aplican:** R1, R2, R4, R5, R6
 - **Contrato que toca:** `strategies[].cycles` de la respuesta de `POST /api/v1/rotations`
-- **Notas:** Decisión 12. Depende de HU-074, HU-191, HU-192 y HU-220. Supuesto por confirmar (regla de encadenamiento): el ciclo siguiente se siembra el lunes de la semana siguiente a la cosecha estimada del anterior. La alternativa, buscar la mejor ventana del cultivo en las semanas siguientes, queda por decidir. Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. Depende de HU-074, HU-191, HU-192 y HU-220. Encadenamiento decidido el 8 de noviembre de 2026 (decisión 15): el ciclo siguiente se siembra el lunes siguiente a la cosecha estimada del anterior. Agregada el 11 de octubre de 2026.
 
 ### HU-082 · Ordenar estrategias por prioridades
 
@@ -68,7 +68,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
   - [ ] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
 - **Reglas que aplican:** R1, R4, R5
 - **Contrato que toca:** `strategies[].scores`, `total_score` y `rank` de `POST /api/v1/rotations`
-- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Supuestos por confirmar: el tope de 10 estrategias, el desempate (primero `risk` más alto y después el orden de los `crop_id`) y la fórmula exacta de cada criterio. Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213.
+- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213.
 
 ### HU-083 · Explicar el orden de las estrategias
 
@@ -89,7 +89,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 - **Criterios de aceptación:**
   - [ ] Cumple el OpenAPI: recibe `municipality_id`, `sowing_date`, `previous_crop_ids`, `current_crop_ids` (HU-223), `cycles`, `priorities`, `signal_priorities`, `irrigated` y `lot_id`, según el contrato
   - [ ] 422 con `cycles` distinto de 2 o 3; `priorities` o `signal_priorities` con un peso fuera de 0 a 5 o todos en 0; `sowing_date` con formato inválido, anterior a hoy o a más de doce meses; `previous_crop_ids` con más de 3 cultivos o alguno fuera del catálogo; o `current_crop_ids` con menos de 2 o más de 3 cultivos o alguno fuera del catálogo
-  - [ ] La respuesta trae las estrategias excluidas con su motivo, incluidas las que tienen un cultivo no apto o un ciclo de alto riesgo
+  - [ ] La respuesta trae hasta 10 estrategias excluidas con su motivo, incluidas las que tienen un cultivo no apto o un ciclo de alto riesgo, y `excluded_counts` con el total por motivo
   - [ ] Sin estrategias válidas: 200 con `strategies` vacía y las exclusiones
   - [ ] 401 con `lot_id` y sin sesión; 404 con un lote ajeno
   - [ ] No guarda los datos de la finca ni quién consultó (R9)
