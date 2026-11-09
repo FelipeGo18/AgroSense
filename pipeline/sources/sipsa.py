@@ -21,6 +21,7 @@ from typing import IO, Any
 import polars as pl
 
 from pipeline.settings import get_settings
+from pipeline.sources import dane
 from pipeline.sources.fetch import fetch
 
 SOURCE_ID = "dane_sipsa"
@@ -30,8 +31,7 @@ PAGE_URL = (
     "servicio-web-para-consulta-de-la-base-de-datos-de-sipsa"
 )
 # Licencia de uso (HU-221): los términos del portal del DANE y la cita textual que piden a quien use sus datos.
-TERMS_URL = "https://www.dane.gov.co/index.php/terminos-y-condiciones"
-CITATION = "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co"
+TERMS_URL, CITATION = dane.TERMS_URL, dane.CITATION
 ENVELOPE = (
     '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:ser="http://servicios.sipsa.co.gov.dane/">'
     "<soap:Body><ser:promediosSipsaParcial/></soap:Body></soap:Envelope>"
@@ -267,6 +267,79 @@ def monthly(prices: pl.DataFrame, season: pl.DataFrame, crops: dict[str, Any]) -
     )
 
 
+# Los grupos en el orden en que le importan al altiplano: primero lo que más se siembra (papa), las frutas al final.
+GROUP_ORDER = ("Tubérculos, raíces y plátanos", "Verduras y hortalizas", "Frutas")
+# Contra qué día se compara el último precio: el último con precio hasta una semana antes.
+WEEK_DAYS = 7
+
+LATEST_SCHEMA = {
+    "market_id": pl.String,
+    "product_id": pl.String,
+    "position": pl.Int16,
+    "product": pl.String,
+    "group": pl.String,
+    "several_varieties": pl.Boolean,
+    "market": pl.String,
+    "date": pl.Date,
+    "min_cop_kg": pl.Int64,
+    "avg_cop_kg": pl.Int64,
+    "max_cop_kg": pl.Int64,
+    "week_ago_date": pl.Date,
+    "week_ago_min_cop_kg": pl.Int64,
+    "week_ago_avg_cop_kg": pl.Int64,
+    "week_ago_max_cop_kg": pl.Int64,
+    "change_pct": pl.Float64,
+    "market_date": pl.Date,
+    "market_source_id": pl.String,
+    "source_id": pl.String,
+}
+
+
+def latest(prices: pl.DataFrame) -> pl.DataFrame:
+    """La tabla `market_price_latest`: por central y producto, el último precio, el de hace una semana y el cambio.
+
+    La escriben el pipeline y cada actualización de precios (HU-222), para que la API solo filtre y devuelva.
+
+    - El último precio es el del último día con precio del producto en esa central; el nombre, el grupo y el asterisco
+      son los de ese día.
+    - El de hace una semana es el del último día con precio hasta `WEEK_DAYS` días antes. Sin ese día, el precio de
+      hace una semana y `change_pct` van nulos (R1).
+    - `change_pct` es el cambio del precio medio, en %, con un decimal.
+    - `market_date` es el último día con precios en la central, y `market_source_id` la fuente de ese día.
+    - `position` es el orden en que se muestran los productos de una central: por grupo (`GROUP_ORDER`) y por nombre.
+    """
+    if prices.is_empty():
+        return pl.DataFrame(schema=LATEST_SCHEMA)
+    ordered = prices.sort("market_id", "product_id", "date")
+    keys = ["market_id", "product_id"]
+    last = ordered.group_by(keys, maintain_order=True).last()
+    week = (
+        ordered.join(last.select(*keys, (pl.col("date") - pl.duration(days=WEEK_DAYS)).alias("cutoff")), on=keys)
+        .filter(pl.col("date") <= pl.col("cutoff"))
+        .group_by(keys, maintain_order=True)
+        .last()
+        .select(*keys, *(pl.col(col).alias(f"week_ago_{col}") for col in ("date", "min_cop_kg", "avg_cop_kg", "max_cop_kg")))
+    )
+    market = (
+        prices.sort("market_id", "date", "source_id")
+        .group_by("market_id", maintain_order=True)
+        .agg(pl.col("date").last().alias("market_date"), pl.col("source_id").last().alias("market_source_id"))
+    )
+    rank = {group: i for i, group in enumerate(GROUP_ORDER)}
+    return (
+        last.join(week, on=keys, how="left")
+        .join(market, on="market_id")
+        .with_columns(
+            ((pl.col("avg_cop_kg") / pl.col("week_ago_avg_cop_kg") - 1) * 100).round(1).alias("change_pct"),
+            pl.col("group").replace_strict(rank, default=len(GROUP_ORDER), return_dtype=pl.Int16).alias("group_rank"),
+        )
+        .sort("market_id", "group_rank", "group", "product", "product_id")
+        .with_columns(pl.int_range(1, pl.len() + 1, dtype=pl.Int16).over("market_id").alias("position"))
+        .select(list(LATEST_SCHEMA))
+        .cast(LATEST_SCHEMA)
+    )
+
+
 def source(table: pl.DataFrame, downloaded_at: str) -> dict[str, Any]:
     """La fila de `sources` de esta fuente (R8)."""
     period = f"Del {table['date'].min()} al {table['date'].max()}" if table.height else None
@@ -285,6 +358,7 @@ def source(table: pl.DataFrame, downloaded_at: str) -> dict[str, Any]:
             f"Términos y condiciones del DANE ({TERMS_URL}): se autoriza el uso, aprovechamiento, transformación y análisis "
             f"de la información citando «{CITATION}». Se rigen por la ley colombiana y el DANE puede cambiarlos sin aviso."
         ),
+        "citation": CITATION,
         "notes": (
             "Precio mínimo, medio y máximo por kilo de cada producto en la central de abastos, por día. Es el precio "
             "mayorista (lo que se paga en la central), no el de la tienda. Los nombres con asterisco en SIPSA juntan "

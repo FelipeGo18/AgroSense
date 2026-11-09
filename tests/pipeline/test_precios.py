@@ -127,3 +127,46 @@ def test_lo_publicado_en_el_repositorio_cumple_el_contrato():
     prices = pl.read_parquet(folder / "market_price_day.parquet")
     build.validate_market(prices, pl.read_parquet(folder / "sources.parquet"))
     assert sorted(set(prices["market_id"].to_list())) == ["1", "9"]
+
+
+# ---------- El último precio de cada producto (market_price_latest) ----------
+
+
+def test_el_ultimo_precio_trae_el_de_hace_una_semana_y_el_cambio():
+    """Lo calcula quien escribe los datos, no la API (revisión de Felipe del PR #12)."""
+    latest = sipsa.latest(read(SAMPLE_SIPSA_ROWS))
+    papa = latest.filter((pl.col("market_id") == "1") & (pl.col("product_id") == "papa-negra")).to_dicts()[0]
+    assert (papa["date"], papa["avg_cop_kg"], papa["min_cop_kg"], papa["max_cop_kg"]) == (date(2026, 10, 19), 2925, 2800, 3000)
+    assert (papa["week_ago_date"], papa["week_ago_avg_cop_kg"], papa["change_pct"]) == (date(2026, 10, 12), 2750, 6.4)
+    assert papa["source_id"] == "dane_sipsa" and papa["several_varieties"] is True
+
+
+def test_sin_precio_de_hace_una_semana_el_cambio_va_nulo():
+    """La zanahoria solo tiene el 17 de octubre: no hay con qué compararla (R1)."""
+    latest = sipsa.latest(read(SAMPLE_SIPSA_ROWS))
+    zanahoria = latest.filter(pl.col("product_id") == "zanahoria").to_dicts()[0]
+    assert zanahoria["week_ago_date"] is None and zanahoria["week_ago_avg_cop_kg"] is None and zanahoria["change_pct"] is None
+
+
+def test_los_productos_van_en_el_orden_en_que_se_muestran_y_cada_central_dice_su_ultimo_dia():
+    latest = sipsa.latest(read(SAMPLE_SIPSA_ROWS))
+    corabastos = latest.filter(pl.col("market_id") == "1")
+    # Primero tubérculos, raíces y plátanos; después verduras y hortalizas; las frutas al final. Dentro, por nombre.
+    assert corabastos["product_id"].to_list() == ["papa-criolla", "papa-negra", "zanahoria", "aguacate"]
+    assert corabastos["position"].to_list() == [1, 2, 3, 4]
+    assert set(corabastos["market_date"].to_list()) == {date(2026, 10, 19)}
+    assert set(corabastos["market_source_id"].to_list()) == {"dane_sipsa"}
+    assert latest.select("market_id", "product_id").is_duplicated().sum() == 0
+
+
+def test_el_ultimo_precio_se_publica_con_su_fila_en_el_manifiesto(tmp_path):
+    manifest = publish(tmp_path, read(SAMPLE_SIPSA_ROWS))
+    assert manifest["tables"]["market_price_latest"]["rows"] == 5
+    assert pl.read_parquet(tmp_path / "market_price_latest.parquet").equals(sipsa.latest(read(SAMPLE_SIPSA_ROWS)))
+
+
+def test_las_fuentes_del_dane_traen_su_cita():
+    """La cita que piden los términos del DANE va en `sources.citation` (R8): la API la lee de ahí."""
+    assert sipsa.source(read(SAMPLE_SIPSA_ROWS), "2026-10-20T15:34:00+00:00")["citation"] == dane.CITATION
+    assert dane.source(SAMPLE_META)["citation"] == dane.CITATION
+    assert dane.CITATION == "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co"

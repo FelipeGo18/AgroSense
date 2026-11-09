@@ -52,7 +52,7 @@ def test_lo_que_se_acaba_de_publicar_coincide_con_su_manifiesto(tmp_path, caches
     folder = rebuild(tmp_path, caches)
     manifest = build.verify(folder, REGION["dataset_version"])
     expected = {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
-    assert set(manifest["tables"]) == expected | {"market_price_day", "market_price_season", "market_month"}
+    assert set(manifest["tables"]) == expected | {"market_price_day", "market_price_latest", "market_price_season", "market_month"}
 
 
 def test_reconstruir_dos_veces_da_las_mismas_tablas(tmp_path, caches):
@@ -162,7 +162,7 @@ def test_cada_tabla_escrita_deja_su_linea(tmp_path, caches):
     written = {line["table"]: line["rows"] for line in logs if line["event"] == "table_written"}
     assert written["municipalities"] == 3 and written["market_price_day"] == 7
     expected = {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
-    assert set(written) == expected | {"market_price_day", "market_price_season", "market_month"}
+    assert set(written) == expected | {"market_price_day", "market_price_latest", "market_price_season", "market_month"}
 
 
 def test_si_no_se_publica_el_log_dice_por_que(tmp_path, caches, monkeypatch):

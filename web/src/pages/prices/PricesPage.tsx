@@ -29,8 +29,11 @@ import { PriceChart, SeasonChart } from "./charts";
 const shortName = (name: string) => name.split(" (")[0];
 
 const NOT_FORECAST = "Así se ha movido el precio en la central. No es un pronóstico.";
-/** La cita textual que piden los términos del DANE (HU-221) llega de la API tal cual; después, qué datos son. */
-const sourceText = (citation: string) => `${citation}. Datos de SIPSA, precios mayoristas diarios.`;
+/**
+ * La cita textual que piden los términos del DANE (HU-221) llega de la API tal cual, de la fila de su fuente; después,
+ * qué datos son. Una fuente sin cita no la tiene: no se inventa.
+ */
+const sourceText = (citation: string | null) => `${citation ? `${citation}. ` : ""}Datos de SIPSA, precios mayoristas diarios.`;
 
 /**
  * Precios en la central de abastos (HU-221): el último precio por kilo de cada producto en Corabastos o en Tunja, según

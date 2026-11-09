@@ -318,7 +318,7 @@ def test_la_temporada_sale_siempre_del_dataset_publicado(published, market):
 
 def test_una_version_mas_vieja_que_la_publicada_no_se_sirve(published, market):
     old = sipsa.prices(io.BytesIO(sipsa_xml(SAMPLE_SIPSA_ROWS[:1]).encode()), SAMPLE_MARKETS)
-    store.write_version(market, "servicio", old, [], THURSDAY_3PM)
+    store.write_version(market, "servicio", old, sipsa.latest(old), [], THURSDAY_3PM)
     body = TestClient(app).get("/api/v1/market/prices").json()
     assert body["version"] == REGION["dataset_version"] and body["updated_at"] is None
 
