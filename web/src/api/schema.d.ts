@@ -1019,7 +1019,7 @@ export interface components {
             /** Source Id */
             source_id: string;
             /** Citation */
-            citation: string;
+            citation: string | null;
         };
         /** MonthChange */
         MonthChange: {
@@ -1168,7 +1168,7 @@ export interface components {
             /** Source Id */
             source_id: string;
             /** Citation */
-            citation: string;
+            citation: string | null;
         };
         /** ProductPrice */
         ProductPrice: {

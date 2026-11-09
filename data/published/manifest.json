@@ -1,7 +1,7 @@
 {
-  "dataset_version": "2026.11.3",
+  "dataset_version": "2026.11.4",
   "rules_version": "0.1.0",
-  "created_at": "2026-11-09T15:52:02+00:00",
+  "created_at": "2026-11-09T22:31:14+00:00",
   "region": {
     "id": "co-boyaca-cundinamarca",
     "name": "Boyacá y Cundinamarca, Colombia",
@@ -40,6 +40,10 @@
     "market_price_day": {
       "rows": 100764,
       "coverage": "Corabastos (Bogotá) · Tunja (Complejo de Servicios del Sur); del 2020-02-01 al 2026-10-19"
+    },
+    "market_price_latest": {
+      "rows": 69,
+      "coverage": "El último precio de cada producto en cada central, con el de hace una semana y el cambio"
     },
     "market_price_season": {
       "rows": 756,

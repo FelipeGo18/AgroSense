@@ -111,7 +111,6 @@ def no_dataset(tmp_path_factory, monkeypatch):
     from backend.market import store
 
     monkeypatch.setattr(store, "served", store.Served())
-    monkeypatch.setattr("backend.api.market.served", store.served)
     yield
     get_settings.cache_clear()
 

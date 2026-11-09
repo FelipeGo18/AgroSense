@@ -22,6 +22,10 @@ DATASET = "gdxc-w37w"
 ROWS_URL = f"https://www.datos.gov.co/resource/{DATASET}.json?$limit=5000"
 META_URL = f"https://www.datos.gov.co/api/views/{DATASET}.json"
 PAGE_URL = f"https://www.datos.gov.co/d/{DATASET}"
+# Los términos y condiciones del portal del DANE, que valen para su información, y la cita textual que piden a quien la
+# use (verificados el 8 de noviembre de 2026, HU-221). Va en la columna `citation` de cada fuente del DANE.
+TERMS_URL = "https://www.dane.gov.co/index.php/terminos-y-condiciones"
+CITATION = "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co"
 
 CACHE = Path("data/raw/dane")
 ROWS_FILE = "divipola.json"
@@ -129,6 +133,7 @@ def source(meta: dict[str, Any]) -> dict[str, Any]:
         "period_covered": period,
         "coverage": "Colombia",
         "license": meta.get("license") or "Creative Commons Attribution | Share Alike 4.0 International",
+        "citation": CITATION,
         "notes": (
             "Códigos DIVIPOLA de municipio y departamento, nombre y coordenadas de referencia del municipio. "
             "Los nombres se escriben en mayúscula inicial a partir del nombre oficial, que viene en mayúsculas."

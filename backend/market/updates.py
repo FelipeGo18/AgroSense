@@ -11,8 +11,10 @@ supercronic, en los horarios del `.env`; la API nunca baja nada.
   traen el mínimo y el máximo y reemplazan los días del boletín; solo se conservan los días del boletín posteriores al
   último día del servicio en cada central.
 
-La temporada (`market_price_season`) y el precio por cultivo (`market_month`) no se recalculan aquí: solo cambian una vez
-al año, cuando cierra un año completo, y salen del dataset publicado (`uv run python -m pipeline.build`).
+Cada versión lleva, además de los precios, `market_price_latest` (el último precio de cada producto, con el de hace una
+semana y el cambio), para que la API solo filtre. La temporada (`market_price_season`) y el precio por cultivo
+(`market_month`) no se recalculan aquí: solo cambian una vez al año, cuando cierra un año completo, y salen del dataset
+publicado (`uv run python -m pipeline.build`).
 
 Si algo falla, no se toca la versión que se sirve (R1), el log dice por qué y el comando termina con error.
 """
@@ -31,9 +33,9 @@ from typing import Any
 
 import polars as pl
 
-from backend.config.settings import get_settings
 from backend.market.store import MarketData, load_latest, write_version
 from common import logging
+from pipeline.settings import get_settings
 from pipeline.sources import sipsa, sipsa_boletin
 
 log = logging.get_logger("agrosense.market")
@@ -179,7 +181,8 @@ def daily(
         combined = pl.concat([prices, _keep_names(new, prices)]).sort("product_id", "market_id", "date")
         _validate(combined)
         downloaded_at = now.astimezone(UTC).isoformat(timespec="seconds")
-        data = write_version(folder, "boletin", combined, _bulletin_source(combined, downloaded_at, sources), now)
+        latest = sipsa.latest(combined)
+        data = write_version(folder, "boletin", combined, latest, _bulletin_source(combined, downloaded_at, sources), now)
     log.info(
         "market_refreshed",
         version=data.version,
@@ -236,7 +239,7 @@ def weekly(
         sources = [sipsa.source(service, downloaded_at)]
         if bulletin.height:
             sources.append(next(row for row in previous.sources if row["source_id"] == sipsa_boletin.SOURCE_ID))
-        data = write_version(folder, "servicio", combined, sources, now)
+        data = write_version(folder, "servicio", combined, sipsa.latest(combined), sources, now)
     log.info(
         "market_refreshed",
         version=data.version,

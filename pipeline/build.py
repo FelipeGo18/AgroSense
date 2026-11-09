@@ -6,19 +6,19 @@
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `municipality_boundaries` (MGN del DANE, HU-044), el
 catálogo (`crops` y `crop_stages`, HU-061), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221),
-`market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla pasa por las validaciones y por su
-esquema del contrato (`pipeline/schema.py`, HU-011) antes de escribirse: si una falla, no se publica nada (R7, R8).
+`market_price_latest` (el último precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y
+`manifest.json`. Cada tabla pasa por las validaciones y por su esquema del contrato (`pipeline/schema.py`, HU-011) antes
+de escribirse: si una falla, no se publica nada (R7, R8).
 También se valida el mapeo de los productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que
 se publican. Al terminar, lo publicado se revisa contra su manifiesto (HU-123).
 
 Cada paso deja una línea en la terminal con la fuente, las filas leídas y las descartadas con su motivo (HU-177). Usa la
-misma configuración de logs que la API (`common/logging.py`): nivel y formato con `AGROSENSE_LOG_LEVEL` y
+misma configuración de logs que la API (`common/logging.py`, que no depende del backend): nivel y formato con `AGROSENSE_LOG_LEVEL` y
 `AGROSENSE_LOG_FORMAT`, sin depender de la base de datos.
 """
 
 import argparse
 import json
-import os
 import re
 import sys
 from collections import Counter
@@ -33,6 +33,7 @@ import yaml
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
 from pipeline import schema
+from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, sipsa
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
@@ -184,10 +185,12 @@ def publish(
     validate(municipalities, sources)
     if boundaries is not None:
         validate_boundaries(boundaries, municipalities, sources)
-    season = month = None
+    season = month = latest = None
     if prices is not None:
         validate_market(prices, sources)
         season = sipsa.seasonal(prices)
+        # El último precio de cada producto, con el de hace una semana y el cambio: la API solo lo filtra (HU-221).
+        latest = sipsa.latest(prices)
     if crop_products is not None:
         if prices is None:
             raise ValidationError("El mapeo de `sipsa_crops.yaml` se valida contra los precios de SIPSA, y no hay precios.")
@@ -195,13 +198,17 @@ def publish(
         month = sipsa.monthly(prices, season, crop_products)
         validate_market_month(month, crop_products, sources)
     # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
-    tables = {"municipalities": municipalities, "sources": sources.sort("source_id")}
+    # `sources` junta filas de varias fuentes: va con las columnas del contrato, en su orden. Una fuente sin cita (por
+    # ejemplo, las del catálogo) queda con `citation` nula, no inventada (R1).
+    source_columns = list(schema.TABLES["sources"].columns)
+    sources = sources.with_columns(pl.lit(None, dtype=pl.String).alias(col) for col in source_columns if col not in sources.columns)
+    tables = {"municipalities": municipalities, "sources": sources.select(source_columns).sort("source_id")}
     if boundaries is not None:
         tables["municipality_boundaries"] = boundaries
     if crops is not None:
         tables["crops"], tables["crop_stages"] = crops[1], crops[2]
     if prices is not None:
-        tables |= {"market_price_day": prices, "market_price_season": season}
+        tables |= {"market_price_day": prices, "market_price_latest": latest, "market_price_season": season}
     if month is not None:
         tables["market_month"] = month
     for name, table in tables.items():
@@ -236,6 +243,10 @@ def publish(
         manifest["tables"]["market_price_day"] = {
             "rows": prices.height,
             "coverage": f"{' · '.join(sorted(set(prices['market'].to_list())))}; del {prices['date'].min()} al {prices['date'].max()}",
+        }
+        manifest["tables"]["market_price_latest"] = {
+            "rows": latest.height,
+            "coverage": "El último precio de cada producto en cada central, con el de hace una semana y el cambio",
         }
         manifest["tables"]["market_price_season"] = {
             "rows": season.height,
@@ -343,8 +354,9 @@ def main() -> None:
     parser.add_argument("--descargar", action="store_true", help="Baja otra vez las fuentes a data/raw/ antes de publicar.")
     parser.add_argument("--verificar", action="store_true", help="No publica: solo revisa que data/published coincida con su manifiesto.")
     args = parser.parse_args()
-    # El pipeline no usa la base de datos: lee solo el nivel y el formato de los logs, no toda la configuración de la API.
-    configure(os.environ.get("AGROSENSE_LOG_LEVEL", "INFO"), os.environ.get("AGROSENSE_LOG_FORMAT", "console"))
+    # El pipeline no usa la base de datos: lee su configuración de `pipeline/settings.py`, no la de la API.
+    settings = get_settings()
+    configure(settings.log_level, settings.log_format)
     expected = load_region()["dataset_version"]
     try:
         if not args.verificar:

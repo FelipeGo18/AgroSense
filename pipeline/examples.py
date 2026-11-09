@@ -19,6 +19,7 @@ import polars as pl
 
 from pipeline import schema
 from pipeline.build import PUBLISHED
+from pipeline.sources import sipsa
 
 EXAMPLES = Path("data/examples")
 SOURCE_ID = "ejemplo"
@@ -40,6 +41,7 @@ EXAMPLE_SOURCE = {
     "period_covered": None,
     "coverage": "Samacá, Toca y Tunja (Boyacá)",
     "license": None,
+    "citation": None,
     "notes": "Cifras inventadas con la forma del contrato, para desarrollar y probar el motor, la API y la web (HU-011). "
     "Nunca se muestran como datos reales (R5).",
 }
@@ -402,7 +404,9 @@ def build(published: Path = PUBLISHED) -> dict[str, pl.DataFrame]:
         "grid_cells": cells,
         "soil_municipality": soil_municipality(cells),
         "market_month": market_month(),
-        "market_price_day": market_price_day(),
+        "market_price_day": (day_prices := market_price_day()),
+        # Calculada con la misma función del pipeline y de las actualizaciones de precios.
+        "market_price_latest": sipsa.latest(day_prices),
         "market_price_season": market_price_season(),
         "climate_risk_week": climate_risk_week(risk, month),
         "climate_normal_doy": climate_normal_doy(days),

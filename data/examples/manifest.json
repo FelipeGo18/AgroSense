@@ -103,6 +103,10 @@
       "rows": 96,
       "coverage": "ejemplo"
     },
+    "market_price_latest": {
+      "rows": 4,
+      "coverage": "ejemplo"
+    },
     "market_price_season": {
       "rows": 48,
       "coverage": "ejemplo"

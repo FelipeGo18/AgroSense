@@ -3,6 +3,7 @@
 Es lo que pasó en la central: nada de pronóstico. Sin precios publicados, no se inventan (R1, R5).
 """
 
+import polars as pl
 from fastapi.testclient import TestClient
 
 from backend.api.main import app
@@ -66,3 +67,20 @@ def test_sin_precios_publicados_responde_503(dataset):
 def test_sin_dataset_responde_503():
     response = TestClient(app).get("/api/v1/market/prices")
     assert response.status_code == 503 and response.json()["error"]["code"] == "dataset_unavailable"
+
+
+def test_la_cita_sale_de_la_fila_de_su_fuente(market_dataset):
+    """La API no importa el pipeline: la cita es la columna `citation` de `sources` (R8), y sin ella va nula (R1)."""
+    sources = pl.read_parquet(market_dataset / "sources.parquet")
+    cited = sources.with_columns(
+        pl.when(pl.col("source_id") == "dane_sipsa").then(pl.lit("Cita de prueba")).otherwise(pl.col("citation")).alias("citation")
+    )
+    cited.write_parquet(market_dataset / "sources.parquet")
+    assert TestClient(app).get("/api/v1/market/prices").json()["citation"] == "Cita de prueba"
+
+
+def test_sin_cita_en_su_fuente_la_cita_va_nula(market_dataset):
+    sources = pl.read_parquet(market_dataset / "sources.parquet")
+    sources.with_columns(pl.lit(None, dtype=pl.String).alias("citation")).write_parquet(market_dataset / "sources.parquet")
+    body = TestClient(app).get("/api/v1/market/prices/papa-negra").json()
+    assert body["source_id"] == "dane_sipsa" and body["citation"] is None

@@ -109,6 +109,14 @@ describe("Precios en la central de abastos (HU-221)", () => {
     expect(papa).toHaveTextContent("Sube 6,4 % en una semana");
   });
 
+  it("una fuente sin cita no inventa una: dice solo qué datos son", async () => {
+    api({ prices: () => json({ ...CORABASTOS, citation: null }) });
+    open();
+    expect(await screen.findByText(/Datos de SIPSA, precios mayoristas diarios\./)).toBeInTheDocument();
+    expect(screen.queryByText(/null/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Departamento Administrativo Nacional de Estadística/)).not.toBeInTheDocument();
+  });
+
   it("un producto sin precio reciente dice de cuándo es su último precio", async () => {
     api();
     open();

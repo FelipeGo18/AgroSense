@@ -167,6 +167,7 @@ def source(table: pl.DataFrame, downloaded_at: str) -> dict[str, Any]:
             f"Términos y condiciones del DANE ({sipsa.TERMS_URL}): se autoriza el uso, aprovechamiento, transformación y "
             f"análisis de la información citando «{sipsa.CITATION}»."
         ),
+        "citation": sipsa.CITATION,
         "notes": (
             "Precio medio por kilo del día en la central, de lunes a viernes. Es la misma serie del servicio web de SIPSA "
             "(dane_sipsa), sin el mínimo ni el máximo: van nulos. Se usa solo para los días que el servicio todavía no se "

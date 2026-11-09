@@ -66,11 +66,8 @@ services:
     build: .
     profiles: ["market"]
     restart: unless-stopped
+    # No usa la base de datos: lee su configuración de `pipeline/settings.py`, que no la pide.
     environment:
-      # La configuración del backend las exige, aunque este servicio no use la base de datos.
-      POSTGRES_DB: ${POSTGRES_DB:?falta POSTGRES_DB en .env}
-      POSTGRES_USER: ${POSTGRES_USER:?falta POSTGRES_USER en .env}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
       AGROSENSE_LOG_LEVEL: ${AGROSENSE_LOG_LEVEL:-INFO}
       AGROSENSE_LOG_FORMAT: ${AGROSENSE_LOG_FORMAT:-console}
       AGROSENSE_MARKET_DAILY_SCHEDULE: ${AGROSENSE_MARKET_DAILY_SCHEDULE:-0 15 * * 1-5}
@@ -80,13 +77,14 @@ services:
       TZ: America/Bogota
     volumes:
       - market_data:/app/data/market
-    # Al arrancar: quita un candado que haya quedado de un reinicio, se pone al día con el boletín (es liviano) y deja
-    # los dos horarios del .env en el crontab de supercronic.
+    # Al arrancar: se pone al día con el boletín (es liviano) y deja los dos horarios del .env en el crontab de
+    # supercronic. El candado no se borra: si hay una actualización corriendo a mano, la del arranque no corre (el log
+    # dice por qué) y supercronic arranca igual; un candado de más de 6 horas se da por muerto (`LOCK_STALE_S` en
+    # backend/market/updates.py).
     command:
       - sh
       - -c
       - >-
-        rm -f data/market/.lock;
         python -m backend.market.updates diario;
         printf '%s python -m backend.market.updates diario\n%s python -m backend.market.updates semanal\n'
         "$$AGROSENSE_MARKET_DAILY_SCHEDULE" "$$AGROSENSE_MARKET_WEEKLY_SCHEDULE" > /tmp/precios.cron
