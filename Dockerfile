@@ -29,6 +29,10 @@ COPY pipeline ./pipeline
 COPY catalog ./catalog
 # El dataset publicado por el pipeline: la API solo lo lee (AGROSENSE_DATA_DIR).
 COPY data/published ./data/published
+# Los datos de ejemplo del contrato (HU-011): los usan las pruebas y el desarrollo del motor.
+COPY data/examples ./data/examples
+# El contrato: las pruebas comparan el esquema en código con él (HU-011).
+COPY specs/02-contratos.md ./specs/02-contratos.md
 COPY tests ./tests
 
 # Sin privilegios dentro del contenedor.

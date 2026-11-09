@@ -69,15 +69,14 @@ Se aplica en la hora 34 si hay retraso, o desde el inicio si HU-004 no permite l
 
 1. Todo el P1
 2. Capa GIBS en el mapa del lote (HU-211): queda OpenStreetMap
-3. NDVI por lote (HU-209): queda el NDVI por municipio (HU-208)
-4. SMAP (HU-210): queda la humedad del suelo de POWER. Va después de lo anterior porque el reto lo nombra primero entre los datos sugeridos (decisión 14)
-5. Suelo por lote (HU-182 y su parte de HU-185): queda el suelo del municipio (HU-183)
-6. Plan de agua solo con año normal, sin año seco
-7. Explicaciones reducidas a una razón por estrategia
-8. Pruebas en CI: se ejecutan a mano
-9. Último recurso: las cuentas (EP-16, ≈ 40 h sin la capa GIBS). La demo queda en modo sin cuenta, que funciona completo con municipio, área y cultivo anterior
+3. SMAP (HU-210): queda la humedad del suelo de POWER. Va después de lo anterior porque el reto lo nombra primero entre los datos sugeridos (decisión 14)
+4. Suelo por lote (HU-182 y su parte de HU-185): queda el suelo del municipio (HU-183)
+5. Plan de agua solo con año normal, sin año seco
+6. Explicaciones reducidas a una razón por estrategia
+7. Pruebas en CI: se ejecutan a mano
+8. Último recurso: las cuentas (EP-16, ≈ 40 h sin la capa GIBS). La demo queda en modo sin cuenta, que funciona completo con municipio, área y cultivo anterior
 
-Los pasos 2 a 5 liberan unas 16 horas; no bastan solos. Lo que de verdad hace caber el P0 es lo que se adelanta en la fase 0.
+Los pasos 2 a 4 liberan unas 12 horas; no bastan solos. Lo que de verdad hace caber el P0 es lo que se adelanta en la fase 0.
 
 ## Lo que nunca se recorta
 
