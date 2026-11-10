@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.4"
+dataset_version: "2026.11.5"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"
@@ -18,3 +18,21 @@ region:
   markets:
     "1": "Corabastos (Bogotá)"
     "9": "Tunja (Complejo de Servicios del Sur)"
+
+# Gradiente térmico (HU-044): cuántos °C baja la temperatura por cada metro que se sube. Corrige las temperaturas de
+# NASA POWER, cuya celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio.
+# Es propio de la región (R7): región Andina de Colombia, tabla 3 de Chaves y Jaramillo (1999), con 133 estaciones
+# entre 100 y 4482 m: Tmax = 33,97 − 0,0058·A (R² 0,86) y Tmin = 23,97 − 0,0059·A (R² 0,92), con A en metros.
+temperature_lapse_rate:
+  temp_max_c_per_m: 0.0058
+  temp_min_c_per_m: 0.0059
+  source:
+    source_id: cenicafe_lapse_rate
+    name: "Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3"
+    institution: "Centro Nacional de Investigaciones de Café (Cenicafé)"
+    url: "https://revistas.unal.edu.co/index.php/arh/article/view/92185"
+    downloaded_at: "2026-11-09"
+    period_covered: null
+    coverage: "Región Andina de Colombia, de 100 a 4482 m"
+    license: null
+    notes: "Avances en Recursos Hidráulicos, n.º 6 (septiembre de 1999), pp. 37-42. Pendiente de la temperatura máxima media (0,0058 °C/m) y de la mínima media (0,0059 °C/m) con la altitud en la región Andina. Se usa para corregir por altitud las temperaturas de NASA POWER."
