@@ -17,10 +17,12 @@
 import { chromium } from "playwright-core";
 
 const BASE = process.env.BASE ?? "http://127.0.0.1:5190";
+// El diagnóstico con una consulta completa usa el mes en curso: siempre está entre los doce que se pueden elegir.
+const THIS_MONTH = new Date().toISOString().slice(0, 7);
 /** Rutas de la app. Una vista nueva se agrega aquí. */
 const ROUTES = (
   process.env.ROUTES ??
-  "/,/entrar,/crear-cuenta,/consultar,/mi-finca,/como-funciona,/politica-de-datos,/precios,/precios?producto=papa-negra,/ruta-que-no-existe"
+  `/,/entrar,/crear-cuenta,/consultar,/diagnostico,/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no,/mi-finca,/como-funciona,/politica-de-datos,/precios,/precios?producto=papa-negra,/ruta-que-no-existe`
 ).split(",");
 /** Anchos de los que hay que cuidarse: teléfono chico, teléfonos comunes, tablet, portátiles y pantalla grande. Con altos bajos a propósito. */
 const SIZES = [
