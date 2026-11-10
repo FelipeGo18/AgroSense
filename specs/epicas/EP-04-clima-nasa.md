@@ -54,17 +54,17 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-205 · NASA POWER ampliado: humedad, radiación y viento
 
 - **Historia:** Como motor, quiero la humedad del suelo modelada, la radiación, el viento y la humedad relativa de NASA POWER por municipio, para calcular la ET0 por Penman-Monteith y mostrar la humedad del suelo junto a la señal de agua.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] El adaptador `nasa_power` descarga, además de la lluvia y la temperatura, la humedad del suelo superficial y de la zona de raíces (`GWETTOP`, `GWETROOT`), la radiación solar, el viento a 2 m y la humedad relativa (`RH2M`), con caché y reintentos. Los nombres exactos de la radiación y del viento se verifican en la documentación de POWER antes de usarlos
-  - [ ] Desde qué año hay datos de cada variable queda verificado y documentado (la serie de lluvia y temperatura empieza en 1981; la de radiación puede empezar después)
-  - [ ] `climate_month` gana `soil_wetness_top` y `soil_wetness_root` (fracción de 0 a 1, promedio del mes), con `quality`
-  - [ ] La entrada de NASA POWER en `sources` dice que es un **reanálisis** (un modelo con observaciones asimiladas), no una observación directa, y que su celda mide unos 50 km
-  - [ ] Días faltantes marcados en `quality`; nunca se rellenan (R1)
-  - [ ] Comprobación manual en 2 municipios
+  - [x] El adaptador `nasa_power` descarga, además de la lluvia y la temperatura, la humedad del suelo superficial y de la zona de raíces (`GWETTOP`, `GWETROOT`), la radiación solar, el viento a 2 m y la humedad relativa (`RH2M`), con caché y reintentos. Los nombres exactos de la radiación y del viento se verifican en la documentación de POWER antes de usarlos: `ALLSKY_SFC_SW_DWN` (MJ/m²/día) y `WS2M` (m/s), verificados en la API de parámetros de POWER el 10 de noviembre de 2026
+  - [x] Desde qué año hay datos de cada variable queda verificado y documentado (la serie de lluvia y temperatura empieza en 1981; la de radiación puede empezar después): todas desde el 1 de enero de 1981, menos la radiación, desde el 1 de enero de 1984 y con unos días más de retraso
+  - [x] `climate_month` gana `soil_wetness_top` y `soil_wetness_root` (fracción de 0 a 1, promedio del mes), con `quality`
+  - [x] La entrada de NASA POWER en `sources` dice que es un **reanálisis** (un modelo con observaciones asimiladas), no una observación directa, y que su celda mide unos 50 km
+  - [x] Días faltantes marcados en `quality`; nunca se rellenan (R1)
+  - [x] Comprobación manual en 2 municipios (ver las notas)
 - **Reglas que aplican:** R1, R7, R8, R10
 - **Contrato que toca:** `climate_month` (`soil_wetness_top`, `soil_wetness_root`), `sources`
-- **Notas:** Decisión 12. La ET0 por Penman-Monteith con estas variables es HU-143. En el MVP la humedad no cambia la calificación de `water`: se muestra para contrastar (HU-071), junto a la de SMAP (HU-210). Es la serie larga para «Qué cambió» (HU-216). Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. La ET0 por Penman-Monteith con estas variables es HU-143. En el MVP la humedad no cambia la calificación de `water`: se muestra para contrastar (HU-071), junto a la de SMAP (HU-210). Es la serie larga para «Qué cambió» (HU-216). Agregada el 11 de octubre de 2026. **10 de noviembre de 2026:** el adaptador baja las ocho variables en la misma consulta por celda (unos 2,2 MB por celda, 48 MB en total). La radiación, el viento y la humedad relativa quedan en la caché para la ET0 (HU-143). La humedad del suelo de un mes es el promedio de sus días, con el 90 % de ellos; si le falta un día, el mes es `partial`. Una caché bajada antes de esta HU no trae las variables nuevas: el pipeline pide bajarla otra vez en vez de publicar nulos. **Comprobación:** la humedad del suelo queda entre 0,21 y 1 y sigue el ciclo de la lluvia (en Tunja y Duitama, lo más seco en febrero y marzo; lo más húmedo en junio y noviembre); no hay humedad del suelo del IDEAM con qué compararla, y SMAP llega con HU-210. La humedad relativa de POWER frente a las normales 1991–2020 del IDEAM: UPTC, Tunja, 87 % frente a 77 %; Surbata Bonza, Duitama, 83 % frente a 77 %; Tibaitatá, Mosquera, 78 % frente a 82 %. Como la lluvia (HU-042), en Boyacá POWER es más húmedo que las estaciones.
 
 ### HU-206 · Altitud de municipios y lotes con NASADEM
 

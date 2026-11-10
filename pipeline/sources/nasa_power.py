@@ -39,7 +39,20 @@ API_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
 PAGE_URL = "https://power.larc.nasa.gov/"
 COMMUNITY = "AG"
 # Mínima y máxima a 2 m (°C) y lluvia corregida (mm/día). Sus series empiezan en 1981.
-PARAMETERS = ("T2M_MIN", "T2M_MAX", "PRECTOTCORR")
+# Cada variable de POWER y su columna en la caché leída (HU-041, HU-205). Nombres verificados en la API de parámetros de
+# POWER (comunidad AG, diaria) el 10 de noviembre de 2026. Todas empiezan el 1 de enero de 1981, menos la radiación, que
+# empieza el 1 de enero de 1984 y llega unos días después que las demás.
+COLUMNS = {
+    "T2M_MIN": "temp_min_c",  # temperatura mínima a 2 m, °C
+    "T2M_MAX": "temp_max_c",  # temperatura máxima a 2 m, °C
+    "PRECTOTCORR": "precip_mm",  # lluvia corregida, mm/día
+    "GWETTOP": "soil_wetness_top",  # humedad del suelo de los primeros 5 cm, de 0 (seco) a 1 (saturado)
+    "GWETROOT": "soil_wetness_root",  # humedad del suelo de la zona de raíces (hasta 1 m), de 0 a 1
+    "ALLSKY_SFC_SW_DWN": "radiation_mj_m2",  # radiación solar que llega al suelo, MJ/m²/día
+    "WS2M": "wind_2m_m_s",  # viento a 2 m, m/s
+    "RH2M": "rh_2m_pct",  # humedad relativa a 2 m, %
+}
+PARAMETERS = tuple(COLUMNS)
 FIRST_DAY = date(1981, 1, 1)
 # La rejilla de MERRA-2, la de POWER para estas variables: celdas centradas en múltiplos de estos pasos.
 LAT_STEP, LON_STEP = 0.5, 0.625
@@ -57,8 +70,10 @@ NORMAL_MIN_YEARS = 24
 # Un mes es `ok` con todos sus días con dato, y `partial` con al menos este porcentaje: su total es la suma de los
 # días con dato y la fila lo dice. Con menos, el mes no tiene total (R1).
 PARTIAL_MIN_SHARE = 0.9
+# Las columnas de humedad del suelo de `climate_month` (HU-205), que salen tal cual de la serie diaria.
+WETNESS = ("soil_wetness_top", "soil_wetness_root")
 
-SERIES_SCHEMA = {"cell": pl.String, "date": pl.Date, "temp_min_c": pl.Float64, "temp_max_c": pl.Float64, "precip_mm": pl.Float64}
+SERIES_SCHEMA = {"cell": pl.String, "date": pl.Date, **dict.fromkeys(COLUMNS.values(), pl.Float64)}
 DAY_SCHEMA = {
     "municipality_id": pl.String,
     "date": pl.Date,
@@ -192,6 +207,11 @@ def read_cache(cell_ids: list[str], cache: Path = CACHE) -> tuple[pl.DataFrame, 
         header = body.get("header", {})
         fill = header.get("fill_value", -999.0)
         parameter = body["properties"]["parameter"]
+        absent = [name for name in PARAMETERS if name not in parameter]
+        if absent:
+            # Una caché bajada antes de HU-205 no trae la humedad, la radiación ni el viento: no se publican nulos como si
+            # POWER no los tuviera (R1).
+            raise FileNotFoundError(f"La celda {cell} de la caché de NASA POWER no trae {absent}. {hint}")
         days = sorted(parameter["T2M_MIN"])
         elevations[cell] = float(body["geometry"]["coordinates"][2])
         versions.add((header.get("api") or {}).get("version"))
@@ -200,9 +220,7 @@ def read_cache(cell_ids: list[str], cache: Path = CACHE) -> tuple[pl.DataFrame, 
                 {
                     "cell": [cell] * len(days),
                     "date": [datetime.strptime(day, "%Y%m%d").date() for day in days],
-                    "temp_min_c": _values(parameter["T2M_MIN"], days, fill),
-                    "temp_max_c": _values(parameter["T2M_MAX"], days, fill),
-                    "precip_mm": _values(parameter["PRECTOTCORR"], days, fill),
+                    **{column: _values(parameter[name], days, fill) for name, column in COLUMNS.items()},
                 },
                 schema=SERIES_SCHEMA,
             )
@@ -271,7 +289,12 @@ def cell_months(series: pl.DataFrame, end: date) -> pl.DataFrame:
     months = (
         series.with_columns(pl.col("date").dt.year().cast(pl.Int16).alias("year"), pl.col("date").dt.month().cast(pl.Int8).alias("month"))
         .group_by("cell", "year", "month")
-        .agg(pl.col("precip_mm").sum().alias("total"), pl.col("precip_mm").count().alias("valid"))
+        .agg(
+            pl.col("precip_mm").sum().alias("total"),
+            pl.col("precip_mm").count().alias("valid"),
+            *(pl.col(c).mean().alias(f"{c}_mean") for c in WETNESS),
+            *(pl.col(c).count().alias(f"{c}_valid") for c in WETNESS),
+        )
         .filter(pl.date("year", "month", 1).dt.month_end() <= end)
         .with_columns(days.alias("days"))
         .with_columns(
@@ -283,6 +306,14 @@ def cell_months(series: pl.DataFrame, end: date) -> pl.DataFrame:
             .alias("days_quality")
         )
         .with_columns(pl.when(pl.col("days_quality").is_not_null()).then(pl.col("total").round(1)).alias("precip_mm"))
+        # La humedad del suelo (HU-205): el promedio de los días con dato, si son al menos el 90 % del mes.
+        .with_columns(
+            *(
+                pl.when(pl.col(f"{c}_valid") >= PARTIAL_MIN_SHARE * pl.col("days")).then(pl.col(f"{c}_mean").round(3)).alias(c)
+                for c in WETNESS
+            ),
+            pl.all_horizontal(pl.col(f"{c}_valid") == pl.col("days") for c in WETNESS).alias("wetness_complete"),
+        )
     )
     first, last = NORMAL_PERIOD
     normal = (
@@ -293,7 +324,7 @@ def cell_months(series: pl.DataFrame, end: date) -> pl.DataFrame:
         .select("cell", "month", "precip_normal_mm")
     )
     return months.join(normal, on=["cell", "month"], how="left").select(
-        "cell", "year", "month", "precip_mm", "precip_normal_mm", "days_quality"
+        "cell", "year", "month", "precip_mm", "precip_normal_mm", *WETNESS, "days_quality", "wetness_complete"
     )
 
 
@@ -302,7 +333,10 @@ def climate_month(series: pl.DataFrame, municipalities: pl.DataFrame, end: date)
 
     - Un mes sin el 90 % de sus días con lluvia no tiene total y, si no le queda ningún dato, no se publica (R1).
     - `quality = partial` si al mes le faltan días o si no tiene normal (menos de 24 años completos en 1991-2020).
-    - El año seco y la ET0 (HU-143) y la humedad del suelo (HU-205) van nulos hasta sus HU.
+    - La humedad del suelo (HU-205) es el promedio del mes de la de POWER, de 0 a 1; sin el 90 % de sus días, nula. Es la
+      de un modelo y de una celda de unos 55 × 70 km: un dato de la zona, no del lote (R10).
+    - `quality = partial` también si a la humedad le falta algún día.
+    - El año seco y la ET0 (HU-143) van nulos hasta su HU.
     """
     if series.is_empty():
         return pl.DataFrame(schema=MONTH_SCHEMA)
@@ -311,7 +345,8 @@ def climate_month(series: pl.DataFrame, municipalities: pl.DataFrame, end: date)
         "municipality_id",
         pl.Series("cell", [cell_of(lat, lon) for lat, lon in places.select("lat", "lon").iter_rows()], dtype=pl.String),
     )
-    months = cell_months(series, end).filter(pl.col("precip_mm").is_not_null())
+    # Un mes sin la lluvia ni la humedad no tiene ningún dato: no se publica (R1).
+    months = cell_months(series, end).filter(pl.any_horizontal(pl.col(c).is_not_null() for c in ("precip_mm", *WETNESS)))
     return (
         places.join(months, on="cell")
         .select(
@@ -320,11 +355,9 @@ def climate_month(series: pl.DataFrame, municipalities: pl.DataFrame, end: date)
             "month",
             "precip_mm",
             "precip_normal_mm",
-            *(
-                pl.lit(None, dtype=pl.Float64).alias(name)
-                for name in ("precip_dry_mm", "et0_mm", "et0_normal_mm", "soil_wetness_top", "soil_wetness_root")
-            ),
-            pl.when((pl.col("days_quality") == "ok") & pl.col("precip_normal_mm").is_not_null())
+            *(pl.lit(None, dtype=pl.Float64).alias(name) for name in ("precip_dry_mm", "et0_mm", "et0_normal_mm")),
+            *WETNESS,
+            pl.when((pl.col("days_quality") == "ok") & pl.col("precip_normal_mm").is_not_null() & pl.col("wetness_complete"))
             .then(pl.lit("ok"))
             .otherwise(pl.lit("partial"))
             .alias("quality"),
@@ -358,7 +391,9 @@ def source(series: pl.DataFrame, meta: dict[str, Any]) -> dict[str, Any]:
         "notes": (
             "Es un reanálisis (MERRA-2 y GEOS-IT): un modelo con observaciones asimiladas, no una observación directa. "
             "Celda de 0,5° de latitud por 0,625° de longitud (unos 55 × 70 km): es un dato de la zona, no del lote. "
-            "Temperatura mínima y máxima a 2 m (T2M_MIN, T2M_MAX) y lluvia corregida (PRECTOTCORR). Las temperaturas se "
+            "Temperatura mínima y máxima a 2 m (T2M_MIN, T2M_MAX), lluvia corregida (PRECTOTCORR), humedad del suelo de los "
+            "primeros 5 cm y de la zona de raíces (GWETTOP, GWETROOT, de 0 a 1, de un modelo), radiación solar "
+            "(ALLSKY_SFC_SW_DWN, desde 1984), viento a 2 m (WS2M) y humedad relativa a 2 m (RH2M). Las temperaturas se "
             "corrigen por altitud con la altura de la celda que da POWER, la altitud del municipio y el gradiente térmico de "
             "pipeline/region.yaml. Los días sin dato (-999) quedan nulos, nunca rellenos."
         ),

@@ -24,7 +24,7 @@
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-201 | Fuentes de contraste para la oferta | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-041 | Series diarias de lluvia y temperatura | P0 | M | hecha | Adaptador de NASA POWER con caché por celda (20 celdas) y `climate_day` corregida por altitud, publicada con la de NASADEM (HU-206) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-042 | Lluvia mensual y su normal | P0 | M | hecha | `climate_month` con la lluvia de NASA POWER y su normal 1991–2020; en el altiplano es de 1,7 a 2,7 veces la del IDEAM (riesgo para la señal de agua) |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-205 | NASA POWER ampliado: humedad, radiación y viento | P0 | M | pendiente | Nueva |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-205 | NASA POWER ampliado: humedad, radiación y viento | P0 | M | hecha | Humedad del suelo, radiación (desde 1984), viento y humedad relativa en la caché; la humedad del suelo, en `climate_month` |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-206 | Altitud de municipios y lotes con NASADEM | P0 | M | en curso | `grid_cells` con altitud y pendiente de NASADEM, y la de cada municipio como mediana de sus celdas; falta confirmar el método |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-207 | Lluvia por satélite con GPM IMERG | P0 | L | pendiente | Nueva |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-208 | Verdor del campo por municipio con MODIS NDVI | P0 | L | pendiente | Nueva |
