@@ -1,7 +1,7 @@
 {
-  "dataset_version": "2026.11.5",
+  "dataset_version": "2026.11.6",
   "rules_version": "0.1.0",
-  "created_at": "2026-11-10T12:34:57+00:00",
+  "created_at": "2026-11-10T13:00:30+00:00",
   "region": {
     "id": "co-boyaca-cundinamarca",
     "name": "Boyacá y Cundinamarca, Colombia",
@@ -22,7 +22,7 @@
       "coverage": "Boyacá y Cundinamarca, Colombia"
     },
     "sources": {
-      "rows": 11,
+      "rows": 12,
       "coverage": "todas las fuentes de lo publicado"
     },
     "municipality_boundaries": {
@@ -36,6 +36,14 @@
     "crop_stages": {
       "rows": 27,
       "coverage": "cultivos del MVP"
+    },
+    "climate_day": {
+      "rows": 4002294,
+      "coverage": "239 municipios con altitud, del 1981-01-01 al 2026-11-06"
+    },
+    "grid_cells": {
+      "rows": 593648,
+      "coverage": "Celdas de 0,0025° de 239 municipios; sin suelo hasta HU-181"
     },
     "market_price_day": {
       "rows": 100764,

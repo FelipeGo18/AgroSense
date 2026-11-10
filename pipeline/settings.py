@@ -30,6 +30,10 @@ class PipelineSettings(BaseSettings):
     power_timeout_s: float = Field(120, gt=0, validation_alias="AGROSENSE_POWER_TIMEOUT_S")
     power_max_mb: float = Field(10, gt=0, validation_alias="AGROSENSE_POWER_MAX_MB")
 
+    # NASADEM (HU-206): tiempo máximo y tamaño máximo de cada mosaico de 1°. Hoy uno pesa unos 20 MB y baja en unos 8 s.
+    nasadem_timeout_s: float = Field(300, gt=0, validation_alias="AGROSENSE_NASADEM_TIMEOUT_S")
+    nasadem_max_mb: float = Field(60, gt=0, validation_alias="AGROSENSE_NASADEM_MAX_MB")
+
     # Descargas de precios de SIPSA (HU-221, HU-222): tiempo máximo de cada descarga, contado de punta a punta (no por
     # lectura), y tamaño máximo. La respuesta completa del servicio pesa unos 300 MB y tarda de 2 a 5 minutos; el anexo del
     # boletín diario, unos 340 KB.

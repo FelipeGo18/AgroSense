@@ -30,12 +30,12 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-041 · Series diarias de lluvia y temperatura
 
 - **Historia:** Como motor, quiero series diarias de lluvia y temperatura por municipio, para evaluar el clima de cada ventana de siembra.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Descarga con caché y reintentos
   - [x] Fuente y fecha registradas
   - [x] Días faltantes o incompletos marcados en `quality` (`climate_day`); nunca se rellenan (R1)
-  - [ ] Publica `climate_day` (mínima y máxima diarias corregidas por altitud), de la que salen las heladas, el calor y «Qué cambió» (HU-045, HU-216)
+  - [x] Publica `climate_day` (mínima y máxima diarias corregidas por altitud), de la que salen las heladas, el calor y «Qué cambió» (HU-045, HU-216). Publicada con la altitud de NASADEM (HU-206, 10 de noviembre de 2026)
 - **Notas:** La etapa por temperatura acumulada que también la usa (HU-150) pasó a P1 el 11 de octubre de 2026. **9 de noviembre de 2026:** el adaptador `pipeline/sources/nasa_power.py` baja de la API diaria por punto de POWER (comunidad AG, sin cuenta) la mínima, la máxima y la lluvia (`T2M_MIN`, `T2M_MAX`, `PRECTOTCORR`) desde 1981, una vez por celda de 0,5° × 0,625° y no por municipio: los 239 municipios caen en 20 celdas (unos 22 MB de caché, menos de un minuto). Se comprobó contra la API que todos los puntos de una celda reciben la misma serie. Reintenta 3 veces y corta por tiempo total y por tamaño (`AGROSENSE_POWER_TIMEOUT_S`, `AGROSENSE_POWER_MAX_MB`), con la misma descarga con límites que SIPSA (`pipeline/sources/fetch.py`, 10 de noviembre de 2026). Un `-999` queda nulo; un día con solo una de las dos temperaturas es `partial`, y uno sin ninguna no se publica (así tampoco salen los últimos días, que POWER aún no tiene). `climate_day` ya se arma con la corrección por altitud, pero **no se publica hasta que exista la altitud de los municipios (HU-206)**: sin ella la temperatura no se puede corregir y no se publica sin corregir (R1). Con la altitud serán unos 4 millones de filas y unos 15 MB de Parquet en `data/published/`. La lluvia diaria queda en la caché para HU-042. Pruebas: `tests/pipeline/test_clima_diario.py`.
 
 ### HU-042 · Lluvia mensual y su normal
@@ -69,18 +69,18 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-206 · Altitud de municipios y lotes con NASADEM
 
 - **Historia:** Como motor, quiero la altitud de cada municipio y de cada lote desde NASADEM, para decidir si un cultivo se da en la zona y corregir la temperatura.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso (falta que Felipe confirme el método de la altitud del municipio)
 - **Criterios de aceptación:**
-  - [ ] Adaptador `nasadem` con caché: descarga los mosaicos de NASADEM (30 m) que cubren la región
-  - [ ] `municipalities.altitude_m` sale de NASADEM con un método documentado (supuesto por confirmar: la mediana de las celdas dentro del polígono municipal o la altitud de la cabecera)
-  - [ ] Publica la altitud (promedio de los píxeles de 30 m) en `grid_cells`, la rejilla común de 250 m (decisión 15), para que la API calcule la altitud de un lote como la mediana de las celdas de su polígono, igual que el suelo (HU-182)
-  - [ ] Entrada de NASADEM en `sources` con producto, versión, resolución, acceso y licencia
-  - [ ] Comprobación manual en 2 municipios contra la altitud oficial de la cabecera
-  - [ ] **Pendiente (decisión 14):** la pendiente se calcula a 30 m y `grid_cells.slope_pct` guarda la mediana de cada celda; `municipalities.slope_pct`, la del municipio. La de un lote la calcula la API al vuelo, como la altitud. La usa el criterio `erosion` (HU-224)
-  - [ ] Sin celdas válidas, `altitude_m` queda nulo y la aptitud es `insufficient_data` (R1)
+  - [x] Adaptador `nasadem` con caché: descarga los mosaicos de NASADEM (30 m) que cubren la región
+  - [x] `municipalities.altitude_m` sale de NASADEM con un método documentado (supuesto por confirmar: la mediana de las celdas dentro del polígono municipal o la altitud de la cabecera). **Se usa la mediana del polígono** (10 de noviembre de 2026), la misma regla del contrato para un lote; por confirmar con Felipe
+  - [x] Publica la altitud (promedio de los píxeles de 30 m) en `grid_cells`, la rejilla común de 250 m (decisión 15), para que la API calcule la altitud de un lote como la mediana de las celdas de su polígono, igual que el suelo (HU-182)
+  - [x] Entrada de NASADEM en `sources` con producto, versión, resolución, acceso y licencia
+  - [x] Comprobación manual en 2 municipios contra la altitud oficial de la cabecera (10 de noviembre de 2026, en 3: ver las notas)
+  - [x] **Pendiente (decisión 14):** la pendiente se calcula a 30 m y `grid_cells.slope_pct` guarda la mediana de cada celda; `municipalities.slope_pct`, la del municipio. La de un lote la calcula la API al vuelo, como la altitud. La usa el criterio `erosion` (HU-224)
+  - [x] Sin celdas válidas, `altitude_m` queda nulo y la aptitud es `insufficient_data` (R1). La aptitud la decide el motor (HU-191)
 - **Reglas que aplican:** R1, R7, R8, R9
 - **Contrato que toca:** `municipalities.altitude_m`, `municipalities.slope_pct`, `grid_cells`
-- **Notas:** Decisión 12. Reemplaza al «modelo de elevación por elegir» de HU-044. La altitud del lote no se guarda: la API la calcula al vuelo (R9). Con un lote dibujado, la aptitud usa la temperatura media corregida a la altitud del lote (`specs/01-reglas.md`, «Aptitud del cultivo en la zona», decisión 13). Supuesto por confirmar: en el MVP la corrección de la temperatura sigue usando la altitud del municipio, porque los indicadores de clima se precalculan por municipio; corregir por la altitud del lote necesita una decisión. No se recorta. Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. Reemplaza al «modelo de elevación por elegir» de HU-044. La altitud del lote no se guarda: la API la calcula al vuelo (R9). Con un lote dibujado, la aptitud usa la temperatura media corregida a la altitud del lote (`specs/01-reglas.md`, «Aptitud del cultivo en la zona», decisión 13). Supuesto por confirmar: en el MVP la corrección de la temperatura sigue usando la altitud del municipio, porque los indicadores de clima se precalculan por municipio; corregir por la altitud del lote necesita una decisión. No se recorta. Agregada el 11 de octubre de 2026. **10 de noviembre de 2026:** `pipeline/sources/nasadem.py` baja los 13 mosaicos de 1° que tocan la región (unos 224 MB en `data/raw/nasadem/`, menos de 2 minutos) de la copia en GeoTIFF de Microsoft Planetary Computer, que no pide cuenta; el distribuidor oficial es el LP DAAC, con cuenta de Earthdata, y `sources` cita su DOI. Cada celda de 0,0025° son exactamente 9 × 9 píxeles: la altitud es su promedio y la pendiente, la mediana de la de sus píxeles, con diferencias centrales a 30 m. `grid_cells` publica 593 648 celdas de los 239 municipios, todas `partial` hasta que llegue el suelo (HU-181). **Comprobación** en la celda de la cabecera (punto de DIVIPOLA), contra la altitud que dan las enciclopedias (no se encontró la del IGAC): Villa de Leyva 2147 m (2149), Chiquinquirá 2552 m (2556), Girardot 281 m (290). **El método importa:** en Duitama la cabecera está a 2527 m y la mediana del municipio a 3110 m, porque incluye el páramo; son unos 3,4 °C en la temperatura corregida. Por eso un municipio con varios pisos térmicos no se resume bien en un número, y la propuesta (por decidir con Felipe, ver `docs/registro-de-decisiones.md`) es que con un lote dibujado el motor corrija la temperatura a la altitud del lote, que sale de `grid_cells`.
 
 ### HU-207 · Lluvia por satélite con GPM IMERG
 
@@ -164,9 +164,9 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 - **Historia:** Como motor, quiero la altitud de cada municipio y la de su celda de NASA POWER, para corregir la temperatura y filtrar cultivos por piso térmico.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] `altitude_m` desde NASADEM (HU-206), con fuente
+  - [x] `altitude_m` desde NASADEM (HU-206), con fuente (10 de noviembre de 2026)
   - [x] `climate_cell_elevation_m` desde la respuesta de NASA POWER (9 de noviembre de 2026, con HU-041)
-  - [ ] Todas las temperaturas publicadas se corrigen con un gradiente térmico con fuente; el gradiente vive en la configuración del pipeline
+  - [x] Todas las temperaturas publicadas se corrigen con un gradiente térmico con fuente; el gradiente vive en la configuración del pipeline (10 de noviembre de 2026)
   - [ ] Comprobación manual en 2 municipios contra una estación del IDEAM, si la hay
 - **Reglas que aplican:** R7, R8
 - **Notas:** También publica `municipalities` (con `source_ids`) y `municipality_boundaries` desde el Marco Geoestadístico Nacional del DANE, que usan HU-164, HU-181 y HU-078. Pasa a P0 el 10 de octubre de 2026 porque las heladas dependen de la temperatura mínima, y la celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio. Desde el 11 de octubre de 2026 la altitud sale de NASADEM (HU-206, decisión 12). **15 de octubre de 2026:** adelantada la parte de municipios (decisión de Felipe, para los lotes): `pipeline/sources/dane.py` publica `municipalities` desde DIVIPOLA del DANE (datos.gov.co, CC BY-SA 4.0) para Boyacá y Cundinamarca (`pipeline/region.yaml`, supuesto hasta el 28 de octubre), con `sources` y `manifest.json`; 239 municipios. `altitude_m` y `climate_cell_elevation_m` van nulas hasta NASADEM y NASA POWER. El 15 de octubre de 2026 se publicaron los límites (`municipality_boundaries`) desde el servicio MGN 2025 del geoportal del DANE (`pipeline/sources/dane_mgn.py`), simplificados a unos 10 m; los 239 puntos de DIVIPOLA caen dentro de su límite. Faltan la altitud y la corrección de la temperatura. Pruebas en `tests/pipeline/test_municipios.py`. **9 de noviembre de 2026 (con HU-041):** `climate_cell_elevation_m` sale de la altura de la celda que da NASA POWER (de 532 a 2898 m en la región) y la fila suma la fuente `nasa_power`. El gradiente vive en `pipeline/region.yaml` con su fuente (`cenicafe_lapse_rate`): región Andina de Colombia, Chaves y Jaramillo (1999), tabla 3, con 133 estaciones de 100 a 4482 m. Es de 0,0058 °C/m para la máxima y de 0,0059 °C/m para la mínima. `climate_day` ya lo aplica; el criterio se marca cuando haya altitud y se publique la primera temperatura corregida.

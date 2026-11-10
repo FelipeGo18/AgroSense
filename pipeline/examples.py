@@ -68,8 +68,9 @@ def municipalities(published: pl.DataFrame) -> pl.DataFrame:
     for row in rows:
         altitude, tmean, slope = TOWNS[row["municipality_id"]]
         row.update(altitude_m=altitude, climate_cell_elevation_m=altitude - 180, tmean_annual_c=tmean, slope_pct=slope)
-        # La altitud y la altura de la celda son inventadas: la fila ya no cita NASA POWER, solo lo real que queda (R5).
-        row["source_ids"] = sorted({*row["source_ids"], SOURCE_ID} - {"nasa_power"})
+        # La altitud, la pendiente y la altura de la celda son inventadas: la fila ya no cita NASA POWER ni NASADEM, solo
+        # lo real que queda (R5).
+        row["source_ids"] = sorted({*row["source_ids"], SOURCE_ID} - {"nasa_power", "nasadem"})
     return _table("municipalities", rows)
 
 
