@@ -187,11 +187,11 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-166 · Borrar mi cuenta
 
 - **Historia:** Como agricultor, quiero borrar mi cuenta y todo lo que registré, para tener control de mis datos.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] `DELETE /api/v1/me` borra usuario, sesiones, lotes y temporadas (también los borrados que aún se podían restaurar) y, cuando existan (P1), sus tickets y sus eventos de `activity_log`, con las acciones de administradores sobre sus datos anonimizadas
-  - [ ] Confirmación clara en la web antes de borrar
-  - [ ] Prueba automática del borrado en cascada
+  - [x] `DELETE /api/v1/me` borra usuario, sesiones, lotes y temporadas (también los borrados que aún se podían restaurar) y, cuando existan (P1), sus tickets y sus eventos de `activity_log`, con las acciones de administradores sobre sus datos anonimizadas
+  - [x] Confirmación clara en la web antes de borrar: el diálogo «Borrar mi cuenta» de Mi cuenta, que pide la contraseña (HU-162)
+  - [x] Prueba automática del borrado en cascada: `test_borrar_la_cuenta_se_lleva_todo_lo_suyo` (`tests/accounts/test_account.py`), con los tickets y las acciones de un administrador anonimizadas, y `test_borrar_un_usuario_borra_en_cascada_lo_suyo` (`tests/accounts/test_migrations.py`). Cerrada el 10 de noviembre de 2026
 - **Reglas que aplican:** R9
 - **Notas:** No se recorta: es parte de las cuentas que el proyecto no recorta mientras haya cuentas (`CLAUDE.md`).
 
