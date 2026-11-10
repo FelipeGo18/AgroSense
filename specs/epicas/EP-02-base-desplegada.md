@@ -58,4 +58,20 @@ estado: pendiente
 - **Criterios de aceptación:**
   - [ ] Un contenedor sirve API y web en una URL pública
   - [ ] `/api/v1/version` responde
-  - [ ] Docker Compose levanta la app y PostgreSQL con volumen persistente; credenciales en variables de entorno, ningún secreto en el repositorio
+  - [ ] La app desplegada usa la base de datos en la nube (`AGROSENSE_DATABASE_URL` en el panel del alojamiento); credenciales en variables de entorno, ningún secreto en el repositorio
+- **Notas:** Desde el 10 de noviembre de 2026 la base del despliegue es la de la nube, no un PostgreSQL con volumen (`docs/registro-de-decisiones.md`). Sus migraciones las aplica GitHub Actions al fusionar en `desarrollo` (HU-229).
+
+### HU-229 · Migraciones revisadas y aplicadas con GitHub Actions
+
+- **Historia:** Como equipo, quiero que cada cambio de la base de datos se revise solo en el PR y se aplique solo a la base de la nube al fusionar, para que dos cambios de la misma tabla no choquen y nadie tenga que acordarse de migrar.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Criterios de aceptación:**
+  - [ ] En cada PR hacia `desarrollo` o `produccion` que toque el backend, un workflow corre en Docker las pruebas de las migraciones sobre el código ya fusionado con la rama de destino: una sola migración final, números sin saltos ni repetidos, modelos y migraciones iguales, cada una baja y vuelve a subir, y la copia de seguridad antes de migrar
+  - [ ] El PR falla si edita, borra o renombra una migración que ya está en la rama de destino
+  - [ ] Si el PR trae migraciones nuevas, un comentario del workflow dice cuáles son y su SQL, para revisarlas antes de fusionar
+  - [ ] Al fusionar en `desarrollo` un cambio de migraciones, el workflow las aplica a la base de la nube con la imagen de la app (`pg_dump` 17), de a una corrida a la vez y con copia de seguridad antes
+  - [ ] La copia sale cifrada (AES-256) y queda 7 días como archivo del workflow; sin la clave de cifrado no se migra. El repositorio es público: nunca hay una copia sin cifrar ni un dato de conexión en los logs
+  - [ ] `python -m backend.db.renumber` pasa las migraciones propias de la rama al número que sigue a las de la rama de destino y las encadena detrás de la última
+  - [ ] `backend/README.md` explica el flujo, cómo resolver un choque de migraciones y lo que configura el dueño del repositorio (secretos, entorno `nube` y reglas de la rama)
+- **Reglas que aplican:** R4, R9
+- **Notas:** Decidido el 10 de noviembre de 2026: las migraciones se aplican solas al fusionar. La base de la nube es una sola, así que una migración tiene que ser compatible con el código que todavía no se actualizó: agregar tablas o columnas sí; renombrar o borrar se hace en dos pasos. Un choque de contenido (dos migraciones que cambian la misma tabla) no se arregla renumerando: la del PR se rehace sobre la rama de destino. Agregada el 10 de noviembre de 2026.
