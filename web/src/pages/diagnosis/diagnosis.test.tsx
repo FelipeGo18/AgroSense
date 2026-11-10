@@ -100,6 +100,17 @@ describe("La consulta (HU-091)", () => {
     expect(toRequest(form).sowing_date).toBe("2027-01-01");
   });
 
+  it("el mes en curso se cuenta en la hora de Bogotá (UTC−5), como en la API, no en UTC ni en la del navegador", () => {
+    // 30 de noviembre, 8:00 p. m. en Bogotá: en UTC ya es 1 de diciembre. Noviembre sigue siendo el mes en curso.
+    expect(sowingMonths(new Date("2026-12-01T01:00:00Z"))[0].value).toBe("2026-11");
+    // 1 de diciembre, 12:30 a. m. en Bogotá: ya es diciembre.
+    expect(sowingMonths(new Date("2026-12-01T05:30:00Z"))[0].value).toBe("2026-12");
+    // Fin de año: 31 de diciembre, 11:00 p. m. en Bogotá, ya 2027 en UTC.
+    const months = sowingMonths(new Date("2027-01-01T04:00:00Z"));
+    expect(months[0].value).toBe("2026-12");
+    expect(months[11].value).toBe("2027-11");
+  });
+
   it("«Sí», «No» y «No sé» se envían como riego verdadero, falso o nulo", () => {
     const base: ConsultForm = { ...EMPTY_FORM, municipalityId: "15646", cropId: "papa", month: "2027-01" };
     expect(toRequest({ ...base, irrigation: "si" }).irrigated).toBe(true);

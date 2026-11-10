@@ -17,8 +17,9 @@
 import { chromium } from "playwright-core";
 
 const BASE = process.env.BASE ?? "http://127.0.0.1:5190";
-// El diagnóstico con una consulta completa usa el mes en curso: siempre está entre los doce que se pueden elegir.
-const THIS_MONTH = new Date().toISOString().slice(0, 7);
+// El diagnóstico con una consulta completa usa el mes en curso en la hora de la región (Bogotá, como la web y la API):
+// siempre está entre los doce que se pueden elegir.
+const THIS_MONTH = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit" }).format(new Date());
 /** Rutas de la app. Una vista nueva se agrega aquí. */
 const ROUTES = (
   process.env.ROUTES ??

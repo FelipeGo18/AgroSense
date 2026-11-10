@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
+import { REGION_TIME_ZONE } from "@/app/config";
 import type { Crop } from "@/features/farm/seasons";
 import type { LotListItem, Municipality } from "@/features/farm/lots";
 
@@ -44,15 +45,26 @@ export const ERRORS: Record<ConsultField, string> = {
 };
 
 const MONTH = new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric", timeZone: "UTC" });
+// El año y el mes de un instante en la hora de la región, no en la del navegador.
+const REGION_MONTH = new Intl.DateTimeFormat("en-US", { timeZone: REGION_TIME_ZONE, year: "numeric", month: "numeric" });
 const pad = (n: number) => String(n).padStart(2, "0");
+
+/** El año y el mes (0 a 11) en curso en la región. */
+export function regionMonth(now: Date): [number, number] {
+  const parts = REGION_MONTH.formatToParts(now);
+  const part = (type: "year" | "month") => Number(parts.find((p) => p.type === type)?.value);
+  return [part("year"), part("month") - 1];
+}
 
 /**
  * Los doce meses entre los que se elige cuándo sembrar: el mes en curso y los once siguientes. El mes en curso vale
- * aunque su día 1 ya haya pasado (`specs/02-contratos.md`, «Fechas»).
+ * aunque su día 1 ya haya pasado, y se cuenta en la hora de la región, como en la API (`specs/02-contratos.md`,
+ * «Fechas»): así la web nunca ofrece un mes que la API rechaza.
  */
-export function sowingMonths(today: Date = new Date()): { value: string; label: string }[] {
+export function sowingMonths(now: Date = new Date()): { value: string; label: string }[] {
+  const [year, month] = regionMonth(now);
   return Array.from({ length: 12 }, (_, i) => {
-    const date = new Date(Date.UTC(today.getFullYear(), today.getMonth() + i, 1));
+    const date = new Date(Date.UTC(year, month + i, 1));
     const value = `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}`;
     // Solo el mes: «septiembre de 2027» cabe en el selector a 320 px. Que el primero es el mes en curso lo dice la ayuda.
     return { value, label: MONTH.format(date) };
