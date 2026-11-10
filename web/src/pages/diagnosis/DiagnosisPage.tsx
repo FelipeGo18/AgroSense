@@ -34,6 +34,8 @@ import {
 import { harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { byId, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
 import { useVersion } from "@/features/version";
+import { useSignalPriorities } from "@/features/diagnosis/priorities";
+import { PrioritiesPanel } from "./PrioritiesPanel";
 import { SignalList } from "./SignalList";
 import { formatDate, useCrops } from "@/features/farm/seasons";
 import { irrigationText, placeName } from "@/pages/farm/common";
@@ -95,13 +97,17 @@ export function DiagnosisPage() {
   // Con `?lote=`: se espera la sesión y los lotes. Si no hay sesión o el lote no es suyo, se dice y no se consulta.
   const waitingLot = Boolean(sent.lotId) && (sessionLoading || (Boolean(user) && lots.isPending));
   const lotMissing = Boolean(sent.lotId) && !waitingLot && !sentLot;
+  // Las prioridades de quien consulta (HU-202): se espera a saberlas para no pedir dos veces, y con todas en 0 no se pide.
+  const priorities = useSignalPriorities();
   const request: DiagnosisRequest | null =
     catalogsReady &&
     hasConsult(params) &&
     !waitingLot &&
     !lotMissing &&
+    priorities.ready &&
+    !priorities.allZero &&
     Object.keys(validate(sent, { ...catalogs, lot: sentLot })).length === 0
-      ? toRequest(sent, sentLot)
+      ? toRequest(sent, sentLot, priorities.value)
       : null;
   const diagnosis = useDiagnosis(request);
 
@@ -211,6 +217,8 @@ export function DiagnosisPage() {
                   />
                 )}
 
+                <PrioritiesPanel priorities={priorities} />
+
                 <Button type="submit" disabled={!catalogsReady} className="w-full sm:w-auto sm:self-start">
                   Ver el diagnóstico
                 </Button>
@@ -218,7 +226,14 @@ export function DiagnosisPage() {
             )}
           </Card>
 
-          <Result request={request} sentMonth={sent.month} diagnosis={diagnosis} waitingLot={waitingLot} lotMissing={lotMissing} />
+          <Result
+            request={request}
+            sentMonth={sent.month}
+            diagnosis={diagnosis}
+            waitingLot={waitingLot}
+            lotMissing={lotMissing}
+            zeroPriorities={hasConsult(params) && priorities.allZero}
+          />
         </div>
         {request && diagnosis.isSuccess && <Details data={diagnosis.data} />}
       </main>
@@ -262,12 +277,15 @@ function Result({
   diagnosis,
   waitingLot,
   lotMissing,
+  zeroPriorities,
 }: {
   request: DiagnosisRequest | null;
   sentMonth: string;
   diagnosis: ReturnType<typeof useDiagnosis>;
   waitingLot: boolean;
   lotMissing: boolean;
+  /** Hay una consulta, pero todas las prioridades están en 0: no se pide (HU-202). */
+  zeroPriorities: boolean;
 }) {
   if (!request) {
     return (
@@ -275,7 +293,9 @@ function Result({
         <h2 id="resultado" className="text-[clamp(1.25rem,3vw,1.75rem)]">
           Resultado
         </h2>
-        {lotMissing ? (
+        {zeroPriorities ? (
+          <Alert>Todas sus prioridades están en 0. Suba al menos una en «Sus prioridades · Ajustar» para ver el diagnóstico.</Alert>
+        ) : lotMissing ? (
           <Alert>
             Ese lote no está entre los suyos o no ha entrado con su cuenta.{" "}
             <Link to={PATHS.login} className={LINK}>

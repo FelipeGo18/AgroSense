@@ -74,19 +74,20 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-202 · Ajustar mis prioridades al consultar
 
 - **Historia:** Como agricultor, quiero decir qué me importa más de cada señal al consultar, para que el semáforo y el orden de las ventanas reflejen mi criterio.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Seis controles, uno por señal (agua, heladas, calor, suelo, oferta y mercado), de 0 a 5, con el control de prioridad del kit (cinco semillas y un «0»)
-  - [ ] Empiezan en los pesos por defecto de AgroSense, tomados de `default_weights` de `GET /api/v1/version`, antes de consultar; un botón «Volver al criterio de AgroSense» los restablece
-  - [ ] Al cambiar uno, la web vuelve a pedir el diagnóstico con `priorities`
-  - [ ] Con todos en 0, la web no envía la petición y pide subir al menos uno
-  - [ ] Junto a los controles, un texto corto: «0: no cambia la luz, salvo un riesgo grave de clima. 4 o 5: un resultado medio cuenta como desfavorable»
+  - [x] Seis controles, uno por señal (agua, heladas, calor, suelo, oferta y mercado), de 0 a 5, con el control de prioridad del kit (cinco semillas y un «0»)
+  - [x] Empiezan en los pesos por defecto de AgroSense, tomados de `default_weights` de `GET /api/v1/version`, antes de consultar; un botón «Volver al criterio de AgroSense» los restablece
+  - [x] Al cambiar uno, la web vuelve a pedir el diagnóstico con `priorities`
+  - [x] Con todos en 0, la web no envía la petición y pide subir al menos uno
+  - [x] Junto a los controles, un texto corto: «0: no cambia la luz, salvo un riesgo grave de clima. 4 o 5: un resultado medio cuenta como desfavorable»
   - [ ] Las mismas prioridades se envían como `signal_priorities` a las estrategias de rotación (HU-214) durante la misma visita y, en P1, se usan en «Planear una siembra» (HU-180)
-  - [ ] En el MVP las prioridades se guardan en el navegador, con o sin cuenta; en el perfil (`PATCH /me`, `priorities`) cuando exista HU-160 (P1). Siempre se puede volver al criterio de AgroSense
-  - [ ] Cada control tiene una función; nada decorativo
+  - [x] Sin cuenta, las prioridades se guardan en el navegador; con cuenta, en el perfil (`PATCH /me`, `priorities`, de HU-160), el mismo lugar que «Sus prioridades» de Mi cuenta. Siempre se puede volver al criterio de AgroSense. Corregido el 10 de noviembre de 2026: decía «en el navegador, con o sin cuenta, hasta que exista HU-160»; HU-160 ya guarda las prioridades en el perfil y `specs/05-frontend.md` («Dónde se ajustan») ya lo decía así
+  - [x] Cada control tiene una función; nada decorativo
 - **Reglas que aplican:** R2, R9
 - **Contrato que toca:** `priorities` del cuerpo de `POST /api/v1/diagnostics` y de `POST /api/v1/calendar`; `weights` de la respuesta; `default_weights` de `GET /api/v1/version`; `priorities` de `PATCH /api/v1/me`
 - **Notas:** Decisión 10. Son distintas de las cuatro prioridades de las rotaciones (HU-101). El perfil como lugar para recordarlas depende de `PATCH /me` (HU-160), que pasó a P1 el 11 de octubre de 2026: en el MVP se recuerdan en el navegador. Los controles van en un resumen plegado, «Criterio de AgroSense · Ajustar» (`specs/05-frontend.md`, «Dónde se ajustan»).
+- **Hecho (10 nov), salvo el envío a las estrategias:** en `/diagnostico`, dentro de la consulta, el resumen plegado «Criterio de AgroSense · Ajustar» (o «Sus prioridades · Ajustar») con los seis `SeedRow` del kit; sus controles se dibujan solo abierto. La lógica está en `web/src/features/diagnosis/priorities.ts` (`useSignalPriorities`), que también usará HU-214 para enviar `signal_priorities`: ese criterio queda pendiente hasta que exista la pantalla de estrategias. La consulta espera el primer intento de `GET /version` para no pedir dos veces; si `/version` falla, consulta sin `priorities` (la API usa sus pesos) y no lo vuelve a pedir en bucle (`useVersion` con `retryOnMount: false`). Con todas en 0 no se consulta ni se guarda, y el resultado lo dice. En el celular el panel ocupa todo el ancho de la tarjeta: las seis casillas de 44 px no caben de otro modo a 320 px. «Volver al criterio de AgroSense» solo aparece cuando hay a qué volver. «Sus prioridades» de Mi cuenta usa la misma lista de señales.
 
 ### HU-203 · Dos luces y cultivos alternativos
 
