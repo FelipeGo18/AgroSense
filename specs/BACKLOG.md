@@ -76,7 +76,7 @@
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-092 | Semáforo con señales, razones y limitaciones | P0 | M | hecha | Seis señales con calificación, «Lo que más limita», fuentes y limitaciones; rótulo de la cosecha según `harvest_basis` (10 nov) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-194 | Cultivo no apto y mejores ventanas | P0 | S | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-202 | Ajustar mis prioridades al consultar | P0 | S | en curso | Controles, `priorities`, todo en 0 y guardado (navegador o perfil) hechos (10 nov); falta enviarlas a las estrategias con HU-214 |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-203 | Dos luces y cultivos alternativos | P0 | M | pendiente | Las alternativas son P1 |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-203 | Dos luces y cultivos alternativos | P0 | M | hecha | Una o dos luces con su acción, lo que más limita y por qué difieren; «No cuenta» y «Cuenta siempre»; enlace a estrategias (10 nov). Las alternativas son P1 |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-093 | Gráfica de la lluvia de la ventana | P0 | S | pendiente | Reducida a una gráfica (antes M) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-094 | Estados de carga, vacío y error | P0 | S | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-219 | Pantalla «Qué cambió en su zona» | P0 | M | pendiente | Nueva |
