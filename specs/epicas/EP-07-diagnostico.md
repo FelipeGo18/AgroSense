@@ -228,6 +228,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Criterios de aceptación:**
   - [ ] `POST /api/v1/diagnostics` recibe `municipality_id`, `crop_id`, `sowing_date`, `irrigated`, `priorities` y `lot_id`, según el contrato
   - [ ] 422 para entradas fuera del catálogo, un cultivo con `kind` distinto de `crop`, un `sowing_date` con formato inválido, anterior a hoy o a más de doce meses, o `priorities` con un peso fuera de 0 a 5 o todos en 0
+  - [ ] «Hoy» y «el mes en curso» se cuentan en la hora de la región (en la piloto, `America/Bogota`, UTC−5), no en UTC ni en la del servidor. Prueba: el 30 de noviembre a las 8:00 p. m. de Bogotá (1 de diciembre en UTC), un `sowing_date` del 1 de noviembre se acepta; el 1 de diciembre a las 12:30 a. m. de Bogotá, se rechaza (`specs/02-contratos.md`, «Fechas»)
   - [ ] Sin `priorities`, usa los pesos por defecto y `overall` coincide con `overall_default`
   - [ ] 200 con `insufficient_data` para entradas válidas sin datos
   - [ ] 200 con `suitability.level = not_suitable`, luz `red` y acción `rotate` para un cultivo que no es apto; no es un error
