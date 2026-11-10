@@ -30,13 +30,13 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-041 · Series diarias de lluvia y temperatura
 
 - **Historia:** Como motor, quiero series diarias de lluvia y temperatura por municipio, para evaluar el clima de cada ventana de siembra.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Descarga con caché y reintentos
-  - [ ] Fuente y fecha registradas
-  - [ ] Días faltantes o incompletos marcados en `quality` (`climate_day`); nunca se rellenan (R1)
+  - [x] Descarga con caché y reintentos
+  - [x] Fuente y fecha registradas
+  - [x] Días faltantes o incompletos marcados en `quality` (`climate_day`); nunca se rellenan (R1)
   - [ ] Publica `climate_day` (mínima y máxima diarias corregidas por altitud), de la que salen las heladas, el calor y «Qué cambió» (HU-045, HU-216)
-- **Notas:** La etapa por temperatura acumulada que también la usa (HU-150) pasó a P1 el 11 de octubre de 2026.
+- **Notas:** La etapa por temperatura acumulada que también la usa (HU-150) pasó a P1 el 11 de octubre de 2026. **9 de noviembre de 2026:** el adaptador `pipeline/sources/nasa_power.py` baja de la API diaria por punto de POWER (comunidad AG, sin cuenta) la mínima, la máxima y la lluvia (`T2M_MIN`, `T2M_MAX`, `PRECTOTCORR`) desde 1981, una vez por celda de 0,5° × 0,625° y no por municipio: los 239 municipios caen en 20 celdas (unos 22 MB de caché, menos de un minuto). Se comprobó contra la API que todos los puntos de una celda reciben la misma serie. Reintenta 3 veces y corta por tiempo total y por tamaño (`AGROSENSE_POWER_TIMEOUT_S`, `AGROSENSE_POWER_MAX_MB`), con la misma descarga con límites que SIPSA (`pipeline/sources/fetch.py`, 10 de noviembre de 2026). Un `-999` queda nulo; un día con solo una de las dos temperaturas es `partial`, y uno sin ninguna no se publica (así tampoco salen los últimos días, que POWER aún no tiene). `climate_day` ya se arma con la corrección por altitud, pero **no se publica hasta que exista la altitud de los municipios (HU-206)**: sin ella la temperatura no se puede corregir y no se publica sin corregir (R1). Con la altitud serán unos 4 millones de filas y unos 15 MB de Parquet en `data/published/`. La lluvia diaria queda en la caché para HU-042. Pruebas: `tests/pipeline/test_clima_diario.py`.
 
 ### HU-042 · Lluvia mensual y su normal
 
@@ -165,11 +165,11 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] `altitude_m` desde NASADEM (HU-206), con fuente
-  - [ ] `climate_cell_elevation_m` desde la respuesta de NASA POWER
+  - [x] `climate_cell_elevation_m` desde la respuesta de NASA POWER (9 de noviembre de 2026, con HU-041)
   - [ ] Todas las temperaturas publicadas se corrigen con un gradiente térmico con fuente; el gradiente vive en la configuración del pipeline
   - [ ] Comprobación manual en 2 municipios contra una estación del IDEAM, si la hay
 - **Reglas que aplican:** R7, R8
-- **Notas:** También publica `municipalities` (con `source_ids`) y `municipality_boundaries` desde el Marco Geoestadístico Nacional del DANE, que usan HU-164, HU-181 y HU-078. Pasa a P0 el 10 de octubre de 2026 porque las heladas dependen de la temperatura mínima, y la celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio. Desde el 11 de octubre de 2026 la altitud sale de NASADEM (HU-206, decisión 12). **15 de octubre de 2026:** adelantada la parte de municipios (decisión de Felipe, para los lotes): `pipeline/sources/dane.py` publica `municipalities` desde DIVIPOLA del DANE (datos.gov.co, CC BY-SA 4.0) para Boyacá y Cundinamarca (`pipeline/region.yaml`, supuesto hasta el 28 de octubre), con `sources` y `manifest.json`; 239 municipios. `altitude_m` y `climate_cell_elevation_m` van nulas hasta NASADEM y NASA POWER. El 15 de octubre de 2026 se publicaron los límites (`municipality_boundaries`) desde el servicio MGN 2025 del geoportal del DANE (`pipeline/sources/dane_mgn.py`), simplificados a unos 10 m; los 239 puntos de DIVIPOLA caen dentro de su límite. Faltan la altitud y la corrección de la temperatura. Pruebas en `tests/pipeline/test_municipios.py`.
+- **Notas:** También publica `municipalities` (con `source_ids`) y `municipality_boundaries` desde el Marco Geoestadístico Nacional del DANE, que usan HU-164, HU-181 y HU-078. Pasa a P0 el 10 de octubre de 2026 porque las heladas dependen de la temperatura mínima, y la celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio. Desde el 11 de octubre de 2026 la altitud sale de NASADEM (HU-206, decisión 12). **15 de octubre de 2026:** adelantada la parte de municipios (decisión de Felipe, para los lotes): `pipeline/sources/dane.py` publica `municipalities` desde DIVIPOLA del DANE (datos.gov.co, CC BY-SA 4.0) para Boyacá y Cundinamarca (`pipeline/region.yaml`, supuesto hasta el 28 de octubre), con `sources` y `manifest.json`; 239 municipios. `altitude_m` y `climate_cell_elevation_m` van nulas hasta NASADEM y NASA POWER. El 15 de octubre de 2026 se publicaron los límites (`municipality_boundaries`) desde el servicio MGN 2025 del geoportal del DANE (`pipeline/sources/dane_mgn.py`), simplificados a unos 10 m; los 239 puntos de DIVIPOLA caen dentro de su límite. Faltan la altitud y la corrección de la temperatura. Pruebas en `tests/pipeline/test_municipios.py`. **9 de noviembre de 2026 (con HU-041):** `climate_cell_elevation_m` sale de la altura de la celda que da NASA POWER (de 532 a 2898 m en la región) y la fila suma la fuente `nasa_power`. El gradiente vive en `pipeline/region.yaml` con su fuente (`cenicafe_lapse_rate`): región Andina de Colombia, Chaves y Jaramillo (1999), tabla 3, con 133 estaciones de 100 a 4482 m. Es de 0,0058 °C/m para la máxima y de 0,0059 °C/m para la mínima. `climate_day` ya lo aplica; el criterio se marca cuando haya altitud y se publique la primera temperatura corregida.
 
 ### HU-045 · Heladas y temperatura máxima por mes
 

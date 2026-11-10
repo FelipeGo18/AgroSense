@@ -25,6 +25,11 @@ class PipelineSettings(BaseSettings):
     # Dónde dejan las actualizaciones de precios sus versiones (HU-222). La API las lee de la misma carpeta.
     market_dir: Path = Field(Path("data/market"), validation_alias="AGROSENSE_MARKET_DIR")
 
+    # NASA POWER (HU-041): tiempo máximo de cada descarga, contado de punta a punta (no por lectura), y tamaño máximo de
+    # cada respuesta. Hoy una celda con 45 años de mínima, máxima y lluvia pesa unos 0,8 MB y baja en unos 3 s.
+    power_timeout_s: float = Field(120, gt=0, validation_alias="AGROSENSE_POWER_TIMEOUT_S")
+    power_max_mb: float = Field(10, gt=0, validation_alias="AGROSENSE_POWER_MAX_MB")
+
     # Descargas de precios de SIPSA (HU-221, HU-222): tiempo máximo de cada descarga, contado de punta a punta (no por
     # lectura), y tamaño máximo. La respuesta completa del servicio pesa unos 300 MB y tarda de 2 a 5 minutos; el anexo del
     # boletín diario, unos 340 KB.

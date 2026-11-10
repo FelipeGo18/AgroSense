@@ -4,17 +4,23 @@
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
     uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
-Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `municipality_boundaries` (MGN del DANE, HU-044), el
-catálogo (`crops` y `crop_stages`, HU-061), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221),
-`market_price_latest` (el último precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y
-`manifest.json`. Cada tabla pasa por las validaciones y por su esquema del contrato (`pipeline/schema.py`, HU-011) antes
-de escribirse: si una falla, no se publica nada (R7, R8).
+Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044, con la altura de su celda de NASA POWER),
+`municipality_boundaries` (MGN del DANE, HU-044), el catálogo (`crops` y `crop_stages`, HU-061), `climate_day` (NASA
+POWER, HU-041), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221), `market_price_latest` (el último
+precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla
+pasa por las validaciones y por su esquema del contrato (`pipeline/schema.py`, HU-011) antes de escribirse: si una
+falla, no se publica nada (R7, R8).
 También se valida el mapeo de los productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que
 se publican. Al terminar, lo publicado se revisa contra su manifiesto (HU-123).
 
+Si falta la caché de NASA POWER o la de SIPSA, se publica lo demás sin esas tablas y el log lo dice (`source_missing`):
+no hace falta bajar el clima ni los precios para reconstruir los municipios. `climate_day` solo se publica con los
+municipios que tienen altitud (NASADEM, HU-206): sin ella la temperatura no se puede corregir y no se publica sin
+corregir (R1).
+
 Cada paso deja una línea en la terminal con la fuente, las filas leídas y las descartadas con su motivo (HU-177). Usa la
-misma configuración de logs que la API (`common/logging.py`, que no depende del backend): nivel y formato con `AGROSENSE_LOG_LEVEL` y
-`AGROSENSE_LOG_FORMAT`, sin depender de la base de datos.
+misma configuración de logs que la API (`common/logging.py`, que no depende del backend): nivel y formato con
+`AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT`, sin depender de la base de datos.
 """
 
 import argparse
@@ -34,7 +40,7 @@ from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
 from pipeline import schema
 from pipeline.settings import get_settings
-from pipeline.sources import dane, dane_mgn, sipsa
+from pipeline.sources import dane, dane_mgn, nasa_power, sipsa
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
@@ -166,6 +172,16 @@ def validate_market_month(month: pl.DataFrame, crops: dict[str, Any], sources: p
         raise ValidationError(f"`market_month` con una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def validate_climate(climate: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`climate_day` solo trae municipios publicados (R7) y cita fuentes que existen (R8)."""
+    extra = set(climate["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`climate_day` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    unknown = set(climate["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`climate_day` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -175,12 +191,14 @@ def publish(
     crops: tuple[str, pl.DataFrame, pl.DataFrame] | None = None,
     prices: pl.DataFrame | None = None,
     crop_products: dict[str, Any] | None = None,
+    climate: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
     `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
-    `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). Todo se valida antes de
-    escribir nada.
+    `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). `climate`
+    (`climate_day`) solo se escribe si trae filas: una tabla vacía no es un dato (R1). Todo se valida antes de escribir
+    nada.
     """
     validate(municipalities, sources)
     if boundaries is not None:
@@ -197,6 +215,9 @@ def publish(
         validate_crops(crop_products, prices, set(crops[1]["crop_id"].to_list()) if crops is not None else None)
         month = sipsa.monthly(prices, season, crop_products)
         validate_market_month(month, crop_products, sources)
+    has_climate = climate is not None and not climate.is_empty()
+    if has_climate:
+        validate_climate(climate, municipalities, sources)
     # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
     # `sources` junta filas de varias fuentes: va con las columnas del contrato, en su orden. Una fuente sin cita (por
     # ejemplo, las del catálogo) queda con `citation` nula, no inventada (R1).
@@ -207,6 +228,8 @@ def publish(
         tables["municipality_boundaries"] = boundaries
     if crops is not None:
         tables["crops"], tables["crop_stages"] = crops[1], crops[2]
+    if has_climate:
+        tables["climate_day"] = climate
     if prices is not None:
         tables |= {"market_price_day": prices, "market_price_latest": latest, "market_price_season": season}
     if month is not None:
@@ -239,6 +262,10 @@ def publish(
     if crops is not None:
         manifest["tables"]["crops"] = {"rows": crops[1].height, "coverage": "cultivos del MVP"}
         manifest["tables"]["crop_stages"] = {"rows": crops[2].height, "coverage": "cultivos del MVP"}
+    if has_climate:
+        days = f"del {climate['date'].min()} al {climate['date'].max()}"
+        coverage = f"{climate['municipality_id'].n_unique()} municipios con altitud, {days}"
+        manifest["tables"]["climate_day"] = {"rows": climate.height, "coverage": coverage}
     if prices is not None:
         manifest["tables"]["market_price_day"] = {
             "rows": prices.height,
@@ -292,7 +319,44 @@ def verify(folder: Path = PUBLISHED, dataset_version: str | None = None) -> dict
     return manifest
 
 
-def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE, market_cache: Path = sipsa.CACHE) -> dict[str, Any]:
+def climate_from_cache(
+    region: dict[str, Any], municipalities: pl.DataFrame, cache: Path
+) -> tuple[pl.DataFrame, pl.DataFrame | None, list[dict[str, Any]]]:
+    """El clima de NASA POWER (HU-041): los municipios con la altura de su celda, `climate_day` y sus fuentes.
+
+    Sin la caché de POWER devuelve los municipios como estaban, sin clima y sin fuentes nuevas: lo demás se publica igual.
+    """
+    try:
+        series, meta = nasa_power.read_cache(nasa_power.cells(municipalities), cache)
+    except FileNotFoundError as error:
+        log.warning("source_missing", source=nasa_power.SOURCE_ID, detail=f"Se publica sin el clima de NASA POWER: {error}")
+        return municipalities, None, []
+    municipalities = nasa_power.with_cell_elevation(municipalities, meta["elevations"])
+    lapse = region.get("temperature_lapse_rate")
+    climate = nasa_power.climate_day(series, municipalities, lapse)
+    sources = [nasa_power.source(series, meta)]
+    if lapse is not None:
+        sources.append(lapse["source"])
+    without = municipalities.filter(pl.col("altitude_m").is_null()).height
+    if without:
+        log.warning(
+            "climate_not_corrected",
+            table="climate_day",
+            municipalities=without,
+            detail=f"{without} municipios sin altitud (llega con NASADEM, HU-206): no tienen filas en climate_day",
+        )
+    if lapse is None:
+        log.warning("climate_not_corrected", table="climate_day", detail="region.yaml no trae temperature_lapse_rate")
+    return municipalities, climate, sources
+
+
+def build(
+    download: bool = False,
+    folder: Path = PUBLISHED,
+    cache: Path = dane.CACHE,
+    market_cache: Path = sipsa.CACHE,
+    power_cache: Path = nasa_power.CACHE,
+) -> dict[str, Any]:
     region = load_region()
     version, name = region["dataset_version"], region["region"]["name"]
     departments = region["region"]["departments"]
@@ -317,6 +381,9 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
         detail=f"DIVIPOLA: {len(rows)} filas leídas, {municipalities.height} de la región y {outside} descartadas por ser de "
         "otros departamentos",
     )
+    if download:
+        nasa_power.download(nasa_power.cells(municipalities), power_cache)
+    municipalities, climate, climate_sources = climate_from_cache(region, municipalities, power_cache)
     features, mgn_meta = dane_mgn.read_cache(departments, cache)
     boundaries = dane_mgn.boundaries(features)
     catalog = crops_catalog.load()
@@ -344,9 +411,9 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
         )
         own.append(sipsa.source(prices, downloaded_at))
         crop_products = load_crops()
-    sources = pl.concat([pl.DataFrame(own), catalog_sources], how="diagonal_relaxed")
+    sources = pl.concat([pl.DataFrame([*own, *climate_sources]), catalog_sources], how="diagonal_relaxed")
     crops = (catalog["version"], crops_table, stages_table)
-    return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products)
+    return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate)
 
 
 def main() -> None:
@@ -362,7 +429,7 @@ def main() -> None:
         if not args.verificar:
             build(download=args.descargar)
         manifest = verify(PUBLISHED, expected)
-    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError) as error:
+    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError, nasa_power.DownloadError) as error:
         event = "dataset_mismatch" if args.verificar else "dataset_not_published"
         log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")
         sys.exit(1)
