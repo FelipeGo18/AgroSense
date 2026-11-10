@@ -3,6 +3,7 @@ pruebas nunca la tocan (backend/README.md, «Base de datos en la nube»)."""
 
 import pytest
 from alembic import command
+from pydantic import ValidationError
 from structlog.testing import capture_logs
 
 from backend.config.settings import Settings, get_settings, is_local
@@ -99,3 +100,35 @@ def test_al_arrancar_sin_migrar_y_al_dia_lo_dice(engine, database_url):
     with capture_logs() as logs:
         migrate.on_startup(database_url, alembic_config(database_url), auto=False)
     assert [(entry["event"], entry["current_migration"]) for entry in logs] == [("migration_up_to_date", "1.3")]
+
+
+# ---------- Una cadena mal escrita ----------
+
+SECRET = "clave-que-no-debe-salir"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        f"AGROSENSE_DATABASE_URL=postgresql://usuario.ejemplo:{SECRET}@{HOST}:5432/postgres",  # con el nombre delante
+        f'"postgresql://usuario.ejemplo:{SECRET}@{HOST}:5432/postgres"',  # entre comillas
+        f"usuario.ejemplo:{SECRET}@{HOST}:5432/postgres",  # sin postgresql://
+        f"https://usuario.ejemplo:{SECRET}@{HOST}:5432/postgres",  # otro esquema
+        f"postgresql://usuario.ejemplo:{SECRET}@{HOST}:5432",  # sin la base
+    ],
+)
+def test_una_cadena_mal_escrita_dice_que_corregir_sin_mostrar_la_clave(monkeypatch, value):
+    monkeypatch.setenv("AGROSENSE_DATABASE_URL", value)
+    with pytest.raises(ValidationError) as error:
+        Settings(_env_file=None)
+    message = str(error.value)
+    assert "AGROSENSE_DATABASE_URL no tiene la forma postgresql://usuario:clave@host:5432/base" in message
+    assert SECRET not in message
+    assert HOST not in message
+
+
+def test_los_espacios_y_el_salto_de_linea_al_pegarla_no_estorban(monkeypatch):
+    monkeypatch.setenv("AGROSENSE_DATABASE_URL", f"  {CLOUD}\n")
+    assert Settings(_env_file=None).database_url.host == HOST
+    monkeypatch.setenv("AGROSENSE_DATABASE_URL", "   ")
+    assert Settings(_env_file=None).cloud_database_url is None
