@@ -149,7 +149,7 @@ Cada regla es una fila con un `condition_type` de esta lista cerrada. El motor s
 
 ## Base de datos de cuentas (PostgreSQL)
 
-Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL propio en Docker, aparte del dataset publicado. El motor no la lee: la API consulta los lotes y le pasa al motor solo lo que necesita.
+Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL (en la nube para el equipo y la demo; en Docker Compose para las pruebas), aparte del dataset publicado. El motor no la lee: la API consulta los lotes y le pasa al motor solo lo que necesita.
 
 | Tabla | Llave primaria | Columnas principales | Notas |
 |---|---|---|---|
