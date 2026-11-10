@@ -260,7 +260,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Lot */
+        /**
+         * Get Lot
+         * @description El lote con sus temporadas en curso y la etapa de hoy de cada una. Solo lee: sin dataset se ve igual, con la
+         *     etapa nula (R1).
+         */
         get: operations["get_lot_api_v1_lots__lot_id__get"];
         put?: never;
         post?: never;
@@ -288,7 +292,8 @@ export interface paths {
         };
         /**
          * List Seasons
-         * @description El historial del lote: las temporadas sin borrar, de la siembra más reciente a la más antigua.
+         * @description El historial del lote: las temporadas sin borrar, de la siembra más reciente a la más antigua. Solo lee: sin
+         *     dataset se ve igual, con la etapa nula (R1), como en el detalle del lote.
          */
         get: operations["list_seasons_api_v1_lots__lot_id__seasons_get"];
         put?: never;
@@ -420,6 +425,46 @@ export interface paths {
          * @description Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad.
          */
         get: operations["trends_api_v1_trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market Prices
+         * @description El último precio de cada producto en la central, con su cambio frente a hace una semana.
+         */
+        get: operations["market_prices_api_v1_market_prices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/prices/{product_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Product History
+         * @description Los precios del último año de un producto en la central y en qué meses suele estar más caro o más barato.
+         */
+        get: operations["product_history_api_v1_market_prices__product_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -953,6 +998,34 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** Market */
+        Market: {
+            /** Market Id */
+            market_id: string;
+            /** Name */
+            name: string;
+        };
+        /** MarketPrices */
+        MarketPrices: {
+            /** Version */
+            version: string;
+            /** Updated At */
+            updated_at: string | null;
+            market: components["schemas"]["Market"];
+            /** Markets */
+            markets: components["schemas"]["Market"][];
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Products */
+            products: components["schemas"]["ProductPrice"][];
+            /** Source Id */
+            source_id: string;
+            /** Citation */
+            citation: string | null;
+        };
         /** MonthChange */
         MonthChange: {
             /** Month */
@@ -1060,6 +1133,62 @@ export interface components {
         Periods: {
             before: components["schemas"]["Period"];
             after: components["schemas"]["Period"];
+        };
+        /**
+         * Price
+         * @description Pesos por kilo de un día. El mínimo y el máximo pueden faltar: el DANE no siempre los da (R1).
+         */
+        Price: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Min Cop Kg */
+            min_cop_kg: number | null;
+            /** Avg Cop Kg */
+            avg_cop_kg: number;
+            /** Max Cop Kg */
+            max_cop_kg: number | null;
+        };
+        /** ProductHistory */
+        ProductHistory: {
+            /** Version */
+            version: string;
+            /** Updated At */
+            updated_at: string | null;
+            /** Product Id */
+            product_id: string;
+            /** Product */
+            product: string;
+            /** Group */
+            group: string;
+            /** Several Varieties */
+            several_varieties: boolean;
+            market: components["schemas"]["Market"];
+            latest: components["schemas"]["Price"];
+            /** Days */
+            days: components["schemas"]["Price"][];
+            season: components["schemas"]["Season"] | null;
+            /** Source Id */
+            source_id: string;
+            /** Citation */
+            citation: string | null;
+        };
+        /** ProductPrice */
+        ProductPrice: {
+            /** Product Id */
+            product_id: string;
+            /** Product */
+            product: string;
+            /** Group */
+            group: string;
+            /** Several Varieties */
+            several_varieties: boolean;
+            latest: components["schemas"]["Price"];
+            week_ago: components["schemas"]["Price"] | null;
+            /** Change Pct */
+            change_pct: number | null;
         };
         /**
          * Profile
@@ -1208,6 +1337,17 @@ export interface components {
             /** Risk */
             risk: number | null;
         };
+        /** Season */
+        Season: {
+            /** Years */
+            years: number;
+            /** First Year */
+            first_year: number;
+            /** Last Year */
+            last_year: number;
+            /** Months */
+            months: components["schemas"]["SeasonMonth"][];
+        };
         /** SeasonCreate */
         SeasonCreate: {
             /** Diagnosis Light */
@@ -1237,6 +1377,13 @@ export interface components {
             area_ha?: number | null;
             /** Follows Season Ids */
             follows_season_ids?: string[];
+        };
+        /** SeasonMonth */
+        SeasonMonth: {
+            /** Month */
+            month: number;
+            /** Seasonal Index */
+            seasonal_index: number;
         };
         /** SeasonOut */
         SeasonOut: {
@@ -2932,6 +3079,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    market_prices_api_v1_market_prices_get: {
+        parameters: {
+            query?: {
+                market_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketPrices"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    product_history_api_v1_market_prices__product_id__get: {
+        parameters: {
+            query?: {
+                market_id?: string | null;
+            };
+            header?: never;
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

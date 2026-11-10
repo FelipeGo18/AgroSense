@@ -3014,10 +3014,10 @@
       }
     ],
     "version": {
-      "dataset_version": "2026.11.0",
+      "dataset_version": "2026.11.4",
       "rules_version": "0.1.0",
-      "created_at": "2026-11-09T03:29:17Z",
-      "region": "Boyacá y Cundinamarca, Colombia (supuesto hasta el 28 de octubre de 2026)",
+      "created_at": "2026-11-09T22:31:14Z",
+      "region": "Boyacá y Cundinamarca, Colombia",
       "default_weights": {
         "water": 3,
         "frost": 3,
@@ -3045,6 +3045,7 @@
           "period_covered": null,
           "coverage": "AgroSense",
           "license": "Del proyecto",
+          "citation": null,
           "notes": "Solo para cómo se dibuja cada cultivo (`archetype`) y su nombre en la web. No es un dato agronómico."
         },
         {
@@ -3052,10 +3053,11 @@
           "name": "DIVIPOLA- Códigos municipios",
           "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
           "url": "https://www.datos.gov.co/d/gdxc-w37w",
-          "downloaded_at": "2026-10-15T21:20:13+00:00",
+          "downloaded_at": "2026-10-20T16:08:37+00:00",
           "period_covered": "Actualizada por el DANE el 2025-01-24",
           "coverage": "Colombia",
           "license": "Creative Commons Attribution | Share Alike 4.0 International",
+          "citation": "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co",
           "notes": "Códigos DIVIPOLA de municipio y departamento, nombre y coordenadas de referencia del municipio. Los nombres se escriben en mayúscula inicial a partir del nombre oficial, que viene en mayúsculas."
         },
         {
@@ -3063,11 +3065,24 @@
           "name": "Marco Geoestadístico Nacional 2025 · Municipios",
           "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
           "url": "https://geoportal.dane.gov.co/mparcgis/rest/services/Divipola/Serv_DIVIPOLA_MGN_2025/FeatureServer/317",
-          "downloaded_at": "2026-10-15T21:20:33+00:00",
+          "downloaded_at": "2026-11-09T15:18:40+00:00",
           "period_covered": "Versión 2025 del Marco Geoestadístico Nacional",
           "coverage": "Colombia",
           "license": "Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122)",
+          "citation": "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co",
           "notes": "Límite de cada municipio, simplificado a unos 10 m para dibujarlo en el mapa y validar que un lote cae dentro de su municipio."
+        },
+        {
+          "source_id": "dane_sipsa",
+          "name": "SIPSA · Precios mayoristas diarios (servicio web)",
+          "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
+          "url": "https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa/servicio-web-para-consulta-de-la-base-de-datos-de-sipsa",
+          "downloaded_at": "2026-10-20T15:34:00+00:00",
+          "period_covered": "Del 2020-02-01 al 2026-10-19",
+          "coverage": "Colombia; publicadas: Corabastos (Bogotá) · Tunja (Complejo de Servicios del Sur)",
+          "license": "Términos y condiciones del DANE (https://www.dane.gov.co/index.php/terminos-y-condiciones): se autoriza el uso, aprovechamiento, transformación y análisis de la información citando «Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co». Se rigen por la ley colombiana y el DANE puede cambiarlos sin aviso.",
+          "citation": "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co",
+          "notes": "Precio mínimo, medio y máximo por kilo de cada producto en la central de abastos, por día. Es el precio mayorista (lo que se paga en la central), no el de la tienda. Los nombres con asterisco en SIPSA juntan varias variedades. Se publican en pesos enteros."
         },
         {
           "source_id": "fao_56",
@@ -3078,6 +3093,7 @@
           "period_covered": "1998",
           "coverage": "Mundial (cada fila de la tabla 11 dice su región)",
           "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
           "notes": "Duración de las 4 etapas (inicial, desarrollo, media y final) y coeficientes de cultivo Kc. El Kc inicial que no aparece en la fila del cultivo es el de su grupo (por ejemplo, raíces y tubérculos 0,5)."
         },
         {
@@ -3089,6 +3105,7 @@
           "period_covered": "Base descontinuada hacia 2015; se consulta por la plataforma GAEZ",
           "coverage": "Mundial",
           "license": "CC BY 4.0 (catálogo de datos de la FAO)",
+          "citation": null,
           "notes": "Rangos óptimos y absolutos de temperatura, lluvia anual y pH; temperaturas que matan la planta; duración del ciclo; familia. La propia FAO advierte que son opinión experta. Cada ficha se cita con su URL."
         },
         {
@@ -3100,6 +3117,7 @@
           "period_covered": "2016-2019",
           "coverage": "Mundial",
           "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
           "notes": "Las legumbres, y las leguminosas en general, fijan nitrógeno del aire y mejoran el suelo."
         },
         {
@@ -3111,6 +3129,7 @@
           "period_covered": "Temperatura del Ideam, promedio 1981-2010",
           "coverage": "Colombia",
           "license": "Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita",
+          "citation": null,
           "notes": "Anexo 1.1.1.1, temperatura media anual (p. 145): alta > 20 y < 28 °C, media de 10 a 20 °C, baja ≥ 28 °C, no apta < 10 °C. No pone límite superior de exclusión."
         },
         {
@@ -3122,6 +3141,7 @@
           "period_covered": "Temperatura del Ideam, promedio 1981-2010",
           "coverage": "Colombia",
           "license": "Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita",
+          "citation": null,
           "notes": "Anexo 1.1.1, temperatura media anual (p. 127): alta 12-15 °C, media 10-12 y 15-16 °C, baja 8-10 °C, no apta < 8 y > 16 °C."
         }
       ]

@@ -9,7 +9,8 @@ export const PATHS = {
   /** Editar lote con el mapa listo para dibujar: desde «Dibujar en el mapa» de un lote sin dibujar. */
   drawLot: (lotId: string) => `/mi-finca/lotes/${lotId}/editar?dibujar` as const,
   /** Registrar una siembra; con `after`, viene de registrar esa cosecha y la marca como «lo que había antes». */
-  sow: (lotId: string, after?: string) => (after ? `/mi-finca/lotes/${lotId}/sembrar?despues=${after}` : `/mi-finca/lotes/${lotId}/sembrar`),
+  sow: (lotId: string, after?: string) =>
+    after ? `/mi-finca/lotes/${lotId}/sembrar?despues=${after}` : `/mi-finca/lotes/${lotId}/sembrar`,
   harvest: (lotId: string, seasonId: string) => `/mi-finca/lotes/${lotId}/siembras/${seasonId}/cosechar` as const,
   editSeason: (lotId: string, seasonId: string) => `/mi-finca/lotes/${lotId}/siembras/${seasonId}/editar` as const,
   howItWorks: "/como-funciona",
@@ -19,6 +20,7 @@ export const PATHS = {
   password: "/mi-cuenta/contrasena",
   activity: "/mi-cuenta/actividad",
   dataPolicy: "/politica-de-datos",
+  prices: "/precios",
   // Páginas de prueba de la fase 0: no se enlazan desde la app; se entra escribiendo la dirección.
   lab: "/pruebas",
   kit: "/kit",

@@ -83,7 +83,11 @@ function MainNav() {
   return (
     <nav ref={nav} aria-label="Principal" className="relative hidden items-center gap-8 lg:flex xl:gap-10">
       {NAV.map((item) => (
-        <NavLink key={item.to} to={item.to} className="border-b-[5px] border-transparent pt-[5px] aria-[current=page]:font-bold">
+        <NavLink
+          key={item.to}
+          to={item.to}
+          className={`border-b-[5px] border-transparent pt-[5px] aria-[current=page]:font-bold ${item.wide ? "hidden xl:inline" : ""}`}
+        >
           {item.label}
         </NavLink>
       ))}

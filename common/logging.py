@@ -1,7 +1,8 @@
 """Logs de la terminal (HU-177; specs/02-contratos.md, «Logs de la terminal»).
 
 `structlog` a la salida estándar: líneas legibles con color en desarrollo y una línea JSON por evento en producción.
-Se configura una vez; lo usan la API, las migraciones y los avisos de Uvicorn. No hay archivos de log.
+Se configura una vez; lo usan la API, las migraciones, los avisos de Uvicorn, el pipeline y las actualizaciones de
+precios. No hay archivos de log. Vive fuera de `backend/` y de `pipeline/` para que ninguno importe al otro.
 
     log = get_logger()
     log.warning("accounts_unavailable", reason="database_down")

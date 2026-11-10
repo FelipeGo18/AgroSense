@@ -1,6 +1,6 @@
 # AgroSense · Siembra Segura
 
-Herramienta web de apoyo a la decisión para agricultores (región piloto en Colombia, por confirmar con el enunciado del reto y la sede) que, con observaciones de la Tierra de la NASA, el suelo local, las características de los cultivos y las prioridades del agricultor, ayuda a explorar estrategias de rotación que cuiden el suelo y adapten la finca a condiciones que cambian. El flujo del MVP:
+Herramienta web de apoyo a la decisión para agricultores (región piloto en Boyacá y Cundinamarca, Colombia; sede Duitama confirmada en HU-002) que, con observaciones de la Tierra de la NASA, el suelo local, las características de los cultivos y las prioridades del agricultor, ayuda a explorar estrategias de rotación que cuiden el suelo y adapten la finca a condiciones que cambian. El flujo del MVP:
 
 1. **Estrategias de rotación:** para un lote (o un municipio y un área, sin cuenta), planes de hasta 3 ciclos que cumplen las reglas agronómicas, comparados por agua, suelo, ingreso y riesgo según las prioridades del agricultor, con cinco criterios de salud del suelo por reglas con fuente (nitrógeno, carbono orgánico, cobertura, corte de plagas y erosión) y comparados contra la rotación que el agricultor ya hace. Es una comparación, no una predicción de cuánto mejora el suelo.
 2. **Diagnóstico de cada ciclo:** ¿conviene sembrar este cultivo en esta fecha? (primero, si el cultivo se da en la zona; luego, un semáforo con seis señales: agua, heladas, calor, suelo, oferta y mercado; cada señal calificada de 0 a 100; si las prioridades del agricultor dan otra luz que las de AgroSense, se muestran las dos; y las ventanas de siembra del año ordenadas primero por el factor que más limita y después por las prioridades). También se puede consultar suelto.
@@ -13,7 +13,7 @@ Proyecto para el **NASA Space Apps Challenge 2026** (reto «Field Shift: Adaptin
 
 ## Estado actual
 
-Hay código de la web (`web/`: inicio, entrar, crear cuenta, Mi cuenta, Mi finca con el mapa de lotes y las siembras y cosechas), de las cuentas y los lotes (`backend/`: esquema, migraciones y la API de cuenta, sesión, lotes y temporadas), del catálogo agronómico (`catalog/crops.yaml`, con fuente por valor) y del pipeline (`pipeline/`: municipios y límites de DIVIPOLA, catálogo, `sources` y el manifiesto). El contrato está congelado (decisión 15): su esquema en código está en `pipeline/schema.py`, hay un dataset de ejemplo en `data/examples/` y los endpoints de cálculo ya tienen su forma y sus ejemplos, pero responden `501` hasta que exista su parte del motor (`backend/engine/` solo tiene las etapas por calendario). No inventes comandos, archivos ni módulos que no existan: si algo falta, créalo según la spec o pregunta.
+Hay código de la web (`web/`: inicio, entrar, crear cuenta, Mi cuenta, Mi finca con el mapa de lotes y las siembras y cosechas, y la pantalla de precios `/precios`, HU-221), de las cuentas y los lotes (`backend/`: esquema, migraciones y la API de cuenta, sesión, lotes y temporadas), del catálogo agronómico (`catalog/crops.yaml`, con fuente por valor) y del pipeline (`pipeline/`: municipios y límites de DIVIPOLA, catálogo, los precios mayoristas de SIPSA de Corabastos y Tunja, `sources` y el manifiesto). El contrato está congelado (decisión 15): su esquema en código está en `pipeline/schema.py`, hay un dataset de ejemplo en `data/examples/` y los endpoints de cálculo ya tienen su forma y sus ejemplos, pero responden `501` hasta que exista su parte del motor (`backend/engine/` solo tiene las etapas por calendario). Las tablas de precios están en el contrato **por aprobar**. No inventes comandos, archivos ni módulos que no existan: si algo falta, créalo según la spec o pregunta.
 
 **Excepción de la fase 0: el frontend y las cuentas.** Desde el 12 de octubre de 2026 también se adelanta el backend de las cuentas (`backend/`, PostgreSQL en Docker y migraciones de Alembic: `backend/README.md`). Identidad visual, animaciones, audio, assets 3D y un prototipo navegable se adelantan ahora en `web/` y en Figma (EP-15, `specs/05-frontend.md`). Todo lo de diseño y frontend (pantallas, HUs de web, estilo, stack de la web) se puede rediseñar. Un cambio que toque las reglas R1–R10 o el contrato de la API se registra en `docs/decisiones.md` y se refleja en `specs/01-reglas.md` y `specs/02-contratos.md`.
 
@@ -80,6 +80,7 @@ AgroSense/
 │   ├── accounts/            # M8: usuarios, lotes, temporadas (PostgreSQL)
 │   ├── conditions/          # M9: condiciones actuales con caché
 │   └── config/              # thresholds.yaml, weights.yaml (versionados)
+├── common/                  # lo que comparten backend y pipeline sin importarse: logs (common/logging.py)
 ├── web/                     # W1–W10: React + Vite; src/api con tipos generados
 ├── data/
 │   ├── raw/                 # caché de descargas (fuera de git)

@@ -6,7 +6,7 @@ Se carga una vez y queda en memoria. Si falta o no se puede leer, los endpoints 
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -54,6 +54,15 @@ class Dataset:
     # El suelo estimado de cada municipio (`soil_municipality`, HU-181), por `municipality_id`. Vacío si el dataset no
     # lo trae: entonces el suelo es `insufficient_data` (R1).
     soil: dict[str, dict[str, Any]]
+    # Precios mayoristas de SIPSA (HU-221). Nulos si el dataset publicado no los trae: no se inventan.
+    market_prices: pl.DataFrame | None = None
+    market_season: pl.DataFrame | None = None
+    # El último precio de cada producto en cada central (`market_price_latest`), ya calculado por el pipeline.
+    market_latest: pl.DataFrame | None = None
+    # El último día con precios, para compararlo con las versiones de las actualizaciones (HU-222). Nulo sin precios.
+    market_last_date: date | None = None
+    # Las centrales de la región: (código de SIPSA, nombre), de `region.yaml` o, si no las dice, de los precios.
+    markets: tuple[tuple[str, str], ...] = ()
 
 
 def load(folder: Path) -> Dataset:
@@ -72,6 +81,11 @@ def load(folder: Path) -> Dataset:
         stage_rows = pl.read_parquet(stages_path).to_dicts() if stages_path.exists() else []
         soil_path = folder / "soil_municipality.parquet"
         soil = pl.read_parquet(soil_path).to_dicts() if soil_path.exists() else []
+        prices_path, season_path = folder / "market_price_day.parquet", folder / "market_price_season.parquet"
+        market_prices = pl.read_parquet(prices_path) if prices_path.exists() else None
+        market_season = pl.read_parquet(season_path) if season_path.exists() else None
+        latest_path = folder / "market_price_latest.parquet"
+        market_latest = pl.read_parquet(latest_path) if latest_path.exists() else None
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -96,7 +110,21 @@ def load(folder: Path) -> Dataset:
         crops={crop["crop_id"]: crop for crop in crops},
         stages=_stages(stage_rows),
         soil={row["municipality_id"]: row for row in soil},
+        market_prices=market_prices,
+        market_season=market_season,
+        market_latest=market_latest,
+        market_last_date=market_latest["market_date"].max() if market_latest is not None and market_latest.height else None,
+        markets=_markets(manifest["region"], market_latest),
     )
+
+
+def _markets(region: dict[str, Any], latest: pl.DataFrame | None) -> tuple[tuple[str, str], ...]:
+    """Las centrales de la región en orden de código: las de `region.yaml` o, si no las dice, las que tienen precios."""
+    if region.get("markets"):
+        return tuple(sorted(region["markets"].items()))
+    if latest is None:
+        return ()
+    return tuple(latest.select("market_id", "market").unique().sort("market_id").iter_rows())
 
 
 def _stages(rows: list[dict[str, Any]]) -> dict[str, list[StageSpan]]:
