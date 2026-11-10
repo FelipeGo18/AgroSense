@@ -15,7 +15,7 @@ estado: pendiente
 
 **Resultado esperado:** Un agricultor crea su cuenta, registra uno o varios lotes en una o varias zonas, los divide y junta por partes como trabaja, y al volver encuentra sus lotes con su historial (incluido lo que borró hace menos de 30 días, para restaurarlo) y su progreso. Sin cuenta, puede consultar: los datos se envían solo para calcular y no se guardan (R9).
 
-Decisión 6 de `docs/decisiones.md` y regla R9. Cuentas en PostgreSQL propio con autenticación propia, sin servicios externos. Capacidad y orden de recorte en `docs/plan-48h.md`.
+Decisión 6 de `docs/decisiones.md` y regla R9. Cuentas en PostgreSQL (en la nube para el equipo y la demo, desde el 10 de noviembre de 2026; en Docker Compose para las pruebas) con autenticación propia. Capacidad y orden de recorte en `docs/plan-48h.md`.
 
 El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cuentas se hace en el evento.
 

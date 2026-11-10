@@ -12,6 +12,9 @@ uv run uvicorn backend.api.main:app --reload   # API en http://127.0.0.1:8000 (d
 
 O todo en Docker: `docker compose up app` copia la base, aplica las migraciones y deja la API en el mismo puerto.
 
+La base del equipo y de la demo está en la nube: con `AGROSENSE_DATABASE_URL` en el `.env`, la API usa esa en vez de la
+local (ver «Base de datos en la nube»). Las pruebas usan siempre la local.
+
 La documentación (`/api/docs` y `/api/openapi.json`, que usa `npm run api:types`) solo existe con
 `AGROSENSE_API_DOCS=true`: lo trae `.env.example` y Docker Compose la enciende. Sin la variable queda apagada, y así
 debe ir en producción.
@@ -228,6 +231,43 @@ usuario borra en cascada lo suyo (R9).
 
 `tests/accounts/test_backup.py`: antes de migrar se copia la base y la copia sirve; si la copia falla no se migra; y
 `alembic upgrade` directo se niega.
+
+`tests/accounts/test_base_en_la_nube.py`: la cadena de la nube se usa con psycopg y SSL; la base de la nube no se migra
+sola al arrancar; su copia viaja con el mismo SSL; y las pruebas nunca la usan.
+
+## Base de datos en la nube
+
+Desde el 10 de noviembre de 2026 la base del equipo y de la demo es un PostgreSQL 17 en la nube
+(`docs/registro-de-decisiones.md`). La de Docker Compose (`db`) sigue siendo la de las pruebas y la de trabajar sin conexión.
+
+**Cómo conectarse.** Copie la cadena de conexión, con la clave, en su `.env`:
+
+```bash
+AGROSENSE_DATABASE_URL=postgresql://<usuario>:<clave>@<host>:5432/<base>
+```
+
+- Sin `sslmode` en la cadena, la API exige SSL (`sslmode=require`). La copia de seguridad viaja con el mismo SSL.
+- La cadena trae la clave: va solo en su `.env` o en el panel del alojamiento. Nunca en git, en un chat ni en un issue.
+- Sin la variable (o vacía), todo vuelve a la base local.
+
+**Las pruebas nunca la usan.** `tests/conftest.py` reemplaza la cadena por la base local durante `pytest`, venga de
+Compose o del `.env`, y se niega a correr si `POSTGRES_HOST` no es local: las pruebas crean una base y borran su
+esquema en cada corrida.
+
+**No se migra sola.** Con la base de la nube, la API **no** aplica migraciones al arrancar: es compartida, y una rama con
+una migración nueva cambiaría la base de todo el equipo. Al arrancar solo dice si falta alguna (`migration_pending`) y,
+mientras falte, las cuentas quedan apagadas. La aplica una persona, cuando la migración ya está en `desarrollo`:
+
+```bash
+docker compose run --rm app python -m backend.db.migrate   # dice «Base de datos: en la nube», copia y migra
+```
+
+Se corre desde la imagen de la app porque trae `pg_dump` 17, el mismo del servidor. El contenedor `db` no sirve para
+copiar la nube: solo alcanza la base local, y por eso `migrate` se niega. Para que el despliegue migre solo al arrancar,
+se pone `AGROSENSE_AUTO_MIGRATE=true` en su panel; si no, se migra a mano antes de desplegar.
+
+**La copia trae datos personales.** Queda en `backups/` de quien migra, con todas las cuentas. No la comparta ni la suba
+a ningún lado; borre las que ya no sirvan.
 
 ## Carpetas
 

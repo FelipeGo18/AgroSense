@@ -54,6 +54,7 @@ export const SECTIONS: { title: string; items: { mark: Mark; text: string }[] }[
     title: "Quién puede verlos",
     items: [
       { mark: "note", text: "Usted, con su usuario y su contraseña." },
+      { mark: "note", text: "Se guardan en una base de datos en la nube y viajan cifrados entre AgroSense y esa base." },
       {
         mark: "note",
         text: "Soporte puede ver sus lotes para ayudarle. Cada vez que lo hace queda escrito en «Mi actividad», donde usted lo puede ver.",
