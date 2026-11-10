@@ -34,8 +34,9 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 
 | Tabla | Fuente | HU |
 |---|---|---|
-| `municipalities` (sin altitud todavía; con la altura de su celda de NASA POWER) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`), y NASA POWER | HU-044, HU-041 |
-| `climate_day` (**todavía no se publica**: espera la altitud de NASADEM, HU-206) | NASA POWER, API diaria por punto (`pipeline/sources/nasa_power.py`). Es un reanálisis | HU-041 |
+| `municipalities` (con la altitud y la pendiente de NASADEM y la altura de su celda de NASA POWER) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`), NASADEM y NASA POWER | HU-044, HU-206, HU-041 |
+| `climate_day` | NASA POWER, API diaria por punto (`pipeline/sources/nasa_power.py`), corregida por la altitud de NASADEM. Es un reanálisis | HU-041 |
+| `grid_cells` (sin el suelo todavía, HU-181) | NASADEM (`pipeline/sources/nasadem.py`): altitud y pendiente de cada celda de 250 m | HU-206 |
 | `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
 | `crops` y `crop_stages` | Catálogo agronómico de `catalog/crops.yaml`: FAO EcoCrop, FAO-56, UPRA y FAO, con fuente por valor (`pipeline/catalog.py`) | HU-061, HU-199, HU-063 |
 | `market_price_day`, `market_price_latest`, `market_price_season` | SIPSA del DANE, servicio web (`pipeline/sources/sipsa.py`): precios de Corabastos y Tunja desde 2020, el último de cada producto con el de hace una semana y su cambio (lo que lee `/market/prices`, que no calcula nada), y su temporada. Sin la caché de SIPSA se publica lo demás y el log dice `source_missing`. Los días que faltan después del dataset los suman los crons de precios (HU-222, `backend/README.md`), también con el boletín diario (`pipeline/sources/sipsa_boletin.py`) | HU-221, HU-222 |
@@ -45,6 +46,19 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 
 Antes de publicar, cada tabla se revisa contra su esquema del contrato (`pipeline/schema.py`, HU-011): columnas, orden,
 tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
+
+## Altitud y pendiente de NASADEM (HU-206)
+
+- Se bajan los mosaicos de 1° que tocan la región (13, unos 224 MB en `data/raw/nasadem/`, menos de 2 minutos) de la
+  copia en GeoTIFF de NASADEM HGT v001 que publica Microsoft Planetary Computer, sin cuenta. Cada mosaico se revisa al
+  bajarlo (tamaño y georreferencia) y se reintenta 3 veces, con `AGROSENSE_NASADEM_TIMEOUT_S` y
+  `AGROSENSE_NASADEM_MAX_MB`. El manifiesto de la caché (`nasadem.meta.json`) solo se escribe si bajaron todos.
+- La rejilla del contrato es de 0,0025°, y un píxel de NASADEM mide 1 segundo: cada celda son exactamente 9 × 9 píxeles.
+  La altitud es su promedio y la pendiente, la mediana de la de sus píxeles, calculada a 30 m con diferencias centrales.
+- Cada celda va con el municipio que contiene su centro (`grid_cells`, 593 648 celdas). Sin el suelo (HU-181) son todas
+  `partial`.
+- La altitud y la pendiente de un municipio son la mediana de sus celdas, como las de un lote (supuesto por confirmar:
+  ver HU-206). Sin la caché de NASADEM se publica lo demás, sin la rejilla ni el clima diario, y el log lo dice.
 
 ## Clima diario de NASA POWER (HU-041)
 
@@ -60,8 +74,8 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
   región Andina de Chaves y Jaramillo (Cenicafé, 1999), con su fila en `sources`.
 - Un `-999` de POWER es un día sin dato: queda nulo y el día es `partial`. Un día sin ninguna de las dos temperaturas no
   se publica, y así tampoco los últimos días, que POWER todavía no tiene (R1).
-- **Mientras no haya altitud, `climate_day` no se publica**: no se publica una temperatura sin corregir. Con la altitud
-  serán unos 4 millones de filas y unos 15 MB de Parquet.
+- **Sin la altitud de NASADEM, `climate_day` no se publica**: no se publica una temperatura sin corregir. Con ella son
+  unos 4 millones de filas y unos 21 MB de Parquet.
 - La lluvia diaria queda en la caché para la lluvia mensual (HU-042).
 
 ## Datos de ejemplo (HU-011)
