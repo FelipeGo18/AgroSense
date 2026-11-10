@@ -29,6 +29,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Cuentas y regla R9 | Cuentas con lotes y temporadas; R9 reescrita (decisión 6) | 10 oct 2026 |
 | Clima en vivo | Ambiente de la escena, nunca insumo de la decisión (decisión 7) | 10 oct 2026 |
 | Responsables del contrato | Haider y Felipe: cualquiera de los dos cambia `specs/02-contratos.md` o aprueba cada cambio | 10 oct 2026 |
+| Zona horaria de las fechas | «Hoy» y «el mes en curso» de las fechas de siembra se cuentan en la hora de la región: en la piloto, `America/Bogota` (UTC−5, sin horario de verano). La API y la web usan la misma, para que el mes que ofrece la web siempre lo acepte la API. Antes no estaba definida: el último día de cada mes, desde las 7 p. m., la API en UTC habría rechazado el mes que se acaba (HU-091, HU-076) | 10 nov 2026 |
 | Base de datos | PostgreSQL en la nube, la base del equipo y de la demo, con SSL obligatorio (`AGROSENSE_DATABASE_URL`). El PostgreSQL de Docker Compose queda para las pruebas y para trabajar sin conexión: las pruebas nunca usan la de la nube, y la API no la migra sola al arrancar (se migra a mano, con copia antes). Reemplaza «PostgreSQL propio en Docker, sin servicios gestionados» (10 oct 2026) | 10 nov 2026 |
 | Inicio de sesión | Autenticación propia: usuario y contraseña (Argon2), sesión en cookie; recuperar la contraseña en P1 | 10 oct 2026 |
 | Condiciones actuales | Open-Meteo, solo el «ahora», sin pronóstico | 10 oct 2026 |

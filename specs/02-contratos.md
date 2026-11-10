@@ -401,7 +401,7 @@ Los ejemplos son ilustrativos, no son datos reales. Toda respuesta de cálculo t
 
 Evalúa **una ventana de siembra**: de `sowing_date` a la cosecha estimada de ese cultivo (ver `specs/01-reglas.md`). Es riesgo histórico de esa época del año, no un pronóstico: la misma fecha en otro año da el mismo resultado de clima.
 
-- `sowing_date` anterior a hoy o a más de doce meses responde 422 (ver «Fechas» en `/calendar`).
+- `sowing_date` anterior a hoy o a más de doce meses responde 422 (ver «Fechas» en `/calendar`). «Hoy» es el de la hora de la región: en la piloto, `America/Bogota` (UTC−5).
 - `irrigated`: si hay riego. Con riego, la falta de lluvia no es un riesgo en la señal `water`. Nulo se trata como sin riego y se agrega a las limitaciones.
 - `priorities`: el peso de 0 a 5 de cada señal para quien consulta (ver «Las prioridades del agricultor» en `specs/01-reglas.md`). Opcional: sin él se usan los pesos por defecto de `weights.yaml`. Fuera de rango, o todas en 0, responde 422.
 - `lot_id` es opcional y exige sesión: con él, la señal de suelo usa el suelo del lote y `irrigated` se toma del lote. Un lote ajeno responde 404.
@@ -698,7 +698,7 @@ La lluvia es la de la fuente que define `sources.yaml` y la ET0 es la de `climat
 
 Tiene dos lecturas, según venga o no `sowing_date`. No guarda los datos de la finca ni quién consultó (R9) y trae `versions` y `reference_date` (el día desde el que se cuentan los doce meses), para que el mismo resultado se pueda reproducir (R4).
 
-Fechas: la ventana de un mes empieza el día 1 y la de una semana, su lunes. `month` se refiere a la próxima vez que llega ese mes desde `reference_date`. En `/diagnostics` y en «Planear una siembra» de `/calendar`, una fecha de siembra anterior a hoy o a más de doce meses responde 422; el mes en curso se acepta aunque su día 1 ya haya pasado. En «Mi cultivo» (`/calendar` con `sowing_date`), la fecha puede ser pasada.
+Fechas: la ventana de un mes empieza el día 1 y la de una semana, su lunes. `month` se refiere a la próxima vez que llega ese mes desde `reference_date`. En `/diagnostics` y en «Planear una siembra» de `/calendar`, una fecha de siembra anterior a hoy o a más de doce meses responde 422; el mes en curso se acepta aunque su día 1 ya haya pasado. En «Mi cultivo» (`/calendar` con `sowing_date`), la fecha puede ser pasada. **«Hoy» y «el mes en curso» se cuentan en la hora de la región**, nunca en UTC ni en la hora del servidor: en la región piloto (Colombia), `America/Bogota`, UTC−5 todo el año (sin horario de verano). La web cuenta los doce meses con la misma hora, así que el mes que ofrece es siempre uno que la API acepta. Vale para `/diagnostics`, `/rotations` y `/calendar` (decidido el 10 de noviembre de 2026).
 
 **Planear una siembra (sin `sowing_date`).** Responde `suitability` y `windows`:
 
