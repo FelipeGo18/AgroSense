@@ -248,6 +248,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **`/rotations` trae hasta 10 descartadas** y el conteo por motivo: con 8 cultivos y 3 ciclos puede haber cientos.
 - **`/water-plans` y `/trends` tienen respuesta escrita**, el suelo trae el rango del carbono orgánico (R10), `quality` solo vale `ok` o `partial`, y un endpoint que no está construido responde `501`.
 - **Ejemplos corregidos:** la aptitud se explica por la temperatura media anual (decisión 13) y la respuesta dice cuál se usó; las siembras registradas en AgroSense son P1.
+- **Cambio del 10 de noviembre de 2026 (aprobado por Felipe, HU-075, HU-045 y HU-077):** `thresholds.yaml` 1.0.0 con cortes de fuentes derivadas (el WRSI para el agua y el ZARC de Brasil para las heladas), oferta y mercado sin curva por falta de fuente, la helada como mínima ≤ 2 °C y una tabla nueva, `climate_frost_month`, para contar los años con helada en cualquiera de los meses sensibles de una ventana.
 
 ## Cómo se conectan
 
