@@ -29,6 +29,7 @@ from typing import Any
 import polars as pl
 
 from common.logging import get_logger
+from pipeline import et0
 from pipeline.settings import get_settings
 from pipeline.sources.fetch import DownloadError, fetch
 
@@ -70,6 +71,9 @@ NORMAL_MIN_YEARS = 24
 # Un mes es `ok` con todos sus días con dato, y `partial` con al menos este porcentaje: su total es la suma de los
 # días con dato y la fila lo dice. Con menos, el mes no tiene total (R1).
 PARTIAL_MIN_SHARE = 0.9
+# El año seco (HU-143): la lluvia de ese mes que se supera en 4 de cada 5 años de 1991 a 2020 (el percentil 20), la
+# «lluvia confiable al 80 %» con la que se planea el riego. Supuesto por confirmar: la HU solo pide un percentil bajo.
+DRY_QUANTILE = 0.2
 # Las columnas de humedad del suelo de `climate_month` (HU-205), que salen tal cual de la serie diaria.
 WETNESS = ("soil_wetness_top", "soil_wetness_root")
 
@@ -319,24 +323,83 @@ def cell_months(series: pl.DataFrame, end: date) -> pl.DataFrame:
     normal = (
         months.filter((pl.col("days_quality") == "ok") & pl.col("year").is_between(first, last))
         .group_by("cell", "month")
-        .agg(pl.col("precip_mm").mean().round(1).alias("precip_normal_mm"), pl.len().alias("years"))
-        .with_columns(pl.when(pl.col("years") >= NORMAL_MIN_YEARS).then(pl.col("precip_normal_mm")).alias("precip_normal_mm"))
-        .select("cell", "month", "precip_normal_mm")
+        .agg(
+            pl.col("precip_mm").mean().round(1).alias("precip_normal_mm"),
+            pl.col("precip_mm").quantile(DRY_QUANTILE, interpolation="linear").round(1).alias("precip_dry_mm"),
+            pl.len().alias("years"),
+        )
+        .with_columns(pl.when(pl.col("years") >= NORMAL_MIN_YEARS).then(pl.col(c)).alias(c) for c in ("precip_normal_mm", "precip_dry_mm"))
+        .select("cell", "month", "precip_normal_mm", "precip_dry_mm")
     )
     return months.join(normal, on=["cell", "month"], how="left").select(
-        "cell", "year", "month", "precip_mm", "precip_normal_mm", *WETNESS, "days_quality", "wetness_complete"
+        "cell", "year", "month", "precip_mm", "precip_normal_mm", "precip_dry_mm", *WETNESS, "days_quality", "wetness_complete"
     )
 
 
-def climate_month(series: pl.DataFrame, municipalities: pl.DataFrame, end: date) -> pl.DataFrame:
-    """La tabla `climate_month`: la lluvia de cada mes de cada municipio (la de su celda de POWER) y su normal.
+def municipality_et0(series: pl.DataFrame, municipalities: pl.DataFrame, lapse_rate: dict[str, Any] | None, end: date) -> pl.DataFrame:
+    """La ET0 de cada mes completo de cada municipio (HU-143) y su normal: Penman-Monteith de FAO-56 (`pipeline/et0.py`).
+
+    - Cada día usa la mínima y la máxima corregidas por altitud, como `climate_day`, y la altitud y la latitud del
+      municipio. Sin altitud no se corrige la temperatura ni se sabe la presión: el municipio no tiene ET0 (R1).
+    - Un mes tiene ET0 solo si todos sus días la tienen: a uno que le falta una variable (la radiación empieza en 1984)
+      no se le suma una parte, ni se cambia de método (R1). La normal es el promedio de 1991 a 2020 con 24 años.
+    """
+    schema = {"municipality_id": pl.String, "year": pl.Int16, "month": pl.Int8, "et0_mm": pl.Float64, "et0_normal_mm": pl.Float64}
+    if lapse_rate is None or series.is_empty():
+        return pl.DataFrame(schema=schema)
+    places = municipalities.drop_nulls(["lat", "lon", "altitude_m", "climate_cell_elevation_m"])
+    places = places.select(
+        "municipality_id",
+        "lat",
+        "altitude_m",
+        pl.Series("cell", [cell_of(lat, lon) for lat, lon in places.select("lat", "lon").iter_rows()], dtype=pl.String),
+        (pl.col("climate_cell_elevation_m") - pl.col("altitude_m")).alias("drop_m"),
+    )
+    rate_min, rate_max = float(lapse_rate["temp_min_c_per_m"]), float(lapse_rate["temp_max_c_per_m"])
+    days = places.join(series, on="cell").with_columns(
+        et0.penman_monteith(
+            pl.col("temp_min_c") + rate_min * pl.col("drop_m"),
+            pl.col("temp_max_c") + rate_max * pl.col("drop_m"),
+            pl.col("rh_2m_pct"),
+            pl.col("wind_2m_m_s"),
+            pl.col("radiation_mj_m2"),
+            pl.col("lat"),
+            pl.col("altitude_m"),
+            pl.col("date").dt.ordinal_day(),
+        ).alias("et0_day"),
+        pl.col("date").dt.year().cast(pl.Int16).alias("year"),
+        pl.col("date").dt.month().cast(pl.Int8).alias("month"),
+    )
+    months = (
+        days.group_by("municipality_id", "year", "month")
+        .agg(pl.col("et0_day").sum().alias("total"), pl.col("et0_day").count().alias("valid"))
+        .filter(pl.date("year", "month", 1).dt.month_end() <= end)
+        .with_columns(
+            pl.when(pl.col("valid") == pl.date("year", "month", 1).dt.month_end().dt.day()).then(pl.col("total").round(1)).alias("et0_mm")
+        )
+    )
+    first, last = NORMAL_PERIOD
+    normal = (
+        months.filter(pl.col("et0_mm").is_not_null() & pl.col("year").is_between(first, last))
+        .group_by("municipality_id", "month")
+        .agg(pl.col("et0_mm").mean().round(1).alias("et0_normal_mm"), pl.len().alias("years"))
+        .with_columns(pl.when(pl.col("years") >= NORMAL_MIN_YEARS).then(pl.col("et0_normal_mm")).alias("et0_normal_mm"))
+        .select("municipality_id", "month", "et0_normal_mm")
+    )
+    return months.join(normal, on=["municipality_id", "month"], how="left").select(list(schema)).cast(schema)
+
+
+def climate_month(series: pl.DataFrame, municipalities: pl.DataFrame, end: date, lapse_rate: dict[str, Any] | None = None) -> pl.DataFrame:
+    """La tabla `climate_month`: la lluvia de cada mes de cada municipio (la de su celda de POWER), su normal y su año
+    seco, la ET0 por Penman-Monteith y su normal, y la humedad del suelo.
 
     - Un mes sin el 90 % de sus días con lluvia no tiene total y, si no le queda ningún dato, no se publica (R1).
-    - `quality = partial` si al mes le faltan días o si no tiene normal (menos de 24 años completos en 1991-2020).
+    - La normal y el año seco de la lluvia: el promedio y el percentil 20 de 1991 a 2020, con 24 años completos.
+    - La ET0 (HU-143) sale de `municipality_et0`: nula sin altitud o si al mes le falta un día de alguna variable.
     - La humedad del suelo (HU-205) es el promedio del mes de la de POWER, de 0 a 1; sin el 90 % de sus días, nula. Es la
       de un modelo y de una celda de unos 55 × 70 km: un dato de la zona, no del lote (R10).
-    - `quality = partial` también si a la humedad le falta algún día.
-    - El año seco y la ET0 (HU-143) van nulos hasta su HU.
+    - `quality = ok` solo con todo: la lluvia de todos los días, su normal y su año seco, la ET0 y su normal, y la humedad
+      de todos los días. Si falta algo, `partial` (R1).
     """
     if series.is_empty():
         return pl.DataFrame(schema=MONTH_SCHEMA)
@@ -347,20 +410,26 @@ def climate_month(series: pl.DataFrame, municipalities: pl.DataFrame, end: date)
     )
     # Un mes sin la lluvia ni la humedad no tiene ningún dato: no se publica (R1).
     months = cell_months(series, end).filter(pl.any_horizontal(pl.col(c).is_not_null() for c in ("precip_mm", *WETNESS)))
+    evapo = municipality_et0(series, municipalities, lapse_rate, end)
+    complete = (
+        (pl.col("days_quality") == "ok")
+        & pl.col("wetness_complete")
+        & pl.all_horizontal(pl.col(c).is_not_null() for c in ("precip_normal_mm", "precip_dry_mm", "et0_mm", "et0_normal_mm"))
+    )
     return (
         places.join(months, on="cell")
+        .join(evapo, on=["municipality_id", "year", "month"], how="left")
         .select(
             "municipality_id",
             "year",
             "month",
             "precip_mm",
             "precip_normal_mm",
-            *(pl.lit(None, dtype=pl.Float64).alias(name) for name in ("precip_dry_mm", "et0_mm", "et0_normal_mm")),
+            "precip_dry_mm",
+            "et0_mm",
+            "et0_normal_mm",
             *WETNESS,
-            pl.when((pl.col("days_quality") == "ok") & pl.col("precip_normal_mm").is_not_null() & pl.col("wetness_complete"))
-            .then(pl.lit("ok"))
-            .otherwise(pl.lit("partial"))
-            .alias("quality"),
+            pl.when(complete).then(pl.lit("ok")).otherwise(pl.lit("partial")).alias("quality"),
             pl.lit(SOURCE_ID).alias("source_id"),
         )
         .cast(MONTH_SCHEMA)
@@ -395,6 +464,7 @@ def source(series: pl.DataFrame, meta: dict[str, Any]) -> dict[str, Any]:
             "primeros 5 cm y de la zona de raíces (GWETTOP, GWETROOT, de 0 a 1, de un modelo), radiación solar "
             "(ALLSKY_SFC_SW_DWN, desde 1984), viento a 2 m (WS2M) y humedad relativa a 2 m (RH2M). Las temperaturas se "
             "corrigen por altitud con la altura de la celda que da POWER, la altitud del municipio y el gradiente térmico de "
-            "pipeline/region.yaml. Los días sin dato (-999) quedan nulos, nunca rellenos."
+            "pipeline/region.yaml. La ET0 de climate_month se calcula con estas variables por Penman-Monteith de FAO-56 "
+            "(fuente fao_56). Los días sin dato (-999) quedan nulos, nunca rellenos."
         ),
     }

@@ -36,7 +36,7 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 |---|---|---|
 | `municipalities` (con la altitud y la pendiente de NASADEM y la altura de su celda de NASA POWER) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`), NASADEM y NASA POWER | HU-044, HU-206, HU-041 |
 | `climate_day` | NASA POWER, API diaria por punto (`pipeline/sources/nasa_power.py`), corregida por la altitud de NASADEM. Es un reanálisis | HU-041 |
-| `climate_month` (por ahora, la lluvia, su normal y la humedad del suelo) | NASA POWER: la lluvia de cada mes completo de la celda del municipio, su normal 1991–2020 y la humedad del suelo de un modelo, de 0 a 1 (HU-205). Es un reanálisis y en el altiplano da más lluvia que el IDEAM | HU-042 |
+| `climate_month` | NASA POWER: la lluvia de cada mes completo de la celda del municipio, su normal 1991–2020 y su año seco, la ET0 por Penman-Monteith de FAO-56 con su normal (HU-143) y la humedad del suelo de un modelo, de 0 a 1 (HU-205). Es un reanálisis y en el altiplano da más lluvia que el IDEAM | HU-042 |
 | `grid_cells` (sin el suelo todavía, HU-181) | NASADEM (`pipeline/sources/nasadem.py`): altitud y pendiente de cada celda de 250 m | HU-206 |
 | `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
 | `crops` y `crop_stages` | Catálogo agronómico de `catalog/crops.yaml`: FAO EcoCrop, FAO-56, UPRA y FAO, con fuente por valor (`pipeline/catalog.py`) | HU-061, HU-199, HU-063 |
@@ -82,6 +82,10 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
 - **`climate_month` (HU-042):** la lluvia de cada mes completo, sin corregir por altitud, y su normal de 1991 a 2020
   (con 24 de los 30 años completos). Un mes es `partial` si le faltan días o no tiene normal; sin el 90 % de sus días
   no tiene total. Comparada con el IDEAM, en el altiplano POWER da de 1,7 a 2,7 veces la lluvia (`docs/riesgos.md`).
+- **La ET0 (HU-143):** Penman-Monteith de FAO-56, día por día (`pipeline/et0.py`), con la temperatura corregida por
+  altitud, la humedad relativa, el viento y la radiación de POWER. Un mes tiene ET0 solo si todos sus días la tienen
+  (no la tienen 1981–1983, sin radiación). El año seco (`precip_dry_mm`) es el percentil 20 de la lluvia del mes en
+  1991–2020.
 
 ## Datos de ejemplo (HU-011)
 
