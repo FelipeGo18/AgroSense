@@ -262,7 +262,7 @@ describe("Pantalla del diagnóstico (HU-091)", () => {
     expect(screen.getByRole("combobox", { name: "Municipio" })).toHaveValue("Samacá");
     expect(screen.getByLabelText("Cultivo")).toHaveValue("papa");
     expect(screen.getByRole("radio", { name: "Sí" })).toBeChecked();
-    expect(screen.getByText(/Estimación con un año normal, no es pronóstico/)).toBeInTheDocument();
+    expect(screen.getByText("Cosecha estimada con la duración de las etapas del cultivo. No es pronóstico.")).toBeInTheDocument();
   });
 
   it("sin cuenta no pide los lotes", async () => {

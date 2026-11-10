@@ -73,7 +73,7 @@
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-084 | Endpoint de estrategias de rotación | P0 | S | pendiente | Suma `current_crop_ids` (decisión 14) |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-223 | La rotación actual como referencia | P0 | M | pendiente | Nueva (8 nov, decisión 14): el reto pide comparar contra la actual |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-091 | Elegir municipio, cultivo y cuándo sembrar | P0 | M | hecha | En `/diagnostico`; la consulta va en la dirección; con lote, municipio y riego del lote (10 nov) |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-092 | Semáforo con señales, razones y limitaciones | P0 | M | pendiente | |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-092 | Semáforo con señales, razones y limitaciones | P0 | M | hecha | Seis señales con calificación, «Lo que más limita», fuentes y limitaciones; rótulo de la cosecha según `harvest_basis` (10 nov) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-194 | Cultivo no apto y mejores ventanas | P0 | S | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-202 | Ajustar mis prioridades al consultar | P0 | S | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-203 | Dos luces y cultivos alternativos | P0 | M | pendiente | Las alternativas son P1 |

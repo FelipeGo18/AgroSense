@@ -31,7 +31,10 @@ import {
   type DiagnosisResponse,
   type Irrigation,
 } from "@/features/diagnosis/consult";
+import { harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { byId, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
+import { useVersion } from "@/features/version";
+import { SignalList } from "./SignalList";
 import { formatDate, useCrops } from "@/features/farm/seasons";
 import { irrigationText, placeName } from "@/pages/farm/common";
 
@@ -217,6 +220,7 @@ export function DiagnosisPage() {
 
           <Result request={request} sentMonth={sent.month} diagnosis={diagnosis} waitingLot={waitingLot} lotMissing={lotMissing} />
         </div>
+        {request && diagnosis.isSuccess && <Details data={diagnosis.data} />}
       </main>
       <Footer />
     </div>
@@ -309,9 +313,10 @@ function errorText(error: Error): string {
   return error.message;
 }
 
-/** Lo mínimo del resultado: la acción primero, la luz con forma y texto, y la ventana evaluada. El detalle es HU-092. */
+/** El resumen: la acción primero (HU-092), la luz con forma y texto, sus razones y la ventana evaluada. */
 function Summary({ data }: { data: DiagnosisResponse }) {
   const notSuitable = data.suitability.level === "not_suitable";
+  const reasons = data.overall.reasons ?? [];
   return (
     <Card bodyClassName="gap-4">
       {data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>}
@@ -319,13 +324,65 @@ function Summary({ data }: { data: DiagnosisResponse }) {
         {notSuitable ? "Este cultivo no se da en su zona" : ACTION_TEXT[data.overall.action]}
       </p>
       <TrafficLightBadge light={data.overall.light} className="self-start" />
+      {reasons.length > 0 && (
+        <ul className="flex list-disc flex-col gap-1 pl-5" aria-label="Por qué esta luz">
+          {reasons.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
+        </ul>
+      )}
       {data.window && (
         <p>
           Siembra el {formatDate(data.window.sowing_start)} · cosecha estimada el {formatDate(data.window.harvest_estimate)}.{" "}
-          <span className="text-texto-secundario">Estimación con un año normal, no es pronóstico.</span>
+          <span className="text-texto-secundario">{harvestNote(data.window.harvest_basis)}</span>
         </p>
       )}
       <p className="text-[15px] text-texto-secundario">Es información para decidir. La decisión es suya.</p>
     </Card>
+  );
+}
+
+/**
+ * El detalle del resultado (HU-092): las señales de la ventana y las limitaciones. Va a todo el ancho, debajo de la
+ * consulta y del resumen. Con un cultivo que no es apto no hay señales (`signals` nulo): solo las limitaciones.
+ */
+function Details({ data }: { data: DiagnosisResponse }) {
+  const version = useVersion();
+  const soil = useMunicipalitySoil(data.signals?.soil ? data.request.municipality_id : null);
+  const hasSignals = orderedSignals(data.signals).length > 0;
+  return (
+    <div className="mt-10 flex min-w-0 flex-col gap-8">
+      {hasSignals && (
+        <section aria-labelledby="senales" className="flex min-w-0 flex-col gap-4">
+          <h2 id="senales" className="text-[clamp(1.25rem,3vw,1.75rem)]">
+            Las señales de esta ventana
+          </h2>
+          <p className="max-w-[880px]">
+            Cada señal se mide contra lo que este cultivo necesita o aguanta, con una calificación de 0 a 100. Ninguna se promedia con otra
+            para decidir la luz: una señal desfavorable no la compensan las demás.
+          </p>
+          <SignalList
+            signals={data.signals}
+            limiting={data.overall.limiting_signal}
+            irrigated={data.request.irrigated}
+            supplySemester={data.window?.supply_semester}
+            soil={soil.data}
+            version={version.data}
+          />
+        </section>
+      )}
+      {data.limitations.length > 0 && (
+        <section aria-labelledby="limitaciones" className="flex max-w-[880px] min-w-0 flex-col gap-3">
+          <h2 id="limitaciones" className="text-[clamp(1.25rem,3vw,1.75rem)]">
+            Limitaciones de este resultado
+          </h2>
+          <ul className="flex list-disc flex-col gap-1 pl-5">
+            {data.limitations.map((limitation) => (
+              <li key={limitation}>{limitation}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }
