@@ -29,7 +29,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Cuentas y regla R9 | Cuentas con lotes y temporadas; R9 reescrita (decisión 6) | 10 oct 2026 |
 | Clima en vivo | Ambiente de la escena, nunca insumo de la decisión (decisión 7) | 10 oct 2026 |
 | Responsables del contrato | Haider y Felipe: cualquiera de los dos cambia `specs/02-contratos.md` o aprueba cada cambio | 10 oct 2026 |
-| Base de datos | PostgreSQL propio en Docker, sin servicios gestionados (Supabase descartado) | 10 oct 2026 |
+| Base de datos | PostgreSQL en la nube, la base del equipo y de la demo, con SSL obligatorio (`AGROSENSE_DATABASE_URL`). El PostgreSQL de Docker Compose queda para las pruebas y para trabajar sin conexión: las pruebas nunca usan la de la nube, y la API no la migra sola al arrancar (se migra a mano, con copia antes). Reemplaza «PostgreSQL propio en Docker, sin servicios gestionados» (10 oct 2026) | 10 nov 2026 |
 | Inicio de sesión | Autenticación propia: usuario y contraseña (Argon2), sesión en cookie; recuperar la contraseña en P1 | 10 oct 2026 |
 | Condiciones actuales | Open-Meteo, solo el «ahora», sin pronóstico | 10 oct 2026 |
 | Dónde se prepara el frontend | En este repositorio (`web/`, EP-15) | 10 oct 2026 |

@@ -1,9 +1,12 @@
 # Servicios de AgroSense para desarrollo y pruebas (HU-021, HU-161).
 # La base de datos de las cuentas y la API. `web` se agrega con su primera HU; en desarrollo la web corre con `npm run dev`.
+# La base del equipo y de la demo está en la nube (AGROSENSE_DATABASE_URL en el .env); `db` es la local, la de las
+# pruebas y la de trabajar sin conexión.
 #
 #   cp .env.example .env
 #   docker compose up -d db        # arranca PostgreSQL en 127.0.0.1:5432
-#   docker compose up app          # copia la base, aplica las migraciones y deja la API en http://localhost:8000
+#   docker compose up app          # con la base local: la copia, aplica las migraciones y deja la API en http://localhost:8000
+#                                  # con la de la nube: solo la usa; las migraciones se aplican a mano
 #   docker compose up --no-deps app                # la API sola, sin base de datos: las cuentas responden 503
 #   docker compose run --rm app uv run pytest      # pruebas
 #   docker compose down            # lo apaga y conserva los datos
@@ -41,9 +44,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?falta POSTGRES_DB en .env}
       POSTGRES_USER: ${POSTGRES_USER:?falta POSTGRES_USER en .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
-      # Dentro de Compose la base de datos se llama `db` y escucha en su puerto normal.
+      # Dentro de Compose la base de datos se llama `db` y escucha en su puerto normal. Las pruebas usan siempre esta.
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
+      # La base en la nube. Con ella en el .env, la API usa esa base en vez de `db`, no la migra sola al
+      # arrancar y exige SSL. Vacía: la base local. Ver backend/README.md, «Base de datos en la nube».
+      AGROSENSE_DATABASE_URL: ${AGROSENSE_DATABASE_URL:-}
+      AGROSENSE_AUTO_MIGRATE: ${AGROSENSE_AUTO_MIGRATE:-}
       WEB_ORIGINS: ${WEB_ORIGINS:-http://localhost:5173}
       AGROSENSE_LOG_LEVEL: ${AGROSENSE_LOG_LEVEL:-INFO}
       AGROSENSE_LOG_FORMAT: ${AGROSENSE_LOG_FORMAT:-console}
