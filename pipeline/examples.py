@@ -57,6 +57,10 @@ def _frost_month(month: int) -> float:
     return max(0.0, math.cos((month - 1) * math.pi / 6)) * 0.8 + (0.2 if month in (7, 8) else 0.0)
 
 
+# Helada: mínima menor o igual a 2 °C (ZARC de Brasil, `mapa_zarc_2025`; decidido por Felipe el 10 de noviembre de 2026).
+FROST_C = 2
+
+
 def _table(name: str, rows: list[dict[str, Any]]) -> pl.DataFrame:
     spec = schema.TABLES[name]
     table = pl.DataFrame(rows, schema={col: column.dtype for col, column in spec.columns.items()}, orient="row")
@@ -89,11 +93,11 @@ def climate_day() -> pl.DataFrame:
 
 
 def climate_risk_month(days: pl.DataFrame) -> pl.DataFrame:
-    """Calculado de `climate_day` de ejemplo, como lo haría el pipeline: helada = mínima menor que 2 °C."""
+    """Calculado de `climate_day` de ejemplo, como lo haría el pipeline: helada = mínima menor o igual a 2 °C."""
     monthly = (
         days.with_columns(pl.col("date").dt.year().alias("year"), pl.col("date").dt.month().cast(pl.Int8).alias("month"))
         .group_by("municipality_id", "year", "month")
-        .agg((pl.col("temp_min_c") < 2).sum().alias("frost_days"), pl.col("temp_max_c").quantile(0.9).alias("tmax_p90"))
+        .agg((pl.col("temp_min_c") <= FROST_C).sum().alias("frost_days"), pl.col("temp_max_c").quantile(0.9).alias("tmax_p90"))
     )
     table = (
         monthly.group_by("municipality_id", "month")
@@ -112,6 +116,24 @@ def climate_risk_month(days: pl.DataFrame) -> pl.DataFrame:
         )
     )
     return table.select(list(schema.TABLES["climate_risk_month"].columns)).sort("municipality_id", "month")
+
+
+def climate_frost_month(days: pl.DataFrame) -> pl.DataFrame:
+    """Calculado de `climate_day` de ejemplo: los días con helada de cada mes de cada año (HU-045, HU-077)."""
+    table = (
+        days.with_columns(pl.col("date").dt.year().cast(pl.Int16).alias("year"), pl.col("date").dt.month().cast(pl.Int8).alias("month"))
+        .group_by("municipality_id", "year", "month")
+        .agg(
+            (pl.col("temp_min_c") <= FROST_C).sum().cast(pl.Int16).alias("frost_days"),
+            pl.col("temp_min_c").count().cast(pl.Int16).alias("valid_days"),
+            pl.col("date").first().dt.month_end().dt.day().alias("days"),
+        )
+        .with_columns(
+            pl.when(pl.col("valid_days") == pl.col("days")).then(pl.lit("ok")).otherwise(pl.lit("partial")).alias("quality"),
+            pl.lit(SOURCE_ID).alias("source_id"),
+        )
+    )
+    return table.select(list(schema.TABLES["climate_frost_month"].columns)).sort("municipality_id", "year", "month")
 
 
 def _precip(town_index: int, year: int, month: int) -> float:
@@ -395,6 +417,7 @@ def build(published: Path = PUBLISHED) -> dict[str, pl.DataFrame]:
         "climate_day": days,
         "climate_month": month,
         "climate_risk_month": risk,
+        "climate_frost_month": climate_frost_month(days),
         "precip_month": precip_month(),
         "soil_moisture_month": soil_moisture_month(),
         "ndvi_municipality": ndvi_municipality(),

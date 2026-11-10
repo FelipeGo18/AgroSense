@@ -212,6 +212,19 @@ TABLES: dict[str, Table] = {
         },
         hu="HU-045",
     ),
+    "climate_frost_month": Table(
+        key=("municipality_id", "year", "month"),
+        columns={
+            "municipality_id": c(S, "", False),
+            "year": c(I16, "", False),
+            "month": c(I8, "1 a 12", False),
+            "frost_days": c(I16, "días con mínima ≤ 2 °C", False),
+            "valid_days": c(I16, "días con mínima", False),
+            "quality": c(S, "", False),
+            "source_id": c(S, "", False),
+        },
+        hu="HU-045, HU-077",
+    ),
     "climate_month": Table(
         key=("municipality_id", "year", "month"),
         columns={
