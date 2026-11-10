@@ -199,15 +199,30 @@ que falten. Nunca **crea** migraciones: eso lo hace una persona, que la lee y la
 
 ### Reglas
 
-- Una migración que ya está en `desarrollo` **no se edita**: otros ya la aplicaron. Lo que haya que corregir va en una migración nueva.
+- Una migración que ya está en `desarrollo` **no se edita**: otros ya la aplicaron. Lo que haya que corregir va en una migración nueva. El PR que lo intente falla (ver «Migraciones con GitHub Actions»).
+- **Compatible con el código de antes.** La base de la nube es una sola y la usan a la vez ramas con código viejo y nuevo. Agregar tablas, columnas que aceptan nulo o con valor por defecto, e índices: sí. Renombrar o borrar una columna o una tabla se hace en dos pasos: primero se deja de usar en el código, y en otra migración, después, se borra.
 - Mientras la migración solo exista en su rama, sí puede rehacerla: `uv run python -m backend.db.migrate --bajar -1`, borre el archivo y créela otra vez.
 - Un cambio de tablas es un cambio de contrato (`specs/02-contratos.md`): se avisa antes a Haider o a Felipe.
 
 ### Cuando dos personas crean una migración a la vez
 
-Las dos toman el mismo número (por ejemplo `1.4`). Al juntar las ramas las pruebas fallan y el PR no pasa. Lo arregla
-quien fusiona de segundo: baja la suya (`uv run python -m backend.db.migrate --bajar -1`), borra su archivo, trae `desarrollo` y la crea
-otra vez con el comando, que ahora le da `1.5`.
+Las dos toman el mismo número (por ejemplo `1.4`). La primera que se fusiona gana. La segunda falla en su PR: «hay 2
+migraciones finales». Lo arregla quien llega de segundo, según el tipo de choque:
+
+- **Solo el número** (las dos cambian tablas distintas): traiga `desarrollo` y renumere la suya.
+  ```bash
+  git fetch && git merge origin/desarrollo
+  python -m backend.db.renumber      # su 1.4 pasa a 1.5, detrás de la que ya se fusionó
+  ```
+  Corre con el Python de su computador (solo usa la biblioteca estándar y git): no necesita Docker ni `uv`.
+  Si su base local ya tenía aplicada su `1.4`, rehágala: `docker compose down -v`, `docker compose up -d db` y
+  `uv run python -m backend.db.migrate`.
+- **El contenido** (las dos cambian la misma tabla): renumerar no basta. Las pruebas fallan porque la suya no corre
+  detrás de la otra, o porque los modelos ya no coinciden. Borre su archivo, traiga `desarrollo`, rehaga su base local,
+  ajuste los modelos y créela otra vez con `uv run python -m backend.db.revision "..."`, que ahora le da `1.5` y la
+  compara contra la tabla ya cambiada.
+
+En los dos casos, el PR vuelve a correr las pruebas y solo pasa cuando su migración va detrás de la otra y corre bien.
 
 ### Comandos
 
@@ -220,6 +235,7 @@ otra vez con el comando, que ahora le da `1.5`.
 | `uv run alembic check` | Falla si los modelos tienen cambios sin migración |
 | `uv run python -m backend.db.migrate --bajar -1` | Copia la base y deshace la última |
 | `uv run python -m backend.db.migrate --bajar 1.2` | Copia la base y vuelve a como quedó tras esa migración |
+| `python -m backend.db.renumber` | Pasa sus migraciones detrás de las de `origin/desarrollo` (choque de número); sin Docker ni `uv` |
 | `uv run alembic upgrade head --sql` | Muestra el SQL sin ejecutarlo |
 | `docker compose down -v` | Borra su base local; al volver a subirla, las migraciones la rehacen desde cero |
 
@@ -254,20 +270,62 @@ AGROSENSE_DATABASE_URL=postgresql://<usuario>:<clave>@<host>:5432/<base>
 Compose o del `.env`, y se niega a correr si `POSTGRES_HOST` no es local: las pruebas crean una base y borran su
 esquema en cada corrida.
 
-**No se migra sola.** Con la base de la nube, la API **no** aplica migraciones al arrancar: es compartida, y una rama con
-una migración nueva cambiaría la base de todo el equipo. Al arrancar solo dice si falta alguna (`migration_pending`) y,
-mientras falte, las cuentas quedan apagadas. La aplica una persona, cuando la migración ya está en `desarrollo`:
+**La API no la migra al arrancar.** Con la base de la nube, la API **no** aplica migraciones al arrancar: es compartida,
+y una rama con una migración nueva cambiaría la base de todo el equipo. Al arrancar solo dice si falta alguna
+(`migration_pending`) y, mientras falte, las cuentas quedan apagadas. Las migraciones las aplica **GitHub Actions al
+fusionar en `desarrollo`** (ver «Migraciones con GitHub Actions»). A mano, solo si el workflow no puede:
 
 ```bash
 docker compose run --rm app python -m backend.db.migrate   # dice «Base de datos: en la nube», copia y migra
 ```
 
 Se corre desde la imagen de la app porque trae `pg_dump` 17, el mismo del servidor. El contenedor `db` no sirve para
-copiar la nube: solo alcanza la base local, y por eso `migrate` se niega. Para que el despliegue migre solo al arrancar,
-se pone `AGROSENSE_AUTO_MIGRATE=true` en su panel; si no, se migra a mano antes de desplegar.
+copiar la nube: solo alcanza la base local, y por eso `migrate` se niega.
 
 **La copia trae datos personales.** Queda en `backups/` de quien migra, con todas las cuentas. No la comparta ni la suba
 a ningún lado; borre las que ya no sirvan.
+
+## Migraciones con GitHub Actions
+
+`.github/workflows/migraciones.yml` (HU-229) hace dos trabajos.
+
+**En cada PR hacia `desarrollo` o `produccion`** (sin secretos, con un PostgreSQL temporal en Docker):
+
+1. Si el PR no toca el backend, termina en verde.
+2. Falla si el PR edita, borra o renombra una migración que ya está en la rama de destino.
+3. Corre en Docker las pruebas de las migraciones **sobre el código ya fusionado con la rama de destino**: una sola
+   migración final, números sin saltos, modelos y migraciones iguales, cada una baja y vuelve a subir, y la copia antes de
+   migrar. Si otra migración se fusionó primero, aquí aparece el choque (ver «Cuando dos personas crean una migración a
+   la vez»).
+4. Si el PR trae migraciones nuevas, deja un comentario con cuáles son y el SQL que van a ejecutar
+   (`python -m backend.db.report`, sin conectarse a ninguna base). Revíselo antes de fusionar.
+
+**Al fusionar en `desarrollo`** un cambio en `backend/db/migrations/versions/`:
+
+1. Construye la imagen de la app y corre `python -m backend.db.migrate` contra la base de la nube: copia y migra.
+2. De a una corrida a la vez (nunca dos sobre la misma base) y sin cortar una que ya empezó.
+3. Cifra la copia con AES-256 y la guarda 7 días como archivo del workflow. Sin la clave de cifrado no migra. El
+   repositorio es público: nunca queda una copia sin cifrar, y el host y el usuario de la base se tapan en los logs.
+
+Para recuperar una copia: descargue el archivo del workflow y descífrelo con la clave.
+
+```bash
+gpg --decrypt agrosense_<fecha>_de-1.3_a-1.4.dump.gpg > copia.dump
+```
+
+También se puede correr a mano desde *Actions* → *Migraciones* → *Run workflow*, sobre `desarrollo`.
+
+### Lo que configura el dueño del repositorio
+
+Solo el dueño puede hacerlo (*Settings* del repositorio):
+
+1. **Entorno `nube`** (*Environments*): los secretos `AGROSENSE_DATABASE_URL` (la cadena de conexión de la base de la
+   nube) y `AGROSENSE_BACKUP_KEY` (una clave larga para cifrar las copias; guárdela fuera de GitHub, sin ella no se
+   puede abrir una copia). Si quiere aprobar cada migración antes de que corra, agregue revisores al entorno.
+2. **Reglas de la rama `desarrollo`** (*Branches* o *Rules*): exigir el check «Revisar migraciones» y que la rama esté
+   al día antes de fusionar. Sin lo segundo, un PR viejo se fusiona sin volver a probarse contra la migración nueva.
+3. Opcional: exigir la revisión de los dueños del código (`.github/CODEOWNERS`): los cambios de migraciones son cambios
+   de contrato y los revisan Haider o Felipe.
 
 ## Carpetas
 
