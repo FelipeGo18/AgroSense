@@ -36,7 +36,7 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 |---|---|---|
 | `municipalities` (con la altitud y la pendiente de NASADEM y la altura de su celda de NASA POWER) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`), NASADEM y NASA POWER | HU-044, HU-206, HU-041 |
 | `climate_day` | NASA POWER, API diaria por punto (`pipeline/sources/nasa_power.py`), corregida por la altitud de NASADEM. Es un reanálisis | HU-041 |
-| `climate_month` (por ahora, solo la lluvia y su normal) | NASA POWER: la lluvia de cada mes completo de la celda del municipio y su normal 1991–2020. Es un reanálisis y en el altiplano da más lluvia que el IDEAM | HU-042 |
+| `climate_month` (por ahora, la lluvia, su normal y la humedad del suelo) | NASA POWER: la lluvia de cada mes completo de la celda del municipio, su normal 1991–2020 y la humedad del suelo de un modelo, de 0 a 1 (HU-205). Es un reanálisis y en el altiplano da más lluvia que el IDEAM | HU-042 |
 | `grid_cells` (sin el suelo todavía, HU-181) | NASADEM (`pipeline/sources/nasadem.py`): altitud y pendiente de cada celda de 250 m | HU-206 |
 | `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
 | `crops` y `crop_stages` | Catálogo agronómico de `catalog/crops.yaml`: FAO EcoCrop, FAO-56, UPRA y FAO, con fuente por valor (`pipeline/catalog.py`) | HU-061, HU-199, HU-063 |
@@ -63,9 +63,11 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
 
 ## Clima diario de NASA POWER (HU-041)
 
-- Se baja la mínima, la máxima y la lluvia diarias desde 1981 (`T2M_MIN`, `T2M_MAX`, `PRECTOTCORR`), **una vez por
-  celda** de 0,5° × 0,625° y no por municipio: todos los puntos de una celda reciben la misma serie. Los 239 municipios
-  caen en 20 celdas: unos 22 MB en `data/raw/nasa_power/` y menos de un minuto.
+- Se bajan desde 1981 la mínima, la máxima y la lluvia diarias (`T2M_MIN`, `T2M_MAX`, `PRECTOTCORR`) y, desde HU-205,
+  la humedad del suelo (`GWETTOP`, `GWETROOT`), la radiación (`ALLSKY_SFC_SW_DWN`, desde 1984), el viento a 2 m
+  (`WS2M`) y la humedad relativa (`RH2M`), **una vez por celda** de 0,5° × 0,625° y no por municipio: todos los
+  puntos de una celda reciben la misma serie. Los 239 municipios caen en 20 celdas: unos 48 MB en
+  `data/raw/nasa_power/` y menos de un minuto. Una caché de antes de HU-205 se baja otra vez.
 - Cada celda se baja de a una, con 3 intentos y la misma descarga con límites que SIPSA (`pipeline/sources/fetch.py`).
   Se corta por tiempo total y por tamaño, con `AGROSENSE_POWER_TIMEOUT_S`
   y `AGROSENSE_POWER_MAX_MB` del `.env` (`.env.example` trae los valores de producción; los lee `pipeline/settings.py`).

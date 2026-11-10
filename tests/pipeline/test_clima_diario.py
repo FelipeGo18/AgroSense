@@ -40,7 +40,11 @@ def response(cell, elevation, days):
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [lon, lat, elevation]},
         "properties": {
-            "parameter": {name: {day: values[i] for day, values in days.items()} for i, name in enumerate(nasa_power.PARAMETERS)}
+            # Las variables que el ejemplo no da (humedad, radiación, viento) van con un valor de ejemplo cualquiera.
+            "parameter": {
+                name: {day: values[i] if i < len(values) else 0.5 for day, values in days.items()}
+                for i, name in enumerate(nasa_power.PARAMETERS)
+            }
         },
         "header": {"api": {"version": "v2.10.3", "name": "POWER Daily API"}, "fill_value": -999.0},
     }
