@@ -92,19 +92,20 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-203 · Dos luces y cultivos alternativos
 
 - **Historia:** Como agricultor, quiero ver la luz con mis prioridades y la de AgroSense cuando no coinciden, y qué otros cultivos salen mejor cuando conviene cambiar, para decidir yo con toda la información.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Si `overall.light` y `overall_default.light` son iguales, se ve una sola luz
-  - [ ] Si difieren, se ven las dos con su acción: «Con sus prioridades: verde · Con el criterio de AgroSense: amarillo», cada una con forma y texto, no solo color. La de sus prioridades va primero
-  - [ ] Una señal con `counts = false` se sigue viendo, con el rótulo «No cuenta para la luz con sus prioridades»
-  - [ ] Un riesgo grave de clima con peso 0 lleva el rótulo «Cuenta siempre: riesgo grave»
-  - [ ] Con la acción `rotate` en cualquiera de las dos luces, el botón «Ver estrategias de rotación» lleva a HU-214 con el municipio, la fecha y el cultivo consultado como anterior
+  - [x] Si `overall.light` y `overall_default.light` son iguales, se ve una sola luz
+  - [x] Si difieren, se ven las dos con su acción: «Con sus prioridades: verde · Con el criterio de AgroSense: amarillo», cada una con forma y texto, no solo color. La de sus prioridades va primero
+  - [x] Una señal con `counts = false` se sigue viendo, con el rótulo «No cuenta para la luz con sus prioridades»
+  - [x] Un riesgo grave de clima con peso 0 lleva el rótulo «Cuenta siempre: riesgo grave»
+  - [x] Con la acción `rotate` en cualquiera de las dos luces, el botón «Ver estrategias de rotación» lleva a HU-214 con el municipio, la fecha y el cultivo consultado como anterior
   - [ ] P1 (con HU-197): con `alternatives`, una lista «Otros cultivos que en esta ventana salen bien en clima y tienen mejor oferta», cada uno con su nombre y sus razones; tocar uno consulta el diagnóstico de ese cultivo en la misma fecha. Con `alternatives` vacío, el mensaje «No encontramos otro cultivo apto que salga mejor en esta ventana» y el enlace a las estrategias
-  - [ ] Rótulo visible: «Es información para decidir. La decisión es suya»
-  - [ ] Cada botón tiene una acción o una navegación definida
+  - [x] Rótulo visible: «Es información para decidir. La decisión es suya»
+  - [x] Cada botón tiene una acción o una navegación definida
 - **Reglas que aplican:** R1, R2, R5
 - **Contrato que toca:** `overall`, `overall_default`, `weights`, `signals.*.counts` y `alternatives` de la respuesta de diagnóstico
 - **Notas:** Decisión 10. Depende de HU-074 (o de su respuesta simulada). Las alternativas se muestran si cualquiera de las dos luces da `rotate`, también cuando el cultivo consultado no es apto (`specs/01-reglas.md`, «Agregación del semáforo»); su lista es P1 desde el 11 de octubre de 2026, junto con HU-197. Los mismos componentes muestran cada ciclo de una estrategia (HU-215).
+- **Hecho (10 nov), la parte del P0:** en el resumen de `/diagnostico`. Con las luces iguales, una sola. Si difieren, «Con sus prioridades: <acción>» primero y más grande y «Con el criterio de AgroSense: <acción>» debajo, cada una con su luz (forma y texto), «Lo que más limita» y sus razones, y una línea que dice por qué difieren con los pesos que cambió la persona frente a los de AgroSense («Usted puso la oferta en 0 (AgroSense: 2)»), como pide `specs/05-frontend.md` («Dos luces»). En las señales, «No cuenta para la luz con sus prioridades» (`counts = false`, anillo vacío) y «Cuenta siempre: riesgo grave» (agua, heladas, calor o exceso de lluvia críticos con peso 0, rombo lleno; la oferta y el mercado no). Con `rotate` en cualquiera de las dos luces, «Ver estrategias de rotación» lleva a `/consultar?municipio=&siembra=&anterior=&riego=` (o `?lote=&siembra=&anterior=`): HU-214 los toma ya elegidos. Lógica en `web/src/features/diagnosis/lights.ts`. Las alternativas (P1) quedan con HU-197.
 
 ### HU-093 · Gráfica de la lluvia de la ventana
 
