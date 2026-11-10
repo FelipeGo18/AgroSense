@@ -29,7 +29,7 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
   - [ ] Sin cuenta, la pantalla pide: municipio (buscador), área en hectáreas (mayor que cero), qué había antes en el terreno (de 0 a 3 cultivos del catálogo, o «Nada: es la primera siembra aquí»), cuándo sembrar el primer ciclo (un mes de los próximos doce), «¿Tiene riego?» («Sí», «No», «No sé») y cuántos ciclos (2 o 3; por defecto 3)
   - [ ] Con cuenta, se entra desde el lote: la web toma `lot_id`, el riego del lote y, en `previous_crop_ids`, los cultivos de las temporadas de las que viene el terreno (`follows_season_ids`); el área es la parte libre o la de la temporada cosechada que se va a sembrar
   - [ ] **La rotación actual (HU-223):** sin cuenta, la pantalla pregunta «¿Qué viene sembrando en este terreno?» (de 2 a 3 cultivos en orden, opcional, con «No tengo una rotación fija»). Con cuenta, la web la arma con el historial del terreno, del más antiguo al más reciente, y deja corregirla antes de consultar
-  - [ ] Envía `POST /api/v1/rotations` con los campos del contrato, incluidas las prioridades de la rotación (HU-101) y las de las señales (`signal_priorities`, HU-202)
+  - [ ] Envía `POST /api/v1/rotations` con los campos del contrato, incluidas las prioridades de la rotación (HU-101) y las de las señales (`signal_priorities`, HU-202: las da `useSignalPriorities` de `web/src/features/diagnosis/priorities.ts`, las mismas de la consulta del diagnóstico)
   - [ ] Sin cuenta, el área solo se usa en el navegador para el agua del plan (HU-215) y no se guarda en el servidor (R9)
   - [ ] Validación inmediata en pantalla; un 422 de la API se explica en palabras sencillas
   - [ ] Cada botón tiene una acción o una navegación definida; usable a 360 px

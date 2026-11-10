@@ -5,6 +5,7 @@ import type { Crop } from "@/features/farm/seasons";
 import type { LotListItem, Municipality } from "@/features/farm/lots";
 
 export type DiagnosisRequest = Schemas["DiagnosisRequest"];
+type SignalWeights = Schemas["SignalWeights"];
 export type DiagnosisResponse = Schemas["DiagnosisResponse"];
 
 /**
@@ -120,7 +121,9 @@ export function validate(form: ConsultForm, { municipalities, crops, months, lot
 }
 
 /** El cuerpo de `POST /diagnostics`. Con lote: su municipio, su riego y `lot_id`. Las prioridades llegan con HU-202. */
-export function toRequest(form: ConsultForm, lot?: LotListItem): DiagnosisRequest {
+export function toRequest(form: ConsultForm, lot?: LotListItem, priorities?: SignalWeights | null): DiagnosisRequest {
+  // Sin prioridades (el criterio de AgroSense no cargó), la API usa los pesos por defecto (`specs/02-contratos.md`).
+  const weights = priorities ? { priorities } : {};
   if (lot) {
     return {
       municipality_id: lot.municipality_id,
@@ -128,6 +131,7 @@ export function toRequest(form: ConsultForm, lot?: LotListItem): DiagnosisReques
       sowing_date: sowingDate(form.month),
       irrigated: lot.irrigated,
       lot_id: lot.lot_id,
+      ...weights,
     };
   }
   return {
@@ -136,6 +140,7 @@ export function toRequest(form: ConsultForm, lot?: LotListItem): DiagnosisReques
     sowing_date: sowingDate(form.month),
     irrigated: IRRIGATED[form.irrigation as Irrigation],
     lot_id: null,
+    ...weights,
   };
 }
 

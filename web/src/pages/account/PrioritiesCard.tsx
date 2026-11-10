@@ -5,18 +5,9 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SeedRow } from "@/components/ui/PriorityControl";
 import { useUpdateProfile, type Profile } from "@/features/auth/session";
+import { PRIORITY_SIGNALS as SIGNALS } from "@/features/diagnosis/priorities";
 import { useVersion } from "@/features/version";
 import { LINK } from "./AccountShell";
-
-/** Las seis señales del P0, en el orden del diagnóstico, y qué significa darle peso a cada una. */
-const SIGNALS = [
-  { key: "water", label: "Agua", hint: "que la lluvia alcance", climate: true },
-  { key: "frost", label: "Heladas", hint: "que no hiele en lo sensible", climate: true },
-  { key: "heat", label: "Calor", hint: "que no haga más calor del que aguanta", climate: true },
-  { key: "soil", label: "Suelo", hint: "que el pH le sirva", climate: false },
-  { key: "supply", label: "Oferta", hint: "que no haya demasiado sembrado", climate: false },
-  { key: "market", label: "Mercado", hint: "que el precio suela estar bien", climate: false },
-] as const;
 
 type Weights = Record<string, number>;
 
