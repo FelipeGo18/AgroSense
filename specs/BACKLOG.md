@@ -31,7 +31,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-209 | Verdor por lote con MODIS NDVI | P1 | M | pendiente | Pasó a P1 el 8 de noviembre de 2026 (decisión 15): toda la región serían unos 14 millones de filas |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-210 | Humedad del suelo por satélite con SMAP | P0 | M | pendiente | Ya no es lo primero que se recorta: el reto lo nombra primero (decisión 14) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-216 | Clima de dos periodos para «Qué cambió» | P0 | M | pendiente | Nueva |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-044 | Municipios, límites, altitud y corrección de la temperatura | P0 | S | en curso | Municipios de DIVIPOLA, límites del MGN y altura de la celda de NASA POWER publicados; gradiente con fuente en `region.yaml`, altitud de NASADEM y temperaturas corregidas; falta la comprobación con el IDEAM |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-044 | Municipios, límites, altitud y corrección de la temperatura | P0 | S | hecha | Municipios de DIVIPOLA, límites del MGN, altitud de NASADEM y altura de la celda de NASA POWER publicados; temperaturas corregidas con el gradiente de `region.yaml`; comprobado contra 4 estaciones del IDEAM: queda un sesgo de POWER entre el día y la noche (ver HU-045) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Heladas y temperatura máxima por mes | P0 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-193 | Riesgo climático por semana | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-043 | Verdor por lote con HLS (30 m) | P1 | L | pendiente | Antes «Humedad del suelo y NDVI» |
