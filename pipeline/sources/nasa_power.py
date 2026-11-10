@@ -13,7 +13,8 @@ La respuesta trae la altura de la celda (`climate_cell_elevation_m`). Con ella y
 HU-206) se corrige la temperatura con el gradiente de `pipeline/region.yaml` (HU-044). Un municipio sin altitud no tiene
 filas en `climate_day`: no se publica una temperatura sin corregir como si lo estuviera (R1).
 
-La lluvia diaria (`PRECTOTCORR`) se baja en la misma consulta y queda en la caché para la lluvia mensual (HU-042).
+La lluvia diaria (`PRECTOTCORR`) se baja en la misma consulta. Con ella sale `climate_month` (HU-042): la lluvia de
+cada mes completo y su normal de 1991 a 2020. La lluvia no se corrige por altitud: no hay un gradiente con fuente.
 """
 
 import json
@@ -49,12 +50,36 @@ META_FILE = "nasa_power.meta.json"
 ATTEMPTS = 3
 PAUSE_S = 10
 
+# La normal de la lluvia (HU-042): el periodo de referencia de la OMM, el mismo de las normales del IDEAM. Un mes tiene
+# normal si al menos 24 de sus 30 años están completos (`ok`); si no, queda nula (R1).
+NORMAL_PERIOD = (1991, 2020)
+NORMAL_MIN_YEARS = 24
+# Un mes es `ok` con todos sus días con dato, y `partial` con al menos este porcentaje: su total es la suma de los
+# días con dato y la fila lo dice. Con menos, el mes no tiene total (R1).
+PARTIAL_MIN_SHARE = 0.9
+
 SERIES_SCHEMA = {"cell": pl.String, "date": pl.Date, "temp_min_c": pl.Float64, "temp_max_c": pl.Float64, "precip_mm": pl.Float64}
 DAY_SCHEMA = {
     "municipality_id": pl.String,
     "date": pl.Date,
     "temp_min_c": pl.Float64,
     "temp_max_c": pl.Float64,
+    "quality": pl.String,
+    "source_id": pl.String,
+}
+
+
+MONTH_SCHEMA = {
+    "municipality_id": pl.String,
+    "year": pl.Int16,
+    "month": pl.Int8,
+    "precip_mm": pl.Float64,
+    "precip_normal_mm": pl.Float64,
+    "precip_dry_mm": pl.Float64,
+    "et0_mm": pl.Float64,
+    "et0_normal_mm": pl.Float64,
+    "soil_wetness_top": pl.Float64,
+    "soil_wetness_root": pl.Float64,
     "quality": pl.String,
     "source_id": pl.String,
 }
@@ -234,6 +259,79 @@ def climate_day(series: pl.DataFrame, municipalities: pl.DataFrame, lapse_rate: 
         )
         .cast(DAY_SCHEMA)
         .sort("municipality_id", "date")
+    )
+
+
+def cell_months(series: pl.DataFrame, end: date) -> pl.DataFrame:
+    """La lluvia de cada celda en cada mes completo hasta `end`, con su calidad y su normal (HU-042).
+
+    El mes en curso, o uno que termina después de `end`, no se publica: todavía no tiene todos sus días.
+    """
+    days = pl.date("year", "month", 1).dt.month_end().dt.day()
+    months = (
+        series.with_columns(pl.col("date").dt.year().cast(pl.Int16).alias("year"), pl.col("date").dt.month().cast(pl.Int8).alias("month"))
+        .group_by("cell", "year", "month")
+        .agg(pl.col("precip_mm").sum().alias("total"), pl.col("precip_mm").count().alias("valid"))
+        .filter(pl.date("year", "month", 1).dt.month_end() <= end)
+        .with_columns(days.alias("days"))
+        .with_columns(
+            pl.when(pl.col("valid") == pl.col("days"))
+            .then(pl.lit("ok"))
+            .when(pl.col("valid") >= PARTIAL_MIN_SHARE * pl.col("days"))
+            .then(pl.lit("partial"))
+            .otherwise(pl.lit(None, dtype=pl.String))
+            .alias("days_quality")
+        )
+        .with_columns(pl.when(pl.col("days_quality").is_not_null()).then(pl.col("total").round(1)).alias("precip_mm"))
+    )
+    first, last = NORMAL_PERIOD
+    normal = (
+        months.filter((pl.col("days_quality") == "ok") & pl.col("year").is_between(first, last))
+        .group_by("cell", "month")
+        .agg(pl.col("precip_mm").mean().round(1).alias("precip_normal_mm"), pl.len().alias("years"))
+        .with_columns(pl.when(pl.col("years") >= NORMAL_MIN_YEARS).then(pl.col("precip_normal_mm")).alias("precip_normal_mm"))
+        .select("cell", "month", "precip_normal_mm")
+    )
+    return months.join(normal, on=["cell", "month"], how="left").select(
+        "cell", "year", "month", "precip_mm", "precip_normal_mm", "days_quality"
+    )
+
+
+def climate_month(series: pl.DataFrame, municipalities: pl.DataFrame, end: date) -> pl.DataFrame:
+    """La tabla `climate_month`: la lluvia de cada mes de cada municipio (la de su celda de POWER) y su normal.
+
+    - Un mes sin el 90 % de sus días con lluvia no tiene total y, si no le queda ningún dato, no se publica (R1).
+    - `quality = partial` si al mes le faltan días o si no tiene normal (menos de 24 años completos en 1991-2020).
+    - El año seco y la ET0 (HU-143) y la humedad del suelo (HU-205) van nulos hasta sus HU.
+    """
+    if series.is_empty():
+        return pl.DataFrame(schema=MONTH_SCHEMA)
+    places = municipalities.drop_nulls(["lat", "lon"])
+    places = places.select(
+        "municipality_id",
+        pl.Series("cell", [cell_of(lat, lon) for lat, lon in places.select("lat", "lon").iter_rows()], dtype=pl.String),
+    )
+    months = cell_months(series, end).filter(pl.col("precip_mm").is_not_null())
+    return (
+        places.join(months, on="cell")
+        .select(
+            "municipality_id",
+            "year",
+            "month",
+            "precip_mm",
+            "precip_normal_mm",
+            *(
+                pl.lit(None, dtype=pl.Float64).alias(name)
+                for name in ("precip_dry_mm", "et0_mm", "et0_normal_mm", "soil_wetness_top", "soil_wetness_root")
+            ),
+            pl.when((pl.col("days_quality") == "ok") & pl.col("precip_normal_mm").is_not_null())
+            .then(pl.lit("ok"))
+            .otherwise(pl.lit("partial"))
+            .alias("quality"),
+            pl.lit(SOURCE_ID).alias("source_id"),
+        )
+        .cast(MONTH_SCHEMA)
+        .sort("municipality_id", "year", "month")
     )
 
 

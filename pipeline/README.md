@@ -36,6 +36,7 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 |---|---|---|
 | `municipalities` (con la altitud y la pendiente de NASADEM y la altura de su celda de NASA POWER) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`), NASADEM y NASA POWER | HU-044, HU-206, HU-041 |
 | `climate_day` | NASA POWER, API diaria por punto (`pipeline/sources/nasa_power.py`), corregida por la altitud de NASADEM. Es un reanálisis | HU-041 |
+| `climate_month` (por ahora, solo la lluvia y su normal) | NASA POWER: la lluvia de cada mes completo de la celda del municipio y su normal 1991–2020. Es un reanálisis y en el altiplano da más lluvia que el IDEAM | HU-042 |
 | `grid_cells` (sin el suelo todavía, HU-181) | NASADEM (`pipeline/sources/nasadem.py`): altitud y pendiente de cada celda de 250 m | HU-206 |
 | `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
 | `crops` y `crop_stages` | Catálogo agronómico de `catalog/crops.yaml`: FAO EcoCrop, FAO-56, UPRA y FAO, con fuente por valor (`pipeline/catalog.py`) | HU-061, HU-199, HU-063 |
@@ -76,7 +77,9 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
   se publica, y así tampoco los últimos días, que POWER todavía no tiene (R1).
 - **Sin la altitud de NASADEM, `climate_day` no se publica**: no se publica una temperatura sin corregir. Con ella son
   unos 4 millones de filas y unos 21 MB de Parquet.
-- La lluvia diaria queda en la caché para la lluvia mensual (HU-042).
+- **`climate_month` (HU-042):** la lluvia de cada mes completo, sin corregir por altitud, y su normal de 1991 a 2020
+  (con 24 de los 30 años completos). Un mes es `partial` si le faltan días o no tiene normal; sin el 90 % de sus días
+  no tiene total. Comparada con el IDEAM, en el altiplano POWER da de 1,7 a 2,7 veces la lluvia (`docs/riesgos.md`).
 
 ## Datos de ejemplo (HU-011)
 

@@ -41,15 +41,15 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-042 · Lluvia mensual y su normal
 
 - **Historia:** Como motor, quiero la lluvia de cada mes de cada año y su normal por municipio, para saber cuánta agua suele caer en los meses de una ventana de siembra.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] `climate_month` con `precip_mm` por `municipality_id`, `year` y `month`, y `precip_normal_mm`, con `quality` y `source_id`
-  - [ ] Periodo base de la normal documentado
-  - [ ] Comprobación manual en 2 municipios
-  - [ ] Calidad `partial` bajo un mínimo de días válidos; un mes sin días válidos no se publica con un valor rellenado (R1)
+  - [x] `climate_month` con `precip_mm` por `municipality_id`, `year` y `month`, y `precip_normal_mm`, con `quality` y `source_id` (10 de noviembre de 2026)
+  - [x] Periodo base de la normal documentado: 1991–2020, el de la OMM y el de las normales del IDEAM, con 24 de los 30 años completos
+  - [x] Comprobación manual en 2 municipios (en 4, contra el IDEAM: ver las notas)
+  - [x] Calidad `partial` bajo un mínimo de días válidos; un mes sin días válidos no se publica con un valor rellenado (R1): `partial` sin todos los días o sin normal; sin el 90 % de los días, el mes no tiene total
 - **Reglas que aplican:** R1, R7, R8
 - **Contrato que toca:** `climate_month`
-- **Notas:** Antes publicaba el total y la anomalía de un periodo fijo de seis meses, en una tabla que ya no existe: cambió el 11 de octubre de 2026. El año seco (`precip_dry_mm`) y la ET0 de la misma tabla los agrega HU-143. Es la lluvia de NASA POWER, la serie larga desde 1981; la lluvia por satélite es HU-207 y va en otra tabla (`precip_month`). La señal de agua (HU-071) y la serie `water` de `/trends` leen la fuente que dice `sources.yaml`.
+- **Notas:** Antes publicaba el total y la anomalía de un periodo fijo de seis meses, en una tabla que ya no existe: cambió el 11 de octubre de 2026. El año seco (`precip_dry_mm`) y la ET0 de la misma tabla los agrega HU-143. Es la lluvia de NASA POWER, la serie larga desde 1981; la lluvia por satélite es HU-207 y va en otra tabla (`precip_month`). La señal de agua (HU-071) y la serie `water` de `/trends` leen la fuente que dice `sources.yaml`. **10 de noviembre de 2026:** `nasa_power.climate_month` suma la lluvia diaria de la celda de POWER de cada municipio en cada mes completo (de enero de 1981 al último mes terminado), sin corregirla por altitud: no hay un gradiente con fuente. Son 131 450 filas de los 239 municipios. El mes en curso no se publica. **Comprobación:** Normales 1991–2020 de lluvia del IDEAM (datos.gov.co, `nsz2-kzcq`) frente a la normal de NASA POWER en la celda de cada estación: UPTC, Tunja, 656 mm al año frente a 1750 mm (2,7 veces); Tibaitatá, Mosquera, 704 frente a 1719 (2,4); Surbata Bonza, Duitama, 895 frente a 1628 (1,8); Villa de Leyva, 1049 frente a 1755 (1,7). POWER acierta en que hay dos temporadas de lluvia (abril-mayo y octubre-noviembre), pero en el altiplano da mucha más lluvia, sobre todo a mitad de año: en agosto, en Tunja, 143 mm frente a 37. No se corrige, porque no hay una corrección con fuente (R1, R8). Es un riesgo serio para la señal de agua (`docs/riesgos.md`): con esta lluvia sobraría el agua donde falta. Hay que comparar también la de IMERG (HU-207) contra el IDEAM antes de elegir en `sources.yaml` cuál calcula `water`.
 
 ### HU-205 · NASA POWER ampliado: humedad, radiación y viento
 
@@ -96,7 +96,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Un mes con pocos datos válidos queda `partial`; sin datos, la fila no se publica (R1)
 - **Reglas que aplican:** R1, R7, R8
 - **Contrato que toca:** `precip_month`, `sources`
-- **Notas:** Decisión 12. No se recorta. Antes estaba descartado del P0 por el trabajo con mallas (`specs/04-stack.md`); ese costo se aceptó el 11 de octubre de 2026. El método de calibración de la versión que se use se cita de su documentación. Riesgo: el tamaño de la descarga (`docs/riesgos.md`). Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. No se recorta. Antes estaba descartado del P0 por el trabajo con mallas (`specs/04-stack.md`); ese costo se aceptó el 11 de octubre de 2026. El método de calibración de la versión que se use se cita de su documentación. Riesgo: el tamaño de la descarga (`docs/riesgos.md`). Agregada el 11 de octubre de 2026. **10 de noviembre de 2026 (comprobación de HU-042):** la lluvia de NASA POWER en el altiplano es de 1,7 a 2,7 veces la de las normales del IDEAM (Tunja, Duitama, Villa de Leyva y Mosquera). La de IMERG se compara contra las mismas estaciones antes de decidir en `sources.yaml` cuál calcula la señal de agua.
 
 ### HU-208 · Verdor del campo por municipio con MODIS NDVI
 
