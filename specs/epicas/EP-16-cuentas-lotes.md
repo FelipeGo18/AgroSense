@@ -26,7 +26,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-160 · Editar mi perfil y cambiar la contraseña
 
 - **Historia:** Como agricultor, quiero cambiar mi nombre, mi usuario y mi contraseña, para mantener mi cuenta a mi gusto y segura.
-- **Prioridad:** P1 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] `PATCH /api/v1/me` y `POST /api/v1/me/password` del contrato
   - [x] `PATCH /api/v1/me` acepta `priorities`: un entero de 0 a 5 por señal; nulo vuelve a los pesos de AgroSense; fuera de rango o todas en 0, 422
@@ -80,14 +80,14 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-161 · Esquema de cuentas y migraciones
 
 - **Historia:** Como desarrollador, quiero las tablas `users`, `sessions`, `lots` y `seasons` con migraciones, para guardar cuentas de forma reproducible.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Tablas y columnas del contrato, con migraciones de Alembic: `users`, `sessions`, `login_attempts`, `lots`, `seasons`, `support_tickets`, `activity_log` y `usage_daily`. Las migraciones son de toda la base de datos (`backend/db/migrations/`) y se numeran `1.1`, `1.2` … `1.9` y después `2.1`, con el primer número como carpeta (`1/1.1_…`); el número lo pone `python -m backend.db.revision`
   - [x] PostgreSQL en Docker Compose con volumen persistente
   - [x] Antes de aplicar o deshacer una migración se hace una copia de seguridad de la base de datos (`python -m backend.db.migrate`); si la copia falla, no se migra, y `alembic upgrade` directo se niega a correr
   - [x] La base de datos solo cambia con migraciones que quedan en el repositorio; las pruebas fallan si los modelos cambian sin migración, si quedan dos migraciones finales o si una no se puede deshacer (`backend/README.md`)
   - [x] Borrar un usuario borra en cascada sus sesiones, lotes y temporadas y, cuando existan (P1), sus tickets y sus eventos de `activity_log`
-  - [ ] `municipality_id` y `crop_id` se validan contra el catálogo publicado (`municipality_id` hecho el 15 de octubre de 2026 en la API de lotes; `crop_id` espera al catálogo de cultivos)
+  - [x] `municipality_id` y `crop_id` se validan contra el catálogo publicado (`municipality_id` hecho el 15 de octubre de 2026 en la API de lotes; `crop_id` en la API de siembras con el catálogo de cultivos, HU-165: `backend/api/seasons.py`, `_check_crop`, con su prueba en `tests/accounts/test_siembras.py`)
 - **Reglas que aplican:** R7, R9
 - **Contrato que toca:** base de datos de cuentas de `specs/02-contratos.md`
 - **Notas:** `activity_log` (HU-178) y `support_tickets` (HU-170) son P1: en el MVP no se crean.
@@ -95,7 +95,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-162 · Autenticación
 
 - **Historia:** Como agricultor, quiero crear una cuenta e iniciar sesión de forma sencilla, para volver a mis lotes desde cualquier dispositivo.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] `POST /auth/register`, `/auth/login` y `/auth/logout` del contrato, con usuario y contraseña; `GET /me` y `DELETE /me`
   - [x] Contraseña guardada solo como hash Argon2; sesión en cookie `httpOnly`, `Secure` y `SameSite=Lax`, con el hash del token en `sessions`
