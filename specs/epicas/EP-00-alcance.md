@@ -57,7 +57,7 @@ estado: pendiente
   | `cebolla_bulbo` | Cebolla cabezona blanca | Precios e índice (2021–2025) | Precios e índice (2021–2025) |
   | `zanahoria` | Zanahoria | Precios e índice (2021–2025) | Precios e índice (2021–2025) |
   | `haba` | — | SIPSA no publica haba en ninguna central | — |
-  | `maiz` | — | SIPSA no publica maíz en grano en ninguna central; «Chócolo mazorca» es maíz tierno (por decidir con Producto y agro) | — |
+  | `maiz` | — | SIPSA no publica maíz en grano en ninguna central; «Chócolo mazorca» es maíz tierno y no lo representa: queda sin producto (decidido por Felipe el 10 de noviembre de 2026) | — |
   | `avena_vicia` | — | Abono verde: no se vende ni tiene diagnóstico | — |
 
   «Papa criolla» y «Cebolla junca» son otros cultivos y no entran. El porqué de cada fila está en `pipeline/sipsa_crops.yaml`.
