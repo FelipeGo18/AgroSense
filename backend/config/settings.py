@@ -3,9 +3,18 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL, make_url
+from sqlalchemy.exc import ArgumentError
+
+# Lo que se le dice a quien puso mal AGROSENSE_DATABASE_URL. Nunca repite la cadena: trae la clave de la base.
+BAD_DATABASE_URL = (
+    "AGROSENSE_DATABASE_URL no tiene la forma postgresql://usuario:clave@host:5432/base. Revise que empiece por "
+    "postgresql://, que no tenga comillas ni el nombre de la variable delante, que esté en una sola línea y que los "
+    "caracteres especiales de la clave (@ : / # %) estén codificados (por ejemplo, @ es %40)."
+)
+CLOUD_SCHEMES = ("postgresql", "postgres", "postgresql+psycopg")
 
 # Nombres con que se llega a un PostgreSQL de esta máquina o de Docker Compose. Cualquier otro es una base remota.
 LOCAL_HOSTS = frozenset({"db", "localhost", "127.0.0.1", "::1"})
@@ -18,7 +27,9 @@ def is_local(url: URL) -> bool:
 
 class Settings(BaseSettings):
     # Una variable vacía cuenta como no puesta: Docker Compose pasa `AGROSENSE_DATABASE_URL=` cuando el .env no la trae.
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True)
+    # `hide_input_in_errors`: si un valor no sirve, el error no lo repite. Así una cadena de conexión mal escrita no deja
+    # su clave en los logs (los de GitHub Actions son públicos).
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True, hide_input_in_errors=True)
 
     # PostgreSQL local de Docker Compose. Las mismas variables que usa Compose para crear la base de datos. Las pruebas
     # usan siempre esta, aunque la API apunte a la nube (tests/conftest.py).
@@ -32,6 +43,22 @@ class Settings(BaseSettings):
     # La base de datos en la nube: la cadena de conexión, `postgresql://usuario:clave@host:5432/base`. Con ella, la API y
     # las migraciones usan esa base en vez de la local. Sin `sslmode` en la cadena se exige SSL.
     cloud_database_url: str | None = Field(None, validation_alias="AGROSENSE_DATABASE_URL")
+
+    @field_validator("cloud_database_url")
+    @classmethod
+    def _check_cloud_database_url(cls, value: str | None) -> str | None:
+        """Se revisa al arrancar, con un mensaje que dice qué corregir. Los espacios de los bordes (un salto de línea
+        al pegarla) se quitan; lo demás no se adivina."""
+        if value is None or not value.strip():
+            return None
+        value = value.strip()
+        try:
+            url = make_url(value)
+        except ArgumentError:
+            raise ValueError(BAD_DATABASE_URL) from None
+        if url.drivername not in CLOUD_SCHEMES or not url.host or not url.database:
+            raise ValueError(BAD_DATABASE_URL)
+        return value
 
     # Si la API aplica las migraciones al arrancar. Sin la variable: sí con la base local y no con la de la nube, que es
     # compartida y se migra a mano (backend/README.md, «Base de datos en la nube»).
