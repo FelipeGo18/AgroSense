@@ -37,6 +37,14 @@ def daily(cell: str, first: date, last: date, rain=lambda day: 1.0, wetness=lamb
     )
 
 
+LAPSE = {"temp_min_c_per_m": 0.0059, "temp_max_c_per_m": 0.0058}
+
+
+def with_altitude(altitude: float = 2600.0) -> pl.DataFrame:
+    """Los municipios de ejemplo con altitud (como la de NASADEM) y la altura de su celda: con ellas hay ET0 (HU-143)."""
+    return municipalities().with_columns(pl.lit(altitude).alias("altitude_m"), pl.lit(altitude).alias("climate_cell_elevation_m"))
+
+
 def municipalities() -> pl.DataFrame:
     # Sin altitud: la lluvia no se corrige por altitud y sale igual (HU-042).
     return dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
@@ -90,7 +98,7 @@ def test_un_mes_con_pocos_dias_sin_dato_es_parcial_y_uno_con_muchos_no_se_public
 def test_la_normal_es_el_promedio_de_1991_a_2020_con_24_anos_completos():
     # Cada enero llueve 1 mm por día más que el anterior; los demás meses, 1 mm por día.
     series = daily(NORTH, date(1985, 1, 1), date(2022, 12, 31), lambda day: float(day.year - 1990) if day.month == 1 else 1.0)
-    table = nasa_power.climate_month(series, municipalities(), date(2022, 12, 31))
+    table = nasa_power.climate_month(series, with_altitude(), date(2022, 12, 31), LAPSE)
     # De 1991 a 2020 el enero llueve de 1 a 30 mm por día: en promedio 15,5 mm por día, 480,5 mm.
     january = month_of(table, "15646", 2005, 1)
     assert january["precip_normal_mm"] == 480.5 and january["quality"] == "ok"
@@ -149,7 +157,7 @@ def test_a_la_humedad_le_falta_un_dia_y_el_mes_es_parcial():
         date(2020, 12, 31),
         wetness=lambda day: None if (day.year, day.month, day.day) == (2010, 5, 3) else (0.4, 0.6),
     )
-    table = nasa_power.climate_month(series, municipalities(), date(2020, 12, 31))
+    table = nasa_power.climate_month(series, with_altitude(), date(2020, 12, 31), LAPSE)
     may = month_of(table, "15646", 2010, 5)
     assert (may["soil_wetness_top"], may["quality"]) == (0.4, "partial")
     assert month_of(table, "15646", 2010, 6)["quality"] == "ok"
@@ -170,3 +178,42 @@ def test_una_cache_de_antes_de_hu_205_pide_bajarla_otra_vez(tmp_path):
     (tmp_path / nasa_power.META_FILE).write_text(json.dumps({"cells": [NORTH]}), encoding="utf-8")
     with pytest.raises(FileNotFoundError, match="--descargar"):
         nasa_power.read_cache([NORTH], tmp_path)
+
+
+# ---------- ET0 y año seco (HU-143) ----------
+
+
+def test_la_et0_del_mes_es_la_suma_de_la_de_sus_dias_por_penman_monteith():
+    """Con los mismos datos cada día, la ET0 del mes es la de un día por los días del mes (FAO-56, `pipeline/et0.py`)."""
+    from pipeline import et0
+
+    series = daily(NORTH, date(2024, 1, 1), date(2024, 1, 31))
+    january = month_of(nasa_power.climate_month(series, with_altitude(), date(2024, 1, 31), LAPSE), "15646", 2024, 1)
+    lat = with_altitude().filter(pl.col("municipality_id") == "15646")["lat"][0]
+    day = pl.DataFrame({"d": list(range(1, 32))}).select(
+        et0.penman_monteith(pl.lit(8.0), pl.lit(19.0), pl.lit(80.0), pl.lit(2.0), pl.lit(15.0), pl.lit(lat), pl.lit(2600.0), pl.col("d"))
+    )
+    assert january["et0_mm"] == round(day.to_series().sum(), 1) and 60 < january["et0_mm"] < 130
+
+
+def test_sin_altitud_o_sin_radiacion_no_hay_et0():
+    series = daily(NORTH, date(2024, 1, 1), date(2024, 2, 29))
+    # Sin altitud no se corrige la temperatura ni se sabe la presión.
+    assert month_of(nasa_power.climate_month(series, municipalities(), date(2024, 2, 29), LAPSE), "15646", 2024, 1)["et0_mm"] is None
+    # Un día de febrero sin radiación: febrero no tiene ET0 y es `partial`; no se suma una parte (R1).
+    gap = series.with_columns(
+        pl.when(pl.col("date") == date(2024, 2, 5)).then(None).otherwise(pl.col("radiation_mj_m2")).alias("radiation_mj_m2")
+    )
+    table = nasa_power.climate_month(gap, with_altitude(), date(2024, 2, 29), LAPSE)
+    assert month_of(table, "15646", 2024, 1)["et0_mm"] is not None
+    february = month_of(table, "15646", 2024, 2)
+    assert (february["et0_mm"], february["quality"]) == (None, "partial")
+
+
+def test_el_ano_seco_es_la_lluvia_que_se_supera_4_de_cada_5_anos():
+    # Cada marzo de 1991 a 2020 llueve 1 mm por día más que el anterior: de 31 a 930 mm.
+    series = daily(NORTH, date(1991, 1, 1), date(2020, 12, 31), lambda day: float(day.year - 1990) if day.month == 3 else 1.0)
+    march = month_of(nasa_power.climate_month(series, with_altitude(), date(2020, 12, 31), LAPSE), "15646", 2000, 3)
+    totals = sorted(31.0 * k for k in range(1, 31))
+    expected = pl.Series(totals).quantile(nasa_power.DRY_QUANTILE, interpolation="linear")
+    assert march["precip_dry_mm"] == round(expected, 1) and march["precip_dry_mm"] < march["precip_normal_mm"]

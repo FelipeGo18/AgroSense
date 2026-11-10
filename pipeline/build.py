@@ -410,8 +410,8 @@ def climate_from_cache(
     municipalities = nasa_power.with_cell_elevation(municipalities, meta["elevations"])
     lapse = region.get("temperature_lapse_rate")
     climate = nasa_power.climate_day(series, municipalities, lapse)
-    # La lluvia no se corrige por altitud: sale para todos los municipios con coordenadas.
-    month = nasa_power.climate_month(series, municipalities, date.fromisoformat(meta["requested_end"]))
+    # La lluvia no se corrige por altitud: sale para todos los municipios con coordenadas. La ET0 sí necesita la altitud.
+    month = nasa_power.climate_month(series, municipalities, date.fromisoformat(meta["requested_end"]), lapse)
     sources = [nasa_power.source(series, meta)]
     if lapse is not None:
         sources.append(lapse["source"])
