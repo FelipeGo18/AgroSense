@@ -2,6 +2,8 @@
 export const PATHS = {
   home: "/",
   consult: "/consultar",
+  /** Diagnóstico de una fecha de siembra, la «consulta suelta» (HU-091). «Consultar» es la entrada a las estrategias (decisión 12). */
+  diagnosis: "/diagnostico",
   farm: "/mi-finca",
   addLot: "/mi-finca/agregar",
   lot: (lotId: string) => `/mi-finca/lotes/${lotId}` as const,
