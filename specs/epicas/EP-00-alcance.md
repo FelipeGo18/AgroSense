@@ -44,9 +44,9 @@ estado: pendiente
 ### HU-003 · Verificar SIPSA y decidir si entra al P0
 
 - **Historia:** Como equipo, quiero verificar SIPSA (productos, mercados, frecuencia y última fecha), para decidir si la señal de mercado entra al P0.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso (verificación y mapeo hechos; falta aprobar la decisión)
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Decisión «entra» o «no entra» documentada (propuesta de Datos abajo, **por aprobar** por el equipo)
+  - [x] Decisión «entra» o «no entra» documentada: **entra**, aprobado por Felipe el 10 de noviembre de 2026 (propuesta de Datos abajo)
   - [x] Si entra, mapeo de producto SIPSA a `crop_id`: `pipeline/sipsa_crops.yaml`, validado por `pipeline.build` contra los precios publicados (`tests/pipeline/test_cultivos_sipsa.py`)
 - **Verificación (7 de noviembre de 2026, con la descarga de SIPSA del 20 de octubre):** el servicio web del DANE (`promediosSipsaParcial`, sin cuenta) trae el precio mínimo, medio y máximo por kilo de cada producto, central y día desde el 1 de febrero de 2020, hasta el día anterior a la descarga. Corabastos publica 36 productos unos seis días por semana; Tunja, 33, unos tres. Para los 7 cultivos del MVP:
 
@@ -61,14 +61,14 @@ estado: pendiente
   | `avena_vicia` | — | Abono verde: no se vende ni tiene diagnóstico | — |
 
   «Papa criolla» y «Cebolla junca» son otros cultivos y no entran. El porqué de cada fila está en `pipeline/sipsa_crops.yaml`.
-- **Propuesta de Datos (por aprobar):** **entra.** Los datos de SIPSA alimentan la señal `market` del P0 en 4 de los 6 cultivos con diagnóstico (papa, arveja, cebolla de bulbo y zanahoria). En haba y maíz la señal es `insufficient_data` (R1): no cambia la luz y queda en las limitaciones (regla 5 de «Agregación del semáforo»). Por qué: el adaptador, sus validaciones y la actualización diaria ya existen (HU-221, HU-222); cubre las dos centrales de referencia de la región con más de seis años de precios; el índice estacional ya se calcula. `market_month` por cultivo ya se publica (HU-051, 7 de noviembre); lo que falta es la parte de datos de la señal (HU-073). Si se aprueba, HU-051 pasa a P0. Si no, la señal `market` queda en `insufficient_data` en el MVP y `/precios` sigue como P1. La licencia lo permite: los términos del DANE autorizan el uso y la transformación de los datos con su cita (verificado el 8 de noviembre en HU-221).
+- **Propuesta de Datos (aprobado por Felipe el 10 de noviembre de 2026):** **entra.** Los datos de SIPSA alimentan la señal `market` del P0 en 4 de los 6 cultivos con diagnóstico (papa, arveja, cebolla de bulbo y zanahoria). En haba y maíz la señal es `insufficient_data` (R1): no cambia la luz y queda en las limitaciones (regla 5 de «Agregación del semáforo»). Por qué: el adaptador, sus validaciones y la actualización diaria ya existen (HU-221, HU-222); cubre las dos centrales de referencia de la región con más de seis años de precios; el índice estacional ya se calcula. `market_month` por cultivo ya se publica (HU-051, 7 de noviembre); lo que falta es la parte de datos de la señal (HU-073). Si se aprueba, HU-051 pasa a P0. Si no, la señal `market` queda en `insufficient_data` en el MVP y `/precios` sigue como P1. La licencia lo permite: los términos del DANE autorizan el uso y la transformación de los datos con su cita (verificado el 8 de noviembre en HU-221).
 
 ### HU-004 · Confirmar qué se puede preparar antes del evento
 
 - **Historia:** Como equipo, quiero confirmar en los términos de 2026 y con el evento local qué se puede preparar antes, para no arriesgar la entrega.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Regla citada con enlace
+  - [x] Regla citada con enlace: «2026 NASA Space Apps Participant Terms and Conditions», actualizados el 7 de agosto de 2026 (https://www.spaceappschallenge.org/legal/), leídos por Felipe el 10 de noviembre de 2026. No limitan cuándo se crea el trabajo: el contenido original es el «created for the NASA Space Apps Challenge», no el creado durante el fin de semana. Lo que sí exigen: que el contenido original sea libre o tenga una licencia OSI (sin licencia, NASA lo publica con Apache 2.0); que el material de terceros (datos o código que no son de la NASA ni de otra agencia espacial) sea libre o tenga licencia OSI y que su licencia vaya en la documentación de la entrega; citar **todas** las fuentes, también las abiertas, o se pierde el premio; tener los derechos de todo lo que se entrega, y no incluir datos personales ni publicidad de productos comerciales
   - [x] Respuesta escrita de la sede local sobre si se puede llevar código preparado (pipeline, motor, web) o solo diseños, guías y datos. **Sí se puede llevar código preparado:** confirmado por Felipe el 8 de noviembre de 2026
   - [x] Plan ajustado si cambia lo permitido (`docs/plan-48h.md`, los dos casos): aplica el escenario «Se puede llevar código y datos preparados»; el orden de recorte no se aplica desde el inicio
 - **Notas:** **Urgente: se hace esta semana (antes del 17 de octubre de 2026).** Define todo el plan: si se puede llevar código, los datos NASA y las fichas llegan hechos al evento; si no, el P0 del evento supera de lejos las horas del equipo (`docs/plan-48h.md`). Marcada urgente el 11 de octubre de 2026.
