@@ -28,7 +28,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from backend.accounts import maintenance
-from backend.config.settings import get_settings
+from backend.config.settings import get_settings, is_local
 from common import logging
 from common.logging import get_logger
 
@@ -58,10 +58,21 @@ def backup_name(database: str, current: str, target: str, now: datetime) -> str:
 
 def _dump_command(url: URL, output: Path) -> tuple[list[str], dict[str, str]]:
     """Con `pg_dump` instalado (en la imagen de la app) se usa directo. Si no (un computador de desarrollo sin
-    PostgreSQL instalado), se le pide al contenedor de la base de datos de Docker Compose, que lo trae."""
+    PostgreSQL instalado), se le pide al contenedor de la base de datos de Docker Compose, que lo trae. Ese contenedor
+    solo alcanza la base local: una base en la nube se copia desde la imagen de la app."""
     if shutil.which("pg_dump"):
         args = ["pg_dump", "--format=custom", "--no-owner", f"--host={url.host}", f"--port={url.port}", f"--username={url.username}"]
-        return [*args, f"--file={output}", str(url.database)], {**os.environ, "PGPASSWORD": url.password or ""}
+        env = {**os.environ, "PGPASSWORD": url.password or ""}
+        # El mismo SSL que la conexión: con la base de la nube, `require`.
+        sslmode = url.query.get("sslmode")
+        if sslmode:
+            env["PGSSLMODE"] = str(sslmode)
+        return [*args, f"--file={output}", str(url.database)], env
+    if not is_local(url):
+        raise BackupError(
+            "Para copiar la base de la nube hace falta `pg_dump`. Migre desde la imagen de la app: "
+            "docker compose run --rm app python -m backend.db.migrate"
+        )
     if shutil.which("docker"):
         inner = ["pg_dump", "--format=custom", "--no-owner", f"--username={url.username}", str(url.database)]
         return ["docker", "compose", "exec", "-T", "db", *inner], dict(os.environ)
@@ -133,12 +144,15 @@ def migrate(config: Config, url: URL, target: str = "head", down: bool = False, 
     return saved
 
 
-def on_startup(url: URL, config: Config) -> None:
+def on_startup(url: URL, config: Config, auto: bool = True) -> None:
     """Como arranca la API: intenta copiar y migrar, y pase lo que pase deja que la API suba.
 
     Si la base de datos no responde, o la copia o una migración fallan, lo escribe en el log y termina bien. La API
     arranca, lo que no usa la base de datos funciona, y las cuentas quedan apagadas hasta que el esquema esté al día
     (backend/db/state.py).
+
+    Con `auto` en falso (la base compartida de la nube) no migra: solo dice si falta alguna migración. Así una rama con
+    una migración nueva no cambia la base de todo el equipo al levantar la API.
     """
     log = get_logger("agrosense.migrate")
     expected = ScriptDirectory.from_config(config).get_current_head()
@@ -148,6 +162,19 @@ def on_startup(url: URL, config: Config) -> None:
         log.warning(
             "migration_skipped", reason="database_down", detail="La base de datos no responde: no se migró. Las cuentas quedan apagadas."
         )
+        return
+    if not auto:
+        if before == expected:
+            log.info("migration_up_to_date", current_migration=before, detail=f"La base de datos ya está al día (migración {before})")
+        else:
+            log.warning(
+                "migration_pending",
+                current_migration=before,
+                expected_migration=expected,
+                detail=f"La base está en la migración {before or 'vacía'} y el código espera la {expected}. No se migra sola: "
+                "aplíquela a mano (backend/README.md, «Base de datos en la nube»). Mientras tanto, las cuentas quedan apagadas.",
+            )
+        purge_activity(url)
         return
     try:
         saved = migrate(config, url)
@@ -210,12 +237,14 @@ def main() -> None:
     url = settings.database_url
     if args.al_arrancar:
         logging.configure(settings.log_level, settings.log_format)
-        on_startup(url, Config("alembic.ini"))
+        on_startup(url, Config("alembic.ini"), auto=settings.migrate_on_startup)
         return
+    # Que nadie migre la base de todo el equipo creyendo que es la suya.
+    print(f"Base de datos: {'en la nube' if not is_local(url) else 'local'} ({url.host}, base {url.database}).")
     try:
         before = current_revision(url)
     except OperationalError:
-        sys.exit("La base de datos no responde. ¿Está arriba? (docker compose up -d db)")
+        sys.exit("La base de datos no responde. ¿Está arriba? (docker compose up -d db; con la nube, revise AGROSENSE_DATABASE_URL)")
     try:
         saved = migrate(Config("alembic.ini"), url, target=args.bajar or "head", down=bool(args.bajar))
     except BackupError as error:

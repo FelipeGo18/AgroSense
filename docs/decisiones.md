@@ -75,7 +75,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **Sin cuenta:** se puede consultar; los datos de la finca se envían solo para calcular y no se guardan en el servidor ni en sus logs. Cuando exista el contador (P1), la consulta solo se cuenta, sin datos de quien consulta.
 - **Métricas (P1, HU-170):** para saber cómo se usa la app, el servidor lleva un contador por día, tipo de consulta, municipio y cultivo (`usage_daily`), sin usuario, sesión, IP, hora, fecha de siembra, prioridades ni área. En el P0 no existe: los endpoints de cálculo no escriben nada. Decidido el 11 de octubre de 2026.
 - **Con cuenta:** se guardan los lotes, su historial y las prioridades del agricultor (en su perfil), con consentimiento registrado. El usuario puede borrar todo.
-- **Sin servicios externos:** PostgreSQL propio en Docker y autenticación propia con usuario y contraseña. No se pide correo ni celular. Si la base de datos falla, el modo sin cuenta sigue funcionando.
+- **Datos propios, base en la nube:** la base de datos es un PostgreSQL en la nube (la del equipo y la demo; desde el 10 de noviembre de 2026) y en Docker para las pruebas. Se usa solo como PostgreSQL: la autenticación es propia, con usuario y contraseña. No se pide correo ni celular. Si la base de datos falla, el modo sin cuenta sigue funcionando.
 
 **Analogía:** la calculadora de una ferretería y el cuaderno de fiado. La calculadora la usa cualquiera y no anota de quién es la cuenta: solo cuenta cuántas veces se usó; el cuaderno solo existe si el cliente abrió su cuenta, y la puede cerrar cuando quiera.
 
