@@ -38,20 +38,21 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-092 · Semáforo con señales, razones y limitaciones
 
 - **Historia:** Como agricultor, quiero ver el semáforo con sus señales, razones y limitaciones, para entender el resultado.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] «Desfavorable» y «no evaluable» se distinguen con forma y texto, no solo con color
-  - [ ] La acción sugerida es lo primero que se lee
-  - [ ] Se ve la ventana evaluada: fecha de siembra y cosecha estimada, con el rótulo «Estimación con un año normal, no es pronóstico»
-  - [ ] Las seis señales (agua, heladas, calor, suelo, oferta y mercado); «No aplica» se ve distinto de «datos insuficientes». Las señales del P1 se muestran solo si vienen en la respuesta
-  - [ ] La señal de agua dice si se evaluó con riego o sin riego
-  - [ ] La señal de oferta dice de qué año y semestre de EVA es el dato y si es preliminar
-  - [ ] Cada señal muestra su calificación de 0 a 100 (`score`) junto al nivel en texto; sin calificación, no se dibuja una barra en cero (R1)
-  - [ ] La señal que más limita la ventana (`limiting_signal`) se marca «Lo que más limita» con forma y texto
-  - [ ] Cuando una señal trae `sources`, se ven todas juntas, cada una con su valor, su origen y su fecha, y se marca cuál calculó la señal («Usada para la luz»); las demás llevan «Para contrastar». Nunca se muestra un valor combinado
-  - [ ] El suelo lleva su rango y el rótulo de estimación (R10)
+  - [x] «Desfavorable» y «no evaluable» se distinguen con forma y texto, no solo con color
+  - [x] La acción sugerida es lo primero que se lee
+  - [x] Se ve la ventana evaluada: fecha de siembra y cosecha estimada, con el rótulo de cómo se estimó la cosecha según `harvest_basis`: con `calendar` (el MVP, HU-220), «Cosecha estimada con la duración de las etapas del cultivo. No es pronóstico»; con `normal_year` (P1), «Estimación con un año normal, no es pronóstico». Corregido el 10 de noviembre de 2026: el rótulo anterior citaba un año normal que el motor del MVP no evalúa (R5)
+  - [x] Las seis señales (agua, heladas, calor, suelo, oferta y mercado); «No aplica» se ve distinto de «datos insuficientes». Las señales del P1 se muestran solo si vienen en la respuesta
+  - [x] La señal de agua dice si se evaluó con riego o sin riego
+  - [x] La señal de oferta dice de qué año y semestre de EVA es el dato y si es preliminar
+  - [x] Cada señal muestra su calificación de 0 a 100 (`score`) junto al nivel en texto; sin calificación, no se dibuja una barra en cero (R1)
+  - [x] La señal que más limita la ventana (`limiting_signal`) se marca «Lo que más limita» con forma y texto
+  - [x] Cuando una señal trae `sources`, se ven todas juntas, cada una con su valor, su origen y su fecha, y se marca cuál calculó la señal («Usada para la luz»); las demás llevan «Para contrastar». Nunca se muestra un valor combinado
+  - [x] El suelo lleva su rango y el rótulo de estimación (R10)
 - **Reglas que aplican:** R1, R5, R8, R10
 - **Contrato que toca:** `signals` (con `score`, `counts` y `sources`) y `limiting_signal` de la respuesta de diagnóstico
+- **Hecho (10 nov):** en `/diagnostico`, debajo de la consulta y del resumen (`web/src/pages/diagnosis/SignalList.tsx`, lógica en `web/src/features/diagnosis/signals.ts`). El resumen dice primero la acción, después la luz (forma y texto: «Desfavorable» es un cuadrado; «No evaluable», un anillo punteado) y sus razones (`overall.reasons`). Cada señal: estado con forma y texto (y «riesgo grave» solo en las que por regla pueden ser críticas), calificación con su barra (sin calificación, nada), «Lo que más limita» con un banderín, razones y, con `sources`, cada fuente con su valor, su origen (de `GET /version`, o el nombre del producto de `docs/fuentes.md` si su fila aún no está publicada), su periodo y «Usada para la luz» o «Para contrastar»; POWER dice que es un reanálisis y la humedad del suelo, que es de la zona y su resolución. Con riego, el agua lleva el rótulo de estimación del riego (R10). El suelo muestra el rango de pH del municipio (`GET /catalogs/municipalities/{id}/soil`, p05 a p95) y el rótulo de estimación; el del lote llega con HU-182. Los campos nulos que la respuesta omite se tratan como nulos (R1). Las limitaciones van al final. Pendientes de otras HU: la luz con las prioridades frente a la de AgroSense y «No cuenta para la luz» (HU-203), y no dibujar el semáforo de un cultivo no apto (HU-194).
 
 ### HU-194 · Cultivo no apto y mejores ventanas
 
