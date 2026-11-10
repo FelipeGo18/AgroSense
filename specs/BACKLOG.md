@@ -41,7 +41,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-189 | Lluvia en años de El Niño y La Niña | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-225 | Tendencia del agua almacenada con GRACE-FO | P1 | M | pendiente | Nueva (8 nov, decisión 14) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-226 | Temperatura de la superficie y evapotranspiración con ECOSTRESS | P1 | M | pendiente | Nueva (8 nov, decisión 14) |
-| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | en curso | `market_month` publicada (7 nov); columnas aprobadas por Felipe (10 nov). Falta revisar el mapeo |
+| [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | hecha | `market_month` publicada (7 nov); columnas y mapeo aprobados por Felipe (10 nov); el maíz queda sin producto |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-221 | Precios en la central de abastos | P1 | L | en curso | Contrato aprobado por Felipe (10 nov). Falta el diseño en Figma |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | hecha | Dos crons del servicio `market` (9 nov): boletín diario y serie completa semanal; la API solo lee. Contrato aprobado por Felipe (10 nov) |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | en curso | Fichas de los 7 cultivos y el descanso con fuente por valor; falta revisión cruzada |
