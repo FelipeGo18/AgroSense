@@ -263,6 +263,10 @@ AGROSENSE_DATABASE_URL=postgresql://<usuario>:<clave>@<host>:5432/<base>
 ```
 
 - Sin `sslmode` en la cadena, la API exige SSL (`sslmode=require`). La copia de seguridad viaja con el mismo SSL.
+- Si la cadena está mal escrita (con comillas, con el nombre de la variable delante, sin `postgresql://`, sin la base o
+  con caracteres de la clave sin codificar), la API y el workflow no arrancan y dicen qué revisar, **sin repetir la
+  cadena**: trae la clave, y los logs de GitHub Actions son públicos. Los espacios y el salto de línea de los bordes se
+  quitan solos.
 - La cadena trae la clave: va solo en su `.env` o en el panel del alojamiento. Nunca en git, en un chat ni en un issue.
 - Sin la variable (o vacía), todo vuelve a la base local.
 
