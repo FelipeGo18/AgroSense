@@ -6,14 +6,28 @@ Descarga las fuentes a una caché, las valida y publica el dataset que lee la AP
 ```bash
 uv run python -m pipeline.build --descargar   # baja las fuentes a data/raw/ y publica
 uv run python -m pipeline.build               # publica otra vez desde la caché, sin red
+uv run python -m pipeline.build --verificar   # solo revisa que data/published coincida con su manifiesto
 ```
 
+- Al terminar de publicar, el comando revisa lo publicado contra su manifiesto (HU-123): cada tabla que nombra existe y
+  tiene sus filas, no hay tablas que no nombre y la versión es la de `region.yaml`. Si algo no coincide, termina con
+  error. Desde la misma caché, reconstruir da los mismos archivos byte a byte (R4); solo cambia `created_at`.
+- Cada paso deja una línea en la terminal (HU-177): por fuente, las filas leídas, las que quedan y las descartadas con su
+  motivo; por tabla, las filas escritas; al final, si se publicó o por qué no. Nivel y formato con `AGROSENSE_LOG_LEVEL`
+  y `AGROSENSE_LOG_FORMAT` (`console` o `json`), igual que la API.
+
 - `data/raw/` es caché y no va a git. `data/published/` sí va a git y entra en la imagen de Docker: es el dataset de la demo.
-- `pipeline/region.yaml` dice la región y la versión del dataset. **La región es un supuesto** (Boyacá y Cundinamarca)
-  hasta el enunciado del 28 de octubre de 2026. `dataset_version` sube a mano cada vez que cambia lo publicado (R4).
+- `pipeline/region.yaml` dice la región y la versión del dataset: **Boyacá y Cundinamarca, Colombia** (confirmada el 28 de octubre de 2026 con la sede de Duitama, HU-002). `dataset_version` sube a mano cada vez que cambia lo publicado (R4).
 - Antes de escribir se valida todo: `municipality_id` de 5 dígitos y sin repetir (R7), nombre, coordenadas en rango y
   que cada fila cite una fuente que está en `sources` (R8). Si algo falla, no se publica nada.
 - Lo que todavía no tiene fuente va nulo, nunca inventado (R1).
+- `pipeline/sipsa_crops.yaml` dice qué producto de SIPSA da el precio de cada cultivo del MVP (HU-003). Un cultivo sin
+  producto lleva su porqué. Antes de publicar se valida contra los precios: si un producto no está, si dos cultivos
+  usan el mismo o si falta el porqué, no se publica nada.
+- Los precios de SIPSA, además, los baja la API cada día por su cuenta (HU-222, `backend/README.md`): lo publicado
+  aquí es el punto de partida.
+- `--descargar` baja también SIPSA: unos 300 MB que tardan un par de minutos. Sin `--descargar` hace falta su caché en
+  `data/raw/sipsa/`.
 
 ## Qué publica hoy
 
@@ -22,7 +36,9 @@ uv run python -m pipeline.build               # publica otra vez desde la caché
 | `municipalities` (sin altitud todavía) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`) | HU-044 |
 | `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
 | `crops` y `crop_stages` | Catálogo agronómico de `catalog/crops.yaml`: FAO EcoCrop, FAO-56, UPRA y FAO, con fuente por valor (`pipeline/catalog.py`) | HU-061, HU-199, HU-063 |
-| `sources` | Una fila por fuente | HU-122 |
+| `market_price_day`, `market_price_latest`, `market_price_season` | SIPSA del DANE, servicio web (`pipeline/sources/sipsa.py`): precios de Corabastos y Tunja desde 2020, el último de cada producto con el de hace una semana y su cambio (lo que lee `/market/prices`, que no calcula nada), y su temporada. Sin la caché de SIPSA se publica lo demás y el log dice `source_missing`. Los días que faltan después del dataset los suman los crons de precios (HU-222, `backend/README.md`), también con el boletín diario (`pipeline/sources/sipsa_boletin.py`) | HU-221, HU-222 |
+| `market_month` | Lo mismo por cultivo, con el producto de `pipeline/sipsa_crops.yaml`: índice estacional y precio de cada mes del último año completo | HU-051 |
+| `sources` | Una fila por fuente, con la cita textual que pide (`citation`, nula si no pide una) | HU-122, HU-221 |
 | `manifest.json` | Versión, región, filas y cobertura por tabla | HU-122 |
 
 Antes de publicar, cada tabla se revisa contra su esquema del contrato (`pipeline/schema.py`, HU-011): columnas, orden,

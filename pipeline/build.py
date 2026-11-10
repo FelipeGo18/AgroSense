@@ -2,14 +2,26 @@
 
     uv run python -m pipeline.build              # lee la caché de data/raw/ y publica
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
+    uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
-Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `sources` y `manifest.json`. Cada tabla pasa por las
-validaciones antes de escribirse: si una falla, no se publica nada (R7, R8).
+Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `municipality_boundaries` (MGN del DANE, HU-044), el
+catálogo (`crops` y `crop_stages`, HU-061), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221),
+`market_price_latest` (el último precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y
+`manifest.json`. Cada tabla pasa por las validaciones y por su esquema del contrato (`pipeline/schema.py`, HU-011) antes
+de escribirse: si una falla, no se publica nada (R7, R8).
+También se valida el mapeo de los productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que
+se publican. Al terminar, lo publicado se revisa contra su manifiesto (HU-123).
+
+Cada paso deja una línea en la terminal con la fuente, las filas leídas y las descartadas con su motivo (HU-177). Usa la
+misma configuración de logs que la API (`common/logging.py`, que no depende del backend): nivel y formato con `AGROSENSE_LOG_LEVEL` y
+`AGROSENSE_LOG_FORMAT`, sin depender de la base de datos.
 """
 
 import argparse
 import json
+import re
 import sys
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -18,12 +30,21 @@ import polars as pl
 import shapely
 import yaml
 
+from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
 from pipeline import schema
-from pipeline.sources import dane, dane_mgn
+from pipeline.settings import get_settings
+from pipeline.sources import dane, dane_mgn, sipsa
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
+CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
 PUBLISHED = Path("data/published")
+
+log = get_logger("agrosense.pipeline")
+
+# Como pide el catálogo de cultivos (HU-061): `snake_case`, sin tildes.
+CROP_ID = re.compile(r"^[a-z][a-z0-9_]*$")
+CROP_FIELDS = {"product_id", "notes", "reason"}
 
 
 class ValidationError(ValueError):
@@ -32,6 +53,11 @@ class ValidationError(ValueError):
 
 def load_region(path: Path = REGION_FILE) -> dict[str, Any]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def load_crops(path: Path = CROPS_FILE) -> dict[str, Any]:
+    """Qué producto de SIPSA da el precio de cada cultivo (HU-003): `crop_id` → `product_id`, `notes` y `reason`."""
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("crops")
 
 
 def validate(municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
@@ -73,6 +99,73 @@ def validate_boundaries(boundaries: pl.DataFrame, municipalities: pl.DataFrame, 
         raise ValidationError(f"Límites con una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def validate_market(prices: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """Las reglas de los precios (`sipsa.validate`), con las fuentes de lo que se publica (R1, R8)."""
+    try:
+        sipsa.validate(prices, set(sources["source_id"].to_list()))
+    except sipsa.PricesError as error:
+        raise ValidationError(str(error)) from error
+
+
+def validate_crops(crops: Any, prices: pl.DataFrame, catalog_ids: set[str] | None = None) -> None:
+    """El mapeo de `sipsa_crops.yaml` (HU-003): cada cultivo tiene un producto que SIPSA publica en la región, o ninguno y
+    el porqué (R1). Un producto no da el precio de dos cultivos: dos productos tampoco se promedian (decisión 11).
+
+    Con `catalog_ids` (los `crop_id` de `catalog/crops.yaml`), cada cultivo del mapeo tiene que estar en el catálogo: los
+    identificadores salen de un solo lugar y un `crop_id` mal escrito no se publica."""
+    if not isinstance(crops, dict) or not crops:
+        raise ValidationError("`sipsa_crops.yaml` no trae cultivos en `crops`.")
+    if catalog_ids is not None:
+        unknown = sorted(set(crops) - catalog_ids)
+        if unknown:
+            raise ValidationError(f"Cultivos de `sipsa_crops.yaml` que no están en `catalog/crops.yaml`: {unknown}.")
+    published = set(prices["product_id"].unique().to_list())
+    owners: dict[str, str] = {}
+    for crop_id, entry in crops.items():
+        if not isinstance(crop_id, str) or not CROP_ID.match(crop_id):
+            raise ValidationError(f"`crop_id` inválido en `sipsa_crops.yaml`: {crop_id!r}. Va en snake_case y sin tildes.")
+        if not isinstance(entry, dict) or "product_id" not in entry:
+            raise ValidationError(f"{crop_id}: falta `product_id` en `sipsa_crops.yaml` (nulo si SIPSA no tiene el cultivo).")
+        unknown = set(entry) - CROP_FIELDS
+        if unknown:
+            raise ValidationError(f"{crop_id}: campos que no se conocen en `sipsa_crops.yaml`: {sorted(unknown)}.")
+        product = entry["product_id"]
+        if product is None:
+            if not str(entry.get("reason") or "").strip():
+                raise ValidationError(f"{crop_id}: sin producto de SIPSA hay que decir por qué en `reason` (R1).")
+            continue
+        if not isinstance(product, str) or product not in published:
+            raise ValidationError(f"{crop_id}: el producto {product!r} no está en los precios de SIPSA que se publican.")
+        if product in owners:
+            raise ValidationError(f"El producto {product!r} da el precio de dos cultivos: {owners[product]} y {crop_id}.")
+        owners[product] = crop_id
+
+
+def validate_market_month(month: pl.DataFrame, crops: dict[str, Any], sources: pl.DataFrame) -> None:
+    """`market_month` (HU-051): llave sin repetir, meses de 1 a 12, índice y precio presentes y positivos, el producto que
+    dice el mapeo y una fuente que existe (R1, R8). Vacía es válida: sin años completos no hay índice que publicar."""
+    repeated = month.filter(pl.struct("crop_id", "market_id", "month").is_duplicated())
+    if not repeated.is_empty():
+        raise ValidationError(f"`market_month` repite cultivo, central y mes: {repeated.head(3).to_dicts()}")
+    bad = month.filter(
+        ~pl.col("month").is_between(1, 12)
+        | pl.col("seasonal_index").is_null()
+        | (pl.col("seasonal_index") <= 0)
+        | pl.col("price_cop_kg").is_null()
+        | (pl.col("price_cop_kg") <= 0)
+        | ~pl.col("quality").is_in(["ok", "partial"])
+    )
+    if not bad.is_empty():
+        raise ValidationError(f"`market_month` con mes, índice, precio o calidad fuera de lo permitido: {bad.head(3).to_dicts()}")
+    expected = {crop_id: entry.get("product_id") for crop_id, entry in crops.items()}
+    wrong = [row for row in month.select("crop_id", "product_id").unique().iter_rows() if expected.get(row[0]) != row[1]]
+    if wrong:
+        raise ValidationError(f"`market_month` con un producto que no es el de `sipsa_crops.yaml`: {sorted(wrong)[:3]}")
+    unknown = set(month["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`market_month` con una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -80,17 +173,44 @@ def publish(
     folder: Path = PUBLISHED,
     boundaries: pl.DataFrame | None = None,
     crops: tuple[str, pl.DataFrame, pl.DataFrame] | None = None,
+    prices: pl.DataFrame | None = None,
+    crop_products: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4)."""
+    """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
+
+    `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
+    `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). Todo se valida antes de
+    escribir nada.
+    """
     validate(municipalities, sources)
     if boundaries is not None:
         validate_boundaries(boundaries, municipalities, sources)
+    season = month = latest = None
+    if prices is not None:
+        validate_market(prices, sources)
+        season = sipsa.seasonal(prices)
+        # El último precio de cada producto, con el de hace una semana y el cambio: la API solo lo filtra (HU-221).
+        latest = sipsa.latest(prices)
+    if crop_products is not None:
+        if prices is None:
+            raise ValidationError("El mapeo de `sipsa_crops.yaml` se valida contra los precios de SIPSA, y no hay precios.")
+        validate_crops(crop_products, prices, set(crops[1]["crop_id"].to_list()) if crops is not None else None)
+        month = sipsa.monthly(prices, season, crop_products)
+        validate_market_month(month, crop_products, sources)
     # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
-    tables = {"municipalities": municipalities, "sources": sources.sort("source_id")}
+    # `sources` junta filas de varias fuentes: va con las columnas del contrato, en su orden. Una fuente sin cita (por
+    # ejemplo, las del catálogo) queda con `citation` nula, no inventada (R1).
+    source_columns = list(schema.TABLES["sources"].columns)
+    sources = sources.with_columns(pl.lit(None, dtype=pl.String).alias(col) for col in source_columns if col not in sources.columns)
+    tables = {"municipalities": municipalities, "sources": sources.select(source_columns).sort("source_id")}
     if boundaries is not None:
         tables["municipality_boundaries"] = boundaries
     if crops is not None:
         tables["crops"], tables["crop_stages"] = crops[1], crops[2]
+    if prices is not None:
+        tables |= {"market_price_day": prices, "market_price_latest": latest, "market_price_season": season}
+    if month is not None:
+        tables["market_month"] = month
     for name, table in tables.items():
         tables[name] = schema.typed(name, table)
         try:
@@ -100,6 +220,7 @@ def publish(
     folder.mkdir(parents=True, exist_ok=True)
     for name, table in tables.items():
         table.write_parquet(folder / f"{name}.parquet")
+        log.info("table_written", table=name, rows=table.height, detail=f"{name}: {table.height} filas escritas en {folder}")
     manifest = {
         "dataset_version": region["dataset_version"],
         # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
@@ -118,36 +239,141 @@ def publish(
     if crops is not None:
         manifest["tables"]["crops"] = {"rows": crops[1].height, "coverage": "cultivos del MVP"}
         manifest["tables"]["crop_stages"] = {"rows": crops[2].height, "coverage": "cultivos del MVP"}
+    if prices is not None:
+        manifest["tables"]["market_price_day"] = {
+            "rows": prices.height,
+            "coverage": f"{' · '.join(sorted(set(prices['market'].to_list())))}; del {prices['date'].min()} al {prices['date'].max()}",
+        }
+        manifest["tables"]["market_price_latest"] = {
+            "rows": latest.height,
+            "coverage": "El último precio de cada producto en cada central, con el de hace una semana y el cambio",
+        }
+        manifest["tables"]["market_price_season"] = {
+            "rows": season.height,
+            "coverage": f"Productos con al menos {sipsa.MIN_YEARS} años completos de precios",
+        }
+    if month is not None:
+        crops_with_rows = ", ".join(sorted(set(month["crop_id"].to_list()))) or "ningún cultivo"
+        manifest["tables"]["market_month"] = {
+            "rows": month.height,
+            "coverage": f"{crops_with_rows}: índice estacional y precio de cada mes del último año completo, por central",
+        }
     (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return manifest
 
 
-def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE) -> dict[str, Any]:
+def verify(folder: Path = PUBLISHED, dataset_version: str | None = None) -> dict[str, Any]:
+    """HU-123: lo publicado en `folder` coincide con su manifiesto. Cada tabla que nombra existe y tiene las filas que dice,
+    no hay tablas que no nombre y, con `dataset_version`, la versión es esa (la de `region.yaml`). Devuelve el manifiesto.
+
+    Así se sabe que una carpeta copiada o reconstruida es la de la demo, y no una a medias o mezclada con otra (R4).
+    """
+    manifest_path = folder / "manifest.json"
+    if not manifest_path.exists():
+        raise ValidationError(f"No hay `manifest.json` en {folder}: publique con `uv run python -m pipeline.build`.")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    listed = manifest.get("tables") or {}
+    problems = []
+    if dataset_version is not None and manifest.get("dataset_version") != dataset_version:
+        problems.append(f"el manifiesto es de la versión {manifest.get('dataset_version')} y `region.yaml` dice {dataset_version}")
+    for name, info in listed.items():
+        path = folder / f"{name}.parquet"
+        if not path.exists():
+            problems.append(f"falta `{name}.parquet`")
+            continue
+        rows = pl.scan_parquet(path).select(pl.len()).collect().item()
+        if rows != info.get("rows"):
+            problems.append(f"`{name}` tiene {rows} filas y el manifiesto dice {info.get('rows')}")
+    extra = sorted(path.name for path in folder.glob("*.parquet") if path.stem not in listed)
+    if extra:
+        problems.append(f"tablas que el manifiesto no nombra: {extra}")
+    if problems:
+        raise ValidationError(f"Lo publicado en {folder} no coincide con su manifiesto: {'; '.join(problems)}.")
+    return manifest
+
+
+def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE, market_cache: Path = sipsa.CACHE) -> dict[str, Any]:
     region = load_region()
+    version, name = region["dataset_version"], region["region"]["name"]
     departments = region["region"]["departments"]
+    log.info("pipeline_started", dataset_version=version, detail=f"Reconstruyendo el dataset {version} de {name}")
     if download:
+        log.info("source_downloading", source=dane.SOURCE_ID, detail=f"Bajando DIVIPOLA del DANE a {cache}")
         dane.download(cache)
+        log.info("source_downloading", source=dane_mgn.SOURCE_ID, detail=f"Bajando los límites municipales del DANE a {cache}")
         dane_mgn.download(departments, cache)
+        log.info("source_downloading", source=sipsa.SOURCE_ID, detail=f"Bajando SIPSA del DANE a {market_cache} (unos 300 MB)")
+        sipsa.download(market_cache)
     rows, meta = dane.read_cache(cache)
     municipalities = dane.municipalities(rows, departments)
+    outside = len(rows) - municipalities.height
+    log.info(
+        "source_read",
+        source=dane.SOURCE_ID,
+        rows_read=len(rows),
+        rows_kept=municipalities.height,
+        rows_rejected=outside,
+        reasons={"outside_region": outside},
+        detail=f"DIVIPOLA: {len(rows)} filas leídas, {municipalities.height} de la región y {outside} descartadas por ser de "
+        "otros departamentos",
+    )
     features, mgn_meta = dane_mgn.read_cache(departments, cache)
     boundaries = dane_mgn.boundaries(features)
     catalog = crops_catalog.load()
     crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
-    sources = pl.concat([pl.DataFrame([dane.source(meta), dane_mgn.source(mgn_meta)]), catalog_sources], how="diagonal_relaxed")
-    return publish(region, municipalities, sources, folder, boundaries, (catalog["version"], crops_table, stages_table))
+    own = [dane.source(meta), dane_mgn.source(mgn_meta)]
+    prices = crop_products = None
+    counts: Counter[str] = Counter()
+    try:
+        prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache, counts)
+    except FileNotFoundError as error:
+        # Sin la caché de SIPSA (unos 300 MB) se publica lo demás, sin las tablas de precios: no se inventan (R1), y el
+        # manifiesto dice qué trae. Así reconstruir los municipios no obliga a bajar los precios.
+        log.warning("source_missing", source=sipsa.SOURCE_ID, detail=f"Se publica sin los precios de SIPSA: {error}")
+    else:
+        rejected = counts["other_market"] + counts["no_average"]
+        log.info(
+            "source_read",
+            source=sipsa.SOURCE_ID,
+            rows_read=counts["read"],
+            rows_kept=prices.height,
+            rows_rejected=rejected,
+            reasons={"other_market": counts["other_market"], "no_average": counts["no_average"]},
+            detail=f"SIPSA: {counts['read']} filas leídas, {prices.height} de las centrales de la región y {rejected} "
+            f"descartadas: {counts['other_market']} de otras centrales y {counts['no_average']} sin precio medio ese día (R1)",
+        )
+        own.append(sipsa.source(prices, downloaded_at))
+        crop_products = load_crops()
+    sources = pl.concat([pl.DataFrame(own), catalog_sources], how="diagonal_relaxed")
+    crops = (catalog["version"], crops_table, stages_table)
+    return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reconstruye data/published desde la caché.")
     parser.add_argument("--descargar", action="store_true", help="Baja otra vez las fuentes a data/raw/ antes de publicar.")
+    parser.add_argument("--verificar", action="store_true", help="No publica: solo revisa que data/published coincida con su manifiesto.")
     args = parser.parse_args()
+    # El pipeline no usa la base de datos: lee su configuración de `pipeline/settings.py`, no la de la API.
+    settings = get_settings()
+    configure(settings.log_level, settings.log_format)
+    expected = load_region()["dataset_version"]
     try:
-        manifest = build(download=args.descargar)
+        if not args.verificar:
+            build(download=args.descargar)
+        manifest = verify(PUBLISHED, expected)
     except (FileNotFoundError, ValidationError, crops_catalog.CatalogError) as error:
-        sys.exit(f"No se publicó nada: {error}")
+        event = "dataset_mismatch" if args.verificar else "dataset_not_published"
+        log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")
+        sys.exit(1)
     tables = ", ".join(f"{name} ({info['rows']} filas)" for name, info in manifest["tables"].items())
-    print(f"Dataset {manifest['dataset_version']} publicado en {PUBLISHED}: {tables}.")
+    verb = "revisado: coincide con su manifiesto" if args.verificar else "publicado y revisado contra su manifiesto"
+    log.info(
+        "dataset_verified" if args.verificar else "dataset_published",
+        dataset_version=manifest["dataset_version"],
+        tables=len(manifest["tables"]),
+        detail=f"Dataset {manifest['dataset_version']} {verb} en {PUBLISHED}: {tables}",
+    )
 
 
 if __name__ == "__main__":

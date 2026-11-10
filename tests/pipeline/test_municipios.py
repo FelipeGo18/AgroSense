@@ -8,8 +8,8 @@ import shapely
 from shapely.geometry import box, mapping
 
 from pipeline import build
-from pipeline.sources import dane, dane_mgn
-from tests.conftest import SAMPLE_META, SAMPLE_MUNICIPALITIES, SAMPLE_REGION
+from pipeline.sources import dane, dane_mgn, sipsa
+from tests.conftest import SAMPLE_MARKETS, SAMPLE_META, SAMPLE_MUNICIPALITIES, SAMPLE_REGION, SAMPLE_SIPSA_ROWS, sipsa_xml
 
 
 @pytest.mark.parametrize(
@@ -101,21 +101,29 @@ def test_sin_la_cache_dice_como_bajarla(tmp_path):
 
 
 def test_reconstruye_desde_la_cache_sin_usar_la_red(tmp_path, monkeypatch):
-    cache = tmp_path / "raw"
+    cache, market_cache = tmp_path / "raw", tmp_path / "raw-sipsa"
     cache.mkdir()
+    market_cache.mkdir()
     (cache / dane.ROWS_FILE).write_text(json.dumps(SAMPLE_MUNICIPALITIES), encoding="utf-8")
     (cache / dane.META_FILE).write_text(json.dumps(SAMPLE_META), encoding="utf-8")
+    (market_cache / sipsa.ROWS_FILE).write_text(sipsa_xml(SAMPLE_SIPSA_ROWS), encoding="utf-8")
+    (market_cache / sipsa.META_FILE).write_text("2026-10-20T15:34:00+00:00", encoding="utf-8")
     for department, ids in (("15", ["15407", "15646"]), ("25", ["25899"])):
         (cache / dane_mgn._file(department)).write_text(json.dumps(feature_collection(ids)), encoding="utf-8")
-    monkeypatch.setattr(build, "load_region", lambda: {**SAMPLE_REGION})
 
     def no_network(*args, **kwargs):
         raise AssertionError("no debe usar la red")
 
     monkeypatch.setattr(dane.urllib.request, "urlopen", no_network)
-    manifest = build.build(folder=tmp_path / "published", cache=cache)
+    region = {**SAMPLE_REGION, "region": {**SAMPLE_REGION["region"], "markets": SAMPLE_MARKETS}}
+    monkeypatch.setattr(build, "load_region", lambda: region)
+    # El mapeo de ejemplo, con productos que trae la caché de ejemplo (HU-003).
+    crops = {"papa": {"product_id": "papa-negra"}, "haba": {"product_id": None, "reason": "Ejemplo: sin producto en SIPSA."}}
+    monkeypatch.setattr(build, "load_crops", lambda: crops)
+    manifest = build.build(folder=tmp_path / "published", cache=cache, market_cache=market_cache)
     assert manifest["tables"]["municipalities"]["rows"] == 3
     assert manifest["tables"]["municipality_boundaries"]["rows"] == 3
+    assert manifest["tables"]["market_price_day"]["rows"] == 7
 
 
 def test_lo_publicado_en_el_repositorio_cumple_el_contrato():

@@ -18,6 +18,8 @@ import polars as pl
 import shapely
 from shapely.geometry import shape
 
+from pipeline.sources import dane
+
 SOURCE_ID = "dane_mgn_2025"
 SERVICE = "https://geoportal.dane.gov.co/mparcgis/rest/services/Divipola/Serv_DIVIPOLA_MGN_2025/FeatureServer/317"
 CACHE = Path("data/raw/dane")
@@ -84,6 +86,7 @@ def source(meta: dict[str, Any]) -> dict[str, Any]:
         "period_covered": "Versión 2025 del Marco Geoestadístico Nacional",
         "coverage": "Colombia",
         "license": "Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122)",
+        "citation": dane.CITATION,
         "notes": (
             "Límite de cada municipio, simplificado a unos 10 m para dibujarlo en el mapa y validar que un lote cae dentro de su municipio."
         ),

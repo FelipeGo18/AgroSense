@@ -9,12 +9,12 @@ from typing import Any
 from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 
-from backend.api import auth, calculations, catalogs, errors, lots, seasons, version
-from backend.config import logging
+from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, version
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
 from backend.db.session import get_db
 from backend.db.state import accounts_state
+from common import logging
 
 log = logging.get_logger("agrosense.api")
 
@@ -92,6 +92,7 @@ def create_app() -> FastAPI:
     app.include_router(lots.router)
     app.include_router(seasons.router)
     app.include_router(calculations.router)
+    app.include_router(market.router)
 
     @app.get("/api/v1/health", tags=["estado"])
     def health(request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:

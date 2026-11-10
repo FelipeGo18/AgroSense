@@ -19,6 +19,7 @@ import polars as pl
 
 from pipeline import schema
 from pipeline.build import PUBLISHED
+from pipeline.sources import sipsa
 
 EXAMPLES = Path("data/examples")
 SOURCE_ID = "ejemplo"
@@ -40,6 +41,7 @@ EXAMPLE_SOURCE = {
     "period_covered": None,
     "coverage": "Samacá, Toca y Tunja (Boyacá)",
     "license": None,
+    "citation": None,
     "notes": "Cifras inventadas con la forma del contrato, para desarrollar y probar el motor, la API y la web (HU-011). "
     "Nunca se muestran como datos reales (R5).",
 }
@@ -274,13 +276,45 @@ def supply_semester() -> pl.DataFrame:
     return _table("supply_semester", rows)
 
 
+# El producto de SIPSA de cada cultivo de ejemplo, como en `pipeline/sipsa_crops.yaml`.
+MARKET_PRODUCTS = {
+    "papa": "papa-negra",
+    "arveja": "arveja-verde-en-vaina",
+    "cebolla_bulbo": "cebolla-cabezona-blanca",
+    "zanahoria": "zanahoria",
+}
+
+
 def market_month() -> pl.DataFrame:
     rows = [
-        {"crop_id": crop, "market_id": "1", "month": month, "price_cop_kg": 1500 + 300 * j + int(400 * math.sin(month + j)),
-         "volume_t": None, "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3), "quality": "ok", "source_id": SOURCE_ID}
+        {"crop_id": crop, "market_id": "1", "month": month, "product_id": MARKET_PRODUCTS[crop],
+         "price_cop_kg": 1500 + 300 * j + int(400 * math.sin(month + j)), "price_year": 2024, "volume_t": None,
+         "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3), "years": 4, "quality": "ok", "source_id": SOURCE_ID}
         for j, crop in enumerate(MARKET_CROPS) for month in range(1, 13)
     ]  # fmt: skip
     return _table("market_month", rows)
+
+
+def market_price_day() -> pl.DataFrame:
+    """Cuatro semanas de precios de ejemplo en Corabastos (R5): los nombres son los de SIPSA, las cifras inventadas."""
+    start = date(2024, 12, 2)
+    rows = [
+        {"product_id": product, "market_id": "1", "date": start + timedelta(days=d), "product": product.replace("-", " ").capitalize(),
+         "group": "Verduras y hortalizas", "several_varieties": False, "market": "Corabastos (Bogotá)",
+         "min_cop_kg": price - 150, "avg_cop_kg": price, "max_cop_kg": price + 150, "source_id": SOURCE_ID}
+        for j, product in enumerate(MARKET_PRODUCTS.values()) for d in range(28) if (start + timedelta(days=d)).weekday() < 6
+        for price in [1500 + 300 * j + int(200 * math.sin(d / 4 + j))]
+    ]  # fmt: skip
+    return _table("market_price_day", rows)
+
+
+def market_price_season() -> pl.DataFrame:
+    rows = [
+        {"product_id": product, "market_id": "1", "month": month, "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3),
+         "years": 4, "first_year": 2021, "last_year": 2024, "source_id": SOURCE_ID}
+        for j, product in enumerate(MARKET_PRODUCTS.values()) for month in range(1, 13)
+    ]  # fmt: skip
+    return _table("market_price_season", rows)
 
 
 def rotation_rules() -> pl.DataFrame:
@@ -370,6 +404,10 @@ def build(published: Path = PUBLISHED) -> dict[str, pl.DataFrame]:
         "grid_cells": cells,
         "soil_municipality": soil_municipality(cells),
         "market_month": market_month(),
+        "market_price_day": (day_prices := market_price_day()),
+        # Calculada con la misma función del pipeline y de las actualizaciones de precios.
+        "market_price_latest": sipsa.latest(day_prices),
+        "market_price_season": market_price_season(),
         "climate_risk_week": climate_risk_week(risk, month),
         "climate_normal_doy": climate_normal_doy(days),
         "ndvi_grid": ndvi_grid(cells),

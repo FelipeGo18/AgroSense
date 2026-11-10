@@ -28,9 +28,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from backend.accounts import maintenance
-from backend.config import logging
-from backend.config.logging import get_logger
 from backend.config.settings import get_settings
+from common import logging
+from common.logging import get_logger
 
 BACKUPS = Path("backups")
 # Se conservan las copias más recientes; las demás se borran para no llenar el disco.

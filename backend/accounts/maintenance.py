@@ -16,8 +16,8 @@ from sqlalchemy.orm import Session as Db
 
 from backend.accounts import activity
 from backend.accounts.models import Session
-from backend.config import logging
 from backend.config.settings import get_settings
+from common import logging
 
 
 @dataclass(frozen=True)

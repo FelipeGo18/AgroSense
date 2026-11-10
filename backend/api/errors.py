@@ -15,8 +15,8 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.accounts.security import ServerBusy
-from backend.config.logging import get_logger
 from backend.db.state import remember_down
+from common.logging import get_logger
 
 log = get_logger("agrosense.api")
 
