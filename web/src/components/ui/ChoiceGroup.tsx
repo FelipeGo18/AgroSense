@@ -14,16 +14,26 @@ export interface ChoiceGroupProps<T> {
   onChange: (value: T) => void;
   /** Ayuda bajo las opciones. */
   hint?: string;
+  /** Error bajo las opciones, enlazado a la pregunta (`aria-describedby`). */
+  error?: string;
 }
 
 /**
  * Una pregunta con pocas respuestas, todas a la vista (radios nativos: se recorren con las flechas del teclado).
  * Cada opción mide al menos 44 px de alto; en 320 px se apilan si no caben.
  */
-export function ChoiceGroup<T extends string | number | boolean | null>({ legend, choices, value, onChange, hint }: ChoiceGroupProps<T>) {
+export function ChoiceGroup<T extends string | number | boolean | null>({
+  legend,
+  choices,
+  value,
+  onChange,
+  hint,
+  error,
+}: ChoiceGroupProps<T>) {
   const name = useId();
+  const described = [error && `${name}-error`, hint && `${name}-hint`].filter(Boolean).join(" ");
   return (
-    <fieldset className="flex min-w-0 flex-col gap-2" aria-describedby={hint ? `${name}-hint` : undefined}>
+    <fieldset className="flex min-w-0 flex-col gap-2" aria-describedby={described || undefined}>
       <legend className="mb-2 text-[18px] font-bold">{legend}</legend>
       <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3">
         {choices.map((choice) => {
@@ -56,6 +66,11 @@ export function ChoiceGroup<T extends string | number | boolean | null>({ legend
           );
         })}
       </div>
+      {error && (
+        <p id={`${name}-error`} role="alert" className="text-[15px] leading-snug font-bold text-oscuro-rojo">
+          {error}
+        </p>
+      )}
       {hint && (
         <p id={`${name}-hint`} className="text-[15px] leading-snug text-texto-secundario">
           {hint}
