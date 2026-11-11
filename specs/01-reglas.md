@@ -17,6 +17,8 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 
 > R9 suma `/changes` a los endpoints de cálculo y R10 suma la humedad del suelo y el verdor desde el 11 de octubre de 2026 (decisión 12 de `docs/decisiones.md`). Las demás reglas no cambiaron.
 
+> R8 se aclara el 10 de noviembre de 2026 (decisión 16, enmienda del 10 nov 2026): una regla agronómica para la que ninguna fuente externa da el corte puede apuntar a un **criterio propio del equipo registrado en `sources`** (por ejemplo, `criterio_equipo_2026`), cuya `notes` dice que no es una fuente externa, quién lo aprobó y por qué, y que queda pendiente de validar por un agrónomo. Nunca a un número sin registro ni a la fuente `ejemplo`.
+
 ## Cómo se comprueba cada regla
 
 | Regla | Comprobación sugerida |
