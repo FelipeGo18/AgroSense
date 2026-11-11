@@ -28,9 +28,9 @@ estado: pendiente
 ### HU-022 · Lint y pruebas automáticas en cada cambio
 
 - **Historia:** Como equipo, quiero lint y pruebas automáticas en cada cambio, para detectar roturas temprano.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] GitHub Actions corre Ruff, pytest, Vitest y el build web dentro de Docker Compose
+  - [X] GitHub Actions corre Ruff, pytest, Vitest y el build web dentro de Docker Compose
   - [X] Las mismas pruebas corren en local con un solo comando de Docker
 
 ### HU-177 · Logs de la terminal
