@@ -127,6 +127,22 @@ def no_dataset(tmp_path_factory, monkeypatch):
     monkeypatch.setenv("AGROSENSE_DATA_DIR", str(tmp_path_factory.mktemp("sin-dataset")))
     # Ni versiones de precios bajadas (HU-222): cada prueba parte de una carpeta vacía y la API la vuelve a mirar.
     monkeypatch.setenv("AGROSENSE_MARKET_DIR", str(tmp_path_factory.mktemp("sin-precios")))
+    # Ni las cachés de las fuentes de quien corre las pruebas (data/raw/): una prueba que las necesita trae las de ejemplo.
+    from pipeline.sources import nasa_power, nasadem, sipsa
+
+    for module in (sipsa, nasa_power, nasadem):
+        monkeypatch.setattr(module, "CACHE", tmp_path_factory.mktemp(f"sin-cache-{module.SOURCE_ID}"))
+    # La región de ejemplo de las pruebas usa las mismas fuentes por señal que la región piloto (catalog/sources.yaml).
+    import yaml
+
+    from common import signal_sources
+    from pipeline import build
+
+    config = yaml.safe_load(signal_sources.SIGNAL_SOURCES_FILE.read_text(encoding="utf-8"))
+    config["regions"][SAMPLE_REGION["region"]["id"]] = next(iter(config["regions"].values()))
+    sources_file = tmp_path_factory.mktemp("fuentes-por-senal") / "sources.yaml"
+    sources_file.write_text(yaml.safe_dump(config, allow_unicode=True), encoding="utf-8")
+    monkeypatch.setattr(build, "SIGNAL_SOURCES_FILE", sources_file)
     get_settings.cache_clear()
     from backend.market import store
 

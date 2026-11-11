@@ -120,7 +120,7 @@ def test_reconstruye_desde_la_cache_sin_usar_la_red(tmp_path, monkeypatch):
     # El mapeo de ejemplo, con productos que trae la caché de ejemplo (HU-003).
     crops = {"papa": {"product_id": "papa-negra"}, "haba": {"product_id": None, "reason": "Ejemplo: sin producto en SIPSA."}}
     monkeypatch.setattr(build, "load_crops", lambda: crops)
-    manifest = build.build(folder=tmp_path / "published", cache=cache, market_cache=market_cache)
+    manifest = build.build(folder=tmp_path / "published", cache=cache, market_cache=market_cache, power_cache=tmp_path / "sin-clima")
     assert manifest["tables"]["municipalities"]["rows"] == 3
     assert manifest["tables"]["municipality_boundaries"]["rows"] == 3
     assert manifest["tables"]["market_price_day"]["rows"] == 7

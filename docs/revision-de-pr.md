@@ -16,8 +16,9 @@ Antes de aceptar, se baja la rama, se corre y se hace el recorrido de punta a pu
 
 - [ ] Una sola funcionalidad, o máximo tres muy relacionadas, y cada una con su HU.
 - [ ] El PR va a `desarrollo` (nunca a `produccion`) y está al día con `desarrollo`, sin conflictos.
-- [ ] La rama se llama `feature/…`, `fix/…` o `docs/…`.
-- [ ] Los commits son `tipo: descripción en español (HU-xxx)`, con `tipo` entre `feat`, `fix`, `docs`, `perf`, `test` y `chore`.
+- [ ] La rama dice su HU: `tipo/hu-xxx-descripcion-corta`, con `tipo` entre `feature`, `fix`, `docs`, `perf`, `test` y `chore` (por ejemplo `fix/hu-076-hoy-en-la-region`). Si el cambio toca varias HU, va la principal. Si de verdad no corresponde a ninguna, `tipo/sin-hu-…`, y se dice por qué en el PR.
+- [ ] Cada commit empieza con su HU: `tipo(HU-xxx): descripción en español`, con `tipo` entre `feat`, `fix`, `docs`, `perf`, `test` y `chore` (por ejemplo `fix(HU-076): «hoy» es el día en la región`). Con varias HU, `tipo(HU-207, HU-208): …`; sin HU, `tipo(sin HU): …`.
+- [ ] El CI lo revisa solo (`scripts/check_names.py`, en el check `hu`): un PR con la rama o un commit sin su HU no se puede mergear. Los commits de antes del 12 de noviembre de 2026 pueden seguir con el formato anterior, `tipo: descripción (HU-xxx)`.
 - [ ] Sin firma de Claude ni de otra herramienta (`Co-Authored-By`, «Generated with …») en los commits ni en la descripción.
 - [ ] La descripción sigue la plantilla y dice lo que de verdad hace el PR: nada que no esté en el diff ni al revés.
 
