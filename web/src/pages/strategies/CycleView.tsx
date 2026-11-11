@@ -5,11 +5,11 @@ import { Card } from "@/components/ui/Card";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ExampleLabel } from "@/components/ui/Labels";
 import { harvestNote, useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { useTrends } from "@/features/diagnosis/trends";
 import { formatDate, todayIso, type SowPlan } from "@/features/farm/seasons";
 import {
   cycleParams,
   strategyKey,
-  useTrends,
   useWaterPlan,
   waterRequest,
   weeksBetween,
@@ -21,6 +21,7 @@ import type { Version } from "@/features/version";
 import { DiagnosisLights } from "@/pages/diagnosis/Lights";
 import { SignalList } from "@/pages/diagnosis/SignalList";
 import { SuitabilityScore } from "@/pages/diagnosis/Suitability";
+import { WaterChart } from "@/pages/diagnosis/WaterChart";
 import { CycleWater } from "./CycleWater";
 import { GreenChart } from "./GreenChart";
 
@@ -360,6 +361,16 @@ function CycleDetails({
             supplySemester={diagnosis.window?.supply_semester}
             soil={soil.data}
             version={version}
+            waterChart={
+              <WaterChart
+                series={trends.data?.water}
+                status={trends.status}
+                cropName={cropName}
+                from={cycle.sowing_date}
+                to={cycle.harvest_estimate}
+                version={version}
+              />
+            }
           />
         </section>
       )}
@@ -376,7 +387,7 @@ function CycleDetails({
         <Card bodyClassName="gap-3">
           {trends.isPending ? (
             <p role="status">Cargando el verdor…</p>
-          ) : !ndvi || ndvi.status !== "available" || ndvi.points.every((p) => p.ndvi_normal === null) ? (
+          ) : !ndvi || ndvi.status !== "available" || ndvi.points.every((p) => typeof p.ndvi_normal !== "number") ? (
             <p className="text-texto-secundario">
               <span aria-hidden="true">? </span>Sin datos suficientes del verdor de su zona.
             </p>

@@ -7,7 +7,6 @@ export type WaterPlanRequest = Schemas["WaterPlanRequest"];
 export type WaterPlanResponse = Schemas["WaterPlanResponse"];
 export type WaterMonth = Schemas["WaterMonth"];
 export type SoilMoisture = Schemas["SoilMoisture"];
-export type TrendsResponse = Schemas["TrendsResponse"];
 
 /**
  * El ciclo de una estrategia (HU-215): se abre en la misma dirección de la consulta con `estrategia` (su secuencia de
@@ -68,17 +67,6 @@ export function useWaterPlan(request: WaterPlanRequest | null) {
     queryKey: ["water-plans", request],
     queryFn: () => api<WaterPlanResponse>("/water-plans", { body: request }),
     enabled: request !== null,
-    retry: false,
-    staleTime: Infinity,
-  });
-}
-
-export function useTrends(municipalityId: string, cropId: string | null, sowingDate: string) {
-  const query = cropId ? new URLSearchParams({ municipality_id: municipalityId, crop_id: cropId, sowing_date: sowingDate }) : null;
-  return useQuery({
-    queryKey: ["trends", query?.toString()],
-    queryFn: () => api<TrendsResponse>(`/trends?${query}`),
-    enabled: query !== null,
     retry: false,
     staleTime: Infinity,
   });
