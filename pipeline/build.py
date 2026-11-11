@@ -36,11 +36,12 @@ import polars as pl
 import shapely
 import yaml
 
+from common import signal_sources
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
 from pipeline import climate_normals, schema
 from pipeline.settings import get_settings
-from pipeline.sources import dane, dane_mgn, nasa_power, nasadem, sipsa
+from pipeline.sources import dane, dane_mgn, nasa_power, nasadem, sipsa, sipsa_boletin
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
@@ -520,8 +521,34 @@ def build(
         own.append(sipsa.source(prices, downloaded_at))
         crop_products = load_crops()
     sources = pl.concat([pl.DataFrame([*own, *terrain_sources, *climate_sources]), catalog_sources], how="diagonal_relaxed")
+    check_signal_sources(region["region"]["id"], set(sources["source_id"].to_list()))
     crops = (catalog["version"], crops_table, stages_table)
     return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid, climate_month)
+
+
+SIGNAL_SOURCES_FILE = signal_sources.SIGNAL_SOURCES_FILE
+# Las fuentes que tienen adaptador en el pipeline: si una no se publica, es porque falta su caché, no un error.
+ADAPTERS = frozenset(module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem))
+
+
+def check_signal_sources(region_id: str, published: set[str]) -> None:
+    """`catalog/sources.yaml` contra lo que se va a publicar (HU-122, R8): una fuente que no está en `sources`, ni tiene
+    adaptador, ni está en `planned` hace fallar el pipeline. Una con adaptador que esta vez no se publica (falta su caché)
+    solo se dice en el log: su señal será `insufficient_data` (R1)."""
+    try:
+        config = signal_sources.load_signal_sources(SIGNAL_SOURCES_FILE)
+        missing = signal_sources.check_sources(config, region_id, published, set(ADAPTERS))
+    except signal_sources.SignalSourcesError as error:
+        raise ValidationError(str(error)) from error
+    for source in missing:
+        log.warning("signal_source_missing", source=source, detail=f"catalog/sources.yaml usa {source}, que no se publica esta vez")
+    planned = sorted(config.planned)
+    log.info(
+        "signal_sources_checked",
+        version=config.version,
+        planned=planned,
+        detail=f"catalog/sources.yaml {config.version}: fuentes por llegar {', '.join(planned) or 'ninguna'}",
+    )
 
 
 def main() -> None:
