@@ -29,17 +29,18 @@ def test_el_archivo_del_repositorio_tiene_las_seis_senales_de_la_region():
     assert tuple(config.for_region(REGION)) == P0_SIGNALS
 
 
-def test_la_lluvia_es_de_power_por_ahora_con_su_aviso_e_imerg_por_llegar():
-    """Decisión de Felipe del 11 de noviembre de 2026: POWER calcula el agua mientras no exista IMERG (HU-207)."""
+def test_la_lluvia_es_de_power_por_ahora_con_su_aviso_e_imerg_de_contraste():
+    """Decisión de Felipe del 11 de noviembre de 2026: POWER calcula el agua. IMERG ya se publica (HU-207) y se muestra
+    para contrastar; pasar la lluvia a IMERG queda por decidir con la comparación contra el IDEAM."""
     config = get_signal_sources()
     water = config.for_region(REGION)["water"]
     assert (water.used, water.et0) == ("nasa_power", "nasa_power")
-    assert water.contrast == ("imerg",) and config.planned["imerg"] == "HU-207"
+    assert water.contrast == ("imerg",) and not config.is_planned("imerg")
     assert "sobrestima" in water.caveat and "IDEAM" in water.caveat
 
 
 def test_cada_fuente_esta_publicada_o_por_llegar_en_el_dataset_del_repositorio():
-    """R8 contra lo publicado: hoy POWER y SIPSA están; IMERG, SoilGrids, EVA y SMAP esperan su HU."""
+    """R8 contra lo publicado: hoy POWER, IMERG y SIPSA están; SoilGrids, EVA y SMAP esperan su HU."""
     published = set(pl.read_parquet(Path("data/published/sources.parquet"))["source_id"].to_list())
     assert check_sources(get_signal_sources(), REGION, published, set(ADAPTERS)) == []
 
@@ -52,14 +53,15 @@ def test_una_fuente_que_nadie_conoce_es_un_error():
 
 
 def test_una_fuente_con_adaptador_que_no_se_publico_no_es_un_error_y_se_avisa():
-    """Sin la caché de POWER se publica lo demás: la señal será `insufficient_data` (R1), no un pipeline caído."""
+    """Sin la caché de POWER ni la de IMERG se publica lo demás: la señal será `insufficient_data` (R1), no un pipeline
+    caído."""
     missing = check_sources(get_signal_sources(), REGION, {"dane_divipola", "dane_sipsa"}, set(ADAPTERS))
-    assert missing == ["nasa_power"]
+    assert missing == ["imerg", "nasa_power"]
 
 
 def test_una_fuente_de_planned_que_ya_se_publica_tiene_que_salir_de_la_lista():
     with pytest.raises(SignalSourcesError, match="siguen en `planned`"):
-        check_sources(get_signal_sources(), REGION, {"nasa_power", "dane_sipsa", "imerg"}, set(ADAPTERS))
+        check_sources(get_signal_sources(), REGION, {"nasa_power", "dane_sipsa", "smap"}, set(ADAPTERS))
 
 
 def test_una_region_que_no_esta_en_el_archivo_es_un_error():
