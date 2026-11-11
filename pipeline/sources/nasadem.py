@@ -32,6 +32,7 @@ import shapely
 import tifffile
 
 from common.logging import get_logger
+from pipeline import schema
 from pipeline.settings import get_settings
 from pipeline.sources.fetch import DownloadError, fetch
 
@@ -269,11 +270,6 @@ def grid_cells(cells: pl.DataFrame) -> pl.DataFrame:
     ).sort("cell_id")
 
 
-def cell_id_of(lat: float, lon: float) -> str:
-    """La celda de la rejilla del contrato que contiene un punto: `"{fila}_{columna}"` («La rejilla de 250 m»)."""
-    return f"{math.floor((90 - lat) / CELL_DEG)}_{math.floor((lon + 180) / CELL_DEG)}"
-
-
 def municipality_terrain(cells: pl.DataFrame, municipalities: pl.DataFrame) -> pl.DataFrame:
     """La altitud y la pendiente de cada municipio (decidido por Felipe el 10 de noviembre de 2026):
 
@@ -287,7 +283,7 @@ def municipality_terrain(cells: pl.DataFrame, municipalities: pl.DataFrame) -> p
     points = municipalities.drop_nulls(["lat", "lon"])
     towns = points.select(
         "municipality_id",
-        pl.Series("cell_id", [cell_id_of(lat, lon) for lat, lon in points.select("lat", "lon").iter_rows()], dtype=pl.String),
+        pl.Series("cell_id", [schema.cell_id(lat, lon) for lat, lon in points.select("lat", "lon").iter_rows()], dtype=pl.String),
     ).join(cells.select("cell_id", "altitude_m"), on="cell_id", how="left")
     slopes = (
         cells.filter(pl.col("altitude_m").is_not_null())
