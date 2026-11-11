@@ -26,5 +26,9 @@ export default defineConfig(({ command }) => ({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
+    // Muchas pruebas recorren páginas que se cargan aparte (la primera de cada archivo, en frío): solas tardan de 2 a 3 s
+    // y con todos los archivos en paralelo pasaban del límite de 5 s de Vitest y fallaban sin que nada estuviera mal.
+    // 15 s deja margen para una máquina ocupada; una prueba que de verdad se cuelga sigue fallando.
+    testTimeout: 15_000,
   },
 }));

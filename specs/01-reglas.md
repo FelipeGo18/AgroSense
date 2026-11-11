@@ -92,7 +92,7 @@ Qué mide cada curva:
 | Señal | Variable | Límites |
 |---|---|---|
 | `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia en la ventana, con la retención del suelo | `thresholds.yaml` |
-| `frost` | Porcentaje de años con helada en los meses sensibles (semanas en P1) | `thresholds.yaml` |
+| `frost` | Porcentaje de años con al menos una helada (mínima ≤ 2 °C) en cualquiera de los meses sensibles de la ventana (semanas en P1) | `thresholds.yaml` |
 | `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_*`, `heat_max_c`) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
 | `supply` | Variación del área sembrada | `thresholds.yaml` |

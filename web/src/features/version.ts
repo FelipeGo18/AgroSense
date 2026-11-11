@@ -9,5 +9,13 @@ export type Version = components["schemas"]["Version"];
  * «criterio de AgroSense» que se muestra junto a las prioridades de quien consulta. Cambia muy poco: se pide una vez.
  */
 export function useVersion() {
-  return useQuery({ queryKey: ["version"], queryFn: () => api<Version>("/version"), staleTime: Infinity, retry: false });
+  // Si falla, no se vuelve a pedir sola cada vez que un componente se monta: con la API caída serían decenas de
+  // peticiones. Se reintenta a mano («Volver a intentar» de Mi cuenta llama a `refetch`).
+  return useQuery({
+    queryKey: ["version"],
+    queryFn: () => api<Version>("/version"),
+    staleTime: Infinity,
+    retry: false,
+    retryOnMount: false,
+  });
 }
