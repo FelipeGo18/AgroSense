@@ -58,8 +58,10 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
   La altitud es su promedio y la pendiente, la mediana de la de sus píxeles, calculada a 30 m con diferencias centrales.
 - Cada celda va con el municipio que contiene su centro (`grid_cells`, 593 648 celdas). Sin el suelo (HU-181) son todas
   `partial`.
-- La altitud y la pendiente de un municipio son la mediana de sus celdas, como las de un lote (supuesto por confirmar:
-  ver HU-206). Sin la caché de NASADEM se publica lo demás, sin la rejilla ni el clima diario, y el log lo dice.
+- La altitud de un municipio es la de la celda de su cabecera (el punto de DIVIPOLA), y su pendiente, la mediana de
+  sus celdas (decidido por Felipe el 10 de noviembre de 2026, HU-206).
+- `municipalities.tmean_annual_c` es la temperatura media de 1991–2020, corregida por altitud: el periodo normal está
+  en `region.yaml` (`climate_normal`) y la calcula `pipeline/climate_normals.py` (HU-044). Sin la caché de NASADEM se publica lo demás, sin la rejilla ni el clima diario, y el log lo dice.
 
 ## Clima diario de NASA POWER (HU-041)
 
@@ -82,10 +84,12 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
 - **`climate_month` (HU-042):** la lluvia de cada mes completo, sin corregir por altitud, y su normal de 1991 a 2020
   (con 24 de los 30 años completos). Un mes es `partial` si le faltan días o no tiene normal; sin el 90 % de sus días
   no tiene total. Comparada con el IDEAM, en el altiplano POWER da de 1,7 a 2,7 veces la lluvia (`docs/riesgos.md`).
-- **La ET0 (HU-143):** Penman-Monteith de FAO-56, día por día (`pipeline/et0.py`), con la temperatura corregida por
-  altitud, la humedad relativa, el viento y la radiación de POWER. Un mes tiene ET0 solo si todos sus días la tienen
-  (no la tienen 1981–1983, sin radiación). El año seco (`precip_dry_mm`) es el percentil 20 de la lluvia del mes en
-  1991–2020.
+- **La ET0 (HU-143):** Penman-Monteith de FAO-56, día por día (`pipeline/et0.py`), con la mínima y la máxima de
+  `climate_day` (ya corregidas por altitud) y la humedad relativa, el viento y la radiación de POWER. Un mes tiene ET0
+  solo si todos sus días la tienen (no la tienen 1981–1983, sin radiación). El año seco (`precip_dry_mm`) es el
+  percentil 20 de la lluvia del mes en 1991–2020.
+- El periodo normal, sus 24 años mínimos, el 90 % de los días y el percentil del año seco están en `region.yaml`
+  (`climate_normal`): los mismos para la lluvia, la ET0 y la temperatura media anual.
 
 ## Datos de ejemplo (HU-011)
 
