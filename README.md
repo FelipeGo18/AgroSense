@@ -143,6 +143,8 @@ que es el entorno que comparte todo el equipo.
 
 Si su terminal no reconoce `uv`, use `python -m uv` en su lugar.
 
+En el caso en el que la terminal activa no reconozca el servicio de PostgreSQL aunque esté levantada la base de datos local, es conveniente reiniciar la sesión de esa terminal. La salida al preparar la base de datos (paso 4) debe ser que está al día.
+
 ## Estructura
 
 ```

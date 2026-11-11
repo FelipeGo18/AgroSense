@@ -14,7 +14,7 @@
 | [EP-01](epicas/EP-01-contratos.md) | HU-012 | OpenAPI con ejemplos de cada estado | P0 | M | hecha | Modelos y ejemplos de los endpoints de cálculo; responden 501 hasta su HU del motor (8 nov) |
 | [EP-01](epicas/EP-01-contratos.md) | HU-013 | Respuestas simuladas (MSW) | P0 | S | hecha | `VITE_SIMULATION=true` y `?estado=`; generadas del OpenAPI con `npm run api:examples` (9 nov) |
 | [EP-01](epicas/EP-01-contratos.md) | HU-014 | Modo simulación para desarrolladores | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-021 | Clonar y ejecutar con pocos comandos | P0 | S | pendiente | |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-021 | Clonar y ejecutar con pocos comandos | P0 | S | hecha | Probado con y sin Docker en dos máquinas (`docs/reporte-prueba-hu-021.md`) | 
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-022 | Lint y pruebas automáticas en cada cambio | P0 | S | pendiente | |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | en curso | Hecho para la API, las migraciones y el pipeline (8 nov); falta lo de los endpoints de cálculo, que aún no existen |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | Esqueleto desplegado en URL pública | P0 | M | pendiente | |
