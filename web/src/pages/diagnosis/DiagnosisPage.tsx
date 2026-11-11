@@ -37,9 +37,11 @@ import { asksOtherWindow } from "@/features/diagnosis/windows";
 import { byId, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
 import { useVersion } from "@/features/version";
 import { useSignalPriorities } from "@/features/diagnosis/priorities";
+import { useTrends } from "@/features/diagnosis/trends";
 import { DiagnosisLights } from "./Lights";
 import { PrioritiesPanel } from "./PrioritiesPanel";
 import { SignalList } from "./SignalList";
+import { WaterChart } from "./WaterChart";
 import { BestWindows, NotSuitable, SuitabilityScore } from "./Suitability";
 import { formatDate, useCrops } from "@/features/farm/seasons";
 import { irrigationText, placeName } from "@/pages/farm/common";
@@ -385,7 +387,11 @@ function Summary({ data }: { data: DiagnosisResponse }) {
  */
 function Details({ data }: { data: DiagnosisResponse }) {
   const version = useVersion();
+  const crops = useCrops();
   const soil = useMunicipalitySoil(data.signals?.soil ? data.request.municipality_id : null);
+  // La lluvia de la ventana año por año, para la gráfica de la señal de agua (HU-093).
+  const trends = useTrends(data.signals?.water ? data.request.municipality_id : null, data.request.crop_id, data.request.sowing_date);
+  const cropName = crops.data?.find((c) => c.crop_id === data.request.crop_id)?.name_es ?? data.request.crop_id;
   const hasSignals = orderedSignals(data.signals).length > 0;
   return (
     <div className="mt-10 flex min-w-0 flex-col gap-8">
@@ -406,6 +412,16 @@ function Details({ data }: { data: DiagnosisResponse }) {
             supplySemester={data.window?.supply_semester}
             soil={soil.data}
             version={version.data}
+            waterChart={
+              <WaterChart
+                series={trends.data?.water}
+                status={trends.status}
+                cropName={cropName}
+                from={data.window?.sowing_start}
+                to={data.window?.harvest_estimate}
+                version={version.data}
+              />
+            }
           />
         </section>
       )}

@@ -17,7 +17,11 @@ import type { Version } from "@/features/version";
 
 type Year = "normal" | "dry";
 const MONTH = new Intl.DateTimeFormat("es-CO", { month: "short", year: "numeric", timeZone: "UTC" });
-const monthLabel = (year: number, month: number) => MONTH.format(new Date(Date.UTC(year, month - 1, 1)));
+/** «Oct. de 2027» con mayúscula solo al comienzo: `capitalize` de CSS pondría «Oct De 2027». */
+const monthLabel = (year: number, month: number) => {
+  const text = MONTH.format(new Date(Date.UTC(year, month - 1, 1)));
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
 const SHORT_MONTH = new Intl.DateTimeFormat("es-CO", { month: "short", timeZone: "UTC" });
 const NUMBER = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
 
@@ -152,7 +156,7 @@ function MonthBox({ month, year, irrigated }: { month: WaterMonth; year: Year; i
             : "border-oscuro-cielo bg-[#E6F0F5]"
       }`}
     >
-      <p className="font-bold capitalize">{label}</p>
+      <p className="font-bold">{label}</p>
       {missing ? (
         <p className="text-texto-secundario">
           <span aria-hidden="true">? </span>Sin datos suficientes

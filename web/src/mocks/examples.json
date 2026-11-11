@@ -4111,8 +4111,52 @@
             "points": [
               {
                 "year": 2015,
-                "precip_mm": 410,
-                "need_mm": 465
+                "precip_mm": 470,
+                "need_mm": 430
+              },
+              {
+                "year": 2016,
+                "precip_mm": 505,
+                "need_mm": 432
+              },
+              {
+                "year": 2017,
+                "need_mm": 428
+              },
+              {
+                "year": 2018,
+                "precip_mm": 360,
+                "need_mm": 435
+              },
+              {
+                "year": 2019,
+                "precip_mm": 385,
+                "need_mm": 431
+              },
+              {
+                "year": 2020,
+                "precip_mm": 540,
+                "need_mm": 429
+              },
+              {
+                "year": 2021,
+                "precip_mm": 495,
+                "need_mm": 433
+              },
+              {
+                "year": 2022,
+                "precip_mm": 350,
+                "need_mm": 436
+              },
+              {
+                "year": 2023,
+                "precip_mm": 455,
+                "need_mm": 430
+              },
+              {
+                "year": 2024,
+                "precip_mm": 448,
+                "need_mm": 434
               }
             ]
           },

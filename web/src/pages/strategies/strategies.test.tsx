@@ -791,16 +791,16 @@ describe("Ciclo de una estrategia (HU-215)", () => {
       }),
     );
     expect(await screen.findByText("Estimación con el clima de la zona. Verifique la humedad del suelo en su lote")).toBeInTheDocument();
-    const may = within(screen.getByRole("listitem", { name: /^may/ }));
+    const may = within(screen.getByRole("listitem", { name: /^may/i }));
     expect(may.getByText("8 a 20 mm")).toBeInTheDocument();
     expect(may.getByText("160 a 400 m³")).toBeInTheDocument();
     expect(may.getByText("el cultivo pasaría sed")).toBeInTheDocument();
-    expect(within(screen.getByRole("listitem", { name: /^abr/ })).getByText("La lluvia alcanza")).toBeInTheDocument();
-    expect(within(screen.getByRole("listitem", { name: /^jun/ })).getByText("Sin datos suficientes")).toBeInTheDocument();
+    expect(within(screen.getByRole("listitem", { name: /^abr/i })).getByText("La lluvia alcanza")).toBeInTheDocument();
+    expect(within(screen.getByRole("listitem", { name: /^jun/i })).getByText("Sin datos suficientes")).toBeInTheDocument();
     expect(screen.getByText(/En el ciclo faltarían 160 a 400 m³/)).toBeInTheDocument();
 
     await user.click(group("¿Qué año ver?").getByRole("radio", { name: "Año seco" }));
-    expect(within(screen.getByRole("listitem", { name: /^abr/ })).getByText("5 a 9 mm")).toBeInTheDocument();
+    expect(within(screen.getByRole("listitem", { name: /^abr/i })).getByText("5 a 9 mm")).toBeInTheDocument();
     expect(screen.getByText(/En el ciclo faltarían 700 a 1.060 m³ en un año seco/)).toBeInTheDocument();
 
     // La humedad del suelo de la zona, por fuente y en su unidad, para contrastar.
@@ -815,7 +815,7 @@ describe("Ciclo de una estrategia (HU-215)", () => {
     fakeApi();
     sessionStorage.setItem("agrosense.area", "2");
     open(CYCLE.replace("riego=no", "riego=si"));
-    const may = await screen.findByRole("listitem", { name: /^may/ });
+    const may = await screen.findByRole("listitem", { name: /^may/i });
     expect(within(may).getByText("riego que haría falta")).toBeInTheDocument();
   });
 
