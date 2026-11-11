@@ -51,6 +51,8 @@ COPY data/published ./data/published
 COPY data/examples ./data/examples
 # El contrato: las pruebas comparan el esquema en código con él (HU-011).
 COPY specs/02-contratos.md ./specs/02-contratos.md
+# El revisor de los nombres de ramas y commits (HU-022): las pruebas lo cargan.
+COPY scripts ./scripts
 COPY tests ./tests
 
 # Sin privilegios dentro del contenedor.

@@ -5,12 +5,13 @@ escribe nada. Sin dataset, o sin etapas del cultivo (el descanso), la etapa va n
 siguen (R1). Una temporada cosechada no tiene etapa de hoy.
 """
 
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Any
 
 from backend.accounts.farm_models import Season
 from backend.dataset import Dataset, DatasetUnavailable, get_dataset
 from backend.engine.stages import stage_today
+from common.region import region_today
 
 EMPTY = {
     "stage": None,
@@ -24,7 +25,8 @@ EMPTY = {
 
 
 def today() -> date:
-    return datetime.now(UTC).date()
+    """El día de hoy en la región, no el del servidor (`common/region.py`)."""
+    return region_today()
 
 
 def dataset_or_none() -> Dataset | None:

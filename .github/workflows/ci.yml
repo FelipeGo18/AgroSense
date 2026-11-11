@@ -1,0 +1,35 @@
+# HU-022: lint, pruebas y build en cada cambio.
+# Corre el comando local: Ruff, Ruff format, pytest, typecheck, lint, format, Vitest y build web.
+# No usa secretos ni toca la base de la nube: las pruebas usan la PostgreSQL de Compose.
+
+name: CI
+
+on:
+  push:
+    branches: [desarrollo, produccion]
+  # Sin filtro de ramas ni de rutas: si el check se exige en la rama, tiene que correr en todo PR.
+  pull_request:
+# Si llegan varios commits seguidos a la misma rama, solo se prueba el último.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs: 
+  test:
+    runs-on: ubuntu-latest
+    #La primera corrida es lenta (no hay caché de Docker); si pasa de 20 minutos, algo se colgó.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Toda la historia: el paso de los nombres compara los commits del PR con la rama de destino.
+          fetch-depth: 0
+      # La rama y cada commit del PR dicen su HU (docs/revision-de-pr.md, sección 1). Va en este mismo check `test`, que
+      # es obligatorio para mergear: un PR sin su HU no entra.
+      - name: Rama y commits con su HU
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/check_names.py "$GITHUB_HEAD_REF" "$GITHUB_BASE_REF"
+      - name: Lint, pruebas y build (Docker Compose)
+        run: |
+          cp .env.example .env
+          docker compose run --rm test

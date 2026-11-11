@@ -34,6 +34,7 @@ from backend.api.errors import ApiError, explain
 from backend.api.lots import _own_lot
 from backend.dataset import Dataset
 from backend.db.session import get_db
+from common.region import region_today
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
 
@@ -50,8 +51,9 @@ def _months_ahead(day: date, months: int) -> date:
 
 
 def _check_sowing_date(sowing_date: date) -> None:
-    """De este mes a doce meses: el mes en curso se acepta aunque su día 1 ya haya pasado (contrato, «Fechas»)."""
-    today = date.today()
+    """De este mes a doce meses: el mes en curso se acepta aunque su día 1 ya haya pasado (contrato, «Fechas»). «Hoy» es
+    el día en la región, no el del servidor ni el de quien consulta (`common/region.py`)."""
+    today = region_today()
     if not date(today.year, today.month, 1) <= sowing_date < _months_ahead(today, 13):
         raise ApiError(
             422,
