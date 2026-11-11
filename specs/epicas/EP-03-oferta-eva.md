@@ -19,7 +19,7 @@ estado: pendiente
 
 **Varias fuentes, ninguna única verdad (decisión 11).** Un indicador puede venir de varias fuentes: la estadística oficial del país, FAOSTAT, reportes descargados de portales públicos y las siembras registradas en AgroSense. `sources.yaml` dice cuál calcula la señal en cada región; las demás se muestran al lado para contrastar.
 
-**Supuesto de la región piloto:** EVA, el código DIVIPOLA y los semestres A y B son de Colombia. El reto aún no confirma la región (HU-002). Lo propio de Colombia vive en el adaptador de EVA; el modelo no lo supone fuera de él (R7).
+**Región piloto:** EVA, el código DIVIPOLA y los semestres A y B son de Colombia. La región está confirmada desde el 28 de octubre de 2026: Boyacá y Cundinamarca (HU-002). Lo propio de Colombia vive en el adaptador de EVA; el modelo no lo supone fuera de él (R7).
 
 ## Historias de usuario
 

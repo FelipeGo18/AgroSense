@@ -44,12 +44,14 @@ export function byId(municipalities: Municipality[] | undefined) {
   return new Map((municipalities ?? []).map((m) => [m.municipality_id, m]));
 }
 
-export function useLots() {
-  return useQuery({ queryKey: LOTS, queryFn: () => api<LotListItem[]>("/lots"), retry: false });
+/** Los lotes de quien tiene la sesión. Con `enabled` en falso (sin sesión) no se piden: la API respondería 401. */
+export function useLots(enabled = true) {
+  return useQuery({ queryKey: LOTS, queryFn: () => api<LotListItem[]>("/lots"), retry: false, enabled });
 }
 
 export function useLot(lotId: string) {
-  return useQuery({ queryKey: lotKey(lotId), queryFn: () => api<LotDetail>(`/lots/${lotId}`), retry: false });
+  // Sin lote elegido no se pide nada (la entrada a las estrategias lo usa solo con `?lote=`).
+  return useQuery({ queryKey: lotKey(lotId), queryFn: () => api<LotDetail>(`/lots/${lotId}`), retry: false, enabled: Boolean(lotId) });
 }
 
 export function useCreateLot() {

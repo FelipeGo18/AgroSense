@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Outlet, ScrollRestoration, createBrowserRouter, useLocation, type RouteObject } from "react-router";
+import { SimulationStrip } from "@/components/layout/SimulationStrip";
+import { SIMULATION } from "./config";
 import { PATHS } from "./paths";
 
 function Root() {
@@ -17,6 +19,7 @@ function Root() {
         <Outlet />
       </div>
       <ScrollRestoration />
+      {SIMULATION && <SimulationStrip />}
     </QueryClientProvider>
   );
 }
@@ -30,10 +33,7 @@ function Loading() {
 }
 
 /** Pantallas ya diseñadas en Figma que todavía no están programadas: cada enlace lleva a un lugar que lo dice. */
-const PENDING: { path: string; title: string }[] = [
-  { path: PATHS.consult, title: "Consultar" },
-  { path: PATHS.howItWorks, title: "¿Cómo funciona?" },
-];
+const PENDING: { path: string; title: string }[] = [{ path: PATHS.howItWorks, title: "¿Cómo funciona?" }];
 
 const pending = ({ path, title }: (typeof PENDING)[number]): RouteObject => ({
   path,
@@ -60,9 +60,19 @@ export const routes: RouteObject[] = [
       { path: PATHS.lot(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/LotPage")).LotPage }) },
       { path: PATHS.editLot(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/EditLotPage")).EditLotPage }) },
       { path: PATHS.sow(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/SeasonFormPage")).SowPage }) },
-      { path: PATHS.editSeason(":lotId", ":seasonId"), lazy: async () => ({ Component: (await import("@/pages/farm/SeasonFormPage")).EditSeasonPage }) },
-      { path: PATHS.harvest(":lotId", ":seasonId"), lazy: async () => ({ Component: (await import("@/pages/farm/HarvestPage")).HarvestPage }) },
+      {
+        path: PATHS.editSeason(":lotId", ":seasonId"),
+        lazy: async () => ({ Component: (await import("@/pages/farm/SeasonFormPage")).EditSeasonPage }),
+      },
+      {
+        path: PATHS.harvest(":lotId", ":seasonId"),
+        lazy: async () => ({ Component: (await import("@/pages/farm/HarvestPage")).HarvestPage }),
+      },
       { path: PATHS.dataPolicy, lazy: async () => ({ Component: (await import("@/pages/policy/PolicyPage")).PolicyPage }) },
+      { path: PATHS.prices, lazy: async () => ({ Component: (await import("@/pages/prices/PricesPage")).PricesPage }) },
+      // «Consultar» es la entrada a las estrategias de rotación (HU-214, decisión 12).
+      { path: PATHS.consult, lazy: async () => ({ Component: (await import("@/pages/strategies/StrategiesPage")).StrategiesPage }) },
+      { path: PATHS.diagnosis, lazy: async () => ({ Component: (await import("@/pages/diagnosis/DiagnosisPage")).DiagnosisPage }) },
       ...PENDING.map(pending),
       // Pruebas de la fase 0. Cada recorrido se carga aparte: trae sus propias escenas.
       { path: PATHS.lab, lazy: async () => ({ Component: (await import("@/pages/lab/LabIndexPage")).LabIndexPage }) },

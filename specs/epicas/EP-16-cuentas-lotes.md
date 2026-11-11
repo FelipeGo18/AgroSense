@@ -15,7 +15,7 @@ estado: pendiente
 
 **Resultado esperado:** Un agricultor crea su cuenta, registra uno o varios lotes en una o varias zonas, los divide y junta por partes como trabaja, y al volver encuentra sus lotes con su historial (incluido lo que borró hace menos de 30 días, para restaurarlo) y su progreso. Sin cuenta, puede consultar: los datos se envían solo para calcular y no se guardan (R9).
 
-Decisión 6 de `docs/decisiones.md` y regla R9. Cuentas en PostgreSQL propio con autenticación propia, sin servicios externos. Capacidad y orden de recorte en `docs/plan-48h.md`.
+Decisión 6 de `docs/decisiones.md` y regla R9. Cuentas en PostgreSQL (en la nube para el equipo y la demo, desde el 10 de noviembre de 2026; en Docker Compose para las pruebas) con autenticación propia. Capacidad y orden de recorte en `docs/plan-48h.md`.
 
 El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cuentas se hace en el evento.
 
@@ -26,7 +26,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-160 · Editar mi perfil y cambiar la contraseña
 
 - **Historia:** Como agricultor, quiero cambiar mi nombre, mi usuario y mi contraseña, para mantener mi cuenta a mi gusto y segura.
-- **Prioridad:** P1 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] `PATCH /api/v1/me` y `POST /api/v1/me/password` del contrato
   - [x] `PATCH /api/v1/me` acepta `priorities`: un entero de 0 a 5 por señal; nulo vuelve a los pesos de AgroSense; fuera de rango o todas en 0, 422
@@ -55,7 +55,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [x] El `request_id` de cada evento coincide con el de la terminal (HU-177)
   - [x] (Web, 12 de octubre de 2026) «Mi actividad» en `/mi-cuenta/actividad`: cada evento en palabras, con quién lo hizo (usted o soporte), cuándo y su resultado con forma y texto; solo los nombres de los campos que cambiaron; de a 50 con «Ver más antiguos». «¿Ve algo que no hizo?» lleva a cambiar la contraseña mientras no exista «Reportar un problema» (HU-170)
 - **Reglas que aplican:** R9
-- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP la tabla `activity_log` no existe; los logs de la terminal (HU-177) siguen. Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento lo menciona desde la versión 2 (vigente: 3, HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria. **Estado al 13 de octubre de 2026:** hechos la tabla (migración 1.3), los eventos de los endpoints de cuenta, `GET /me/activity` y la pantalla. Faltan: la prueba de que los endpoints de cálculo no escriben (todavía no existen), los permisos de solo agregar y la limpieza de 180 días con otro rol, y anonimizar las acciones de administradores (no hay administradores hasta HU-170; borrar la cuenta ya borra los eventos del agricultor). Revisión de seguridad hecha el 14 de octubre (ver HU-162): un bloqueo deja un solo evento por ventana, la limpieza de 180 días corre también al arrancar (todavía con el usuario de la API) y «Mi actividad» ya no pierde eventos con la misma hora.
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP la tabla `activity_log` no existe; los logs de la terminal (HU-177) siguen. Reemplaza a `admin_actions`: las acciones del administrador son eventos de la misma tabla, y su bitácora (`GET /admin/activity`) llega con HU-170 (P1). El consentimiento lo menciona desde la versión 2 (vigente: 3, HU-163). Definido el 10 de octubre de 2026. Revisión de seguridad obligatoria. **Estado al 13 de octubre de 2026:** hechos la tabla (migración 1.3), los eventos de los endpoints de cuenta, `GET /me/activity` y la pantalla. Faltan: la prueba de que los endpoints de cálculo no escriben (todavía no existen), los permisos de solo agregar y la limpieza de 180 días con otro rol, y anonimizar las acciones de administradores (no hay administradores hasta HU-170; borrar la cuenta ya borra los eventos del agricultor). Revisión de seguridad hecha el 14 de octubre (ver HU-162): un bloqueo deja un solo evento por ventana, la limpieza de 180 días corre también al arrancar (todavía con el usuario de la API) y «Mi actividad» ya no pierde eventos con la misma hora. **9 de noviembre de 2026 (aprobado por Felipe):** la limpieza ya no corre al iniciar sesión; la hace el mantenimiento de las cuentas (`backend/accounts/maintenance.py`), que borra también las sesiones vencidas, al arrancar y con `python -m backend.accounts.maintenance` para programarlo. Ningún endpoint limpia.
 
 ### HU-170 · Roles: agricultor, administrador y desarrollador
 
@@ -80,14 +80,14 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-161 · Esquema de cuentas y migraciones
 
 - **Historia:** Como desarrollador, quiero las tablas `users`, `sessions`, `lots` y `seasons` con migraciones, para guardar cuentas de forma reproducible.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Tablas y columnas del contrato, con migraciones de Alembic: `users`, `sessions`, `login_attempts`, `lots`, `seasons`, `support_tickets`, `activity_log` y `usage_daily`. Las migraciones son de toda la base de datos (`backend/db/migrations/`) y se numeran `1.1`, `1.2` … `1.9` y después `2.1`, con el primer número como carpeta (`1/1.1_…`); el número lo pone `python -m backend.db.revision`
   - [x] PostgreSQL en Docker Compose con volumen persistente
   - [x] Antes de aplicar o deshacer una migración se hace una copia de seguridad de la base de datos (`python -m backend.db.migrate`); si la copia falla, no se migra, y `alembic upgrade` directo se niega a correr
   - [x] La base de datos solo cambia con migraciones que quedan en el repositorio; las pruebas fallan si los modelos cambian sin migración, si quedan dos migraciones finales o si una no se puede deshacer (`backend/README.md`)
   - [x] Borrar un usuario borra en cascada sus sesiones, lotes y temporadas y, cuando existan (P1), sus tickets y sus eventos de `activity_log`
-  - [ ] `municipality_id` y `crop_id` se validan contra el catálogo publicado (`municipality_id` hecho el 15 de octubre de 2026 en la API de lotes; `crop_id` espera al catálogo de cultivos)
+  - [x] `municipality_id` y `crop_id` se validan contra el catálogo publicado (`municipality_id` hecho el 15 de octubre de 2026 en la API de lotes; `crop_id` en la API de siembras con el catálogo de cultivos, HU-165: `backend/api/seasons.py`, `_check_crop`, con su prueba en `tests/accounts/test_siembras.py`)
 - **Reglas que aplican:** R7, R9
 - **Contrato que toca:** base de datos de cuentas de `specs/02-contratos.md`
 - **Notas:** `activity_log` (HU-178) y `support_tickets` (HU-170) son P1: en el MVP no se crean.
@@ -95,7 +95,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-162 · Autenticación
 
 - **Historia:** Como agricultor, quiero crear una cuenta e iniciar sesión de forma sencilla, para volver a mis lotes desde cualquier dispositivo.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] `POST /auth/register`, `/auth/login` y `/auth/logout` del contrato, con usuario y contraseña; `GET /me` y `DELETE /me`
   - [x] Contraseña guardada solo como hash Argon2; sesión en cookie `httpOnly`, `Secure` y `SameSite=Lax`, con el hash del token en `sessions`
@@ -115,7 +115,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-163 · Consentimiento y tratamiento de datos
 
 - **Historia:** Como agricultor, quiero saber qué se guarda de mí y aceptarlo, para confiar en la app.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [x] Texto corto en español claro de qué se guarda y para qué, enlazado a la política de tratamiento de datos (Ley 1581 de 2012). Hecho el 13 de octubre de 2026: el consentimiento de «Crear cuenta» enlaza a la página de la política, que ya existe; su revisión legal es el criterio de abajo
   - [x] Sin aceptar, no se crea la cuenta: la web no envía nada y la API responde 422
@@ -135,7 +135,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Criterios de aceptación:**
   - [x] Endpoints de `lots` del contrato del P0, con `geometry` (polígono GeoJSON). Borrar marca `deleted_at` y el lote deja de verse; restaurarlo es HU-204 (P1)
   - [x] El lote guarda `irrigated` (si tiene riego): el formulario pregunta «¿Este lote tiene riego?» con «Sí», «No» y «Todavía no sé»; sin respuesta queda nulo y se puede cambiar después con `PATCH`
-  - [ ] Con `lot_id`, el diagnóstico y las estrategias toman `irrigated` del lote; con `irrigated` nulo, se evalúa como sin riego y la limitación lo dice
+  - [ ] Con `lot_id`, el diagnóstico y las estrategias toman `irrigated` del lote; con `irrigated` nulo, se evalúa como sin riego y la limitación lo dice. En la web ya lo hacen (HU-091 y HU-214, que envían el riego del lote); falta el motor, que hoy responde 501
   - [x] En la web, un mapa base de OpenStreetMap centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola. La capa satelital de la NASA es HU-211
   - [x] El polígono debe ser válido y caer dentro de su municipio (422 si no), y se ve el límite municipal mientras se dibuja
   - [x] Si no puede o no quiere dibujar, escribe el área a mano y el lote queda sin ubicación; puede dibujarlo después («Dibujar en el mapa», entrega 2)
@@ -143,7 +143,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [x] «Editar lote», desde la cabecera del lote, cambia el nombre, el contorno (moviendo los puntos en el mapa) y el riego; dice que al cambiar el riego se recalculan el diagnóstico, las estrategias y el agua del lote, y que las siembras ya registradas guardan el diagnóstico que vieron
   - [x] Editar el lote a un área menor que la de sus temporadas en curso responde 422
   - [ ] «Borrar este lote» pide confirmación. P1 (HU-204): dice hasta qué fecha se puede restaurar y, en Mi finca, los lotes borrados hace menos de 30 días se ven aparte («Borrados hace poco») con «Restaurar»
-  - [ ] Desde el lote, «Ver estrategias de rotación» abre HU-214 con el lote
+  - [x] Desde el lote, «Ver estrategias de rotación» abre HU-214 con el lote (11 nov: `/consultar?lote=`)
 - **Reglas que aplican:** R7, R9
 - **Notas:** Restaurar lo borrado pasó a P1 el 11 de octubre de 2026 (HU-204): recorte del MVP. Un `PATCH` que deja el lote más chico que el área de sus temporadas en curso responde 422 y la pantalla lo avisa (aprobado por Felipe el 11 de octubre de 2026). Con el polígono, la ficha del lote muestra su suelo estimado (HU-182). La ubicación del lote es un dato personal: entra en el texto de consentimiento (HU-163). El clima de NASA POWER sigue siendo el de la celda de unos 50 km que contiene al lote, no del lote; el polígono abre la puerta a datos por lote en P1 (HU-043). Mapa y librería en `specs/05-frontend.md`. Ampliado el 10 de octubre de 2026. `irrigated` se agregó el 11 de octubre de 2026: con riego, la falta de lluvia no es un riesgo en la señal `water` (HU-071). Es un dato mínimo que se usa (R9); el consentimiento versión 3 lo nombra (HU-163). **Entrega 1 (15 de octubre de 2026):** API de lotes (`backend/api/lots.py`: listar, crear, ver, editar y borrar; ajeno o borrado da 404; `lot.created`, `lot.updated` y `lot.deleted` en la actividad) y, en la web, «Agregar lote» sin dibujar (municipio, área a mano, nombre y riego) y el lote con «Editar lote» y «Borrar este lote». **Mientras no llegue la entrega 2 (el mapa), un `geometry` responde 422 `geometry_not_available`.** Diseños aprobados por Felipe el 15 de octubre: `design/pantallas/sin_dibujo.py`, `agregar.py` y `editar.py`, sin el mapa. Pruebas en `tests/accounts/test_lotes.py` y `web/src/pages/farm/farm.test.tsx`. **Entrega 2 (15 de octubre de 2026):** el lote se dibuja en el mapa real (MapLibre GL 6 y Terra Draw sobre OpenFreeMap) con el límite de su municipio punteado; la barra tiene Dibujar, Mover puntos, Deshacer y Borrar, y el área del dibujo se ve al instante (en el navegador, sobre una esfera de igual área; la que se guarda la calcula la API sobre el elipsoide). Si el dibujo se sale del municipio, la web lo dice y no deja guardar; la API lo valida igual (`backend/api/lot_geometry.py`, pruebas en `tests/accounts/test_lotes.py`). «Escribir el área a mano» sigue disponible, y si el navegador no puede mostrar el mapa se ofrece eso. «Dibujar en el mapa» dibuja un lote que se guardó sin dibujo. Figma: «Dibuje su lote», «se sale del municipio», «D1 · Editar lote». No se dibujó «¿Ya sembró algo en este lote?»: las siembras son la entrega 3 (HU-165).
 
@@ -187,11 +187,11 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-166 · Borrar mi cuenta
 
 - **Historia:** Como agricultor, quiero borrar mi cuenta y todo lo que registré, para tener control de mis datos.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] `DELETE /api/v1/me` borra usuario, sesiones, lotes y temporadas (también los borrados que aún se podían restaurar) y, cuando existan (P1), sus tickets y sus eventos de `activity_log`, con las acciones de administradores sobre sus datos anonimizadas
-  - [ ] Confirmación clara en la web antes de borrar
-  - [ ] Prueba automática del borrado en cascada
+  - [x] `DELETE /api/v1/me` borra usuario, sesiones, lotes y temporadas (también los borrados que aún se podían restaurar) y, cuando existan (P1), sus tickets y sus eventos de `activity_log`, con las acciones de administradores sobre sus datos anonimizadas
+  - [x] Confirmación clara en la web antes de borrar: el diálogo «Borrar mi cuenta» de Mi cuenta, que pide la contraseña (HU-162)
+  - [x] Prueba automática del borrado en cascada: `test_borrar_la_cuenta_se_lleva_todo_lo_suyo` (`tests/accounts/test_account.py`), con los tickets y las acciones de un administrador anonimizadas, y `test_borrar_un_usuario_borra_en_cascada_lo_suyo` (`tests/accounts/test_migrations.py`). Cerrada el 10 de noviembre de 2026
 - **Reglas que aplican:** R9
 - **Notas:** No se recorta: es parte de las cuentas que el proyecto no recorta mientras haya cuentas (`CLAUDE.md`).
 
@@ -269,4 +269,4 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Funciona en el mapa de dibujo (HU-164) y en Mi finca (HU-169)
   - [ ] Entrada de GIBS en `sources` con sus condiciones de uso verificadas
 - **Reglas que aplican:** R5, R8, R10
-- **Notas:** Decisión 12. Resuelve la «capa satelital por definir» de `specs/05-frontend.md`. Los nombres exactos de las capas, su resolución y las condiciones de uso se verifican antes de usarlas (`docs/fuentes.md`). Es lo segundo que se recorta si falta tiempo, después de SMAP. Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. Resuelve la «capa satelital por definir» de `specs/05-frontend.md`. Los nombres exactos de las capas, su resolución y las condiciones de uso se verifican antes de usarlas (`docs/fuentes.md`). Es lo primero de la NASA que se recorta si falta tiempo, antes de SMAP (decisiones 14 y 15). Agregada el 11 de octubre de 2026.

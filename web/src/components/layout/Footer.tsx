@@ -13,7 +13,9 @@ const COLUMNS = [
     title: "Explorar",
     links: [
       { to: PATHS.consult, label: "Consultar" },
+      { to: PATHS.diagnosis, label: "Diagnóstico de una siembra" },
       { to: PATHS.farm, label: "Mi finca" },
+      { to: PATHS.prices, label: "Precios" },
       { to: PATHS.howItWorks, label: "Cómo funciona" },
     ],
   },

@@ -3,6 +3,7 @@
 Se crea sola y se arma con las migraciones de Alembic, así que cada corrida prueba también las migraciones.
 """
 
+import os
 from collections.abc import Iterator
 
 import pytest
@@ -14,10 +15,21 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from backend.accounts.limits import LIMITER
 from backend.api.main import app
-from backend.config.settings import get_settings
+from backend.config.settings import get_settings, is_local
 from backend.db.models import Base
 from backend.db.session import get_db
 from backend.db.state import forget_down
+
+
+def _never_the_cloud() -> None:
+    """Durante las pruebas, `AGROSENSE_DATABASE_URL` apunta a la base local aunque Compose o el .env traigan la de la
+    nube. Una variable de entorno le gana al .env; vacía no serviría, porque vacía cuenta como no puesta."""
+    local = get_settings().local_database_url.set(query={"sslmode": "disable"})
+    os.environ["AGROSENSE_DATABASE_URL"] = local.render_as_string(hide_password=False)
+    get_settings.cache_clear()
+
+
+_never_the_cloud()
 
 
 def alembic_config(url) -> Config:
@@ -31,7 +43,15 @@ def alembic_config(url) -> Config:
 
 @pytest.fixture(scope="session")
 def database_url():
-    url = get_settings().database_url
+    # Siempre el PostgreSQL local, aunque la API apunte a la nube (AGROSENSE_DATABASE_URL): las pruebas crean una base y
+    # borran su esquema en cada corrida, y eso nunca puede pasar en la base del equipo.
+    url = get_settings().local_database_url
+    if not is_local(url):
+        pytest.exit(
+            f"Las pruebas solo corren contra el PostgreSQL local (POSTGRES_HOST={url.host}). "
+            "Use db o 127.0.0.1: docker compose run --rm app uv run pytest",
+            returncode=2,
+        )
     test_url = url.set(database=f"{url.database}_test")
     admin = create_engine(url, isolation_level="AUTOCOMMIT")
     with admin.connect() as connection:
@@ -105,7 +125,28 @@ SAMPLE_REGION = {
 def no_dataset(tmp_path_factory, monkeypatch):
     """Cada prueba parte sin dataset publicado: nada depende de lo que haya en data/published."""
     monkeypatch.setenv("AGROSENSE_DATA_DIR", str(tmp_path_factory.mktemp("sin-dataset")))
+    # Ni versiones de precios bajadas (HU-222): cada prueba parte de una carpeta vacía y la API la vuelve a mirar.
+    monkeypatch.setenv("AGROSENSE_MARKET_DIR", str(tmp_path_factory.mktemp("sin-precios")))
+    # Ni las cachés de las fuentes de quien corre las pruebas (data/raw/): una prueba que las necesita trae las de ejemplo.
+    from pipeline.sources import nasa_power, nasadem, sipsa
+
+    for module in (sipsa, nasa_power, nasadem):
+        monkeypatch.setattr(module, "CACHE", tmp_path_factory.mktemp(f"sin-cache-{module.SOURCE_ID}"))
+    # La región de ejemplo de las pruebas usa las mismas fuentes por señal que la región piloto (catalog/sources.yaml).
+    import yaml
+
+    from common import signal_sources
+    from pipeline import build
+
+    config = yaml.safe_load(signal_sources.SIGNAL_SOURCES_FILE.read_text(encoding="utf-8"))
+    config["regions"][SAMPLE_REGION["region"]["id"]] = next(iter(config["regions"].values()))
+    sources_file = tmp_path_factory.mktemp("fuentes-por-senal") / "sources.yaml"
+    sources_file.write_text(yaml.safe_dump(config, allow_unicode=True), encoding="utf-8")
+    monkeypatch.setattr(build, "SIGNAL_SOURCES_FILE", sources_file)
     get_settings.cache_clear()
+    from backend.market import store
+
+    monkeypatch.setattr(store, "served", store.Served())
     yield
     get_settings.cache_clear()
 
@@ -147,3 +188,61 @@ def sample_boundaries(municipalities):
         for m in municipalities.iter_rows(named=True)
     ]
     return pl.DataFrame(rows, schema={"municipality_id": pl.String, "geometry": pl.Binary, "source_id": pl.String})
+
+
+# Precios de SIPSA de ejemplo (HU-221): las columnas y los códigos como los manda el servicio del DANE; los precios son
+# de ejemplo. Corabastos (1) y Tunja (9) se publican; la central de Medellín (2) no está en la región.
+SAMPLE_MARKETS = {"1": "Corabastos (Bogotá)", "9": "Tunja (Complejo de Servicios del Sur)"}
+
+
+def sipsa_row(market_id: str, product: str, day: str, low, avg, high, group: str = "TUBERCULOS, RAICES Y PLATANOS") -> str:
+    names = {"1": "Bogotá, D.C., Corabastos", "9": "Tunja, Complejo de Servicios del Sur", "2": "Medellín, Central Mayorista de Antioquia"}
+    towns = {"1": "11001", "9": "15001", "2": "05001"}
+    return (
+        f"<return><artiNombre>{product}</artiNombre><deptNombre>X</deptNombre><enmaFecha>{day}T00:00:00-05:00</enmaFecha>"
+        f"<fuenId>{market_id}</fuenId><fuenNombre>{names[market_id]}</fuenNombre><futiId>1</futiId><grupNombre>{group}</grupNombre>"
+        f"<maximoKg>{high}</maximoKg><minimoKg>{low}</minimoKg><muniId>{towns[market_id]}</muniId><promedioKg>{avg}</promedioKg></return>"
+    )
+
+
+SAMPLE_SIPSA_ROWS = [
+    sipsa_row("1", "Papa negra*", "2026-10-05", 2400, 2500, 2600),
+    sipsa_row("1", "Papa negra*", "2026-10-12", 2600, 2750, 2900),
+    sipsa_row("1", "Papa negra*", "2026-10-19", 2800, 2925, 3000),
+    # Sin mínimo ese día: el servicio manda 0.
+    sipsa_row("1", "Papa criolla", "2026-10-19", 0, "4972.4", "5111.11111111111111"),
+    sipsa_row("1", "Zanahoria", "2026-10-17", 1500, 1604, 1666.6666666666667, group="VERDURAS Y HORTALIZAS"),
+    # Sin precio medio: no hay precio de ese día.
+    sipsa_row("1", "Zanahoria", "2026-10-19", 1500, "", 1700, group="VERDURAS Y HORTALIZAS"),
+    sipsa_row("1", "Aguacate*", "2026-10-19", 10000, 10313, 11000, group="FRUTAS"),
+    sipsa_row("9", "Papa negra*", "2026-10-19", 2500, 2600, 2700),
+    sipsa_row("2", "Papa negra*", "2026-10-19", 2700, 2800, 2900),
+]
+
+
+def sipsa_xml(rows: list[str]) -> str:
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?><S:Envelope xmlns:S="http://www.w3.org/2003/05/soap-envelope"><S:Body>'
+        '<ns2:promediosSipsaParcialResponse xmlns:ns2="http://servicios.sipsa.co.gov.dane/">'
+        + "".join(rows)
+        + "</ns2:promediosSipsaParcialResponse></S:Body></S:Envelope>"
+    )
+
+
+@pytest.fixture
+def market_dataset(tmp_path, monkeypatch):
+    """El dataset de ejemplo con los precios de ejemplo de SIPSA."""
+    import io
+
+    import polars as pl
+
+    from pipeline.build import publish
+    from pipeline.sources import dane, sipsa
+
+    prices = sipsa.prices(io.BytesIO(sipsa_xml(SAMPLE_SIPSA_ROWS).encode()), SAMPLE_MARKETS)
+    folder = tmp_path / "published"
+    sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
+    publish(SAMPLE_REGION, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), sources, folder, prices=prices)
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(folder))
+    get_settings.cache_clear()
+    return folder

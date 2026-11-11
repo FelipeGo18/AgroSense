@@ -59,6 +59,33 @@ sources:
     coverage: "Mundial"
     license: "Publicación de la FAO, uso con cita"
     notes: "Las legumbres, y las leguminosas en general, fijan nitrógeno del aire y mejoran el suelo."
+  - source_id: fews_net_wrsi
+    name: "FEWS NET · Water Requirement Satisfaction Index (WRSI) y sus clases"
+    institution: "Famine Early Warning Systems Network (FEWS NET) y USGS; clases publicadas por el Banco Mundial"
+    url: "https://earlywarning.usgs.gov/fews/product/890"
+    downloaded_at: "2026-11-10"
+    period_covered: null
+    coverage: "Mundial (pensado para cultivos de secano en África)"
+    license: "Información pública del USGS; las clases, del catálogo de datos del Banco Mundial (CC BY 4.0)"
+    notes: "Para los cortes de la señal de agua en backend/config/thresholds.yaml (HU-075). El WRSI es la evapotranspiración real de la temporada sobre la que pide el cultivo, por 100: «A case of 'no deficit' will result in a WRSI value of 100» y «A seasonal WRSI value less than 50 is regarded as a crop failure condition (Smith, 1992)» (USGS). Clases del Banco Mundial (https://datacatalog.worldbank.org/search/dataset/0066866/gridded-dekadal-water-requirement-satisfaction-index-wrsi-for-africa): < 50 Failure; 50-60 Poor; 60-80 Mediocre; 80-95 Average; 95-99 Good; 99-100 Very Good. Es una fuente derivada: solo vale si la cobertura de agua de AgroSense se calcula igual (HU-144)."
+  - source_id: mapa_zarc_2025
+    name: "Zoneamento Agrícola de Risco Climático (ZARC): Portaria SPA/MAPA n.º 388, del 21 de agosto de 2025"
+    institution: "Ministério da Agricultura e Pecuária (MAPA), Brasil"
+    url: "https://www.gov.br/agricultura/pt-br/assuntos/riscos-seguro/programa-nacional-de-zoneamento-agricola-de-risco-climatico/portarias/2025-2026/minas-gerais-mg/POF5FF1.PDF"
+    downloaded_at: "2026-11-10"
+    period_covered: "Ciclo 2025-2026"
+    coverage: "Brasil (Minas Gerais, maíz de segunda cosecha)"
+    license: "Acto oficial del gobierno de Brasil, publicado en el Diário Oficial"
+    notes: "Para los cortes de la señal de heladas en backend/config/thresholds.yaml (HU-075). Punto 1.6: tres niveles de riesgo, «20%, 30%, 40%». Punto 1.9.a.1: la helada es la probabilidad de «temperaturas mínimas menores ou igual a 2°C». El ZARC acepta pérdidas en hasta 2 de cada 10 años (Santos y Martins, 2016, Revista de Política Agrícola XXV(3), https://rpa.sede.embrapa.br/RPA/article/download/1157/pdf/2423). Es una fuente derivada y de otro país: el 20/30/40 es el riesgo de todas las amenazas juntas, no solo de la helada. Respaldo cercano: Le Tacon (IRD), «Los riesgos de helada en el altiplano boliviano», planea la papa con un riesgo de helada del 25 % (https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers09-11/38556.pdf)."
+  - source_id: fao_soils_bulletin_55
+    name: "FAO Soils Bulletin 55: Guidelines, land evaluation for irrigated agriculture (1985), formato 5"
+    institution: "FAO"
+    url: "https://www.fao.org/4/x5648e/x5648e05.htm"
+    downloaded_at: "2026-11-10"
+    period_covered: "1985"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Para los cortes de nivel 70 y 40 de backend/config/thresholds.yaml (HU-075). Rendimiento relativo por clase de aptitud: S1 de 1,0 a 0,9; S2 de 0,9 a 0,7; S3 de 0,7 a 0,6; N1 de 0,6 a 0,4; N2 menos de 0,4. La nota 3 dice: «Relative yields indicated are examples only». Es un respaldo débil: en AgroSense los cortes 70 y 40 son una convención."
   - source_id: agrosense_diseno
     name: "Catálogo visual de AgroSense (design/finca/cultivos.py)"
     institution: "Equipo RealE4Life"

@@ -24,9 +24,9 @@ from backend.api.auth import current_user, require_accounts
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain, request_id_of
 from backend.api.lot_geometry import as_geojson, drawn_lot
-from backend.dataset import Dataset, DatasetUnavailable, get_dataset
+from backend.api.season_stage import dataset_or_none, stage_fields, today
+from backend.dataset import Dataset
 from backend.db.session import get_db
-from backend.engine.stages import stage_today
 
 router = APIRouter(prefix="/api/v1", tags=["finca"], dependencies=[Depends(require_accounts)], responses=calc_examples.responses(401, 422))
 
@@ -148,8 +148,18 @@ def _drawn(dataset: Dataset, municipality_id: str, geometry: dict[str, Any]):
 def list_lots(request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> list[LotListItem]:
     """Los lotes del usuario, del más antiguo al más nuevo. Los borrados no salen (restaurarlos es HU-204, P1)."""
     lots = list(db.scalars(select(Lot).where(Lot.user_id == user.user_id, Lot.deleted_at.is_(None)).order_by(Lot.created_at, Lot.name)))
+    # Los cultivos en curso de todos los lotes en una sola consulta (antes era una por lote), en el mismo orden que el detalle.
+    crops: dict[uuid.UUID, list[str]] = {lot.lot_id: [] for lot in lots}
+    if lots:
+        rows = db.execute(
+            select(Season.lot_id, Season.crop_id)
+            .where(Season.lot_id.in_(crops), Season.harvest_date.is_(None), Season.deleted_at.is_(None))
+            .order_by(Season.lot_id, Season.area_ha.desc(), Season.sowing_date, Season.season_id)
+        )
+        for lot_id, crop_id in rows:
+            crops[lot_id].append(crop_id)
     explain(request, f"Lotes consultados: {len(lots)}")
-    return [LotListItem(**_out(lot), current_crop_ids=[season.crop_id for season in _current(db, lot)]) for lot in lots]
+    return [LotListItem(**_out(lot), current_crop_ids=crops[lot.lot_id]) for lot in lots]
 
 
 @router.post("/lots", status_code=201)
@@ -188,34 +198,28 @@ def create_lot(
 
 
 @router.get("/lots/{lot_id}", responses=calc_examples.responses(404))
-def get_lot(lot_id: uuid.UUID, request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> LotDetail:
+def get_lot(
+    lot_id: uuid.UUID,
+    request: Request,
+    user: User = Depends(current_user),
+    db: Db = Depends(get_db),
+    dataset: Dataset | None = Depends(dataset_or_none),
+) -> LotDetail:
+    """El lote con sus temporadas en curso y la etapa de hoy de cada una. Solo lee: sin dataset se ve igual, con la
+    etapa nula (R1)."""
     lot = _own_lot(db, user, lot_id)
-    today = datetime.now(UTC).date()
-    try:
-        dataset = get_dataset()
-    except DatasetUnavailable:
-        # Sin catálogo no hay etapas: el lote se ve igual, con la etapa nula (R1).
-        dataset = None
-    seasons = []
-    for season in _current(db, lot):
-        stages = dataset.stages.get(season.crop_id) if dataset else None
-        state = stage_today(stages, season.sowing_date, today) if stages else None
-        seasons.append(
-            CurrentSeason(
-                season_id=season.season_id,
-                crop_id=season.crop_id,
-                area_ha=_area(season.area_ha),
-                follows_season_ids=list(season.follows_season_ids or []),
-                sowing_date=season.sowing_date,
-                days_since_sowing=max((today - season.sowing_date).days, 0),
-                stage=state.stage if state else None,
-                stage_progress_pct=state.stage_progress_pct if state else None,
-                stage_method=state.stage_method if state else None,
-                harvest_estimate=state.harvest_estimate if state else None,
-                harvest_basis="calendar" if state else None,
-                harvest_due=state.harvest_due if state else None,
-            )
+    on = today()
+    seasons = [
+        CurrentSeason(
+            season_id=season.season_id,
+            crop_id=season.crop_id,
+            area_ha=_area(season.area_ha),
+            follows_season_ids=list(season.follows_season_ids or []),
+            sowing_date=season.sowing_date,
+            **stage_fields(season, dataset, on),
         )
+        for season in _current(db, lot)
+    ]
     explain(request, f"Lote consultado: {len(seasons)} temporadas en curso")
     return LotDetail(**_out(lot), soil=None, current_seasons=seasons)
 

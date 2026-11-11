@@ -1,6 +1,6 @@
 # AgroSense · Siembra Segura
 
-Herramienta web para agricultores (región piloto en Colombia, por confirmar con la sede y el enunciado del reto) que ayuda a explorar **estrategias de rotación** de hasta 3 ciclos: dice cómo cuida el suelo cada una, revisa cada ciclo con un diagnóstico de su ventana de siembra, estima el agua que necesitará y muestra qué cambió en el clima de la zona. Usa datos de la NASA (NASA POWER, NASADEM, GPM IMERG, MODIS NDVI, SMAP y las capas de GIBS), el suelo de SoilGrids, fichas de cultivo con fuente y reglas explicables; como valor agregado, la oferta de EVA/UPRA. Se puede usar sin cuenta; con cuenta, el agricultor dibuja sus lotes y guarda sus temporadas. Proyecto del **NASA Space Apps Challenge 2026**, reto «Field Shift: Adapting Farms with NASA Data» (equipo RealE4Life).
+Herramienta web para agricultores (región piloto en Boyacá y Cundinamarca, Colombia; sede Duitama) que ayuda a explorar **estrategias de rotación** de hasta 3 ciclos: dice cómo cuida el suelo cada una, revisa cada ciclo con un diagnóstico de su ventana de siembra, estima el agua que necesitará y muestra qué cambió en el clima de la zona. Usa datos de la NASA (NASA POWER, NASADEM, GPM IMERG, MODIS NDVI, SMAP y las capas de GIBS), el suelo de SoilGrids, fichas de cultivo con fuente y reglas explicables; como valor agregado, la oferta de EVA/UPRA. Se puede usar sin cuenta; con cuenta, el agricultor dibuja sus lotes y guarda sus temporadas. Proyecto del **NASA Space Apps Challenge 2026** (sede Duitama), reto «Field Shift: Adapting Farms with NASA Data» (equipo RealE4Life).
 
 Flujo del MVP: lote (o municipio y área, sin cuenta) → estrategias de rotación → un ciclo con su diagnóstico → agua del plan → qué cambió. Es historia de la zona y comparación según reglas con fuente: no predice el clima, el rendimiento ni cuánto mejora el suelo.
 
@@ -143,6 +143,8 @@ que es el entorno que comparte todo el equipo.
 
 Si su terminal no reconoce `uv`, use `python -m uv` en su lugar.
 
+En el caso en el que la terminal activa no reconozca el servicio de PostgreSQL aunque esté levantada la base de datos local, es conveniente reiniciar la sesión de esa terminal. La salida al preparar la base de datos (paso 4) debe ser que está al día.
+
 ## Estructura
 
 ```
@@ -156,6 +158,7 @@ AgroSense/
 ├── design/            # generadores de pantallas, kit, mascota y tokens (fuente del diseño)
 ├── web/               # la web: React + Vite (web/README.md)
 ├── backend/           # API, cuentas y migraciones de la base de datos (backend/README.md)
+├── common/            # lo que comparten el backend y el pipeline sin importarse (la configuración de los logs)
 ├── tests/             # pruebas del backend (pytest, en Docker)
 └── docker-compose.yml # PostgreSQL y la API para desarrollo y pruebas
 ```

@@ -8,7 +8,7 @@ agentes: [calidad, datos]
 subsistemas: [S3, D4]
 depende_de: [HU-011]
 reglas: [R1, R2, R3, R4, R7, R8, R9]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-12 · Calidad y trazabilidad
@@ -59,18 +59,19 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
 - **Criterios de aceptación:**
   - [ ] Manifiesto con versión, fuentes y cobertura
   - [x] Cada entrada de `sources` dice qué cubre (`coverage`: país o región) (hecho para DIVIPOLA)
-  - [ ] `sources.yaml` dice, por región, qué fuente calcula cada señal (también qué producto NASA da la lluvia de `water`); la validación falla si una señal de la región no tiene fuente asignada o la fuente no existe en `sources` (R8)
+  - [x] `sources.yaml` dice, por región, qué fuente calcula cada señal (también qué producto NASA da la lluvia de `water`); la validación falla si una señal de la región no tiene fuente asignada o la fuente no existe en `sources` (R8)
   - [ ] Cada producto NASA del MVP (POWER, NASADEM, IMERG, MODIS NDVI, SMAP y GIBS) tiene su entrada en `sources` con misión, resolución, periodo, acceso y licencia, y el panel lo muestra
   - [ ] `GET /api/v1/version` responde `dataset_version`, `rules_version`, `created_at`, `region`, `default_weights` (los pesos por defecto de `weights.yaml`, para mostrarlos antes de consultar) y `sources` (lista con `source_id`, `name`, `institution`, `url`, `coverage` y `license`), según el contrato. **Parcial (13 de octubre de 2026):** el endpoint ya existe y publica `default_weights`, `weights_version` y `weights_reasons`; lo demás viene nulo o vacío hasta que haya dataset, reglas y fuentes publicados
   - [ ] La web muestra fuentes, versión y los pesos por defecto con su porqué (HU-198)
 - **Reglas que aplican:** R4, R7, R8
 - **Contrato que toca:** `GET /api/v1/version`, `manifest.json`, `sources`
-- **Notas:** Decisión 11: un indicador puede tener varias fuentes; se muestran juntas y nunca se mezclan. **15 de octubre de 2026:** `manifest.json` y `sources` ya se publican (con DIVIPOLA como primera fuente) y `GET /version` responde con el dataset, la región y las fuentes; `rules_version` va nula mientras no exista el catálogo. Falta `sources.yaml`, las fuentes de la NASA y la web.
+- **Notas:** Decisión 11: un indicador puede tener varias fuentes; se muestran juntas y nunca se mezclan. **15 de octubre de 2026:** `manifest.json` y `sources` ya se publican (con DIVIPOLA como primera fuente) y `GET /version` responde con el dataset, la región y las fuentes; `rules_version` va nula mientras no exista el catálogo. Falta `sources.yaml`, las fuentes de la NASA y la web. **11 de noviembre de 2026:** hecho `catalog/sources.yaml` 1.0.0 (`common/signal_sources.py`): lo revisan el pipeline antes de publicar y la API al arrancar; las fuentes sin adaptador van en `planned` con su HU. La lluvia de `water` es la de NASA POWER, temporal y con aviso, hasta IMERG (decidido por Felipe el 11 de noviembre de 2026). Faltan las fuentes de la NASA que aún no tienen adaptador y la web.
 
 ### HU-123 · Reconstruir el dataset con un comando
 
 - **Historia:** Como equipo, quiero reconstruir el dataset con un comando, para repetir la demo con los mismos datos.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Un comando regenera `data/published` desde la caché
-  - [ ] El resultado coincide con el manifiesto
+  - [x] Un comando regenera `data/published` desde la caché: `uv run python -m pipeline.build` (con `--descargar`, antes baja las fuentes)
+  - [x] El resultado coincide con el manifiesto: al terminar de publicar, `pipeline.build` revisa que cada tabla que nombra el manifiesto exista y tenga sus filas, que no haya tablas que no nombre y que la versión sea la de `region.yaml`. `uv run python -m pipeline.build --verificar` hace solo esa revisión, sin publicar, y termina con error si no coincide
+- **Notas:** Hecha el 8 de noviembre de 2026 (`verify` en `pipeline/build.py`; pruebas en `tests/pipeline/test_reconstruir.py`). Reconstruir dos veces desde la misma caché da los mismos archivos byte a byte (R4); solo cambia la fecha de `created_at` del manifiesto.
