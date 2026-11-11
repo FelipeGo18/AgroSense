@@ -3,6 +3,7 @@
 Se carga una vez y queda en memoria. Si falta o no se puede leer, los endpoints que lo necesitan responden 503
 `dataset_unavailable` y el log dice por qué; los demás siguen (como las cuentas con la base de datos apagada).
 """
+
 import json
 from dataclasses import dataclass
 from datetime import date, datetime

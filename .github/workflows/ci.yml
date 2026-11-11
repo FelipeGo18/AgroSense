@@ -1,5 +1,5 @@
 # HU-022: lint, pruebas y build en cada cambio.
-# Corre exactamente el mismo comando que en local (`docker compose run --rm test`): Ruff, pytest, Vitest y build web.
+# Corre el comando local: Ruff, Ruff format, pytest, typecheck, lint, format, Vitest y build web.
 # No usa secretos ni toca la base de la nube: las pruebas usan la PostgreSQL de Compose.
 
 name: CI
