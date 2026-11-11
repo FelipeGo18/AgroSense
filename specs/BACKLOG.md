@@ -84,7 +84,7 @@
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-096 | Uso desde el celular | P0 | S | pendiente | |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-214 | Entrada a las estrategias, con o sin cuenta | P0 | M | hecha | En `/consultar`, con o sin lote; el área sin cuenta queda en el navegador; un resumen hasta HU-102 (11 nov) |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-101 | Prioridades del agricultor | P0 | S | hecha | Cuatro controles que empiezan en 3; con todas en 0 no se consulta (11 nov, con HU-214) |
-| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-102 | Estrategias con ciclos, desglose y salud del suelo | P0 | L | pendiente | Antes M |
+| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-102 | Estrategias con ciclos, desglose y salud del suelo | P0 | L | en curso | Tarjetas, desglose, lo de hoy, salud del suelo con fuente, descartadas y estado vacío (11 nov); abrir un ciclo llega con HU-215. Antes M |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-215 | Ciclo de una estrategia | P0 | M | pendiente | Nueva |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-111 | Reevaluar con cambios en memoria | P1 | M | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-112 | Endpoint de escenarios | P1 | S | pendiente | |

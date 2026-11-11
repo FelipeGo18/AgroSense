@@ -128,7 +128,13 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     "/rotations",
     response_model=RotationResponse,
     responses={
-        200: {"content": _examples(estrategias=("Una estrategia sugerida, la rotación actual y dos descartadas", ex.ROTATIONS))},
+        200: {
+            "content": _examples(
+                estrategias=("Dos estrategias sugeridas (una con descanso), la rotación actual y dos descartadas", ex.ROTATIONS),
+                sin_actual=("Sin rotación actual: no hay referencia", ex.ROTATIONS_NO_CURRENT),
+                sin_opciones=("Ninguna estrategia cumple: todas descartadas", ex.ROTATIONS_EMPTY),
+            )
+        },
         **ex.responses(401, 404, 422, 501, 503),
     },
 )
