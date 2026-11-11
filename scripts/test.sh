@@ -21,10 +21,11 @@ paso() {
 }
 
 paso "Ruff"   uv run ruff check . # linter de Python: revisa el código sin ejecutarlo
+paso "Ruff formato" uv run ruff format --check .
 paso "Pytest" uv run pytest       # backend, contrato y cuentas; usa la base `db` de Compose
 # `npm ci` instala exactamente lo del package-lock.json. Si las pruebas de Vitest fallan, el build no corre
 # (van con &&), pero el paso "Web" completo queda marcado como fallido.
-paso "Web"    sh -c "cd web && npm ci && npm test && npm run build"
+paso "Web"          sh -c "cd web && npm ci && npm run typecheck && npm run lint && npm run format:check && npm test && npm run build"
 
 # El código de salida es lo que lee GitHub: 0 = check verde, distinto de 0 = X roja.
 if [ ${#fallos[@]} -gt 0 ]; then
