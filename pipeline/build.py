@@ -28,7 +28,7 @@ import json
 import re
 import sys
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -182,6 +182,20 @@ def validate_climate(climate: pl.DataFrame, municipalities: pl.DataFrame, source
         raise ValidationError(f"`climate_day` cita una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def validate_climate_month(month: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`climate_month` solo trae municipios publicados (R7), meses de 1 a 12, lluvia no negativa y fuentes que existen
+    (R8)."""
+    extra = set(month["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`climate_month` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    bad = month.filter(~pl.col("month").is_between(1, 12) | (pl.col("precip_mm") < 0) | (pl.col("precip_normal_mm") < 0))
+    if not bad.is_empty():
+        raise ValidationError(f"`climate_month` con un mes o una lluvia fuera de lo permitido: {bad.head(3).to_dicts()}")
+    unknown = set(month["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`climate_month` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`grid_cells` solo trae celdas de municipios publicados (R7) y cita fuentes que existen (R8)."""
     extra = set(grid["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
@@ -203,12 +217,13 @@ def publish(
     crop_products: dict[str, Any] | None = None,
     climate: pl.DataFrame | None = None,
     grid: pl.DataFrame | None = None,
+    climate_month: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
     `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
     `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). `climate`
-    (`climate_day`) y `grid` (`grid_cells`, HU-206) solo se escriben si traen filas: una tabla vacía no es un dato
+    (`climate_day`), `climate_month` (HU-042) y `grid` (`grid_cells`, HU-206) solo se escriben si traen filas: una tabla vacía no es un dato
     (R1). Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
@@ -229,6 +244,9 @@ def publish(
     has_climate = climate is not None and not climate.is_empty()
     if has_climate:
         validate_climate(climate, municipalities, sources)
+    has_month = climate_month is not None and not climate_month.is_empty()
+    if has_month:
+        validate_climate_month(climate_month, municipalities, sources)
     has_grid = grid is not None and not grid.is_empty()
     if has_grid:
         validate_grid(grid, municipalities, sources)
@@ -244,6 +262,8 @@ def publish(
         tables["crops"], tables["crop_stages"] = crops[1], crops[2]
     if has_climate:
         tables["climate_day"] = climate
+    if has_month:
+        tables["climate_month"] = climate_month
     if has_grid:
         tables["grid_cells"] = grid
     if prices is not None:
@@ -282,6 +302,12 @@ def publish(
         days = f"del {climate['date'].min()} al {climate['date'].max()}"
         coverage = f"{climate['municipality_id'].n_unique()} municipios con altitud, {days}"
         manifest["tables"]["climate_day"] = {"rows": climate.height, "coverage": coverage}
+    if has_month:
+        normal = climate_normals.Normal.from_region(region)
+        years = f"de {climate_month['year'].min()} a {climate_month['year'].max()}"
+        period = f"; normal {normal.first_year}-{normal.last_year}" if normal is not None else ""
+        coverage = f"{climate_month['municipality_id'].n_unique()} municipios, meses completos {years}{period}"
+        manifest["tables"]["climate_month"] = {"rows": climate_month.height, "coverage": coverage}
     if has_grid:
         coverage = f"Celdas de 0,0025° de {grid['municipality_id'].n_unique()} municipios; sin suelo hasta HU-181"
         manifest["tables"]["grid_cells"] = {"rows": grid.height, "coverage": coverage}
@@ -304,7 +330,9 @@ def publish(
             "rows": month.height,
             "coverage": f"{crops_with_rows}: índice estacional y precio de cada mes del último año completo, por central",
         }
-    (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # Siempre con LF: en Windows `write_text` escribe CRLF, y el archivo cambiaría según quién publica (R4).
+    text = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    (folder / "manifest.json").write_text(text, encoding="utf-8", newline="\n")
     return manifest
 
 
@@ -369,8 +397,9 @@ def terrain_from_cache(
 
 def climate_from_cache(
     region: dict[str, Any], municipalities: pl.DataFrame, cache: Path
-) -> tuple[pl.DataFrame, pl.DataFrame | None, list[dict[str, Any]]]:
-    """El clima de NASA POWER (HU-041): los municipios con la altura de su celda, `climate_day` y sus fuentes.
+) -> tuple[pl.DataFrame, pl.DataFrame | None, pl.DataFrame | None, list[dict[str, Any]]]:
+    """El clima de NASA POWER (HU-041, HU-042): los municipios con la altura de su celda, `climate_day`,
+    `climate_month` y sus fuentes.
 
     Sin la caché de POWER devuelve los municipios como estaban, sin clima y sin fuentes nuevas: lo demás se publica igual.
     """
@@ -378,10 +407,17 @@ def climate_from_cache(
         series, meta = nasa_power.read_cache(nasa_power.cells(municipalities), cache)
     except FileNotFoundError as error:
         log.warning("source_missing", source=nasa_power.SOURCE_ID, detail=f"Se publica sin el clima de NASA POWER: {error}")
-        return municipalities, None, []
+        return municipalities, None, None, []
     municipalities = nasa_power.with_cell_elevation(municipalities, meta["elevations"])
     lapse = region.get("temperature_lapse_rate")
     climate = nasa_power.climate_day(series, municipalities, lapse)
+    # La lluvia no se corrige por altitud: sale para todos los municipios con coordenadas. La ET0 sí necesita la altitud.
+    normal = climate_normals.Normal.from_region(region)
+    if normal is None:
+        log.warning("climate_normal_missing", table="climate_month", detail="region.yaml no trae climate_normal: no hay climate_month")
+        month = None
+    else:
+        month = nasa_power.climate_month(series, municipalities, date.fromisoformat(meta["requested_end"]), normal, climate)
     sources = [nasa_power.source(series, meta)]
     if lapse is not None:
         sources.append(lapse["source"])
@@ -395,7 +431,7 @@ def climate_from_cache(
         )
     if lapse is None:
         log.warning("climate_not_corrected", table="climate_day", detail="region.yaml no trae temperature_lapse_rate")
-    return municipalities, climate, sources
+    return municipalities, climate, month, sources
 
 
 def build(
@@ -442,7 +478,7 @@ def build(
         nasa_power.download(nasa_power.cells(municipalities), power_cache)
     # Primero la altitud: el clima se corrige con ella (HU-044).
     municipalities, grid, terrain_sources = terrain_from_cache(municipalities, boundaries, dem_cache)
-    municipalities, climate, climate_sources = climate_from_cache(region, municipalities, power_cache)
+    municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
     # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
     normal = climate_normals.Normal.from_region(region)
     if climate is not None and not climate.is_empty():
@@ -485,7 +521,7 @@ def build(
         crop_products = load_crops()
     sources = pl.concat([pl.DataFrame([*own, *terrain_sources, *climate_sources]), catalog_sources], how="diagonal_relaxed")
     crops = (catalog["version"], crops_table, stages_table)
-    return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid)
+    return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid, climate_month)
 
 
 def main() -> None:

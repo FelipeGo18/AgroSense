@@ -53,16 +53,16 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 ### HU-143 · Lluvia y ET0 mensuales por municipio
 
 - **Historia:** Como motor, quiero la lluvia y la evapotranspiración de referencia (ET0) mensuales por municipio, con su normal y un año seco, para calcular el balance de agua.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] ET0 por Penman-Monteith (FAO-56) con la temperatura, la radiación, el viento y la humedad relativa de NASA POWER (HU-205); método documentado
-  - [ ] Un mes sin alguna de esas variables no tiene ET0: `et0_mm` queda nulo y `quality = partial`. Nunca se cambia de método en silencio (R1)
-  - [ ] Año seco definido como un percentil bajo de la serie
-  - [ ] `et0_mm`, `et0_normal_mm` y `precip_dry_mm` en `climate_month`, sobre la lluvia de HU-042; el año seco de IMERG va en `precip_month` (HU-207)
-  - [ ] Comprobación manual en un municipio
+  - [x] ET0 por Penman-Monteith (FAO-56) con la temperatura, la radiación, el viento y la humedad relativa de NASA POWER (HU-205); método documentado (`pipeline/et0.py`)
+  - [x] Un mes sin alguna de esas variables no tiene ET0: `et0_mm` queda nulo y `quality = partial`. Nunca se cambia de método en silencio (R1)
+  - [x] Año seco definido como un percentil bajo de la serie: el percentil 20 de 1991–2020, decidido por Felipe el 10 de noviembre de 2026
+  - [x] `et0_mm`, `et0_normal_mm` y `precip_dry_mm` en `climate_month`, sobre la lluvia de HU-042; el año seco de IMERG va en `precip_month` (HU-207)
+  - [x] Comprobación manual en un municipio (en 4, contra la evaporación del IDEAM: ver las notas)
 - **Reglas que aplican:** R1, R8
 - **Contrato que toca:** `climate_month`
-- **Notas:** Va antes del diagnóstico: la señal `water` (HU-071) lo necesita. Cambió de Hargreaves a Penman-Monteith el 11 de octubre de 2026 (decisión 12), porque POWER ampliado entrega la radiación, el viento y la humedad. La versión por semana (`et0_normal_mm` de `climate_risk_week`, HU-193, P1) usa este mismo método.
+- **Notas:** Va antes del diagnóstico: la señal `water` (HU-071) lo necesita. Cambió de Hargreaves a Penman-Monteith el 11 de octubre de 2026 (decisión 12), porque POWER ampliado entrega la radiación, el viento y la humedad. La versión por semana (`et0_normal_mm` de `climate_risk_week`, HU-193, P1) usa este mismo método. **10 de noviembre de 2026:** `pipeline/et0.py` es la ecuación 6 de FAO-56, diaria, con el flujo de calor del suelo en cero; reproduce el ejemplo 18 del libro (3,9 mm/día en Bruselas). Usa la mínima y la máxima corregidas por altitud, la humedad relativa media de POWER para la presión de vapor (ecuación 19: POWER no da la máxima ni la mínima), el viento a 2 m, la radiación y la altitud del municipio para la presión. Un mes tiene ET0 solo si todos sus días la tienen: no la tienen de 1981 a 1983, porque la radiación de POWER empieza en 1984, ni un mes al que le falta un día de radiación. La normal es la de 1991–2020 con 24 años. El año seco es el percentil 20 de la lluvia de cada mes en 1991–2020: la que se supera en 4 de cada 5 años. **Comprobación** contra la evaporación de tanque de las normales 1991–2020 del IDEAM, con el coeficiente de tanque de FAO-56 (de 0,6 a 0,85): UPTC, Tunja, ET0 de 951 mm al año y 1289 de evaporación (0,74); Surbata Bonza, Duitama, 1110 y 1408 (0,79); Villa de Leyva, 1058 y 1485 (0,71); todas dentro del rango (con la altitud de la cabecera, decidida por Felipe; antes, con la mediana, 0,72, 0,74 y 0,70). Tibaitatá, Mosquera, 1077 y 1134 (0,95), por encima: su celda de POWER está a 1790 m y es más seca que la estación. **Revisión de Felipe del PR #24 (10 de noviembre de 2026):** el año seco es el percentil 20 de la lluvia de cada mes, la lluvia confiable con que la FAO planea el riego (decidido por Felipe). El periodo normal, sus años mínimos, el 90 % de los días y el percentil del año seco van en `pipeline/region.yaml` (`climate_normal`), uno solo para la lluvia, la ET0 y la temperatura media anual. La ET0 toma la mínima y la máxima ya corregidas de `climate_day`: la corrección por altitud está en un solo lugar.
 
 ### HU-144 · Déficit de agua por cultivo y etapa
 

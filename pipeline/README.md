@@ -36,6 +36,7 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 |---|---|---|
 | `municipalities` (con la altitud y la pendiente de NASADEM y la altura de su celda de NASA POWER) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`), NASADEM y NASA POWER | HU-044, HU-206, HU-041 |
 | `climate_day` | NASA POWER, API diaria por punto (`pipeline/sources/nasa_power.py`), corregida por la altitud de NASADEM. Es un reanálisis | HU-041 |
+| `climate_month` | NASA POWER: la lluvia de cada mes completo de la celda del municipio, su normal 1991–2020 y su año seco, la ET0 por Penman-Monteith de FAO-56 con su normal (HU-143) y la humedad del suelo de un modelo, de 0 a 1 (HU-205). Es un reanálisis y en el altiplano da más lluvia que el IDEAM | HU-042 |
 | `grid_cells` (sin el suelo todavía, HU-181) | NASADEM (`pipeline/sources/nasadem.py`): altitud y pendiente de cada celda de 250 m | HU-206 |
 | `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
 | `crops` y `crop_stages` | Catálogo agronómico de `catalog/crops.yaml`: FAO EcoCrop, FAO-56, UPRA y FAO, con fuente por valor (`pipeline/catalog.py`) | HU-061, HU-199, HU-063 |
@@ -64,9 +65,11 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
 
 ## Clima diario de NASA POWER (HU-041)
 
-- Se baja la mínima, la máxima y la lluvia diarias desde 1981 (`T2M_MIN`, `T2M_MAX`, `PRECTOTCORR`), **una vez por
-  celda** de 0,5° × 0,625° y no por municipio: todos los puntos de una celda reciben la misma serie. Los 239 municipios
-  caen en 20 celdas: unos 22 MB en `data/raw/nasa_power/` y menos de un minuto.
+- Se bajan desde 1981 la mínima, la máxima y la lluvia diarias (`T2M_MIN`, `T2M_MAX`, `PRECTOTCORR`) y, desde HU-205,
+  la humedad del suelo (`GWETTOP`, `GWETROOT`), la radiación (`ALLSKY_SFC_SW_DWN`, desde 1984), el viento a 2 m
+  (`WS2M`) y la humedad relativa (`RH2M`), **una vez por celda** de 0,5° × 0,625° y no por municipio: todos los
+  puntos de una celda reciben la misma serie. Los 239 municipios caen en 20 celdas: unos 48 MB en
+  `data/raw/nasa_power/` y menos de un minuto. Una caché de antes de HU-205 se baja otra vez.
 - Cada celda se baja de a una, con 3 intentos y la misma descarga con límites que SIPSA (`pipeline/sources/fetch.py`).
   Se corta por tiempo total y por tamaño, con `AGROSENSE_POWER_TIMEOUT_S`
   y `AGROSENSE_POWER_MAX_MB` del `.env` (`.env.example` trae los valores de producción; los lee `pipeline/settings.py`).
@@ -78,7 +81,15 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
   se publica, y así tampoco los últimos días, que POWER todavía no tiene (R1).
 - **Sin la altitud de NASADEM, `climate_day` no se publica**: no se publica una temperatura sin corregir. Con ella son
   unos 4 millones de filas y unos 21 MB de Parquet.
-- La lluvia diaria queda en la caché para la lluvia mensual (HU-042).
+- **`climate_month` (HU-042):** la lluvia de cada mes completo, sin corregir por altitud, y su normal de 1991 a 2020
+  (con 24 de los 30 años completos). Un mes es `partial` si le faltan días o no tiene normal; sin el 90 % de sus días
+  no tiene total. Comparada con el IDEAM, en el altiplano POWER da de 1,7 a 2,7 veces la lluvia (`docs/riesgos.md`).
+- **La ET0 (HU-143):** Penman-Monteith de FAO-56, día por día (`pipeline/et0.py`), con la mínima y la máxima de
+  `climate_day` (ya corregidas por altitud) y la humedad relativa, el viento y la radiación de POWER. Un mes tiene ET0
+  solo si todos sus días la tienen (no la tienen 1981–1983, sin radiación). El año seco (`precip_dry_mm`) es el
+  percentil 20 de la lluvia del mes en 1991–2020.
+- El periodo normal, sus 24 años mínimos, el 90 % de los días y el percentil del año seco están en `region.yaml`
+  (`climate_normal`): los mismos para la lluvia, la ET0 y la temperatura media anual.
 
 ## Datos de ejemplo (HU-011)
 

@@ -22,6 +22,8 @@ class Normal:
     last_year: int
     min_years: int
     min_day_share: float
+    # El año seco (HU-143): el percentil de la lluvia de cada mes que se supera en 4 de cada 5 años.
+    dry_quantile: float
 
     @classmethod
     def from_region(cls, region: dict[str, Any]) -> "Normal | None":
@@ -33,6 +35,7 @@ class Normal:
             last_year=int(config["last_year"]),
             min_years=int(config["min_years"]),
             min_day_share=float(config["min_day_share"]),
+            dry_quantile=float(config["dry_quantile"]),
         )
 
 

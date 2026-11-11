@@ -24,8 +24,8 @@
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-200 | Siembras registradas en AgroSense como dato de oferta | P1 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-201 | Fuentes de contraste para la oferta | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-041 | Series diarias de lluvia y temperatura | P0 | M | hecha | Adaptador de NASA POWER con caché por celda (20 celdas) y `climate_day` corregida por altitud, publicada con la de NASADEM (HU-206) |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-042 | Lluvia mensual y su normal | P0 | M | pendiente | |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-205 | NASA POWER ampliado: humedad, radiación y viento | P0 | M | pendiente | Nueva |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-042 | Lluvia mensual y su normal | P0 | M | hecha | `climate_month` con la lluvia de NASA POWER y su normal 1991–2020; en el altiplano es de 1,7 a 2,7 veces la del IDEAM (riesgo para la señal de agua) |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-205 | NASA POWER ampliado: humedad, radiación y viento | P0 | M | hecha | Humedad del suelo, radiación (desde 1984), viento y humedad relativa en la caché; la humedad del suelo, en `climate_month` |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-206 | Altitud de municipios y lotes con NASADEM | P0 | M | hecha | `grid_cells` con altitud y pendiente de NASADEM; la altitud del municipio es la de la celda de la cabecera y su pendiente, la mediana (decidido por Felipe) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-207 | Lluvia por satélite con GPM IMERG | P0 | L | pendiente | Nueva |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-208 | Verdor del campo por municipio con MODIS NDVI | P0 | L | pendiente | Nueva |
@@ -98,7 +98,7 @@
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-230 | Licencias del proyecto y de lo que usa | P0 | S | en curso | Nueva (10 nov). `LICENSE` Apache 2.0 hecho; falta la lista de licencias de terceros para la entrega |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-142 | Etapas de cada cultivo con Kc | P0 | S | en curso | Los 7 cultivos del MVP |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-220 | Etapas de una ventana por calendario | P0 | S | hecha | `crop_window`: etapas, meses y meses sensibles de una ventana (10 nov). Cebolla, haba y maíz no dicen la sensibilidad a la helada, ni ningún cultivo la del calor (HU-063) |
-| [EP-14](epicas/EP-14-finca-agua.md) | HU-143 | Lluvia y ET0 mensuales por municipio | P0 | M | pendiente | Penman-Monteith |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-143 | Lluvia y ET0 mensuales por municipio | P0 | M | hecha | ET0 por Penman-Monteith de FAO-56 (`pipeline/et0.py`), su normal y el año seco (percentil 20, decidido por Felipe) en `climate_month` |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-144 | Déficit de agua por cultivo y etapa | P0 | M | pendiente | |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-146 | Endpoint del plan de agua | P0 | S | pendiente | |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-141 | Registrar la finca | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
