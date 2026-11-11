@@ -2,7 +2,7 @@
 
 - **Fecha:** 10 de noviembre de 2026
 - **Propósito:** probar los pasos de «Cómo correr el proyecto» del README.
-- **Estado general:** prueba parcial; el recorrido con Docker se detuvo por un conflicto de puerto y el recorrido sin Docker está pendiente.
+- **Estado general:** Resuelto.
 
 ## Con Docker
 
