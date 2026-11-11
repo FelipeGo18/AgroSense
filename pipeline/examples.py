@@ -467,7 +467,9 @@ def write(tables: dict[str, pl.DataFrame], folder: Path = EXAMPLES, published: P
         "notes": "Datos de ejemplo con la forma del contrato (HU-011). Las cifras con la fuente `ejemplo` son inventadas; "
         "el catálogo de cultivos y los límites municipales son los reales.",
     }
-    (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # Siempre con LF, como el manifiesto del dataset publicado (R4).
+    text = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    (folder / "manifest.json").write_text(text, encoding="utf-8", newline="\n")
     return manifest
 
 

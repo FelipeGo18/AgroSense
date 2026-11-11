@@ -10,7 +10,7 @@ import pytest
 
 from pipeline import build, climate_normals
 
-NORMAL = climate_normals.Normal(first_year=1991, last_year=2020, min_years=24, min_day_share=0.9)
+NORMAL = climate_normals.Normal(first_year=1991, last_year=2020, min_years=24, min_day_share=0.9, dry_quantile=0.2)
 
 
 def climate_day(first: date, last: date, tmin=lambda day: 8.0, tmax=lambda day: 18.0) -> pl.DataFrame:

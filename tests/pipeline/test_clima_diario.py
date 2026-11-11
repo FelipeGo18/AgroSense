@@ -21,7 +21,14 @@ LAPSE = {
     "temp_min_c_per_m": 0.0059,
     "source": {"source_id": "gradiente_de_ejemplo", "name": "Gradiente de ejemplo de las pruebas", "url": "https://example.org"},
 }
-REGION = {**SAMPLE_REGION, "region": {**SAMPLE_REGION["region"], "markets": SAMPLE_MARKETS}, "temperature_lapse_rate": LAPSE}
+# El periodo normal de `region.yaml` (`climate_normal`): sin él no hay `climate_month` ni temperatura media anual.
+NORMAL = {"first_year": 1991, "last_year": 2020, "min_years": 24, "min_day_share": 0.9, "dry_quantile": 0.2}
+REGION = {
+    **SAMPLE_REGION,
+    "region": {**SAMPLE_REGION["region"], "markets": SAMPLE_MARKETS},
+    "temperature_lapse_rate": LAPSE,
+    "climate_normal": NORMAL,
+}
 # Samacá y Villa de Leyva caen en la misma celda; Zipaquirá, en la de al lado.
 NORTH, SOUTH = "5.500_-73.750", "5.000_-73.750"
 
@@ -40,7 +47,11 @@ def response(cell, elevation, days):
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [lon, lat, elevation]},
         "properties": {
-            "parameter": {name: {day: values[i] for day, values in days.items()} for i, name in enumerate(nasa_power.PARAMETERS)}
+            # Las variables que el ejemplo no da (humedad, radiación, viento) van con un valor de ejemplo cualquiera.
+            "parameter": {
+                name: {day: values[i] if i < len(values) else 0.5 for day, values in days.items()}
+                for i, name in enumerate(nasa_power.PARAMETERS)
+            }
         },
         "header": {"api": {"version": "v2.10.3", "name": "POWER Daily API"}, "fill_value": -999.0},
     }
