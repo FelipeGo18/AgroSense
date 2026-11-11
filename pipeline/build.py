@@ -38,7 +38,7 @@ import yaml
 
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import schema
+from pipeline import climate_normals, schema
 from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, nasa_power, nasadem, sipsa
 
@@ -303,9 +303,10 @@ def publish(
         coverage = f"{climate['municipality_id'].n_unique()} municipios con altitud, {days}"
         manifest["tables"]["climate_day"] = {"rows": climate.height, "coverage": coverage}
     if has_month:
-        first, last = nasa_power.NORMAL_PERIOD
+        normal = climate_normals.Normal.from_region(region)
         years = f"de {climate_month['year'].min()} a {climate_month['year'].max()}"
-        coverage = f"{climate_month['municipality_id'].n_unique()} municipios, meses completos {years}; normal {first}-{last}"
+        period = f"; normal {normal.first_year}-{normal.last_year}" if normal is not None else ""
+        coverage = f"{climate_month['municipality_id'].n_unique()} municipios, meses completos {years}{period}"
         manifest["tables"]["climate_month"] = {"rows": climate_month.height, "coverage": coverage}
     if has_grid:
         coverage = f"Celdas de 0,0025° de {grid['municipality_id'].n_unique()} municipios; sin suelo hasta HU-181"
@@ -378,7 +379,7 @@ def terrain_from_cache(
     except FileNotFoundError as error:
         log.warning("source_missing", source=nasadem.SOURCE_ID, detail=f"Se publica sin la altitud de NASADEM: {error}")
         return municipalities, None, []
-    terrain = nasadem.municipality_terrain(cells)
+    terrain = nasadem.municipality_terrain(cells, municipalities)
     municipalities = nasadem.with_terrain(municipalities, terrain)
     empty = cells.filter(pl.col("altitude_m").is_null()).height
     log.info(
@@ -411,7 +412,12 @@ def climate_from_cache(
     lapse = region.get("temperature_lapse_rate")
     climate = nasa_power.climate_day(series, municipalities, lapse)
     # La lluvia no se corrige por altitud: sale para todos los municipios con coordenadas. La ET0 sí necesita la altitud.
-    month = nasa_power.climate_month(series, municipalities, date.fromisoformat(meta["requested_end"]), lapse)
+    normal = climate_normals.Normal.from_region(region)
+    if normal is None:
+        log.warning("climate_normal_missing", table="climate_month", detail="region.yaml no trae climate_normal: no hay climate_month")
+        month = None
+    else:
+        month = nasa_power.climate_month(series, municipalities, date.fromisoformat(meta["requested_end"]), normal, climate)
     sources = [nasa_power.source(series, meta)]
     if lapse is not None:
         sources.append(lapse["source"])
@@ -473,6 +479,21 @@ def build(
     # Primero la altitud: el clima se corrige con ella (HU-044).
     municipalities, grid, terrain_sources = terrain_from_cache(municipalities, boundaries, dem_cache)
     municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
+    # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
+    normal = climate_normals.Normal.from_region(region)
+    if climate is not None and not climate.is_empty():
+        if normal is None:
+            log.warning("climate_normal_missing", detail="region.yaml no trae climate_normal: tmean_annual_c queda nula")
+        else:
+            tmean = climate_normals.tmean_annual(climate, normal)
+            municipalities = climate_normals.with_tmean(municipalities, tmean)
+            missing = municipalities.filter(pl.col("tmean_annual_c").is_null()).height
+            log.info(
+                "tmean_annual_computed",
+                municipalities=municipalities.height - missing,
+                detail=f"Temperatura media anual de {normal.first_year}-{normal.last_year}: {municipalities.height - missing} "
+                f"municipios; {missing} sin años suficientes quedan nulos (R1)",
+            )
     catalog = crops_catalog.load()
     crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
     own = [dane.source(meta), dane_mgn.source(mgn_meta)]

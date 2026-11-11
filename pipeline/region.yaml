@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.9"
+dataset_version: "2026.11.8"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"
@@ -18,6 +18,19 @@ region:
   markets:
     "1": "Corabastos (Bogotá)"
     "9": "Tunja (Complejo de Servicios del Sur)"
+
+# Periodo normal del clima (HU-044; decidido por Felipe el 10 de noviembre de 2026): uno solo para todo lo que se compara
+# con una normal. 1991-2020 es el periodo de referencia de la OMM y el de las normales del IDEAM, que siguen sus
+# «Directrices sobre el cálculo de las normales climáticas» (OMM-N.º 1203, 2017); 24 años son el 80 % del periodo. Un
+# año, o un mes, cuenta si tiene al menos el 90 % de sus días con dato: los que faltan no se rellenan (R1).
+climate_normal:
+  first_year: 1991
+  last_year: 2020
+  min_years: 24
+  min_day_share: 0.9
+  # El año seco (HU-143): la lluvia de cada mes que se supera en 4 de cada 5 años del periodo (el percentil 20), la
+  # lluvia confiable con que la FAO planea el riego. Decidido por Felipe el 10 de noviembre de 2026.
+  dry_quantile: 0.2
 
 # Gradiente térmico (HU-044): cuántos °C baja la temperatura por cada metro que se sube. Corrige las temperaturas de
 # NASA POWER, cuya celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio.
@@ -35,4 +48,5 @@ temperature_lapse_rate:
     period_covered: null
     coverage: "Región Andina de Colombia, de 100 a 4482 m"
     license: null
+    citation: "Chaves Córdoba, B. y Jaramillo Robledo, A. (1999). Regionalización de la temperatura del aire en Colombia. Avances en Recursos Hidráulicos, 6, 37-42."
     notes: "Avances en Recursos Hidráulicos, n.º 6 (septiembre de 1999), pp. 37-42. Pendiente de la temperatura máxima media (0,0058 °C/m) y de la mínima media (0,0059 °C/m) con la altitud en la región Andina. Se usa para corregir por altitud las temperaturas de NASA POWER."
