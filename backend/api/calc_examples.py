@@ -281,7 +281,10 @@ ROTATIONS = {
                     "reasons": ["Con pendiente de 9 %, el descanso deja el suelo descubierto 3 meses"],
                 },
             },
-            "reasons": ["El terreno descansa el primer ciclo y corta las plagas de la papa", "No deja ingreso hasta la cosecha de la arveja"],
+            "reasons": [
+                "El terreno descansa el primer ciclo y corta las plagas de la papa",
+                "No deja ingreso hasta la cosecha de la arveja",
+            ],
             "limitations": ["Suelo estimado para el municipio, no para su lote"],
         },
     ],
