@@ -25,6 +25,8 @@ WATER = {"municipality_id": "15646", "total_area_ha": 1.26, "crops": [{"crop_id"
         (m.DiagnosisResponse, ex.DIAGNOSIS_NOT_EVALUABLE),
         (m.DiagnosisResponse, ex.DIAGNOSIS_NOT_APPLICABLE),
         (m.RotationResponse, ex.ROTATIONS),
+        (m.RotationResponse, ex.ROTATIONS_EMPTY),
+        (m.RotationResponse, ex.ROTATIONS_NO_CURRENT),
         (m.WaterPlanResponse, ex.WATER_PLAN),
         (m.ChangesResponse, ex.CHANGES),
         (m.TrendsResponse, ex.TRENDS),

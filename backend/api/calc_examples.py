@@ -189,30 +189,35 @@ _HEALTH = {
         "status": "available",
         "level": "favorable",
         "rule_ids": ["leguminosas"],
+        "source_ids": ["agrosavia_rotacion"],
         "reasons": ["Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"],
     },
     "organic_carbon": {
         "status": "available",
         "level": "favorable",
         "rule_ids": ["materia_organica"],
+        "source_ids": ["agrosavia_rotacion", "soilgrids"],
         "reasons": ["El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"],
     },
     "soil_cover": {
         "status": "insufficient_data",
         "level": None,
         "rule_ids": [],
+        "source_ids": [],
         "reasons": ["Aún no hay una regla con fuente que diga cuántos meses bastan"],
     },
     "pest_break": {
         "status": "available",
         "level": "favorable",
         "rule_ids": ["papa_espera"],
+        "source_ids": ["agrosavia_rotacion"],
         "reasons": ["La papa vuelve al terreno después de dos ciclos de otras familias"],
     },
     "erosion": {
         "status": "available",
         "level": "moderate",
         "rule_ids": ["suelo_descubierto"],
+        "source_ids": ["agrosavia_rotacion", "nasadem"],
         "reasons": ["Con pendiente de 9 %, el suelo queda descubierto 2 meses"],
     },
 }
@@ -253,7 +258,35 @@ ROTATIONS = {
                 "Gana 15 puntos frente a lo que siembra hoy, sobre todo en suelo",
             ],
             "limitations": ["Suelo estimado para el municipio, no para su lote"],
-        }
+        },
+        {
+            "rank": 2,
+            "kind": "suggested",
+            "crop_ids": ["descanso", "arveja", "papa"],
+            "total_score": 70,
+            "scores": {"water": 80, "soil": 75, "income": 40, "risk": 64},
+            "vs_current": {"water": 12, "soil": 25, "income": -29, "risk": 5, "total": 9},
+            "cycles": [
+                _cycle(1, "descanso", "2027-01-04", "2027-04-04", None, None),
+                _cycle(2, "arveja", "2027-04-05", "2027-08-02", "yellow", "frost"),
+                _cycle(3, "papa", "2027-08-09", "2028-01-03", "green", None),
+            ],
+            "soil_health": {
+                **_HEALTH,
+                "erosion": {
+                    "status": "available",
+                    "level": "unfavorable",
+                    "rule_ids": ["suelo_descubierto"],
+                    "source_ids": ["agrosavia_rotacion", "nasadem"],
+                    "reasons": ["Con pendiente de 9 %, el descanso deja el suelo descubierto 3 meses"],
+                },
+            },
+            "reasons": [
+                "El terreno descansa el primer ciclo y corta las plagas de la papa",
+                "No deja ingreso hasta la cosecha de la arveja",
+            ],
+            "limitations": ["Suelo estimado para el municipio, no para su lote"],
+        },
     ],
     "current_strategy": {
         "rank": None,
@@ -272,6 +305,7 @@ ROTATIONS = {
                 "status": "available",
                 "level": "unfavorable",
                 "rule_ids": ["papa_espera"],
+                "source_ids": ["agrosavia_rotacion"],
                 "reasons": ["La papa vuelve después de un solo ciclo de otra familia"],
             },
         },
@@ -281,6 +315,7 @@ ROTATIONS = {
                 "kind": "rule",
                 "rule_id": "papa_espera",
                 "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia",
+                "source_ids": ["agrosavia_rotacion"],
             }
         ],
         "reasons": ["Es la rotación que usted viene haciendo: las demás se comparan contra ella"],
@@ -293,6 +328,7 @@ ROTATIONS = {
             "kind": "rule",
             "rule_id": "familia_seguida",
             "reason": "Repite la familia de la papa, que había antes en el terreno",
+            "source_ids": ["agrosavia_rotacion"],
         },
         {
             "crop_ids": ["arveja", "papa", "maiz"],
@@ -300,6 +336,7 @@ ROTATIONS = {
             "kind": "high_risk",
             "signal": "frost",
             "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa",
+            "source_ids": ["nasa_power"],
         },
     ],
     "excluded_counts": {"rule": 212, "high_risk": 48, "not_suitable": 30, "soil_ph": 0},
@@ -308,6 +345,40 @@ ROTATIONS = {
     "slope_basis": "municipality",
     "limitations": [EXAMPLE_NOTE, "Compara estrategias según reglas con fuente. No predice cuánto va a mejorar el suelo"],
     "versions": EXAMPLE_VERSIONS,
+}
+
+# Sin estrategias válidas: todas quedan descartadas y `excluded` dice por qué (HU-102, estado vacío).
+ROTATIONS_EMPTY = {
+    **ROTATIONS,
+    "strategies": [],
+    "current_strategy": None,
+    "excluded": [
+        {
+            "crop_ids": ["maiz", "arveja", "papa"],
+            "cycle": 1,
+            "kind": "high_risk",
+            "signal": "frost",
+            "reason": "Alto riesgo en el ciclo 1: heladas frecuentes en la floración del maíz",
+            "source_ids": ["nasa_power"],
+        },
+        {
+            "crop_ids": ["cebolla_bulbo", "arveja", "papa"],
+            "cycle": 1,
+            "kind": "soil_ph",
+            "reason": "La cebolla tolera pH de 6,0 a 7,5 y el suelo estimado va de 5,2 a 5,8",
+            "source_ids": ["upra_cebolla_bulbo", "soilgrids"],
+        },
+    ],
+    "excluded_counts": {"rule": 180, "high_risk": 110, "not_suitable": 0, "soil_ph": 40},
+    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
+}
+
+# Sin rotación actual: no hay referencia ni `vs_current`, y la limitación lo dice (decisión 14).
+ROTATIONS_NO_CURRENT = {
+    **ROTATIONS,
+    "strategies": [{**s, "vs_current": None} for s in ROTATIONS["strategies"]],
+    "current_strategy": None,
+    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
 }
 
 WATER_PLAN = {
