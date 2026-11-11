@@ -8,7 +8,7 @@ agentes: [calidad, datos]
 subsistemas: [S3, D4]
 depende_de: [HU-011]
 reglas: [R1, R2, R3, R4, R7, R8, R9]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-12 · Calidad y trazabilidad

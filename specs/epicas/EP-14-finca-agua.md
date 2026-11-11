@@ -8,7 +8,7 @@ agentes: [motor-api, web, datos, producto-agro]
 subsistemas: [AG1, D3, M1, M7, M10, W7]
 depende_de: [EP-04, EP-06, HU-181]
 reglas: [R1, R2, R3, R4, R5, R6, R9, R10]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-14 · Agua del plan y etapas del cultivo
@@ -26,11 +26,11 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 ### HU-142 · Etapas de cada cultivo con Kc
 
 - **Historia:** Como motor, quiero las etapas de cada cultivo con su duración y coeficiente de cultivo (Kc), para estimar su consumo de agua y lo que dura cada ventana.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] `crop_stages` de los 7 cultivos del MVP (papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia): cada etapa con `days`, `kc`, `frost_sensitive` y `heat_sensitive`, y `gdd` solo si hay fuente
-  - [ ] Valores de FAO-56 o de una fuente local, citados (R8); si se adaptan a la región, se dice cómo
-  - [ ] La suma de los días de las etapas coincide con `cycle_months` de la ficha, con la tolerancia que se documente
+  - [x] Valores de FAO-56 o de una fuente local, citados (R8); si se adaptan a la región, se dice cómo (`fao_56` por etapa en `catalog/crops.yaml`)
+  - [x] La suma de los días de las etapas coincide con `cycle_months` de la ficha, con la tolerancia que se documente (`cycle_months` sale de la suma de las etapas: días entre 30,44, con un decimal; `pipeline/catalog.py`)
   - [ ] Revisión cruzada por otro integrante
 - **Reglas que aplican:** R8
 - **Contrato que toca:** `crop_stages`
@@ -77,7 +77,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
   - [ ] Volumen en m³ según el área de cada cultivo
   - [ ] Año normal y año seco; misma entrada, mismo resultado
   - [ ] El mismo cálculo, sin área, da el déficit de una ventana de siembra para la señal `water` (HU-071): no hay dos balances de agua
-  - [ ] Sin lluvia de la fuente elegida, sin ET0 o sin Kc de alguna etapa, no devuelve un déficit: quien lo llama responde `insufficient_data` (R1)
+  - [ ] Sin lluvia de la fuente elegida, sin ET0 o sin Kc de alguna etapa, no devuelve un déficit: quien lo llama responde `insufficient_data` (R1). El Kc de la etapa de desarrollo no falta: se interpola en línea recta entre el de la inicial y el de la media (FAO-56; contrato, `crop_stages`)
   - [ ] Prueba: con la misma lluvia y el mismo cultivo, un suelo arenoso da un déficit mayor o igual que uno arcilloso
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `climate_month`, `precip_month`, `crop_stages`, `grid_cells`, `soil_municipality`
