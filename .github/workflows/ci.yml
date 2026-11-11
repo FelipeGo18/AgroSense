@@ -1,35 +1,117 @@
 # HU-022: lint, pruebas y build en cada cambio.
-# Corre el comando local: Ruff, Ruff format, pytest, typecheck, lint, format, Vitest y build web.
-# No usa secretos ni toca la base de la nube: las pruebas usan la PostgreSQL de Compose.
+#
+# Tres jobs, y los tres son checks obligatorios para mergear a `desarrollo`:
+#   hu      la rama y los commits dicen su HU, y qué partes del repo cambiaron;
+#   python  Ruff, formato y pytest, en la imagen de Dockerfile.test contra la PostgreSQL de Compose;
+#   web     typecheck, lint, formato, Vitest y build.
+# `python` y `web` corren en paralelo, y solo si su parte cambió: un job que no hace falta queda «skipped», y GitHub lo
+# cuenta como aprobado. Los pasos son los de `scripts/test.sh`, los mismos que en local (`docker compose run --rm test`).
+# La imagen y las dependencias de la web se guardan en la caché de GitHub entre corridas: mientras no cambien
+# `uv.lock` ni `web/package-lock.json`, no se vuelven a instalar.
+# No usa secretos ni toca la base de la nube.
 
 name: CI
 
 on:
   push:
     branches: [desarrollo, produccion]
-  # Sin filtro de ramas ni de rutas: si el check se exige en la rama, tiene que correr en todo PR.
+  # Sin filtro de ramas ni de rutas aquí: los checks son obligatorios, así que tienen que existir en todo PR.
   pull_request:
+
 # Si llegan varios commits seguidos a la misma rama, solo se prueba el último.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-jobs: 
-  test:
+permissions:
+  contents: read
+  # El filtro de cambios pide a la API la lista de archivos del PR.
+  pull-requests: read
+
+jobs:
+  hu:
     runs-on: ubuntu-latest
-    #La primera corrida es lenta (no hay caché de Docker); si pasa de 20 minutos, algo se colgó.
-    timeout-minutes: 20
+    timeout-minutes: 5
+    outputs:
+      python: ${{ steps.cambios.outputs.python }}
+      web: ${{ steps.cambios.outputs.web }}
     steps:
       - uses: actions/checkout@v4
         with:
           # Toda la historia: el paso de los nombres compara los commits del PR con la rama de destino.
           fetch-depth: 0
-      # La rama y cada commit del PR dicen su HU (docs/revision-de-pr.md, sección 1). Va en este mismo check `test`, que
-      # es obligatorio para mergear: un PR sin su HU no entra.
+      # La rama y cada commit del PR dicen su HU (docs/revision-de-pr.md, sección 1).
       - name: Rama y commits con su HU
         if: github.event_name == 'pull_request'
         run: python3 scripts/check_names.py "$GITHUB_HEAD_REF" "$GITHUB_BASE_REF"
-      - name: Lint, pruebas y build (Docker Compose)
+      # Qué partes cambiaron. Acción de terceros fijada a un commit exacto (v4.0.3), no a una etiqueta que se pueda mover.
+      - name: Qué partes cambiaron
+        id: cambios
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
+        with:
+          filters: |
+            python:
+              - 'backend/**'
+              - 'pipeline/**'
+              - 'common/**'
+              - 'catalog/**'
+              - 'data/**'
+              - 'tests/**'
+              - 'scripts/**'
+              - 'specs/02-contratos.md'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'alembic.ini'
+              - 'Dockerfile*'
+              - 'docker-compose.yml'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - 'design/**'
+              - 'scripts/test.sh'
+              - '.github/workflows/ci.yml'
+
+  python:
+    needs: hu
+    if: needs.hu.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    # Si pasa de 15 minutos, algo se colgó.
+    timeout-minutes: 15
+    env:
+      # Así la imagen que arma build-push-action se llama `agrosense-test`, la que busca `docker compose run test`.
+      COMPOSE_PROJECT_NAME: agrosense
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # La imagen de pruebas (Python, uv, PostgreSQL cliente y las dependencias) sale de la caché de GitHub mientras no
+      # cambien Dockerfile.test ni uv.lock. Antes se armaba desde cero en cada corrida (cerca de un minuto).
+      - name: Imagen de pruebas (con caché)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.test
+          tags: agrosense-test
+          load: true
+          cache-from: type=gha,scope=test
+          cache-to: type=gha,scope=test,mode=max
+      - name: Ruff, formato y pytest (Docker Compose)
         run: |
           cp .env.example .env
-          docker compose run --rm test
+          docker compose run --rm test bash scripts/test.sh python
+
+  web:
+    needs: hu
+    if: needs.hu.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # Node 22, como Dockerfile.test, con la caché de npm guardada entre corridas (antes `npm ci` bajaba los 537
+      # paquetes cada vez). La web no necesita la base ni Docker: corre directo en la máquina de GitHub.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Typecheck, lint, formato, Vitest y build
+        run: bash scripts/test.sh web
