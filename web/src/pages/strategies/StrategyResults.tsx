@@ -5,7 +5,15 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { ExampleLabel } from "@/components/ui/Labels";
 import { explain422, type RotationResponse, type RotationWeights, type useRotations } from "@/features/strategies/entry";
-import { excludedBreakdown, excludedTotal, exclusionTitle, sequence, sourcesText, type Exclusion } from "@/features/strategies/strategies";
+import {
+  excludedBreakdown,
+  excludedTotal,
+  exclusionTitle,
+  sequence,
+  sourcesText,
+  type Exclusion,
+  type Strategy,
+} from "@/features/strategies/strategies";
 import type { Version } from "@/features/version";
 import { StrategyCard } from "./StrategyCard";
 
@@ -26,6 +34,8 @@ export interface StrategyResultsProps {
   onWriteCurrent: () => void;
   /** Probar el mismo terreno con dos ciclos. */
   onTwoCycles: () => void;
+  /** La dirección del detalle de un ciclo de una estrategia (HU-215). */
+  cycleLink: (strategy: Strategy, cycle: number) => string;
 }
 
 /**
@@ -43,6 +53,7 @@ export function StrategyResults({
   onEdit,
   onWriteCurrent,
   onTwoCycles,
+  cycleLink,
 }: StrategyResultsProps) {
   if (rotations.isPending) {
     return (
@@ -83,7 +94,7 @@ export function StrategyResults({
           <SectionTitle id="hoy" title="Lo que usted siembra hoy">
             Su rotación de siempre, evaluada con los mismos criterios. Cada estrategia de abajo dice cuánto gana o pierde frente a ella.
           </SectionTitle>
-          <StrategyCard strategy={data.current_strategy} {...cardProps} />
+          <StrategyCard strategy={data.current_strategy} {...cardProps} cycleLink={(n) => cycleLink(data.current_strategy!, n)} />
         </section>
       ) : (
         !empty && (
@@ -133,7 +144,7 @@ export function StrategyResults({
           <ol className="grid grid-cols-1 gap-8 xl:grid-cols-2">
             {data.strategies.map((strategy) => (
               <li key={strategy.crop_ids.join("-")} className="min-w-0">
-                <StrategyCard strategy={strategy} {...cardProps} />
+                <StrategyCard strategy={strategy} {...cardProps} cycleLink={(n) => cycleLink(strategy, n)} />
               </li>
             ))}
           </ol>

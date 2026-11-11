@@ -133,7 +133,7 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 - **Historia:** Como agricultor, quiero ver qué cambió en las heladas, la lluvia y el calor de mi zona, y cómo se movieron las mejores fechas de siembra de mi cultivo, para adaptar mi finca a condiciones que cambian.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Se llega desde el resultado del diagnóstico, desde el ciclo de una estrategia (HU-215) y desde el lote, con el municipio y el cultivo ya elegidos
+  - [ ] Se llega desde el resultado del diagnóstico, desde el ciclo de una estrategia (HU-215) y desde el lote, con el municipio y el cultivo ya elegidos. El ciclo ya enlaza a `/que-cambio?municipio=&cultivo=` (`PATHS.changes`), que hoy dice que está pendiente: esta HU pone ahí la pantalla
   - [ ] Por mes, tres comparaciones (heladas, lluvia y temperatura máxima) entre los dos periodos, cada una con su unidad, los años de cada periodo y la fuente
   - [ ] Las mejores ventanas de cada periodo, lado a lado («Entre 1981 y 2000: …» · «Entre 2005 y 2024: …»)
   - [ ] Rótulo fijo y visible: «Así fue en la historia de su zona. No es un pronóstico»

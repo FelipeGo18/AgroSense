@@ -19,6 +19,7 @@ import {
   validate,
   type StrategyForm,
 } from "@/features/strategies/entry";
+import { formatRange, ndviPeriod, noShortfall, windowSpans } from "@/features/strategies/cycle";
 import { setLightMode } from "@/lib/lightMode";
 
 // Datos de ejemplo de las pruebas (R5): catálogo, lote, siembras y respuesta de muestra.
@@ -90,6 +91,54 @@ const LOT_LIST = [
 const LOT_DETAIL = { ...LOT_LIST[0], soil: null, current_seasons: [{ season_id: "s3", crop_id: "avena_vicia", area_ha: 1 }] };
 const SOW = ["2026-12-07", "2027-04-05", "2027-08-02"];
 const HARVEST = ["2027-03-29", "2027-07-26", "2027-12-20"];
+const signal = (level: string | null, score: number | null, reason: string) => ({
+  status: level ? "available" : "insufficient_data",
+  level,
+  critical: false,
+  score,
+  counts: true,
+  indicators: [],
+  reasons: [reason],
+  sources: null,
+});
+const DIAGNOSIS = {
+  suitability: {
+    level: "suitable",
+    score: 95,
+    basis: "municipality",
+    tmean_annual_c: 12.8,
+    altitude_m: 2660,
+    reasons: ["La temperatura media anual (12,8 °C) está en el rango del cultivo"],
+  },
+  window: { sowing_start: "2027-04-05", harvest_estimate: "2027-07-26", harvest_basis: "calendar", supply_semester: null },
+  overall: {
+    light: "green",
+    action: "sow",
+    high_risk: false,
+    weights_basis: "farmer",
+    limiting_signal: "frost",
+    reasons: ["Heladas raras en la floración"],
+  },
+  overall_default: {
+    light: "green",
+    action: "sow",
+    high_risk: false,
+    weights_basis: "default",
+    limiting_signal: "frost",
+    reasons: ["Heladas raras en la floración"],
+  },
+  weights: SIGNAL_DEFAULTS,
+  signals: {
+    water: signal("favorable", 82, "En 8 de los últimos 10 años la lluvia cubrió lo que necesita"),
+    frost: signal("favorable", 72, "Heló en la floración 4 de cada 100 años"),
+    heat: signal("favorable", 95, "La máxima rara vez pasa de 22 °C"),
+    soil: signal("favorable", 78, "pH estimado en el rango del cultivo"),
+    supply: signal("favorable", 76, "Se sembró menos que antes"),
+    market: signal(null, null, "Sin datos de precios"),
+  },
+  limitations: ["Sin datos de mercado: el precio no se evaluó"],
+  versions: { dataset: "ejemplo", rules: "ejemplo" },
+};
 const cycle = (n: number, crop: string, extra: Record<string, unknown> = {}) => ({
   cycle: n,
   crop_id: crop,
@@ -100,7 +149,7 @@ const cycle = (n: number, crop: string, extra: Record<string, unknown> = {}) => 
   light_default: crop === "descanso" ? null : "green",
   limiting_signal: null,
   high_risk: false,
-  diagnosis: null,
+  diagnosis: crop === "descanso" ? null : DIAGNOSIS,
   ...extra,
 });
 const criterion = (level: string, reason: string, sources = ["agrosavia_rotacion"]) => ({
@@ -182,6 +231,53 @@ const ROTATIONS = {
   limitations: ["Suelo estimado para el municipio, no para su lote"],
   versions: { dataset: "ejemplo", rules: "ejemplo" },
 };
+const waterMonth = (month: number, normal: number[] | null, dry: number[] | null) => ({
+  year: 2027,
+  month,
+  status: normal ? "available" : "insufficient_data",
+  stage: "mid",
+  need_mm: 90,
+  rain_mm: { normal: normal ? 70 : null, dry: normal ? 40 : null },
+  deficit_mm: { normal, dry },
+  volume_m3: { normal: normal && normal.map((mm) => mm * 20), dry: dry && dry.map((mm) => mm * 20) },
+});
+const WATER = {
+  request: { municipality_id: "15646", total_area_ha: 2, crops: [{ crop_id: "arveja", area_pct: 100, sowing_date: SOW[1] }] },
+  crops: [
+    {
+      crop_id: "arveja",
+      area_ha: 2,
+      sowing_date: SOW[1],
+      harvest_estimate: HARVEST[1],
+      harvest_basis: "calendar",
+      months: [waterMonth(4, [0, 0], [5, 9]), waterMonth(5, [8, 20], [30, 44]), waterMonth(6, null, null)],
+      total_volume_m3: { normal: [160, 400], dry: [700, 1060] },
+    },
+  ],
+  farm: { months: [], total_volume_m3: { normal: [160, 400], dry: [700, 1060] } },
+  soil_moisture: [
+    { month: 4, source_id: "nasa_power", indicator: "soil_wetness_root", value: 0.62, unit: "fracción" },
+    { month: 4, source_id: "smap", indicator: "soil_moisture_surface", value: 0.31, unit: "m³/m³" },
+  ],
+  sources: { rain: "imerg", et0: "nasa_power", soil: "soilgrids" },
+  soil_basis: "municipality",
+  limitations: [],
+  versions: { dataset: "ejemplo", rules: "ejemplo" },
+};
+const TRENDS = (ndvi: Record<string, unknown>) => ({
+  request: { municipality_id: "15646", crop_id: "arveja", sowing_date: SOW[1] },
+  water: { status: "insufficient_data", source_id: null, unit: "mm", points: [] },
+  supply: { status: "insufficient_data", source_id: "eva", unit: "ha", semester: null, points: [] },
+  ndvi,
+  versions: { dataset: "ejemplo", rules: "ejemplo" },
+});
+const NDVI = {
+  status: "available",
+  source_id: "modis_ndvi",
+  quality: "ok",
+  points: Array.from({ length: 23 }, (_, i) => ({ period: i + 1, ndvi_normal: i === 5 ? null : 0.5 + (i % 5) / 20 })),
+};
+const TRENDS_KEY = `GET /api/v1/trends?municipality_id=15646&crop_id=arveja&sowing_date=${SOW[1]}`;
 const SOIL = (id: string) => ({
   municipality_id: id,
   ph: { value: 5.5, p05: 5.2, p95: 5.8 },
@@ -208,6 +304,8 @@ function fakeApi(extra: Record<string, Reply> = {}) {
     "POST /api/v1/rotations": { status: 200, body: ROTATIONS },
     "GET /api/v1/catalogs/municipalities/15646/soil": { status: 200, body: SOIL("15646") },
     "GET /api/v1/catalogs/municipalities/25899/soil": { status: 200, body: SOIL("25899") },
+    "POST /api/v1/water-plans": { status: 200, body: WATER },
+    [TRENDS_KEY]: { status: 200, body: TRENDS(NDVI) },
     ...extra,
   };
   vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
@@ -632,5 +730,211 @@ describe("Entrada a las estrategias desde el lote (HU-214)", () => {
     open(`${PATHS.consult}?lote=a1&siembra=${MONTH}`);
     expect(await screen.findByText(/Ese lote no está entre los suyos/)).toBeInTheDocument();
     expect(rotationCalls(calls)).toHaveLength(0);
+  });
+});
+
+describe("Ciclo de una estrategia (HU-215)", () => {
+  const CYCLE = `${GUEST}&estrategia=avena_vicia-arveja-papa&ciclo=2`;
+  const waterCalls = (calls: { key: string; body: unknown }[]) =>
+    calls.filter((c) => c.key === "POST /api/v1/water-plans").map((c) => c.body);
+
+  it("reglas: el periodo del NDVI, la ventana que pasa de año y los rangos", () => {
+    expect(ndviPeriod("2027-01-01")).toBe(1);
+    expect(ndviPeriod("2027-12-31")).toBe(23);
+    expect(windowSpans("2027-04-05", "2027-07-26")).toEqual([[6, 13]]);
+    expect(windowSpans("2027-11-01", "2028-02-15")).toEqual([
+      [20, 23], // el 1 de noviembre es el día 305: periodo 20
+      [1, 3],
+    ]);
+    expect(windowSpans("2027-01-01", "2028-01-02")).toEqual([[1, 23]]);
+    expect(formatRange([8, 20], "mm")).toBe("8 a 20 mm");
+    expect(formatRange([20, 20], "mm")).toBe("20 mm");
+    expect(formatRange(null, "mm")).toBeNull();
+    expect(noShortfall([0, 0])).toBe(true);
+    expect(noShortfall([0, 4])).toBe(false);
+  });
+
+  it("tocar un ciclo abre su detalle con el diagnóstico que ya vino, sin pedir otro", async () => {
+    const calls = fakeApi();
+    sessionStorage.setItem("agrosense.area", "2");
+    const router = open(GUEST);
+    const user = userEvent.setup();
+    await results();
+    await user.click(card(/^Estrategia 1/).getByRole("link", { name: "Ver el ciclo 2 de 3: Arveja" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Ciclo 2 de 3: arveja" })).toBeInTheDocument();
+    expect(new URLSearchParams(router.state.location.search).get("estrategia")).toBe("avena_vicia-arveja-papa");
+    expect(screen.getByRole("link", { name: "2 · Arveja" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Puede sembrar en esa fecha")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Las seis señales de este ciclo" })).toBeInTheDocument();
+    expect(screen.getByText("Heló en la floración 4 de cada 100 años")).toBeInTheDocument();
+    expect(calls.some((c) => c.key === "POST /api/v1/diagnostics")).toBe(false);
+    // Ciclo anterior y siguiente, y volver a las estrategias.
+    expect(screen.getByRole("link", { name: "‹ Ciclo 1: avena con vicia" })).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Ciclo 3: papa ›" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Ciclo 3 de 3: papa" })).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "‹ Volver a las estrategias" }));
+    await results();
+  });
+
+  it("el agua del ciclo: por mes en rangos, año normal o seco, con el rótulo de estimación", async () => {
+    const calls = fakeApi();
+    sessionStorage.setItem("agrosense.area", "2");
+    open(CYCLE);
+    const user = userEvent.setup();
+    expect(await screen.findByRole("heading", { name: "Agua de este ciclo" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(waterCalls(calls)[0]).toEqual({
+        municipality_id: "15646",
+        total_area_ha: 2,
+        crops: [{ crop_id: "arveja", area_pct: 100, sowing_date: SOW[1] }],
+      }),
+    );
+    expect(await screen.findByText("Estimación con el clima de la zona. Verifique la humedad del suelo en su lote")).toBeInTheDocument();
+    const may = within(screen.getByRole("listitem", { name: /^may/ }));
+    expect(may.getByText("8 a 20 mm")).toBeInTheDocument();
+    expect(may.getByText("160 a 400 m³")).toBeInTheDocument();
+    expect(may.getByText("el cultivo pasaría sed")).toBeInTheDocument();
+    expect(within(screen.getByRole("listitem", { name: /^abr/ })).getByText("La lluvia alcanza")).toBeInTheDocument();
+    expect(within(screen.getByRole("listitem", { name: /^jun/ })).getByText("Sin datos suficientes")).toBeInTheDocument();
+    expect(screen.getByText(/En el ciclo faltarían 160 a 400 m³/)).toBeInTheDocument();
+
+    await user.click(group("¿Qué año ver?").getByRole("radio", { name: "Año seco" }));
+    expect(within(screen.getByRole("listitem", { name: /^abr/ })).getByText("5 a 9 mm")).toBeInTheDocument();
+    expect(screen.getByText(/En el ciclo faltarían 700 a 1.060 m³ en un año seco/)).toBeInTheDocument();
+
+    // La humedad del suelo de la zona, por fuente y en su unidad, para contrastar.
+    const moisture = within(screen.getByRole("region", { name: "Humedad del suelo de la zona" }));
+    expect(moisture.getByText("NASA POWER (NASA)")).toBeInTheDocument();
+    expect(moisture.getByText("SMAP (NASA)")).toBeInTheDocument();
+    expect(moisture.getByText("0,31 m³/m³")).toBeInTheDocument();
+    expect(moisture.getAllByText("Para contrastar")).toHaveLength(2);
+  });
+
+  it("con riego, lo que falta es el riego que haría falta", async () => {
+    fakeApi();
+    sessionStorage.setItem("agrosense.area", "2");
+    open(CYCLE.replace("riego=no", "riego=si"));
+    const may = await screen.findByRole("listitem", { name: /^may/ });
+    expect(within(may).getByText("riego que haría falta")).toBeInTheDocument();
+  });
+
+  it("el verdor de la zona con la ventana del ciclo, en gráfica y en tabla, y el enlace a qué cambió", async () => {
+    fakeApi();
+    sessionStorage.setItem("agrosense.area", "2");
+    open(CYCLE);
+    expect(await screen.findByText("Cuándo suele estar verde el campo en su zona · MODIS, 250 m")).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: /Verdor normal de la zona/ })).toBeInTheDocument();
+    expect(screen.getByText("Ver los datos en una tabla")).toBeInTheDocument();
+    expect(screen.getAllByText("Sin dato").length).toBeGreaterThan(0); // el periodo sin dato no se inventa
+    expect(screen.getByRole("link", { name: "Ver qué cambió en su zona" })).toHaveAttribute(
+      "href",
+      `${PATHS.changes}?municipio=15646&cultivo=arveja`,
+    );
+  });
+
+  it("sin datos del verdor, lo dice en vez de dibujar", async () => {
+    fakeApi({
+      [TRENDS_KEY]: { status: 200, body: TRENDS({ status: "insufficient_data", source_id: "modis_ndvi", quality: null, points: [] }) },
+    });
+    sessionStorage.setItem("agrosense.area", "2");
+    open(CYCLE);
+    expect(await screen.findByText("Sin datos suficientes del verdor de su zona.")).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /Verdor normal/ })).not.toBeInTheDocument();
+  });
+
+  it("un descanso no tiene semáforo: dice cuánto dura y por qué se propone", async () => {
+    const calls = fakeApi();
+    sessionStorage.setItem("agrosense.area", "2");
+    open(`${GUEST}&estrategia=descanso-arveja-papa&ciclo=1`);
+    expect(await screen.findByRole("heading", { level: 1, name: "Ciclo 1 de 3: descanso" })).toBeInTheDocument();
+    expect(screen.getByText("Sin semáforo: en un descanso no se siembra")).toBeInTheDocument();
+    expect(screen.getByText(/semanas sin sembrar/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Después del descanso" })).toBeInTheDocument();
+    expect(screen.getByText("Datos ejemplo · Reglas ejemplo")).toBeInTheDocument();
+    expect(screen.queryByText(/^Luz /)).not.toBeInTheDocument();
+    expect(waterCalls(calls)).toHaveLength(0);
+  });
+
+  it("un ciclo que ya no está en la respuesta vuelve a la lista", async () => {
+    fakeApi();
+    sessionStorage.setItem("agrosense.area", "2");
+    open(`${GUEST}&estrategia=maiz-papa-arveja&ciclo=1`);
+    await results();
+  });
+
+  it("sin cuenta, el primer ciclo ofrece crear cuenta para registrarlo", async () => {
+    fakeApi();
+    sessionStorage.setItem("agrosense.area", "2");
+    open(`${GUEST}&estrategia=avena_vicia-arveja-papa&ciclo=1`);
+    expect(await screen.findByRole("link", { name: "Crear cuenta y registrarla" })).toHaveAttribute("href", PATHS.signup);
+  });
+});
+
+describe("Registrar el primer ciclo desde el lote (HU-215, HU-165)", () => {
+  const lotApi = (sowing: string) => {
+    const rotations = {
+      ...ROTATIONS,
+      strategies: [
+        strategy(1, "suggested", ["avena_vicia", "arveja", "papa"], 76, {
+          cycles: [cycle(1, "avena_vicia", { sowing_date: sowing }), cycle(2, "arveja"), cycle(3, "papa")],
+        }),
+      ],
+    };
+    return fakeApi({
+      "GET /api/v1/me": { status: 200, body: ROSA },
+      "GET /api/v1/lots": { status: 200, body: LOT_LIST },
+      "GET /api/v1/lots/a1": { status: 200, body: LOT_DETAIL },
+      "GET /api/v1/lots/a1/seasons": { status: 200, body: SEASONS },
+      "POST /api/v1/rotations": { status: 200, body: rotations },
+      "POST /api/v1/lots/a1/seasons": { status: 201, body: SEASONS[0] },
+    });
+  };
+  const LOT_CYCLE = `${PATHS.consult}?lote=a1&siembras=s2&siembra=${MONTH}&ciclos=3&estrategia=avena_vicia-arveja-papa&ciclo=1`;
+
+  it("lleva al formulario de siembra ya armado, y la siembra se guarda con el diagnóstico que vio", async () => {
+    const calls = lotApi("2026-01-05");
+    const router = open(LOT_CYCLE);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Registrar esta siembra de avena con vicia" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Registrar la siembra" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe(PATHS.sow("a1"));
+    expect(screen.getByLabelText("Cultivo")).toHaveValue("avena_vicia");
+    expect(screen.getByLabelText("Fecha de siembra")).toHaveValue("2026-01-05");
+    expect(screen.getByText(/Se guarda con el diagnóstico que vio en la estrategia \(luz verde\)/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Guardar siembra" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.key === "POST /api/v1/lots/a1/seasons")?.body).toMatchObject({
+        crop_id: "avena_vicia",
+        sowing_date: "2026-01-05",
+        follows_season_ids: ["s2"],
+        diagnosis_light: "green",
+        diagnosis_light_default: "green",
+        diagnosis_action: "sow",
+        diagnosis_irrigated: true,
+        dataset_version: "ejemplo",
+      }),
+    );
+  });
+
+  it("con otro cultivo, el diagnóstico de la estrategia ya no corresponde y no se guarda", async () => {
+    const calls = lotApi("2026-01-05");
+    open(LOT_CYCLE);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Registrar esta siembra de avena con vicia" }));
+    await user.selectOptions(await screen.findByLabelText("Cultivo"), "papa");
+    expect(screen.getByText(/el diagnóstico de la estrategia ya no corresponde/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Guardar siembra" }));
+    await waitFor(() => expect(calls.find((c) => c.key === "POST /api/v1/lots/a1/seasons")).toBeDefined());
+    expect(calls.find((c) => c.key === "POST /api/v1/lots/a1/seasons")?.body).not.toHaveProperty("diagnosis_light");
+  });
+
+  it("si la fecha del primer ciclo todavía no llega, dice cuándo registrarla", async () => {
+    lotApi("2099-01-05");
+    open(LOT_CYCLE);
+    expect(await screen.findByText(/Cuando la siembre, desde el 5 de enero de 2099, regístrela en su lote/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Registrar esta siembra/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ir a mi lote" })).toHaveAttribute("href", PATHS.lot("a1"));
   });
 });
