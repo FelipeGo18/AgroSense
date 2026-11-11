@@ -33,11 +33,13 @@ import {
 } from "@/features/diagnosis/consult";
 import { SIGNAL_NAME, harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { sameLight, strategiesLink, whyDifferent } from "@/features/diagnosis/lights";
+import { asksOtherWindow } from "@/features/diagnosis/windows";
 import { byId, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
 import { useVersion } from "@/features/version";
 import { asWeights, useSignalPriorities } from "@/features/diagnosis/priorities";
 import { PrioritiesPanel } from "./PrioritiesPanel";
 import { SignalList } from "./SignalList";
+import { BestWindows, NotSuitable, SuitabilityScore } from "./Suitability";
 import { formatDate, useCrops } from "@/features/farm/seasons";
 import { irrigationText, placeName } from "@/pages/farm/common";
 
@@ -78,6 +80,16 @@ export function DiagnosisPage() {
   // Al intentar enviar, o si la dirección ya traía una consulta, aparecen los de todos.
   const [tried, setTried] = useState(() => hasConsult(params));
   const [touched, setTouched] = useState<ReadonlySet<ConsultField>>(() => new Set());
+  // Si la dirección cambia desde afuera (una de las mejores fechas, «Elegir otro cultivo», volver atrás), el formulario
+  // muestra esa consulta. Al enviar también cambia, con lo mismo que ya tiene el formulario.
+  const search = params.toString();
+  const [shownSearch, setShownSearch] = useState(search);
+  if (search !== shownSearch) {
+    setShownSearch(search);
+    setForm(fromParams(params));
+    setTouched(new Set());
+    setTried(hasConsult(params));
+  }
   const touch = (field: ConsultField) => setTouched((current) => (current.has(field) ? current : new Set(current).add(field)));
 
   const places = byId(municipalities.data);
@@ -344,17 +356,25 @@ function errorText(error: Error): string {
 function Summary({ data }: { data: DiagnosisResponse }) {
   const version = useVersion();
   const defaults = version.data ? asWeights(version.data.default_weights) : null;
-  const notSuitable = data.suitability.level === "not_suitable";
-  const single = notSuitable || sameLight(data.overall, data.overall_default);
+  const single = sameLight(data.overall, data.overall_default);
   const rotate = data.overall.action === "rotate" || data.overall_default.action === "rotate";
+  const example = data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>;
+  // Un cultivo que no se da en la zona tiene su propio letrero, sin semáforo, señales ni ventanas (HU-194).
+  if (data.suitability.level === "not_suitable") {
+    return (
+      <Card bodyClassName="gap-4">
+        {example}
+        <NotSuitable data={data} />
+        <p className="text-[15px] text-texto-secundario">Es información para decidir. La decisión es suya.</p>
+      </Card>
+    );
+  }
   return (
     <Card bodyClassName="gap-4">
-      {data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>}
+      {example}
       {single ? (
         <>
-          <p className="font-titulos text-[clamp(1.4rem,3.5vw,2rem)] leading-tight font-semibold">
-            {notSuitable ? "Este cultivo no se da en su zona" : ACTION_TEXT[data.overall.action]}
-          </p>
+          <p className="font-titulos text-[clamp(1.4rem,3.5vw,2rem)] leading-tight font-semibold">{ACTION_TEXT[data.overall.action]}</p>
           <TrafficLightBadge light={data.overall.light} className="self-start" />
           <LimitingLine signal={data.overall.limiting_signal} />
           <Reasons reasons={data.overall.reasons} />
@@ -372,6 +392,8 @@ function Summary({ data }: { data: DiagnosisResponse }) {
           <span className="text-texto-secundario">{harvestNote(data.window.harvest_basis)}</span>
         </p>
       )}
+      <SuitabilityScore score={data.suitability.score} />
+      {asksOtherWindow(data.overall, data.overall_default) && <BestWindows data={data} strategiesShown={rotate} />}
       {rotate && (
         <ButtonLink to={strategiesLink(data.request)} variant="secondary" className="w-full sm:w-auto sm:self-start">
           Ver estrategias de rotación

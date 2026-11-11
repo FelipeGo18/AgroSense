@@ -192,7 +192,7 @@ La escena refleja la condición aproximada de ahora en el municipio (decisión 7
 - **Dónde se ajustan.** Un resumen plegado, «Criterio de AgroSense · Ajustar» (o «Sus prioridades · Ajustar»), en la consulta, el resultado y el calendario. Abre los seis controles de cinco semillas. Con cuenta se guardan en el perfil; sin cuenta, en el navegador.
 - **Dos luces.** Cuando difieren, «Con sus prioridades» va primero y más grande, y «Con el criterio de AgroSense» al lado, nunca escondida. Una línea dice por qué difieren («Usted puso la oferta en 0»). Cada luz dice cuál es su factor que más limita.
 - **Número de una ventana.** El principal es la nota del factor que más limita; el secundario, el promedio con sus prioridades.
-- **Cultivo no apto.** Letrero propio, «No se da en su zona», sin semáforo: la nota de aptitud de 0 a 100, la escala de cinco semillas, la razón (la altitud frente a la ficha) con su fuente, «Elegir otro cultivo» y las alternativas.
+- **Cultivo no apto.** Letrero propio, «No se da en su zona», sin semáforo: la nota de aptitud de 0 a 100, la escala de cinco semillas, la razón (la temperatura media anual de la zona frente al rango de la ficha, decisión 13) con su fuente, «Elegir otro cultivo» y las alternativas.
 - **Agua sin riego.** En un lote sin riego, el déficit no se dice «riego probable» sino «En estos meses la lluvia no alcanza: el cultivo pasaría sed». Vale en todas las vistas del lote: Mis lotes, lote vivo, calendario y agua.
 - **Historial.** Una línea de tiempo con bifurcaciones (un terreno se divide) y uniones (varios se juntan). En móvil, una lista por siembra con «viene de…».
 
