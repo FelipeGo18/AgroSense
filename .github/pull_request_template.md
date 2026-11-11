@@ -1,6 +1,7 @@
 <!--
 Antes de pedir revisión, revise su PR con docs/revision-de-pr.md.
 El PR va a `desarrollo`, nunca a `produccion`. Sin firma de Claude ni de otra herramienta en los commits ni aquí.
+La rama es `tipo/hu-xxx-descripcion` y cada commit empieza con `tipo(HU-xxx): …`: el CI lo revisa.
 Borre las secciones que no apliquen y estos comentarios.
 -->
 
