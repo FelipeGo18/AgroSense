@@ -38,7 +38,7 @@ import yaml
 
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import schema
+from pipeline import climate_normals, schema
 from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, nasa_power, nasadem, sipsa
 
@@ -351,7 +351,7 @@ def terrain_from_cache(
     except FileNotFoundError as error:
         log.warning("source_missing", source=nasadem.SOURCE_ID, detail=f"Se publica sin la altitud de NASADEM: {error}")
         return municipalities, None, []
-    terrain = nasadem.municipality_terrain(cells)
+    terrain = nasadem.municipality_terrain(cells, municipalities)
     municipalities = nasadem.with_terrain(municipalities, terrain)
     empty = cells.filter(pl.col("altitude_m").is_null()).height
     log.info(
@@ -443,6 +443,21 @@ def build(
     # Primero la altitud: el clima se corrige con ella (HU-044).
     municipalities, grid, terrain_sources = terrain_from_cache(municipalities, boundaries, dem_cache)
     municipalities, climate, climate_sources = climate_from_cache(region, municipalities, power_cache)
+    # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
+    normal = climate_normals.Normal.from_region(region)
+    if climate is not None and not climate.is_empty():
+        if normal is None:
+            log.warning("climate_normal_missing", detail="region.yaml no trae climate_normal: tmean_annual_c queda nula")
+        else:
+            tmean = climate_normals.tmean_annual(climate, normal)
+            municipalities = climate_normals.with_tmean(municipalities, tmean)
+            missing = municipalities.filter(pl.col("tmean_annual_c").is_null()).height
+            log.info(
+                "tmean_annual_computed",
+                municipalities=municipalities.height - missing,
+                detail=f"Temperatura media anual de {normal.first_year}-{normal.last_year}: {municipalities.height - missing} "
+                f"municipios; {missing} sin años suficientes quedan nulos (R1)",
+            )
     catalog = crops_catalog.load()
     crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
     own = [dane.source(meta), dane_mgn.source(mgn_meta)]

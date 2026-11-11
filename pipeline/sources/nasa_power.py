@@ -242,7 +242,14 @@ def source(series: pl.DataFrame, meta: dict[str, Any]) -> dict[str, Any]:
     with_data = series.filter(pl.col("temp_min_c").is_not_null() | pl.col("temp_max_c").is_not_null())
     period = f"Del {with_data['date'].min()} al {with_data['date'].max()}" if with_data.height else None
     downloaded = (meta.get("downloaded_at") or "")[:10]
-    version = (meta.get("api_version") or "").removeprefix("v") or "2.x.x"
+    # La versión de la API sale de la respuesta. Si no la trae, la cita no nombra ninguna: no se inventa (R5).
+    version = (meta.get("api_version") or "").removeprefix("v")
+    citation = (
+        "The data was obtained from National Aeronautics and Space Administration (NASA) Langley Research Center's "
+        "Prediction Of Worldwide Energy Resources (POWER) project funded through the NASA Earth Science Division."
+    )
+    if version:
+        citation += f" The data was obtained from the POWER Project's Daily {version} version on {downloaded.replace('-', '/')}."
     return {
         "source_id": SOURCE_ID,
         "name": "NASA POWER · Datos diarios por punto (comunidad AG)",
@@ -251,12 +258,9 @@ def source(series: pl.DataFrame, meta: dict[str, Any]) -> dict[str, Any]:
         "downloaded_at": meta.get("downloaded_at"),
         "period_covered": period,
         "coverage": f"{len(meta.get('elevations', {}))} celdas de 0,5° × 0,625° que cubren la región",
-        "license": (
-            "La página de POWER no da una licencia; pide citar «The data was obtained from National Aeronautics and Space "
-            "Administration (NASA) Langley Research Center's Prediction Of Worldwide Energy Resources (POWER) project funded "
-            f"through the NASA Earth Science Division.» y «The data was obtained from the POWER Project's Daily {version} "
-            f"version on {downloaded.replace('-', '/')}.» (https://power.larc.nasa.gov/docs/referencing/)"
-        ),
+        "license": "La página de POWER no da una licencia; pide citar la fuente (https://power.larc.nasa.gov/docs/referencing/)",
+        # La cita que pide POWER (R8): la de la entrega.
+        "citation": citation,
         "notes": (
             "Es un reanálisis (MERRA-2 y GEOS-IT): un modelo con observaciones asimiladas, no una observación directa. "
             "Celda de 0,5° de latitud por 0,625° de longitud (unos 55 × 70 km): es un dato de la zona, no del lote. "

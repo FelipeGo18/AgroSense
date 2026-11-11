@@ -243,7 +243,19 @@ def test_la_fuente_dice_que_es_un_reanalisis_su_celda_y_la_cita_de_power(tmp_pat
     row = nasa_power.source(series, meta)
     assert row["source_id"] == "nasa_power" and "reanálisis" in row["notes"] and "0,625°" in row["notes"]
     assert row["period_covered"] == "Del 2024-01-01 al 2024-01-02"
-    assert "POWER Project's Daily 2.10.3 version on 2026/11/09" in row["license"]
+    # La cita va en `citation`, no en `license` (R8).
+    assert "POWER Project's Daily 2.10.3 version on 2026/11/09" in row["citation"]
+    assert row["citation"].startswith("The data was obtained from National Aeronautics and Space Administration (NASA)")
+    assert "The data was obtained" not in row["license"]
+
+
+def test_sin_version_de_la_api_la_cita_no_nombra_ninguna(tmp_path):
+    """Si la respuesta de POWER no trae la versión, no se inventa una (R5)."""
+    series, meta = nasa_power.read_cache([NORTH, SOUTH], write_cache(tmp_path))
+    meta = {**meta, "api_version": None}
+    citation = nasa_power.source(series, meta)["citation"]
+    assert "version" not in citation and "2.x" not in citation
+    assert citation.startswith("The data was obtained from National Aeronautics and Space Administration (NASA)")
 
 
 def sources_with_climate(tmp_path):
@@ -332,3 +344,4 @@ def test_el_gradiente_de_la_region_tiene_valor_y_fuente():
     lapse = build.load_region()["temperature_lapse_rate"]
     assert (lapse["temp_max_c_per_m"], lapse["temp_min_c_per_m"]) == (0.0058, 0.0059)
     assert lapse["source"]["source_id"] == "cenicafe_lapse_rate" and lapse["source"]["url"].startswith("https://")
+    assert lapse["source"]["citation"].startswith("Chaves Córdoba, B. y Jaramillo Robledo, A. (1999)")

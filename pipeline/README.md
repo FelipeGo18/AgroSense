@@ -57,8 +57,10 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
   La altitud es su promedio y la pendiente, la mediana de la de sus píxeles, calculada a 30 m con diferencias centrales.
 - Cada celda va con el municipio que contiene su centro (`grid_cells`, 593 648 celdas). Sin el suelo (HU-181) son todas
   `partial`.
-- La altitud y la pendiente de un municipio son la mediana de sus celdas, como las de un lote (supuesto por confirmar:
-  ver HU-206). Sin la caché de NASADEM se publica lo demás, sin la rejilla ni el clima diario, y el log lo dice.
+- La altitud de un municipio es la de la celda de su cabecera (el punto de DIVIPOLA), y su pendiente, la mediana de
+  sus celdas (decidido por Felipe el 10 de noviembre de 2026, HU-206).
+- `municipalities.tmean_annual_c` es la temperatura media de 1991–2020, corregida por altitud: el periodo normal está
+  en `region.yaml` (`climate_normal`) y la calcula `pipeline/climate_normals.py` (HU-044). Sin la caché de NASADEM se publica lo demás, sin la rejilla ni el clima diario, y el log lo dice.
 
 ## Clima diario de NASA POWER (HU-041)
 
