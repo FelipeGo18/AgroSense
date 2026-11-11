@@ -50,7 +50,8 @@ export function useLots(enabled = true) {
 }
 
 export function useLot(lotId: string) {
-  return useQuery({ queryKey: lotKey(lotId), queryFn: () => api<LotDetail>(`/lots/${lotId}`), retry: false });
+  // Sin lote elegido no se pide nada (la entrada a las estrategias lo usa solo con `?lote=`).
+  return useQuery({ queryKey: lotKey(lotId), queryFn: () => api<LotDetail>(`/lots/${lotId}`), retry: false, enabled: Boolean(lotId) });
 }
 
 export function useCreateLot() {

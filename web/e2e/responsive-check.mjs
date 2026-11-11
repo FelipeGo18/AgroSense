@@ -23,7 +23,7 @@ const THIS_MONTH = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota"
 /** Rutas de la app. Una vista nueva se agrega aquí. */
 const ROUTES = (
   process.env.ROUTES ??
-  `/,/entrar,/crear-cuenta,/consultar,/diagnostico,/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no,/mi-finca,/como-funciona,/politica-de-datos,/precios,/precios?producto=papa-negra,/ruta-que-no-existe`
+  `/,/entrar,/crear-cuenta,/consultar,/consultar?municipio=15646&siembra=${THIS_MONTH}&anterior=papa&riego=no,/diagnostico,/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no,/mi-finca,/como-funciona,/politica-de-datos,/precios,/precios?producto=papa-negra,/ruta-que-no-existe`
 ).split(",");
 /** Anchos de los que hay que cuidarse: teléfono chico, teléfonos comunes, tablet, portátiles y pantalla grande. Con altos bajos a propósito. */
 const SIZES = [
