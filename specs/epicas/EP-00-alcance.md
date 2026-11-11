@@ -8,7 +8,7 @@ agentes: [producto-agro, datos]
 subsistemas: [D1, AG1]
 depende_de: [Enunciado del 28 de octubre]
 reglas: [R7, R8]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-00 · Alcance piloto decidido con datos reales
