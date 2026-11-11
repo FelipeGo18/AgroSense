@@ -231,6 +231,8 @@ class HealthCriterion(BaseModel):
     status: Status
     level: Level | None
     rule_ids: list[str]
+    # Las fuentes de esas reglas (R8), para que la web las cite sin otro catálogo. Vacía sin regla con fuente.
+    source_ids: list[str]
     reasons: list[str]
 
 
@@ -245,6 +247,8 @@ class Issue(BaseModel):
     rule_id: str | None = None
     signal: SignalName | None = None
     reason: str
+    # De dónde sale el motivo (R8): la fuente de la regla, de la ficha del cultivo, del suelo o del clima de la señal.
+    source_ids: list[str]
 
 
 class Exclusion(Issue):

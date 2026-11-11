@@ -781,6 +781,8 @@ export interface components {
             signal?: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
             /** Reason */
             reason: string;
+            /** Source Ids */
+            source_ids: string[];
             /** Crop Ids */
             crop_ids: string[];
         };
@@ -814,6 +816,8 @@ export interface components {
             level: ("favorable" | "moderate" | "unfavorable") | null;
             /** Rule Ids */
             rule_ids: string[];
+            /** Source Ids */
+            source_ids: string[];
             /** Reasons */
             reasons: string[];
         };
@@ -835,6 +839,8 @@ export interface components {
             signal?: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
             /** Reason */
             reason: string;
+            /** Source Ids */
+            source_ids: string[];
         };
         /** LightResult */
         LightResult: {
