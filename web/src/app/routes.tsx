@@ -33,10 +33,7 @@ function Loading() {
 }
 
 /** Pantallas ya diseñadas en Figma que todavía no están programadas: cada enlace lleva a un lugar que lo dice. */
-const PENDING: { path: string; title: string }[] = [
-  { path: PATHS.consult, title: "Consultar" },
-  { path: PATHS.howItWorks, title: "¿Cómo funciona?" },
-];
+const PENDING: { path: string; title: string }[] = [{ path: PATHS.howItWorks, title: "¿Cómo funciona?" }];
 
 const pending = ({ path, title }: (typeof PENDING)[number]): RouteObject => ({
   path,
@@ -73,6 +70,8 @@ export const routes: RouteObject[] = [
       },
       { path: PATHS.dataPolicy, lazy: async () => ({ Component: (await import("@/pages/policy/PolicyPage")).PolicyPage }) },
       { path: PATHS.prices, lazy: async () => ({ Component: (await import("@/pages/prices/PricesPage")).PricesPage }) },
+      // «Consultar» es la entrada a las estrategias de rotación (HU-214, decisión 12).
+      { path: PATHS.consult, lazy: async () => ({ Component: (await import("@/pages/strategies/StrategiesPage")).StrategiesPage }) },
       { path: PATHS.diagnosis, lazy: async () => ({ Component: (await import("@/pages/diagnosis/DiagnosisPage")).DiagnosisPage }) },
       ...PENDING.map(pending),
       // Pruebas de la fase 0. Cada recorrido se carga aparte: trae sus propias escenas.

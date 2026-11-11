@@ -121,8 +121,9 @@ describe("Inicio (HU-173)", () => {
 
 describe("rutas", () => {
   it("una pantalla que aún no está programada lo dice y deja volver al inicio", async () => {
-    open(PATHS.consult);
-    expect(await screen.findByRole("heading", { level: 1, name: "Consultar" })).toBeInTheDocument();
+    // «Consultar» ya es la entrada a las estrategias (HU-214); «¿Cómo funciona?» sigue pendiente.
+    open(PATHS.howItWorks);
+    expect(await screen.findByRole("heading", { level: 1, name: "¿Cómo funciona?" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", PATHS.home);
   });
 

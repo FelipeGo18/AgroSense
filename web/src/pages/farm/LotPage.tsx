@@ -176,6 +176,10 @@ function Seasons({ lot }: { lot: LotDetail }) {
         ) : (
           <p className="text-[14px] text-texto-secundario">Todo el lote está sembrado. Registre una cosecha para sembrar de nuevo.</p>
         )}
+        {/* La entrada a las estrategias con este lote (HU-164, HU-214): su municipio, su riego y su historial. */}
+        <ButtonLink to={`${PATHS.consult}?lote=${lot.lot_id}`} variant="secondary" className="w-full sm:w-auto sm:self-start">
+          Ver estrategias de rotación
+        </ButtonLink>
       </Section>
       {harvested.length > 0 && (
         <Section title="Ya cosechado">

@@ -574,6 +574,8 @@ describe("Siembras y cosechas (HU-165, HU-220)", () => {
     expect(screen.getByRole("link", { name: "Registrar cosecha" })).toHaveAttribute("href", PATHS.harvest("a1", "s1"));
     // 2,5 ha del lote con 1,5 sembradas: queda 1 ha libre para otra siembra.
     expect(screen.getByRole("link", { name: "Registrar siembra" })).toHaveAttribute("href", PATHS.sow("a1"));
+    // Desde el lote se entra a las estrategias con el lote (HU-164, HU-214).
+    expect(screen.getByRole("link", { name: "Ver estrategias de rotación" })).toHaveAttribute("href", `${PATHS.consult}?lote=a1`);
     const done = within(await screen.findByRole("region", { name: "Ya cosechado" }));
     expect(done.getByText("Arveja")).toBeInTheDocument();
     expect(done.getByRole("link", { name: "Corregir" })).toHaveAttribute("href", PATHS.editSeason("a1", "s0"));
