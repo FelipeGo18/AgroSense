@@ -494,7 +494,28 @@ CHANGES = {
 
 TRENDS = {
     "request": {"municipality_id": "15646", "crop_id": "papa", "sowing_date": "2027-08-02"},
-    "water": {"status": "available", "source_id": "imerg", "unit": "mm", "points": [{"year": 2015, "precip_mm": 410, "need_mm": 465}]},
+    # Diez años de la lluvia de la ventana frente a lo que necesitó el cultivo; en 2018, 2019 y 2022 no alcanzó, y 2017
+    # no tiene dato de lluvia (R1).
+    "water": {
+        "status": "available",
+        "source_id": "imerg",
+        "unit": "mm",
+        "points": [
+            {"year": year, "precip_mm": precip, "need_mm": need}
+            for year, precip, need in (
+                (2015, 470, 430),
+                (2016, 505, 432),
+                (2017, None, 428),
+                (2018, 360, 435),
+                (2019, 385, 431),
+                (2020, 540, 429),
+                (2021, 495, 433),
+                (2022, 350, 436),
+                (2023, 455, 430),
+                (2024, 448, 434),
+            )
+        ],
+    },
     "supply": {"status": "insufficient_data", "source_id": "eva", "unit": "ha", "semester": "B", "points": []},
     "ndvi": {
         "status": "available",

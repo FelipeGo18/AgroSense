@@ -111,14 +111,26 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-093 · Gráfica de la lluvia de la ventana
 
 - **Historia:** Como agricultor, quiero ver año por año la lluvia de mi ventana frente a lo que el cultivo necesita, para ver la tendencia con mis ojos.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Una gráfica de la serie `water`: lluvia de los meses de la ventana y necesidad del cultivo, por año, en mm, con unidades y periodo visibles
-  - [ ] Dice de qué fuente es la lluvia (IMERG o POWER, la que calculó la señal)
-  - [ ] Una serie con `insufficient_data` muestra su estado vacío, no una gráfica en cero (R1)
+  - [x] Una gráfica de la serie `water`: lluvia de los meses de la ventana y necesidad del cultivo, por año, en mm, con unidades y periodo visibles
+  - [x] Dice de qué fuente es la lluvia (IMERG o POWER, la que calculó la señal)
+  - [x] Una serie con `insufficient_data` muestra su estado vacío, no una gráfica en cero (R1)
 - **Reglas que aplican:** R1, R5, R8
 - **Contrato que toca:** `GET /api/v1/trends` (serie `water`)
 - **Notas:** Reducida el 11 de octubre de 2026 a una sola gráfica (recorte del MVP); pasó de M a S. La gráfica del área sembrada (serie `supply`) queda para P1; la oferta sigue en su señal. La serie `ndvi` se muestra en el ciclo de una estrategia (HU-215).
+- **Hecho (11 nov):** dentro de la señal de agua, en el diagnóstico y en el ciclo de una estrategia (HU-215), que usan la misma lista de señales. El código está en `web/src/pages/diagnosis/WaterChart.tsx`, y `useTrends` pasó a `web/src/features/diagnosis/trends.ts`, que comparten el diagnóstico y el ciclo. Sigue el diseño de `design/pantallas/detalle.py`.
+  - **La gráfica:**
+    - una barra por año con la lluvia de los meses de la ventana, y lo que necesita el cultivo como línea punteada;
+    - los años en que la lluvia no alcanzó van vacíos y punteados, y la leyenda dice cuántos («3 de 9»): forma, no solo color;
+    - un año sin dato no tiene barra y no cuenta (R1); la necesidad se corta donde falta.
+  - **El título:** dice los meses, el cultivo y la unidad: «Lluvia de ago a dic frente a lo que necesita el cultivo (papa), en mm».
+  - **Al pie:** los años, la fuente de la lluvia con su nota (la que calculó la señal, R8) y que es historia, no pronóstico.
+  - **Para leerla:** cada año dice sus cifras al pasar o tocar, y hay una tabla.
+  - **Estados:** mientras carga, si falla o sin datos, lo dice; nunca una gráfica en cero. Un valor que no viene en la respuesta también es «sin dato».
+  - **El tamaño:** la gráfica se dibuja al ancho real de la tarjeta (`web/src/hooks/useWidth.ts`), así que el texto mide lo mismo en el celular y en el escritorio. La gráfica del verdor (HU-215) pasó a dibujarse igual.
+  - **Ejemplo de la API:** el de `/trends` trae diez años de lluvia, con tres que no alcanzaron y uno sin dato.
+  - **Pruebas:** en `web/src/pages/diagnosis/waterChart.test.tsx`. Revisado a 360 y 1440 px.
 
 ### HU-094 · Estados de carga, vacío y error
 
