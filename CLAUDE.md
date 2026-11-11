@@ -13,7 +13,7 @@ Proyecto para el **NASA Space Apps Challenge 2026** (reto «Field Shift: Adaptin
 
 ## Estado actual
 
-Hay código de la web (`web/`: inicio, entrar, crear cuenta, Mi cuenta, Mi finca con el mapa de lotes y las siembras y cosechas), de las cuentas y los lotes (`backend/`: esquema, migraciones y la API de cuenta, sesión, lotes y temporadas), del catálogo agronómico (`catalog/crops.yaml`, con fuente por valor) y del pipeline (`pipeline/`: municipios y límites de DIVIPOLA, catálogo, `sources` y el manifiesto). El contrato está congelado (decisión 15): su esquema en código está en `pipeline/schema.py`, hay un dataset de ejemplo en `data/examples/` y los endpoints de cálculo ya tienen su forma y sus ejemplos, pero responden `501` hasta que exista su parte del motor (`backend/engine/` solo tiene las etapas por calendario). No inventes comandos, archivos ni módulos que no existan: si algo falta, créalo según la spec o pregunta.
+Hay código de la web (`web/`: inicio, entrar, crear cuenta, Mi cuenta, Mi finca con el mapa de lotes y las siembras y cosechas), de las cuentas y los lotes (`backend/`: esquema, migraciones y la API de cuenta, sesión, lotes y temporadas), del catálogo agronómico (`catalog/crops.yaml`, con fuente por valor, y `catalog/rotation_rules.yaml`, las reglas de rotación como datos, cada una con su fuente) y del pipeline (`pipeline/`: municipios y límites de DIVIPOLA, catálogo, reglas de rotación validadas en `pipeline/rotation_rules.py`, `sources` y el manifiesto). El contrato está congelado (decisión 15): su esquema en código está en `pipeline/schema.py`, hay un dataset de ejemplo en `data/examples/` y los endpoints de cálculo ya tienen su forma y sus ejemplos, pero responden `501` hasta que exista su parte del motor (`backend/engine/` solo tiene las etapas por calendario). No inventes comandos, archivos ni módulos que no existan: si algo falta, créalo según la spec o pregunta.
 
 **Excepción de la fase 0: el frontend y las cuentas.** Desde el 12 de octubre de 2026 también se adelanta el backend de las cuentas (`backend/`, PostgreSQL en Docker y migraciones de Alembic: `backend/README.md`). Identidad visual, animaciones, audio, assets 3D y un prototipo navegable se adelantan ahora en `web/` y en Figma (EP-15, `specs/05-frontend.md`). Todo lo de diseño y frontend (pantallas, HUs de web, estilo, stack de la web) se puede rediseñar. Un cambio que toque las reglas R1–R10 o el contrato de la API se registra en `docs/decisiones.md` y se refleja en `specs/01-reglas.md` y `specs/02-contratos.md`.
 
@@ -60,7 +60,7 @@ Detalle en `docs/decisiones.md`. Las decisiones puntuales (servicios, estilo, al
 
 ## Stack
 
-Python 3.12 con `uv` · Polars · GeoPandas/Shapely · FastAPI + Pydantic v2 · PostgreSQL con SQLAlchemy 2 + Alembic · autenticación propia (Argon2 y sesión en cookie) · pytest · Ruff. Pruebas siempre en Docker. Web: React + TypeScript + Vite, React Router, Tailwind + Radix con estilo propio, React Three Fiber + drei, GSAP + Lenis, Zustand, TanStack Query, MSW, `openapi-typescript`, gráficas en SVG propio, Howler.js (P1). Datos en Parquet con `manifest.json`. Docker Compose con la imagen de la app y PostgreSQL. Backlog en GitHub Projects. Detalle y alternativas descartadas en `specs/04-stack.md`.
+Python 3.12 con `uv` · Polars · GeoPandas/Shapely · FastAPI + Pydantic v2 · PostgreSQL con SQLAlchemy 2 + Alembic · autenticación propia (Argon2 y sesión en cookie) · pytest · Ruff. Pruebas siempre en Docker. Web: React + TypeScript + Vite, React Router, Tailwind + Radix con estilo propio, React Three Fiber + drei, GSAP + Lenis, Zustand, TanStack Query, MSW, `openapi-typescript`, gráficas en SVG propio, Howler.js (P1). Datos en Parquet con `manifest.json`. Docker Compose con la imagen de la app y PostgreSQL. Backlog en Plane (proyecto `AGROS`). Detalle y alternativas descartadas en `specs/04-stack.md`.
 
 ## Estructura prevista del repositorio
 
@@ -111,7 +111,8 @@ uv sync                                       # entorno Python reproducible
 uv run python -m pipeline.build               # reconstruye data/published desde la caché (--descargar baja las fuentes)
 npm --prefix web run dev                      # web; con VITE_SIMULATION=true usa respuestas simuladas
 
-# Pruebas y lint: siempre en Docker
+# Pruebas y lint: siempre en Docker. La imagen `app` copia el código: reconstrúyala antes de probar un cambio
+docker compose build app
 docker compose run --rm app uv run pytest     # motor, contrato y cuentas, contra el PostgreSQL de Compose
 docker compose run --rm app uv run ruff check .
 docker compose run --rm web npm test          # Vitest
