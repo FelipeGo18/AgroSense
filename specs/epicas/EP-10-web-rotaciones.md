@@ -37,7 +37,7 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
 - **Reglas que aplican:** R7, R9
 - **Contrato que toca:** cuerpo de `POST /api/v1/rotations`
 - **Notas:** Decisión 12. Reemplaza, para el MVP, a la finca temporal (HU-141 y HU-145, que pasaron a P1 el 11 de octubre de 2026): sin cuenta se consulta por municipio, área y cultivo anterior. Agregada el 11 de octubre de 2026.
-- **Hecho (11 nov):** en `/consultar` (`web/src/pages/strategies/StrategiesPage.tsx`; la lógica en `web/src/features/strategies/entry.ts`). «Consultar» de la barra y «Ver estrategias de rotación» del lote y del diagnóstico llevan aquí. Sin cuenta, el área vive solo en la pestaña (`sessionStorage`): nunca va en la dirección ni a la API, y el campo lo dice («Solo se usa en este dispositivo»). Lo demás va en la dirección, así que la consulta se puede volver a abrir. Con sesión y lotes, «¿Para cuál terreno?» deja elegir un lote o seguir sin él. Con lote, el municipio y el riego salen del lote (con «Cambiarlo en el lote»); lo de antes, de las siembras cosechadas que dejaron el terreno libre (las mismas de «Registrar siembra», HU-165), y el área es la de esas siembras o, si no elige ninguna, la libre del lote. Al elegirlas, la rotación actual se arma con todo el historial del que vienen, del más antiguo al más reciente (las últimas tres), y se puede corregir. Si un lote de la dirección no es de la persona o no hay sesión, no se consulta y se ofrece entrar. Un 422 se traduce («Revise: priorities» → «Revise sus prioridades de la rotación»), y un 501 dice que el cálculo todavía no está listo. Mientras no exista HU-102, el resultado es un resumen: cuántas estrategias, las tres primeras con su puntaje, la rotación actual, cuántas se descartaron, las limitaciones y los rótulos «Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo» y «La decisión es suya». Pruebas en `web/src/pages/strategies/strategies.test.tsx` y `web/src/pages/farm/farm.test.tsx`; `/consultar` está en `e2e/responsive-check.mjs`, con y sin datos.
+- **Hecho (11 nov):** en `/consultar` (`web/src/pages/strategies/StrategiesPage.tsx`; la lógica en `web/src/features/strategies/entry.ts`). «Consultar» de la barra y «Ver estrategias de rotación» del lote y del diagnóstico llevan aquí. Sin cuenta, el área vive solo en la pestaña (`sessionStorage`): nunca va en la dirección ni a `/rotations`, y solo viaja a `/water-plans` para calcular el agua de cada ciclo (HU-215), que no guarda nada (R9). El campo lo dice: «Solo se usa para calcular el agua que necesitaría cada ciclo. No se guarda» (corregido el 11 de noviembre con HU-215: antes decía que no se enviaba). Lo demás va en la dirección, así que la consulta se puede volver a abrir. Con sesión y lotes, «¿Para cuál terreno?» deja elegir un lote o seguir sin él. Con lote, el municipio y el riego salen del lote (con «Cambiarlo en el lote»); lo de antes, de las siembras cosechadas que dejaron el terreno libre (las mismas de «Registrar siembra», HU-165), y el área es la de esas siembras o, si no elige ninguna, la libre del lote. Al elegirlas, la rotación actual se arma con todo el historial del que vienen, del más antiguo al más reciente (las últimas tres), y se puede corregir. Si un lote de la dirección no es de la persona o no hay sesión, no se consulta y se ofrece entrar. Un 422 se traduce («Revise: priorities» → «Revise sus prioridades de la rotación»), y un 501 dice que el cálculo todavía no está listo. Mientras no exista HU-102, el resultado es un resumen: cuántas estrategias, las tres primeras con su puntaje, la rotación actual, cuántas se descartaron, las limitaciones y los rótulos «Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo» y «La decisión es suya». Pruebas en `web/src/pages/strategies/strategies.test.tsx` y `web/src/pages/farm/farm.test.tsx`; `/consultar` está en `e2e/responsive-check.mjs`, con y sin datos.
 
 ### HU-101 · Prioridades del agricultor
 
@@ -55,7 +55,7 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
 ### HU-102 · Estrategias con ciclos, desglose y salud del suelo
 
 - **Historia:** Como agricultor, quiero ver cada estrategia con sus ciclos, su desglose, cómo cuida mi suelo y por qué se descartaron otras, para decidir con confianza.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Cada estrategia es una tarjeta con sus ciclos en orden: cultivo, fecha de siembra, cosecha estimada con su base y la luz del ciclo con forma y texto. El descanso se ve como «Descanso»
   - [x] Desglose por criterio (agua, suelo, ingreso y riesgo) con su puntaje y el total
@@ -65,12 +65,12 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
   - [x] El suelo usado lleva su rango y el rótulo de estimación (R10)
   - [x] Las estrategias excluidas y su motivo se ven a pedido: la regla que viola, «No se da en su zona» con el dato de la ficha y su fuente, o «Alto riesgo en el ciclo 2: heladas» con la razón
   - [x] Sin estrategias válidas, estado vacío con las exclusiones a la vista y un texto que propone cambiar la fecha o el número de ciclos
-  - [ ] Tocar un ciclo abre su detalle (HU-215). Queda para HU-215: hasta que exista el detalle no se dibuja el botón, porque un control sin función está prohibido (decidido por Haider el 11 de noviembre de 2026)
+  - [x] Tocar un ciclo abre su detalle (HU-215). Cada recuadro de ciclo es el enlace a su detalle (11 nov, con HU-215)
   - [x] Rótulo visible: «Es información para decidir. La decisión es suya»
 - **Reglas que aplican:** R1, R2, R3, R5, R10
 - **Contrato que toca:** respuesta de `POST /api/v1/rotations` (`strategies`, `current_strategy`, `vs_current`, `cycles`, `scores`, `soil_health`, `excluded`)
 - **Notas:** Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos con salud del suelo (decisión 12); pasó de M a L. El resaltado de un cultivo alternativo del diagnóstico se fue con HU-197 a P1. **8 de noviembre de 2026 (decisión 14):** suma la rotación actual como referencia y la erosión; el diseño de «Estrategias de rotación» cambia en Figma antes de programarla.
-- **Hecho (11 nov), salvo abrir el ciclo (HU-215):** en `/consultar`, al consultar, la entrada cambia por el resultado del diseño (`design/pantallas/estrategias.py`). El código está en `web/src/pages/strategies/StrategyResults.tsx` y `StrategyCard.tsx`, y la lectura de la respuesta en `web/src/features/strategies/strategies.ts`.
+- **Hecho (11 nov; abrir el ciclo, con HU-215):** en `/consultar`, al consultar, la entrada cambia por el resultado del diseño (`design/pantallas/estrategias.py`). El código está en `web/src/pages/strategies/StrategyResults.tsx` y `StrategyCard.tsx`, y la lectura de la respuesta en `web/src/features/strategies/strategies.ts`.
   - **Arriba:** el resumen de la consulta, con «Cambiar», que vuelve a la entrada con lo escrito y deja «Volver sin cambiar». Al lado, las prioridades de la rotación: al moverlas se vuelve a pedir y el orden anterior se sigue viendo con «Actualizando…».
   - **El suelo usado:** el del municipio, con su rango de pH y de carbono orgánico y el rótulo de estimación (R10). Con `soil_basis = lot` se dice que es el del lote, sin cifras, hasta que exista HU-182.
   - **Las tarjetas:** primero «Lo que usted siembra hoy», con «Lo que no cumple» (`issues`), y después las sugeridas en su orden. Cada una tiene:
@@ -88,17 +88,34 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
 ### HU-215 · Ciclo de una estrategia
 
 - **Historia:** Como agricultor, quiero abrir un ciclo de una estrategia y ver su diagnóstico, el agua que necesitará y cuándo suele estar verde el campo, para revisar ese ciclo antes de decidir.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Reutiliza los componentes del resultado del diagnóstico (HU-092, HU-194, HU-202 y HU-203) con el `diagnosis` del ciclo; no pide un diagnóstico aparte
-  - [ ] Encabezado con la estrategia y el ciclo («Ciclo 2 de 3: arveja, siembra el …») y botones para ir al ciclo anterior y al siguiente
-  - [ ] **Agua del plan:** pide `POST /api/v1/water-plans` con el cultivo del ciclo, su fecha de siembra y el área de la entrada (`area_pct` 100), y muestra el déficit mensual y el volumen en rangos, en año normal y año seco, con el rótulo de estimación (R10). Sin riego o sin definir, dice «En estos meses la lluvia no alcanza: el cultivo pasaría sed»
-  - [ ] La humedad del suelo de la zona (POWER y, si existe, SMAP) se ve junto al agua como contraste, cada una en su unidad y con su fuente; nunca un valor combinado (decisión 11)
-  - [ ] **Verdor:** la serie `ndvi` de `/trends` junto a la ventana del ciclo, con el rótulo «Cuándo suele estar verde el campo en su zona · MODIS, 250 m». Sin datos, estado vacío (R1)
-  - [ ] Enlace a «Qué cambió en su zona» (HU-219) con el municipio y el cultivo del ciclo
-  - [ ] Un ciclo de descanso muestra su duración y la regla que lo propone, sin semáforo
-  - [ ] Con cuenta, el primer ciclo ofrece «Registrar esta siembra», que crea la temporada con el diagnóstico visto (HU-165)
-  - [ ] Cada botón tiene una acción o una navegación definida; usable a 360 px
+  - [x] Reutiliza los componentes del resultado del diagnóstico (HU-092, HU-194, HU-202 y HU-203) con el `diagnosis` del ciclo; no pide un diagnóstico aparte
+  - [x] Encabezado con la estrategia y el ciclo («Ciclo 2 de 3: arveja, siembra el …») y botones para ir al ciclo anterior y al siguiente
+  - [x] **Agua del plan:** pide `POST /api/v1/water-plans` con el cultivo del ciclo, su fecha de siembra y el área de la entrada (`area_pct` 100), y muestra el déficit mensual y el volumen en rangos, en año normal y año seco, con el rótulo de estimación (R10). Sin riego o sin definir, dice «En estos meses la lluvia no alcanza: el cultivo pasaría sed»
+  - [x] La humedad del suelo de la zona (POWER y, si existe, SMAP) se ve junto al agua como contraste, cada una en su unidad y con su fuente; nunca un valor combinado (decisión 11)
+  - [x] **Verdor:** la serie `ndvi` de `/trends` junto a la ventana del ciclo, con el rótulo «Cuándo suele estar verde el campo en su zona · MODIS, 250 m». Sin datos, estado vacío (R1)
+  - [x] Enlace a «Qué cambió en su zona» (HU-219) con el municipio y el cultivo del ciclo. Lleva a `/que-cambio?municipio=&cultivo=`, que dice que está pendiente hasta que exista HU-219
+  - [x] Un ciclo de descanso muestra su duración y la regla que lo propone, sin semáforo. La regla se lee en las razones de la estrategia (`reasons`, que citan las reglas evaluadas, R5): el contrato no trae una regla por ciclo
+  - [x] Con cuenta, el primer ciclo ofrece «Registrar esta siembra», que crea la temporada con el diagnóstico visto (HU-165)
+  - [x] Cada botón tiene una acción o una navegación definida; usable a 360 px
 - **Reglas que aplican:** R1, R5, R8, R9, R10
 - **Contrato que toca:** `strategies[].cycles[].diagnosis` de `POST /api/v1/rotations`; `POST /api/v1/water-plans`; serie `ndvi` de `GET /api/v1/trends`
 - **Notas:** Decisión 12. Depende de HU-084, HU-146 y HU-078 (o de sus respuestas simuladas). Agregada el 11 de octubre de 2026.
+- **Hecho (11 nov):** al tocar un ciclo de una tarjeta, `/consultar` muestra su detalle (diseño `design/pantallas/ciclo.py`). El código está en `web/src/pages/strategies/CycleView.tsx`, `CycleWater.tsx` y `GreenChart.tsx`, y la lógica en `web/src/features/strategies/cycle.ts`.
+  - **La dirección:** el ciclo va con `estrategia` (la secuencia de cultivos, u `hoy` para la rotación actual; no el puesto, que cambia con las prioridades) y `ciclo`. Así se puede volver atrás y recargar, y no se calcula otra vez. Si el ciclo ya no está en la respuesta, se ve la lista.
+  - **Arriba:** «‹ Volver a las estrategias», la estrategia, las pestañas de los ciclos, el título, la siembra y la cosecha estimada con su nota, y los ciclos anterior y siguiente.
+  - **El diagnóstico:** el que trae el ciclo, con las mismas piezas del diagnóstico: las luces (`DiagnosisLights`, que salió de `DiagnosisPage` para usarse en los dos sitios), la aptitud con su nota y las seis señales (`SignalList`). No se pide otro diagnóstico.
+  - **El agua:** `POST /water-plans` con el cultivo, la fecha y el área de la entrada. Cada mes dice si la lluvia alcanza o cuánto falta, en mm y en m³, y un mes sin datos dice «Sin datos suficientes». Tiene «Año normal / Año seco», el total, las fuentes y el rótulo de estimación. Sin riego, «el cultivo pasaría sed»; con riego, «riego que haría falta».
+  - **Humedad del suelo:** la de cada fuente, en su unidad y con su resolución, «Para contrastar».
+  - **El verdor:** la gráfica del NDVI normal (`GET /trends`) con la ventana del ciclo sombreada. Un periodo sin dato corta la línea. Cada periodo dice su valor al pasar o tocar, y hay una tabla. Sin datos, lo dice.
+  - **«Qué cambió en su zona»:** enlace con el municipio y el cultivo.
+  - **El descanso:** sin semáforo, con su duración en semanas, las razones de la estrategia y «Después del descanso».
+  - **Registrar la siembra del primer ciclo:**
+    - Sin cuenta, «Crear cuenta y registrarla».
+    - Con cuenta pero sin lote, ir a Mi finca.
+    - Con lote, «Registrar esta siembra», que abre el formulario de HU-165 ya armado (cultivo, fecha, terreno y área) y guarda el diagnóstico que vio si no cambia el cultivo ni la fecha.
+    - Si la fecha todavía no llega, dice cuándo registrarla, porque una siembra se registra cuando ya se hizo.
+  - **Arreglo en la API:** `/water-plans` rechazaba un abono verde (`kind = cover`), aunque el contrato solo pide `kind = crop` en el diagnóstico y en «Qué cambió». Ahora lo acepta: el ciclo de un abono verde también tiene su agua.
+  - **Ejemplos de la API:** los ciclos traen su diagnóstico, el agua trae cinco meses y la humedad de POWER y SMAP, y el NDVI trae los 23 periodos. El contrato no cambia.
+  - **Pruebas:** en `web/src/pages/strategies/strategies.test.tsx` y `tests/test_calculos.py`. Revisado sin scroll horizontal ni objetivos de menos de 44 px a 320, 360, 768, 1024 y 1440 px, con y sin modo ligero.
