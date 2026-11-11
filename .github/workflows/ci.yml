@@ -21,6 +21,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Toda la historia: el paso de los nombres compara los commits del PR con la rama de destino.
+          fetch-depth: 0
+      # La rama y cada commit del PR dicen su HU (docs/revision-de-pr.md, sección 1). Va en este mismo check `test`, que
+      # es obligatorio para mergear: un PR sin su HU no entra.
+      - name: Rama y commits con su HU
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/check_names.py "$GITHUB_HEAD_REF" "$GITHUB_BASE_REF"
       - name: Lint, pruebas y build (Docker Compose)
         run: |
           cp .env.example .env
