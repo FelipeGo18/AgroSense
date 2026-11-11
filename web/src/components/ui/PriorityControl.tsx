@@ -25,7 +25,8 @@ export function allZero(p: Priorities) {
   return CRITERIA.every(({ key }) => p[key] === 0);
 }
 
-function Seed({ filled }: { filled: boolean }) {
+/** La semilla del kit: llena o vacía. La usan el control de prioridad y la escala de aptitud (HU-194). */
+export function Seed({ filled }: { filled: boolean }) {
   return (
     <svg aria-hidden="true" viewBox="0 0 44 44" className="size-full">
       {filled ? (

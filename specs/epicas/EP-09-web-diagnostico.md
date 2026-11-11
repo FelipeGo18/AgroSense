@@ -57,19 +57,20 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-194 · Cultivo no apto y mejores ventanas
 
 - **Historia:** Como agricultor, quiero que la pantalla me diga cuando mi cultivo no se da en mi zona y, cuando la fecha no conviene, cuáles ventanas han sido mejores, para saber qué hacer en lugar de quedarme con un «no».
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Con `suitability.level = not_suitable`: la pantalla dice «Este cultivo no se da en su zona» y muestra la nota de aptitud de 0 a 100 (`suitability.score`), la escala de cinco semillas, la razón con el dato de la ficha y su fuente, y las alternativas cuando vienen (HU-203, P1); ofrece «Elegir otro cultivo» y «Ver estrategias de rotación» (HU-214). No dibuja semáforo, señales ni ventanas
-  - [ ] La nota de aptitud (`suitability.score`) se muestra con su número y en la escala de cinco semillas. Es informativa: no es una señal ni cambia la luz; solo la altitud fuera del rango absoluto da «no se da en su zona»
-  - [ ] Sin nota (`score` nulo), no se dibujan semillas en cero (R1)
-  - [ ] Con `suitability.level = insufficient_data`: el resultado se muestra normal y la limitación lo dice; no se pinta como riesgo (R1)
-  - [ ] Con acción `other_window`: lista de `best_windows` con fecha de siembra, cosecha estimada, la nota del factor que más limita (número principal) y el promedio con sus prioridades (secundario); tocar una consulta el diagnóstico de esa fecha
-  - [ ] Con `other_window` y `best_windows` vacío: mensaje «En los próximos doce meses no hay una ventana sin riesgo alto» y enlace a las estrategias de rotación
-  - [ ] Las ventanas llevan el rótulo «Según la historia de la zona. No es un pronóstico»
-  - [ ] Cada botón tiene una acción o una navegación definida
+  - [x] Con `suitability.level = not_suitable`: la pantalla dice «Este cultivo no se da en su zona» y muestra la nota de aptitud de 0 a 100 (`suitability.score`), la escala de cinco semillas, la razón con el dato de la ficha y su fuente, y las alternativas cuando vienen (HU-203, P1); ofrece «Elegir otro cultivo» y «Ver estrategias de rotación» (HU-214). No dibuja semáforo, señales ni ventanas
+  - [x] La nota de aptitud (`suitability.score`) se muestra con su número y en la escala de cinco semillas. Es informativa: no es una señal ni cambia la luz; solo la temperatura media anual fuera del rango absoluto da «no se da en su zona» (decisión 13; decía «la altitud», el criterio anterior)
+  - [x] Sin nota (`score` nulo), no se dibujan semillas en cero (R1)
+  - [x] Con `suitability.level = insufficient_data`: el resultado se muestra normal y la limitación lo dice; no se pinta como riesgo (R1)
+  - [x] Con acción `other_window`: lista de `best_windows` con fecha de siembra, cosecha estimada, la nota del factor que más limita (número principal) y el promedio con sus prioridades (secundario); tocar una consulta el diagnóstico de esa fecha
+  - [x] Con `other_window` y `best_windows` vacío: mensaje «En los próximos doce meses no hay una ventana sin riesgo alto» y enlace a las estrategias de rotación
+  - [x] Las ventanas llevan el rótulo «Según la historia de la zona. No es un pronóstico»
+  - [x] Cada botón tiene una acción o una navegación definida
 - **Reglas que aplican:** R1, R3, R5
 - **Contrato que toca:** `suitability` (con `score`), `alternatives` y `best_windows` de la respuesta de diagnóstico
 - **Notas:** El orden completo de las ventanas, con prioridades y detalle por semanas, está en la lectura «Planear una siembra» del calendario (HU-180, P1). Los cultivos alternativos de la acción `rotate` son HU-203 (en P1, con HU-197). Agregada el 11 de octubre de 2026.
+- **Hecho (10 nov):** en el resumen de `/diagnostico` (`web/src/pages/diagnosis/Suitability.tsx`, lógica en `web/src/features/diagnosis/windows.ts`). Con `not_suitable`, un letrero propio («Este cultivo no se da en su zona», con un brote tachado), sin semáforo, señales ni ventana: la nota de aptitud con su número y cinco semillas (una por cada 20 puntos), el dato con que se decidió («Temperatura media anual de 26,3 °C a 300 m de altitud, la del municipio») y las razones de `suitability.reasons`, que citan la ficha y su fuente; «Elegir otro cultivo» deja la misma consulta sin cultivo y «Ver estrategias de rotación» va a HU-214. Con un cultivo apto, la nota y sus semillas van en el resumen como dato informativo; sin nota no hay semillas (R1), y con `insufficient_data` el resultado es normal y lo dice la limitación de la API. Con `other_window` en cualquiera de las dos luces, «Mejores fechas de los próximos doce meses» con «Según la historia de la zona. No es un pronóstico»: cada una con su siembra, su cosecha, lo que más la limita (número principal) y el promedio con sus prioridades (secundario); tocar una consulta esa fecha y el formulario la muestra (el formulario sigue a la dirección cuando cambia desde afuera). Sin ventanas, «En los próximos doce meses no hay una ventana sin riesgo alto» y el enlace a las estrategias, que no se repite si la otra luz ya dice «rotar». Las alternativas (P1) quedan con HU-197. El botón del kit pasó de alto fijo a alto mínimo: «Ver estrategias de rotación» no cabía en una línea a 360 px y ahora crece a dos.
 
 ### HU-202 · Ajustar mis prioridades al consultar
 
