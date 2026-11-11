@@ -112,6 +112,7 @@ signals:
   market: { variable: seasonal_index,  unit: "",   curve: [[0.8, 0], [1.0, 70], [1.2, 100]], critical_below: 10, source_id: "…" }
 ```
 
+- `water` califica `coverage_pct` con la lluvia del **año seco** de la fuente de `sources.yaml` (`precip_dry_mm`, el percentil 20), no con la normal (decidido por Felipe el 11 de noviembre de 2026): es la lluvia confiable de la FAO y deja la señal del lado prudente, porque las dos fuentes de la NASA dan casi el doble de lluvia en los valles del altiplano, donde están los cultivos (259 estaciones del IDEAM; IMERG 1,85 veces, POWER 1,80; PR #44), y con la normal el agua saldría verde donde falta. La lluvia normal se muestra en `signals.water.sources` para contrastar.
 - `curve`: puntos `[valor, calificación]` en orden de valor; entre dos puntos la calificación va en línea recta, y fuera de ellos vale la del punto más cercano. `crop` quiere decir que la curva sale de la ficha del cultivo: `heat` va de 100 en `temp_opt_max_c` a 0 en `heat_max_c`, y `soil` de 0 en `ph_min` a 100 entre `ph_opt_min` y `ph_opt_max` y a 0 en `ph_max`.
 - `critical_below`: una señal es crítica si su calificación baja de ese número (R2). `soil` nunca es crítica (R10).
 - **Los números de este ejemplo son ilustrativos.** Los de verdad los fija HU-075, cada curva con su `source_id` (R8). Sin fuente para una curva, la señal es `insufficient_data` (R1).
@@ -123,15 +124,17 @@ signals:
 version: "1.0.0"
 regions:
   co-boyaca-cundinamarca:
-    water:  { rain: imerg, rain_contrast: [nasa_power], et0: nasa_power, soil_moisture_contrast: [nasa_power, smap] }
+    water:  { rain: nasa_power, rain_contrast: [imerg], rain_caveat: "La lluvia sale de NASA POWER…", et0: nasa_power,
+              soil_moisture_contrast: [nasa_power, smap] }
     frost:  { used: nasa_power }
     heat:   { used: nasa_power }
     soil:   { used: soilgrids }
     supply: { used: eva, contrast: [] }
     market: { used: dane_sipsa }
+planned: { imerg: HU-207, soilgrids: HU-181, eva: HU-031, smap: HU-210 }
 ```
 
-Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources` hace fallar el pipeline (R8). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
+Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources`, ni tiene adaptador en el pipeline, ni está en `planned` hace fallar el pipeline (R8). `planned` lista las fuentes que todavía no tienen adaptador, con la HU que las trae: mientras estén ahí, lo que las usa es `insufficient_data` (R1) y el contraste no se muestra; una fuente de `planned` que ya se publica también hace fallar el pipeline, para que no se quede en la lista. `rain_caveat` es el aviso que lleva siempre la señal de agua mientras la lluvia salga de una fuente con un sesgo conocido. **Versión 1.0.0 (decidido por Felipe el 11 de noviembre de 2026):** la lluvia de `water` sale de NASA POWER de forma **temporal**, con el aviso de que en el altiplano la sobrestima (de 1,7 a 2,7 veces la del IDEAM, PR #24); cuando exista GPM IMERG (HU-207), `rain` pasa a `imerg`, POWER pasa al contraste y el aviso se quita. Lo leen el pipeline, antes de publicar, y la API al arrancar (`common/signal_sources.py`). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
 
 ### Reglas de rotación como datos (`rotation_rules`, HU-062)
 
@@ -705,7 +708,7 @@ La lluvia es la de la fuente que define `sources.yaml` y la ET0 es la de `climat
 
 Tiene dos lecturas, según venga o no `sowing_date`. No guarda los datos de la finca ni quién consultó (R9) y trae `versions` y `reference_date` (el día desde el que se cuentan los doce meses), para que el mismo resultado se pueda reproducir (R4).
 
-Fechas: la ventana de un mes empieza el día 1 y la de una semana, su lunes. `month` se refiere a la próxima vez que llega ese mes desde `reference_date`. En `/diagnostics` y en «Planear una siembra» de `/calendar`, una fecha de siembra anterior a hoy o a más de doce meses responde 422; el mes en curso se acepta aunque su día 1 ya haya pasado. En «Mi cultivo» (`/calendar` con `sowing_date`), la fecha puede ser pasada. **«Hoy» y «el mes en curso» se cuentan en la hora de la región**, nunca en UTC ni en la hora del servidor: en la región piloto (Colombia), `America/Bogota`, UTC−5 todo el año (sin horario de verano). La web cuenta los doce meses con la misma hora, así que el mes que ofrece es siempre uno que la API acepta. Vale para `/diagnostics`, `/rotations` y `/calendar` (decidido el 10 de noviembre de 2026).
+Fechas: la ventana de un mes empieza el día 1 y la de una semana, su lunes. `month` se refiere a la próxima vez que llega ese mes desde `reference_date`. En `/diagnostics` y en «Planear una siembra» de `/calendar`, una fecha de siembra anterior a hoy o a más de doce meses responde 422; el mes en curso se acepta aunque su día 1 ya haya pasado. En «Mi cultivo» (`/calendar` con `sowing_date`), la fecha puede ser pasada. **«Hoy» y «el mes en curso» se cuentan en la hora de la región**, nunca en UTC ni en la hora del servidor: en la región piloto (Colombia), `America/Bogota`, UTC−5 todo el año (sin horario de verano). La zona sale de `region.timezone` en `pipeline/region.yaml`. Es la de la región y no la de quien consulta, aunque consulte desde otro país: el mes de siembra es el del campo (decidido por Felipe el 11 de noviembre de 2026). La web cuenta los doce meses con la misma hora, así que el mes que ofrece es siempre uno que la API acepta. Vale para `/diagnostics`, `/rotations` y `/calendar` (decidido el 10 de noviembre de 2026).
 
 **Planear una siembra (sin `sowing_date`).** Responde `suitability` y `windows`:
 

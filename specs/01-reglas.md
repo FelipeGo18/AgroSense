@@ -72,7 +72,7 @@ Seis señales independientes en el P0 y tres más en el P1. Ninguna se promedia 
 - Una señal del P1 que todavía no existe no aparece en la respuesta: no se inventa (R5).
 - El grado crítico de cada señal lo fija `thresholds.yaml`; la respuesta lo dice en el campo `critical`.
 - Toda razón dice el periodo que se evaluó («en 7 de los últimos 10 años»): es historia, no pronóstico.
-- **La lluvia de `water`** sale de la fuente que define `sources.yaml` para la región: GPM IMERG (lluvia por satélite, desde 2000) cuando la región la tiene; si no, NASA POWER (reanálisis, desde 1981). Las dos se muestran juntas para contrastar y nunca se mezclan. «Respaldo» es una elección por región en `sources.yaml`, no un relleno por consulta: si la fuente elegida no tiene dato para un municipio, la señal es `insufficient_data` (R1). La ET0 sale de NASA POWER por Penman-Monteith (FAO-56).
+- **La lluvia de `water`** sale de la fuente que define `sources.yaml` para la región: GPM IMERG (lluvia por satélite, desde 2000) cuando la región la tiene; si no, NASA POWER (reanálisis, desde 1981). Las dos se muestran juntas para contrastar y nunca se mezclan. «Respaldo» es una elección por región en `sources.yaml`, no un relleno por consulta: si la fuente elegida no tiene dato para un municipio, la señal es `insufficient_data` (R1). En la región piloto, mientras no exista IMERG (HU-207), la lluvia es la de NASA POWER y la señal lleva siempre el aviso de `rain_caveat`: en el altiplano POWER la sobrestima (decidido por Felipe el 11 de noviembre de 2026). La ET0 sale de NASA POWER por Penman-Monteith (FAO-56).
 - **La humedad del suelo** de la zona (la que modela NASA POWER y la de SMAP) se muestra junto a `water` para contrastar, cada una en su unidad. En el MVP no cambia la calificación.
 - **El verdor** (MODIS NDVI) no es una señal: muestra en qué épocas suele estar verde el campo de la zona, para contrastar las ventanas con lo que de verdad se siembra. No cambia la luz ni el orden.
 - **La oferta es valor agregado, no protagonista** (decisión 12): sigue siendo una de las seis señales, con su peso y sus reglas; en las estrategias de rotación entra solo por el criterio de ingreso.
@@ -91,7 +91,7 @@ Qué mide cada curva:
 
 | Señal | Variable | Límites |
 |---|---|---|
-| `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia en la ventana, con la retención del suelo | `thresholds.yaml` |
+| `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia **del año seco** en la ventana (`precip_dry_mm`: la que se supera en 4 de cada 5 años, la lluvia confiable con que la FAO planea el riego), con la retención del suelo. No la normal: decidido por Felipe el 11 de noviembre de 2026, porque las dos fuentes de la NASA dan casi el doble de lluvia en los valles del altiplano, donde están los cultivos (259 estaciones del IDEAM; IMERG 1,85 veces, POWER 1,80; PR #44), y con la normal el agua saldría verde donde falta | `thresholds.yaml` |
 | `frost` | Porcentaje de años con al menos una helada (mínima ≤ 2 °C) en cualquiera de los meses sensibles de la ventana (semanas en P1) | `thresholds.yaml` |
 | `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_*`, `heat_max_c`) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
