@@ -16,6 +16,7 @@ from backend.config.weights import get_default_weights
 from backend.db.session import get_db
 from backend.db.state import accounts_state
 from common import logging
+from common.signal_sources import get_signal_sources
 
 log = logging.get_logger("agrosense.api")
 
@@ -29,9 +30,11 @@ PRIVATE_PREFIXES = ("/api/v1/auth/", "/api/v1/me", "/api/v1/lots", "/api/v1/seas
 def create_app() -> FastAPI:
     settings = get_settings()
     logging.configure(settings.log_level, settings.log_format)
-    # Si `weights.yaml` o `thresholds.yaml` no sirven, la API no arranca y dice por qué (HU-075).
+    # Si `weights.yaml`, `thresholds.yaml` o `catalog/sources.yaml` no sirven, la API no arranca y dice por qué (HU-075,
+    # HU-122). El motor los recibe ya leídos (R6).
     get_default_weights()
     get_thresholds()
+    get_signal_sources()
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):

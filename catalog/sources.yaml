@@ -1,0 +1,37 @@
+# Qué fuente calcula cada señal en cada región (HU-122; specs/02-contratos.md, «`catalog/sources.yaml`»; decisión 11).
+#
+# `used`: la fuente que calcula la señal. `contrast`: las que se muestran a su lado para contrastar, nunca mezcladas (R1).
+# Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste.
+# Cada `source_id` está en `sources` (R8) o en `planned`, con la HU que lo trae; el pipeline falla si no.
+#
+# La región es la de `pipeline/region.yaml` (`region.id`). Cambia una fuente: cambia aquí y sube la versión (R4).
+
+version: "1.0.0"
+
+regions:
+  co-boyaca-cundinamarca:
+    water:
+      # TEMPORAL (decidido por Felipe el 11 de noviembre de 2026): la lluvia sale de NASA POWER mientras GPM IMERG
+      # (HU-207) no exista. En el altiplano POWER da de 1,7 a 2,7 veces la lluvia del IDEAM (comprobado en el PR #24 en 4
+      # estaciones): por eso la señal lleva siempre el aviso de `rain_caveat`. Cuando llegue IMERG, `rain` pasa a `imerg`,
+      # `nasa_power` pasa a `rain_contrast`, el aviso se quita y sube la versión; el motor no cambia (R6).
+      rain: nasa_power
+      rain_contrast: [imerg]
+      rain_caveat: >-
+        La lluvia sale de NASA POWER, un modelo (reanálisis) que en el altiplano la sobrestima: de 1,7 a 2,7 veces la
+        que miden las estaciones del IDEAM. El agua puede salir mejor de lo que es: verifíquela en campo.
+      et0: nasa_power
+      soil_moisture_contrast: [nasa_power, smap]
+    frost: { used: nasa_power }
+    heat: { used: nasa_power }
+    soil: { used: soilgrids }
+    supply: { used: eva, contrast: [] }
+    market: { used: dane_sipsa }
+
+# Fuentes que todavía no tienen adaptador, con la HU que las trae. Mientras estén aquí, lo que las usa es
+# `insufficient_data` (R1) y el contraste no se muestra. Cuando la HU publique la fuente, sale de esta lista.
+planned:
+  imerg: HU-207
+  soilgrids: HU-181
+  eva: HU-031
+  smap: HU-210

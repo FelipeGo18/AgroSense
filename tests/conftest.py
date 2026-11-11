@@ -132,6 +132,17 @@ def no_dataset(tmp_path_factory, monkeypatch):
 
     for module in (sipsa, nasa_power, nasadem):
         monkeypatch.setattr(module, "CACHE", tmp_path_factory.mktemp(f"sin-cache-{module.SOURCE_ID}"))
+    # La región de ejemplo de las pruebas usa las mismas fuentes por señal que la región piloto (catalog/sources.yaml).
+    import yaml
+
+    from common import signal_sources
+    from pipeline import build
+
+    config = yaml.safe_load(signal_sources.SIGNAL_SOURCES_FILE.read_text(encoding="utf-8"))
+    config["regions"][SAMPLE_REGION["region"]["id"]] = next(iter(config["regions"].values()))
+    sources_file = tmp_path_factory.mktemp("fuentes-por-senal") / "sources.yaml"
+    sources_file.write_text(yaml.safe_dump(config, allow_unicode=True), encoding="utf-8")
+    monkeypatch.setattr(build, "SIGNAL_SOURCES_FILE", sources_file)
     get_settings.cache_clear()
     from backend.market import store
 
