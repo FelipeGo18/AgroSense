@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, version
 from backend.config.settings import get_settings
+from backend.config.thresholds import get_thresholds
 from backend.config.weights import get_default_weights
 from backend.db.session import get_db
 from backend.db.state import accounts_state
@@ -28,8 +29,9 @@ PRIVATE_PREFIXES = ("/api/v1/auth/", "/api/v1/me", "/api/v1/lots", "/api/v1/seas
 def create_app() -> FastAPI:
     settings = get_settings()
     logging.configure(settings.log_level, settings.log_format)
-    # Si `weights.yaml` no sirve, la API no arranca y dice por qué (HU-075).
+    # Si `weights.yaml` o `thresholds.yaml` no sirven, la API no arranca y dice por qué (HU-075).
     get_default_weights()
+    get_thresholds()
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):

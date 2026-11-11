@@ -3,6 +3,7 @@
 Se crea sola y se arma con las migraciones de Alembic, así que cada corrida prueba también las migraciones.
 """
 
+import os
 from collections.abc import Iterator
 
 import pytest
@@ -14,10 +15,21 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from backend.accounts.limits import LIMITER
 from backend.api.main import app
-from backend.config.settings import get_settings
+from backend.config.settings import get_settings, is_local
 from backend.db.models import Base
 from backend.db.session import get_db
 from backend.db.state import forget_down
+
+
+def _never_the_cloud() -> None:
+    """Durante las pruebas, `AGROSENSE_DATABASE_URL` apunta a la base local aunque Compose o el .env traigan la de la
+    nube. Una variable de entorno le gana al .env; vacía no serviría, porque vacía cuenta como no puesta."""
+    local = get_settings().local_database_url.set(query={"sslmode": "disable"})
+    os.environ["AGROSENSE_DATABASE_URL"] = local.render_as_string(hide_password=False)
+    get_settings.cache_clear()
+
+
+_never_the_cloud()
 
 
 def alembic_config(url) -> Config:
@@ -31,7 +43,15 @@ def alembic_config(url) -> Config:
 
 @pytest.fixture(scope="session")
 def database_url():
-    url = get_settings().database_url
+    # Siempre el PostgreSQL local, aunque la API apunte a la nube (AGROSENSE_DATABASE_URL): las pruebas crean una base y
+    # borran su esquema en cada corrida, y eso nunca puede pasar en la base del equipo.
+    url = get_settings().local_database_url
+    if not is_local(url):
+        pytest.exit(
+            f"Las pruebas solo corren contra el PostgreSQL local (POSTGRES_HOST={url.host}). "
+            "Use db o 127.0.0.1: docker compose run --rm app uv run pytest",
+            returncode=2,
+        )
     test_url = url.set(database=f"{url.database}_test")
     admin = create_engine(url, isolation_level="AUTOCOMMIT")
     with admin.connect() as connection:

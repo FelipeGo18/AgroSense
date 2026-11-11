@@ -8,7 +8,7 @@ agentes: [motor-api]
 subsistemas: [M1, M2, M4, M6, M7, M10, M11]
 depende_de: [HU-011, HU-012, EP-03, EP-04, HU-061, HU-063, HU-142, HU-143, HU-144, HU-220, HU-181, HU-198, HU-199, HU-206, HU-207, HU-216]
 reglas: [R1, R2, R3, R4, R5, R6, R8, R9, R10]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-07 · Diagnóstico de la ventana explicable
@@ -43,7 +43,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] `irrigated` nulo se trata como sin riego y se agrega a las limitaciones
   - [ ] Sin la textura del suelo, el balance se calcula sin retención y se agrega a las limitaciones; la señal no queda en `insufficient_data` por eso
   - [ ] La razón dice siempre el periodo que se evaluó (por ejemplo, «en 7 de los últimos 10 años»): es historia, no pronóstico (R5, decisión 4)
-  - [ ] Sin `climate_month` para el municipio o sin etapas con Kc para el cultivo: `insufficient_data`, nivel y `score` nulos (R1)
+  - [ ] Sin `climate_month` para el municipio o sin etapas con Kc para el cultivo: `insufficient_data`, nivel y `score` nulos (R1). El Kc de la etapa de desarrollo va nulo en la ficha a propósito: se interpola en línea recta entre el de la inicial y el de la media (FAO-56, como dice el contrato en `crop_stages`), y no cuenta como un Kc que falta
   - [ ] Caso de referencia: la misma ventana con déficit alto da `unfavorable` sin riego y no da `unfavorable` con riego
 - **Reglas que aplican:** R1, R2, R4, R5, R6, R10
 - **Contrato que toca:** `signals.water` (con `sources`) de la respuesta de diagnóstico; `climate_month`, `precip_month`, `soil_moisture_month`, `crop_stages`, `grid_cells`, `soil_municipality`
@@ -89,7 +89,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `score` y `level` de cada señal en `/diagnostics` y en las ventanas de `/calendar`; `crops`; `thresholds.yaml`
-- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha (`temp_*`, `heat_max_c`); `frost` califica `frost_freq_pct` en las semanas sensibles (cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
+- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha (`temp_*`, `heat_max_c`); `frost` califica el porcentaje de años con helada en los meses sensibles de la ventana (semanas en P1; cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
 
 ### HU-074 · Semáforo con prioridades, dos luces y acción
 
@@ -140,7 +140,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Historia:** Como agricultor, quiero saber qué tan seguido ha helado en las semanas en que mi cultivo es sensible, para no perder la siembra por una helada.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Evalúa los meses de la ventana en que el cultivo está en una etapa con `frost_sensitive`, con `frost_freq_pct` de `climate_risk_month` (HU-045); las etapas de cada mes salen de las etapas por calendario (HU-220). Cuando existan `climate_risk_week` (HU-193, P1) y las etapas por temperatura acumulada (HU-150, P1), evalúa por semana
+  - [ ] Evalúa los meses de la ventana en que el cultivo está en una etapa con `frost_sensitive`: el porcentaje de años con al menos una helada en cualquiera de esos meses, contado con `climate_frost_month` (HU-045; método en el contrato, «Heladas de una ventana»); las etapas de cada mes salen de las etapas por calendario (HU-220). Cuando existan `climate_risk_week` (HU-193, P1) y las etapas por temperatura acumulada (HU-150, P1), evalúa por semana
   - [ ] `score` con la curva de HU-196; el nivel sale de la calificación
   - [ ] La razón nombra la fecha de siembra, la etapa y el mes («Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años»)
   - [ ] `not_applicable` si ninguna etapa es sensible; `insufficient_data` si falta `climate_risk_month` o la ficha no dice la sensibilidad con fuente
@@ -149,7 +149,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Cuando exista «Mi cultivo» en el calendario (HU-179, P1), su bloque `frost` sale de este mismo cálculo
 - **Reglas que aplican:** R1, R2, R4, R5
 - **Contrato que toca:** `signals.frost`; `climate_risk_month` (y `climate_risk_week` en P1), `crop_stages`
-- **Notas:** Depende de HU-045 (riesgo por mes), HU-063 (etapas sensibles), HU-220 (etapas de la ventana) y HU-196. Ya no depende del «mejor mes» ni de HU-179: es HU-179 la que reutiliza esta señal. Cambiada el 11 de octubre de 2026 y, el mismo día, pasada a meses en el MVP (decisión 12).
+- **Notas:** Depende de HU-045 (riesgo por mes), HU-063 (etapas sensibles), HU-220 (etapas de la ventana) y HU-196. Ya no depende del «mejor mes» ni de HU-179: es HU-179 la que reutiliza esta señal. Cambiada el 11 de octubre de 2026 y, el mismo día, pasada a meses en el MVP (decisión 12). **10 de noviembre de 2026 (HU-075):** los cortes de `thresholds.yaml` vienen del ZARC de Brasil, que cuenta el % de **años** con pérdida. Lo comparable es el % de años con al menos una helada en **cualquiera** de los meses sensibles de la ventana, no el promedio de los meses. Como `climate_risk_month` trae la frecuencia de cada mes por separado y con ella no se puede contar esa unión, se agregó `climate_frost_month` con los días con helada de cada mes de cada año (aprobado por Felipe el 10 de noviembre de 2026); el método está en el contrato («Heladas de una ventana»).
 
 ### HU-190 · Señal de calor
 
@@ -212,14 +212,14 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Historia:** Como equipo, quiero umbrales y pesos versionados en configuración, para ajustarlos sin tocar código y explicar qué versión se usó.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Archivos YAML con número de versión
-  - [ ] `thresholds.yaml` con la forma del contrato («Configuración versionada»): los cortes de nivel (70 y 40) y, por señal, `variable`, `unit`, `curve` (puntos o `crop`), `critical_below` y `source_id`; la señal de suelo no tiene umbral crítico (R10)
+  - [x] Archivos YAML con número de versión
+  - [x] `thresholds.yaml` con la forma del contrato («Configuración versionada»): los cortes de nivel (70 y 40) y, por señal, `variable`, `unit`, `curve` (puntos o `crop`), `critical_below` y `source_id`; la señal de suelo no tiene umbral crítico (R10). Versión 1.0.0, decidido por Felipe el 10 de noviembre de 2026
   - [x] `weights.yaml` fija el peso por defecto de 0 a 5 de cada señal del P0; su contenido y su porqué salen de HU-198
   - [ ] El motor recibe la configuración ya leída: no abre los archivos (R6)
-  - [x] Si falta una señal en `weights.yaml` o un peso está fuera de 0 a 5, la API no arranca y dice por qué (hecho para `weights.yaml`; `thresholds.yaml` todavía no existe)
+  - [x] Si falta una señal en `weights.yaml` o un peso está fuera de 0 a 5, la API no arranca y dice por qué. Lo mismo con `thresholds.yaml`: una curva sin orden, una calificación fuera de 0 a 100, una curva sin fuente, un suelo crítico o una señal sin curva con umbral (`backend/config/thresholds.py`, pruebas en `tests/test_umbrales.py`)
   - [ ] La respuesta incluye la versión del dataset y de las reglas, y los pesos usados (`weights`)
 - **Reglas que aplican:** R4, R6, R10
-- **Notas:** **13 de octubre de 2026:** hecha la parte de los pesos (`backend/config/weights.py`, con pruebas en `tests/test_version.py`). Falta `thresholds.yaml` y todo lo que depende del motor.
+- **Notas:** **13 de octubre de 2026:** hecha la parte de los pesos (`backend/config/weights.py`, con pruebas en `tests/test_version.py`). Falta `thresholds.yaml` y todo lo que depende del motor. **10 de noviembre de 2026:** hecho `thresholds.yaml` 1.0.0 (decidido por Felipe el 10 de noviembre de 2026). Agua: clases del WRSI de FEWS NET (100 sin déficit, menos de 50 pérdida, Smith 1992); heladas: niveles de riesgo del ZARC de Brasil (20, 30 y 40 % de los años, mínima ≤ 2 °C); calor: crítica solo al llegar a `heat_max_c` de EcoCrop; suelo: de la ficha y nunca crítica; oferta y mercado: **sin fuente**, `insufficient_data`; 70 y 40: convención, con el ejemplo de la FAO de 1985. Las fuentes del agua y las heladas son derivadas y se dice en `sources`. Falta lo que depende del motor: que reciba los umbrales ya leídos y que cada respuesta diga sus versiones.
 
 ### HU-076 · Endpoint de diagnóstico con errores claros
 
@@ -228,6 +228,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Criterios de aceptación:**
   - [ ] `POST /api/v1/diagnostics` recibe `municipality_id`, `crop_id`, `sowing_date`, `irrigated`, `priorities` y `lot_id`, según el contrato
   - [ ] 422 para entradas fuera del catálogo, un cultivo con `kind` distinto de `crop`, un `sowing_date` con formato inválido, anterior a hoy o a más de doce meses, o `priorities` con un peso fuera de 0 a 5 o todos en 0
+  - [ ] «Hoy» y «el mes en curso» se cuentan en la hora de la región (en la piloto, `America/Bogota`, UTC−5), no en UTC ni en la del servidor. Prueba: el 30 de noviembre a las 8:00 p. m. de Bogotá (1 de diciembre en UTC), un `sowing_date` del 1 de noviembre se acepta; el 1 de diciembre a las 12:30 a. m. de Bogotá, se rechaza (`specs/02-contratos.md`, «Fechas»)
   - [ ] Sin `priorities`, usa los pesos por defecto y `overall` coincide con `overall_default`
   - [ ] 200 con `insufficient_data` para entradas válidas sin datos
   - [ ] 200 con `suitability.level = not_suitable`, luz `red` y acción `rotate` para un cultivo que no es apto; no es un error
@@ -245,7 +246,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] `/trends` recibe `sowing_date` y devuelve tres series: `water` (por año, `precip_mm` de los meses de la ventana, de la fuente de lluvia que calcula la señal, y `need_mm` del cultivo), `supply` (por año, `planted_ha` y `preliminary` del semestre de EVA en que cae la fecha) y `ndvi` (por periodo de 16 días, `ndvi_normal` del municipio, HU-208)
   - [ ] Solo leen el dataset publicado; sin datos, la serie viene vacía con `insufficient_data` (R1)
 - **Reglas que aplican:** R1, R4, R7
-- **Notas:** La serie `ndvi` se sumó el 11 de octubre de 2026 (decisión 12): sirve para contrastar la ventana con la época en que el campo suele estar verde. **15 de octubre de 2026:** hecho `GET /catalogs/municipalities` (`backend/api/catalogs.py`): lee el dataset publicado y, sin él, responde 503 `dataset_unavailable` con el motivo en el log. El 15 de octubre de 2026, también `GET /catalogs/municipalities/{id}/boundary`. Faltan los cultivos, el suelo y `/trends`.
+- **Notas:** La serie `ndvi` se sumó el 11 de octubre de 2026 (decisión 12): sirve para contrastar la ventana con la época en que el campo suele estar verde. **15 de octubre de 2026:** hecho `GET /catalogs/municipalities` (`backend/api/catalogs.py`): lee el dataset publicado y, sin él, responde 503 `dataset_unavailable` con el motivo en el log. El 15 de octubre de 2026, también `GET /catalogs/municipalities/{id}/boundary`. Faltan los cultivos, el suelo y `/trends`. **10 de noviembre de 2026:** `/catalogs/crops` y `/catalogs/municipalities/{id}/soil` ya existen (`backend/api/catalogs.py`); falta `/trends`, que responde 501.
 
 ### HU-217 · Comparar dos periodos de la historia de la zona
 

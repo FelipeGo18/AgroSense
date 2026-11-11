@@ -108,7 +108,7 @@ Términos que aparecen en las specs, explicados en lenguaje sencillo.
 | Otra ventana (`other_window`) | Acción sugerida cuando lo que sale mal es el clima de esa fecha: conviene buscar otra fecha de siembra. Si lo que sale mal es el suelo, la oferta o el mercado, o el cultivo no es apto, la acción es rotar. |
 | Alternativas (`alternatives`) | Con la acción rotar: hasta tres cultivos aptos para la zona que en esa misma ventana salen bien en clima y tienen mejor oferta, con su razón. Es una sugerencia; decide el agricultor. |
 | Riego (`irrigated`) | Si el lote tiene riego. Lo dice el agricultor. Cambia cómo se lee la señal de agua. |
-| Helada | Una noche en que la temperatura mínima a 2 m baja de 2 °C (criterio de amenaza de la UPRA con datos del IDEAM). Cerca del suelo hace más frío y la planta se daña. |
+| Helada | Una noche en que la temperatura mínima a 2 m es de 2 °C o menos (criterio del ZARC de Brasil, el mismo de la UPRA con datos del IDEAM). Cerca del suelo hace más frío y la planta se daña. |
 | Calendario del cultivo | Un cultivo en un municipio a lo largo del año. Tiene dos lecturas: «Mi cultivo», para lo ya sembrado (mes a mes, la etapa, las heladas y el calor a vigilar y el riego probable, de la siembra a la cosecha estimada), y «Planear una siembra» (las ventanas de los próximos doce meses, por mes y por semana, ordenadas por su factor limitante y, entre parecidas, por su balance). |
 | Etapa sensible | Etapa del cultivo en la que una helada o el calor le hacen daño, según su ficha. |
 | Vigile | Aviso del calendario cuando un mes tiene riesgo de helada o de calor y el cultivo está en una etapa sensible (`frost.watch`, `heat.watch`). |
