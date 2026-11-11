@@ -98,6 +98,7 @@ TABLES: dict[str, Table] = {
             "kind": c(S, "crop, cover o fallow", False),
             "archetype": c(S),
             "family": c(S),
+            "secondary_families": c(IDS, "", False),
             "water_need": c(S),
             "root_type": c(S),
             "fixes_nitrogen": c(B),
