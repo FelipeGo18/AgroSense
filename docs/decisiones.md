@@ -249,6 +249,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **`/water-plans` y `/trends` tienen respuesta escrita**, el suelo trae el rango del carbono orgánico (R10), `quality` solo vale `ok` o `partial`, y un endpoint que no está construido responde `501`.
 - **Ejemplos corregidos:** la aptitud se explica por la temperatura media anual (decisión 13) y la respuesta dice cuál se usó; las siembras registradas en AgroSense son P1.
 - **Cambio del 10 de noviembre de 2026 (aprobado por Felipe, HU-075, HU-045 y HU-077):** `thresholds.yaml` 1.0.0 con cortes de fuentes derivadas (el WRSI para el agua y el ZARC de Brasil para las heladas), oferta y mercado sin curva por falta de fuente, la helada como mínima ≤ 2 °C y una tabla nueva, `climate_frost_month`, para contar los años con helada en cualquiera de los meses sensibles de una ventana.
+- **Cambio del 11 de noviembre de 2026 (aprobado por Haider, HU-102):** cada criterio de `soil_health`, cada `issues` de la rotación actual y cada `excluded` de `/rotations` traen `source_ids`, las fuentes de su regla o de su motivo (R8). Antes la respuesta traía solo `rule_ids` y ningún endpoint decía de qué fuente era cada regla, así que la web no podía citarla. Es un campo nuevo: no cambia ninguno de los que ya había.
 
 ## Cómo se conectan
 

@@ -55,21 +55,35 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
 ### HU-102 · Estrategias con ciclos, desglose y salud del suelo
 
 - **Historia:** Como agricultor, quiero ver cada estrategia con sus ciclos, su desglose, cómo cuida mi suelo y por qué se descartaron otras, para decidir con confianza.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Cada estrategia es una tarjeta con sus ciclos en orden: cultivo, fecha de siembra, cosecha estimada con su base y la luz del ciclo con forma y texto. El descanso se ve como «Descanso»
-  - [ ] Desglose por criterio (agua, suelo, ingreso y riesgo) con su puntaje y el total
-  - [ ] **La rotación actual va primero**, rotulada «Lo que usted siembra hoy», con sus mismos ciclos, criterios y salud del suelo, y sus problemas a la vista (`issues`: la regla que viola o el ciclo de alto riesgo). Cada estrategia sugerida dice en qué gana o pierde frente a ella (`vs_current`), con forma y texto. Sin rotación actual, la web lo dice y ofrece escribirla (HU-223)
-  - [ ] Bloque «Salud del suelo» con sus cinco criterios (nitrógeno, carbono orgánico, suelo cubierto, corte de plagas y erosión), cada uno con su nivel en forma y texto, su razón y su fuente; un criterio `insufficient_data` se ve «Sin datos suficientes», no como malo (R1)
-  - [ ] Rótulo visible: «Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo»
-  - [ ] El suelo usado lleva su rango y el rótulo de estimación (R10)
-  - [ ] Las estrategias excluidas y su motivo se ven a pedido: la regla que viola, «No se da en su zona» con el dato de la ficha y su fuente, o «Alto riesgo en el ciclo 2: heladas» con la razón
-  - [ ] Sin estrategias válidas, estado vacío con las exclusiones a la vista y un texto que propone cambiar la fecha o el número de ciclos
-  - [ ] Tocar un ciclo abre su detalle (HU-215)
-  - [ ] Rótulo visible: «Es información para decidir. La decisión es suya»
+  - [x] Cada estrategia es una tarjeta con sus ciclos en orden: cultivo, fecha de siembra, cosecha estimada con su base y la luz del ciclo con forma y texto. El descanso se ve como «Descanso»
+  - [x] Desglose por criterio (agua, suelo, ingreso y riesgo) con su puntaje y el total
+  - [x] **La rotación actual va primero**, rotulada «Lo que usted siembra hoy», con sus mismos ciclos, criterios y salud del suelo, y sus problemas a la vista (`issues`: la regla que viola o el ciclo de alto riesgo). Cada estrategia sugerida dice en qué gana o pierde frente a ella (`vs_current`), con forma y texto. Sin rotación actual, la web lo dice y ofrece escribirla (HU-223)
+  - [x] Bloque «Salud del suelo» con sus cinco criterios (nitrógeno, carbono orgánico, suelo cubierto, corte de plagas y erosión), cada uno con su nivel en forma y texto, su razón y su fuente; un criterio `insufficient_data` se ve «Sin datos suficientes», no como malo (R1)
+  - [x] Rótulo visible: «Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo»
+  - [x] El suelo usado lleva su rango y el rótulo de estimación (R10)
+  - [x] Las estrategias excluidas y su motivo se ven a pedido: la regla que viola, «No se da en su zona» con el dato de la ficha y su fuente, o «Alto riesgo en el ciclo 2: heladas» con la razón
+  - [x] Sin estrategias válidas, estado vacío con las exclusiones a la vista y un texto que propone cambiar la fecha o el número de ciclos
+  - [ ] Tocar un ciclo abre su detalle (HU-215). Queda para HU-215: hasta que exista el detalle no se dibuja el botón, porque un control sin función está prohibido (decidido por Haider el 11 de noviembre de 2026)
+  - [x] Rótulo visible: «Es información para decidir. La decisión es suya»
 - **Reglas que aplican:** R1, R2, R3, R5, R10
 - **Contrato que toca:** respuesta de `POST /api/v1/rotations` (`strategies`, `current_strategy`, `vs_current`, `cycles`, `scores`, `soil_health`, `excluded`)
 - **Notas:** Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos con salud del suelo (decisión 12); pasó de M a L. El resaltado de un cultivo alternativo del diagnóstico se fue con HU-197 a P1. **8 de noviembre de 2026 (decisión 14):** suma la rotación actual como referencia y la erosión; el diseño de «Estrategias de rotación» cambia en Figma antes de programarla.
+- **Hecho (11 nov), salvo abrir el ciclo (HU-215):** en `/consultar`, al consultar, la entrada cambia por el resultado del diseño (`design/pantallas/estrategias.py`). El código está en `web/src/pages/strategies/StrategyResults.tsx` y `StrategyCard.tsx`, y la lectura de la respuesta en `web/src/features/strategies/strategies.ts`.
+  - **Arriba:** el resumen de la consulta, con «Cambiar», que vuelve a la entrada con lo escrito y deja «Volver sin cambiar». Al lado, las prioridades de la rotación: al moverlas se vuelve a pedir y el orden anterior se sigue viendo con «Actualizando…».
+  - **El suelo usado:** el del municipio, con su rango de pH y de carbono orgánico y el rótulo de estimación (R10). Con `soil_basis = lot` se dice que es el del lote, sin cifras, hasta que exista HU-182.
+  - **Las tarjetas:** primero «Lo que usted siembra hoy», con «Lo que no cumple» (`issues`), y después las sugeridas en su orden. Cada una tiene:
+    - su puesto y su total, y lo que gana o pierde frente a hoy, con triángulo y texto;
+    - los ciclos: el abono verde con su rótulo y «Se incorpora»; el descanso «Sin semáforo: no se siembra»; la luz con forma y texto; la del criterio de AgroSense si difiere; y lo que limita;
+    - la nota de la cosecha por calendario;
+    - el desglose con su peso y su diferencia frente a hoy (un criterio sin datos no tiene barra);
+    - sus razones, la salud del suelo con su fuente y sus limitaciones.
+  - **Sin rotación actual:** lo dice y ofrece «Escribir lo que siembro».
+  - **Las descartadas:** van plegadas, con su ciclo, su motivo y su fuente, y cuántas son por motivo cuando la API trae menos que el total.
+  - **Sin estrategias:** «Ninguna estrategia cumple…», con las descartadas abiertas, «Cambiar la fecha» y «Probar con 2 ciclos».
+  - **La fuente de cada regla:** para citarla, el contrato suma `source_ids` (decisión 15 de `docs/decisiones.md`, aprobado por Haider). Los ejemplos de la API suman una sugerida con descanso y los estados `sin_actual` y `sin_opciones`.
+  - **Pruebas:** en `web/src/pages/strategies/strategies.test.tsx`. Revisado sin scroll horizontal ni objetivos de menos de 44 px a 320, 360, 768, 1024 y 1440 px, con y sin modo ligero.
 
 ### HU-215 · Ciclo de una estrategia
 

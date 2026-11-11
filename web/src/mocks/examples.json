@@ -691,6 +691,9 @@
                   "rule_ids": [
                     "leguminosas"
                   ],
+                  "source_ids": [
+                    "agrosavia_rotacion"
+                  ],
                   "reasons": [
                     "Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"
                   ]
@@ -701,6 +704,10 @@
                   "rule_ids": [
                     "materia_organica"
                   ],
+                  "source_ids": [
+                    "agrosavia_rotacion",
+                    "soilgrids"
+                  ],
                   "reasons": [
                     "El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"
                   ]
@@ -708,6 +715,7 @@
                 "soil_cover": {
                   "status": "insufficient_data",
                   "rule_ids": [],
+                  "source_ids": [],
                   "reasons": [
                     "Aún no hay una regla con fuente que diga cuántos meses bastan"
                   ]
@@ -717,6 +725,9 @@
                   "level": "favorable",
                   "rule_ids": [
                     "papa_espera"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion"
                   ],
                   "reasons": [
                     "La papa vuelve al terreno después de dos ciclos de otras familias"
@@ -728,6 +739,10 @@
                   "rule_ids": [
                     "suelo_descubierto"
                   ],
+                  "source_ids": [
+                    "agrosavia_rotacion",
+                    "nasadem"
+                  ],
                   "reasons": [
                     "Con pendiente de 9 %, el suelo queda descubierto 2 meses"
                   ]
@@ -736,6 +751,131 @@
               "reasons": [
                 "Empieza con un abono verde y su suelo tiene poco carbono orgánico",
                 "Gana 15 puntos frente a lo que siembra hoy, sobre todo en suelo"
+              ],
+              "limitations": [
+                "Suelo estimado para el municipio, no para su lote"
+              ]
+            },
+            {
+              "rank": 2,
+              "kind": "suggested",
+              "crop_ids": [
+                "descanso",
+                "arveja",
+                "papa"
+              ],
+              "total_score": 70,
+              "scores": {
+                "water": 80,
+                "soil": 75,
+                "income": 40,
+                "risk": 64
+              },
+              "vs_current": {
+                "water": 12,
+                "soil": 25,
+                "income": -29,
+                "risk": 5,
+                "total": 9
+              },
+              "cycles": [
+                {
+                  "cycle": 1,
+                  "crop_id": "descanso",
+                  "sowing_date": "2027-01-04",
+                  "harvest_estimate": "2027-04-04",
+                  "harvest_basis": "calendar",
+                  "high_risk": false
+                },
+                {
+                  "cycle": 2,
+                  "crop_id": "arveja",
+                  "sowing_date": "2027-04-05",
+                  "harvest_estimate": "2027-08-02",
+                  "harvest_basis": "calendar",
+                  "light": "yellow",
+                  "light_default": "yellow",
+                  "limiting_signal": "frost",
+                  "high_risk": false
+                },
+                {
+                  "cycle": 3,
+                  "crop_id": "papa",
+                  "sowing_date": "2027-08-09",
+                  "harvest_estimate": "2028-01-03",
+                  "harvest_basis": "calendar",
+                  "light": "green",
+                  "light_default": "green",
+                  "high_risk": false
+                }
+              ],
+              "soil_health": {
+                "nitrogen": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "leguminosas"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion"
+                  ],
+                  "reasons": [
+                    "Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"
+                  ]
+                },
+                "organic_carbon": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "materia_organica"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion",
+                    "soilgrids"
+                  ],
+                  "reasons": [
+                    "El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"
+                  ]
+                },
+                "soil_cover": {
+                  "status": "insufficient_data",
+                  "rule_ids": [],
+                  "source_ids": [],
+                  "reasons": [
+                    "Aún no hay una regla con fuente que diga cuántos meses bastan"
+                  ]
+                },
+                "pest_break": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "papa_espera"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion"
+                  ],
+                  "reasons": [
+                    "La papa vuelve al terreno después de dos ciclos de otras familias"
+                  ]
+                },
+                "erosion": {
+                  "status": "available",
+                  "level": "unfavorable",
+                  "rule_ids": [
+                    "suelo_descubierto"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion",
+                    "nasadem"
+                  ],
+                  "reasons": [
+                    "Con pendiente de 9 %, el descanso deja el suelo descubierto 3 meses"
+                  ]
+                }
+              },
+              "reasons": [
+                "El terreno descansa el primer ciclo y corta las plagas de la papa",
+                "No deja ingreso hasta la cosecha de la arveja"
               ],
               "limitations": [
                 "Suelo estimado para el municipio, no para su lote"
@@ -798,6 +938,9 @@
                 "rule_ids": [
                   "leguminosas"
                 ],
+                "source_ids": [
+                  "agrosavia_rotacion"
+                ],
                 "reasons": [
                   "Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"
                 ]
@@ -808,6 +951,10 @@
                 "rule_ids": [
                   "materia_organica"
                 ],
+                "source_ids": [
+                  "agrosavia_rotacion",
+                  "soilgrids"
+                ],
                 "reasons": [
                   "El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"
                 ]
@@ -815,6 +962,7 @@
               "soil_cover": {
                 "status": "insufficient_data",
                 "rule_ids": [],
+                "source_ids": [],
                 "reasons": [
                   "Aún no hay una regla con fuente que diga cuántos meses bastan"
                 ]
@@ -824,6 +972,9 @@
                 "level": "unfavorable",
                 "rule_ids": [
                   "papa_espera"
+                ],
+                "source_ids": [
+                  "agrosavia_rotacion"
                 ],
                 "reasons": [
                   "La papa vuelve después de un solo ciclo de otra familia"
@@ -835,6 +986,10 @@
                 "rule_ids": [
                   "suelo_descubierto"
                 ],
+                "source_ids": [
+                  "agrosavia_rotacion",
+                  "nasadem"
+                ],
                 "reasons": [
                   "Con pendiente de 9 %, el suelo queda descubierto 2 meses"
                 ]
@@ -845,7 +1000,10 @@
                 "cycle": 3,
                 "kind": "rule",
                 "rule_id": "papa_espera",
-                "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia"
+                "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia",
+                "source_ids": [
+                  "agrosavia_rotacion"
+                ]
               }
             ],
             "reasons": [
@@ -863,7 +1021,10 @@
               "cycle": 1,
               "kind": "rule",
               "rule_id": "familia_seguida",
-              "reason": "Repite la familia de la papa, que había antes en el terreno"
+              "reason": "Repite la familia de la papa, que había antes en el terreno",
+              "source_ids": [
+                "agrosavia_rotacion"
+              ]
             },
             {
               "crop_ids": [
@@ -874,7 +1035,10 @@
               "cycle": 2,
               "kind": "high_risk",
               "signal": "frost",
-              "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa"
+              "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa",
+              "source_ids": [
+                "nasa_power"
+              ]
             }
           ],
           "excluded_counts": {
@@ -894,6 +1058,357 @@
           "limitations": [
             "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
             "Compara estrategias según reglas con fuente. No predice cuánto va a mejorar el suelo"
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        },
+        "sin_actual": {
+          "strategies": [
+            {
+              "rank": 1,
+              "kind": "suggested",
+              "crop_ids": [
+                "avena_vicia",
+                "arveja",
+                "papa"
+              ],
+              "total_score": 76,
+              "scores": {
+                "water": 74,
+                "soil": 88,
+                "income": 60,
+                "risk": 71
+              },
+              "cycles": [
+                {
+                  "cycle": 1,
+                  "crop_id": "avena_vicia",
+                  "sowing_date": "2027-01-04",
+                  "harvest_estimate": "2027-04-19",
+                  "harvest_basis": "calendar",
+                  "light": "green",
+                  "light_default": "green",
+                  "limiting_signal": "water",
+                  "high_risk": false
+                },
+                {
+                  "cycle": 2,
+                  "crop_id": "arveja",
+                  "sowing_date": "2027-04-26",
+                  "harvest_estimate": "2027-08-23",
+                  "harvest_basis": "calendar",
+                  "light": "yellow",
+                  "light_default": "yellow",
+                  "limiting_signal": "frost",
+                  "high_risk": false
+                },
+                {
+                  "cycle": 3,
+                  "crop_id": "papa",
+                  "sowing_date": "2027-08-30",
+                  "harvest_estimate": "2028-01-24",
+                  "harvest_basis": "calendar",
+                  "light": "green",
+                  "light_default": "green",
+                  "limiting_signal": "frost",
+                  "high_risk": false
+                }
+              ],
+              "soil_health": {
+                "nitrogen": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "leguminosas"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion"
+                  ],
+                  "reasons": [
+                    "Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"
+                  ]
+                },
+                "organic_carbon": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "materia_organica"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion",
+                    "soilgrids"
+                  ],
+                  "reasons": [
+                    "El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"
+                  ]
+                },
+                "soil_cover": {
+                  "status": "insufficient_data",
+                  "rule_ids": [],
+                  "source_ids": [],
+                  "reasons": [
+                    "Aún no hay una regla con fuente que diga cuántos meses bastan"
+                  ]
+                },
+                "pest_break": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "papa_espera"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion"
+                  ],
+                  "reasons": [
+                    "La papa vuelve al terreno después de dos ciclos de otras familias"
+                  ]
+                },
+                "erosion": {
+                  "status": "available",
+                  "level": "moderate",
+                  "rule_ids": [
+                    "suelo_descubierto"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion",
+                    "nasadem"
+                  ],
+                  "reasons": [
+                    "Con pendiente de 9 %, el suelo queda descubierto 2 meses"
+                  ]
+                }
+              },
+              "reasons": [
+                "Empieza con un abono verde y su suelo tiene poco carbono orgánico",
+                "Gana 15 puntos frente a lo que siembra hoy, sobre todo en suelo"
+              ],
+              "limitations": [
+                "Suelo estimado para el municipio, no para su lote"
+              ]
+            },
+            {
+              "rank": 2,
+              "kind": "suggested",
+              "crop_ids": [
+                "descanso",
+                "arveja",
+                "papa"
+              ],
+              "total_score": 70,
+              "scores": {
+                "water": 80,
+                "soil": 75,
+                "income": 40,
+                "risk": 64
+              },
+              "cycles": [
+                {
+                  "cycle": 1,
+                  "crop_id": "descanso",
+                  "sowing_date": "2027-01-04",
+                  "harvest_estimate": "2027-04-04",
+                  "harvest_basis": "calendar",
+                  "high_risk": false
+                },
+                {
+                  "cycle": 2,
+                  "crop_id": "arveja",
+                  "sowing_date": "2027-04-05",
+                  "harvest_estimate": "2027-08-02",
+                  "harvest_basis": "calendar",
+                  "light": "yellow",
+                  "light_default": "yellow",
+                  "limiting_signal": "frost",
+                  "high_risk": false
+                },
+                {
+                  "cycle": 3,
+                  "crop_id": "papa",
+                  "sowing_date": "2027-08-09",
+                  "harvest_estimate": "2028-01-03",
+                  "harvest_basis": "calendar",
+                  "light": "green",
+                  "light_default": "green",
+                  "high_risk": false
+                }
+              ],
+              "soil_health": {
+                "nitrogen": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "leguminosas"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion"
+                  ],
+                  "reasons": [
+                    "Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"
+                  ]
+                },
+                "organic_carbon": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "materia_organica"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion",
+                    "soilgrids"
+                  ],
+                  "reasons": [
+                    "El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"
+                  ]
+                },
+                "soil_cover": {
+                  "status": "insufficient_data",
+                  "rule_ids": [],
+                  "source_ids": [],
+                  "reasons": [
+                    "Aún no hay una regla con fuente que diga cuántos meses bastan"
+                  ]
+                },
+                "pest_break": {
+                  "status": "available",
+                  "level": "favorable",
+                  "rule_ids": [
+                    "papa_espera"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion"
+                  ],
+                  "reasons": [
+                    "La papa vuelve al terreno después de dos ciclos de otras familias"
+                  ]
+                },
+                "erosion": {
+                  "status": "available",
+                  "level": "unfavorable",
+                  "rule_ids": [
+                    "suelo_descubierto"
+                  ],
+                  "source_ids": [
+                    "agrosavia_rotacion",
+                    "nasadem"
+                  ],
+                  "reasons": [
+                    "Con pendiente de 9 %, el descanso deja el suelo descubierto 3 meses"
+                  ]
+                }
+              },
+              "reasons": [
+                "El terreno descansa el primer ciclo y corta las plagas de la papa",
+                "No deja ingreso hasta la cosecha de la arveja"
+              ],
+              "limitations": [
+                "Suelo estimado para el municipio, no para su lote"
+              ]
+            }
+          ],
+          "excluded": [
+            {
+              "crop_ids": [
+                "papa",
+                "arveja",
+                "haba"
+              ],
+              "cycle": 1,
+              "kind": "rule",
+              "rule_id": "familia_seguida",
+              "reason": "Repite la familia de la papa, que había antes en el terreno",
+              "source_ids": [
+                "agrosavia_rotacion"
+              ]
+            },
+            {
+              "crop_ids": [
+                "arveja",
+                "papa",
+                "maiz"
+              ],
+              "cycle": 2,
+              "kind": "high_risk",
+              "signal": "frost",
+              "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa",
+              "source_ids": [
+                "nasa_power"
+              ]
+            }
+          ],
+          "excluded_counts": {
+            "rule": 212,
+            "high_risk": 48,
+            "not_suitable": 30,
+            "soil_ph": 0
+          },
+          "weights": {
+            "water": 3,
+            "soil": 5,
+            "income": 2,
+            "risk": 4
+          },
+          "soil_basis": "municipality",
+          "slope_basis": "municipality",
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+            "Sin rotación actual: no hay con qué comparar"
+          ],
+          "versions": {
+            "dataset": "ejemplo",
+            "rules": "ejemplo"
+          }
+        },
+        "sin_opciones": {
+          "strategies": [],
+          "excluded": [
+            {
+              "crop_ids": [
+                "maiz",
+                "arveja",
+                "papa"
+              ],
+              "cycle": 1,
+              "kind": "high_risk",
+              "signal": "frost",
+              "reason": "Alto riesgo en el ciclo 1: heladas frecuentes en la floración del maíz",
+              "source_ids": [
+                "nasa_power"
+              ]
+            },
+            {
+              "crop_ids": [
+                "cebolla_bulbo",
+                "arveja",
+                "papa"
+              ],
+              "cycle": 1,
+              "kind": "soil_ph",
+              "reason": "La cebolla tolera pH de 6,0 a 7,5 y el suelo estimado va de 5,2 a 5,8",
+              "source_ids": [
+                "upra_cebolla_bulbo",
+                "soilgrids"
+              ]
+            }
+          ],
+          "excluded_counts": {
+            "rule": 180,
+            "high_risk": 110,
+            "not_suitable": 0,
+            "soil_ph": 40
+          },
+          "weights": {
+            "water": 3,
+            "soil": 5,
+            "income": 2,
+            "risk": 4
+          },
+          "soil_basis": "municipality",
+          "slope_basis": "municipality",
+          "limitations": [
+            "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+            "Sin rotación actual: no hay con qué comparar"
           ],
           "versions": {
             "dataset": "ejemplo",

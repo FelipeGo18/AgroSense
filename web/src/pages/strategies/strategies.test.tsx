@@ -4,7 +4,7 @@ import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATHS } from "@/app/paths";
 import { routes } from "@/app/routes";
-import { sowingMonths } from "@/features/diagnosis/consult";
+import { monthName, sowingMonths } from "@/features/diagnosis/consult";
 import type { Season } from "@/features/farm/seasons";
 import {
   EMPTY_STRATEGY,
@@ -33,6 +33,7 @@ const CROPS = [
   { crop_id: "papa", name_es: "Papa", kind: "crop", archetype: null, family: null, cycle_months: 5 },
   { crop_id: "arveja", name_es: "Arveja", kind: "crop", archetype: null, family: null, cycle_months: 4 },
   { crop_id: "avena_vicia", name_es: "Avena con vicia", kind: "cover", archetype: null, family: null, cycle_months: 4 },
+  { crop_id: "descanso", name_es: "Descanso", kind: "fallow", archetype: null, family: null, cycle_months: 3 },
 ];
 const VERSION = {
   dataset_version: "2026.11.0",
@@ -42,7 +43,10 @@ const VERSION = {
   default_weights: SIGNAL_DEFAULTS,
   weights_version: "1",
   weights_reasons: {},
-  sources: [],
+  sources: [
+    { source_id: "agrosavia_rotacion", name: "Rotación papa, avena y arveja", institution: "Agrosavia" },
+    { source_id: "nasa_power", name: "NASA POWER", institution: "NASA" },
+  ],
 };
 const ROSA = {
   user_id: "1",
@@ -84,25 +88,93 @@ const LOT_LIST = [
   },
 ];
 const LOT_DETAIL = { ...LOT_LIST[0], soil: null, current_seasons: [{ season_id: "s3", crop_id: "avena_vicia", area_ha: 1 }] };
-const strategy = (rank: number | null, kind: string, crops: string[], total: number) => ({
+const SOW = ["2026-12-07", "2027-04-05", "2027-08-02"];
+const HARVEST = ["2027-03-29", "2027-07-26", "2027-12-20"];
+const cycle = (n: number, crop: string, extra: Record<string, unknown> = {}) => ({
+  cycle: n,
+  crop_id: crop,
+  sowing_date: SOW[n - 1],
+  harvest_estimate: HARVEST[n - 1],
+  harvest_basis: "calendar",
+  light: crop === "descanso" ? null : "green",
+  light_default: crop === "descanso" ? null : "green",
+  limiting_signal: null,
+  high_risk: false,
+  diagnosis: null,
+  ...extra,
+});
+const criterion = (level: string, reason: string, sources = ["agrosavia_rotacion"]) => ({
+  status: "available",
+  level,
+  rule_ids: ["regla"],
+  source_ids: sources,
+  reasons: [reason],
+});
+const HEALTH = {
+  nitrogen: criterion("favorable", "La arveja y la vicia fijan nitrógeno"),
+  organic_carbon: criterion("moderate", "Un ciclo devuelve materia orgánica"),
+  soil_cover: {
+    status: "insufficient_data",
+    level: null,
+    rule_ids: [],
+    source_ids: [],
+    reasons: ["Aún no hay una regla con fuente que diga cuántos meses bastan"],
+  },
+  pest_break: criterion("favorable", "La papa vuelve después de dos ciclos de otras familias"),
+  erosion: criterion("unfavorable", "Con pendiente de 9 %, el suelo queda descubierto 4 meses", ["agrosavia_rotacion", "nasa_power"]),
+};
+const strategy = (rank: number | null, kind: string, crops: string[], total: number, extra: Record<string, unknown> = {}) => ({
   rank,
   kind,
   crop_ids: crops,
   total_score: total,
   scores: { water: 70, soil: 80, income: 60, risk: 70 },
   vs_current: null,
-  cycles: [],
-  soil_health: {},
+  cycles: crops.map((crop, i) => cycle(i + 1, crop)),
+  soil_health: HEALTH,
   issues: [],
   reasons: [],
+  limitations: [],
+  ...extra,
 });
+// Datos de ejemplo (R5): dos sugeridas (una con abono verde y otra con descanso), lo de hoy y una descartada.
 const ROTATIONS = {
   strategies: [
-    strategy(1, "suggested", ["avena_vicia", "arveja", "papa"], 76),
-    strategy(2, "suggested", ["arveja", "avena_vicia", "papa"], 70),
+    strategy(1, "suggested", ["avena_vicia", "arveja", "papa"], 76, {
+      vs_current: { water: 6, soil: -10, income: 0, risk: 12, total: 15 },
+      cycles: [
+        cycle(1, "avena_vicia"),
+        cycle(2, "arveja", { light: "yellow", light_default: "red", limiting_signal: "frost" }),
+        cycle(3, "papa"),
+      ],
+      reasons: ["Empieza con un abono verde"],
+    }),
+    strategy(2, "suggested", ["descanso", "arveja", "papa"], 70, {
+      scores: { water: 80, soil: 75, income: null, risk: 64 },
+      vs_current: { water: 12, soil: 25, income: null, risk: 5, total: 9 },
+    }),
   ],
-  current_strategy: strategy(null, "current", ["papa", "arveja", "papa"], 58),
-  excluded: [],
+  current_strategy: strategy(null, "current", ["papa", "arveja", "papa"], 58, {
+    issues: [
+      {
+        cycle: 3,
+        kind: "rule",
+        rule_id: "papa_espera",
+        reason: "La papa vuelve después de un solo ciclo",
+        source_ids: ["agrosavia_rotacion"],
+      },
+    ],
+  }),
+  excluded: [
+    {
+      crop_ids: ["arveja", "papa", "avena_vicia"],
+      cycle: 2,
+      kind: "high_risk",
+      signal: "frost",
+      reason: "Heló en la floración de la papa 22 de cada 100 años",
+      source_ids: ["nasa_power"],
+    },
+  ],
   excluded_counts: { rule: 5, high_risk: 2 },
   weights: START_PRIORITIES,
   soil_basis: "municipality",
@@ -110,6 +182,21 @@ const ROTATIONS = {
   limitations: ["Suelo estimado para el municipio, no para su lote"],
   versions: { dataset: "ejemplo", rules: "ejemplo" },
 };
+const SOIL = (id: string) => ({
+  municipality_id: id,
+  ph: { value: 5.5, p05: 5.2, p95: 5.8 },
+  soc_g_kg: { value: 31, p05: 25, p95: 38 },
+  nitrogen_g_kg: null,
+  clay_pct: null,
+  sand_pct: null,
+  silt_pct: null,
+  texture_class: null,
+  slope_pct: 9,
+  cells: 10,
+  quality: "ok",
+  source_id: "soilgrids",
+  versions: { dataset: "ejemplo", rules: "ejemplo" },
+});
 
 type Reply = { status: number; body?: unknown };
 function fakeApi(extra: Record<string, Reply> = {}) {
@@ -119,6 +206,8 @@ function fakeApi(extra: Record<string, Reply> = {}) {
     "GET /api/v1/catalogs/crops": { status: 200, body: CROPS },
     "GET /api/v1/version": { status: 200, body: VERSION },
     "POST /api/v1/rotations": { status: 200, body: ROTATIONS },
+    "GET /api/v1/catalogs/municipalities/15646/soil": { status: 200, body: SOIL("15646") },
+    "GET /api/v1/catalogs/municipalities/25899/soil": { status: 200, body: SOIL("25899") },
     ...extra,
   };
   vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
@@ -137,6 +226,10 @@ function open(path: string = PATHS.consult) {
   return router;
 }
 const group = (legend: string) => within(screen.getByRole("group", { name: legend }));
+const ORDERED = "Estrategias ordenadas por lo que le importa";
+const results = () => screen.findByRole("heading", { name: ORDERED });
+const card = (name: string | RegExp) => within(screen.getByRole("article", { name }));
+const GUEST = `${PATHS.consult}?municipio=15646&siembra=${MONTH}&anterior=papa&riego=no&ciclos=3`;
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -239,7 +332,7 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     await user.click(group("¿Cuántos ciclos quiere planear?").getByRole("radio", { name: "2 ciclos" }));
     await user.click(screen.getByRole("button", { name: "Ver estrategias" }));
 
-    expect(await screen.findByText("Encontramos 2 estrategias")).toBeInTheDocument();
+    await results();
     expect(rotationCalls(calls)[0]).toEqual({
       municipality_id: "15646",
       sowing_date: `${MONTH}-01`,
@@ -256,11 +349,13 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     expect(router.state.location.search).not.toContain("area");
     expect(sessionStorage.getItem("agrosense.area")).toBe("2,5");
 
-    expect(screen.getByText("1. Avena con vicia → Arveja → Papa")).toBeInTheDocument();
-    expect(screen.getByText(/Su rotación actual:/).parentElement).toHaveTextContent("Papa → Arveja → Papa · 58 de 100");
-    expect(screen.getByText("Se descartaron 7 combinaciones que no cumplen las reglas o tienen riesgo alto.")).toBeInTheDocument();
-    expect(screen.getByText("Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo.")).toBeInTheDocument();
-    expect(screen.getByText("respuesta simulada")).toBeInTheDocument();
+    // El resumen de la consulta, con «Cambiar».
+    expect(screen.getByRole("heading", { level: 1, name: "Estrategias para los próximos 2 ciclos" })).toBeInTheDocument();
+    expect(screen.getByText("Estrategias · Samacá, Boyacá")).toBeInTheDocument();
+    expect(screen.getByText("2,50 ha · antes: papa · sin cuenta")).toBeInTheDocument();
+    expect(screen.getByText("No tiene una rotación fija")).toBeInTheDocument();
+    expect(screen.getByText(`${monthName(MONTH)} · sin riego`)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cambiar: terreno y lo que había antes" })).toBeInTheDocument();
   });
 
   it("desde el diagnóstico llega con el municipio, la fecha, el riego y el cultivo como lo que había antes", async () => {
@@ -277,7 +372,7 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Área del terreno, en hectáreas"), "1");
     await user.click(screen.getByRole("button", { name: "Ver estrategias" }));
-    await screen.findByText("Encontramos 2 estrategias");
+    await results();
     expect(rotationCalls(calls)[0]).toMatchObject({ municipality_id: "15646", previous_crop_ids: ["papa"], irrigated: false });
   });
 
@@ -286,9 +381,11 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     sessionStorage.setItem("agrosense.area", "2");
     open(`${PATHS.consult}?municipio=15646&siembra=${MONTH}&anterior=ninguno&riego=si`);
     const user = userEvent.setup();
-    await screen.findByText("Encontramos 2 estrategias");
+    await results();
     expect(rotationCalls(calls)[0]).toMatchObject({ previous_crop_ids: [], current_crop_ids: null, irrigated: true });
 
+    await user.click(screen.getByRole("button", { name: "Cambiar: lo que viene sembrando" }));
+    expect(screen.getByRole("heading", { level: 1, name: "¿Qué sembrar en los próximos ciclos?" })).toHaveFocus();
     await user.click(group("¿Qué viene sembrando en este terreno?").getByRole("radio", { name: "Sí, en este orden" }));
     await user.selectOptions(screen.getByLabelText("Primero siembra"), "papa");
     await user.click(screen.getByRole("button", { name: "Ver estrategias" }));
@@ -296,6 +393,7 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     await user.selectOptions(screen.getByLabelText("Después"), "arveja");
     await user.click(screen.getByRole("button", { name: "Ver estrategias" }));
     await waitFor(() => expect(rotationCalls(calls).at(-1)).toMatchObject({ current_crop_ids: ["papa", "arveja"] }));
+    expect(await screen.findByText("Papa → Arveja")).toBeInTheDocument();
   });
 
   it("valida en el acto: un área que no sirve se marca al salir del campo", async () => {
@@ -308,21 +406,6 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     expect(screen.getByText("Escriba el área en hectáreas, mayor que cero (por ejemplo, 2,5).")).toBeInTheDocument();
   });
 
-  it("con las prioridades de la rotación todas en 0 no envía la petición y pide subir una", async () => {
-    const calls = fakeApi();
-    sessionStorage.setItem("agrosense.area", "2");
-    open(`${PATHS.consult}?municipio=15646&siembra=${MONTH}&anterior=ninguno&riego=no`);
-    const user = userEvent.setup();
-    await screen.findByText("Encontramos 2 estrategias");
-    const before = rotationCalls(calls).length;
-    await user.click(screen.getByText("¿Qué busca en la rotación? · Ajustar"));
-    for (const name of ["Agua", "Suelo", "Ingreso", "Riesgo"]) {
-      await user.click(within(screen.getByRole("radiogroup", { name: new RegExp(`^${name}:`) })).getByRole("radio", { name: /^0 de 5/ }));
-    }
-    expect(await screen.findByText("Todas sus prioridades están en 0. Suba al menos una para comparar estrategias.")).toBeInTheDocument();
-    expect(rotationCalls(calls)).toHaveLength(before + 3); // las tres primeras aún tenían alguna en más de 0
-  });
-
   it("un 422 de la API se explica en palabras sencillas", async () => {
     fakeApi({
       "POST /api/v1/rotations": {
@@ -331,8 +414,9 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
       },
     });
     sessionStorage.setItem("agrosense.area", "2");
-    open(`${PATHS.consult}?municipio=15646&siembra=${MONTH}&anterior=ninguno&riego=no`);
+    open(GUEST);
     expect(await screen.findByText("Hay un dato que no sirve para consultar. Revise los ciclos.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cambiar los datos" })).toBeInTheDocument();
   });
 
   it("en modo ligero se ve completa", async () => {
@@ -346,6 +430,166 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
 });
 
 const STRATEGY_CURRENT_ERROR = "Elija al menos dos cultivos, en el orden en que los siembra, o «No tengo una rotación fija».";
+
+describe("Prioridades de la rotación (HU-101)", () => {
+  it("al moverlas se vuelve a pedir el orden con ellas, y todas en 0 no consultan", async () => {
+    const calls = fakeApi();
+    sessionStorage.setItem("agrosense.area", "2");
+    open(GUEST);
+    const user = userEvent.setup();
+    await results();
+    expect(screen.getByText("Toque las semillas: el orden cambia al instante.")).toBeInTheDocument();
+
+    const seeds = (name: string) => within(screen.getByRole("radiogroup", { name: new RegExp(`^${name}:`) }));
+    await user.click(seeds("Agua").getByRole("radio", { name: /^5 de 5/ }));
+    await waitFor(() => expect(rotationCalls(calls).at(-1)).toMatchObject({ priorities: { water: 5, soil: 3, income: 3, risk: 3 } }));
+
+    const before = rotationCalls(calls).length;
+    for (const name of ["Agua", "Suelo", "Ingreso", "Riesgo"]) await user.click(seeds(name).getByRole("radio", { name: /^0 de 5/ }));
+    expect(await screen.findByText("Todas sus prioridades están en 0. Suba al menos una para comparar estrategias.")).toBeInTheDocument();
+    expect(rotationCalls(calls)).toHaveLength(before + 3); // las tres primeras aún tenían alguna en más de 0
+    expect(screen.queryByRole("heading", { name: ORDERED })).not.toBeInTheDocument();
+  });
+});
+
+describe("Estrategias con ciclos, desglose y salud del suelo (HU-102)", () => {
+  async function openResults(rotations: unknown = ROTATIONS) {
+    const calls = fakeApi({ "POST /api/v1/rotations": { status: 200, body: rotations } });
+    sessionStorage.setItem("agrosense.area", "2");
+    const router = open(GUEST);
+    await screen.findByRole("heading", { level: 1, name: "Estrategias para los próximos 3 ciclos" });
+    return { calls, router, user: userEvent.setup() };
+  }
+
+  it("lo de hoy va primero y después las sugeridas en su orden, con su puntaje y lo que ganan o pierden", async () => {
+    await openResults();
+    await results();
+    const articles = screen.getAllByRole("article").map((a) => a.getAttribute("aria-label"));
+    expect(articles).toEqual([
+      "Lo que siembra hoy: Papa → Arveja → Papa",
+      "Estrategia 1: Avena con vicia → Arveja → Papa",
+      "Estrategia 2: Descanso → Arveja → Papa",
+    ]);
+    const today = card(/^Lo que siembra hoy/);
+    expect(today.getByText("Se evalúa igual que las demás y no entra al orden.")).toBeInTheDocument();
+    expect(today.getByText("Ciclo 3: no cumple una regla de rotación")).toBeInTheDocument();
+    expect(today.getByText("La papa vuelve después de un solo ciclo")).toBeInTheDocument();
+
+    const first = card(/^Estrategia 1/);
+    expect(first.getByLabelText("Puesto 1")).toBeInTheDocument();
+    expect(first.getByText("76")).toBeInTheDocument();
+    expect(first.getByText("15 más que hoy en total")).toBeInTheDocument();
+    // El desglose: puntaje, peso y diferencia frente a hoy, con forma y texto.
+    expect(first.getByText("6 más que hoy")).toBeInTheDocument();
+    expect(first.getByText("10 menos que hoy")).toBeInTheDocument();
+    expect(first.getByText("Igual que hoy")).toBeInTheDocument();
+    expect(first.getAllByText("peso 3")).toHaveLength(4);
+    expect(first.getByText("Empieza con un abono verde")).toBeInTheDocument();
+
+    // Un criterio sin datos no tiene barra ni cuenta como malo (R1).
+    expect(card(/^Estrategia 2/).getByText("Sin datos: no entra al total")).toBeInTheDocument();
+  });
+
+  it("cada ciclo dice su cultivo, sus fechas y su luz con forma y texto; el descanso no tiene semáforo", async () => {
+    await openResults();
+    await results();
+    const first = card(/^Estrategia 1/);
+    const cover = within(first.getByRole("listitem", { name: "Ciclo 1 de 3: Avena con vicia" }));
+    expect(cover.getByText("Abono verde")).toBeInTheDocument();
+    expect(cover.getByText(/^Se incorpora ~/)).toBeInTheDocument();
+    const peas = within(first.getByRole("listitem", { name: "Ciclo 2 de 3: Arveja" }));
+    expect(peas.getByText("Luz amarilla")).toBeInTheDocument();
+    expect(peas.getByText("luz roja").parentElement).toHaveTextContent("Con el criterio de AgroSense: luz roja");
+    expect(peas.getByText("Limita: heladas")).toBeInTheDocument();
+    expect(peas.getByText(/^Cosecha ~/)).toBeInTheDocument();
+    expect(first.getByText("Cosecha estimada con la duración de las etapas del cultivo. No es pronóstico.")).toBeInTheDocument();
+
+    const rest = within(card(/^Estrategia 2/).getByRole("listitem", { name: "Ciclo 1 de 3: Descanso" }));
+    expect(rest.getByText("Sin semáforo: no se siembra")).toBeInTheDocument();
+    expect(rest.queryByText(/^Luz /)).not.toBeInTheDocument();
+  });
+
+  it("la salud del suelo trae sus cinco criterios con nivel, razón y fuente; sin datos no se pinta como malo", async () => {
+    await openResults();
+    await results();
+    const health = within(card(/^Estrategia 1/).getByRole("region", { name: "Salud del suelo" }));
+    expect(health.getByText("Comparación, no predicción")).toBeInTheDocument();
+    for (const label of ["Nitrógeno", "Carbono orgánico", "Suelo cubierto", "Corte de plagas", "Erosión"]) {
+      expect(health.getByText(label)).toBeInTheDocument();
+    }
+    expect(health.getByText("Sin datos suficientes")).toBeInTheDocument();
+    expect(health.getByText("Desfavorable")).toBeInTheDocument();
+    expect(health.getAllByText("Fuente: Rotación papa, avena y arveja (Agrosavia)")).toHaveLength(3);
+    expect(health.getByText("Fuente: Rotación papa, avena y arveja (Agrosavia) · NASA POWER (NASA)")).toBeInTheDocument();
+    // El criterio sin regla con fuente no inventa una (R8).
+    const cover = health.getByText("Suelo cubierto").closest("li")!;
+    expect(cover).not.toHaveTextContent("Fuente:");
+  });
+
+  it("dice el suelo que se usó con su rango y que es una estimación, y los rótulos de comparación y decisión", async () => {
+    await openResults();
+    await results();
+    expect(await screen.findByText("pH estimado de 5,2 a 5,8 (valor central 5,5) · carbono orgánico de 25 a 38 g/kg")).toBeInTheDocument();
+    expect(screen.getByText("Suelo estimado de Samacá · 250 m")).toBeInTheDocument();
+    expect(screen.getByText("Estimación de un mapa global de 250 m. Un análisis de suelo de su lote es más preciso.")).toBeInTheDocument();
+    expect(screen.getByText("Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo.")).toBeInTheDocument();
+    expect(screen.getByText("Es información para decidir. La decisión es suya.")).toBeInTheDocument();
+    expect(screen.getByText("respuesta simulada")).toBeInTheDocument();
+    expect(screen.getByText("Datos ejemplo · Reglas ejemplo")).toBeInTheDocument();
+  });
+
+  it("las descartadas se ven a pedido, con su ciclo, su motivo y su fuente, y cuántas son en total", async () => {
+    const { user } = await openResults();
+    await results();
+    const details = screen.getByText("7 estrategias descartadas, cada una con su regla o motivo").closest("details")!;
+    expect(details).not.toHaveAttribute("open");
+    await user.click(within(details).getByText("Ver por qué"));
+    expect(details).toHaveAttribute("open");
+    const list = within(details);
+    expect(list.getByText("Arveja → Papa → Avena con vicia")).toBeInTheDocument();
+    expect(list.getByText("Ciclo 2: alto riesgo de clima (heladas)")).toBeInTheDocument();
+    expect(list.getByText("Heló en la floración de la papa 22 de cada 100 años")).toBeInTheDocument();
+    expect(list.getByText("Fuente: NASA POWER (NASA)")).toBeInTheDocument();
+    expect(
+      list.getByText("Aquí van las primeras 1. En total se descartaron 5 por reglas de rotación, 2 por riesgo grave de clima."),
+    ).toBeInTheDocument();
+  });
+
+  it("sin rotación actual lo dice y ofrece escribirla", async () => {
+    const { user } = await openResults({
+      ...ROTATIONS,
+      current_strategy: null,
+      strategies: ROTATIONS.strategies.map((s) => ({ ...s, vs_current: null })),
+    });
+    await results();
+    expect(screen.getByText(/No nos dijo qué viene sembrando en este terreno/)).toBeInTheDocument();
+    expect(screen.queryByText(/más que hoy/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Escribir lo que siembro" }));
+    expect(group("¿Qué viene sembrando en este terreno?").getByRole("radio", { name: "Sí, en este orden" })).toBeChecked();
+    expect(screen.getByLabelText("Primero siembra")).toBeInTheDocument();
+    // «Volver sin cambiar» regresa a las mismas estrategias.
+    await user.click(screen.getByRole("button", { name: "Volver sin cambiar" }));
+    await results();
+  });
+
+  it("sin estrategias válidas: estado vacío con las descartadas a la vista y qué cambiar", async () => {
+    const empty = { ...ROTATIONS, strategies: [], current_strategy: null };
+    const { calls, user } = await openResults(empty);
+    expect(await screen.findByRole("heading", { name: "Ninguna estrategia cumple las reglas con estos datos" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: ORDERED })).not.toBeInTheDocument();
+    const details = screen.getByText("7 estrategias descartadas, cada una con su regla o motivo").closest("details")!;
+    expect(details).toHaveAttribute("open");
+
+    await user.click(screen.getByRole("button", { name: "Probar con 2 ciclos" }));
+    await waitFor(() => expect(rotationCalls(calls).at(-1)).toMatchObject({ cycles: 2 }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Estrategias para los próximos 2 ciclos" })).toBeInTheDocument();
+    // Con dos ciclos ya no se ofrece bajar más: solo cambiar la fecha, que vuelve a la entrada.
+    expect(await screen.findByRole("heading", { name: "Ninguna estrategia cumple las reglas con estos datos" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Probar con 2 ciclos" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Cambiar la fecha" }));
+    expect(screen.getByLabelText("¿Cuándo sembraría el primer ciclo?")).toHaveValue(MONTH);
+  });
+});
 
 describe("Entrada a las estrategias desde el lote (HU-214)", () => {
   it("toma el municipio, el riego y el historial del lote, y envía lot_id", async () => {
@@ -370,7 +614,7 @@ describe("Entrada a las estrategias desde el lote (HU-214)", () => {
     await user.selectOptions(screen.getByLabelText("¿Cuándo sembraría el primer ciclo?"), MONTH);
     await user.click(screen.getByRole("button", { name: "Ver estrategias" }));
 
-    await screen.findByText("Encontramos 2 estrategias");
+    await results();
     expect(rotationCalls(calls)[0]).toMatchObject({
       municipality_id: "25899",
       previous_crop_ids: ["arveja"],
@@ -378,6 +622,9 @@ describe("Entrada a las estrategias desde el lote (HU-214)", () => {
       irrigated: true,
       lot_id: "a1",
     });
+    expect(screen.getByText("Estrategias · Zipaquirá, Cundinamarca")).toBeInTheDocument();
+    expect(screen.getByText("El Alto · 1,00 ha · antes: arveja")).toBeInTheDocument();
+    expect(screen.getByText(`${monthName(MONTH)} · con riego`)).toBeInTheDocument();
   });
 
   it("un lote en la dirección sin sesión no se consulta y lo dice", async () => {
