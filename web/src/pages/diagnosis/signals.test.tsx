@@ -297,7 +297,9 @@ describe("Resultado del diagnóstico (HU-092)", () => {
     fakeApi(
       replies({
         ...RESPONSE,
+        // Sin datos de agua, las dos luces son «no evaluable» (regla 1 de la agregación): no depende de los pesos.
         overall: { ...RESPONSE.overall, light: "not_evaluable", action: "review_data", limiting_signal: null, reasons: [] },
+        overall_default: { ...RESPONSE.overall_default, light: "not_evaluable", action: "review_data", limiting_signal: null, reasons: [] },
       }),
     );
     open();

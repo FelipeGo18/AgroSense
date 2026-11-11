@@ -8,7 +8,7 @@ agentes: [motor-api, web, datos, producto-agro]
 subsistemas: [AG1, D3, M1, M7, M10, W7]
 depende_de: [EP-04, EP-06, HU-181]
 reglas: [R1, R2, R3, R4, R5, R6, R9, R10]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-14 · Agua del plan y etapas del cultivo
@@ -26,11 +26,11 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 ### HU-142 · Etapas de cada cultivo con Kc
 
 - **Historia:** Como motor, quiero las etapas de cada cultivo con su duración y coeficiente de cultivo (Kc), para estimar su consumo de agua y lo que dura cada ventana.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] `crop_stages` de los 7 cultivos del MVP (papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia): cada etapa con `days`, `kc`, `frost_sensitive` y `heat_sensitive`, y `gdd` solo si hay fuente
-  - [ ] Valores de FAO-56 o de una fuente local, citados (R8); si se adaptan a la región, se dice cómo
-  - [ ] La suma de los días de las etapas coincide con `cycle_months` de la ficha, con la tolerancia que se documente
+  - [x] Valores de FAO-56 o de una fuente local, citados (R8); si se adaptan a la región, se dice cómo (`fao_56` por etapa en `catalog/crops.yaml`)
+  - [x] La suma de los días de las etapas coincide con `cycle_months` de la ficha, con la tolerancia que se documente (`cycle_months` sale de la suma de las etapas: días entre 30,44, con un decimal; `pipeline/catalog.py`)
   - [ ] Revisión cruzada por otro integrante
 - **Reglas que aplican:** R8
 - **Contrato que toca:** `crop_stages`
@@ -39,30 +39,30 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 ### HU-220 · Etapas de una ventana por calendario
 
 - **Historia:** Como motor, quiero las etapas de un cultivo y su cosecha estimada desde una fecha de siembra con la duración de su ficha, para evaluar cualquier ventana sin depender de grados-día.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Con `sowing_date` y los `days` de `crop_stages`, da la etapa de cada día de la ventana, los meses que caen en etapas sensibles a la helada y al calor, y `harvest_estimate` con `harvest_basis = calendar`
-  - [ ] Lo usan las señales de la ventana (HU-071, HU-077 y HU-190), el orden de ventanas (HU-192), los ciclos de las estrategias (HU-213), «Qué cambió» (HU-217) y la etapa de las temporadas en curso del lote (`stage_method = calendar`)
-  - [ ] Sin los días de alguna etapa con fuente, no hay ventana: las señales que la necesitan quedan `insufficient_data` (R1)
-  - [ ] Función pura: misma entrada, misma salida; no lee el reloj ni archivos (R4, R6)
-  - [ ] Prueba: un cultivo cuyas etapas suman 150 días, sembrado el 3 de agosto, da la cosecha estimada el 31 de diciembre
+  - [x] Con `sowing_date` y los `days` de `crop_stages`, da la etapa de cada día de la ventana, los meses que caen en etapas sensibles a la helada y al calor, y `harvest_estimate` con `harvest_basis = calendar`
+  - [x] Una sola función (`crop_window`) para todo lo que necesita las etapas de una ventana: las señales (HU-071, HU-077 y HU-190), el orden de ventanas (HU-192), los ciclos de las estrategias (HU-213), «Qué cambió» (HU-217) y la etapa de las temporadas en curso del lote (`stage_method = calendar`). `stage_today` ya la usa; cada una de las demás la llama desde su HU
+  - [x] Sin los días de alguna etapa con fuente, no hay ventana: las señales que la necesitan quedan `insufficient_data` (R1)
+  - [x] Función pura: misma entrada, misma salida; no lee el reloj ni archivos (R4, R6)
+  - [x] Prueba: un cultivo cuyas etapas suman 150 días, sembrado el 3 de agosto, da la cosecha estimada el 31 de diciembre
 - **Reglas que aplican:** R1, R4, R6, R8
 - **Contrato que toca:** `harvest_basis` (`calendar`), `stage_method`, `crop_stages`
-- **Notas:** Decisión 12. Reemplaza en el MVP al cálculo por temperatura acumulada (HU-150 y HU-186, que pasaron a P1): cuando existan, la duración sale del clima de la zona y la base cambia a `normal_year`. Agregada el 11 de octubre de 2026. Avance del 17 de octubre de 2026: `backend/engine/stages.py` (`stage_today`) da la etapa de hoy, su avance y la cosecha estimada de las temporadas en curso (`stage_method = calendar`); falta la etapa de cada día de una ventana y los meses sensibles, para las señales.
+- **Notas:** Decisión 12. Reemplaza en el MVP al cálculo por temperatura acumulada (HU-150 y HU-186, que pasaron a P1): cuando existan, la duración sale del clima de la zona y la base cambia a `normal_year`. Agregada el 11 de octubre de 2026. Avance del 17 de octubre de 2026: `backend/engine/stages.py` (`stage_today`) da la etapa de hoy, su avance y la cosecha estimada de las temporadas en curso (`stage_method = calendar`); falta la etapa de cada día de una ventana y los meses sensibles, para las señales. **10 de noviembre de 2026:** hecha. `crop_window` (`backend/engine/stages.py`) da las etapas de la ventana con sus fechas, su Kc y su sensibilidad, la etapa de cada día, los meses que toca (con el año de cada mes, para las ventanas que pasan de diciembre a enero) y los meses en etapa sensible a la helada o al calor, con su estado: `available`, `not_applicable` si ninguna etapa es sensible, o `insufficient_data` si alguna etapa no dice si lo es (R1). Pruebas en `tests/engine/test_ventana.py`. **Hallazgo:** en el catálogo, cebolla de bulbo, haba y maíz no dicen la sensibilidad a la helada, y ningún cultivo dice la del calor: esas señales quedan en `insufficient_data` hasta HU-063. Una etapa sin días (0) también deja al cultivo sin ventana, en vez de saltarla; el catálogo no tiene ninguna.
 
 ### HU-143 · Lluvia y ET0 mensuales por municipio
 
 - **Historia:** Como motor, quiero la lluvia y la evapotranspiración de referencia (ET0) mensuales por municipio, con su normal y un año seco, para calcular el balance de agua.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] ET0 por Penman-Monteith (FAO-56) con la temperatura, la radiación, el viento y la humedad relativa de NASA POWER (HU-205); método documentado
-  - [ ] Un mes sin alguna de esas variables no tiene ET0: `et0_mm` queda nulo y `quality = partial`. Nunca se cambia de método en silencio (R1)
-  - [ ] Año seco definido como un percentil bajo de la serie
-  - [ ] `et0_mm`, `et0_normal_mm` y `precip_dry_mm` en `climate_month`, sobre la lluvia de HU-042; el año seco de IMERG va en `precip_month` (HU-207)
-  - [ ] Comprobación manual en un municipio
+  - [x] ET0 por Penman-Monteith (FAO-56) con la temperatura, la radiación, el viento y la humedad relativa de NASA POWER (HU-205); método documentado (`pipeline/et0.py`)
+  - [x] Un mes sin alguna de esas variables no tiene ET0: `et0_mm` queda nulo y `quality = partial`. Nunca se cambia de método en silencio (R1)
+  - [x] Año seco definido como un percentil bajo de la serie: el percentil 20 de 1991–2020, decidido por Felipe el 10 de noviembre de 2026
+  - [x] `et0_mm`, `et0_normal_mm` y `precip_dry_mm` en `climate_month`, sobre la lluvia de HU-042; el año seco de IMERG va en `precip_month` (HU-207)
+  - [x] Comprobación manual en un municipio (en 4, contra la evaporación del IDEAM: ver las notas)
 - **Reglas que aplican:** R1, R8
 - **Contrato que toca:** `climate_month`
-- **Notas:** Va antes del diagnóstico: la señal `water` (HU-071) lo necesita. Cambió de Hargreaves a Penman-Monteith el 11 de octubre de 2026 (decisión 12), porque POWER ampliado entrega la radiación, el viento y la humedad. La versión por semana (`et0_normal_mm` de `climate_risk_week`, HU-193, P1) usa este mismo método.
+- **Notas:** Va antes del diagnóstico: la señal `water` (HU-071) lo necesita. Cambió de Hargreaves a Penman-Monteith el 11 de octubre de 2026 (decisión 12), porque POWER ampliado entrega la radiación, el viento y la humedad. La versión por semana (`et0_normal_mm` de `climate_risk_week`, HU-193, P1) usa este mismo método. **10 de noviembre de 2026:** `pipeline/et0.py` es la ecuación 6 de FAO-56, diaria, con el flujo de calor del suelo en cero; reproduce el ejemplo 18 del libro (3,9 mm/día en Bruselas). Usa la mínima y la máxima corregidas por altitud, la humedad relativa media de POWER para la presión de vapor (ecuación 19: POWER no da la máxima ni la mínima), el viento a 2 m, la radiación y la altitud del municipio para la presión. Un mes tiene ET0 solo si todos sus días la tienen: no la tienen de 1981 a 1983, porque la radiación de POWER empieza en 1984, ni un mes al que le falta un día de radiación. La normal es la de 1991–2020 con 24 años. El año seco es el percentil 20 de la lluvia de cada mes en 1991–2020: la que se supera en 4 de cada 5 años. **Comprobación** contra la evaporación de tanque de las normales 1991–2020 del IDEAM, con el coeficiente de tanque de FAO-56 (de 0,6 a 0,85): UPTC, Tunja, ET0 de 951 mm al año y 1289 de evaporación (0,74); Surbata Bonza, Duitama, 1110 y 1408 (0,79); Villa de Leyva, 1058 y 1485 (0,71); todas dentro del rango (con la altitud de la cabecera, decidida por Felipe; antes, con la mediana, 0,72, 0,74 y 0,70). Tibaitatá, Mosquera, 1077 y 1134 (0,95), por encima: su celda de POWER está a 1790 m y es más seca que la estación. **Revisión de Felipe del PR #24 (10 de noviembre de 2026):** el año seco es el percentil 20 de la lluvia de cada mes, la lluvia confiable con que la FAO planea el riego (decidido por Felipe). El periodo normal, sus años mínimos, el 90 % de los días y el percentil del año seco van en `pipeline/region.yaml` (`climate_normal`), uno solo para la lluvia, la ET0 y la temperatura media anual. La ET0 toma la mínima y la máxima ya corregidas de `climate_day`: la corrección por altitud está en un solo lugar.
 
 ### HU-144 · Déficit de agua por cultivo y etapa
 
@@ -77,7 +77,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
   - [ ] Volumen en m³ según el área de cada cultivo
   - [ ] Año normal y año seco; misma entrada, mismo resultado
   - [ ] El mismo cálculo, sin área, da el déficit de una ventana de siembra para la señal `water` (HU-071): no hay dos balances de agua
-  - [ ] Sin lluvia de la fuente elegida, sin ET0 o sin Kc de alguna etapa, no devuelve un déficit: quien lo llama responde `insufficient_data` (R1)
+  - [ ] Sin lluvia de la fuente elegida, sin ET0 o sin Kc de alguna etapa, no devuelve un déficit: quien lo llama responde `insufficient_data` (R1). El Kc de la etapa de desarrollo no falta: se interpola en línea recta entre el de la inicial y el de la media (FAO-56; contrato, `crop_stages`)
   - [ ] Prueba: con la misma lluvia y el mismo cultivo, un suelo arenoso da un déficit mayor o igual que uno arcilloso
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `climate_month`, `precip_month`, `crop_stages`, `grid_cells`, `soil_municipality`

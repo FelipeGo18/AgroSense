@@ -8,7 +8,7 @@ agentes: [motor-api]
 subsistemas: [M1, M2, M4, M6, M7, M10, M11]
 depende_de: [HU-011, HU-012, EP-03, EP-04, HU-061, HU-063, HU-142, HU-143, HU-144, HU-220, HU-181, HU-198, HU-199, HU-206, HU-207, HU-216]
 reglas: [R1, R2, R3, R4, R5, R6, R8, R9, R10]
-estado: pendiente
+estado: en curso
 ---
 
 # EP-07 · Diagnóstico de la ventana explicable
@@ -35,6 +35,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Señal `water` con `status`, `level`, `critical`, `score`, `counts`, `indicators` (`water_deficit_mm`) y `reasons`, según el contrato
   - [ ] Usa el balance hídrico de M7 (HU-144) por etapa del cultivo (HU-142) sobre los meses de la ventana: no hay un segundo cálculo de agua
   - [ ] La lluvia sale de la fuente que define `sources.yaml` para la región: GPM IMERG (`precip_month`, HU-207) cuando la región la tiene y NASA POWER (`climate_month`) si no. La ET0 sale siempre de `climate_month` (HU-143). La razón dice qué fuente de lluvia se usó
+  - [ ] Si `sources.yaml` trae `rain_caveat` para la región, la señal lo lleva en sus limitaciones en cada respuesta, y la web lo muestra junto al agua. Hoy, en la región piloto, la lluvia es la de NASA POWER, que la sobrestima en el altiplano, hasta que exista IMERG (HU-207; decidido por Felipe el 11 de noviembre de 2026)
   - [ ] `signals.water.sources` trae juntas la lluvia de IMERG y la de POWER, cada una con su valor y su periodo, y `used` marca la que calculó la señal; nunca se promedian ni una rellena a la otra (decisión 11). Si la fuente que calcula la señal no tiene dato para el municipio, la señal es `insufficient_data` aunque la otra tenga (R1)
   - [ ] `signals.water.sources` trae también, para contrastar y con `used = false`, la humedad del suelo de la zona: la modelada por POWER (`soil_wetness_root`, HU-205) y, si existe, la de SMAP (`sm_rootzone_m3_m3`, HU-210), cada una en su unidad. No cambian la calificación
   - [ ] El balance tiene en cuenta cuánta agua retiene el suelo según su textura (HU-144): del lote si viene `lot_id` con polígono, si no del municipio. Prueba: la misma ventana con un suelo arenoso da un déficit mayor o igual que con uno arcilloso
@@ -43,7 +44,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] `irrigated` nulo se trata como sin riego y se agrega a las limitaciones
   - [ ] Sin la textura del suelo, el balance se calcula sin retención y se agrega a las limitaciones; la señal no queda en `insufficient_data` por eso
   - [ ] La razón dice siempre el periodo que se evaluó (por ejemplo, «en 7 de los últimos 10 años»): es historia, no pronóstico (R5, decisión 4)
-  - [ ] Sin `climate_month` para el municipio o sin etapas con Kc para el cultivo: `insufficient_data`, nivel y `score` nulos (R1)
+  - [ ] Sin `climate_month` para el municipio o sin etapas con Kc para el cultivo: `insufficient_data`, nivel y `score` nulos (R1). El Kc de la etapa de desarrollo va nulo en la ficha a propósito: se interpola en línea recta entre el de la inicial y el de la media (FAO-56, como dice el contrato en `crop_stages`), y no cuenta como un Kc que falta
   - [ ] Caso de referencia: la misma ventana con déficit alto da `unfavorable` sin riego y no da `unfavorable` con riego
 - **Reglas que aplican:** R1, R2, R4, R5, R6, R10
 - **Contrato que toca:** `signals.water` (con `sources`) de la respuesta de diagnóstico; `climate_month`, `precip_month`, `soil_moisture_month`, `crop_stages`, `grid_cells`, `soil_municipality`
@@ -89,7 +90,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `score` y `level` de cada señal en `/diagnostics` y en las ventanas de `/calendar`; `crops`; `thresholds.yaml`
-- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha (`temp_*`, `heat_max_c`); `frost` califica `frost_freq_pct` en las semanas sensibles (cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
+- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha (`temp_*`, `heat_max_c`); `frost` califica el porcentaje de años con helada en los meses sensibles de la ventana (semanas en P1; cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
 
 ### HU-074 · Semáforo con prioridades, dos luces y acción
 
@@ -246,7 +247,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] `/trends` recibe `sowing_date` y devuelve tres series: `water` (por año, `precip_mm` de los meses de la ventana, de la fuente de lluvia que calcula la señal, y `need_mm` del cultivo), `supply` (por año, `planted_ha` y `preliminary` del semestre de EVA en que cae la fecha) y `ndvi` (por periodo de 16 días, `ndvi_normal` del municipio, HU-208)
   - [ ] Solo leen el dataset publicado; sin datos, la serie viene vacía con `insufficient_data` (R1)
 - **Reglas que aplican:** R1, R4, R7
-- **Notas:** La serie `ndvi` se sumó el 11 de octubre de 2026 (decisión 12): sirve para contrastar la ventana con la época en que el campo suele estar verde. **15 de octubre de 2026:** hecho `GET /catalogs/municipalities` (`backend/api/catalogs.py`): lee el dataset publicado y, sin él, responde 503 `dataset_unavailable` con el motivo en el log. El 15 de octubre de 2026, también `GET /catalogs/municipalities/{id}/boundary`. Faltan los cultivos, el suelo y `/trends`.
+- **Notas:** La serie `ndvi` se sumó el 11 de octubre de 2026 (decisión 12): sirve para contrastar la ventana con la época en que el campo suele estar verde. **15 de octubre de 2026:** hecho `GET /catalogs/municipalities` (`backend/api/catalogs.py`): lee el dataset publicado y, sin él, responde 503 `dataset_unavailable` con el motivo en el log. El 15 de octubre de 2026, también `GET /catalogs/municipalities/{id}/boundary`. Faltan los cultivos, el suelo y `/trends`. **10 de noviembre de 2026:** `/catalogs/crops` y `/catalogs/municipalities/{id}/soil` ya existen (`backend/api/catalogs.py`); falta `/trends`, que responde 501.
 
 ### HU-217 · Comparar dos periodos de la historia de la zona
 

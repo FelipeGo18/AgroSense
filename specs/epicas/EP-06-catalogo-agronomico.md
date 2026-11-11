@@ -19,7 +19,7 @@ La ficha no dice en qué época se siembra: eso lo responde el motor, ventana po
 
 **Es trabajo de la fase 0, sin código, y va primero en el orden de desarrollo** (`docs/orden-de-desarrollo.md`): sin fichas con fuente, la aptitud, el calor, las curvas y las estrategias quedan en «datos insuficientes». Fuentes candidatas: FAO EcoCrop, FAO-56 (Kc y etapas) y Agrosavia (fichas técnicas y las rotaciones papa-avena-arveja de Tibaitatá), todas por confirmar en `docs/fuentes.md`.
 
-Los cultivos dependen de la región piloto, que es un supuesto mientras el reto no confirme la región (decisión 11, HU-002). La lista de 7 se decidió el 11 de octubre de 2026 (decisión 12).
+Los cultivos dependen de la región piloto, confirmada el 28 de octubre de 2026: Boyacá y Cundinamarca (decisión 11, HU-002). La lista de 7 se decidió el 11 de octubre de 2026 (decisión 12).
 
 ## Historias de usuario
 

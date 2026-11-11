@@ -11,6 +11,7 @@ dependencies = [
     { name = "argon2-cffi" },
     { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "fastapi" },
+    { name = "numpy" },
     { name = "openpyxl" },
     { name = "polars" },
     { name = "psycopg", extra = ["binary"] },
@@ -20,6 +21,7 @@ dependencies = [
     { name = "shapely" },
     { name = "sqlalchemy" },
     { name = "structlog" },
+    { name = "tifffile" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -36,6 +38,7 @@ requires-dist = [
     { name = "argon2-cffi", specifier = ">=23.1" },
     { name = "colorama", marker = "sys_platform == 'win32'", specifier = ">=0.4.6" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "numpy", specifier = ">=2.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "polars", specifier = ">=1.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
@@ -45,6 +48,7 @@ requires-dist = [
     { name = "shapely", specifier = ">=2.0" },
     { name = "sqlalchemy", specifier = ">=2.0.30" },
     { name = "structlog", specifier = ">=26.1.0" },
+    { name = "tifffile", specifier = ">=2026.10" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
 
@@ -672,6 +676,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5e/89/b4a0bcfdf4f71a3dea31379f095929613d7e4528a0996bca6aa964cd0dca/structlog-26.1.0.tar.gz", hash = "sha256:f63a716cbd1b1291cf7661de7794b455acfa4c43c5bcf1630e6ad5ddc1adb3b7", size = 1459881, upload-time = "2026-06-06T07:33:39.348Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a9/18/489c97b834dfff9cf2fc2507cede4bcd4b11e67f84bc462acd1992496f86/structlog-26.1.0-py3-none-any.whl", hash = "sha256:e081a26d6c373e6d201eca24eede26d8ffab07f88f477822e679183428d3d91e", size = 73764, upload-time = "2026-06-06T07:33:38.046Z" },
+]
+
+[[package]]
+name = "tifffile"
+version = "2026.10.15"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fd/87/a982ca5b892579397c2b155275cc0119b51feb1701eaefa18acb0245f0a4/tifffile-2026.10.15.tar.gz", hash = "sha256:a5ee666dbd6d62e059830a3450825a2521a981b3f45c07a80ab009484aef56f0", size = 454150, upload-time = "2026-10-16T00:32:10.511Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5b/bc/9e7664e2d30d4e82ada1b29dbb249d2dcac1ed1114cbbf11764f670d8be7/tifffile-2026.10.15-py3-none-any.whl", hash = "sha256:3dcf6c56731a45c1f85c81e90dad922b0a380a2d639e77f71207e010f8ef0f7b", size = 276988, upload-time = "2026-10-16T00:32:09.158Z" },
 ]
 
 [[package]]

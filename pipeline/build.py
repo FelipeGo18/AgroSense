@@ -4,17 +4,23 @@
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
     uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
-Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `municipality_boundaries` (MGN del DANE, HU-044), el
-catálogo (`crops` y `crop_stages`, HU-061), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221),
-`market_price_latest` (el último precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y
-`manifest.json`. Cada tabla pasa por las validaciones y por su esquema del contrato (`pipeline/schema.py`, HU-011) antes
-de escribirse: si una falla, no se publica nada (R7, R8).
+Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044, con la altura de su celda de NASA POWER),
+`municipality_boundaries` (MGN del DANE, HU-044), el catálogo (`crops` y `crop_stages`, HU-061), `climate_day` (NASA
+POWER, HU-041), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221), `market_price_latest` (el último
+precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla
+pasa por las validaciones y por su esquema del contrato (`pipeline/schema.py`, HU-011) antes de escribirse: si una
+falla, no se publica nada (R7, R8).
 También se valida el mapeo de los productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que
 se publican. Al terminar, lo publicado se revisa contra su manifiesto (HU-123).
 
+Si falta la caché de NASA POWER o la de SIPSA, se publica lo demás sin esas tablas y el log lo dice (`source_missing`):
+no hace falta bajar el clima ni los precios para reconstruir los municipios. `climate_day` solo se publica con los
+municipios que tienen altitud (NASADEM, HU-206): sin ella la temperatura no se puede corregir y no se publica sin
+corregir (R1).
+
 Cada paso deja una línea en la terminal con la fuente, las filas leídas y las descartadas con su motivo (HU-177). Usa la
-misma configuración de logs que la API (`common/logging.py`, que no depende del backend): nivel y formato con `AGROSENSE_LOG_LEVEL` y
-`AGROSENSE_LOG_FORMAT`, sin depender de la base de datos.
+misma configuración de logs que la API (`common/logging.py`, que no depende del backend): nivel y formato con
+`AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT`, sin depender de la base de datos.
 """
 
 import argparse
@@ -22,7 +28,7 @@ import json
 import re
 import sys
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -30,11 +36,12 @@ import polars as pl
 import shapely
 import yaml
 
+from common import signal_sources
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import schema
+from pipeline import climate_normals, schema
 from pipeline.settings import get_settings
-from pipeline.sources import dane, dane_mgn, sipsa
+from pipeline.sources import dane, dane_mgn, nasa_power, nasadem, sipsa, sipsa_boletin
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
@@ -166,6 +173,40 @@ def validate_market_month(month: pl.DataFrame, crops: dict[str, Any], sources: p
         raise ValidationError(f"`market_month` con una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def validate_climate(climate: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`climate_day` solo trae municipios publicados (R7) y cita fuentes que existen (R8)."""
+    extra = set(climate["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`climate_day` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    unknown = set(climate["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`climate_day` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
+def validate_climate_month(month: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`climate_month` solo trae municipios publicados (R7), meses de 1 a 12, lluvia no negativa y fuentes que existen
+    (R8)."""
+    extra = set(month["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`climate_month` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    bad = month.filter(~pl.col("month").is_between(1, 12) | (pl.col("precip_mm") < 0) | (pl.col("precip_normal_mm") < 0))
+    if not bad.is_empty():
+        raise ValidationError(f"`climate_month` con un mes o una lluvia fuera de lo permitido: {bad.head(3).to_dicts()}")
+    unknown = set(month["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`climate_month` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
+def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`grid_cells` solo trae celdas de municipios publicados (R7) y cita fuentes que existen (R8)."""
+    extra = set(grid["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`grid_cells` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    unknown = set(grid["source_ids"].explode().drop_nulls().unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`grid_cells` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -175,12 +216,16 @@ def publish(
     crops: tuple[str, pl.DataFrame, pl.DataFrame] | None = None,
     prices: pl.DataFrame | None = None,
     crop_products: dict[str, Any] | None = None,
+    climate: pl.DataFrame | None = None,
+    grid: pl.DataFrame | None = None,
+    climate_month: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
     `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
-    `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). Todo se valida antes de
-    escribir nada.
+    `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). `climate`
+    (`climate_day`), `climate_month` (HU-042) y `grid` (`grid_cells`, HU-206) solo se escriben si traen filas: una tabla vacía no es un dato
+    (R1). Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
     if boundaries is not None:
@@ -197,6 +242,15 @@ def publish(
         validate_crops(crop_products, prices, set(crops[1]["crop_id"].to_list()) if crops is not None else None)
         month = sipsa.monthly(prices, season, crop_products)
         validate_market_month(month, crop_products, sources)
+    has_climate = climate is not None and not climate.is_empty()
+    if has_climate:
+        validate_climate(climate, municipalities, sources)
+    has_month = climate_month is not None and not climate_month.is_empty()
+    if has_month:
+        validate_climate_month(climate_month, municipalities, sources)
+    has_grid = grid is not None and not grid.is_empty()
+    if has_grid:
+        validate_grid(grid, municipalities, sources)
     # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
     # `sources` junta filas de varias fuentes: va con las columnas del contrato, en su orden. Una fuente sin cita (por
     # ejemplo, las del catálogo) queda con `citation` nula, no inventada (R1).
@@ -207,6 +261,12 @@ def publish(
         tables["municipality_boundaries"] = boundaries
     if crops is not None:
         tables["crops"], tables["crop_stages"] = crops[1], crops[2]
+    if has_climate:
+        tables["climate_day"] = climate
+    if has_month:
+        tables["climate_month"] = climate_month
+    if has_grid:
+        tables["grid_cells"] = grid
     if prices is not None:
         tables |= {"market_price_day": prices, "market_price_latest": latest, "market_price_season": season}
     if month is not None:
@@ -239,6 +299,19 @@ def publish(
     if crops is not None:
         manifest["tables"]["crops"] = {"rows": crops[1].height, "coverage": "cultivos del MVP"}
         manifest["tables"]["crop_stages"] = {"rows": crops[2].height, "coverage": "cultivos del MVP"}
+    if has_climate:
+        days = f"del {climate['date'].min()} al {climate['date'].max()}"
+        coverage = f"{climate['municipality_id'].n_unique()} municipios con altitud, {days}"
+        manifest["tables"]["climate_day"] = {"rows": climate.height, "coverage": coverage}
+    if has_month:
+        normal = climate_normals.Normal.from_region(region)
+        years = f"de {climate_month['year'].min()} a {climate_month['year'].max()}"
+        period = f"; normal {normal.first_year}-{normal.last_year}" if normal is not None else ""
+        coverage = f"{climate_month['municipality_id'].n_unique()} municipios, meses completos {years}{period}"
+        manifest["tables"]["climate_month"] = {"rows": climate_month.height, "coverage": coverage}
+    if has_grid:
+        coverage = f"Celdas de 0,0025° de {grid['municipality_id'].n_unique()} municipios; sin suelo hasta HU-181"
+        manifest["tables"]["grid_cells"] = {"rows": grid.height, "coverage": coverage}
     if prices is not None:
         manifest["tables"]["market_price_day"] = {
             "rows": prices.height,
@@ -258,7 +331,9 @@ def publish(
             "rows": month.height,
             "coverage": f"{crops_with_rows}: índice estacional y precio de cada mes del último año completo, por central",
         }
-    (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # Siempre con LF: en Windows `write_text` escribe CRLF, y el archivo cambiaría según quién publica (R4).
+    text = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    (folder / "manifest.json").write_text(text, encoding="utf-8", newline="\n")
     return manifest
 
 
@@ -292,7 +367,87 @@ def verify(folder: Path = PUBLISHED, dataset_version: str | None = None) -> dict
     return manifest
 
 
-def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.CACHE, market_cache: Path = sipsa.CACHE) -> dict[str, Any]:
+def terrain_from_cache(
+    municipalities: pl.DataFrame, boundaries: pl.DataFrame, cache: Path
+) -> tuple[pl.DataFrame, pl.DataFrame | None, list[dict[str, Any]]]:
+    """La altitud y la pendiente de NASADEM (HU-206): los municipios con las suyas, `grid_cells` y su fuente.
+
+    Sin la caché de NASADEM devuelve los municipios como estaban, sin rejilla y sin fuente nueva: lo demás se publica, y
+    el clima diario no, porque sin altitud no se corrige (R1).
+    """
+    try:
+        cells, meta = nasadem.read_cache(boundaries, cache)
+    except FileNotFoundError as error:
+        log.warning("source_missing", source=nasadem.SOURCE_ID, detail=f"Se publica sin la altitud de NASADEM: {error}")
+        return municipalities, None, []
+    terrain = nasadem.municipality_terrain(cells, municipalities)
+    municipalities = nasadem.with_terrain(municipalities, terrain)
+    empty = cells.filter(pl.col("altitude_m").is_null()).height
+    log.info(
+        "source_read",
+        source=nasadem.SOURCE_ID,
+        rows_read=cells.height,
+        rows_kept=cells.height - empty,
+        rows_rejected=empty,
+        reasons={"no_valid_pixels": empty},
+        detail=f"NASADEM: {cells.height} celdas de 250 m en {terrain.height} municipios; {empty} sin ningún píxel válido "
+        "quedan con la altitud nula (R1)",
+    )
+    return municipalities, nasadem.grid_cells(cells), [nasadem.source(meta)]
+
+
+def climate_from_cache(
+    region: dict[str, Any], municipalities: pl.DataFrame, cache: Path
+) -> tuple[pl.DataFrame, pl.DataFrame | None, pl.DataFrame | None, list[dict[str, Any]]]:
+    """El clima de NASA POWER (HU-041, HU-042): los municipios con la altura de su celda, `climate_day`,
+    `climate_month` y sus fuentes.
+
+    Sin la caché de POWER devuelve los municipios como estaban, sin clima y sin fuentes nuevas: lo demás se publica igual.
+    """
+    try:
+        series, meta = nasa_power.read_cache(nasa_power.cells(municipalities), cache)
+    except FileNotFoundError as error:
+        log.warning("source_missing", source=nasa_power.SOURCE_ID, detail=f"Se publica sin el clima de NASA POWER: {error}")
+        return municipalities, None, None, []
+    municipalities = nasa_power.with_cell_elevation(municipalities, meta["elevations"])
+    lapse = region.get("temperature_lapse_rate")
+    climate = nasa_power.climate_day(series, municipalities, lapse)
+    # La lluvia no se corrige por altitud: sale para todos los municipios con coordenadas. La ET0 sí necesita la altitud.
+    normal = climate_normals.Normal.from_region(region)
+    if normal is None:
+        log.warning("climate_normal_missing", table="climate_month", detail="region.yaml no trae climate_normal: no hay climate_month")
+        month = None
+    else:
+        month = nasa_power.climate_month(series, municipalities, date.fromisoformat(meta["requested_end"]), normal, climate)
+    sources = [nasa_power.source(series, meta)]
+    if lapse is not None:
+        sources.append(lapse["source"])
+    without = municipalities.filter(pl.col("altitude_m").is_null()).height
+    if without:
+        log.warning(
+            "climate_not_corrected",
+            table="climate_day",
+            municipalities=without,
+            detail=f"{without} municipios sin altitud de NASADEM (HU-206): no tienen filas en climate_day",
+        )
+    if lapse is None:
+        log.warning("climate_not_corrected", table="climate_day", detail="region.yaml no trae temperature_lapse_rate")
+    return municipalities, climate, month, sources
+
+
+def build(
+    download: bool = False,
+    folder: Path = PUBLISHED,
+    cache: Path = dane.CACHE,
+    market_cache: Path | None = None,
+    power_cache: Path | None = None,
+    dem_cache: Path | None = None,
+) -> dict[str, Any]:
+    # Las cachés de SIPSA, NASA POWER y NASADEM se buscan al correr, no al importar: así las pruebas las apuntan a una
+    # carpeta vacía y nunca leen las de quien las corre.
+    market_cache = market_cache or sipsa.CACHE
+    power_cache = power_cache or nasa_power.CACHE
+    dem_cache = dem_cache or nasadem.CACHE
     region = load_region()
     version, name = region["dataset_version"], region["region"]["name"]
     departments = region["region"]["departments"]
@@ -319,6 +474,27 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
     )
     features, mgn_meta = dane_mgn.read_cache(departments, cache)
     boundaries = dane_mgn.boundaries(features)
+    if download:
+        nasadem.download(nasadem.tiles(boundaries), dem_cache)
+        nasa_power.download(nasa_power.cells(municipalities), power_cache)
+    # Primero la altitud: el clima se corrige con ella (HU-044).
+    municipalities, grid, terrain_sources = terrain_from_cache(municipalities, boundaries, dem_cache)
+    municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
+    # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
+    normal = climate_normals.Normal.from_region(region)
+    if climate is not None and not climate.is_empty():
+        if normal is None:
+            log.warning("climate_normal_missing", detail="region.yaml no trae climate_normal: tmean_annual_c queda nula")
+        else:
+            tmean = climate_normals.tmean_annual(climate, normal)
+            municipalities = climate_normals.with_tmean(municipalities, tmean)
+            missing = municipalities.filter(pl.col("tmean_annual_c").is_null()).height
+            log.info(
+                "tmean_annual_computed",
+                municipalities=municipalities.height - missing,
+                detail=f"Temperatura media anual de {normal.first_year}-{normal.last_year}: {municipalities.height - missing} "
+                f"municipios; {missing} sin años suficientes quedan nulos (R1)",
+            )
     catalog = crops_catalog.load()
     crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
     own = [dane.source(meta), dane_mgn.source(mgn_meta)]
@@ -344,9 +520,35 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
         )
         own.append(sipsa.source(prices, downloaded_at))
         crop_products = load_crops()
-    sources = pl.concat([pl.DataFrame(own), catalog_sources], how="diagonal_relaxed")
+    sources = pl.concat([pl.DataFrame([*own, *terrain_sources, *climate_sources]), catalog_sources], how="diagonal_relaxed")
+    check_signal_sources(region["region"]["id"], set(sources["source_id"].to_list()))
     crops = (catalog["version"], crops_table, stages_table)
-    return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products)
+    return publish(region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid, climate_month)
+
+
+SIGNAL_SOURCES_FILE = signal_sources.SIGNAL_SOURCES_FILE
+# Las fuentes que tienen adaptador en el pipeline: si una no se publica, es porque falta su caché, no un error.
+ADAPTERS = frozenset(module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem))
+
+
+def check_signal_sources(region_id: str, published: set[str]) -> None:
+    """`catalog/sources.yaml` contra lo que se va a publicar (HU-122, R8): una fuente que no está en `sources`, ni tiene
+    adaptador, ni está en `planned` hace fallar el pipeline. Una con adaptador que esta vez no se publica (falta su caché)
+    solo se dice en el log: su señal será `insufficient_data` (R1)."""
+    try:
+        config = signal_sources.load_signal_sources(SIGNAL_SOURCES_FILE)
+        missing = signal_sources.check_sources(config, region_id, published, set(ADAPTERS))
+    except signal_sources.SignalSourcesError as error:
+        raise ValidationError(str(error)) from error
+    for source in missing:
+        log.warning("signal_source_missing", source=source, detail=f"catalog/sources.yaml usa {source}, que no se publica esta vez")
+    planned = sorted(config.planned)
+    log.info(
+        "signal_sources_checked",
+        version=config.version,
+        planned=planned,
+        detail=f"catalog/sources.yaml {config.version}: fuentes por llegar {', '.join(planned) or 'ninguna'}",
+    )
 
 
 def main() -> None:
@@ -362,7 +564,7 @@ def main() -> None:
         if not args.verificar:
             build(download=args.descargar)
         manifest = verify(PUBLISHED, expected)
-    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError) as error:
+    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError, nasa_power.DownloadError, nasadem.TileError) as error:
         event = "dataset_mismatch" if args.verificar else "dataset_not_published"
         log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")
         sys.exit(1)

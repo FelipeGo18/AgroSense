@@ -4,6 +4,7 @@ import { Plate } from "@/components/ui/Plate";
 import { signalTone } from "@/components/ui/SignalCard";
 import { SignalIcon } from "@/components/ui/SignalIcon";
 import { StatusIcon, TONE_STYLE } from "@/components/ui/StatusMark";
+import { countsAlways, notCounted } from "@/features/diagnosis/lights";
 import {
   SIGNAL_NAME,
   SOIL_ESTIMATE,
@@ -29,6 +30,8 @@ export interface SignalListProps {
   /** La señal que más limita la ventana con las prioridades de quien consulta (`overall.limiting_signal`). */
   limiting: string | null | undefined;
   irrigated: boolean | null | undefined;
+  /** Los pesos con que se calculó la luz de quien consulta (`weights`), para «Cuenta siempre: riesgo grave» (HU-203). */
+  weights?: Partial<Record<string, number>> | null;
   supplySemester: SupplySemester | null | undefined;
   soil: MunicipalitySoil | undefined;
   version: Version | undefined;
@@ -39,13 +42,13 @@ export interface SignalListProps {
  * forma y texto, su calificación de 0 a 100 (sin barra si no la tiene, R1), sus razones y, cuando trae varias fuentes,
  * todas juntas con la que calculó la señal marcada (R8). Nunca un valor combinado.
  */
-export function SignalList({ signals, limiting, irrigated, supplySemester, soil, version }: SignalListProps) {
+export function SignalList({ signals, limiting, irrigated, weights, supplySemester, soil, version }: SignalListProps) {
   const list = orderedSignals(signals);
   if (list.length === 0) return null;
   return (
     <ul className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label="Señales de la ventana">
       {list.map(([key, signal]) => (
-        <SignalItem key={key} id={key} signal={signal} limiting={key === limiting}>
+        <SignalItem key={key} id={key} signal={signal} limiting={key === limiting} always={countsAlways(key, signal, weights)}>
           {key === "water" && <Note>{irrigationNote(irrigated)}</Note>}
           {/* Con riego, la señal dice cuánto riego haría falta: es un resultado de riego y lleva su rótulo (R10). */}
           {key === "water" && irrigated === true && <EstimateLabel />}
@@ -65,7 +68,19 @@ export function SignalList({ signals, limiting, irrigated, supplySemester, soil,
   );
 }
 
-function SignalItem({ id, signal, limiting, children }: { id: string; signal: Signal; limiting: boolean; children: ReactNode }) {
+function SignalItem({
+  id,
+  signal,
+  limiting,
+  always,
+  children,
+}: {
+  id: string;
+  signal: Signal;
+  limiting: boolean;
+  always: boolean;
+  children: ReactNode;
+}) {
   const name = SIGNAL_NAME[id] ?? id;
   const headingId = `senal-${id}`;
   return (
@@ -83,6 +98,8 @@ function SignalItem({ id, signal, limiting, children }: { id: string; signal: Si
         </h3>
       </div>
       {limiting && <LimitingTag />}
+      {notCounted(signal) && <CountTag kind="not_counted" />}
+      {always && <CountTag kind="always" />}
       <StatusBadge signal={signal} grave={isGrave(id, signal)} />
       <Score score={signal.score} />
       {children}
@@ -99,6 +116,29 @@ function LimitingTag() {
         <polygon points="5,2 18,6 5,11" fill="var(--color-paleta-calabaza)" />
       </svg>
       Lo que más limita
+    </p>
+  );
+}
+
+/**
+ * Si la señal cuenta para la luz con las prioridades de quien consulta (HU-203), con forma y texto: un anillo vacío
+ * para «No cuenta» (la señal se sigue viendo) y un rombo lleno para el riesgo grave de clima que cuenta aunque su peso
+ * sea 0 (R2).
+ */
+function CountTag({ kind }: { kind: "not_counted" | "always" }) {
+  const always = kind === "always";
+  return (
+    <p
+      className={`relative inline-flex w-fit items-center gap-2 text-[15px] font-bold ${always ? "text-oscuro-rojo" : "text-texto-secundario"}`}
+    >
+      <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 shrink-0">
+        {always ? (
+          <polygon points="8,1 15,8 8,15 1,8" fill="var(--color-oscuro-rojo)" />
+        ) : (
+          <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" />
+        )}
+      </svg>
+      {always ? "Cuenta siempre: riesgo grave" : "No cuenta para la luz con sus prioridades"}
     </p>
   );
 }

@@ -15,7 +15,7 @@
 | [EP-01](epicas/EP-01-contratos.md) | HU-013 | Respuestas simuladas (MSW) | P0 | S | hecha | `VITE_SIMULATION=true` y `?estado=`; generadas del OpenAPI con `npm run api:examples` (9 nov) |
 | [EP-01](epicas/EP-01-contratos.md) | HU-014 | Modo simulación para desarrolladores | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-021 | Clonar y ejecutar con pocos comandos | P0 | S | pendiente | |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-022 | Lint y pruebas automáticas en cada cambio | P0 | S | hecha | |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-022 | Lint y pruebas automáticas en cada cambio | P0 | S | pendiente | |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | en curso | Hecho para la API, las migraciones y el pipeline (8 nov); falta lo de los endpoints de cálculo, que aún no existen |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | Esqueleto desplegado en URL pública | P0 | M | pendiente | Con la base de datos en la nube (10 nov) |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-229 | Migraciones revisadas y aplicadas con GitHub Actions | P0 | M | en curso | Nueva (10 nov) |
@@ -23,16 +23,16 @@
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-032 | Variación del área sembrada y participación departamental | P0 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-200 | Siembras registradas en AgroSense como dato de oferta | P1 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-201 | Fuentes de contraste para la oferta | P1 | M | pendiente | |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-041 | Series diarias de lluvia y temperatura | P0 | M | pendiente | |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-042 | Lluvia mensual y su normal | P0 | M | pendiente | |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-205 | NASA POWER ampliado: humedad, radiación y viento | P0 | M | pendiente | Nueva |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-206 | Altitud de municipios y lotes con NASADEM | P0 | M | pendiente | Nueva |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-041 | Series diarias de lluvia y temperatura | P0 | M | hecha | Adaptador de NASA POWER con caché por celda (20 celdas) y `climate_day` corregida por altitud, publicada con la de NASADEM (HU-206) |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-042 | Lluvia mensual y su normal | P0 | M | hecha | `climate_month` con la lluvia de NASA POWER y su normal 1991–2020; en el altiplano es de 1,7 a 2,7 veces la del IDEAM (riesgo para la señal de agua) |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-205 | NASA POWER ampliado: humedad, radiación y viento | P0 | M | hecha | Humedad del suelo, radiación (desde 1984), viento y humedad relativa en la caché; la humedad del suelo, en `climate_month` |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-206 | Altitud de municipios y lotes con NASADEM | P0 | M | hecha | `grid_cells` con altitud y pendiente de NASADEM; la altitud del municipio es la de la celda de la cabecera y su pendiente, la mediana (decidido por Felipe) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-207 | Lluvia por satélite con GPM IMERG | P0 | L | pendiente | Nueva |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-208 | Verdor del campo por municipio con MODIS NDVI | P0 | L | pendiente | Nueva |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-209 | Verdor por lote con MODIS NDVI | P1 | M | pendiente | Pasó a P1 el 8 de noviembre de 2026 (decisión 15): toda la región serían unos 14 millones de filas |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-210 | Humedad del suelo por satélite con SMAP | P0 | M | pendiente | Ya no es lo primero que se recorta: el reto lo nombra primero (decisión 14) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-216 | Clima de dos periodos para «Qué cambió» | P0 | M | pendiente | Nueva |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-044 | Municipios, límites, altitud y corrección de la temperatura | P0 | S | en curso | Municipios de DIVIPOLA y límites del MGN publicados; faltan altitud y corrección |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-044 | Municipios, límites, altitud y corrección de la temperatura | P0 | S | hecha | Municipios de DIVIPOLA, límites del MGN, altitud de NASADEM, altura de la celda de NASA POWER y temperatura media anual publicadas; temperaturas corregidas con el gradiente de `region.yaml`; comprobado contra 4 estaciones del IDEAM: queda un sesgo de POWER entre el día y la noche (ver HU-045) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Heladas y temperatura máxima por mes | P0 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-193 | Riesgo climático por semana | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-043 | Verdor por lote con HLS (30 m) | P1 | L | pendiente | Antes «Humedad del suelo y NDVI» |
@@ -74,31 +74,31 @@
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-223 | La rotación actual como referencia | P0 | M | pendiente | Nueva (8 nov, decisión 14): el reto pide comparar contra la actual |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-091 | Elegir municipio, cultivo y cuándo sembrar | P0 | M | hecha | En `/diagnostico`; la consulta va en la dirección; con lote, municipio y riego del lote (10 nov) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-092 | Semáforo con señales, razones y limitaciones | P0 | M | hecha | Seis señales con calificación, «Lo que más limita», fuentes y limitaciones; rótulo de la cosecha según `harvest_basis` (10 nov) |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-194 | Cultivo no apto y mejores ventanas | P0 | S | pendiente | |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-202 | Ajustar mis prioridades al consultar | P0 | S | en curso | Controles, `priorities`, todo en 0 y guardado (navegador o perfil) hechos (10 nov); falta enviarlas a las estrategias con HU-214 |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-203 | Dos luces y cultivos alternativos | P0 | M | pendiente | Las alternativas son P1 |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-194 | Cultivo no apto y mejores ventanas | P0 | S | hecha | Letrero de no apto con nota y semillas; mejores fechas que consultan esa fecha; sin ventanas, el enlace a estrategias (10 nov). Alternativas P1 |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-202 | Ajustar mis prioridades al consultar | P0 | S | hecha | Controles, `priorities`, todo en 0 y guardado (navegador o perfil) (10 nov); se envían como `signal_priorities` a las estrategias (11 nov, HU-214). Lo de HU-180 es P1 |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-203 | Dos luces y cultivos alternativos | P0 | M | hecha | Una o dos luces con su acción, lo que más limita y por qué difieren; «No cuenta» y «Cuenta siempre»; enlace a estrategias (10 nov). Las alternativas son P1 |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-093 | Gráfica de la lluvia de la ventana | P0 | S | pendiente | Reducida a una gráfica (antes M) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-094 | Estados de carga, vacío y error | P0 | S | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-219 | Pantalla «Qué cambió en su zona» | P0 | M | pendiente | Nueva |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-095 | Mapa regional por semáforo | P1 | L | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-096 | Uso desde el celular | P0 | S | pendiente | |
-| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-214 | Entrada a las estrategias, con o sin cuenta | P0 | M | pendiente | Nueva |
-| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-101 | Prioridades del agricultor | P0 | S | pendiente | |
+| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-214 | Entrada a las estrategias, con o sin cuenta | P0 | M | hecha | En `/consultar`, con o sin lote; el área sin cuenta queda en el navegador; un resumen hasta HU-102 (11 nov) |
+| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-101 | Prioridades del agricultor | P0 | S | hecha | Cuatro controles que empiezan en 3; con todas en 0 no se consulta (11 nov, con HU-214) |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-102 | Estrategias con ciclos, desglose y salud del suelo | P0 | L | pendiente | Antes M |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-215 | Ciclo de una estrategia | P0 | M | pendiente | Nueva |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-111 | Reevaluar con cambios en memoria | P1 | M | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-112 | Endpoint de escenarios | P1 | S | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-113 | Comparación de escenarios | P1 | M | pendiente | |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | pendiente | Suma estrategias y «Qué cambió» |
-| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources` y `/version` con dataset; faltan `sources.yaml`, fuentes NASA y la web |
+| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources`, `/version` y `catalog/sources.yaml` (11 nov, lluvia de POWER temporal con aviso); faltan las fuentes NASA sin adaptador y la web |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-123 | Reconstruir el dataset con un comando | P0 | S | hecha | `pipeline.build` publica y revisa contra el manifiesto; `--verificar` solo revisa (8 nov) |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-131 | Dos casos reales para la demo | P0 | S | pendiente | |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-132 | Video y descripción de la entrega | P0 | M | pendiente | |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-133 | Impacto económico, social y ambiental | P0 | S | pendiente | |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-230 | Licencias del proyecto y de lo que usa | P0 | S | en curso | Nueva (10 nov). `LICENSE` Apache 2.0 hecho; falta la lista de licencias de terceros para la entrega |
-| [EP-14](epicas/EP-14-finca-agua.md) | HU-142 | Etapas de cada cultivo con Kc | P0 | S | pendiente | Los 7 cultivos del MVP |
-| [EP-14](epicas/EP-14-finca-agua.md) | HU-220 | Etapas de una ventana por calendario | P0 | S | en curso | Hecha la etapa de las temporadas en curso; faltan las ventanas |
-| [EP-14](epicas/EP-14-finca-agua.md) | HU-143 | Lluvia y ET0 mensuales por municipio | P0 | M | pendiente | Penman-Monteith |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-142 | Etapas de cada cultivo con Kc | P0 | S | en curso | Los 7 cultivos del MVP |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-220 | Etapas de una ventana por calendario | P0 | S | hecha | `crop_window`: etapas, meses y meses sensibles de una ventana (10 nov). Cebolla, haba y maíz no dicen la sensibilidad a la helada, ni ningún cultivo la del calor (HU-063) |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-143 | Lluvia y ET0 mensuales por municipio | P0 | M | hecha | ET0 por Penman-Monteith de FAO-56 (`pipeline/et0.py`), su normal y el año seco (percentil 20, decidido por Felipe) en `climate_month` |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-144 | Déficit de agua por cultivo y etapa | P0 | M | pendiente | |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-146 | Endpoint del plan de agua | P0 | S | pendiente | |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-141 | Registrar la finca | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
@@ -125,7 +125,7 @@
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-161 | Esquema de cuentas y migraciones | P0 | M | hecha | Esquema completo del contrato; `municipality_id` y `crop_id` se validan contra el catálogo publicado. Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-162 | Autenticación | P0 | L | hecha | Backend y pantallas hechos; revisión de seguridad hecha y arreglada; entrar y la sesión vencida no escriben de más (PR #19 y #20). Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-163 | Consentimiento y tratamiento de datos | P0 | S | en curso | Página de la política hecha, con el aviso de que falta la revisión legal; falta esa revisión y el canal de contacto |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | L | en curso | Entregas 1 y 2: lotes dibujados en el mapa o con el área a mano; falta «Ver estrategias» (HU-214) |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | L | en curso | Entregas 1 y 2: lotes dibujados en el mapa o con el área a mano; «Ver estrategias» desde el lote (11 nov); falta el riego del lote en el motor y el criterio de «Borrar este lote» (su parte P1 es HU-204) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-165 | Temporadas e historial del lote | P0 | L | en curso | Entrega 3: API y pantallas de siembra, cosecha y corregir; falta pasar el historial a las estrategias (EP-08) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-204 | Historial con lo borrado y «Restaurar» | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-166 | Borrar mi cuenta | P0 | S | hecha | `DELETE /me` con la contraseña, borrado en cascada probado y confirmación en Mi cuenta. Cerrada el 10 de noviembre de 2026 |

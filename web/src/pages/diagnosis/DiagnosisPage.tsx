@@ -5,7 +5,7 @@ import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChoiceGroup } from "@/components/ui/ChoiceGroup";
 import { Combobox, type Option } from "@/components/ui/Combobox";
@@ -31,16 +31,21 @@ import {
   type DiagnosisResponse,
   type Irrigation,
 } from "@/features/diagnosis/consult";
-import { harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { SIGNAL_NAME, harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { sameLight, strategiesLink, whyDifferent } from "@/features/diagnosis/lights";
+import { asksOtherWindow } from "@/features/diagnosis/windows";
 import { byId, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
 import { useVersion } from "@/features/version";
-import { useSignalPriorities } from "@/features/diagnosis/priorities";
+import { asWeights, useSignalPriorities } from "@/features/diagnosis/priorities";
 import { PrioritiesPanel } from "./PrioritiesPanel";
 import { SignalList } from "./SignalList";
+import { BestWindows, NotSuitable, SuitabilityScore } from "./Suitability";
 import { formatDate, useCrops } from "@/features/farm/seasons";
 import { irrigationText, placeName } from "@/pages/farm/common";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
+
+type LightResult = DiagnosisResponse["overall"];
 
 /** Lo primero que se lee del resultado: qué hacer (`specs/01-reglas.md`, «Agregación del semáforo»). */
 const ACTION_TEXT: Record<DiagnosisResponse["overall"]["action"], string> = {
@@ -75,6 +80,16 @@ export function DiagnosisPage() {
   // Al intentar enviar, o si la dirección ya traía una consulta, aparecen los de todos.
   const [tried, setTried] = useState(() => hasConsult(params));
   const [touched, setTouched] = useState<ReadonlySet<ConsultField>>(() => new Set());
+  // Si la dirección cambia desde afuera (una de las mejores fechas, «Elegir otro cultivo», volver atrás), el formulario
+  // muestra esa consulta. Al enviar también cambia, con lo mismo que ya tiene el formulario.
+  const search = params.toString();
+  const [shownSearch, setShownSearch] = useState(search);
+  if (search !== shownSearch) {
+    setShownSearch(search);
+    setForm(fromParams(params));
+    setTouched(new Set());
+    setTried(hasConsult(params));
+  }
   const touch = (field: ConsultField) => setTouched((current) => (current.has(field) ? current : new Set(current).add(field)));
 
   const places = byId(municipalities.data);
@@ -333,23 +348,43 @@ function errorText(error: Error): string {
   return error.message;
 }
 
-/** El resumen: la acción primero (HU-092), la luz con forma y texto, sus razones y la ventana evaluada. */
+/**
+ * El resumen (HU-092, HU-203). La acción primero. Si la luz con sus prioridades y la del criterio de AgroSense coinciden,
+ * se ve una sola; si difieren, las dos con su acción y su factor que más limita, la suya primero y más grande, y una
+ * línea que dice por qué difieren. Con «rotar» en cualquiera de las dos, el camino a las estrategias.
+ */
 function Summary({ data }: { data: DiagnosisResponse }) {
-  const notSuitable = data.suitability.level === "not_suitable";
-  const reasons = data.overall.reasons ?? [];
+  const version = useVersion();
+  const defaults = version.data ? asWeights(version.data.default_weights) : null;
+  const single = sameLight(data.overall, data.overall_default);
+  const rotate = data.overall.action === "rotate" || data.overall_default.action === "rotate";
+  const example = data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>;
+  // Un cultivo que no se da en la zona tiene su propio letrero, sin semáforo, señales ni ventanas (HU-194).
+  if (data.suitability.level === "not_suitable") {
+    return (
+      <Card bodyClassName="gap-4">
+        {example}
+        <NotSuitable data={data} />
+        <p className="text-[15px] text-texto-secundario">Es información para decidir. La decisión es suya.</p>
+      </Card>
+    );
+  }
   return (
     <Card bodyClassName="gap-4">
-      {data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>}
-      <p className="font-titulos text-[clamp(1.4rem,3.5vw,2rem)] leading-tight font-semibold">
-        {notSuitable ? "Este cultivo no se da en su zona" : ACTION_TEXT[data.overall.action]}
-      </p>
-      <TrafficLightBadge light={data.overall.light} className="self-start" />
-      {reasons.length > 0 && (
-        <ul className="flex list-disc flex-col gap-1 pl-5" aria-label="Por qué esta luz">
-          {reasons.map((reason) => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
+      {example}
+      {single ? (
+        <>
+          <p className="font-titulos text-[clamp(1.4rem,3.5vw,2rem)] leading-tight font-semibold">{ACTION_TEXT[data.overall.action]}</p>
+          <TrafficLightBadge light={data.overall.light} className="self-start" />
+          <LimitingLine signal={data.overall.limiting_signal} />
+          <Reasons reasons={data.overall.reasons} />
+        </>
+      ) : (
+        <>
+          <LightBlock title="Con sus prioridades" result={data.overall} primary />
+          <LightBlock title="Con el criterio de AgroSense" result={data.overall_default} />
+          <p className="border-l-4 border-paleta-calabaza pl-3 text-[15px] leading-snug">{whyDifferent(data.weights, defaults)}</p>
+        </>
       )}
       {data.window && (
         <p>
@@ -357,8 +392,54 @@ function Summary({ data }: { data: DiagnosisResponse }) {
           <span className="text-texto-secundario">{harvestNote(data.window.harvest_basis)}</span>
         </p>
       )}
+      <SuitabilityScore score={data.suitability.score} />
+      {asksOtherWindow(data.overall, data.overall_default) && <BestWindows data={data} strategiesShown={rotate} />}
+      {rotate && (
+        <ButtonLink to={strategiesLink(data.request)} variant="secondary" className="w-full sm:w-auto sm:self-start">
+          Ver estrategias de rotación
+        </ButtonLink>
+      )}
       <p className="text-[15px] text-texto-secundario">Es información para decidir. La decisión es suya.</p>
     </Card>
+  );
+}
+
+/** Una de las dos luces cuando difieren: de quién es el criterio y su acción, la luz con forma y texto, lo que más la limita y sus razones. */
+function LightBlock({ title, result, primary = false }: { title: string; result: LightResult; primary?: boolean }) {
+  return (
+    <section aria-label={title} className={`flex min-w-0 flex-col gap-2 ${primary ? "" : "border-t-2 border-superficie-borde pt-4"}`}>
+      <p
+        className={`font-titulos leading-tight font-semibold ${
+          primary ? "text-[clamp(1.4rem,3.5vw,2rem)]" : "text-[clamp(1.1rem,2.5vw,1.35rem)]"
+        }`}
+      >
+        {title}: {ACTION_TEXT[result.action]}
+      </p>
+      <TrafficLightBadge light={result.light} className="self-start" />
+      <LimitingLine signal={result.limiting_signal} />
+      <Reasons reasons={result.reasons} />
+    </section>
+  );
+}
+
+/** Cada luz dice cuál es su factor que más limita (`specs/05-frontend.md`, «Dos luces»). */
+function LimitingLine({ signal }: { signal: string | null | undefined }) {
+  if (!signal) return null;
+  return (
+    <p>
+      Lo que más limita: <span className="font-bold">{SIGNAL_NAME[signal] ?? signal}</span>
+    </p>
+  );
+}
+
+function Reasons({ reasons }: { reasons: string[] | null | undefined }) {
+  if (!reasons || reasons.length === 0) return null;
+  return (
+    <ul className="flex list-disc flex-col gap-1 pl-5" aria-label="Por qué esta luz">
+      {reasons.map((reason) => (
+        <li key={reason}>{reason}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -385,6 +466,7 @@ function Details({ data }: { data: DiagnosisResponse }) {
             signals={data.signals}
             limiting={data.overall.limiting_signal}
             irrigated={data.request.irrigated}
+            weights={data.weights}
             supplySemester={data.window?.supply_semester}
             soil={soil.data}
             version={version.data}
