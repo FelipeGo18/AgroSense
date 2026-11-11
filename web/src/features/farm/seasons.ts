@@ -17,7 +17,12 @@ export function cropNames(crops: Crop[] | undefined) {
 
 /** El historial del lote (GET /lots/{id}/seasons): de la siembra más reciente a la más antigua. */
 export function useSeasons(lotId: string) {
-  return useQuery({ queryKey: ["lots", lotId, "seasons"], queryFn: () => api<Season[]>(`/lots/${lotId}/seasons`), retry: false });
+  return useQuery({
+    queryKey: ["lots", lotId, "seasons"],
+    queryFn: () => api<Season[]>(`/lots/${lotId}/seasons`),
+    retry: false,
+    enabled: Boolean(lotId),
+  });
 }
 
 /** Tras registrar, cosechar, corregir o borrar cambian el lote, su historial y la lista de Mi finca. */

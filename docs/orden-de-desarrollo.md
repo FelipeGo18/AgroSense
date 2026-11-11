@@ -57,7 +57,7 @@ Al terminar esta etapa las estrategias deben funcionar de punta a punta, aunque 
 - **EP-05 Mercado SIPSA** y **EP-11 Escenarios**, solo si sobra tiempo.
 - Las fuentes de contraste de la oferta (HU-201) y las siembras registradas en AgroSense (HU-200).
 - Las tres señales del P1 (`excess_rain`, `disease` y `harvest_weather`, HU-195) con sus datos (HU-046). Mientras no existan, no aparecen en la respuesta.
-- EP-05 tiene un riesgo extra: no está verificado que SIPSA cubra lo necesario. El diagnóstico debe funcionar sin ella, con la señal de mercado como «datos insuficientes».
+- EP-05: SIPSA está verificado y entra (HU-003): cubre papa, arveja, cebolla de bulbo y zanahoria. La señal de mercado no tiene curva con fuente en `thresholds.yaml` 1.0.0, así que hoy es «datos insuficientes» y el diagnóstico funciona sin ella.
 
 ## Reglas para no atascarse
 
