@@ -1,0 +1,27 @@
+# HU-022: lint, pruebas y build en cada cambio.
+# Corre exactamente el mismo comando que en local (`docker compose run --rm test`): Ruff, pytest, Vitest y build web.
+# No usa secretos ni toca la base de la nube: las pruebas usan la PostgreSQL de Compose.
+
+name: CI
+
+on:
+  push:
+    branches: [desarrollo, produccion]
+  # Sin filtro de ramas ni de rutas: si el check se exige en la rama, tiene que correr en todo PR.
+  pull_request:
+# Si llegan varios commits seguidos a la misma rama, solo se prueba el último.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs: 
+  test:
+    runs-on: ubuntu-latest
+    #La primera corrida es lenta (no hay caché de Docker); si pasa de 20 minutos, algo se colgó.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint, pruebas y build (Docker Compose)
+        run: |
+          cp .env.example .env
+          docker compose run --rm test
