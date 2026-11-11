@@ -269,17 +269,34 @@ def grid_cells(cells: pl.DataFrame) -> pl.DataFrame:
     ).sort("cell_id")
 
 
-def municipality_terrain(cells: pl.DataFrame) -> pl.DataFrame:
-    """La altitud y la pendiente de cada municipio: la mediana de sus celdas, como la de un lote (contrato, «La rejilla
-    de 250 m»), y cuántas celdas con dato tiene."""
-    return (
+def cell_id_of(lat: float, lon: float) -> str:
+    """La celda de la rejilla del contrato que contiene un punto: `"{fila}_{columna}"` («La rejilla de 250 m»)."""
+    return f"{math.floor((90 - lat) / CELL_DEG)}_{math.floor((lon + 180) / CELL_DEG)}"
+
+
+def municipality_terrain(cells: pl.DataFrame, municipalities: pl.DataFrame) -> pl.DataFrame:
+    """La altitud y la pendiente de cada municipio (decidido por Felipe el 10 de noviembre de 2026):
+
+    - `altitude_m`: la de la celda que contiene el punto de DIVIPOLA, la cabecera. Es la que corrige la temperatura: ahí
+      están el pueblo, las fincas del valle y la estación del IDEAM. La mediana de todo el municipio daría, en Duitama,
+      el clima del páramo (3110 m frente a 2527 m).
+    - `slope_pct`: la mediana de las celdas del municipio. Para la erosión importa cómo es todo el terreno.
+    - `cells`: cuántas celdas con dato tiene el municipio.
+    Sin celda de la cabecera con dato, la altitud queda nula (R1).
+    """
+    points = municipalities.drop_nulls(["lat", "lon"])
+    towns = points.select(
+        "municipality_id",
+        pl.Series("cell_id", [cell_id_of(lat, lon) for lat, lon in points.select("lat", "lon").iter_rows()], dtype=pl.String),
+    ).join(cells.select("cell_id", "altitude_m"), on="cell_id", how="left")
+    slopes = (
         cells.filter(pl.col("altitude_m").is_not_null())
         .group_by("municipality_id")
-        .agg(
-            pl.col("altitude_m").median().round(1).alias("altitude_m"),
-            pl.col("slope_pct").median().round(1).alias("slope_pct"),
-            pl.len().alias("cells"),
-        )
+        .agg(pl.col("slope_pct").median().round(1).alias("slope_pct"), pl.len().alias("cells"))
+    )
+    return (
+        towns.join(slopes, on="municipality_id", how="full", coalesce=True)
+        .select("municipality_id", "altitude_m", "slope_pct", pl.col("cells").fill_null(0))
         .sort("municipality_id")
     )
 
@@ -305,8 +322,8 @@ def source(meta: dict[str, Any]) -> dict[str, Any]:
 
 
 def with_terrain(municipalities: pl.DataFrame, terrain: pl.DataFrame) -> pl.DataFrame:
-    """`altitude_m` y `slope_pct` de cada municipio (`municipality_terrain`). Un municipio sin celdas con dato queda con
-    los dos nulos (R1). La fila suma la fuente solo si tiene altitud."""
+    """`altitude_m` y `slope_pct` de cada municipio (`municipality_terrain`). Un municipio sin dato queda con ellos nulos
+    (R1). La fila suma la fuente solo si tiene altitud."""
     return (
         municipalities.drop("altitude_m", "slope_pct")
         .join(terrain.select("municipality_id", "altitude_m", "slope_pct"), on="municipality_id", how="left")

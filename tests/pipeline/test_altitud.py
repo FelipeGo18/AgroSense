@@ -127,17 +127,23 @@ def test_cada_celda_va_con_el_municipio_que_contiene_su_centro():
     assert counts == {"15001": 1600, "15646": 400}
 
 
-def test_la_altitud_del_municipio_es_la_mediana_de_sus_celdas():
+def test_la_altitud_del_municipio_es_la_de_su_cabecera_y_la_pendiente_la_mediana():
+    """Decidido por Felipe el 10 de noviembre de 2026: la altitud corrige la temperatura del pueblo y del valle; la
+    pendiente es la de todo el terreno."""
+    town = cell_id(5.5399, -73.3555)
     cells = pl.DataFrame(
         {
+            "cell_id": [town, "1_1", "1_2", "2_1"],
             "municipality_id": ["15001"] * 3 + ["15646"],
-            "altitude_m": [2500.0, 2600.0, 3500.0, None],
+            "altitude_m": [2711.0, 2600.0, 3500.0, None],
             "slope_pct": [5.0, 10.0, 40.0, None],
         }
     )
-    terrain = nasadem.municipality_terrain(cells).to_dicts()
-    # Un municipio sin celdas con dato no sale: queda nulo al unirlo (R1).
-    assert terrain == [{"municipality_id": "15001", "altitude_m": 2600.0, "slope_pct": 10.0, "cells": 3}]
+    municipalities = pl.DataFrame({"municipality_id": ["15001", "15646"], "lat": [5.5399, 5.4925], "lon": [-73.3555, -73.4856]})
+    terrain = {row["municipality_id"]: row for row in nasadem.municipality_terrain(cells, municipalities).to_dicts()}
+    assert terrain["15001"] == {"municipality_id": "15001", "altitude_m": 2711.0, "slope_pct": 10.0, "cells": 3}
+    # Sin celda de la cabecera con dato, la altitud queda nula: no se rellena con otra celda (R1).
+    assert terrain["15646"]["altitude_m"] is None and terrain["15646"]["cells"] == 0
 
 
 # ---------- Descarga ----------
