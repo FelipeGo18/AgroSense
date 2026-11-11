@@ -223,6 +223,14 @@ _HEALTH = {
 }
 
 
+# El diagnóstico de cada ciclo: el de la ventana, con la misma forma de la respuesta de diagnóstico sin `request`,
+# `best_windows` ni `alternatives` (HU-213). En el ejemplo todos los ciclos traen el mismo; un descanso no trae ninguno.
+_DIAGNOSIS_CORE = {
+    key: DIAGNOSIS_OK[key]
+    for key in ("suitability", "window", "overall", "overall_default", "weights", "signals", "limitations", "versions")
+}
+
+
 def _cycle(n: int, crop: str, sow: str, harvest: str, light: str | None, limiting: str | None) -> dict[str, Any]:
     return {
         "cycle": n,
@@ -234,7 +242,7 @@ def _cycle(n: int, crop: str, sow: str, harvest: str, light: str | None, limitin
         "light_default": light,
         "limiting_signal": limiting,
         "high_risk": False,
-        "diagnosis": None,
+        "diagnosis": None if crop == "descanso" else _DIAGNOSIS_CORE,
     }
 
 
@@ -381,6 +389,25 @@ ROTATIONS_NO_CURRENT = {
     "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
 }
 
+
+def _water_month(
+    month: int, stage: str, need: int, rain: tuple[int, int], normal: tuple[int, int] | None, dry: tuple[int, int] | None
+) -> dict[str, Any]:
+    """Un mes del agua del plan: el déficit en mm y el volumen en m³ para 1,26 ha (1 mm en 1 ha son 10 m³). Sin
+    déficit, `[0, 0]`: la lluvia alcanza."""
+    deficit = {"normal": list(normal or (0, 0)), "dry": list(dry or (0, 0))}
+    return {
+        "year": 2027,
+        "month": month,
+        "status": "available",
+        "stage": stage,
+        "need_mm": need,
+        "rain_mm": {"normal": rain[0], "dry": rain[1]},
+        "deficit_mm": deficit,
+        "volume_m3": {key: [round(mm * 12.6) for mm in value] for key, value in deficit.items()},
+    }
+
+
 WATER_PLAN = {
     "request": {
         "municipality_id": "15646",
@@ -395,16 +422,8 @@ WATER_PLAN = {
             "harvest_estimate": "2027-12-27",
             "harvest_basis": "calendar",
             "months": [
-                {
-                    "year": 2027,
-                    "month": 9,
-                    "status": "available",
-                    "stage": "development",
-                    "need_mm": 95,
-                    "rain_mm": {"normal": 70, "dry": 41},
-                    "deficit_mm": {"normal": [20, 30], "dry": [48, 62]},
-                    "volume_m3": {"normal": [252, 378], "dry": [605, 781]},
-                },
+                _water_month(8, "initial", 60, (75, 52), None, None),
+                _water_month(9, "development", 95, (70, 41), (20, 30), (48, 62)),
                 {
                     "year": 2027,
                     "month": 10,
@@ -415,6 +434,8 @@ WATER_PLAN = {
                     "deficit_mm": {"normal": None, "dry": None},
                     "volume_m3": {"normal": None, "dry": None},
                 },
+                _water_month(11, "mid", 110, (118, 80), None, (22, 34)),
+                _water_month(12, "late", 70, (52, 30), (12, 20), (34, 44)),
             ],
             "total_volume_m3": {"normal": [900, 1300], "dry": [2100, 2700]},
         }
@@ -423,7 +444,16 @@ WATER_PLAN = {
         "months": [{"year": 2027, "month": 9, "volume_m3": {"normal": [252, 378], "dry": [605, 781]}}],
         "total_volume_m3": {"normal": [900, 1300], "dry": [2100, 2700]},
     },
-    "soil_moisture": [{"month": 9, "source_id": "nasa_power", "indicator": "soil_wetness_root", "value": 0.61, "unit": "fracción"}],
+    "soil_moisture": [
+        *[
+            {"month": month, "source_id": "nasa_power", "indicator": "soil_wetness_root", "value": value, "unit": "fracción"}
+            for month, value in ((8, 0.62), (9, 0.58), (10, 0.66), (11, 0.70), (12, 0.64))
+        ],
+        *[
+            {"month": month, "source_id": "smap", "indicator": "soil_moisture_surface", "value": value, "unit": "m³/m³"}
+            for month, value in ((8, 0.31), (9, 0.29), (10, 0.34), (11, 0.36), (12, 0.30))
+        ],
+    ],
     "sources": {"rain": "imerg", "et0": "nasa_power", "soil": "soilgrids"},
     "soil_basis": "municipality",
     "limitations": [EXAMPLE_NOTE, "Es una estimación con el clima de la zona: verifique la humedad del suelo en su lote"],
@@ -466,7 +496,42 @@ TRENDS = {
     "request": {"municipality_id": "15646", "crop_id": "papa", "sowing_date": "2027-08-02"},
     "water": {"status": "available", "source_id": "imerg", "unit": "mm", "points": [{"year": 2015, "precip_mm": 410, "need_mm": 465}]},
     "supply": {"status": "insufficient_data", "source_id": "eva", "unit": "ha", "semester": "B", "points": []},
-    "ndvi": {"status": "available", "source_id": "modis_ndvi", "quality": "ok", "points": [{"period": 1, "ndvi_normal": 0.52}]},
+    "ndvi": {
+        "status": "available",
+        "source_id": "modis_ndvi",
+        "quality": "ok",
+        "points": [
+            {"period": period, "ndvi_normal": value}
+            for period, value in enumerate(
+                (
+                    0.52,
+                    0.50,
+                    0.49,
+                    0.50,
+                    0.53,
+                    0.58,
+                    0.63,
+                    0.67,
+                    0.69,
+                    0.70,
+                    0.68,
+                    0.64,
+                    0.60,
+                    0.57,
+                    0.55,
+                    0.54,
+                    0.56,
+                    0.61,
+                    0.66,
+                    0.70,
+                    0.68,
+                    0.62,
+                    0.56,
+                ),
+                start=1,
+            )
+        ],
+    },
     "versions": EXAMPLE_VERSIONS,
 }
 

@@ -160,7 +160,9 @@ def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depend
 def water_plans(body: WaterPlanRequest, request: Request, dataset: Dataset = Depends(require_dataset)) -> Any:
     """Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10)."""
     _check_place(dataset, body.municipality_id)
-    _check_crops(dataset, [crop.crop_id for crop in body.crops], only_crops=True)
+    # Un abono verde también crece y necesita agua: el ciclo de una estrategia puede serlo (HU-215). Como en el
+    # contrato, solo el diagnóstico y «Qué cambió» piden `kind = crop`.
+    _check_crops(dataset, [crop.crop_id for crop in body.crops])
     _not_implemented(request, "Plan de agua")
 
 
