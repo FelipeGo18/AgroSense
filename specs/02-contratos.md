@@ -112,6 +112,7 @@ signals:
   market: { variable: seasonal_index,  unit: "",   curve: [[0.8, 0], [1.0, 70], [1.2, 100]], critical_below: 10, source_id: "…" }
 ```
 
+- `water` califica `coverage_pct` con la lluvia del **año seco** de la fuente de `sources.yaml` (`precip_dry_mm`, el percentil 20), no con la normal (decidido por Felipe el 11 de noviembre de 2026): es la lluvia confiable de la FAO y deja la señal del lado prudente, porque las dos fuentes de la NASA dan casi el doble de lluvia en los valles del altiplano, donde están los cultivos (259 estaciones del IDEAM; IMERG 1,85 veces, POWER 1,80; PR #44), y con la normal el agua saldría verde donde falta. La lluvia normal se muestra en `signals.water.sources` para contrastar.
 - `curve`: puntos `[valor, calificación]` en orden de valor; entre dos puntos la calificación va en línea recta, y fuera de ellos vale la del punto más cercano. `crop` quiere decir que la curva sale de la ficha del cultivo: `heat` va de 100 en `temp_opt_max_c` a 0 en `heat_max_c`, y `soil` de 0 en `ph_min` a 100 entre `ph_opt_min` y `ph_opt_max` y a 0 en `ph_max`.
 - `critical_below`: una señal es crítica si su calificación baja de ese número (R2). `soil` nunca es crítica (R10).
 - **Los números de este ejemplo son ilustrativos.** Los de verdad los fija HU-075, cada curva con su `source_id` (R8). Sin fuente para una curva, la señal es `insufficient_data` (R1).

@@ -75,7 +75,7 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
   - [ ] Para la señal `water` de `/diagnostics` y de los ciclos de `/rotations`, el suelo es el del lote cuando llega `lot_id` (HU-182) y, si no, el del municipio (`soil_municipality`). El plan de agua (`/water-plans`) no recibe `lot_id` y usa siempre el del municipio, también con cuenta. La respuesta dice cuál se usó (R10)
   - [ ] Sin la textura del suelo, el balance se calcula sin retención y se agrega a las limitaciones (R1)
   - [ ] Volumen en m³ según el área de cada cultivo
-  - [ ] Año normal y año seco; misma entrada, mismo resultado
+  - [ ] Año normal y año seco; misma entrada, mismo resultado. Para la señal `water` (HU-071) el déficit se calcula con el año seco (`precip_dry_mm`), no con el normal (decidido por Felipe el 11 de noviembre de 2026); el plan de agua (`/water-plans`) sigue mostrando los dos
   - [ ] El mismo cálculo, sin área, da el déficit de una ventana de siembra para la señal `water` (HU-071): no hay dos balances de agua
   - [ ] Sin lluvia de la fuente elegida, sin ET0 o sin Kc de alguna etapa, no devuelve un déficit: quien lo llama responde `insufficient_data` (R1). El Kc de la etapa de desarrollo no falta: se interpola en línea recta entre el de la inicial y el de la media (FAO-56; contrato, `crop_stages`)
   - [ ] Prueba: con la misma lluvia y el mismo cultivo, un suelo arenoso da un déficit mayor o igual que uno arcilloso

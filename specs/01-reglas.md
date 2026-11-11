@@ -91,7 +91,7 @@ Qué mide cada curva:
 
 | Señal | Variable | Límites |
 |---|---|---|
-| `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia en la ventana, con la retención del suelo | `thresholds.yaml` |
+| `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia **del año seco** en la ventana (`precip_dry_mm`: la que se supera en 4 de cada 5 años, la lluvia confiable con que la FAO planea el riego), con la retención del suelo. No la normal: decidido por Felipe el 11 de noviembre de 2026, porque las dos fuentes de la NASA dan casi el doble de lluvia en los valles del altiplano, donde están los cultivos (259 estaciones del IDEAM; IMERG 1,85 veces, POWER 1,80; PR #44), y con la normal el agua saldría verde donde falta | `thresholds.yaml` |
 | `frost` | Porcentaje de años con al menos una helada (mínima ≤ 2 °C) en cualquiera de los meses sensibles de la ventana (semanas en P1) | `thresholds.yaml` |
 | `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_*`, `heat_max_c`) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
