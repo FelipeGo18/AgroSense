@@ -1,0 +1,142 @@
+# Catálogo agronómico: reglas de rotación como datos (EP-06, HU-062; specs/02-contratos.md, «Reglas de rotación como
+# datos»). Armado el 9 de noviembre de 2026 por producto-agro. PENDIENTE: revisión cruzada por otro integrante (calidad)
+# y confirmación de Felipe de la regla «sin franja intermedia» (`moderate == favorable`) que usa `papa_espera`.
+#
+# Regla (R1, R8): sin fuente no hay regla. Cada número de una regla se puede señalar en su fuente (página o tabla en el
+# comentario de la regla y en `notes` de la fuente), o es un supuesto declarado con quién lo decidió. Un criterio de
+# `soil_health` sin regla con fuente queda en `insufficient_data` en el motor; nunca se escribe un corte «típico» ni se
+# usa la fuente `ejemplo`.
+#
+# Criterios SIN regla en esta versión (nota 9 de HU-062): a los cuatro les faltan los cortes con fuente. Lo hallado en la
+# segunda búsqueda (9 de noviembre de 2026) queda en `sources:` para cuando aparezcan los cortes, sin escribir reglas:
+#   - nitrogen (legume_cycles): ninguna fuente revisada da cuántos ciclos de leguminosa hacen falta; solo hay
+#     recomendaciones cualitativas.
+#   - organic_carbon (organic_matter_cycles): la forma de `levels` ya está aprobada (decisión 16, docs/decisiones.md).
+#     El umbral sí tiene fuente: materia orgánica baja < 5 % en suelos paperos del altiplano (Castro Franco,
+#     `cevipapa_taller_2005`, tabla 3, p. 35). Llevarlo a carbono orgánico (`soc_low_g_kg`) pide un factor: la FAO da
+#     1,7 a 2,0 (`fao_glosolan_wb_2019`), o sea 25,0 a 29,4 g/kg; elegir uno es un supuesto que decide el equipo.
+#     Faltan con fuente los cortes por número de ciclos (`low` y `normal`).
+#   - soil_cover (covered_months_pct): la FAO da un 30 % de cobertura de la superficie al sembrar y AAFC (Canadá) cuenta
+#     días al año con rastrojo y nieve; las dos miden otra variable (no meses cubiertos): no sirven para este corte.
+#   - erosion (bare_months_on_slope): la pendiente sí tiene fuente: desde 12 % aumenta la susceptibilidad a la erosión
+#     (IGAC 2021, `igac_capacidad_uso_2021`, p. 15; falta decidir si es ≥ 12, «a partir de», o > 12 como dice el
+#     contrato). Faltan con fuente los meses descubiertos.
+#
+# `version` es la de catalog/crops.yaml: los dos catálogos la comparten y es `rules_version` (decisión 16).
+# Las familias de `params` son las de las fichas de catalog/crops.yaml, con la misma mayúscula.
+
+version: "0.1.0"
+
+sources:
+  - source_id: psu_rotacion_familias
+    name: "Plant Rotation in the Garden Based on Plant Families (Elsa Sánchez y Kathleen Demchak)"
+    institution: "Penn State Extension, The Pennsylvania State University"
+    url: "https://extension.psu.edu/plant-rotation-in-the-garden-based-on-plant-families"
+    downloaded_at: "2026-11-09"
+    period_covered: "Página actualizada el 9 de marzo de 2026"
+    coverage: "Estados Unidos (huerta, clima templado)"
+    license: "Derechos de Penn State; uso con cita"
+    notes: "Cita: «it is not recommended that an area be planted with plants of the same family in succession», «to avoid the buildup of shared pests». Su tabla de familias pone papa en Solanaceae, arveja y haba en Fabaceae (= Leguminosae), maíz y avena en Poaceae (= Gramineae), cebolla en Liliaceae (el grupo Allium; la ficha usa Alliaceae) y zanahoria en Apiaceae (= Umbelliferae). No dice cuántos años esperar. Es una guía de huerta de clima templado: se pide una fuente local."
+  - source_id: fao_papa_2008
+    name: "International Year of the Potato 2008. New light on a hidden treasure (capítulo «The potato»)"
+    institution: "FAO"
+    url: "https://www.fao.org/4/i0500e/i0500e02b.pdf"
+    downloaded_at: "2026-11-09"
+    period_covered: "2008"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "p. 19 (sección «Cultivation»): «To prevent the build-up of pathogens in the soil, farmers avoid growing potatoes on the same land from year to year. Instead, they grow potatoes in rotations of three or more years, alternating with other, dissimilar crops, such as maize, beans and alfalfa. Crops susceptible to the same pathogens as the potato (e.g. tomato) are avoided». Habla de años, no de ciclos (ver la regla `papa_espera`)."
+  - source_id: agrosavia_tibaitata_2022
+    name: "Efecto del establecimiento de sistemas de rotación para el cultivo de la papa sobre las características químicas y físicas del suelo (Vargas Díaz, Wilches Ortiz y Espitia Malagón)"
+    institution: "Agrosavia, Centro de Investigación Tibaitatá; revista Siembra 9(2), e4023, Universidad Central del Ecuador"
+    url: "https://www.redalyc.org/journal/6538/653871546014/653871546014.pdf"
+    downloaded_at: "2026-11-09"
+    period_covered: "Ensayo de noviembre de 2016 a julio de 2017"
+    coverage: "Mosquera, Cundinamarca (Colombia), 2.560 m s. n. m."
+    license: "CC BY-NC (Creative Commons Atribución-NoComercial)"
+    notes: "Rotación de referencia del catálogo. Tabla 1 (p. 3): T1 papa-papa-avena, T2 papa-avena-arveja, T3 papa-arveja-papa. La avena fue sola: Avena sativa, variedad forrajera Cayuse, al voleo a 88 kg/ha (p. 3-4); no se sembró vicia. La arveja, Pisum sativum tipo Santa Isabel. T2 dio el pH más alto al final (5,32 a 6,04; tablas 2 y 3). No da cortes para ninguna regla."
+
+  - source_id: ica_punta_morada
+    name: "Preguntas frecuentes sobre la punta morada de la papa"
+    institution: "Instituto Colombiano Agropecuario (ICA)"
+    url: "https://www.ica.gov.co/getattachment/ICAComunica/PYP/puntamorada/Preguntas-frecuentes.pdf.aspx?lang=es-CO"
+    downloaded_at: "2026-11-09"
+    period_covered: null
+    coverage: "Colombia (zonas paperas)"
+    license: "Documento público del ICA, uso con cita"
+    notes: "Preguntas 16 y 23 (p. 4 y 8): «se deben evitar las siembras sucesivas de papa en el mismo lugar de producción», rotando «con especies que no pertenezcan a la familia Solanaceae». Es la fuente del filtro `papa_seguida`. No da un número de ciclos de espera."
+  - source_id: cevipapa_taller_2005
+    name: "Memorias del I Taller Nacional sobre suelos, fisiología y nutrición vegetal en el cultivo de la papa (capítulos de Hugo E. Castro Franco y de Gilberto A. Murcia Contreras)"
+    institution: "CEVIPAPA y Consejo Nacional de la Papa, con el MADR; capítulo de Murcia: Corpoica; copia en el repositorio de Agrosavia"
+    url: "https://repository.agrosavia.co/server/api/core/bitstreams/f3004e2f-1756-45ed-840b-760a9c1b4235/content"
+    downloaded_at: "2026-11-09"
+    period_covered: "Taller del 9 y 10 de febrero de 2005; tablas con datos del ICA de 1970 a 1994"
+    coverage: "Suelos paperos del altiplano cundiboyacense (Colombia)"
+    license: "Sin licencia declarada; uso con cita"
+    notes: "Castro Franco, Tabla 3 (p. 35), «Niveles críticos aplicables a suelos paperos del Altiplano Cundiboyacense»: «M.O. (%) Bajo <5, Medio 5 – 10, Alto >10». La Tabla 1 (p. 34) usa los mismos cortes. Murcia (Corpoica, p. 51 a 53): rotación «abono verde inicial – papa – abono verde final» a 2.840 y 2.970 m; abonos verdes depuestos «aproximadamente a los 3,5 meses»; «en ningún caso hubo un importante mejoramiento de la materia orgánica» en 18 meses. No da cortes por número de ciclos. Ninguna regla la cita todavía (nota 9 de HU-062)."
+  - source_id: fao_glosolan_wb_2019
+    name: "Procedimiento operativo estándar para el análisis de carbono orgánico del suelo, Walkley-Black (GLOSOLAN-SOP-02, versión 2)"
+    institution: "FAO, Red mundial de laboratorios de suelos (GLOSOLAN)"
+    url: "https://openknowledge.fao.org/server/api/core/bitstreams/3e255ff1-5a67-4d60-af9d-a3a37cb16a1f/content"
+    downloaded_at: "2026-11-09"
+    period_covered: "Vigente desde el 28 de octubre de 2019"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita (licencia por confirmar en la ficha del repositorio)"
+    notes: "p. 4 de 20: «La relación de carbono orgánico a materia orgánica es de 1:1.7–2.0 aproximadamente». Es un rango, no un factor único: 5 % de materia orgánica equivale a entre 25,0 y 29,4 g/kg de carbono orgánico. Ninguna regla la cita todavía (nota 9 de HU-062)."
+  - source_id: igac_capacidad_uso_2021
+    name: "Clasificación de las tierras por su capacidad de uso (instructivo IN-GAG-PC05-02, versión 1)"
+    institution: "Instituto Geográfico Agustín Codazzi (IGAC)"
+    url: "https://www.igac.gov.co/sites/default/files/listadomaestro/in-gag-pc05-02_clasificacion_de_las_tierras_por_su_capacidad_de_uso.pdf"
+    downloaded_at: "2026-11-09"
+    period_covered: "Vigente desde el 11 de mayo de 2021"
+    coverage: "Colombia"
+    license: "Documento público del IGAC, uso con cita (copia no controlada)"
+    notes: "p. 15: «el valor 12% del gradiente de la pendiente es el punto crítico … a partir de ese valor se incrementa la susceptibilidad de los suelos a la erosión». Tabla 9 (p. 15): clases de pendiente. Da la pendiente desde la que aplica (`slope_pct_from: 12`), no los meses descubiertos. Ninguna regla la cita todavía (nota 9 de HU-062)."
+
+rules:
+  # Filtro (R3) general. Fuente: Penn State Extension (no sembrar la misma familia en sucesión, por las plagas
+  # compartidas). Es una guía de huerta de clima templado (lo dice su `notes`): vale como criterio general mientras no
+  # haya una fuente local por familia; para la papa, el respaldo local es `papa_seguida` (ICA).
+  # Compara solo `family` (nota 2 de HU-062): la avena con vicia cuenta como Gramineae.
+  - rule_id: familia_seguida
+    kind: filter
+    criterion: null
+    condition_type: same_family_consecutive
+    params: {families: null}
+    levels: null
+    reason_template: "Repite la familia {family} en dos ciclos seguidos"
+    source_id: psu_rotacion_familias
+
+  # Filtro (R3) de la papa con fuente local. ICA, preguntas frecuentes de la punta morada, preguntas 16 y 23 (p. 4 y 8):
+  # «se deben evitar las siembras sucesivas de papa en el mismo lugar de producción» y rotar con especies que no sean
+  # Solanaceae. Se solapa con `familia_seguida` a propósito: si la regla general se retira por ser de clima templado, la
+  # papa sigue filtrada con una fuente colombiana. Sin número: no hay cortes.
+  # CONTRASTE (no es fuente de esta regla): la Guía Ambiental para el cultivo de la papa (MinAmbiente, 2004, tabla de
+  # propuestas) dice «Realizar máximo dos siembras consecutivas de papa en un mismo lote y aumento del tiempo de
+  # rotación». Es menos estricta que el ICA (admite papa sobre papa una vez); el filtro sigue al ICA, la más prudente.
+  - rule_id: papa_seguida
+    kind: filter
+    criterion: null
+    condition_type: same_family_consecutive
+    params: {families: [Solanaceae]}
+    levels: null
+    reason_template: "Repite la familia {family} en dos ciclos seguidos"
+    source_id: ica_punta_morada
+
+  # Corte de plagas de la papa (kind health: la FAO lo describe como práctica, no como restricción obligatoria).
+  # Fuente: FAO 2008, p. 19: «they grow potatoes in rotations of three or more years, alternating with other, dissimilar
+  # crops». Una rotación de tres años es la papa y 2 años de otros cultivos antes de volver.
+  # SUPUESTO DECLARADO: en el altiplano caben dos ciclos por año, así que 2 años de otros cultivos son unos 4 ciclos de
+  # otras familias (min_cycles = favorable = 4). Supuesto del equipo, decisión de Juan Cárdenas del 9 nov 2026 (opción b),
+  # la confirma Felipe en la revisión cruzada; se pide una fuente andina que lo diga en ciclos.
+  # Sin franja intermedia: `moderate == favorable`, así que desde 4 ciclos de otras familias es favorable y con menos es
+  # unfavorable; nunca moderate. Así no queda ningún número sin fuente o sin supuesto declarado (R8).
+  # Supuesto por confirmar (nota 3 de HU-062): el descanso cuenta como un ciclo sin esa familia.
+  - rule_id: papa_espera
+    kind: health
+    criterion: pest_break
+    condition_type: family_return_min_cycles
+    params: {family: Solanaceae, min_cycles: 4}
+    levels: {favorable: 4, moderate: 4}
+    reason_template: "La familia {family} vuelve al terreno después de {cycles} ciclos de otras familias"
+    source_id: fao_papa_2008

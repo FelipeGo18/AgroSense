@@ -3,8 +3,9 @@
     uv run python -m pipeline.build              # lee la caché de data/raw/ y publica
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
 
-Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), `sources` y `manifest.json`. Cada tabla pasa por las
-validaciones antes de escribirse: si una falla, no se publica nada (R7, R8).
+Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044), sus límites, el catálogo agronómico (`crops`,
+`crop_stages` y `rotation_rules`, HU-061 y HU-062), `sources` y `manifest.json`. Cada tabla pasa por las validaciones
+antes de escribirse: si una falla, no se publica nada (R7, R8).
 """
 
 import argparse
@@ -19,7 +20,7 @@ import shapely
 import yaml
 
 from pipeline import catalog as crops_catalog
-from pipeline import schema
+from pipeline import rotation_rules, schema
 from pipeline.sources import dane, dane_mgn
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
@@ -80,6 +81,7 @@ def publish(
     folder: Path = PUBLISHED,
     boundaries: pl.DataFrame | None = None,
     crops: tuple[str, pl.DataFrame, pl.DataFrame] | None = None,
+    rules: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4)."""
     validate(municipalities, sources)
@@ -91,6 +93,8 @@ def publish(
         tables["municipality_boundaries"] = boundaries
     if crops is not None:
         tables["crops"], tables["crop_stages"] = crops[1], crops[2]
+    if rules is not None:
+        tables["rotation_rules"] = rules
     for name, table in tables.items():
         tables[name] = schema.typed(name, table)
         try:
@@ -102,7 +106,8 @@ def publish(
         table.write_parquet(folder / f"{name}.parquet")
     manifest = {
         "dataset_version": region["dataset_version"],
-        # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
+        # La versión del catálogo agronómico: la de las fichas, que es también la de las reglas de rotación (HU-062,
+        # nota 7). Sin catálogo, nula.
         "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "region": region["region"],
@@ -118,6 +123,8 @@ def publish(
     if crops is not None:
         manifest["tables"]["crops"] = {"rows": crops[1].height, "coverage": "cultivos del MVP"}
         manifest["tables"]["crop_stages"] = {"rows": crops[2].height, "coverage": "cultivos del MVP"}
+    if rules is not None:
+        manifest["tables"]["rotation_rules"] = {"rows": rules.height, "coverage": "reglas de rotación de los cultivos del MVP"}
     (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return manifest
 
@@ -134,8 +141,18 @@ def build(download: bool = False, folder: Path = PUBLISHED, cache: Path = dane.C
     boundaries = dane_mgn.boundaries(features)
     catalog = crops_catalog.load()
     crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
-    sources = pl.concat([pl.DataFrame([dane.source(meta), dane_mgn.source(mgn_meta)]), catalog_sources], how="diagonal_relaxed")
-    return publish(region, municipalities, sources, folder, boundaries, (catalog["version"], crops_table, stages_table))
+    # Las reglas citan las fuentes de las fichas y las suyas, y usan las familias de las fichas (HU-062).
+    rules_table, rules_sources = rotation_rules.build(
+        rotation_rules.load(),
+        crop_sources=catalog.get("sources") or [],
+        known_families=set(crops_table["family"].drop_nulls().to_list()),
+        expected_version=catalog["version"],
+    )
+    sources = pl.concat(
+        [pl.DataFrame([dane.source(meta), dane_mgn.source(mgn_meta)]), catalog_sources, rules_sources], how="diagonal_relaxed"
+    )
+    crops = (catalog["version"], crops_table, stages_table)
+    return publish(region, municipalities, sources, folder, boundaries, crops, rules_table)
 
 
 def main() -> None:
@@ -144,7 +161,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         manifest = build(download=args.descargar)
-    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError) as error:
+    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError, rotation_rules.RotationRulesError) as error:
         sys.exit(f"No se publicó nada: {error}")
     tables = ", ".join(f"{name} ({info['rows']} filas)" for name, info in manifest["tables"].items())
     print(f"Dataset {manifest['dataset_version']} publicado en {PUBLISHED}: {tables}.")
