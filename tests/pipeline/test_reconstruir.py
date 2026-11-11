@@ -41,7 +41,7 @@ def caches(tmp_path, monkeypatch):
 def rebuild(tmp_path, caches):
     cache, market_cache = caches
     folder = tmp_path / "published"
-    build.build(folder=folder, cache=cache, market_cache=market_cache)
+    build.build(folder=folder, cache=cache, market_cache=market_cache, power_cache=tmp_path / "sin-clima")
     return folder
 
 
@@ -57,8 +57,8 @@ def test_lo_que_se_acaba_de_publicar_coincide_con_su_manifiesto(tmp_path, caches
 
 def test_reconstruir_dos_veces_da_las_mismas_tablas(tmp_path, caches):
     cache, market_cache = caches
-    build.build(folder=tmp_path / "a", cache=cache, market_cache=market_cache)
-    build.build(folder=tmp_path / "b", cache=cache, market_cache=market_cache)
+    build.build(folder=tmp_path / "a", cache=cache, market_cache=market_cache, power_cache=tmp_path / "sin-clima")
+    build.build(folder=tmp_path / "b", cache=cache, market_cache=market_cache, power_cache=tmp_path / "sin-clima")
     for table in sorted(path.name for path in (tmp_path / "a").glob("*.parquet")):
         assert (tmp_path / "a" / table).read_bytes() == (tmp_path / "b" / table).read_bytes(), table
 
@@ -114,7 +114,11 @@ def use_example_caches(monkeypatch, folder, caches):
     cache, market_cache = caches
     real_build = build.build
     monkeypatch.setattr(build, "PUBLISHED", folder)
-    monkeypatch.setattr(build, "build", lambda download=False: real_build(folder=folder, cache=cache, market_cache=market_cache))
+    monkeypatch.setattr(
+        build,
+        "build",
+        lambda download=False: real_build(folder=folder, cache=cache, market_cache=market_cache, power_cache=folder.parent / "sin-clima"),
+    )
 
 
 def test_el_comando_publica_y_revisa(tmp_path, caches, monkeypatch):
@@ -181,9 +185,9 @@ def test_sin_la_cache_de_sipsa_se_publica_lo_demas_y_el_log_dice_por_que(tmp_pat
     cache, _ = caches
     folder = tmp_path / "published"
     with capture_logs() as logs:
-        manifest = build.build(folder=folder, cache=cache, market_cache=tmp_path / "sin-sipsa")
+        manifest = build.build(folder=folder, cache=cache, market_cache=tmp_path / "sin-sipsa", power_cache=tmp_path / "sin-clima")
     assert set(manifest["tables"]) == {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
     assert "dane_sipsa" not in pl.read_parquet(folder / "sources.parquet")["source_id"].to_list()
-    missing = [line for line in logs if line["event"] == "source_missing"]
-    assert missing and missing[0]["source"] == "dane_sipsa" and missing[0]["log_level"] == "warning"
+    missing = [line for line in logs if line["event"] == "source_missing" and line["source"] == "dane_sipsa"]
+    assert missing and missing[0]["log_level"] == "warning"
     build.verify(folder, REGION["dataset_version"])

@@ -55,7 +55,7 @@ En todas las tablas: `ok` (el dato está completo para lo que se calcula) o `par
 ### Decisiones sobre el clima publicado
 
 - Todas las temperaturas publicadas (`climate_day`, `climate_month`, `climate_risk_month` y `climate_risk_week`) se corrigen por altitud: la celda de NASA POWER tiene unos 50 km y su altura puede diferir cientos de metros de la del municipio. La corrección usa la diferencia entre `altitude_m` y `climate_cell_elevation_m` con un gradiente térmico con fuente (HU-044). Así la etapa del cultivo, la ET0 y las heladas usan la misma temperatura.
-- El umbral de helada es una mínima menor que 2 °C a 2 m, el criterio de amenaza que usa la UPRA con datos del IDEAM.
+- El umbral de helada es una mínima menor o igual a 2 °C a 2 m (el criterio del ZARC de Brasil, `mapa_zarc_2025`; antes «menor que 2 °C», de la UPRA con datos del IDEAM, cuyo boletín ya no está en su enlace; decidido por Felipe el 10 de noviembre de 2026).
 - NASA POWER es un **reanálisis** (un modelo con observaciones asimiladas), no una observación directa; su entrada en `sources` lo dice. Es la serie larga (desde 1981).
 - La lluvia tiene dos fuentes: NASA POWER (`climate_month`) y GPM IMERG (`precip_month`). `sources.yaml` dice cuál calcula la señal `water` en cada región; la otra se muestra para contrastar. Nunca se promedian ni una rellena a la otra.
 - La humedad del suelo tiene dos fuentes con unidades distintas: la de POWER (`soil_wetness_*`, fracción de 0 a 1) y la de SMAP (`sm_*_m3_m3`). No se convierten una en otra.
@@ -123,15 +123,17 @@ signals:
 version: "1.0.0"
 regions:
   co-boyaca-cundinamarca:
-    water:  { rain: imerg, rain_contrast: [nasa_power], et0: nasa_power, soil_moisture_contrast: [nasa_power, smap] }
+    water:  { rain: nasa_power, rain_contrast: [imerg], rain_caveat: "La lluvia sale de NASA POWER…", et0: nasa_power,
+              soil_moisture_contrast: [nasa_power, smap] }
     frost:  { used: nasa_power }
     heat:   { used: nasa_power }
     soil:   { used: soilgrids }
     supply: { used: eva, contrast: [] }
     market: { used: dane_sipsa }
+planned: { imerg: HU-207, soilgrids: HU-181, eva: HU-031, smap: HU-210 }
 ```
 
-Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources` hace fallar el pipeline (R8). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
+Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources`, ni tiene adaptador en el pipeline, ni está en `planned` hace fallar el pipeline (R8). `planned` lista las fuentes que todavía no tienen adaptador, con la HU que las trae: mientras estén ahí, lo que las usa es `insufficient_data` (R1) y el contraste no se muestra; una fuente de `planned` que ya se publica también hace fallar el pipeline, para que no se quede en la lista. `rain_caveat` es el aviso que lleva siempre la señal de agua mientras la lluvia salga de una fuente con un sesgo conocido. **Versión 1.0.0 (decidido por Felipe el 11 de noviembre de 2026):** la lluvia de `water` sale de NASA POWER de forma **temporal**, con el aviso de que en el altiplano la sobrestima (de 1,7 a 2,7 veces la del IDEAM, PR #24); cuando exista GPM IMERG (HU-207), `rain` pasa a `imerg`, POWER pasa al contraste y el aviso se quita. Lo leen el pipeline, antes de publicar, y la API al arrancar (`common/signal_sources.py`). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
 
 ### Reglas de rotación como datos (`rotation_rules`, HU-062)
 

@@ -31,11 +31,16 @@ afterEach(() => {
 });
 
 describe("Entrar (HU-162)", () => {
-  it("entra con usuario y contraseña y lleva a la finca", async () => {
+  // Cruza dos páginas que se cargan aparte (entrar y Mi finca), la primera en frío: sola tardaba unos 4,9 s y en la
+  // suite completa, con todo en paralelo, se pasaba del límite de 5 s. Por eso tiene 15 s, y el texto se pega en vez de
+  // teclearse letra por letra (cada letra hace reaccionar a la mascota; el tecleo lo prueban las demás pruebas de aquí).
+  it("entra con usuario y contraseña y lleva a la finca", { timeout: 15_000 }, async () => {
     const calls = fakeApi({ "POST /api/v1/auth/login": { status: 200, body: ROSA } });
     open(PATHS.login);
-    await userEvent.type(await screen.findByLabelText("Usuario"), "rosa.samaca");
-    await userEvent.type(screen.getByLabelText("Contraseña"), "papa-criolla-2026");
+    await userEvent.click(await screen.findByLabelText("Usuario"));
+    await userEvent.paste("rosa.samaca");
+    await userEvent.click(screen.getByLabelText("Contraseña"));
+    await userEvent.paste("papa-criolla-2026");
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
     expect(calls.find((call) => call.key.startsWith("POST"))?.body).toEqual({ username: "rosa.samaca", password: "papa-criolla-2026" });
