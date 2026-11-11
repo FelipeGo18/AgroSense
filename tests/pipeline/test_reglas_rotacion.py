@@ -789,26 +789,43 @@ def test_el_catalogo_real_tiene_el_filtro_de_familia_en_ciclos_seguidos(real_cat
     assert ("filter", "same_family_consecutive") in kinds
 
 
-# Criterios de `soil_health` sin regla con fuente. Solo se aceptan si la nota de HU-062 lo declara (criterio «Sin fuente
-# no hay regla»): quien no encuentre fuente lo escribe en la nota de la HU y agrega el criterio aquí, en el mismo cambio.
-# Declarados en la nota 9 de HU-062 (specs/epicas/EP-06-catalogo-agronomico.md, 9 de noviembre de 2026; decisión 16):
-# en la versión 0.1.0 del catálogo no hay fuente para sus cortes y el motor los deja en `insufficient_data` (R1, R8).
-CRITERIA_WITHOUT_SOURCE_DECLARED: set[str] = {"nitrogen", "organic_carbon", "soil_cover", "erosion"}
+# Cada criterio de `soil_health` tiene su regla `health` (criterio «como mínimo, una regla por criterio» de HU-062).
+# Hasta el 10 de noviembre de 2026 cuatro criterios no tenían regla (nota 9 de HU-062); ese día el equipo fijó sus cortes
+# como criterio propio registrado (`criterio_equipo_2026`, números aprobados por Juan Cárdenas). También `papa_espera`
+# (pest_break) cita esa fuente desde ese día: sus 4 ciclos son un supuesto del equipo sobre la cita de FAO 2008. Si un criterio pierde su
+# regla, la nota de HU-062 debe decirlo y esta prueba se ajusta en el mismo cambio (R1, R8).
+TEAM_CRITERION_SOURCE = "criterio_equipo_2026"
+TEAM_CRITERION_RULES = {
+    "papa_espera": "pest_break",
+    "leguminosa_en_rotacion": "nitrogen",
+    "materia_organica_ciclos": "organic_carbon",
+    "suelo_cubierto": "soil_cover",
+    "erosion_pendiente": "erosion",
+}
 
 
-def test_cada_criterio_de_soil_health_tiene_su_regla_health_o_la_nota_declara_que_no_hay_fuente(real_catalog):
+def test_cada_criterio_de_soil_health_tiene_al_menos_una_regla_health(real_catalog):
     # Preparar
     rules, _ = real_catalog
     health = {(r["criterion"], r["condition_type"]) for r in rows(rules) if r["kind"] == "health"}
     # Comprobar
     for criterion, condition_type in CRITERIA.items():
-        if (criterion, condition_type) in health:
-            assert criterion not in CRITERIA_WITHOUT_SOURCE_DECLARED, f"`{criterion}` ya tiene regla: sáquelo de la lista."
-            continue
-        assert criterion in CRITERIA_WITHOUT_SOURCE_DECLARED, (
-            f"`{criterion}` no tiene una regla `health` `{condition_type}`: si no hay fuente, la nota de HU-062 debe "
-            f"decirlo ({EPIC}) y el criterio va en CRITERIA_WITHOUT_SOURCE_DECLARED (R1, R8)."
+        assert (criterion, condition_type) in health, (
+            f"`{criterion}` no tiene una regla `health` `{condition_type}`: si no hay fuente ni criterio del equipo, la "
+            f"nota de HU-062 debe decirlo ({EPIC}) y esta prueba se ajusta (R1, R8)."
         )
+
+
+def test_las_cinco_reglas_del_criterio_del_equipo_citan_su_fuente_propia(real_catalog):
+    # Preparar
+    rules, sources = real_catalog
+    by_id = {r["rule_id"]: r for r in rows(rules)}
+    # Comprobar: la fuente existe (R8) y cada regla es `health` de su criterio y la cita.
+    assert TEAM_CRITERION_SOURCE in sources
+    for rule_id, criterion in TEAM_CRITERION_RULES.items():
+        assert rule_id in by_id, f"Falta la regla `{rule_id}` ({criterion})."
+        rule = by_id[rule_id]
+        assert (rule["kind"], rule["criterion"], rule["source_id"]) == ("health", criterion, TEAM_CRITERION_SOURCE), rule_id
 
 
 def test_en_el_catalogo_real_min_cycles_es_igual_a_favorable_en_pest_break(real_catalog):

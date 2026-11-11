@@ -1,26 +1,39 @@
 # Catálogo agronómico: reglas de rotación como datos (EP-06, HU-062; specs/02-contratos.md, «Reglas de rotación como
-# datos»). Armado el 9 de noviembre de 2026 por producto-agro. PENDIENTE: revisión cruzada por otro integrante (calidad)
-# y confirmación de Felipe de la regla «sin franja intermedia» (`moderate == favorable`) que usa `papa_espera`.
+# datos»). Armado el 9 de noviembre de 2026 y ampliado el 10 por producto-agro. PENDIENTE: revisión cruzada por otro integrante (calidad)
+# (la regla «sin franja intermedia», `moderate == favorable`, la aprobó Felipe el 10 nov 2026).
 #
-# Regla (R1, R8): sin fuente no hay regla. Cada número de una regla se puede señalar en su fuente (página o tabla en el
+# Regla (R1, R8): toda regla tiene fuente registrada (decisión 16, enmienda del 10 nov 2026). Cada número de una regla se puede señalar en su fuente (página o tabla en el
 # comentario de la regla y en `notes` de la fuente), o es un supuesto declarado con quién lo decidió. Un criterio de
 # `soil_health` sin regla con fuente queda en `insufficient_data` en el motor; nunca se escribe un corte «típico» ni se
 # usa la fuente `ejemplo`.
 #
-# Criterios SIN regla en esta versión (nota 9 de HU-062): a los cuatro les faltan los cortes con fuente. Lo hallado en la
-# segunda búsqueda (9 de noviembre de 2026) queda en `sources:` para cuando aparezcan los cortes, sin escribir reglas:
-#   - nitrogen (legume_cycles): ninguna fuente revisada da cuántos ciclos de leguminosa hacen falta; solo hay
-#     recomendaciones cualitativas.
-#   - organic_carbon (organic_matter_cycles): la forma de `levels` ya está aprobada (decisión 16, docs/decisiones.md).
-#     El umbral sí tiene fuente: materia orgánica baja < 5 % en suelos paperos del altiplano (Castro Franco,
-#     `cevipapa_taller_2005`, tabla 3, p. 35). Llevarlo a carbono orgánico (`soc_low_g_kg`) pide un factor: la FAO da
-#     1,7 a 2,0 (`fao_glosolan_wb_2019`), o sea 25,0 a 29,4 g/kg; elegir uno es un supuesto que decide el equipo.
-#     Faltan con fuente los cortes por número de ciclos (`low` y `normal`).
-#   - soil_cover (covered_months_pct): la FAO da un 30 % de cobertura de la superficie al sembrar y AAFC (Canadá) cuenta
-#     días al año con rastrojo y nieve; las dos miden otra variable (no meses cubiertos): no sirven para este corte.
-#   - erosion (bare_months_on_slope): la pendiente sí tiene fuente: desde 12 % aumenta la susceptibilidad a la erosión
-#     (IGAC 2021, `igac_capacidad_uso_2021`, p. 15; falta decidir si es ≥ 12, «a partir de», o > 12 como dice el
-#     contrato). Faltan con fuente los meses descubiertos.
+# Cortes de cuatro criterios como CRITERIO DEL EQUIPO (nota 9 de HU-062): nitrogen, organic_carbon, soil_cover y
+# erosion tienen regla, pero ninguna fuente revisada (dos búsquedas, 9 de noviembre de 2026) da sus cortes. El 10 nov
+# 2026 el equipo decidió fijarlos como criterio propio registrado y Juan Cárdenas aprobó ese día los números que propuso
+# producto-agro. Las cuatro reglas citan `criterio_equipo_2026`, que NO es una fuente agronómica externa (lo dice su
+# `notes`); desde el 10 nov 2026 también la cita `papa_espera` (pest_break, ver su comentario). Resumen:
+#   - Cómo: cada corte traduce lo que `specs/01-reglas.md` pide medir (sí o no de leguminosa, ciclos de abono verde o
+#     descanso, % del tiempo cubierto, meses descubiertos en ladera). Los dos números con fuente externa se conservan
+#     de su fuente: soc_low_g_kg = 29 (materia orgánica < 5 %, Castro, `cevipapa_taller_2005`, tabla 3, p. 35, con el
+#     factor 1,724, dentro del 1,7 a 2,0 de `fao_glosolan_wb_2019`) y slope_pct_from = 12 (`igac_capacidad_uso_2021`,
+#     p. 15, «a partir de», >=). Lo demás (1; 2/1 y 1/0; 80/60; 1/3) es del equipo.
+#   - Por qué: sin regla, los cuatro criterios saldrían `insufficient_data` en la demo y la salud del suelo tendría un
+#     solo criterio con nivel. Un criterio propio y declarado es mejor que un corte «típico» sin dueño (R5, R8).
+#   - Para qué: comparar estrategias entre sí por reglas. No predice cuánto nitrógeno queda, cuánto cambia el carbono ni
+#     cuánto suelo se pierde (decisión 4). El carbono orgánico es una estimación de un mapa de 250 m (SoilGrids) y la
+#     pendiente es un dato de la zona (NASADEM), no una medición del lote (R10).
+# Supuestos que debe validar un agrónomo (idealmente de Agrosavia o de una UMATA del altiplano):
+#   1. Si basta un ciclo de leguminosa en 2 o 3 ciclos. El conteo incluye la vicia de `avena_vicia`, que el ensayo de
+#      Tibaitatá no sembró.
+#   2. Si 2 ciclos de abono verde o descanso son buena referencia con materia orgánica < 5 % (el ensayo de Murcia no vio
+#      una mejora importante en 18 meses) y si 29 g/kg vale con SoilGrids, que no mide por Walkley-Black.
+#   3. Si 80 % y 60 % del tiempo cubierto separan bien las prácticas de la zona, y si el descanso (que aquí cuenta como
+#      suelo descubierto, decisión 16) debería contar como cubierto por la vegetación espontánea.
+#   4. Cuántos meses descubiertos en ladera (>= 12 %) se toleran y si se deberían contar solo los meses de lluvia.
+#   5. Todo el ciclo de un cultivo cuenta como cubierto desde la siembra (contrato): sobreestima la cobertura de todas
+#      las estrategias por igual.
+# Bloqueo que no se resuelve aquí: el descanso no tiene duración (contradicción 3 de HU-062); sin ella, `soil_cover` y
+# `erosion` de una estrategia con descanso salen `insufficient_data` (R1).
 #
 # `version` es la de catalog/crops.yaml: los dos catálogos la comparten y es `rules_version` (decisión 16).
 # Las familias de `params` son las de las fichas de catalog/crops.yaml, con la misma mayúscula.
@@ -45,7 +58,7 @@ sources:
     period_covered: "2008"
     coverage: "Mundial"
     license: "Publicación de la FAO, uso con cita"
-    notes: "p. 19 (sección «Cultivation»): «To prevent the build-up of pathogens in the soil, farmers avoid growing potatoes on the same land from year to year. Instead, they grow potatoes in rotations of three or more years, alternating with other, dissimilar crops, such as maize, beans and alfalfa. Crops susceptible to the same pathogens as the potato (e.g. tomato) are avoided». Habla de años, no de ciclos (ver la regla `papa_espera`)."
+    notes: "p. 19 (sección «Cultivation»): «To prevent the build-up of pathogens in the soil, farmers avoid growing potatoes on the same land from year to year. Instead, they grow potatoes in rotations of three or more years, alternating with other, dissimilar crops, such as maize, beans and alfalfa. Crops susceptible to the same pathogens as the potato (e.g. tomato) are avoided». Habla de años, no de ciclos. La regla `papa_espera` usa esta cita como respaldo, pero cita `criterio_equipo_2026`: sus 4 ciclos salen del supuesto del equipo de dos ciclos por año (2 años de otros cultivos = 4 ciclos), decisión de Juan Cárdenas del 10 nov 2026."
   - source_id: agrosavia_tibaitata_2022
     name: "Efecto del establecimiento de sistemas de rotación para el cultivo de la papa sobre las características químicas y físicas del suelo (Vargas Díaz, Wilches Ortiz y Espitia Malagón)"
     institution: "Agrosavia, Centro de Investigación Tibaitatá; revista Siembra 9(2), e4023, Universidad Central del Ecuador"
@@ -73,7 +86,7 @@ sources:
     period_covered: "Taller del 9 y 10 de febrero de 2005; tablas con datos del ICA de 1970 a 1994"
     coverage: "Suelos paperos del altiplano cundiboyacense (Colombia)"
     license: "Sin licencia declarada; uso con cita"
-    notes: "Castro Franco, Tabla 3 (p. 35), «Niveles críticos aplicables a suelos paperos del Altiplano Cundiboyacense»: «M.O. (%) Bajo <5, Medio 5 – 10, Alto >10». La Tabla 1 (p. 34) usa los mismos cortes. Murcia (Corpoica, p. 51 a 53): rotación «abono verde inicial – papa – abono verde final» a 2.840 y 2.970 m; abonos verdes depuestos «aproximadamente a los 3,5 meses»; «en ningún caso hubo un importante mejoramiento de la materia orgánica» en 18 meses. No da cortes por número de ciclos. Ninguna regla la cita todavía (nota 9 de HU-062)."
+    notes: "Castro Franco, Tabla 3 (p. 35), «Niveles críticos aplicables a suelos paperos del Altiplano Cundiboyacense»: «M.O. (%) Bajo <5, Medio 5 – 10, Alto >10». La Tabla 1 (p. 34) usa los mismos cortes. Murcia (Corpoica, p. 51 a 53): rotación «abono verde inicial – papa – abono verde final» a 2.840 y 2.970 m; abonos verdes depuestos «aproximadamente a los 3,5 meses»; «en ningún caso hubo un importante mejoramiento de la materia orgánica» en 18 meses. No da cortes por número de ciclos. Ninguna regla la cita como `source_id`: su umbral y el diseño de Murcia los usa `materia_organica_ciclos`, que cita `criterio_equipo_2026` (nota 9 de HU-062)."
   - source_id: fao_glosolan_wb_2019
     name: "Procedimiento operativo estándar para el análisis de carbono orgánico del suelo, Walkley-Black (GLOSOLAN-SOP-02, versión 2)"
     institution: "FAO, Red mundial de laboratorios de suelos (GLOSOLAN)"
@@ -82,7 +95,7 @@ sources:
     period_covered: "Vigente desde el 28 de octubre de 2019"
     coverage: "Mundial"
     license: "Publicación de la FAO, uso con cita (licencia por confirmar en la ficha del repositorio)"
-    notes: "p. 4 de 20: «La relación de carbono orgánico a materia orgánica es de 1:1.7–2.0 aproximadamente». Es un rango, no un factor único: 5 % de materia orgánica equivale a entre 25,0 y 29,4 g/kg de carbono orgánico. Ninguna regla la cita todavía (nota 9 de HU-062)."
+    notes: "p. 4 de 20: «La relación de carbono orgánico a materia orgánica es de 1:1.7–2.0 aproximadamente». Es un rango, no un factor único: 5 % de materia orgánica equivale a entre 25,0 y 29,4 g/kg de carbono orgánico. Ninguna regla la cita como `source_id`: el factor 1,724 que usa `materia_organica_ciclos` cae en este rango (nota 9 de HU-062)."
   - source_id: igac_capacidad_uso_2021
     name: "Clasificación de las tierras por su capacidad de uso (instructivo IN-GAG-PC05-02, versión 1)"
     institution: "Instituto Geográfico Agustín Codazzi (IGAC)"
@@ -91,7 +104,17 @@ sources:
     period_covered: "Vigente desde el 11 de mayo de 2021"
     coverage: "Colombia"
     license: "Documento público del IGAC, uso con cita (copia no controlada)"
-    notes: "p. 15: «el valor 12% del gradiente de la pendiente es el punto crítico … a partir de ese valor se incrementa la susceptibilidad de los suelos a la erosión». Tabla 9 (p. 15): clases de pendiente. Da la pendiente desde la que aplica (`slope_pct_from: 12`), no los meses descubiertos. Ninguna regla la cita todavía (nota 9 de HU-062)."
+    notes: "p. 15: «el valor 12% del gradiente de la pendiente es el punto crítico … a partir de ese valor se incrementa la susceptibilidad de los suelos a la erosión». Tabla 9 (p. 15): clases de pendiente. Da la pendiente desde la que aplica (`slope_pct_from: 12`), no los meses descubiertos. Ninguna regla la cita como `source_id`: el 12 % lo usa `erosion_pendiente`, que cita `criterio_equipo_2026` porque los meses descubiertos son del equipo (nota 9 de HU-062)."
+
+  - source_id: criterio_equipo_2026
+    name: "Cortes de salud del suelo de AgroSense: criterio propio del equipo (HU-062)"
+    institution: "Equipo RealE4Life (AgroSense)"
+    url: "https://github.com/FelipeGo18/AgroSense/blob/24c645f/docs/registro-de-decisiones.md"
+    downloaded_at: "2026-11-10"
+    period_covered: "Decidido el 10 de noviembre de 2026 (propuesta de producto-agro; números aprobados por Juan Cárdenas el mismo día)"
+    coverage: "AgroSense, región piloto del altiplano (Colombia)"
+    license: "Del proyecto"
+    notes: "Criterio del equipo RealE4Life, NO una fuente agronómica externa, decidido el 10 nov 2026 porque ninguna fuente revisada da estos cortes (nota 9 de HU-062). Fija los cortes de las reglas papa_espera (pest_break: favorable desde 4 ciclos de otras familias antes de volver a Solanaceae, sin franja; los 4 ciclos salen de las «rotations of three or more years» de fao_papa_2008 p. 19 con el supuesto del equipo de dos ciclos por año), leguminosa_en_rotacion (nitrogen: favorable desde 1 ciclo con leguminosa, sin franja), materia_organica_ciclos (organic_carbon: con carbono bajo, favorable desde 2 ciclos de abono verde o descanso y moderate con 1; con carbono normal, favorable con 1 y moderate con 0), suelo_cubierto (soil_cover: favorable desde 80 % y moderate desde 60 %) y erosion_pendiente (erosion: favorable hasta 1 mes descubierto y moderate hasta 3). Se apoya en parte en fuentes externas que no dan estos cortes: fao_iyp_2019 (las leguminosas fijan nitrógeno), fao_papa_2008 p. 19 (leguminosas entre los cultivos que alternan con la papa), cevipapa_taller_2005 (tabla 3, p. 35: materia orgánica baja < 5 %, de donde sale soc_low_g_kg = 29 con el factor 1,724; y el diseño abono verde – papa – abono verde de Murcia, p. 51 a 53), fao_glosolan_wb_2019 p. 4 (factor de 1,7 a 2,0) e igac_capacidad_uso_2021 p. 15 (pendiente desde 12 %). Los números externos (29 g/kg y 12 %) siguen siendo de su fuente; los cortes por ciclos, porcentaje y meses son del equipo. Compara estrategias por reglas; no predice cuánto mejora el suelo. Pendiente de validar por un agrónomo."
 
 rules:
   # Filtro (R3) general. Fuente: Penn State Extension (no sembrar la misma familia en sucesión, por las plagas
@@ -124,12 +147,13 @@ rules:
     source_id: ica_punta_morada
 
   # Corte de plagas de la papa (kind health: la FAO lo describe como práctica, no como restricción obligatoria).
-  # Fuente: FAO 2008, p. 19: «they grow potatoes in rotations of three or more years, alternating with other, dissimilar
+  # CRITERIO DEL EQUIPO (criterio_equipo_2026, decisión de Juan Cárdenas del 10 nov 2026). Respaldo externo, que no da
+  # el número en ciclos: FAO 2008 (fao_papa_2008), p. 19: «they grow potatoes in rotations of three or more years, alternating with other, dissimilar
   # crops». Una rotación de tres años es la papa y 2 años de otros cultivos antes de volver.
   # SUPUESTO DECLARADO: en el altiplano caben dos ciclos por año, así que 2 años de otros cultivos son unos 4 ciclos de
-  # otras familias (min_cycles = favorable = 4). Supuesto del equipo, decisión de Juan Cárdenas del 9 nov 2026 (opción b),
-  # la confirma Felipe en la revisión cruzada; se pide una fuente andina que lo diga en ciclos.
-  # Sin franja intermedia: `moderate == favorable`, así que desde 4 ciclos de otras familias es favorable y con menos es
+  # otras familias (min_cycles = favorable = 4). Supuesto del equipo, decisión de Juan Cárdenas del 9 nov 2026 (opción b);
+  # se pide una fuente andina que lo diga en ciclos.
+  # Sin franja intermedia (aprobada por Felipe el 10 nov 2026): `moderate == favorable`, así que desde 4 ciclos de otras familias es favorable y con menos es
   # unfavorable; nunca moderate. Así no queda ningún número sin fuente o sin supuesto declarado (R8).
   # Supuesto por confirmar (nota 3 de HU-062): el descanso cuenta como un ciclo sin esa familia.
   - rule_id: papa_espera
@@ -139,4 +163,76 @@ rules:
     params: {family: Solanaceae, min_cycles: 4}
     levels: {favorable: 4, moderate: 4}
     reason_template: "La familia {family} vuelve al terreno después de {cycles} ciclos de otras familias"
-    source_id: fao_papa_2008
+    source_id: criterio_equipo_2026
+
+  # Nitrógeno (kind health). CRITERIO DEL EQUIPO (criterio_equipo_2026, aprobado por Juan Cárdenas el 10 nov 2026):
+  # ninguna fuente revisada da cuántos ciclos de leguminosa hacen falta. Lo que sí tiene fuente: las leguminosas fijan
+  # nitrógeno del aire (fao_iyp_2019, citado en crops.yaml) y la FAO 2008 (fao_papa_2008, p. 19) nombra fríjol y alfalfa,
+  # dos leguminosas, entre los cultivos que alternan con la papa. Sin franja intermedia (moderate == favorable): con al
+  # menos un ciclo de leguminosa o de abono verde con leguminosa (avena_vicia, por la vicia) es favorable, y sin ninguno
+  # es unfavorable. El conteo incluye la vicia, que el ensayo de Tibaitatá no sembró (nota 2 de HU-062).
+  # No dice cuánto nitrógeno queda en el suelo (decisión 4).
+  - rule_id: leguminosa_en_rotacion
+    kind: health
+    criterion: nitrogen
+    condition_type: legume_cycles
+    params: {}
+    levels: {favorable: 1, moderate: 1}
+    reason_template: "Ciclos con leguminosa, que fija nitrógeno del aire: {count}. Compara estrategias por reglas; no dice cuánto nitrógeno queda en el suelo"
+    source_id: criterio_equipo_2026
+
+  # Carbono orgánico (kind health). Combina un dato con fuente externa y cortes del equipo:
+  # - soc_low_g_kg = 29: materia orgánica baja < 5 % en suelos paperos del altiplano (Castro Franco, cevipapa_taller_2005,
+  #   tabla 3, p. 35), llevada a carbono orgánico con el factor de Van Bemmelen 1,724, que cae dentro del rango 1,7 a 2,0
+  #   de la FAO (fao_glosolan_wb_2019, p. 4): 50 g/kg / 1,724 = 29,0 g/kg. El factor lo eligió el equipo (aprobado por
+  #   Felipe el 10 nov 2026).
+  # - Cortes por ciclos: CRITERIO DEL EQUIPO (criterio_equipo_2026, aprobado por Juan Cárdenas el 10 nov 2026). Con el
+  #   carbono bajo, el corte favorable de 2 ciclos sigue el diseño local «abono verde inicial – papa – abono verde final»
+  #   (Murcia, Corpoica, en cevipapa_taller_2005, p. 51 a 53), que es un ensayo y no una recomendación de cortes. El mismo
+  #   ensayo no halló «un importante mejoramiento de la materia orgánica» en 18 meses: este criterio compara prácticas, no
+  #   promete que el carbono suba. Con el carbono normal, sin abono verde ni descanso es moderate, no unfavorable: no hay
+  #   fuente de que la estrategia deteriore un suelo que no está bajo.
+  # Cuentan los ciclos de abono verde (kind = cover) y de descanso (kind = fallow); los residuos de cultivo no cuentan
+  # (nota 3 de HU-062). Se compara soc_g_kg (el valor central) con soc_low_g_kg; la razón da el rango p05–p95 (R10).
+  - rule_id: materia_organica_ciclos
+    kind: health
+    criterion: organic_carbon
+    condition_type: organic_matter_cycles
+    params: {soc_low_g_kg: 29}
+    levels:
+      low: {favorable: 2, moderate: 1}
+      normal: {favorable: 1, moderate: 0}
+    reason_template: "Ciclos de abono verde o descanso: {count}. El carbono orgánico del suelo es {soc_level} según una estimación de un mapa de 250 m ({soc_range} g/kg); un análisis de suelo de su lote es más preciso. No predice cuánto cambia el carbono del suelo"
+    source_id: criterio_equipo_2026
+
+  # Suelo cubierto (kind health). CRITERIO DEL EQUIPO (criterio_equipo_2026, aprobado por Juan Cárdenas el 10 nov 2026):
+  # ninguna fuente da un corte de meses cubiertos. Las que se revisaron miden otra cosa: la FAO da un 30 % de cobertura
+  # de la superficie al sembrar, y AAFC cuenta días al año con rastrojo y nieve. Por eso no se usan.
+  # El descanso cuenta como suelo descubierto (decisión 16). Los cortes dejan un descanso corto (alrededor de una quinta
+  # parte de la estrategia) en favorable, para no anular siempre lo que el descanso suma en organic_carbon.
+  - rule_id: suelo_cubierto
+    kind: health
+    criterion: soil_cover
+    condition_type: covered_months_pct
+    params: {}
+    levels: {favorable: 80, moderate: 60}
+    reason_template: "El suelo queda cubierto por un cultivo o un abono verde el {pct} % del tiempo que dura la estrategia; el descanso cuenta como suelo descubierto. Compara estrategias por reglas; no predice cuánto mejora el suelo"
+    source_id: criterio_equipo_2026
+
+  # Erosión (kind health). Combina un dato con fuente externa y cortes del equipo:
+  # - slope_pct_from = 12: «el valor 12% del gradiente de la pendiente es el punto crítico … a partir de ese valor se
+  #   incrementa la susceptibilidad de los suelos a la erosión» (igac_capacidad_uso_2021, p. 15). Con menos pendiente,
+  #   erosion es favorable (contrato; «a partir de», >=, aprobado por Felipe el 10 nov 2026).
+  # - Meses descubiertos (máximos): CRITERIO DEL EQUIPO (criterio_equipo_2026, aprobado por Juan Cárdenas el 10 nov
+  #   2026). favorable hasta 1 mes (el paso entre cosecha y siembra y un descanso muy corto); moderate hasta 3 meses; más,
+  #   unfavorable. El descanso cuenta como suelo descubierto (decisión 16). Lo debe validar un agrónomo.
+  # La pendiente es la del terreno de la zona (NASADEM, 30 m), no una medición del lote (R10). No dice cuánto suelo se
+  # pierde (decisión 4).
+  - rule_id: erosion_pendiente
+    kind: health
+    criterion: erosion
+    condition_type: bare_months_on_slope
+    params: {slope_pct_from: 12}
+    levels: {favorable: 1, moderate: 3}
+    reason_template: "Pendiente estimada del terreno: {slope} % (dato de la zona, no medido en su lote). La estrategia deja el suelo descubierto {months} meses. Compara estrategias por reglas; no predice cuánto suelo se pierde"
+    source_id: criterio_equipo_2026
