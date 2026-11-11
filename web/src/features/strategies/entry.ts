@@ -13,8 +13,9 @@ export type RotationWeights = Schemas["RotationWeights"];
  * primer ciclo, riego, cuántos ciclos y la rotación que viene haciendo (HU-223). Con cuenta, desde el lote: su
  * municipio, su riego y su historial.
  *
- * Va en la dirección, salvo el área: sin cuenta, el área solo se usa en este navegador para el agua del plan (HU-215) y
- * nunca llega al servidor ni a sus logs (R9). Por eso vive en `sessionStorage`, no en la dirección.
+ * Va en la dirección, salvo el área: sin cuenta, el área solo sirve para el agua de cada ciclo (HU-215). Viaja solo a
+ * `POST /water-plans`, que calcula y no guarda nada (R9); nunca va a `/rotations` ni a la dirección, donde quedaría en
+ * el historial del navegador. Por eso vive en `sessionStorage`.
  */
 export type Mode = "" | "none" | "crops";
 

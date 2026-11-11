@@ -40,10 +40,12 @@ import {
   type StrategyField,
   type StrategyForm,
 } from "@/features/strategies/entry";
+import { cycleParams, findCycle, strategyKey, withoutCycle } from "@/features/strategies/cycle";
 import { sequence, socRange } from "@/features/strategies/strategies";
 import { useVersion } from "@/features/version";
 import { irrigationText, placeName } from "@/pages/farm/common";
 import { PreviousChoice } from "@/pages/farm/SeasonParts";
+import { CycleView } from "./CycleView";
 import { StrategyResults } from "./StrategyResults";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
@@ -145,6 +147,10 @@ export function StrategiesPage() {
       : null;
   const rotations = useRotations(request);
   const soil = useMunicipalitySoil(showResult && rotations.data?.soil_basis === "municipality" ? request?.municipality_id : null);
+  // El ciclo abierto (HU-215): `estrategia` y `ciclo` en la dirección. Si no existe en la respuesta, se ve la lista.
+  const openCycle =
+    showResult && request && !zeroPriorities ? findCycle(rotations.data, params.get("estrategia"), params.get("ciclo")) : null;
+  const areaHa = sent.lotId ? (lot.data ? lotArea : null) : parseArea(sent.areaText);
 
   // Al volver a la entrada desde el resultado, el foco va a su título: el contenido cambió de lugar.
   const formTitle = useRef<HTMLHeadingElement>(null);
@@ -200,7 +206,22 @@ export function StrategiesPage() {
       <title>Estrategias de rotación · AgroSense</title>
       <TopBar />
       <main className="container-page pt-[112px] pb-40 md:pt-[128px] md:pb-48">
-        {showResult ? (
+        {openCycle && request ? (
+          <CycleView
+            open={openCycle}
+            params={params}
+            backTo={`${PATHS.consult}?${withoutCycle(params)}`}
+            municipalityId={request.municipality_id}
+            irrigated={request.irrigated}
+            areaHa={areaHa}
+            names={names}
+            kinds={kinds}
+            version={version.data}
+            signedIn={Boolean(user)}
+            versions={rotations.data!.versions}
+            lot={sent.lotId ? { lotId: sent.lotId, follows: sent.seasonIds } : null}
+          />
+        ) : showResult ? (
           <>
             <Card bodyClassName="gap-8">
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
@@ -248,6 +269,7 @@ export function StrategiesPage() {
                 onEdit={() => edit()}
                 onWriteCurrent={() => edit({ currentMode: "crops" })}
                 onTwoCycles={() => setParams(toParams({ ...sent, cycles: 2 }), { preventScrollReset: true })}
+                cycleLink={(strategy, n) => `${PATHS.consult}?${cycleParams(params, strategyKey(strategy), n)}`}
               />
             )}
           </>
@@ -363,7 +385,7 @@ export function StrategiesPage() {
                           value={form.areaText}
                           onChange={(e) => change({ areaText: e.target.value })}
                           onBlur={() => touch("area")}
-                          hint="Solo se usa en este dispositivo, para calcular el agua del plan. No se envía a AgroSense."
+                          hint="Solo se usa para calcular el agua que necesitaría cada ciclo. No se guarda."
                           error={errors.area}
                         />
                         <Slots

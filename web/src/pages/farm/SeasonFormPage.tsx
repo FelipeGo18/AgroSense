@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { Alert } from "@/components/ui/Alert";
@@ -21,7 +21,9 @@ import {
   useUpdateSeason,
   type Crop,
   type Season,
+  type SowPlan,
 } from "@/features/farm/seasons";
+import { LIGHT_LABEL, type Light } from "@/components/ui/TrafficLightBadge";
 import { useEntrance } from "@/hooks/useEntrance";
 import { AccountShell, LINK } from "@/pages/account/AccountShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
@@ -116,10 +118,15 @@ function SeasonForm({
   const remove = useDeleteSeason(lot.lot_id, season?.season_id ?? "");
   const saving = mode === "create" ? create : update;
   const after = params.get("despues");
+  // Desde el primer ciclo de una estrategia llega la siembra armada, con el diagnóstico que vio (HU-215).
+  const location = useLocation();
+  const plan = mode === "create" ? (location.state as { plan?: SowPlan } | null)?.plan : undefined;
 
-  const [follows, setFollows] = useState<string[]>(season ? season.follows_season_ids : after ? [after] : []);
-  const [crop, setCrop] = useState(season?.crop_id ?? "");
-  const [sowing, setSowing] = useState(season?.sowing_date ?? todayIso());
+  const [follows, setFollows] = useState<string[]>(
+    season ? season.follows_season_ids : plan ? plan.follows_season_ids : after ? [after] : [],
+  );
+  const [crop, setCrop] = useState(season?.crop_id ?? plan?.crop_id ?? "");
+  const [sowing, setSowing] = useState(season?.sowing_date ?? plan?.sowing_date ?? todayIso());
   const [tried, setTried] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
@@ -144,11 +151,15 @@ function SeasonForm({
   const chosen = follows.filter((id) => options.some((o) => o.id === id));
 
   // Mientras no lo escriba, el área sugerida es la de lo que había antes (si cabe) o todo lo libre.
-  const [areaText, setArea] = useState<string | null>(season ? haText(season.area_ha) : null);
+  const [areaText, setArea] = useState<string | null>(season ? haText(season.area_ha) : plan ? haText(plan.area_ha) : null);
   const before = sum(options.filter((o) => chosen.includes(o.id)).map((o) => o.ha));
   const area = areaText ?? haText(Math.round((before > 0 ? Math.min(before, free) : free) * 100) / 100);
   const areaHa = parseHa(area);
   const harvested = !!season?.harvest_date;
+
+  // El diagnóstico de la estrategia vale mientras no cambien el cultivo ni la fecha: es el de esa ventana.
+  const planHolds = Boolean(plan && crop === plan.crop_id && sowing === plan.sowing_date);
+  const planLight = plan?.diagnosis.diagnosis_light as Light | null | undefined;
 
   const errors = {
     crop: crop ? undefined : "Elija el cultivo.",
@@ -168,7 +179,13 @@ function SeasonForm({
     event.preventDefault();
     setTried(true);
     if (Object.values(errors).some(Boolean) || areaHa === null) return;
-    const body = { crop_id: crop, sowing_date: sowing, area_ha: areaHa, follows_season_ids: chosen };
+    const body = {
+      crop_id: crop,
+      sowing_date: sowing,
+      area_ha: areaHa,
+      follows_season_ids: chosen,
+      ...(planHolds && plan ? plan.diagnosis : {}),
+    };
     const notice = mode === "create" ? `Siembra de ${(names.get(crop) ?? crop).toLowerCase()} registrada.` : "Cambios guardados.";
     const done = () => void navigate(PATHS.lot(lot.lot_id), { state: { notice } });
     if (mode === "create") create.mutate(body, { onSuccess: done });
@@ -251,7 +268,11 @@ function SeasonForm({
         <p className="border-l-8 border-superficie-borde bg-paleta-niebla px-4 py-3 text-[15px]">
           {season?.diagnosis_light
             ? "Se conserva el diagnóstico que vio al sembrar: es el de ese día y no se recalcula."
-            : "Sin diagnóstico al sembrar: cuando consulte el diagnóstico antes de sembrar, se guardará con la siembra."}
+            : plan && planHolds
+              ? `Se guarda con el diagnóstico que vio en la estrategia${planLight ? ` (${LIGHT_LABEL[planLight].toLowerCase()})` : ""}: es el de esa ventana y no se recalcula.`
+              : plan
+                ? "Cambió el cultivo o la fecha: el diagnóstico de la estrategia ya no corresponde a esta siembra y no se guarda."
+                : "Sin diagnóstico al sembrar: cuando consulte el diagnóstico antes de sembrar, se guardará con la siembra."}
         </p>
         <Button type="submit" loading={saving.isPending} loadingText="Guardando…">
           {mode === "create" ? "Guardar siembra" : "Guardar cambios"}

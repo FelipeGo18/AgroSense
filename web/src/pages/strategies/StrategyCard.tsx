@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import { Card } from "@/components/ui/Card";
 import { Plate } from "@/components/ui/Plate";
 import { StatusIcon, TONE_STYLE, type Tone } from "@/components/ui/StatusMark";
@@ -28,6 +29,8 @@ export interface StrategyCardProps {
   kinds: Map<string, string>;
   weights: RotationWeights;
   version: Version | undefined;
+  /** La dirección del detalle de cada ciclo (HU-215). */
+  cycleLink: (cycle: number) => string;
 }
 
 /**
@@ -35,7 +38,7 @@ export interface StrategyCardProps {
  * o pierde frente a lo de hoy, sus razones y su salud del suelo. La rotación actual usa la misma tarjeta, rotulada «Lo
  * que siembra hoy», sin puesto y con sus problemas a la vista (decisión 14).
  */
-export function StrategyCard({ strategy, names, kinds, weights, version }: StrategyCardProps) {
+export function StrategyCard({ strategy, names, kinds, weights, version, cycleLink }: StrategyCardProps) {
   const current = strategy.kind === "current";
   const title = sequence(strategy.crop_ids, names);
   const total = delta(strategy.vs_current?.total);
@@ -65,7 +68,7 @@ export function StrategyCard({ strategy, names, kinds, weights, version }: Strat
           </div>
         </header>
 
-        <Cycles cycles={strategy.cycles} names={names} kinds={kinds} />
+        <Cycles cycles={strategy.cycles} names={names} kinds={kinds} cycleLink={cycleLink} />
 
         <Breakdown strategy={strategy} weights={weights} />
 
@@ -139,7 +142,17 @@ function DeltaText({ delta: d, suffix }: { delta: Delta; suffix?: string }) {
 }
 
 /** Los ciclos en orden. Un descanso no tiene luz: no se siembra. Un abono verde se incorpora en vez de cosecharse. */
-function Cycles({ cycles, names, kinds }: { cycles: Cycle[]; names: Map<string, string>; kinds: Map<string, string> }) {
+function Cycles({
+  cycles,
+  names,
+  kinds,
+  cycleLink,
+}: {
+  cycles: Cycle[];
+  names: Map<string, string>;
+  kinds: Map<string, string>;
+  cycleLink: (cycle: number) => string;
+}) {
   const bases = new Set(cycles.filter((c) => cycleKind(c.crop_id, kinds) !== "fallow").map((c) => c.harvest_basis));
   return (
     <div className="flex flex-col gap-2">
@@ -151,9 +164,13 @@ function Cycles({ cycles, names, kinds }: { cycles: Cycle[]; names: Map<string, 
             total={cycles.length}
             name={names.get(cycle.crop_id) ?? cycle.crop_id}
             kind={cycleKind(cycle.crop_id, kinds)}
+            to={cycleLink(cycle.cycle)}
           />
         ))}
       </ol>
+      <p className="text-[14px] text-texto-secundario">
+        Toque un ciclo para ver su diagnóstico, el agua que necesitaría y cuándo suele estar verde el campo.
+      </p>
       {[...bases].map((basis) => (
         <p key={basis} className="text-[14px] text-texto-secundario">
           {harvestNote(basis)}
@@ -163,44 +180,62 @@ function Cycles({ cycles, names, kinds }: { cycles: Cycle[]; names: Map<string, 
   );
 }
 
-function CycleBox({ cycle, total, name, kind }: { cycle: Cycle; total: number; name: string; kind: "crop" | "cover" | "fallow" }) {
+/** Un ciclo de la tarjeta. Todo el recuadro es el enlace a su detalle (HU-215): un objetivo grande para el dedo. */
+function CycleBox({
+  cycle,
+  total,
+  name,
+  kind,
+  to,
+}: {
+  cycle: Cycle;
+  total: number;
+  name: string;
+  kind: "crop" | "cover" | "fallow";
+  to: string;
+}) {
   const fallow = kind === "fallow";
   return (
-    <li
-      aria-label={`Ciclo ${cycle.cycle} de ${total}: ${name}`}
-      className={`flex min-w-0 flex-col gap-1.5 border-2 px-3 py-3 text-[15px] leading-snug ${
-        fallow ? "border-dashed border-superficie-borde bg-superficie-panel" : "border-superficie-borde bg-superficie-panel-suave"
-      }`}
-    >
-      <p className="text-[13px] font-bold tracking-wide text-texto-secundario uppercase">Ciclo {cycle.cycle}</p>
-      <p className="font-titulos text-[1.1rem] leading-tight font-semibold break-words">{name}</p>
-      {kind === "cover" && <p className="w-fit border-2 border-oscuro-oliva px-1.5 text-[13px] font-bold text-oscuro-oliva">Abono verde</p>}
-      {fallow ? (
-        <>
-          <p>Desde el {formatShortDate(cycle.sowing_date)}</p>
-          <p>Hasta el {formatShortDate(cycle.harvest_estimate)}</p>
-          <p className="text-[14px] font-bold text-texto-secundario">Sin semáforo: no se siembra</p>
-        </>
-      ) : (
-        <>
-          <p>Siembra {formatShortDate(cycle.sowing_date)}</p>
-          <p>
-            {kind === "cover" ? "Se incorpora" : "Cosecha"} ~{formatShortDate(cycle.harvest_estimate)}
-          </p>
-          {cycle.light ? <LightTag light={cycle.light} /> : <p className="text-[14px] text-texto-secundario">Sin luz para este ciclo</p>}
-          {cycle.light_default && cycle.light_default !== cycle.light && (
-            <p className="text-[14px]">
-              Con el criterio de AgroSense: <span className="font-bold">{LIGHT_LABEL[cycle.light_default].toLowerCase()}</span>
+    <li aria-label={`Ciclo ${cycle.cycle} de ${total}: ${name}`} className="flex min-w-0">
+      <Link
+        to={to}
+        aria-label={`Ver el ciclo ${cycle.cycle} de ${total}: ${name}`}
+        className={`flex w-full min-w-0 flex-col gap-1.5 border-2 px-3 py-3 text-[15px] leading-snug hover:border-oscuro-oliva focus-visible:border-oscuro-oliva ${
+          fallow ? "border-dashed border-superficie-borde bg-superficie-panel" : "border-superficie-borde bg-superficie-panel-suave"
+        }`}
+      >
+        <p className="text-[13px] font-bold tracking-wide text-texto-secundario uppercase">Ciclo {cycle.cycle}</p>
+        <p className="font-titulos text-[1.1rem] leading-tight font-semibold break-words">{name}</p>
+        {kind === "cover" && (
+          <p className="w-fit border-2 border-oscuro-oliva px-1.5 text-[13px] font-bold text-oscuro-oliva">Abono verde</p>
+        )}
+        {fallow ? (
+          <>
+            <p>Desde el {formatShortDate(cycle.sowing_date)}</p>
+            <p>Hasta el {formatShortDate(cycle.harvest_estimate)}</p>
+            <p className="text-[14px] font-bold text-texto-secundario">Sin semáforo: no se siembra</p>
+          </>
+        ) : (
+          <>
+            <p>Siembra {formatShortDate(cycle.sowing_date)}</p>
+            <p>
+              {kind === "cover" ? "Se incorpora" : "Cosecha"} ~{formatShortDate(cycle.harvest_estimate)}
             </p>
-          )}
-          {cycle.limiting_signal && (
-            <p className="text-[14px] font-bold text-texto-secundario">
-              Limita: {(SIGNAL_NAME[cycle.limiting_signal] ?? cycle.limiting_signal).toLowerCase()}
-            </p>
-          )}
-          {cycle.high_risk && <p className="text-[14px] font-bold text-oscuro-rojo">Alto riesgo de clima en este ciclo</p>}
-        </>
-      )}
+            {cycle.light ? <LightTag light={cycle.light} /> : <p className="text-[14px] text-texto-secundario">Sin luz para este ciclo</p>}
+            {cycle.light_default && cycle.light_default !== cycle.light && (
+              <p className="text-[14px]">
+                Con el criterio de AgroSense: <span className="font-bold">{LIGHT_LABEL[cycle.light_default].toLowerCase()}</span>
+              </p>
+            )}
+            {cycle.limiting_signal && (
+              <p className="text-[14px] font-bold text-texto-secundario">
+                Limita: {(SIGNAL_NAME[cycle.limiting_signal] ?? cycle.limiting_signal).toLowerCase()}
+              </p>
+            )}
+            {cycle.high_risk && <p className="text-[14px] font-bold text-oscuro-rojo">Alto riesgo de clima en este ciclo</p>}
+          </>
+        )}
+      </Link>
     </li>
   );
 }

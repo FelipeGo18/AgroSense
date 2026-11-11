@@ -659,7 +659,178 @@
                   "light": "green",
                   "light_default": "green",
                   "limiting_signal": "water",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 },
                 {
                   "cycle": 2,
@@ -670,7 +841,178 @@
                   "light": "yellow",
                   "light_default": "yellow",
                   "limiting_signal": "frost",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 },
                 {
                   "cycle": 3,
@@ -681,7 +1023,178 @@
                   "light": "green",
                   "light_default": "green",
                   "limiting_signal": "frost",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 }
               ],
               "soil_health": {
@@ -796,7 +1309,178 @@
                   "light": "yellow",
                   "light_default": "yellow",
                   "limiting_signal": "frost",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 },
                 {
                   "cycle": 3,
@@ -806,7 +1490,178 @@
                   "harvest_basis": "calendar",
                   "light": "green",
                   "light_default": "green",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 }
               ],
               "soil_health": {
@@ -906,7 +1761,178 @@
                 "light": "yellow",
                 "light_default": "yellow",
                 "limiting_signal": "frost",
-                "high_risk": false
+                "high_risk": false,
+                "diagnosis": {
+                  "suitability": {
+                    "level": "suitable",
+                    "score": 100,
+                    "basis": "municipality",
+                    "tmean_annual_c": 12.8,
+                    "altitude_m": 2660,
+                    "reasons": [
+                      "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                    ]
+                  },
+                  "window": {
+                    "sowing_start": "2027-08-02",
+                    "harvest_estimate": "2027-12-27",
+                    "harvest_basis": "calendar",
+                    "supply_semester": {
+                      "year": 2025,
+                      "semester": "B",
+                      "preliminary": true
+                    }
+                  },
+                  "overall": {
+                    "light": "green",
+                    "action": "sow",
+                    "high_risk": false,
+                    "weights_basis": "farmer",
+                    "limiting_signal": "frost",
+                    "reasons": [
+                      "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                    ]
+                  },
+                  "overall_default": {
+                    "light": "yellow",
+                    "action": "rotate",
+                    "high_risk": false,
+                    "weights_basis": "default",
+                    "limiting_signal": "supply",
+                    "reasons": [
+                      "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                    ]
+                  },
+                  "weights": {
+                    "water": 5,
+                    "frost": 3,
+                    "heat": 3,
+                    "soil": 3,
+                    "supply": 0,
+                    "market": 3
+                  },
+                  "signals": {
+                    "water": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 86,
+                      "counts": true,
+                      "indicators": [
+                        "water_deficit_mm"
+                      ],
+                      "reasons": [
+                        "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "imerg",
+                          "indicator": "precip_mm",
+                          "value": 410,
+                          "unit": "mm",
+                          "period": "2015-2024",
+                          "used": true
+                        },
+                        {
+                          "source_id": "nasa_power",
+                          "indicator": "precip_mm",
+                          "value": 380,
+                          "unit": "mm",
+                          "period": "2015-2024",
+                          "used": false
+                        },
+                        {
+                          "source_id": "nasa_power",
+                          "indicator": "soil_wetness_root",
+                          "value": 0.61,
+                          "unit": "fracción",
+                          "used": false
+                        }
+                      ]
+                    },
+                    "frost": {
+                      "status": "available",
+                      "level": "moderate",
+                      "critical": false,
+                      "score": 58,
+                      "counts": true,
+                      "indicators": [
+                        "frost_freq_pct"
+                      ],
+                      "reasons": [
+                        "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                      ]
+                    },
+                    "heat": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 94,
+                      "counts": true,
+                      "indicators": [
+                        "tmax_p90_c"
+                      ],
+                      "reasons": [
+                        "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                      ]
+                    },
+                    "soil": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 80,
+                      "counts": true,
+                      "indicators": [
+                        "ph"
+                      ],
+                      "reasons": [
+                        "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                      ]
+                    },
+                    "supply": {
+                      "status": "available",
+                      "level": "unfavorable",
+                      "critical": false,
+                      "score": 30,
+                      "counts": false,
+                      "indicators": [
+                        "planted_change_pct"
+                      ],
+                      "reasons": [
+                        "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "eva",
+                          "indicator": "planted_change_pct",
+                          "value": 35,
+                          "unit": "%",
+                          "period": "2025-B",
+                          "preliminary": true,
+                          "used": true
+                        }
+                      ]
+                    },
+                    "market": {
+                      "status": "insufficient_data",
+                      "critical": false,
+                      "counts": true,
+                      "indicators": [],
+                      "reasons": [
+                        "Sin datos de mercado para la zona"
+                      ]
+                    }
+                  },
+                  "limitations": [
+                    "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                    "Datos EVA del último año son preliminares",
+                    "Suelo estimado para el municipio, no para su lote"
+                  ],
+                  "versions": {
+                    "dataset": "ejemplo",
+                    "rules": "ejemplo"
+                  }
+                }
               },
               {
                 "cycle": 2,
@@ -917,7 +1943,178 @@
                 "light": "green",
                 "light_default": "green",
                 "limiting_signal": "water",
-                "high_risk": false
+                "high_risk": false,
+                "diagnosis": {
+                  "suitability": {
+                    "level": "suitable",
+                    "score": 100,
+                    "basis": "municipality",
+                    "tmean_annual_c": 12.8,
+                    "altitude_m": 2660,
+                    "reasons": [
+                      "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                    ]
+                  },
+                  "window": {
+                    "sowing_start": "2027-08-02",
+                    "harvest_estimate": "2027-12-27",
+                    "harvest_basis": "calendar",
+                    "supply_semester": {
+                      "year": 2025,
+                      "semester": "B",
+                      "preliminary": true
+                    }
+                  },
+                  "overall": {
+                    "light": "green",
+                    "action": "sow",
+                    "high_risk": false,
+                    "weights_basis": "farmer",
+                    "limiting_signal": "frost",
+                    "reasons": [
+                      "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                    ]
+                  },
+                  "overall_default": {
+                    "light": "yellow",
+                    "action": "rotate",
+                    "high_risk": false,
+                    "weights_basis": "default",
+                    "limiting_signal": "supply",
+                    "reasons": [
+                      "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                    ]
+                  },
+                  "weights": {
+                    "water": 5,
+                    "frost": 3,
+                    "heat": 3,
+                    "soil": 3,
+                    "supply": 0,
+                    "market": 3
+                  },
+                  "signals": {
+                    "water": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 86,
+                      "counts": true,
+                      "indicators": [
+                        "water_deficit_mm"
+                      ],
+                      "reasons": [
+                        "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "imerg",
+                          "indicator": "precip_mm",
+                          "value": 410,
+                          "unit": "mm",
+                          "period": "2015-2024",
+                          "used": true
+                        },
+                        {
+                          "source_id": "nasa_power",
+                          "indicator": "precip_mm",
+                          "value": 380,
+                          "unit": "mm",
+                          "period": "2015-2024",
+                          "used": false
+                        },
+                        {
+                          "source_id": "nasa_power",
+                          "indicator": "soil_wetness_root",
+                          "value": 0.61,
+                          "unit": "fracción",
+                          "used": false
+                        }
+                      ]
+                    },
+                    "frost": {
+                      "status": "available",
+                      "level": "moderate",
+                      "critical": false,
+                      "score": 58,
+                      "counts": true,
+                      "indicators": [
+                        "frost_freq_pct"
+                      ],
+                      "reasons": [
+                        "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                      ]
+                    },
+                    "heat": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 94,
+                      "counts": true,
+                      "indicators": [
+                        "tmax_p90_c"
+                      ],
+                      "reasons": [
+                        "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                      ]
+                    },
+                    "soil": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 80,
+                      "counts": true,
+                      "indicators": [
+                        "ph"
+                      ],
+                      "reasons": [
+                        "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                      ]
+                    },
+                    "supply": {
+                      "status": "available",
+                      "level": "unfavorable",
+                      "critical": false,
+                      "score": 30,
+                      "counts": false,
+                      "indicators": [
+                        "planted_change_pct"
+                      ],
+                      "reasons": [
+                        "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "eva",
+                          "indicator": "planted_change_pct",
+                          "value": 35,
+                          "unit": "%",
+                          "period": "2025-B",
+                          "preliminary": true,
+                          "used": true
+                        }
+                      ]
+                    },
+                    "market": {
+                      "status": "insufficient_data",
+                      "critical": false,
+                      "counts": true,
+                      "indicators": [],
+                      "reasons": [
+                        "Sin datos de mercado para la zona"
+                      ]
+                    }
+                  },
+                  "limitations": [
+                    "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                    "Datos EVA del último año son preliminares",
+                    "Suelo estimado para el municipio, no para su lote"
+                  ],
+                  "versions": {
+                    "dataset": "ejemplo",
+                    "rules": "ejemplo"
+                  }
+                }
               },
               {
                 "cycle": 3,
@@ -928,7 +2125,178 @@
                 "light": "yellow",
                 "light_default": "yellow",
                 "limiting_signal": "water",
-                "high_risk": false
+                "high_risk": false,
+                "diagnosis": {
+                  "suitability": {
+                    "level": "suitable",
+                    "score": 100,
+                    "basis": "municipality",
+                    "tmean_annual_c": 12.8,
+                    "altitude_m": 2660,
+                    "reasons": [
+                      "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                    ]
+                  },
+                  "window": {
+                    "sowing_start": "2027-08-02",
+                    "harvest_estimate": "2027-12-27",
+                    "harvest_basis": "calendar",
+                    "supply_semester": {
+                      "year": 2025,
+                      "semester": "B",
+                      "preliminary": true
+                    }
+                  },
+                  "overall": {
+                    "light": "green",
+                    "action": "sow",
+                    "high_risk": false,
+                    "weights_basis": "farmer",
+                    "limiting_signal": "frost",
+                    "reasons": [
+                      "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                    ]
+                  },
+                  "overall_default": {
+                    "light": "yellow",
+                    "action": "rotate",
+                    "high_risk": false,
+                    "weights_basis": "default",
+                    "limiting_signal": "supply",
+                    "reasons": [
+                      "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                    ]
+                  },
+                  "weights": {
+                    "water": 5,
+                    "frost": 3,
+                    "heat": 3,
+                    "soil": 3,
+                    "supply": 0,
+                    "market": 3
+                  },
+                  "signals": {
+                    "water": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 86,
+                      "counts": true,
+                      "indicators": [
+                        "water_deficit_mm"
+                      ],
+                      "reasons": [
+                        "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "imerg",
+                          "indicator": "precip_mm",
+                          "value": 410,
+                          "unit": "mm",
+                          "period": "2015-2024",
+                          "used": true
+                        },
+                        {
+                          "source_id": "nasa_power",
+                          "indicator": "precip_mm",
+                          "value": 380,
+                          "unit": "mm",
+                          "period": "2015-2024",
+                          "used": false
+                        },
+                        {
+                          "source_id": "nasa_power",
+                          "indicator": "soil_wetness_root",
+                          "value": 0.61,
+                          "unit": "fracción",
+                          "used": false
+                        }
+                      ]
+                    },
+                    "frost": {
+                      "status": "available",
+                      "level": "moderate",
+                      "critical": false,
+                      "score": 58,
+                      "counts": true,
+                      "indicators": [
+                        "frost_freq_pct"
+                      ],
+                      "reasons": [
+                        "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                      ]
+                    },
+                    "heat": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 94,
+                      "counts": true,
+                      "indicators": [
+                        "tmax_p90_c"
+                      ],
+                      "reasons": [
+                        "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                      ]
+                    },
+                    "soil": {
+                      "status": "available",
+                      "level": "favorable",
+                      "critical": false,
+                      "score": 80,
+                      "counts": true,
+                      "indicators": [
+                        "ph"
+                      ],
+                      "reasons": [
+                        "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                      ]
+                    },
+                    "supply": {
+                      "status": "available",
+                      "level": "unfavorable",
+                      "critical": false,
+                      "score": 30,
+                      "counts": false,
+                      "indicators": [
+                        "planted_change_pct"
+                      ],
+                      "reasons": [
+                        "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "eva",
+                          "indicator": "planted_change_pct",
+                          "value": 35,
+                          "unit": "%",
+                          "period": "2025-B",
+                          "preliminary": true,
+                          "used": true
+                        }
+                      ]
+                    },
+                    "market": {
+                      "status": "insufficient_data",
+                      "critical": false,
+                      "counts": true,
+                      "indicators": [],
+                      "reasons": [
+                        "Sin datos de mercado para la zona"
+                      ]
+                    }
+                  },
+                  "limitations": [
+                    "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                    "Datos EVA del último año son preliminares",
+                    "Suelo estimado para el municipio, no para su lote"
+                  ],
+                  "versions": {
+                    "dataset": "ejemplo",
+                    "rules": "ejemplo"
+                  }
+                }
               }
             ],
             "soil_health": {
@@ -1091,7 +2459,178 @@
                   "light": "green",
                   "light_default": "green",
                   "limiting_signal": "water",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 },
                 {
                   "cycle": 2,
@@ -1102,7 +2641,178 @@
                   "light": "yellow",
                   "light_default": "yellow",
                   "limiting_signal": "frost",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 },
                 {
                   "cycle": 3,
@@ -1113,7 +2823,178 @@
                   "light": "green",
                   "light_default": "green",
                   "limiting_signal": "frost",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 }
               ],
               "soil_health": {
@@ -1221,7 +3102,178 @@
                   "light": "yellow",
                   "light_default": "yellow",
                   "limiting_signal": "frost",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 },
                 {
                   "cycle": 3,
@@ -1231,7 +3283,178 @@
                   "harvest_basis": "calendar",
                   "light": "green",
                   "light_default": "green",
-                  "high_risk": false
+                  "high_risk": false,
+                  "diagnosis": {
+                    "suitability": {
+                      "level": "suitable",
+                      "score": 100,
+                      "basis": "municipality",
+                      "tmean_annual_c": 12.8,
+                      "altitude_m": 2660,
+                      "reasons": [
+                        "La temperatura media anual del municipio (12,8 °C, corregida a 2.660 m) está dentro del rango de la papa (8 a 16 °C)"
+                      ]
+                    },
+                    "window": {
+                      "sowing_start": "2027-08-02",
+                      "harvest_estimate": "2027-12-27",
+                      "harvest_basis": "calendar",
+                      "supply_semester": {
+                        "year": 2025,
+                        "semester": "B",
+                        "preliminary": true
+                      }
+                    },
+                    "overall": {
+                      "light": "green",
+                      "action": "sow",
+                      "high_risk": false,
+                      "weights_basis": "farmer",
+                      "limiting_signal": "frost",
+                      "reasons": [
+                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      ]
+                    },
+                    "overall_default": {
+                      "light": "yellow",
+                      "action": "rotate",
+                      "high_risk": false,
+                      "weights_basis": "default",
+                      "limiting_signal": "supply",
+                      "reasons": [
+                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      ]
+                    },
+                    "weights": {
+                      "water": 5,
+                      "frost": 3,
+                      "heat": 3,
+                      "soil": 3,
+                      "supply": 0,
+                      "market": 3
+                    },
+                    "signals": {
+                      "water": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 86,
+                        "counts": true,
+                        "indicators": [
+                          "water_deficit_mm"
+                        ],
+                        "reasons": [
+                          "En 7 de los últimos 10 años, la lluvia de agosto a diciembre cubrió lo que necesita la papa"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "imerg",
+                            "indicator": "precip_mm",
+                            "value": 410,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": true
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "precip_mm",
+                            "value": 380,
+                            "unit": "mm",
+                            "period": "2015-2024",
+                            "used": false
+                          },
+                          {
+                            "source_id": "nasa_power",
+                            "indicator": "soil_wetness_root",
+                            "value": 0.61,
+                            "unit": "fracción",
+                            "used": false
+                          }
+                        ]
+                      },
+                      "frost": {
+                        "status": "available",
+                        "level": "moderate",
+                        "critical": false,
+                        "score": 58,
+                        "counts": true,
+                        "indicators": [
+                          "frost_freq_pct"
+                        ],
+                        "reasons": [
+                          "Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años"
+                        ]
+                      },
+                      "heat": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 94,
+                        "counts": true,
+                        "indicators": [
+                          "tmax_p90_c"
+                        ],
+                        "reasons": [
+                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        ]
+                      },
+                      "soil": {
+                        "status": "available",
+                        "level": "favorable",
+                        "critical": false,
+                        "score": 80,
+                        "counts": true,
+                        "indicators": [
+                          "ph"
+                        ],
+                        "reasons": [
+                          "pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"
+                        ]
+                      },
+                      "supply": {
+                        "status": "available",
+                        "level": "unfavorable",
+                        "critical": false,
+                        "score": 30,
+                        "counts": false,
+                        "indicators": [
+                          "planted_change_pct"
+                        ],
+                        "reasons": [
+                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_change_pct",
+                            "value": 35,
+                            "unit": "%",
+                            "period": "2025-B",
+                            "preliminary": true,
+                            "used": true
+                          }
+                        ]
+                      },
+                      "market": {
+                        "status": "insufficient_data",
+                        "critical": false,
+                        "counts": true,
+                        "indicators": [],
+                        "reasons": [
+                          "Sin datos de mercado para la zona"
+                        ]
+                      }
+                    },
+                    "limitations": [
+                      "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
+                      "Datos EVA del último año son preliminares",
+                      "Suelo estimado para el municipio, no para su lote"
+                    ],
+                    "versions": {
+                      "dataset": "ejemplo",
+                      "rules": "ejemplo"
+                    }
+                  }
                 }
               ],
               "soil_health": {
@@ -1478,6 +3701,37 @@
               "months": [
                 {
                   "year": 2027,
+                  "month": 8,
+                  "status": "available",
+                  "stage": "initial",
+                  "need_mm": 60,
+                  "rain_mm": {
+                    "normal": 75,
+                    "dry": 52
+                  },
+                  "deficit_mm": {
+                    "normal": [
+                      0,
+                      0
+                    ],
+                    "dry": [
+                      0,
+                      0
+                    ]
+                  },
+                  "volume_m3": {
+                    "normal": [
+                      0,
+                      0
+                    ],
+                    "dry": [
+                      0,
+                      0
+                    ]
+                  }
+                },
+                {
+                  "year": 2027,
                   "month": 9,
                   "status": "available",
                   "stage": "development",
@@ -1516,6 +3770,68 @@
                   "rain_mm": {},
                   "deficit_mm": {},
                   "volume_m3": {}
+                },
+                {
+                  "year": 2027,
+                  "month": 11,
+                  "status": "available",
+                  "stage": "mid",
+                  "need_mm": 110,
+                  "rain_mm": {
+                    "normal": 118,
+                    "dry": 80
+                  },
+                  "deficit_mm": {
+                    "normal": [
+                      0,
+                      0
+                    ],
+                    "dry": [
+                      22,
+                      34
+                    ]
+                  },
+                  "volume_m3": {
+                    "normal": [
+                      0,
+                      0
+                    ],
+                    "dry": [
+                      277,
+                      428
+                    ]
+                  }
+                },
+                {
+                  "year": 2027,
+                  "month": 12,
+                  "status": "available",
+                  "stage": "late",
+                  "need_mm": 70,
+                  "rain_mm": {
+                    "normal": 52,
+                    "dry": 30
+                  },
+                  "deficit_mm": {
+                    "normal": [
+                      12,
+                      20
+                    ],
+                    "dry": [
+                      34,
+                      44
+                    ]
+                  },
+                  "volume_m3": {
+                    "normal": [
+                      151,
+                      252
+                    ],
+                    "dry": [
+                      428,
+                      554
+                    ]
+                  }
                 }
               ],
               "total_volume_m3": {
@@ -1560,11 +3876,74 @@
           },
           "soil_moisture": [
             {
+              "month": 8,
+              "source_id": "nasa_power",
+              "indicator": "soil_wetness_root",
+              "value": 0.62,
+              "unit": "fracción"
+            },
+            {
               "month": 9,
               "source_id": "nasa_power",
               "indicator": "soil_wetness_root",
-              "value": 0.61,
+              "value": 0.58,
               "unit": "fracción"
+            },
+            {
+              "month": 10,
+              "source_id": "nasa_power",
+              "indicator": "soil_wetness_root",
+              "value": 0.66,
+              "unit": "fracción"
+            },
+            {
+              "month": 11,
+              "source_id": "nasa_power",
+              "indicator": "soil_wetness_root",
+              "value": 0.7,
+              "unit": "fracción"
+            },
+            {
+              "month": 12,
+              "source_id": "nasa_power",
+              "indicator": "soil_wetness_root",
+              "value": 0.64,
+              "unit": "fracción"
+            },
+            {
+              "month": 8,
+              "source_id": "smap",
+              "indicator": "soil_moisture_surface",
+              "value": 0.31,
+              "unit": "m³/m³"
+            },
+            {
+              "month": 9,
+              "source_id": "smap",
+              "indicator": "soil_moisture_surface",
+              "value": 0.29,
+              "unit": "m³/m³"
+            },
+            {
+              "month": 10,
+              "source_id": "smap",
+              "indicator": "soil_moisture_surface",
+              "value": 0.34,
+              "unit": "m³/m³"
+            },
+            {
+              "month": 11,
+              "source_id": "smap",
+              "indicator": "soil_moisture_surface",
+              "value": 0.36,
+              "unit": "m³/m³"
+            },
+            {
+              "month": 12,
+              "source_id": "smap",
+              "indicator": "soil_moisture_surface",
+              "value": 0.3,
+              "unit": "m³/m³"
             }
           ],
           "sources": {
@@ -1752,6 +4131,94 @@
               {
                 "period": 1,
                 "ndvi_normal": 0.52
+              },
+              {
+                "period": 2,
+                "ndvi_normal": 0.5
+              },
+              {
+                "period": 3,
+                "ndvi_normal": 0.49
+              },
+              {
+                "period": 4,
+                "ndvi_normal": 0.5
+              },
+              {
+                "period": 5,
+                "ndvi_normal": 0.53
+              },
+              {
+                "period": 6,
+                "ndvi_normal": 0.58
+              },
+              {
+                "period": 7,
+                "ndvi_normal": 0.63
+              },
+              {
+                "period": 8,
+                "ndvi_normal": 0.67
+              },
+              {
+                "period": 9,
+                "ndvi_normal": 0.69
+              },
+              {
+                "period": 10,
+                "ndvi_normal": 0.7
+              },
+              {
+                "period": 11,
+                "ndvi_normal": 0.68
+              },
+              {
+                "period": 12,
+                "ndvi_normal": 0.64
+              },
+              {
+                "period": 13,
+                "ndvi_normal": 0.6
+              },
+              {
+                "period": 14,
+                "ndvi_normal": 0.57
+              },
+              {
+                "period": 15,
+                "ndvi_normal": 0.55
+              },
+              {
+                "period": 16,
+                "ndvi_normal": 0.54
+              },
+              {
+                "period": 17,
+                "ndvi_normal": 0.56
+              },
+              {
+                "period": 18,
+                "ndvi_normal": 0.61
+              },
+              {
+                "period": 19,
+                "ndvi_normal": 0.66
+              },
+              {
+                "period": 20,
+                "ndvi_normal": 0.7
+              },
+              {
+                "period": 21,
+                "ndvi_normal": 0.68
+              },
+              {
+                "period": 22,
+                "ndvi_normal": 0.62
+              },
+              {
+                "period": 23,
+                "ndvi_normal": 0.56
               }
             ]
           },
@@ -3529,9 +5996,9 @@
       }
     ],
     "version": {
-      "dataset_version": "2026.11.4",
+      "dataset_version": "2026.11.9",
       "rules_version": "0.1.0",
-      "created_at": "2026-11-09T22:31:14Z",
+      "created_at": "2026-11-11T13:25:05Z",
       "region": "Boyacá y Cundinamarca, Colombia",
       "default_weights": {
         "water": 3,
@@ -3562,6 +6029,18 @@
           "license": "Del proyecto",
           "citation": null,
           "notes": "Solo para cómo se dibuja cada cultivo (`archetype`) y su nombre en la web. No es un dato agronómico."
+        },
+        {
+          "source_id": "cenicafe_lapse_rate",
+          "name": "Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3",
+          "institution": "Centro Nacional de Investigaciones de Café (Cenicafé)",
+          "url": "https://revistas.unal.edu.co/index.php/arh/article/view/92185",
+          "downloaded_at": "2026-11-09",
+          "period_covered": null,
+          "coverage": "Región Andina de Colombia, de 100 a 4482 m",
+          "license": null,
+          "citation": "Chaves Córdoba, B. y Jaramillo Robledo, A. (1999). Regionalización de la temperatura del aire en Colombia. Avances en Recursos Hidráulicos, 6, 37-42.",
+          "notes": "Avances en Recursos Hidráulicos, n.º 6 (septiembre de 1999), pp. 37-42. Pendiente de la temperatura máxima media (0,0058 °C/m) y de la mínima media (0,0059 °C/m) con la altitud en la región Andina. Se usa para corregir por altitud las temperaturas de NASA POWER."
         },
         {
           "source_id": "dane_divipola",
@@ -3634,6 +6113,66 @@
           "license": "Publicación de la FAO, uso con cita",
           "citation": null,
           "notes": "Las legumbres, y las leguminosas en general, fijan nitrógeno del aire y mejoran el suelo."
+        },
+        {
+          "source_id": "fao_soils_bulletin_55",
+          "name": "FAO Soils Bulletin 55: Guidelines, land evaluation for irrigated agriculture (1985), formato 5",
+          "institution": "FAO",
+          "url": "https://www.fao.org/4/x5648e/x5648e05.htm",
+          "downloaded_at": "2026-11-10",
+          "period_covered": "1985",
+          "coverage": "Mundial",
+          "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
+          "notes": "Para los cortes de nivel 70 y 40 de backend/config/thresholds.yaml (HU-075). Rendimiento relativo por clase de aptitud: S1 de 1,0 a 0,9; S2 de 0,9 a 0,7; S3 de 0,7 a 0,6; N1 de 0,6 a 0,4; N2 menos de 0,4. La nota 3 dice: «Relative yields indicated are examples only». Es un respaldo débil: en AgroSense los cortes 70 y 40 son una convención."
+        },
+        {
+          "source_id": "fews_net_wrsi",
+          "name": "FEWS NET · Water Requirement Satisfaction Index (WRSI) y sus clases",
+          "institution": "Famine Early Warning Systems Network (FEWS NET) y USGS; clases publicadas por el Banco Mundial",
+          "url": "https://earlywarning.usgs.gov/fews/product/890",
+          "downloaded_at": "2026-11-10",
+          "period_covered": null,
+          "coverage": "Mundial (pensado para cultivos de secano en África)",
+          "license": "Información pública del USGS; las clases, del catálogo de datos del Banco Mundial (CC BY 4.0)",
+          "citation": null,
+          "notes": "Para los cortes de la señal de agua en backend/config/thresholds.yaml (HU-075). El WRSI es la evapotranspiración real de la temporada sobre la que pide el cultivo, por 100: «A case of 'no deficit' will result in a WRSI value of 100» y «A seasonal WRSI value less than 50 is regarded as a crop failure condition (Smith, 1992)» (USGS). Clases del Banco Mundial (https://datacatalog.worldbank.org/search/dataset/0066866/gridded-dekadal-water-requirement-satisfaction-index-wrsi-for-africa): < 50 Failure; 50-60 Poor; 60-80 Mediocre; 80-95 Average; 95-99 Good; 99-100 Very Good. Es una fuente derivada: solo vale si la cobertura de agua de AgroSense se calcula igual (HU-144)."
+        },
+        {
+          "source_id": "mapa_zarc_2025",
+          "name": "Zoneamento Agrícola de Risco Climático (ZARC): Portaria SPA/MAPA n.º 388, del 21 de agosto de 2025",
+          "institution": "Ministério da Agricultura e Pecuária (MAPA), Brasil",
+          "url": "https://www.gov.br/agricultura/pt-br/assuntos/riscos-seguro/programa-nacional-de-zoneamento-agricola-de-risco-climatico/portarias/2025-2026/minas-gerais-mg/POF5FF1.PDF",
+          "downloaded_at": "2026-11-10",
+          "period_covered": "Ciclo 2025-2026",
+          "coverage": "Brasil (Minas Gerais, maíz de segunda cosecha)",
+          "license": "Acto oficial del gobierno de Brasil, publicado en el Diário Oficial",
+          "citation": null,
+          "notes": "Para los cortes de la señal de heladas en backend/config/thresholds.yaml (HU-075). Punto 1.6: tres niveles de riesgo, «20%, 30%, 40%». Punto 1.9.a.1: la helada es la probabilidad de «temperaturas mínimas menores ou igual a 2°C». El ZARC acepta pérdidas en hasta 2 de cada 10 años (Santos y Martins, 2016, Revista de Política Agrícola XXV(3), https://rpa.sede.embrapa.br/RPA/article/download/1157/pdf/2423). Es una fuente derivada y de otro país: el 20/30/40 es el riesgo de todas las amenazas juntas, no solo de la helada. Respaldo cercano: Le Tacon (IRD), «Los riesgos de helada en el altiplano boliviano», planea la papa con un riesgo de helada del 25 % (https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers09-11/38556.pdf)."
+        },
+        {
+          "source_id": "nasa_power",
+          "name": "NASA POWER · Datos diarios por punto (comunidad AG)",
+          "institution": "NASA Langley Research Center, proyecto POWER (Prediction Of Worldwide Energy Resources)",
+          "url": "https://power.larc.nasa.gov/",
+          "downloaded_at": "2026-11-10T14:10:09+00:00",
+          "period_covered": "Del 1981-01-01 al 2026-11-07",
+          "coverage": "20 celdas de 0,5° × 0,625° que cubren la región",
+          "license": "La página de POWER no da una licencia; pide citar la fuente (https://power.larc.nasa.gov/docs/referencing/)",
+          "citation": "The data was obtained from National Aeronautics and Space Administration (NASA) Langley Research Center's Prediction Of Worldwide Energy Resources (POWER) project funded through the NASA Earth Science Division. The data was obtained from the POWER Project's Daily 2.10.3 version on 2026/11/10.",
+          "notes": "Es un reanálisis (MERRA-2 y GEOS-IT): un modelo con observaciones asimiladas, no una observación directa. Celda de 0,5° de latitud por 0,625° de longitud (unos 55 × 70 km): es un dato de la zona, no del lote. Temperatura mínima y máxima a 2 m (T2M_MIN, T2M_MAX), lluvia corregida (PRECTOTCORR), humedad del suelo de los primeros 5 cm y de la zona de raíces (GWETTOP, GWETROOT, de 0 a 1, de un modelo), radiación solar (ALLSKY_SFC_SW_DWN, desde 1984), viento a 2 m (WS2M) y humedad relativa a 2 m (RH2M). Las temperaturas se corrigen por altitud con la altura de la celda que da POWER, la altitud del municipio y el gradiente térmico de pipeline/region.yaml. La ET0 de climate_month se calcula con estas variables por Penman-Monteith de FAO-56 (fuente fao_56). Los días sin dato (-999) quedan nulos, nunca rellenos."
+        },
+        {
+          "source_id": "nasadem",
+          "name": "NASADEM HGT v001: modelo de elevación de 1 segundo de arco (unos 30 m)",
+          "institution": "NASA Jet Propulsion Laboratory (JPL); distribuido por el LP DAAC de la NASA y el USGS",
+          "url": "https://doi.org/10.5067/MEaSUREs/NASADEM/NASADEM_HGT.001",
+          "downloaded_at": "2026-11-10T12:58:09+00:00",
+          "period_covered": "Misión SRTM, del 11 al 21 de febrero de 2000",
+          "coverage": "Mundial entre 56° S y 60° N; bajados los mosaicos n03w075, n04w075, n04w074, n04w073, n05w075, n05w074, n05w073, n06w075, n06w074, n06w073, n06w072, n07w073, n07w072",
+          "license": "Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita",
+          "citation": "NASA JPL (2020). NASADEM Merged DEM Global 1 arc second V001. NASA EOSDIS Land Processes DAAC. https://doi.org/10.5067/MEaSUREs/NASADEM/NASADEM_HGT.001",
+          "notes": "Copia en GeoTIFF de Microsoft Planetary Computer, sin cuenta. Altitud de cada celda de 250 m: promedio de sus 9 × 9 píxeles; pendiente: mediana de la de sus píxeles, calculada a 30 m. La de un municipio es la mediana de sus celdas."
         },
         {
           "source_id": "upra_cebolla_bulbo",
