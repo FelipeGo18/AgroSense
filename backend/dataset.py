@@ -131,7 +131,14 @@ def _stages(rows: list[dict[str, Any]]) -> dict[str, list[StageSpan]]:
     """Las filas ya vienen en el orden de las etapas (el pipeline las ordena)."""
     stages: dict[str, list[StageSpan]] = {}
     for row in rows:
-        stages.setdefault(row["crop_id"], []).append(StageSpan(row["stage"], row["days"]))
+        span = StageSpan(
+            row["stage"],
+            row["days"],
+            kc=row.get("kc"),
+            frost_sensitive=row.get("frost_sensitive"),
+            heat_sensitive=row.get("heat_sensitive"),
+        )
+        stages.setdefault(row["crop_id"], []).append(span)
     return stages
 
 
