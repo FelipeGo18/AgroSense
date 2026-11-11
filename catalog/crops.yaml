@@ -301,7 +301,8 @@ crops:
     species: "Avena sativa + Vicia sativa ssp. sativa"
     ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=481 y https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=238003"
     mixture_rule: "Mezcla de dos especies: los rangos son la intersección (lo que toleran las dos). Cada nota dice de qué especie sale cada límite."
-    family: {v: Gramineae, s: fao_ecocrop, n: "La avena es Gramineae y la vicia Leguminosae: para el corte de plagas (HU-062) cuentan las dos familias."}
+    family: {v: Gramineae, s: fao_ecocrop, n: "Familia de la avena (Avena sativa), la especie principal de la mezcla. La de la vicia va en `secondary_families`."}
+    secondary_families: {v: [Leguminosae], s: fao_ecocrop, n: "La vicia (Vicia sativa) es Leguminosae (FAO EcoCrop, vista cropView id=238003). Cuenta en el corte de plagas, no en el filtro de familia seguida (decisión 16)."}
     fixes_nitrogen: {v: true, s: fao_iyp_2019, n: "Por la vicia, que es leguminosa; la avena no fija."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
     root_type: {v: null, n: "Pendiente de HU-062."}
