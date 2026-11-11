@@ -21,7 +21,7 @@ estado: pendiente
 
 Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de EVA (EP-03).
 
-**Supuesto de la región piloto (decisión 11):** el reto aún no confirma la región ni los datos (HU-002, enunciado del 28 de octubre). Los productos NASA cubren todo el mundo, pero varias piezas de esta épica son de Colombia: los municipios y sus límites del DANE, el criterio de helada de la UPRA con datos del IDEAM, la comprobación contra estaciones del IDEAM y contra la Gobernación de Boyacá. Esas piezas viven en los adaptadores y en la configuración del pipeline, no en el motor (R7). Si la región cambia, se reemplazan con su fuente.
+**Región piloto (decisión 11):** confirmada el 28 de octubre de 2026: Boyacá y Cundinamarca, con sede en Duitama (HU-002). Los productos NASA cubren todo el mundo, pero varias piezas de esta épica son de Colombia: los municipios y sus límites del DANE, el criterio de helada de la UPRA con datos del IDEAM, la comprobación contra estaciones del IDEAM y contra la Gobernación de Boyacá. Esas piezas viven en los adaptadores y en la configuración del pipeline, no en el motor (R7). Si la región cambia, se reemplazan con su fuente.
 
 **Acceso:** IMERG, NASADEM, MODIS y SMAP piden una cuenta de NASA Earthdata (por verificar para cada producto). Las credenciales van en variables de entorno, nunca en el repositorio. Con la caché, el dataset se reconstruye sin volver a descargar (HU-123).
 

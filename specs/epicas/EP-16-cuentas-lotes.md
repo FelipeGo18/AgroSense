@@ -115,7 +115,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-163 · Consentimiento y tratamiento de datos
 
 - **Historia:** Como agricultor, quiero saber qué se guarda de mí y aceptarlo, para confiar en la app.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [x] Texto corto en español claro de qué se guarda y para qué, enlazado a la política de tratamiento de datos (Ley 1581 de 2012). Hecho el 13 de octubre de 2026: el consentimiento de «Crear cuenta» enlaza a la página de la política, que ya existe; su revisión legal es el criterio de abajo
   - [x] Sin aceptar, no se crea la cuenta: la web no envía nada y la API responde 422
@@ -269,4 +269,4 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Funciona en el mapa de dibujo (HU-164) y en Mi finca (HU-169)
   - [ ] Entrada de GIBS en `sources` con sus condiciones de uso verificadas
 - **Reglas que aplican:** R5, R8, R10
-- **Notas:** Decisión 12. Resuelve la «capa satelital por definir» de `specs/05-frontend.md`. Los nombres exactos de las capas, su resolución y las condiciones de uso se verifican antes de usarlas (`docs/fuentes.md`). Es lo segundo que se recorta si falta tiempo, después de SMAP. Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. Resuelve la «capa satelital por definir» de `specs/05-frontend.md`. Los nombres exactos de las capas, su resolución y las condiciones de uso se verifican antes de usarlas (`docs/fuentes.md`). Es lo primero de la NASA que se recorta si falta tiempo, antes de SMAP (decisiones 14 y 15). Agregada el 11 de octubre de 2026.
