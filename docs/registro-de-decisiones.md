@@ -118,5 +118,6 @@ No se deciden por preferencia: se resuelven con el resultado de la HU indicada y
 | Acceso con cuenta de NASA Earthdata y tamaño de las descargas de IMERG, NASADEM, MODIS y SMAP | HU-206 a HU-210 | 24 oct | Datos |
 | Capas, resolución y condiciones de uso de NASA GIBS | HU-211 | 31 oct | Web |
 | Fuente de las reglas de salud del suelo (cortes de `nitrogen`, `organic_carbon`, `soil_cover` y `pest_break`) | HU-062 | 13 nov (fin de la fase 0) | Producto y agro |
+| ¿Qué lluvia calcula `water`: IMERG o POWER? IMERG también sobrestima en el altiplano (1,85 veces el IDEAM; POWER 1,80), pero sigue mejor el ciclo del año (0,87 frente a 0,81) y acierta entre 1000 y 2000 m. Y ¿la normal de IMERG es 2001–2024 con 20 años? | HU-207 | 13 nov (fin de la fase 0) | Felipe |
 | Texto del consentimiento del MVP (la versión 3 nombra funciones que pasaron a P1) | HU-163 | 31 oct | Producto |
 | ¿El inicio nombra los datos de la NASA? (hoy «no habla de NASA») | HU-173 | 31 oct | Web y Producto |

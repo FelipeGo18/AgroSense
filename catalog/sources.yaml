@@ -6,7 +6,7 @@
 #
 # La región es la de `pipeline/region.yaml` (`region.id`). Cambia una fuente: cambia aquí y sube la versión (R4).
 
-version: "1.0.0"
+version: "1.1.0"
 
 regions:
   co-boyaca-cundinamarca:
@@ -16,6 +16,8 @@ regions:
       # estaciones): por eso la señal lleva siempre el aviso de `rain_caveat`. Cuando llegue IMERG, `rain` pasa a `imerg`,
       # `nasa_power` pasa a `rain_contrast`, el aviso se quita y sube la versión; el motor no cambia (R6).
       rain: nasa_power
+      # IMERG ya se publica (HU-207, `precip_month`) y se muestra para contrastar. Frente a 169 estaciones del IDEAM del
+      # altiplano también sobrestima (mediana 1,85 veces, POWER 1,80): pasar `rain` a IMERG queda por decidir con Felipe.
       rain_contrast: [imerg]
       rain_caveat: >-
         La lluvia sale de NASA POWER, un modelo (reanálisis) que en el altiplano la sobrestima: de 1,7 a 2,7 veces la
@@ -31,7 +33,6 @@ regions:
 # Fuentes que todavía no tienen adaptador, con la HU que las trae. Mientras estén aquí, lo que las usa es
 # `insufficient_data` (R1) y el contraste no se muestra. Cuando la HU publique la fuente, sale de esta lista.
 planned:
-  imerg: HU-207
   soilgrids: HU-181
   eva: HU-031
   smap: HU-210
