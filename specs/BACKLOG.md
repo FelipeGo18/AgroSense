@@ -75,15 +75,15 @@
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-091 | Elegir municipio, cultivo y cuándo sembrar | P0 | M | hecha | En `/diagnostico`; la consulta va en la dirección; con lote, municipio y riego del lote (10 nov) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-092 | Semáforo con señales, razones y limitaciones | P0 | M | hecha | Seis señales con calificación, «Lo que más limita», fuentes y limitaciones; rótulo de la cosecha según `harvest_basis` (10 nov) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-194 | Cultivo no apto y mejores ventanas | P0 | S | hecha | Letrero de no apto con nota y semillas; mejores fechas que consultan esa fecha; sin ventanas, el enlace a estrategias (10 nov). Alternativas P1 |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-202 | Ajustar mis prioridades al consultar | P0 | S | en curso | Controles, `priorities`, todo en 0 y guardado (navegador o perfil) hechos (10 nov); falta enviarlas a las estrategias con HU-214 |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-202 | Ajustar mis prioridades al consultar | P0 | S | hecha | Controles, `priorities`, todo en 0 y guardado (navegador o perfil) (10 nov); se envían como `signal_priorities` a las estrategias (11 nov, HU-214). Lo de HU-180 es P1 |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-203 | Dos luces y cultivos alternativos | P0 | M | hecha | Una o dos luces con su acción, lo que más limita y por qué difieren; «No cuenta» y «Cuenta siempre»; enlace a estrategias (10 nov). Las alternativas son P1 |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-093 | Gráfica de la lluvia de la ventana | P0 | S | pendiente | Reducida a una gráfica (antes M) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-094 | Estados de carga, vacío y error | P0 | S | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-219 | Pantalla «Qué cambió en su zona» | P0 | M | pendiente | Nueva |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-095 | Mapa regional por semáforo | P1 | L | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-096 | Uso desde el celular | P0 | S | pendiente | |
-| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-214 | Entrada a las estrategias, con o sin cuenta | P0 | M | pendiente | Nueva |
-| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-101 | Prioridades del agricultor | P0 | S | pendiente | |
+| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-214 | Entrada a las estrategias, con o sin cuenta | P0 | M | hecha | En `/consultar`, con o sin lote; el área sin cuenta queda en el navegador; un resumen hasta HU-102 (11 nov) |
+| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-101 | Prioridades del agricultor | P0 | S | hecha | Cuatro controles que empiezan en 3; con todas en 0 no se consulta (11 nov, con HU-214) |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-102 | Estrategias con ciclos, desglose y salud del suelo | P0 | L | pendiente | Antes M |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-215 | Ciclo de una estrategia | P0 | M | pendiente | Nueva |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-111 | Reevaluar con cambios en memoria | P1 | M | pendiente | |
@@ -125,7 +125,7 @@
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-161 | Esquema de cuentas y migraciones | P0 | M | hecha | Esquema completo del contrato; `municipality_id` y `crop_id` se validan contra el catálogo publicado. Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-162 | Autenticación | P0 | L | hecha | Backend y pantallas hechos; revisión de seguridad hecha y arreglada; entrar y la sesión vencida no escriben de más (PR #19 y #20). Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-163 | Consentimiento y tratamiento de datos | P0 | S | en curso | Página de la política hecha, con el aviso de que falta la revisión legal; falta esa revisión y el canal de contacto |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | L | en curso | Entregas 1 y 2: lotes dibujados en el mapa o con el área a mano; falta «Ver estrategias» (HU-214) |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | L | en curso | Entregas 1 y 2: lotes dibujados en el mapa o con el área a mano; «Ver estrategias» desde el lote (11 nov); falta el riego del lote en el motor y el criterio de «Borrar este lote» (su parte P1 es HU-204) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-165 | Temporadas e historial del lote | P0 | L | en curso | Entrega 3: API y pantallas de siembra, cosecha y corregir; falta pasar el historial a las estrategias (EP-08) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-204 | Historial con lo borrado y «Restaurar» | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-166 | Borrar mi cuenta | P0 | S | hecha | `DELETE /me` con la contraseña, borrado en cascada probado y confirmación en Mi cuenta. Cerrada el 10 de noviembre de 2026 |
