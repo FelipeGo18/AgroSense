@@ -3,21 +3,66 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import URL
+from sqlalchemy import URL, make_url
+from sqlalchemy.exc import ArgumentError
+
+# Lo que se le dice a quien puso mal AGROSENSE_DATABASE_URL. Nunca repite la cadena: trae la clave de la base.
+BAD_DATABASE_URL = (
+    "AGROSENSE_DATABASE_URL no tiene la forma postgresql://usuario:clave@host:5432/base. Revise que empiece por "
+    "postgresql://, que no tenga comillas ni el nombre de la variable delante, que esté en una sola línea y que los "
+    "caracteres especiales de la clave (@ : / # %) estén codificados (por ejemplo, @ es %40)."
+)
+CLOUD_SCHEMES = ("postgresql", "postgres", "postgresql+psycopg")
+
+# Nombres con que se llega a un PostgreSQL de esta máquina o de Docker Compose. Cualquier otro es una base remota.
+LOCAL_HOSTS = frozenset({"db", "localhost", "127.0.0.1", "::1"})
+
+
+def is_local(url: URL) -> bool:
+    """Si la base está en esta máquina o en Docker Compose, y no en la nube."""
+    return (url.host or "localhost") in LOCAL_HOSTS
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Una variable vacía cuenta como no puesta: Docker Compose pasa `AGROSENSE_DATABASE_URL=` cuando el .env no la trae.
+    # `hide_input_in_errors`: si un valor no sirve, el error no lo repite. Así una cadena de conexión mal escrita no deja
+    # su clave en los logs (los de GitHub Actions son públicos).
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_ignore_empty=True, hide_input_in_errors=True)
 
-    # PostgreSQL de las cuentas. Las mismas variables que usa Docker Compose para crear la base de datos.
-    postgres_db: str
-    postgres_user: str
-    postgres_password: str
+    # PostgreSQL local de Docker Compose. Las mismas variables que usa Compose para crear la base de datos. Las pruebas
+    # usan siempre esta, aunque la API apunte a la nube (tests/conftest.py).
+    postgres_db: str = "agrosense"
+    postgres_user: str = "agrosense"
+    postgres_password: str = ""
     # 127.0.0.1 y no «localhost»: Docker publica el puerto solo en IPv4 y con «localhost» algunos sistemas prueban antes IPv6 y esperan.
     postgres_host: str = "127.0.0.1"
     postgres_port: int = 5432
+
+    # La base de datos en la nube: la cadena de conexión, `postgresql://usuario:clave@host:5432/base`. Con ella, la API y
+    # las migraciones usan esa base en vez de la local. Sin `sslmode` en la cadena se exige SSL.
+    cloud_database_url: str | None = Field(None, validation_alias="AGROSENSE_DATABASE_URL")
+
+    @field_validator("cloud_database_url")
+    @classmethod
+    def _check_cloud_database_url(cls, value: str | None) -> str | None:
+        """Se revisa al arrancar, con un mensaje que dice qué corregir. Los espacios de los bordes (un salto de línea
+        al pegarla) se quitan; lo demás no se adivina."""
+        if value is None or not value.strip():
+            return None
+        value = value.strip()
+        try:
+            url = make_url(value)
+        except ArgumentError:
+            raise ValueError(BAD_DATABASE_URL) from None
+        if url.drivername not in CLOUD_SCHEMES or not url.host or not url.database:
+            raise ValueError(BAD_DATABASE_URL)
+        return value
+
+    # Si la API aplica las migraciones al arrancar. Sin la variable: sí con la base local y no con la de la nube, que es
+    # compartida y se migra a mano (backend/README.md, «Base de datos en la nube»).
+    auto_migrate: bool | None = Field(None, validation_alias="AGROSENSE_AUTO_MIGRATE")
 
     # Orígenes de la web que pueden cambiar datos (protección contra CSRF), separados por coma.
     web_origins: str = "http://localhost:5173"
@@ -39,9 +84,9 @@ class Settings(BaseSettings):
     log_level: str = Field("INFO", validation_alias="AGROSENSE_LOG_LEVEL")
     log_format: str = Field("console", validation_alias="AGROSENSE_LOG_FORMAT")
 
-    @computed_field
     @property
-    def database_url(self) -> URL:
+    def local_database_url(self) -> URL:
+        """El PostgreSQL de Docker Compose, armado con las variables `POSTGRES_*`."""
         return URL.create(
             "postgresql+psycopg",
             username=self.postgres_user,
@@ -50,6 +95,21 @@ class Settings(BaseSettings):
             port=self.postgres_port,
             database=self.postgres_db,
         )
+
+    @computed_field
+    @property
+    def database_url(self) -> URL:
+        """La base que usan la API y las migraciones: la de la nube si está puesta; si no, la local."""
+        if not self.cloud_database_url:
+            return self.local_database_url
+        url = make_url(self.cloud_database_url).set(drivername="postgresql+psycopg")
+        if "sslmode" not in url.query:
+            url = url.update_query_dict({"sslmode": "require"})
+        return url
+
+    @property
+    def migrate_on_startup(self) -> bool:
+        return self.auto_migrate if self.auto_migrate is not None else is_local(self.database_url)
 
     @property
     def allowed_origins(self) -> frozenset[str]:

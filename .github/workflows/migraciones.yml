@@ -1,0 +1,185 @@
+# Migraciones de la base de datos (HU-229). Explicado en backend/README.md, «Migraciones con GitHub Actions».
+#
+# - En cada PR hacia desarrollo o produccion: revisa las migraciones sobre el código ya fusionado con la rama de destino,
+#   bloquea editar las que ya se fusionaron y comenta las nuevas con su SQL. No usa secretos.
+# - Al fusionar en desarrollo un cambio de migraciones: las aplica a la base de datos en la nube, una corrida a la vez y
+#   con copia cifrada antes. Usa los secretos del entorno `nube`, que crea el dueño del repositorio.
+#
+# El repositorio es público: ningún paso imprime datos de conexión ni deja una copia sin cifrar.
+
+name: Migraciones
+
+on:
+  pull_request:
+    branches: [desarrollo, produccion]
+  push:
+    branches: [desarrollo]
+    paths: ["backend/db/migrations/versions/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Así la imagen que arma build-push-action se llama `agrosense-app`, la que busca `docker compose run app`.
+  COMPOSE_PROJECT_NAME: agrosense
+
+jobs:
+  revisar:
+    name: Revisar migraciones
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # Si llegan varios commits seguidos al mismo PR, solo se prueba el último.
+    concurrency:
+      group: migraciones-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      BASE: origin/${{ github.base_ref }}
+      VERSIONS: backend/db/migrations/versions
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Sin filtro de rutas en el disparador: si el check se exige en la rama, tiene que correr en todo PR. Si el PR no
+      # toca el backend, termina aquí, en verde.
+      - name: ¿El PR toca el backend?
+        id: cambios
+        run: |
+          if git diff --name-only "$BASE"...HEAD | grep -qE '^(backend/|tests/|alembic\.ini|pyproject\.toml|uv\.lock|Dockerfile|docker-compose\.yml|\.github/workflows/migraciones\.yml)'; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "El PR no toca el backend: no hay migraciones que revisar." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Las migraciones fusionadas no se tocan
+        if: steps.cambios.outputs.backend == 'true'
+        run: |
+          touched=$(git diff --name-status --diff-filter=MDR "$BASE"...HEAD -- "$VERSIONS")
+          if [ -n "$touched" ]; then
+            echo "::error::Este PR edita, borra o renombra migraciones que ya están en ${{ github.base_ref }}. Lo que haya que corregir va en una migración nueva."
+            echo "$touched"
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.cambios.outputs.backend == 'true'
+
+      # Con la caché de GitHub: si no cambian las dependencias, la imagen sale en un minuto en vez de varios.
+      - name: Imagen de la app
+        if: steps.cambios.outputs.backend == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: agrosense-app:latest
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,scope=app,mode=max
+
+      - name: PostgreSQL local
+        if: steps.cambios.outputs.backend == 'true'
+        run: |
+          cp .env.example .env
+          docker compose up -d --wait db
+
+      # Sobre el código ya fusionado con la rama de destino (así hace checkout GitHub en un PR): si otra migración se
+      # fusionó primero, aquí aparecen las dos migraciones finales o el choque en la misma tabla.
+      - name: Pruebas de las migraciones
+        if: steps.cambios.outputs.backend == 'true'
+        run: >-
+          docker compose run --rm -T app uv run pytest -q
+          tests/accounts/test_migrations.py tests/accounts/test_backup.py
+          tests/accounts/test_base_en_la_nube.py tests/accounts/test_renumerar.py
+
+      - name: Comentario con las migraciones nuevas
+        if: steps.cambios.outputs.backend == 'true'
+        # En un PR desde un fork el token no puede comentar: no frena el check.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          added=$(git diff --name-only --diff-filter=A "$BASE"...HEAD -- "$VERSIONS" | grep -E '\.py$' || true)
+          if [ -z "$added" ]; then
+            echo "El PR no trae migraciones nuevas." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # shellcheck disable=SC2086
+          docker compose run --rm -T app python -m backend.db.report $added > comentario.md
+          cat comentario.md >> "$GITHUB_STEP_SUMMARY"
+          gh pr comment "$PR" --edit-last --body-file comentario.md 2>/dev/null || gh pr comment "$PR" --body-file comentario.md
+
+      - name: Apagar PostgreSQL
+        if: always() && steps.cambios.outputs.backend == 'true'
+        run: docker compose down -v
+
+  aplicar:
+    name: Aplicar en la base de la nube
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/desarrollo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: nube
+    # Nunca dos a la vez sobre la misma base, y nunca se corta una que ya empezó.
+    concurrency:
+      group: migraciones-nube
+      cancel-in-progress: false
+    env:
+      AGROSENSE_DATABASE_URL: ${{ secrets.AGROSENSE_DATABASE_URL }}
+      AGROSENSE_BACKUP_KEY: ${{ secrets.AGROSENSE_BACKUP_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secretos del entorno nube
+        run: |
+          if [ -z "$AGROSENSE_DATABASE_URL" ] || [ -z "$AGROSENSE_BACKUP_KEY" ]; then
+            echo "::error::Faltan los secretos AGROSENSE_DATABASE_URL o AGROSENSE_BACKUP_KEY del entorno nube. Los crea el dueño del repositorio (backend/README.md, «Migraciones con GitHub Actions»). Sin la clave de cifrado no se migra."
+            exit 1
+          fi
+          # El host y el usuario no son el secreto completo: se tapan en los logs, que son públicos.
+          for part in hostname username; do
+            value=$(python3 -c "import os, urllib.parse; print(getattr(urllib.parse.urlsplit(os.environ['AGROSENSE_DATABASE_URL']), '$part') or '')")
+            [ -n "$value" ] && echo "::add-mask::$value"
+          done
+
+      - uses: docker/setup-buildx-action@v3
+
+      # La misma caché que la revisión de los PR: la imagen ya suele estar armada.
+      - name: Imagen de la app
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: agrosense-app:latest
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,scope=app,mode=max
+
+      # La copia de seguridad y la migración las hace backend.db.migrate, con el pg_dump 17 de la imagen.
+      - name: Copiar y migrar
+        run: |
+          mkdir -p backups && chmod 777 backups
+          docker run --rm -e AGROSENSE_DATABASE_URL -v "$PWD/backups:/app/backups" agrosense-app python -m backend.db.migrate
+
+      - name: Cifrar la copia
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)" backups 2>/dev/null || true
+          shopt -s nullglob
+          for dump in backups/*.dump; do
+            gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+              --output "$dump.gpg" "$dump" <<< "$AGROSENSE_BACKUP_KEY"
+            shred -u "$dump"
+            echo "Copia cifrada: $(basename "$dump").gpg" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Guardar la copia cifrada (7 días)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: copia-base-nube-${{ github.run_id }}
+          path: backups/*.gpg
+          retention-days: 7
+          if-no-files-found: ignore

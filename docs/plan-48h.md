@@ -29,7 +29,7 @@ Un equipo de 6 personas rinde unas **168 horas útiles** en el evento (unas 28 p
 
 **El P0 no cabe en el evento en ningún escenario sin adelantar más o recortar.** Para que quepa hay que llegar con unas 192 horas de HU ya hechas (338 menos 146). Con código permitido, eso es el pipeline, los contratos y unas 68 horas más del motor puro (calificación, aptitud, balance hídrico, señales, estrategias) y de las pantallas en 2D, que se pueden construir contra datos de ejemplo. Si no se permite código, el orden de recorte se aplica desde el inicio. **Qué se adelanta y qué se recorta se decide con el equipo.**
 
-**HU-004 resuelta el 8 de noviembre de 2026: sí se puede llevar código preparado** (confirmado por Felipe). Aplica la última fila: el pipeline, los contratos, el motor puro y las pantallas en 2D se adelantan en la fase 0, y el orden de recorte no se aplica desde el inicio. Falta citar la regla con su enlace.
+**HU-004 resuelta el 8 de noviembre de 2026: sí se puede llevar código preparado** (confirmado por Felipe). Aplica la última fila: el pipeline, los contratos, el motor puro y las pantallas en 2D se adelantan en la fase 0, y el orden de recorte no se aplica desde el inicio. La regla está citada en HU-004: los términos 2026 de Space Apps (https://www.spaceappschallenge.org/legal/) no limitan cuándo se crea el trabajo.
 
 | Equipo | Horas útiles | ¿Cabe el P0 sin preparar nada antes? |
 |---|---|---|
@@ -54,11 +54,11 @@ Supone que los datos y el catálogo llegan preparados. Si no, el bloque de las h
 
 | Bloque | Qué pasa | Hito de salida |
 |---|---|---|
-| Hora 0–3 | Repositorio, contratos en código (HU-012), respuestas simuladas (HU-013), despliegue del esqueleto (HU-023), PostgreSQL en Docker Compose con migraciones (HU-161) y logs (HU-177) | URL pública responde la versión |
+| Hora 0–3 | Repositorio, contratos en código (HU-012), respuestas simuladas (HU-013), despliegue del esqueleto (HU-023), la base de datos en la nube con sus migraciones (HU-161, HU-229; PostgreSQL en Docker Compose para las pruebas) y logs (HU-177) | URL pública responde la versión |
 | Hora 3–16 | En paralelo. **Datos de la NASA:** POWER ampliado y ET0 (HU-041, HU-042, HU-205, HU-143), NASADEM (HU-206, HU-044), IMERG (HU-207), heladas y calor por mes (HU-045), clima de dos periodos (HU-216), NDVI por municipio (HU-208), suelo (HU-181) y oferta (EP-03). **Motor,** contra Parquet de ejemplo: etapas por calendario y balance hídrico (HU-220, HU-144); aptitud, calificación y señales (HU-191, HU-196, HU-071, HU-077, HU-190, HU-183, HU-072, HU-073); orden de ventanas y semáforo (HU-192, HU-074, HU-076); y **las estrategias de rotación** (HU-081, HU-213, HU-082, HU-212, HU-184, HU-083, HU-084). **Web,** contra respuestas simuladas: inicio (HU-173), entrada y estrategias (HU-214, HU-101, HU-102) y el resultado que reusa el ciclo (HU-092, HU-194, HU-202, HU-203). Autenticación y consentimiento (HU-162, HU-163). Casos de referencia (HU-121) | Cada parte funciona sola |
 | Hora 16–20 | Primera integración con datos reales | **Hito 1:** una estrategia de rotación real, con datos de la NASA y el diagnóstico de sus ciclos, visible en la URL pública |
 | Hora 20–26 | Descanso por turnos; siempre hay alguien con el despliegue | — |
-| Hora 26–34 | Ciclo de una estrategia con el agua del plan (HU-215, HU-146, HU-078, HU-093); «Qué cambió» (HU-217, HU-218, HU-219); lotes con polígono, temporadas, Mi finca y borrar la cuenta (HU-164, HU-165, HU-168, HU-169, HU-166); suelo del lote (HU-182, HU-185); y lo recortable de la NASA, en este orden: NDVI por lote (HU-209), capa GIBS (HU-211) y SMAP (HU-210). Estados, celular y calidad (HU-094, HU-096, EP-12) | **Hito 2:** todo el P0 pasa las pruebas; se congela el alcance |
+| Hora 26–34 | Ciclo de una estrategia con el agua del plan (HU-215, HU-146, HU-078, HU-093); «Qué cambió» (HU-217, HU-218, HU-219); lotes con polígono, temporadas, Mi finca y borrar la cuenta (HU-164, HU-165, HU-168, HU-169, HU-166); suelo del lote (HU-182, HU-185); y lo recortable de la NASA, en este orden: capa GIBS (HU-211) y SMAP (HU-210); el NDVI por lote (HU-209) ya es P1 (decisión 15). Estados, celular y calidad (HU-094, HU-096, EP-12) | **Hito 2:** todo el P0 pasa las pruebas; se congela el alcance |
 | Hora 34–42 | P1 solo si el hito 2 se cumplió; si no, pulido y corrección de errores. Ensayo de la demo (HU-131) | Demo ensayada |
 | Hora 42–46 | Video, descripción del proyecto y entrega (EP-13); solo correcciones | Entrega enviada |
 | Hora 46–48 | Margen ante imprevistos | — |

@@ -21,7 +21,7 @@ estado: pendiente
 
 Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de EVA (EP-03).
 
-**Supuesto de la región piloto (decisión 11):** el reto aún no confirma la región ni los datos (HU-002, enunciado del 28 de octubre). Los productos NASA cubren todo el mundo, pero varias piezas de esta épica son de Colombia: los municipios y sus límites del DANE, el criterio de helada de la UPRA con datos del IDEAM, la comprobación contra estaciones del IDEAM y contra la Gobernación de Boyacá. Esas piezas viven en los adaptadores y en la configuración del pipeline, no en el motor (R7). Si la región cambia, se reemplazan con su fuente.
+**Región piloto (decisión 11):** confirmada el 28 de octubre de 2026: Boyacá y Cundinamarca, con sede en Duitama (HU-002). Los productos NASA cubren todo el mundo, pero varias piezas de esta épica son de Colombia: los municipios y sus límites del DANE, el criterio de helada de la UPRA con datos del IDEAM, la comprobación contra estaciones del IDEAM y contra la Gobernación de Boyacá. Esas piezas viven en los adaptadores y en la configuración del pipeline, no en el motor (R7). Si la región cambia, se reemplazan con su fuente.
 
 **Acceso:** IMERG, NASADEM, MODIS y SMAP piden una cuenta de NASA Earthdata (por verificar para cada producto). Las credenciales van en variables de entorno, nunca en el repositorio. Con la caché, el dataset se reconstruye sin volver a descargar (HU-123).
 
@@ -178,8 +178,9 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] `climate_risk_month` con `frost_freq_pct`, `frost_days_mean`, `tmax_p90_c`, `years` y `quality`, desde la mínima y la máxima diarias corregidas por altitud
-  - [ ] Umbral de helada: mínima menor que 2 °C a 2 m, con fuente (UPRA e IDEAM; supuesto de la región piloto), en la configuración del pipeline
+  - [ ] Umbral de helada: mínima **menor o igual a 2 °C** a 2 m, con fuente, en la configuración del pipeline (decidido por Felipe el 10 de noviembre de 2026: es el criterio del ZARC de Brasil, `mapa_zarc_2025`, el mismo de `docs/investigacion-decisiones.md`; el boletín de la UPRA de enero de 2024 ya no está en su enlace)
   - [ ] `tmax_p90_c` es la temperatura máxima que se supera uno de cada diez días de ese mes; el método queda documentado
+  - [ ] `climate_frost_month`: los días con helada de cada mes de cada año (`frost_days`, `valid_days`, `quality`), para que la señal de heladas cuente los años con helada de una ventana (HU-077). Agregado el 10 de noviembre de 2026, aprobado por Felipe el 10 de noviembre de 2026
   - [ ] Comprobación: los meses con más heladas en el altiplano caen entre diciembre y marzo, como dicen la Gobernación de Boyacá y el IDEAM
   - [ ] Con pocos años o pocos días válidos, `quality = partial`; sin datos, la fila no se publica (R1)
 - **Reglas que aplican:** R1, R8

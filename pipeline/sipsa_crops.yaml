@@ -34,7 +34,8 @@ crops:
     product_id: null
     reason: >-
       SIPSA no publica maíz en grano en ninguna central. «Chócolo mazorca» es maíz cosechado tierno: serviría solo si
-      el maíz del MVP se vende como chócolo, y eso cambia su cosecha. Por decidir con Producto y agro.
+      el maíz del MVP se vende como chócolo, y eso cambia su cosecha. Queda sin producto (decidido por Felipe el 10 de noviembre de 2026): la señal de
+      mercado del maíz es «datos insuficientes» (R1).
   avena_vicia:
     product_id: null
     reason: Es abono verde. Se incorpora al suelo y no se vende en la central.
