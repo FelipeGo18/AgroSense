@@ -39,7 +39,8 @@ climate_normal:
 # La normal de GPM IMERG (HU-207): IMERG no tiene 1991-2020, así que su normal es otra y `precip_month` dice cuál
 # (`normal_period`). 2001-2024 son los años completos de la corrida final (llega a septiembre de 2025) y los mismos de los
 # dos periodos de «Qué cambió» con IMERG (2001-2012 y 2013-2024, specs/01-reglas.md). 20 años son el 80 % del periodo,
-# la misma proporción que 24 de 30. Nunca se completa con años de NASA POWER (R1). Supuesto por confirmar con Felipe.
+# la misma proporción que 24 de 30. Nunca se completa con años de NASA POWER (R1). Aprobado por Felipe el 11 de
+# noviembre de 2026 (PR #44).
 # El mes `partial` y el año seco usan los cortes de `climate_normal`.
 imerg_normal:
   first_year: 2001

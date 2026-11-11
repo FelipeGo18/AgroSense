@@ -1,4 +1,4 @@
-"""Qué fuente calcula cada señal (`catalog/sources.yaml`, HU-122): su forma, la lluvia temporal y R8."""
+"""Qué fuente calcula cada señal (`catalog/sources.yaml`, HU-122): su forma, la lluvia de IMERG con su aviso y R8."""
 
 from pathlib import Path
 
@@ -29,14 +29,15 @@ def test_el_archivo_del_repositorio_tiene_las_seis_senales_de_la_region():
     assert tuple(config.for_region(REGION)) == P0_SIGNALS
 
 
-def test_la_lluvia_es_de_power_por_ahora_con_su_aviso_e_imerg_de_contraste():
-    """Decisión de Felipe del 11 de noviembre de 2026: POWER calcula el agua. IMERG ya se publica (HU-207) y se muestra
-    para contrastar; pasar la lluvia a IMERG queda por decidir con la comparación contra el IDEAM."""
+def test_la_lluvia_es_de_imerg_con_su_aviso_y_power_de_contraste():
+    """Decisión de Felipe del 11 de noviembre de 2026 (PR #44): IMERG calcula el agua porque sigue mejor los meses del
+    año; POWER se muestra para contrastar y la ET0 sigue siendo de POWER. En los valles del altiplano IMERG también
+    sobrestima la lluvia, así que el aviso sigue, ahora sobre IMERG."""
     config = get_signal_sources()
     water = config.for_region(REGION)["water"]
-    assert (water.used, water.et0) == ("nasa_power", "nasa_power")
-    assert water.contrast == ("imerg",) and not config.is_planned("imerg")
-    assert "sobrestima" in water.caveat and "IDEAM" in water.caveat
+    assert (water.used, water.et0) == ("imerg", "nasa_power")
+    assert water.contrast == ("nasa_power",) and not config.is_planned("imerg")
+    assert "GPM IMERG" in water.caveat and "sobrestima" in water.caveat and "IDEAM" in water.caveat
 
 
 def test_cada_fuente_esta_publicada_o_por_llegar_en_el_dataset_del_repositorio():
