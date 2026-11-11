@@ -31,7 +31,7 @@ estado: pendiente
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] GitHub Actions corre Ruff, pytest, Vitest y el build web dentro de Docker Compose
-  - [ ] Las mismas pruebas corren en local con un solo comando de Docker
+  - [X] Las mismas pruebas corren en local con un solo comando de Docker
 
 ### HU-177 · Logs de la terminal
 

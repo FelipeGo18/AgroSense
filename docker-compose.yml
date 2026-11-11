@@ -96,7 +96,39 @@ services:
         printf '%s python -m backend.market.updates diario\n%s python -m backend.market.updates semanal\n'
         "$$AGROSENSE_MARKET_DAILY_SCHEDULE" "$$AGROSENSE_MARKET_WEEKLY_SCHEDULE" > /tmp/precios.cron
         && exec supercronic /tmp/precios.cron
+  
+  # Lint, pruebas y build de todo el repo con un solo comando (HU-022):
+  #   docker compose run --rm test
+  # Corre scripts/test.sh dentro de la imagen Dockerfile.test: Ruff, pytest (contra `db`) y Vitest + build de la web.
+  # Con el perfil `test` no arranca con `docker compose up`: solo con `run`. Lo mismo lo ejecuta el CI (ci.yml).
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    profiles: ["test"]
+    depends_on:
+      #Levanta PostgreSQL y espera a que responda antes de empezar las pruebas.
+      db:
+        condition: service_healthy
+    working_dir: /repo
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      #Dentro de Compose la base se llama `db` y escucha en su puerto normal.
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      # Fijo y vacío: las pruebas nunca usan la base de la nube, venga lo que venga del .env.
+      AGROSENSE_DATABASE_URL: ""
+      AGROSENSE_AUTO_MIGRATE: ""
+    volumes:
+      #Todo el repo, no solo web/: la web importa archivos de design/ (fuera de web/) y sin ellos fallan las pruebas.
+      - .:/repo
+      #node_modules en un volumen aparte
+      - web_node_modules:/repo/web/node_modules
+    command: ["bash", "scripts/test.sh"]
 
 volumes:
   db_data:
   market_data:
+  web_node_modules:
