@@ -33,6 +33,7 @@ Arranca contra las respuestas simuladas y se integra con EP-08. Cada pantalla se
   - [ ] Sin cuenta, el área solo se usa en el navegador para el agua del plan (HU-215) y no se guarda en el servidor (R9)
   - [ ] Validación inmediata en pantalla; un 422 de la API se explica en palabras sencillas
   - [ ] Cada botón tiene una acción o una navegación definida; usable a 360 px
+  - [ ] Desde el diagnóstico («Ver estrategias de rotación», HU-203) llega con `?municipio=&siembra=&anterior=&riego=` o, con un lote, `?lote=&siembra=&anterior=` (`strategiesLink` de `web/src/features/diagnosis/lights.ts`): la pantalla los toma ya elegidos, con el cultivo consultado como lo que había antes en el terreno
 - **Reglas que aplican:** R7, R9
 - **Contrato que toca:** cuerpo de `POST /api/v1/rotations`
 - **Notas:** Decisión 12. Reemplaza, para el MVP, a la finca temporal (HU-141 y HU-145, que pasaron a P1 el 11 de octubre de 2026): sin cuenta se consulta por municipio, área y cultivo anterior. Agregada el 11 de octubre de 2026.
