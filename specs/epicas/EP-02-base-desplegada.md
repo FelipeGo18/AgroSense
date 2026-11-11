@@ -20,10 +20,10 @@ estado: pendiente
 ### HU-021 · Clonar y ejecutar con pocos comandos
 
 - **Historia:** Como integrante, quiero clonar y ejecutar todo con pocos comandos, para no perder tiempo configurando.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] README de arranque probado por otra persona. Escrito el 12 de octubre de 2026 (`README.md`, «Cómo correr el proyecto», con Docker y sin Docker); falta que lo pruebe otra persona en una máquina limpia
-  - [ ] Estructura del repositorio acordada
+  - [X] README de arranque probado por otra persona. Escrito el 12 de octubre de 2026 (`README.md`, «Cómo correr el proyecto», con Docker y sin Docker); «Probado con y sin Docker en dos máquinas (`docs/reporte-prueba-hu-021.md`)»
+  - [X] Estructura del repositorio acordada
 
 ### HU-022 · Lint y pruebas automáticas en cada cambio
 
