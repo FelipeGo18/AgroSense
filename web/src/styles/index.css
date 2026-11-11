@@ -9,6 +9,8 @@
   --color-pie-suave: #cdbba3;
   --color-seccion-ejemplo: #e9f0e1;
   --color-fila-senal: #f5f8f2;
+  /* Fondo oliva claro de lo elegido o lo hecho (diseños de precios, actividad y calendario en design/pantallas). */
+  --color-oliva-claro: #e9f2d8;
 }
 
 /*

@@ -43,7 +43,7 @@ Hackatón: 14 y 15 de noviembre de 2026. Guías de entrega y de jurado: 13 de no
 | Prioridades: forraje | El valor como forraje en la ficha del cultivo (P1) | HU-227 |
 | IA («SI», opcional) | Reglas con fuente y explicables, no aprendizaje automático (decisión 4): la entrega explica por qué | HU-132 |
 
-**La sede y la región todavía no están confirmadas.** Si la sede del equipo es Moquegua (Perú), hay que decidir si la región piloto pasa a la región de la sede. Hasta entonces, la región piloto es el altiplano colombiano, como supuesto (decisión 11, HU-002). Lo propio de Colombia vive en los adaptadores de cada fuente.
+**Sede y región confirmadas (28 de octubre de 2026):** La sede del equipo es **Duitama (Boyacá, Colombia)** y la región piloto es el altiplano de **Boyacá y Cundinamarca, Colombia** (HU-002). Lo propio de Colombia vive en los adaptadores de cada fuente (R7).
 
 ## Problema
 
@@ -92,7 +92,7 @@ Pequeños y medianos productores, y técnicos o asesores agropecuarios que los a
 | Calor (`heat`) | Si suelen darse temperaturas máximas por encima de lo que el cultivo aguanta | NASA POWER, corregida por altitud; ficha del cultivo | `tmax_p90_c` frente a `heat_max_c` |
 | Suelo (`soil`) | Si el pH está en el rango del cultivo (estimación); la textura entra en la señal de agua y el carbono orgánico alimenta la salud del suelo de las estrategias | SoilGrids (ISRIC) | `ph` |
 | Oferta (`supply`) | Si en la zona se está sembrando mucho o poco de ese cultivo, según el semestre de EVA en que cae la siembra. Es valor agregado: una señal más, con su peso | EVA / UPRA en la región piloto; en P1, fuentes de contraste | `planted_change_pct`, `dept_share_pct` |
-| Mercado (`market`) | Si el precio suele estar bajo en el mes en que saldría la cosecha | SIPSA / DANE (por confirmar, P1) | `seasonal_index` |
+| Mercado (`market`) | Si el precio suele estar bajo en el mes en que saldría la cosecha | SIPSA / DANE (entra: HU-003) | `seasonal_index` |
 
 En el P1 se suman tres señales: exceso de lluvia (`excess_rain`), enfermedades por clima con regla publicada (`disease`) y clima de cosecha (`harvest_weather`).
 
@@ -123,11 +123,11 @@ El impacto se presenta como **potencial**: la herramienta apoya decisiones, no g
 
 | Dimensión | MVP (P0) | Ideal (P1) |
 |---|---|---|
-| Región | Una región piloto con buena cobertura en EVA, por ejemplo el altiplano de Cundinamarca o Boyacá. **Supuesto** hasta confirmar la sede y el enunciado del 28 de octubre (HU-002) | Una segunda región con otro piso térmico |
+| Región | Altiplano de Boyacá y Cundinamarca, Colombia (sede **Duitama**, confirmada el 28 de octubre de 2026 en HU-002) | Una segunda región con otro piso térmico |
 | Cultivos | 7 cultivos del altiplano con ficha completa y con fuente: papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia (abono verde); más el descanso | Más cultivos y variedades |
 | Estrategias de rotación | Hasta 3 ciclos (2 o 3), con filtros entre ciclos, 4 criterios de puntuación (agua, suelo, ingreso y riesgo) y la salud del suelo con 4 criterios por reglas con fuente | Rotaciones ponderadas por el área de cada cultivo |
 | Diagnóstico de un ciclo | Aptitud por altitud; seis señales calificadas de 0 a 100; con y sin riego; prioridades del agricultor con las dos luces cuando difieren; mejores ventanas de los próximos doce meses, por mes | Cultivos alternativos cuando conviene rotar; ventanas por semana; tres señales más: exceso de lluvia, enfermedades por clima y clima de cosecha |
-| Datos de la NASA | NASA POWER ampliado (lluvia, temperatura, humedad del suelo modelada, y radiación, viento y humedad para la ET0 por Penman-Monteith), NASADEM (altitud), GPM IMERG (lluvia por satélite), MODIS NDVI por municipio y por lote, SMAP (humedad del suelo) y la capa GIBS en el mapa. Orden de recorte: GIBS y después SMAP; el NDVI por lote pasó a P1 (decisión 15) | NDVI por lote a 30 m (HLS); riesgo climático por semana; aguaceros, ventanas secas y gota; lo que recomiende el enunciado y no alcance a entrar |
+| Datos de la NASA | NASA POWER ampliado (lluvia, temperatura, humedad del suelo modelada, y radiación, viento y humedad para la ET0 por Penman-Monteith), NASADEM (altitud), GPM IMERG (lluvia por satélite), MODIS NDVI por municipio (por lote, P1), SMAP (humedad del suelo) y la capa GIBS en el mapa. Orden de recorte: GIBS y después SMAP; el NDVI por lote pasó a P1 (decisión 15) | NDVI por lote a 30 m (HLS); riesgo climático por semana; aguaceros, ventanas secas y gota; lo que recomiende el enunciado y no alcance a entrar |
 | Suelo | pH, carbono orgánico y textura de SoilGrids por municipio y por lote dibujado | Contraste con los estudios de suelos del IGAC |
 | Qué cambió | Dos periodos de la misma fuente, por mes: heladas, lluvia y temperatura máxima, y las mejores ventanas de cada periodo | Lluvia en años de El Niño y La Niña |
 | Agua | El agua del plan de cada ciclo: déficit mensual y volumen, en año normal y año seco | Finca temporal con varios cultivos; calendario de riego de la finca; aviso de riego semanal |

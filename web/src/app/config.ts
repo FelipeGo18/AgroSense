@@ -17,6 +17,15 @@ const SOCIAL_ENV: { brand: Brand; label: string; key: string }[] = [
   { brand: "youtube", label: "YouTube", key: "VITE_SOCIAL_YOUTUBE" },
 ];
 
+/**
+ * La hora de la región piloto (Colombia): UTC−5 todo el año. «Hoy» y «el mes en curso» de las fechas de siembra se
+ * cuentan con ella, igual que en la API (`specs/02-contratos.md`, «Fechas»), aunque el navegador esté en otra zona.
+ */
+export const REGION_TIME_ZONE = "America/Bogota";
+
+/** Respuestas simuladas activas (HU-013): solo en `npm run dev` con `VITE_SIMULATION=true`. */
+export const SIMULATION = import.meta.env.VITE_SIMULATION === "true" && import.meta.env.DEV;
+
 /** Redes del equipo que tienen dirección. Una red sin dirección no aparece: no se dibuja un enlace sin destino. */
 export const SOCIAL_LINKS = SOCIAL_ENV.flatMap(({ brand, label, key }) => {
   const href = env(key);

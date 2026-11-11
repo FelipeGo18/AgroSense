@@ -6,3 +6,5 @@ e2e/results
 src/assets/globe.json
 # Tipos del contrato, generados con `npm run api:types`
 src/api/schema.d.ts
+# Respuestas simuladas, generadas con `npm run api:examples`
+src/mocks/examples.json

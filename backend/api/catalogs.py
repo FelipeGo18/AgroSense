@@ -12,8 +12,8 @@ from pydantic import BaseModel
 from backend.api import calc_examples
 from backend.api.calc_models import ErrorBody, MunicipalitySoil, SoilRange, Versions
 from backend.api.errors import ApiError, explain
-from backend.config.logging import get_logger
 from backend.dataset import Dataset, DatasetUnavailable, get_dataset
+from common.logging import get_logger
 
 log = get_logger("agrosense.api")
 

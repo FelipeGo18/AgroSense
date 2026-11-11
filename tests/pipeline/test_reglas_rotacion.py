@@ -26,7 +26,7 @@ import pytest
 from pipeline import build as pipeline_build
 from pipeline import catalog, examples, rotation_rules, schema
 from pipeline.sources import dane, dane_mgn
-from tests.conftest import SAMPLE_META, SAMPLE_MUNICIPALITIES, SAMPLE_REGION
+from tests.conftest import SAMPLE_MARKETS, SAMPLE_META, SAMPLE_MUNICIPALITIES, SAMPLE_REGION
 
 RULE_ID = "regla_de_prueba"
 VERSION = "0.1.0"
@@ -626,7 +626,8 @@ def test_el_build_completo_une_las_fuentes_de_las_reglas_y_anota_la_tabla(tmp_pa
         }
         for m in municipalities.iter_rows(named=True)
     ]
-    monkeypatch.setattr(pipeline_build, "load_region", lambda: copy.deepcopy(SAMPLE_REGION))
+    region = {**SAMPLE_REGION, "region": {**SAMPLE_REGION["region"], "markets": SAMPLE_MARKETS}}
+    monkeypatch.setattr(pipeline_build, "load_region", lambda: copy.deepcopy(region))
     monkeypatch.setattr(dane, "read_cache", lambda cache: (copy.deepcopy(SAMPLE_MUNICIPALITIES), dict(SAMPLE_META)))
     monkeypatch.setattr(dane_mgn, "read_cache", lambda departments, cache: (copy.deepcopy(features), dict(SAMPLE_META)))
     folder = tmp_path / "published"

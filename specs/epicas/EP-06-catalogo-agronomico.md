@@ -19,7 +19,7 @@ La ficha no dice en qué época se siembra: eso lo responde el motor, ventana po
 
 **Es trabajo de la fase 0, sin código, y va primero en el orden de desarrollo** (`docs/orden-de-desarrollo.md`): sin fichas con fuente, la aptitud, el calor, las curvas y las estrategias quedan en «datos insuficientes». Fuentes candidatas: FAO EcoCrop, FAO-56 (Kc y etapas) y Agrosavia (fichas técnicas y las rotaciones papa-avena-arveja de Tibaitatá), todas por confirmar en `docs/fuentes.md`.
 
-Los cultivos dependen de la región piloto, que es un supuesto mientras el reto no confirme la región (decisión 11, HU-002). La lista de 7 se decidió el 11 de octubre de 2026 (decisión 12).
+Los cultivos dependen de la región piloto, confirmada el 28 de octubre de 2026: Boyacá y Cundinamarca (decisión 11, HU-002). La lista de 7 se decidió el 11 de octubre de 2026 (decisión 12).
 
 ## Historias de usuario
 
@@ -29,7 +29,7 @@ Los cultivos dependen de la región piloto, que es un supuesto mientras el reto 
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
   - [x] Hay una ficha por cada uno de los 7 cultivos del MVP (papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia) y otra para el descanso, con `crop_id` en `snake_case` sin tildes (`crop_id`: `papa`, `arveja`, `haba`, `maiz`, `zanahoria`, `cebolla_bulbo`, `avena_vicia` y `descanso`; un `crop_id` es un cultivo con ficha propia, no una variedad)
-  - [ ] Cada ficha trae, con fuente: altitud mínima, máxima y óptima; temperatura óptima y `heat_max_c`; rango de pH; familia (`family`); tipo de raíz (`root_type`); si fija nitrógeno (`fixes_nitrogen`); duración (`cycle_months` y los días de cada etapa en `crop_stages`, HU-142) y, si hay fuente, grados-día
+  - [ ] Cada ficha trae, con fuente: temperatura media anual en que se da el cultivo (`tmean_min_c`, `tmean_max_c`; antes era la altitud mínima, máxima y óptima, cambiado por la decisión 13); temperatura óptima y `heat_max_c`; rango de pH; familia (`family`); tipo de raíz (`root_type`); si fija nitrógeno (`fixes_nitrogen`); duración (`cycle_months` y los días de cada etapa en `crop_stages`, HU-142) y, si hay fuente, grados-día
   - [x] Todos los campos del contrato llenos; los que el contrato permite nulos (`tmean_min_c`, `tmean_max_c`, `heat_max_c`, los límites de las curvas `temp_*`, `rain_*` y `tmean_opt_*`, pH, `base_temp_c`, `gdd`) quedan nulos solo si no hay fuente, y se anota por qué
   - [x] `tmean_min_c` y `tmean_max_c` (temperatura media anual en que se da el cultivo) con fuente: de ahí sale la aptitud en la zona (HU-191). Cambiado el 16 de octubre de 2026 (decisión 13): antes era el rango de altitud
   - [x] `heat_max_c` (temperatura máxima que aguanta) con fuente: de ahí sale la señal de calor (HU-190) (EcoCrop, con un supuesto por confirmar en HU-190: es el máximo de la temperatura del ciclo)

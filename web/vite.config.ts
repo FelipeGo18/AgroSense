@@ -2,9 +2,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { msw } from "msw/vite";
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
+export default defineConfig(({ command }) => ({
+  // MSW (HU-013) sirve su worker solo en desarrollo: el build nunca lo trae, así no hay simulación en producción.
+  plugins: [react(), tailwindcss(), ...(command === "serve" ? [msw({ mode: "worker-only" })] : [])],
   resolve: { alias: { "@": "/src" } },
   // Para generar el HTML de las páginas públicas en el build (scripts/prerender.mjs): estas librerías se empaquetan,
   // porque Node no las carga bien sueltas.
@@ -24,5 +26,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
+    // Muchas pruebas recorren páginas que se cargan aparte (la primera de cada archivo, en frío): solas tardan de 2 a 3 s
+    // y con todos los archivos en paralelo pasaban del límite de 5 s de Vitest y fallaban sin que nada estuviera mal.
+    // 15 s deja margen para una máquina ocupada; una prueba que de verdad se cuelga sigue fallando.
+    testTimeout: 15_000,
   },
-});
+}));

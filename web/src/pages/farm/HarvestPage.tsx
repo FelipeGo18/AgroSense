@@ -9,7 +9,7 @@ import { TextField } from "@/components/ui/TextField";
 import { formatHa, useLot, type LotDetail } from "@/features/farm/lots";
 import { cropNames, formatDate, todayIso, useCrops, useSeasons, useUpdateSeason, type Season } from "@/features/farm/seasons";
 import { AccountShell, LINK } from "@/pages/account/AccountShell";
-import { Eyebrow } from "./common";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Shell } from "./SeasonFormPage";
 import { LotBar, type Part } from "./SeasonParts";
 

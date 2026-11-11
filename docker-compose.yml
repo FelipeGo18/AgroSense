@@ -1,9 +1,12 @@
 # Servicios de AgroSense para desarrollo y pruebas (HU-021, HU-161).
 # La base de datos de las cuentas y la API. `web` se agrega con su primera HU; en desarrollo la web corre con `npm run dev`.
+# La base del equipo y de la demo está en la nube (AGROSENSE_DATABASE_URL en el .env); `db` es la local, la de las
+# pruebas y la de trabajar sin conexión.
 #
 #   cp .env.example .env
 #   docker compose up -d db        # arranca PostgreSQL en 127.0.0.1:5432
-#   docker compose up app          # copia la base, aplica las migraciones y deja la API en http://localhost:8000
+#   docker compose up app          # con la base local: la copia, aplica las migraciones y deja la API en http://localhost:8000
+#                                  # con la de la nube: solo la usa; las migraciones se aplican a mano
 #   docker compose up --no-deps app                # la API sola, sin base de datos: las cuentas responden 503
 #   docker compose run --rm app uv run pytest      # pruebas
 #   docker compose down            # lo apaga y conserva los datos
@@ -41,9 +44,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?falta POSTGRES_DB en .env}
       POSTGRES_USER: ${POSTGRES_USER:?falta POSTGRES_USER en .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
-      # Dentro de Compose la base de datos se llama `db` y escucha en su puerto normal.
+      # Dentro de Compose la base de datos se llama `db` y escucha en su puerto normal. Las pruebas usan siempre esta.
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
+      # La base en la nube. Con ella en el .env, la API usa esa base en vez de `db`, no la migra sola al
+      # arrancar y exige SSL. Vacía: la base local. Ver backend/README.md, «Base de datos en la nube».
+      AGROSENSE_DATABASE_URL: ${AGROSENSE_DATABASE_URL:-}
+      AGROSENSE_AUTO_MIGRATE: ${AGROSENSE_AUTO_MIGRATE:-}
       WEB_ORIGINS: ${WEB_ORIGINS:-http://localhost:5173}
       AGROSENSE_LOG_LEVEL: ${AGROSENSE_LOG_LEVEL:-INFO}
       AGROSENSE_LOG_FORMAT: ${AGROSENSE_LOG_FORMAT:-console}
@@ -54,6 +61,42 @@ services:
     volumes:
       # Las copias de seguridad que se hacen antes de cada migración quedan en su máquina, no dentro del contenedor.
       - ./backups:/app/backups
+      # Las versiones de precios que deja el servicio `market`: la API solo las lee (HU-222).
+      - market_data:/app/data/market:ro
+
+  # Precios de SIPSA al día (HU-222): dos crons con supercronic, en la hora de Bogotá. El diario baja el anexo del boletín
+  # del DANE (unos 340 KB) y el semanal la serie completa del servicio web (unos 300 MB). Con el perfil `market` no
+  # arranca con `docker compose up`, para no usar la red en cada equipo:
+  #   docker compose --profile market up -d market                            # encenderlo
+  #   docker compose --profile market run --rm market python -m backend.market.updates diario   # correr uno ya
+  market:
+    build: .
+    profiles: ["market"]
+    restart: unless-stopped
+    # No usa la base de datos: lee su configuración de `pipeline/settings.py`, que no la pide.
+    environment:
+      AGROSENSE_LOG_LEVEL: ${AGROSENSE_LOG_LEVEL:-INFO}
+      AGROSENSE_LOG_FORMAT: ${AGROSENSE_LOG_FORMAT:-console}
+      AGROSENSE_MARKET_DAILY_SCHEDULE: ${AGROSENSE_MARKET_DAILY_SCHEDULE:-0 15 * * 1-5}
+      AGROSENSE_MARKET_WEEKLY_SCHEDULE: ${AGROSENSE_MARKET_WEEKLY_SCHEDULE:-0 15 * * 0}
+      AGROSENSE_MARKET_TIMEOUT_S: ${AGROSENSE_MARKET_TIMEOUT_S:-900}
+      AGROSENSE_MARKET_MAX_MB: ${AGROSENSE_MARKET_MAX_MB:-600}
+      TZ: America/Bogota
+    volumes:
+      - market_data:/app/data/market
+    # Al arrancar: se pone al día con el boletín (es liviano) y deja los dos horarios del .env en el crontab de
+    # supercronic. El candado no se borra: si hay una actualización corriendo a mano, la del arranque no corre (el log
+    # dice por qué) y supercronic arranca igual; un candado de más de 6 horas se da por muerto (`LOCK_STALE_S` en
+    # backend/market/updates.py).
+    command:
+      - sh
+      - -c
+      - >-
+        python -m backend.market.updates diario;
+        printf '%s python -m backend.market.updates diario\n%s python -m backend.market.updates semanal\n'
+        "$$AGROSENSE_MARKET_DAILY_SCHEDULE" "$$AGROSENSE_MARKET_WEEKLY_SCHEDULE" > /tmp/precios.cron
+        && exec supercronic /tmp/precios.cron
 
 volumes:
   db_data:
+  market_data:

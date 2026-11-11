@@ -33,8 +33,9 @@ Las decisiones que guían todo el proyecto, explicadas en lenguaje sencillo. Si 
 
 - **Antes de la demo:** el pipeline descarga y limpia los datos, calcula los indicadores y guarda Parquet versionado.
 - **Cuando el agricultor consulta:** la API solo lee esos indicadores ya calculados y aplica las reglas (milisegundos).
+- **Excepción acotada para precios mayoristas (HU-222, 20 de octubre de 2026):** como SIPSA publica precios nuevos cada día hábil hacia las 2:00 p. m., la API con `AGROSENSE_MARKET_REFRESH=true` descarga y valida en segundo plano la última versión del servicio SOAP del DANE a las 3:00 p. m. (hora de Bogotá) y la guarda como Parquet versionado en `data/market/`. Las consultas de los usuarios siguen leyendo únicamente Parquet local en memoria, nunca el servicio externo en vivo.
 
-**Por qué:** descargar 20 años de lluvia diaria tarda minutos; si se hiciera en cada consulta, la app sería lentísima. Si la API de NASA se cae durante la presentación, la demo sigue. Y con la versión del dataset se puede reproducir cualquier resultado.
+**Por qué:** descargar 20 años de lluvia diaria o 300 MB de precios tarda minutos; si se hiciera en cada consulta, la app sería lentísima. Si la API de NASA o la del DANE se caen durante la presentación, la demo sigue con la última versión local validada. Y con la versión del dataset se puede reproducir cualquier resultado.
 
 **Analogía:** cocinar en casa antes de un viaje en lugar de buscar restaurante en carretera.
 
@@ -74,7 +75,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **Sin cuenta:** se puede consultar; los datos de la finca se envían solo para calcular y no se guardan en el servidor ni en sus logs. Cuando exista el contador (P1), la consulta solo se cuenta, sin datos de quien consulta.
 - **Métricas (P1, HU-170):** para saber cómo se usa la app, el servidor lleva un contador por día, tipo de consulta, municipio y cultivo (`usage_daily`), sin usuario, sesión, IP, hora, fecha de siembra, prioridades ni área. En el P0 no existe: los endpoints de cálculo no escriben nada. Decidido el 11 de octubre de 2026.
 - **Con cuenta:** se guardan los lotes, su historial y las prioridades del agricultor (en su perfil), con consentimiento registrado. El usuario puede borrar todo.
-- **Sin servicios externos:** PostgreSQL propio en Docker y autenticación propia con usuario y contraseña. No se pide correo ni celular. Si la base de datos falla, el modo sin cuenta sigue funcionando.
+- **Datos propios, base en la nube:** la base de datos es un PostgreSQL en la nube (la del equipo y la demo; desde el 10 de noviembre de 2026) y en Docker para las pruebas. Se usa solo como PostgreSQL: la autenticación es propia, con usuario y contraseña. No se pide correo ni celular. Si la base de datos falla, el modo sin cuenta sigue funcionando.
 
 **Analogía:** la calculadora de una ferretería y el cuaderno de fiado. La calculadora la usa cualquiera y no anota de quién es la cuenta: solo cuenta cuántas veces se usó; el cuaderno solo existe si el cliente abrió su cuenta, y la puede cerrar cuando quiera.
 
@@ -170,7 +171,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **Juntas, nunca mezcladas.** Las fuentes se muestran lado a lado para contrastarlas. Cada una dice de dónde viene, de qué fecha es y qué cubre (`coverage`). No se promedian ni una rellena a otra.
 - **Una calcula la señal.** `sources.yaml` dice, para cada región, qué fuente calcula cada señal; la respuesta dice cuál fue. Las demás son de contraste.
 - **Las siembras de AgroSense, con cuidado.** Solo se muestran como totales por municipio y cultivo, y nunca cuando hay menos de 5 cuentas, para que nadie pueda deducir lo de un vecino (R9).
-- **La región está por confirmar.** El reto todavía no dice qué datos ni qué región. Colombia es un supuesto: el P0 se prepara con una región piloto colombiana (EVA, DIVIPOLA, SIPSA, IDEAM, UPRA, IGAC) hasta que el enunciado del 28 de octubre la confirme o la cambie (HU-002). El modelo no supone Colombia fuera de los adaptadores de cada fuente (R7).
+- **Sede y región confirmadas (HU-002, 28 de octubre de 2026):** el equipo participa en la sede **Duitama (Boyacá, Colombia)** y la región del proyecto es **Boyacá y Cundinamarca, Colombia** (`co-boyaca-cundinamarca`, con fuentes locales EVA, DIVIPOLA, SIPSA, IDEAM, UPRA, IGAC). Aun así, el modelo no supone Colombia fuera de los adaptadores de cada fuente (R7).
 
 **Analogía:** preguntar la hora a varias personas. Si dos relojes no coinciden, no se saca el promedio: se dice qué marca cada uno y cuál se está usando.
 
@@ -191,7 +192,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 **Qué es:** el MVP se centra en lo que pide el reto oficial («Field Shift»): una herramienta que use observaciones de la Tierra de la NASA, el suelo local, las características de los cultivos y las prioridades del agricultor para explorar estrategias de rotación que fortalezcan el suelo y adapten la finca a condiciones que cambian. Son cinco decisiones que van juntas:
 
 - **La NASA es el núcleo: se usa todo lo que dé.** Cada producto entra por su propio adaptador y publica tablas versionadas: NASA POWER ampliado (lluvia, temperatura, humedad del suelo modelada, y radiación, viento y humedad para la ET0 por Penman-Monteith), NASADEM (altitud del municipio y del lote), GPM IMERG (lluvia por satélite), MODIS NDVI (verdor por municipio y por lote), SMAP (humedad del suelo por satélite) y las capas de NASA GIBS en el mapa del lote. `sources.yaml` dice qué producto calcula cada señal en cada región. Si un producto falta, la señal o el indicador es «datos insuficientes». Ninguno cambia el motor. De NASA POWER se dice siempre que es un reanálisis, no una observación directa. Lo que recomiende el enunciado del 28 de octubre entra por el mismo mecanismo.
-- **Las estrategias de rotación son el centro del producto.** El flujo principal es: lote (o municipio y área, sin cuenta) → estrategias de rotación de 3 ciclos → un ciclo con su diagnóstico de ventana → agua del plan → qué cambió. El diagnóstico de ventana no desaparece: es la revisión de cada ciclo y sigue disponible como consulta suelta. Cada estrategia trae su salud del suelo con cuatro criterios por reglas con fuente: nitrógeno, carbono orgánico, suelo cubierto y corte de plagas. Una estrategia con un cultivo que no se da en la zona, o con un ciclo de alto riesgo de clima, se descarta con su motivo.
+- **Las estrategias de rotación son el centro del producto.** El flujo principal es: lote (o municipio y área, sin cuenta) → estrategias de rotación de 3 ciclos → un ciclo con su diagnóstico de ventana → agua del plan → qué cambió. El diagnóstico de ventana no desaparece: es la revisión de cada ciclo y sigue disponible como consulta suelta. Cada estrategia trae su salud del suelo con cuatro criterios por reglas con fuente: nitrógeno, carbono orgánico, suelo cubierto y corte de plagas (la decisión 14 sumó el quinto, la erosión). Una estrategia con un cultivo que no se da en la zona, o con un ciclo de alto riesgo de clima, se descarta con su motivo.
 - **«Qué cambió».** Para un municipio y un cultivo, se comparan dos periodos de la misma fuente (por defecto 1981–2000 y 2005–2024 con POWER): heladas, lluvia y temperatura máxima por mes, y cómo se movieron las mejores ventanas de siembra. Es historia comparada, nunca pronóstico.
 - **Siete cultivos con ficha completa.** Papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia (abono verde), cada dato con su fuente. Es trabajo de la fase 0, sin código, y va primero.
 - **P0 es el MVP.** Todo lo que no sirve al flujo principal pasó a P1: la escena 3D y el descenso, el lote vivo, el clima en vivo, el calendario completo, la finca temporal, los cultivos alternativos, el progreso, la trazabilidad y restaurar lo borrado. La web del MVP es 2D.
@@ -247,6 +248,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **`/rotations` trae hasta 10 descartadas** y el conteo por motivo: con 8 cultivos y 3 ciclos puede haber cientos.
 - **`/water-plans` y `/trends` tienen respuesta escrita**, el suelo trae el rango del carbono orgánico (R10), `quality` solo vale `ok` o `partial`, y un endpoint que no está construido responde `501`.
 - **Ejemplos corregidos:** la aptitud se explica por la temperatura media anual (decisión 13) y la respuesta dice cuál se usó; las siembras registradas en AgroSense son P1.
+- **Cambio del 10 de noviembre de 2026 (aprobado por Felipe, HU-075, HU-045 y HU-077):** `thresholds.yaml` 1.0.0 con cortes de fuentes derivadas (el WRSI para el agua y el ZARC de Brasil para las heladas), oferta y mercado sin curva por falta de fuente, la helada como mínima ≤ 2 °C y una tabla nueva, `climate_frost_month`, para contar los años con helada en cualquiera de los meses sensibles de una ventana.
 
 ## 16. Reglas de rotación como datos: segunda familia y cortes del carbono orgánico
 

@@ -10,7 +10,11 @@
     "departments": [
       "15",
       "25"
-    ]
+    ],
+    "markets": {
+      "1": "Corabastos (Bogotá)",
+      "9": "Tunja (Complejo de Servicios del Sur)"
+    }
   },
   "periods": [
     {
@@ -59,6 +63,10 @@
       "rows": 36,
       "coverage": "ejemplo"
     },
+    "climate_frost_month": {
+      "rows": 360,
+      "coverage": "ejemplo"
+    },
     "precip_month": {
       "rows": 360,
       "coverage": "ejemplo"
@@ -92,6 +100,18 @@
       "coverage": "ejemplo"
     },
     "market_month": {
+      "rows": 48,
+      "coverage": "ejemplo"
+    },
+    "market_price_day": {
+      "rows": 96,
+      "coverage": "ejemplo"
+    },
+    "market_price_latest": {
+      "rows": 4,
+      "coverage": "ejemplo"
+    },
+    "market_price_season": {
       "rows": 48,
       "coverage": "ejemplo"
     },

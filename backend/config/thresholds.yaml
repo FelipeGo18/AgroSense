@@ -1,0 +1,75 @@
+# Umbrales de las señales: cómo se califica cada una de 0 a 100 y desde qué calificación es crítica (HU-075;
+# specs/02-contratos.md, «Configuración versionada»; specs/01-reglas.md, «Cómo se califica cada señal»).
+#
+# `curve`: puntos [valor, calificación] en orden de valor; entre dos puntos la calificación va en línea recta, y fuera de
+# ellos vale la del punto más cercano. `crop`: la curva sale de la ficha del cultivo (catalog/crops.yaml). `null`: no hay
+# una fuente que diga los cortes, y la señal es `insufficient_data` (R1, R8): nunca se inventa una curva.
+# `critical_below`: la señal es crítica si su calificación baja de ese número (R2). El suelo nunca es crítico (R10).
+# `source_id`: la fuente de los cortes, que está en `sources` (catalog/crops.yaml la publica).
+#
+# Las fuentes del agua y de las heladas son derivadas: son de otros sistemas (FEWS NET y el ZARC de Brasil) y se dice.
+# Decidido por Felipe el 10 de noviembre de 2026 (docs/registro-de-decisiones.md). Si aparece evidencia mejor, se
+# cambian aquí y sube la versión: el motor no cambia (R4).
+
+version: "1.0.0"
+
+# Desde qué calificación una señal es favorable o moderada; por debajo de `moderate`, desfavorable. Son una convención
+# del proyecto, al estilo de EcoCrop: el respaldo más cercano es el ejemplo de clases de la FAO de 1985, que coinciden
+# en 0,7 y 0,4 pero que la propia FAO llama «examples only».
+levels:
+  favorable: 70
+  moderate: 40
+  source_id: fao_soils_bulletin_55
+
+signals:
+  water:
+    variable: coverage_pct
+    unit: "%"
+    # Las clases del WRSI: 100 sin déficit; 80 inicio de «Average»; 60 inicio de «Mediocre»; menos de 50, pérdida de la
+    # cosecha (Smith, FAO, 1992). Los extremos 0 y 100 son la propia escala.
+    curve: [[0, 0], [50, 20], [60, 40], [80, 70], [100, 100]]
+    critical_below: 20
+    source_id: fews_net_wrsi
+    note: "Derivada del WRSI de FEWS NET: vale si la cobertura se calcula como el agua que usa el cultivo sobre la que pide, con la retención del suelo (HU-144)."
+  frost:
+    variable: frost_freq_pct
+    unit: "%"
+    # Los niveles de riesgo del ZARC de Brasil (20, 30 y 40 % de los años, con la helada como mínima ≤ 2 °C): hasta 20 %
+    # favorable, de 20 a 40 % moderada y más de 40 %, fuera de lo que el ZARC recomienda, crítica. El tramo de 40 a 100
+    # solo cambia el orden de las ventanas, no la luz.
+    curve: [[0, 100], [20, 70], [40, 40], [100, 0]]
+    critical_below: 40
+    source_id: mapa_zarc_2025
+    note: "Derivada del ZARC de Brasil, que mide el riesgo de todas las amenazas juntas; no hay una fuente colombiana con cortes de frecuencia de heladas."
+  heat:
+    variable: tmax_p90_c
+    unit: "°C"
+    # De 100 en `temp_opt_max_c` a 0 en `heat_max_c` de la ficha. Crítica solo con calificación 0: la máxima llega al
+    # máximo absoluto que aguanta el cultivo según EcoCrop.
+    curve: crop
+    critical_below: 1
+    source_id: fao_ecocrop
+  soil:
+    variable: ph
+    unit: "pH"
+    # De 0 en `ph_min` a 100 entre `ph_opt_min` y `ph_opt_max` y a 0 en `ph_max`, de la ficha. Nunca crítica: el suelo es
+    # una estimación de un mapa de 250 m (R10).
+    curve: crop
+    critical_below: null
+    source_id: fao_ecocrop
+  supply:
+    variable: planted_change_pct
+    unit: "%"
+    # Sin fuente: ninguna fuente publicada dice desde qué variación del área sembrada hay sobreoferta. La señal es
+    # `insufficient_data`: no cuenta para la luz ni para el orden, y va a las limitaciones (R1).
+    curve: null
+    critical_below: null
+    source_id: null
+  market:
+    variable: seasonal_index
+    unit: ""
+    # Sin fuente: ninguna fuente publicada dice qué índice estacional de precio es «precio bajo». La señal es
+    # `insufficient_data` (R1).
+    curve: null
+    critical_below: null
+    source_id: null

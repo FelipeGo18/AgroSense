@@ -40,13 +40,14 @@ estado: en curso
 ### HU-013 · Respuestas simuladas (MSW)
 
 - **Historia:** Como desarrollador web, quiero respuestas simuladas, para desarrollar contra casos realistas.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] MSW responde todos los endpoints P0, incluidos `/rotations` con estrategias de 3 ciclos y `/changes`
-  - [ ] Se puede forzar cada estado con un parámetro de la URL en desarrollo (por ejemplo, `?estado=insufficient_data`)
-  - [ ] Cada respuesta simulada lleva el rótulo de ejemplo en pantalla (R5)
+  - [x] MSW responde todos los endpoints P0, incluidos `/rotations` con estrategias de 3 ciclos y `/changes`
+  - [x] Se puede forzar cada estado con un parámetro de la URL en desarrollo (por ejemplo, `?estado=insufficient_data`)
+  - [x] Cada respuesta simulada lleva el rótulo de ejemplo en pantalla (R5)
 - **Reglas que aplican:** R5
 - **Notas:** El panel de simulación para forzar estados, usuarios, clima y tiempo es HU-014, que pasó a P1 el 11 de octubre de 2026; en el MVP basta el parámetro de la URL.
+- **Hecho (9 nov):** `VITE_SIMULATION=true` en `npm run dev` activa MSW (`web/src/mocks/`). Las respuestas salen de los ejemplos del OpenAPI de HU-012 con `npm run api:examples` (nunca a mano): diagnóstico, estrategias, plan de agua, «Qué cambió», tendencias y suelo, con `versions = ejemplo`; los catálogos y `/version` son los del dataset publicado. `?estado=` en la dirección fuerza un ejemplo (`no_apto`, `sin_agua`, `no_aplica`…, o su nombre del contrato: `not_suitable`, `insufficient_data`, `not_applicable`), un error (`503` o `dataset_unavailable`, y los demás de cada ruta), `cargando` o `sin_conexion`. Una franja fija al pie rotula todo como ejemplo (R5). Las cuentas, los lotes y las temporadas siguen yendo a la API real (simularlas es HU-014). El build no incluye MSW.
 
 ### HU-014 · Modo simulación para desarrolladores
 

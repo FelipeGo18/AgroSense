@@ -11,7 +11,8 @@ import type { LotPolygon } from "@/features/farm/geo";
 import { byId, formatHa, useBoundary, useLot, useMunicipalities, type LotDetail } from "@/features/farm/lots";
 import { STAGE_NAMES, STAGE_ORDER, cropNames, formatDate, formatShortDate, useCrops, useSeasons } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
-import { Eyebrow, WithoutDrawing, irrigationText, placeName } from "./common";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { WithoutDrawing, irrigationText, placeName } from "./common";
 
 /**
  * El lote (HU-164, HU-169): su contorno en el mapa, lo que se sabe de él, sus siembras en curso y su suelo. Editar y
@@ -175,6 +176,10 @@ function Seasons({ lot }: { lot: LotDetail }) {
         ) : (
           <p className="text-[14px] text-texto-secundario">Todo el lote está sembrado. Registre una cosecha para sembrar de nuevo.</p>
         )}
+        {/* La entrada a las estrategias con este lote (HU-164, HU-214): su municipio, su riego y su historial. */}
+        <ButtonLink to={`${PATHS.consult}?lote=${lot.lot_id}`} variant="secondary" className="w-full sm:w-auto sm:self-start">
+          Ver estrategias de rotación
+        </ButtonLink>
       </Section>
       {harvested.length > 0 && (
         <Section title="Ya cosechado">

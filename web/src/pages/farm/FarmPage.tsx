@@ -11,7 +11,7 @@ import { bbox, type LotPolygon } from "@/features/farm/geo";
 import { byId, formatHa, useBoundary, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
 import { cropNames, useCrops } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
-import { Eyebrow } from "./common";
+import { Eyebrow } from "@/components/ui/Eyebrow";
 
 /**
  * Mi finca (HU-169, HU-164). Figma: «D0 · Mis lotes» y «Lote sin dibujar / En Mi finca». Los lotes dibujados van en

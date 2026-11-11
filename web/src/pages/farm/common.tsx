@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { Choice } from "@/components/ui/ChoiceGroup";
 import type { Municipality } from "@/features/farm/lots";
 
@@ -22,11 +21,6 @@ export const NAME_ERROR = "Escriba un nombre para el lote.";
 /** «Samacá, Boyacá». Sin catálogo, el código: nunca se inventa un nombre. */
 export const placeName = (municipality: Municipality | undefined, id: string) =>
   municipality ? `${municipality.name}, ${municipality.department}` : `Municipio ${id}`;
-
-/** El rótulo pequeño en mayúsculas que va sobre los títulos («MI FINCA»). */
-export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">{children}</p>;
-}
 
 /** Lo que cambia sin dibujo, dicho antes de guardar y en el lote (Figma: «Lote sin dibujar / Área a mano»). */
 export function WithoutDrawing({ place }: { place: string }) {

@@ -24,7 +24,8 @@ import {
 } from "@/features/farm/seasons";
 import { useEntrance } from "@/hooks/useEntrance";
 import { AccountShell, LINK } from "@/pages/account/AccountShell";
-import { AREA_ERROR, Eyebrow } from "./common";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { AREA_ERROR } from "./common";
 import { LotBar, PreviousChoice, type Part } from "./SeasonParts";
 
 /**

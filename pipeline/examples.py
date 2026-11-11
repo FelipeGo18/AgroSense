@@ -20,6 +20,7 @@ import polars as pl
 from pipeline import rotation_rules as rotation
 from pipeline import schema
 from pipeline.build import PUBLISHED
+from pipeline.sources import sipsa
 
 EXAMPLES = Path("data/examples")
 SOURCE_ID = "ejemplo"
@@ -41,6 +42,7 @@ EXAMPLE_SOURCE = {
     "period_covered": None,
     "coverage": "Samacá, Toca y Tunja (Boyacá)",
     "license": None,
+    "citation": None,
     "notes": "Cifras inventadas con la forma del contrato, para desarrollar y probar el motor, la API y la web (HU-011). "
     "Nunca se muestran como datos reales (R5).",
 }
@@ -56,6 +58,10 @@ def _frost_month(month: int) -> float:
     return max(0.0, math.cos((month - 1) * math.pi / 6)) * 0.8 + (0.2 if month in (7, 8) else 0.0)
 
 
+# Helada: mínima menor o igual a 2 °C (ZARC de Brasil, `mapa_zarc_2025`; decidido por Felipe el 10 de noviembre de 2026).
+FROST_C = 2
+
+
 def _table(name: str, rows: list[dict[str, Any]]) -> pl.DataFrame:
     spec = schema.TABLES[name]
     table = pl.DataFrame(rows, schema={col: column.dtype for col, column in spec.columns.items()}, orient="row")
@@ -67,7 +73,9 @@ def municipalities(published: pl.DataFrame) -> pl.DataFrame:
     for row in rows:
         altitude, tmean, slope = TOWNS[row["municipality_id"]]
         row.update(altitude_m=altitude, climate_cell_elevation_m=altitude - 180, tmean_annual_c=tmean, slope_pct=slope)
-        row["source_ids"] = sorted({*row["source_ids"], SOURCE_ID})
+        # La altitud, la pendiente y la altura de la celda son inventadas: la fila ya no cita NASA POWER ni NASADEM, solo
+        # lo real que queda (R5).
+        row["source_ids"] = sorted({*row["source_ids"], SOURCE_ID} - {"nasa_power", "nasadem"})
     return _table("municipalities", rows)
 
 
@@ -88,11 +96,11 @@ def climate_day() -> pl.DataFrame:
 
 
 def climate_risk_month(days: pl.DataFrame) -> pl.DataFrame:
-    """Calculado de `climate_day` de ejemplo, como lo haría el pipeline: helada = mínima menor que 2 °C."""
+    """Calculado de `climate_day` de ejemplo, como lo haría el pipeline: helada = mínima menor o igual a 2 °C."""
     monthly = (
         days.with_columns(pl.col("date").dt.year().alias("year"), pl.col("date").dt.month().cast(pl.Int8).alias("month"))
         .group_by("municipality_id", "year", "month")
-        .agg((pl.col("temp_min_c") < 2).sum().alias("frost_days"), pl.col("temp_max_c").quantile(0.9).alias("tmax_p90"))
+        .agg((pl.col("temp_min_c") <= FROST_C).sum().alias("frost_days"), pl.col("temp_max_c").quantile(0.9).alias("tmax_p90"))
     )
     table = (
         monthly.group_by("municipality_id", "month")
@@ -111,6 +119,24 @@ def climate_risk_month(days: pl.DataFrame) -> pl.DataFrame:
         )
     )
     return table.select(list(schema.TABLES["climate_risk_month"].columns)).sort("municipality_id", "month")
+
+
+def climate_frost_month(days: pl.DataFrame) -> pl.DataFrame:
+    """Calculado de `climate_day` de ejemplo: los días con helada de cada mes de cada año (HU-045, HU-077)."""
+    table = (
+        days.with_columns(pl.col("date").dt.year().cast(pl.Int16).alias("year"), pl.col("date").dt.month().cast(pl.Int8).alias("month"))
+        .group_by("municipality_id", "year", "month")
+        .agg(
+            (pl.col("temp_min_c") <= FROST_C).sum().cast(pl.Int16).alias("frost_days"),
+            pl.col("temp_min_c").count().cast(pl.Int16).alias("valid_days"),
+            pl.col("date").first().dt.month_end().dt.day().alias("days"),
+        )
+        .with_columns(
+            pl.when(pl.col("valid_days") == pl.col("days")).then(pl.lit("ok")).otherwise(pl.lit("partial")).alias("quality"),
+            pl.lit(SOURCE_ID).alias("source_id"),
+        )
+    )
+    return table.select(list(schema.TABLES["climate_frost_month"].columns)).sort("municipality_id", "year", "month")
 
 
 def _precip(town_index: int, year: int, month: int) -> float:
@@ -275,13 +301,45 @@ def supply_semester() -> pl.DataFrame:
     return _table("supply_semester", rows)
 
 
+# El producto de SIPSA de cada cultivo de ejemplo, como en `pipeline/sipsa_crops.yaml`.
+MARKET_PRODUCTS = {
+    "papa": "papa-negra",
+    "arveja": "arveja-verde-en-vaina",
+    "cebolla_bulbo": "cebolla-cabezona-blanca",
+    "zanahoria": "zanahoria",
+}
+
+
 def market_month() -> pl.DataFrame:
     rows = [
-        {"crop_id": crop, "market_id": "1", "month": month, "price_cop_kg": 1500 + 300 * j + int(400 * math.sin(month + j)),
-         "volume_t": None, "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3), "quality": "ok", "source_id": SOURCE_ID}
+        {"crop_id": crop, "market_id": "1", "month": month, "product_id": MARKET_PRODUCTS[crop],
+         "price_cop_kg": 1500 + 300 * j + int(400 * math.sin(month + j)), "price_year": 2024, "volume_t": None,
+         "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3), "years": 4, "quality": "ok", "source_id": SOURCE_ID}
         for j, crop in enumerate(MARKET_CROPS) for month in range(1, 13)
     ]  # fmt: skip
     return _table("market_month", rows)
+
+
+def market_price_day() -> pl.DataFrame:
+    """Cuatro semanas de precios de ejemplo en Corabastos (R5): los nombres son los de SIPSA, las cifras inventadas."""
+    start = date(2024, 12, 2)
+    rows = [
+        {"product_id": product, "market_id": "1", "date": start + timedelta(days=d), "product": product.replace("-", " ").capitalize(),
+         "group": "Verduras y hortalizas", "several_varieties": False, "market": "Corabastos (Bogotá)",
+         "min_cop_kg": price - 150, "avg_cop_kg": price, "max_cop_kg": price + 150, "source_id": SOURCE_ID}
+        for j, product in enumerate(MARKET_PRODUCTS.values()) for d in range(28) if (start + timedelta(days=d)).weekday() < 6
+        for price in [1500 + 300 * j + int(200 * math.sin(d / 4 + j))]
+    ]  # fmt: skip
+    return _table("market_price_day", rows)
+
+
+def market_price_season() -> pl.DataFrame:
+    rows = [
+        {"product_id": product, "market_id": "1", "month": month, "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3),
+         "years": 4, "first_year": 2021, "last_year": 2024, "source_id": SOURCE_ID}
+        for j, product in enumerate(MARKET_PRODUCTS.values()) for month in range(1, 13)
+    ]  # fmt: skip
+    return _table("market_price_season", rows)
 
 
 def rotation_rules(crops: pl.DataFrame | None = None, published: Path = PUBLISHED) -> pl.DataFrame:
@@ -370,6 +428,7 @@ def build(published: Path = PUBLISHED) -> dict[str, pl.DataFrame]:
         "climate_day": days,
         "climate_month": month,
         "climate_risk_month": risk,
+        "climate_frost_month": climate_frost_month(days),
         "precip_month": precip_month(),
         "soil_moisture_month": soil_moisture_month(),
         "ndvi_municipality": ndvi_municipality(),
@@ -379,6 +438,10 @@ def build(published: Path = PUBLISHED) -> dict[str, pl.DataFrame]:
         "grid_cells": cells,
         "soil_municipality": soil_municipality(cells),
         "market_month": market_month(),
+        "market_price_day": (day_prices := market_price_day()),
+        # Calculada con la misma función del pipeline y de las actualizaciones de precios.
+        "market_price_latest": sipsa.latest(day_prices),
+        "market_price_season": market_price_season(),
         "climate_risk_week": climate_risk_week(risk, month),
         "climate_normal_doy": climate_normal_doy(days),
         "ndvi_grid": ndvi_grid(cells),
@@ -413,7 +476,9 @@ def write(tables: dict[str, pl.DataFrame], folder: Path = EXAMPLES, published: P
         "notes": "Datos de ejemplo con la forma del contrato (HU-011). Las cifras con la fuente `ejemplo` son inventadas; "
         "el catálogo de cultivos y los límites municipales son los reales.",
     }
-    (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # Siempre con LF, como el manifiesto del dataset publicado (R4).
+    text = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    (folder / "manifest.json").write_text(text, encoding="utf-8", newline="\n")
     return manifest
 
 
