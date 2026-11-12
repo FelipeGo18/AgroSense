@@ -72,7 +72,7 @@ function Activity() {
       <div data-enter>
         <title>Mi actividad · AgroSense</title>
         <Card bodyClassName="gap-3 md:px-4 md:pt-2">
-          <Link to={PATHS.account} className={`${LINK} self-start text-[15px]`}>
+          <Link to={PATHS.account} className={`${LINK} inline-flex min-h-11 items-center self-start text-[15px]`}>
             <span aria-hidden="true">‹ </span>Mi cuenta
           </Link>
           <h1 className="text-[clamp(1.875rem,3vw,2.375rem)]">Mi actividad</h1>

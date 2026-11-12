@@ -47,4 +47,5 @@ npm run typecheck && npm run lint
 ```
 
 - Si la API no está en el 8000: `API_PROXY=http://127.0.0.1:8001 npm run dev`.
-- Páginas con sesión (Mi finca, Mi cuenta): `SESSION=<cookie agrosense_session de una cuenta de prueba> ROUTES=/mi-finca npm run test:responsive`. Borre la cuenta de prueba al terminar.
+- Páginas con sesión (Mi finca, el lote, sembrar, Mi cuenta): `SESSION=<cookie agrosense_session> LOT=<lot_id> npm run test:responsive`, con una cuenta de prueba de la base **local** (nunca la de la nube) que tenga un lote; las rutas se suman solas. Borre la cuenta de prueba al terminar.
+- Las estrategias, sus ciclos y el diagnóstico completo se ven con la web en simulación (`VITE_SIMULATION=true npm run dev -- --port 5190 --strictPort`): el script pone el área de la consulta en la pestaña.
