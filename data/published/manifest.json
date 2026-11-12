@@ -1,7 +1,7 @@
 {
-  "dataset_version": "2026.11.10",
+  "dataset_version": "2026.11.11",
   "rules_version": "0.1.0",
-  "created_at": "2026-11-11T15:31:15+00:00",
+  "created_at": "2026-11-12T20:48:50+00:00",
   "region": {
     "id": "co-boyaca-cundinamarca",
     "name": "Boyacá y Cundinamarca, Colombia",

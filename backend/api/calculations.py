@@ -35,7 +35,7 @@ from backend.api.calc_models import (
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
 from backend.api.lots import _own_lot
-from backend.config.weights import load_weights
+from backend.config.weights import get_default_weights
 from backend.dataset import Dataset
 from backend.db.session import get_db
 from backend.engine.suitability import ABOVE_MAX, NOT_SUITABLE, Suitability, suitability
@@ -195,14 +195,18 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         # Cultivo no es apto para la zona: devolver 200 con la forma completa
         reason = _suitability_reason(crop, result, municipality.tmean_annual_c, crop["tmean_min_c"], crop["tmean_max_c"])
 
-        light_result = LightResult(
-            light="red",
-            action="rotate",
-            high_risk=False,
-            weights_basis="default",
-            limiting_signal=None,
-            reasons=["Este cultivo no se da en su zona: elija otro"],
-        )
+        # Regla 0 ignora los pesos (la luz es roja de todas formas), pero `weights` y `weights_basis` siguen
+        # diciendo cuáles se habrían usado (specs/epicas/EP-07-diagnostico.md, HU-074): los del agricultor si
+        # mandó `priorities`, si no los de AgroSense (cacheados: `weights.yaml` no se vuelve a leer en cada consulta).
+        weights_used = body.priorities if body.priorities is not None else get_default_weights().weights
+        basis_used = "farmer" if body.priorities is not None else "default"
+
+        reasons = ["Este cultivo no se da en su zona: elija otro"]
+        limitations = []
+        if body.lot_id is not None:
+            # La aptitud usa la temperatura del municipio también con lote: la corrección a su altitud espera
+            # HU-206, que calcula la mediana de `grid_cells` en el polígono del lote (R1).
+            limitations.append("Temperatura media anual del municipio, no corregida a la altitud del lote (HU-206).")
 
         return DiagnosisResponse(
             request=DiagnosisRequestEcho(
@@ -222,10 +226,14 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
             ),
             window=None,
             signals=None,
-            overall=light_result,
-            overall_default=light_result,
-            weights=load_weights().weights,
-            limitations=[],
+            overall=LightResult(
+                light="red", action="rotate", high_risk=False, weights_basis=basis_used, limiting_signal=None, reasons=reasons
+            ),
+            overall_default=LightResult(
+                light="red", action="rotate", high_risk=False, weights_basis="default", limiting_signal=None, reasons=reasons
+            ),
+            weights=weights_used,
+            limitations=limitations,
             versions={"dataset": dataset.version, "rules": dataset.rules_version},
         )
 

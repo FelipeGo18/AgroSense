@@ -12,7 +12,7 @@ from backend.api.calculations import _get_article, _suitability_reason
 from backend.api.errors import ApiError
 from backend.api.main import app
 from backend.config.settings import get_settings
-from backend.config.weights import load_weights
+from backend.config.weights import get_default_weights
 from backend.engine.suitability import ABOVE_MAX, BELOW_MIN, Suitability
 
 SOON = (date.today() + timedelta(days=40)).isoformat()
@@ -235,7 +235,7 @@ def test_diagnostico_cultivo_no_apto_responde_200_con_la_forma_del_contrato(data
         assert light["reasons"] == ["Este cultivo no se da en su zona: elija otro"]
     assert body["overall"]["weights_basis"] == "default"
 
-    assert body["weights"] == load_weights().weights
+    assert body["weights"] == get_default_weights().weights
     assert body["versions"]["dataset"] not in (None, "ejemplo")
     assert body["request"]["crop_id"] == "papa"
     assert body["request"]["municipality_id"] == "25307"
@@ -262,6 +262,56 @@ def test_diagnostico_cultivo_no_apto_por_debajo_del_minimo(dataset_con_clima):
         "La temperatura media anual del municipio (6,0 °C) no alcanza la que necesita el maíz (desde 10 °C)"
     ]
     assert body["overall"]["light"] == "red" and body["overall"]["action"] == "rotate"
+
+
+def test_diagnostico_no_apto_con_prioridades_usa_weights_basis_farmer(dataset_con_clima):
+    """Con `priorities`, `overall` dice `weights_basis = farmer` y `weights` trae las del agricultor, aunque la
+    regla 0 ignore los pesos para decidir la luz (sigue roja). `overall_default` sigue siempre en `default`."""
+    priorities = {"water": 0, "frost": 1, "heat": 2, "soil": 3, "supply": 4, "market": 5}
+    response = TestClient(app).post(
+        "/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON, "priorities": priorities}
+    )
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    assert body["overall"]["weights_basis"] == "farmer"
+    assert body["overall_default"]["weights_basis"] == "default"
+    assert body["weights"] == priorities
+    assert body["overall"]["light"] == "red" and body["overall_default"]["light"] == "red"
+
+
+def test_diagnostico_no_apto_sin_prioridades_usa_los_pesos_por_defecto(dataset_con_clima):
+    response = TestClient(app).post("/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON})
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    assert body["overall"]["weights_basis"] == "default"
+    assert body["weights"] == get_default_weights().weights
+
+
+def test_diagnostico_no_apto_con_lote_dice_que_la_temperatura_es_la_del_municipio(dataset_con_clima, client):
+    """Con `lot_id`, la aptitud sigue usando la temperatura del municipio (la del lote espera HU-206) y lo dice en
+    `limitations`, en vez de dejarlas vacías como si no faltara nada."""
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "fabio.girardot",
+            "password": "papaya-criolla-2026",
+            "display_name": "Fabio",
+            "consent_version": 3,
+            "consent_accepted": True,
+        },
+    )
+    lot = client.post("/api/v1/lots", json={"name": "La Vega", "municipality_id": "25307", "area_ha": 1.0}).json()
+
+    response = client.post(
+        "/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON, "lot_id": lot["lot_id"]}
+    )
+    assert response.status_code == 200, response.json()
+    assert response.json()["limitations"] == ["Temperatura media anual del municipio, no corregida a la altitud del lote (HU-206)."]
+
+
+def test_diagnostico_no_apto_sin_lote_no_tiene_limitaciones(dataset_con_clima):
+    response = TestClient(app).post("/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON})
+    assert response.json()["limitations"] == []
 
 
 def test_diagnostico_cultivo_apto_sigue_en_501(dataset_con_clima):
