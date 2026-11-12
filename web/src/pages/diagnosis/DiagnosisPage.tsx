@@ -12,7 +12,6 @@ import { Combobox, type Option } from "@/components/ui/Combobox";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ExampleLabel } from "@/components/ui/Labels";
 import { SelectField } from "@/components/ui/SelectField";
-import { TrafficLightBadge } from "@/components/ui/TrafficLightBadge";
 import { StateCard } from "@/components/ui/StateCard";
 import { DiagnosisSkeleton } from "./DiagnosisSkeleton";
 import { useSession } from "@/features/auth/session";
@@ -362,9 +361,8 @@ function Result({
       </h2>
       {diagnosis.isPending ? (
         <DiagnosisSkeleton querySummary={querySummary} />
-      ) : //<TrafficLightBadge loading className="self-start" />
+      ) :
       diagnosis.isError ? (
-        //<Alert>{errorText(diagnosis.error)}</Alert>
         <DiagnosisError
           error={diagnosis.error}
           onRetry={() => void diagnosis.refetch()}
