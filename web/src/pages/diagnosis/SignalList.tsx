@@ -35,6 +35,8 @@ export interface SignalListProps {
   supplySemester: SupplySemester | null | undefined;
   soil: MunicipalitySoil | undefined;
   version: Version | undefined;
+  /** La gráfica de la lluvia de la ventana año por año, dentro de la señal de agua (HU-093). */
+  waterChart?: ReactNode;
 }
 
 /**
@@ -42,7 +44,7 @@ export interface SignalListProps {
  * forma y texto, su calificación de 0 a 100 (sin barra si no la tiene, R1), sus razones y, cuando trae varias fuentes,
  * todas juntas con la que calculó la señal marcada (R8). Nunca un valor combinado.
  */
-export function SignalList({ signals, limiting, irrigated, weights, supplySemester, soil, version }: SignalListProps) {
+export function SignalList({ signals, limiting, irrigated, weights, supplySemester, soil, version, waterChart }: SignalListProps) {
   const list = orderedSignals(signals);
   if (list.length === 0) return null;
   return (
@@ -61,6 +63,7 @@ export function SignalList({ signals, limiting, irrigated, weights, supplySemest
               ))}
             </ul>
           )}
+          {key === "water" && waterChart}
           {signal.sources && signal.sources.length > 0 && <Sources sources={signal.sources} version={version} />}
         </SignalItem>
       ))}

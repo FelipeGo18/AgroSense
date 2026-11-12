@@ -560,15 +560,15 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
           "harvest_basis": "calendar", "light": "green", "light_default": "green", "limiting_signal": "frost", "high_risk": false }
       ],
       "soil_health": {
-        "nitrogen": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"],
+        "nitrogen": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID"],
           "reasons": ["Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"] },
-        "organic_carbon": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"],
+        "organic_carbon": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID", "soilgrids"],
           "reasons": ["El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"] },
-        "soil_cover": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"],
+        "soil_cover": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID"],
           "reasons": ["El suelo queda cubierto 11 de los 13 meses de la estrategia"] },
-        "pest_break": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"],
+        "pest_break": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID"],
           "reasons": ["La papa vuelve al terreno después de dos ciclos de otras familias"] },
-        "erosion": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"],
+        "erosion": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID", "nasadem"],
           "reasons": ["El lote tiene una pendiente de 14 % y el suelo queda descubierto 2 meses"] }
       },
       "reasons": ["Empieza con un abono verde y su suelo tiene poco carbono orgánico", "Ningún ciclo tiene un riesgo alto de clima"],
@@ -585,16 +585,16 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
     "soil_health": {},
     "issues": [
       { "cycle": 3, "kind": "rule", "rule_id": "REGLA_ID",
-        "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia" }
+        "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia", "source_ids": ["FUENTE_ID"] }
     ],
     "reasons": ["Es la rotación que usted viene haciendo: las demás se comparan contra ella"],
     "limitations": []
   },
   "excluded": [
     { "crop_ids": ["papa", "arveja", "haba"], "cycle": 1, "kind": "rule", "rule_id": "REGLA_ID",
-      "reason": "Repite la familia de la papa, que había antes en el terreno" },
+      "reason": "Repite la familia de la papa, que había antes en el terreno", "source_ids": ["FUENTE_ID"] },
     { "crop_ids": ["arveja", "papa", "maiz"], "cycle": 2, "kind": "high_risk", "signal": "frost",
-      "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa" }
+      "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa", "source_ids": ["nasa_power"] }
   ],
   "weights": { "water": 3, "soil": 5, "income": 2, "risk": 4 },
   "soil_basis": "municipality",
@@ -607,8 +607,9 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - Cada ciclo trae además `diagnosis`: el diagnóstico de esa ventana, con la misma forma de «Respuesta de diagnóstico» (sin `request`, `best_windows` ni `alternatives`). El ejemplo lo omite por brevedad. `light` es la luz con los pesos de quien consulta y `light_default` con los de AgroSense. En un ciclo de descanso, `light`, `light_default`, `limiting_signal` y `diagnosis` vienen nulos.
 - `kind`: `suggested` en las estrategias del ranking y `current` en la de referencia. `vs_current`: en cada sugerida, la diferencia de cada criterio y del total frente a la actual (positivo es mejor); nulo sin rotación actual o si el criterio no califica en alguna de las dos.
 - `current_strategy` (decisión 14, aprobado por Felipe el 8 de noviembre de 2026): la rotación actual evaluada con la misma forma de una estrategia (el ejemplo omite sus ciclos y su salud del suelo por brevedad), con `rank` nulo. **Nunca se excluye:** si viola una regla, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, `issues` lo dice con la misma forma de `excluded` (sin `crop_ids`). Nula sin `current_crop_ids`. Una estrategia sugerida igual a la actual no se repite en `strategies`.
-- `soil_health`: los cinco criterios de salud del suelo (`erosion` desde la decisión 14), cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons` y `rule_ids` (reglas de `rotation_rules`, con fuente). **No es una predicción de cuánto mejora el suelo.**
+- `soil_health`: los cinco criterios de salud del suelo (`erosion` desde la decisión 14), cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons`, `rule_ids` (reglas de `rotation_rules`, con fuente) y `source_ids` (las fuentes de esas reglas y de los datos que usan, para que la web las cite; vacía sin regla con fuente). **No es una predicción de cuánto mejora el suelo.**
 - `excluded`: las estrategias descartadas, con el ciclo y el motivo. **Trae hasta 10** (decisión 15): primero las que quedaron fuera por un solo motivo, y entre ellas, en el orden en que se habrían ordenado. `excluded_counts` cuenta todas las descartadas por `kind` (por ejemplo `{"rule": 212, "high_risk": 48, "not_suitable": 30, "soil_ph": 0}`), para que la web diga cuántas son sin traerlas todas. `kind` es `rule` (viola una regla de filtro; trae `rule_id`), `not_suitable` (un cultivo no se da en la zona), `soil_ph` (el pH queda fuera de todo el intervalo) o `high_risk` (un ciclo con `water`, `frost` o `heat` desfavorable y crítica; trae `signal`).
+- Cada descartada y cada `issues` trae `source_ids`: la fuente de su regla, de la ficha del cultivo, del suelo o del clima de la señal (R8).
 - La oferta y el mercado no excluyen estrategias: entran solo por `income`.
 - `soil_basis` y `slope_basis`: `lot` o `municipality`, de dónde salen el suelo y la pendiente.
 - Sin estrategias válidas, `strategies` viene vacía y `excluded` dice por qué.
@@ -618,6 +619,8 @@ Con cuenta, la web arma `previous_crop_ids` con los cultivos de las temporadas d
 Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 2 ciclos sin `soil_health`, y `previous_crop_ids` pedía al menos un cultivo.
 
 > **8 de noviembre de 2026 (decisión 14, aprobado por Felipe):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta.
+
+> **11 de noviembre de 2026 (HU-102, aprobado por Haider; decisión 15 de `docs/decisiones.md`):** `source_ids` en cada criterio de `soil_health`, en cada `issues` y en cada `excluded`. Es un campo nuevo; los demás no cambian.
 
 ### Cuerpo de `POST /api/v1/water-plans`
 

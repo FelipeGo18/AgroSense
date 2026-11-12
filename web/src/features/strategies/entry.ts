@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 import type { Irrigation } from "@/features/diagnosis/consult";
 import type { SignalWeights } from "@/features/diagnosis/priorities";
@@ -13,8 +13,9 @@ export type RotationWeights = Schemas["RotationWeights"];
  * primer ciclo, riego, cuántos ciclos y la rotación que viene haciendo (HU-223). Con cuenta, desde el lote: su
  * municipio, su riego y su historial.
  *
- * Va en la dirección, salvo el área: sin cuenta, el área solo se usa en este navegador para el agua del plan (HU-215) y
- * nunca llega al servidor ni a sus logs (R9). Por eso vive en `sessionStorage`, no en la dirección.
+ * Va en la dirección, salvo el área: sin cuenta, el área solo sirve para el agua de cada ciclo (HU-215). Viaja solo a
+ * `POST /water-plans`, que calcula y no guarda nada (R9); nunca va a `/rotations` ni a la dirección, donde quedaría en
+ * el historial del navegador. Por eso vive en `sessionStorage`.
  */
 export type Mode = "" | "none" | "crops";
 
@@ -235,7 +236,10 @@ export function toRequest(
 
 export const allZero = (p: RotationWeights) => p.water === 0 && p.soil === 0 && p.income === 0 && p.risk === 0;
 
-/** Calcular no es guardar (R9): la API no guarda nada; se pide como una lectura y se recuerda en la visita. */
+/**
+ * Calcular no es guardar (R9): la API no guarda nada; se pide como una lectura y se recuerda en la visita. Al mover una
+ * prioridad, el orden anterior se sigue viendo mientras llega el nuevo (`isPlaceholderData`), con un aviso (HU-101).
+ */
 export function useRotations(request: RotationRequest | null) {
   return useQuery({
     queryKey: ["rotations", request],
@@ -243,6 +247,7 @@ export function useRotations(request: RotationRequest | null) {
     enabled: request !== null,
     retry: false,
     staleTime: Infinity,
+    placeholderData: keepPreviousData,
   });
 }
 
