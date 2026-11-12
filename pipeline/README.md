@@ -37,6 +37,7 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 | `municipalities` (con la altitud y la pendiente de NASADEM y la altura de su celda de NASA POWER) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`), NASADEM y NASA POWER | HU-044, HU-206, HU-041 |
 | `climate_day` | NASA POWER, API diaria por punto (`pipeline/sources/nasa_power.py`), corregida por la altitud de NASADEM. Es un reanálisis | HU-041 |
 | `climate_month` | NASA POWER: la lluvia de cada mes completo de la celda del municipio, su normal 1991–2020 y su año seco, la ET0 por Penman-Monteith de FAO-56 con su normal (HU-143) y la humedad del suelo de un modelo, de 0 a 1 (HU-205). Es un reanálisis y en el altiplano da más lluvia que el IDEAM | HU-042 |
+| `precip_month` | GPM IMERG mensual, corrida final V07 (`pipeline/sources/imerg.py`): la lluvia de cada mes por municipio, promedio de sus celdas de 0,1° ponderado por área, con su normal 2001–2024 y su año seco. Pide cuenta de NASA Earthdata (`AGROSENSE_EARTHDATA_TOKEN`); sin la caché se publica lo demás y el log dice `source_missing` | HU-207 |
 | `grid_cells` (sin el suelo todavía, HU-181) | NASADEM (`pipeline/sources/nasadem.py`): altitud y pendiente de cada celda de 250 m | HU-206 |
 | `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
 | `crops` y `crop_stages` | Catálogo agronómico de `catalog/crops.yaml`: FAO EcoCrop, FAO-56, UPRA y FAO, con fuente por valor (`pipeline/catalog.py`) | HU-061, HU-199, HU-063 |
@@ -62,6 +63,22 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
   sus celdas (decidido por Felipe el 10 de noviembre de 2026, HU-206).
 - `municipalities.tmean_annual_c` es la temperatura media de 1991–2020, corregida por altitud: el periodo normal está
   en `region.yaml` (`climate_normal`) y la calcula `pipeline/climate_normals.py` (HU-044). Sin la caché de NASADEM se publica lo demás, sin la rejilla ni el clima diario, y el log lo dice.
+
+## Lluvia por satélite de GPM IMERG (HU-207)
+
+- Pide una cuenta de NASA Earthdata: genere el token en https://urs.earthdata.nasa.gov («Generate Token»), apruebe la
+  app «NASA GESDISC DATA ARCHIVE» y ponga el token en `AGROSENSE_EARTHDATA_TOKEN` en su `.env`. Sin el token,
+  `--descargar` baja lo demás y lo dice en el log (`source_skipped`).
+- El catálogo de la NASA (CMR, sin cuenta) da los meses de la colección `GPM_3IMERGM` V07. De cada uno se baja por
+  OPeNDAP solo el recuadro de la región en CSV (34 × 30 celdas, unos 8 KB), de a 4 a la vez y con 3 intentos, con
+  `AGROSENSE_IMERG_TIMEOUT_S` y `AGROSENSE_IMERG_MAX_MB`. Los 333 meses son 2,7 MB en `data/raw/imerg/` y bajan en
+  unos 2 minutos y medio. Un mes que ya está en la caché no se vuelve a bajar. El manifiesto de la caché
+  (`imerg.meta.json`) solo se escribe si bajaron todos.
+- La lluvia viene en mm/h promedio del mes y se pasa a mm del mes. La de un municipio es el promedio de las celdas
+  que tocan su polígono, ponderado por el área de cada una dentro. Un mes es `ok` si hay dato en todo el municipio,
+  `partial` si cubre al menos el 90 %, y con menos no se publica (R1).
+- La normal es 2001–2024 (`imerg_normal` en `region.yaml`), con al menos 20 años completos: nunca se completa con
+  años de NASA POWER (R1).
 
 ## Clima diario de NASA POWER (HU-041)
 
