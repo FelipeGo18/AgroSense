@@ -25,6 +25,8 @@ WATER = {"municipality_id": "15646", "total_area_ha": 1.26, "crops": [{"crop_id"
         (m.DiagnosisResponse, ex.DIAGNOSIS_NOT_EVALUABLE),
         (m.DiagnosisResponse, ex.DIAGNOSIS_NOT_APPLICABLE),
         (m.RotationResponse, ex.ROTATIONS),
+        (m.RotationResponse, ex.ROTATIONS_EMPTY),
+        (m.RotationResponse, ex.ROTATIONS_NO_CURRENT),
         (m.WaterPlanResponse, ex.WATER_PLAN),
         (m.ChangesResponse, ex.CHANGES),
         (m.TrendsResponse, ex.TRENDS),
@@ -75,6 +77,8 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         ("post", "/api/v1/diagnostics", DIAGNOSIS),
         ("post", "/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["papa"], "current_crop_ids": ["papa", "arveja"]}),
         ("post", "/api/v1/water-plans", WATER),
+        # El agua del ciclo de un abono verde (HU-215): es una entrada válida.
+        ("post", "/api/v1/water-plans", {**WATER, "crops": [{"crop_id": "avena_vicia", "area_pct": 100, "sowing_date": SOON}]}),
         ("get", "/api/v1/changes?municipality_id=15646&crop_id=papa", None),
         ("get", f"/api/v1/trends?municipality_id=15646&crop_id=papa&sowing_date={SOON}", None),
     ],

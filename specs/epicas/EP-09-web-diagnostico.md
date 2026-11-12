@@ -111,14 +111,26 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-093 · Gráfica de la lluvia de la ventana
 
 - **Historia:** Como agricultor, quiero ver año por año la lluvia de mi ventana frente a lo que el cultivo necesita, para ver la tendencia con mis ojos.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Una gráfica de la serie `water`: lluvia de los meses de la ventana y necesidad del cultivo, por año, en mm, con unidades y periodo visibles
-  - [ ] Dice de qué fuente es la lluvia (IMERG o POWER, la que calculó la señal)
-  - [ ] Una serie con `insufficient_data` muestra su estado vacío, no una gráfica en cero (R1)
+  - [x] Una gráfica de la serie `water`: lluvia de los meses de la ventana y necesidad del cultivo, por año, en mm, con unidades y periodo visibles
+  - [x] Dice de qué fuente es la lluvia (IMERG o POWER, la que calculó la señal)
+  - [x] Una serie con `insufficient_data` muestra su estado vacío, no una gráfica en cero (R1)
 - **Reglas que aplican:** R1, R5, R8
 - **Contrato que toca:** `GET /api/v1/trends` (serie `water`)
 - **Notas:** Reducida el 11 de octubre de 2026 a una sola gráfica (recorte del MVP); pasó de M a S. La gráfica del área sembrada (serie `supply`) queda para P1; la oferta sigue en su señal. La serie `ndvi` se muestra en el ciclo de una estrategia (HU-215).
+- **Hecho (11 nov):** dentro de la señal de agua, en el diagnóstico y en el ciclo de una estrategia (HU-215), que usan la misma lista de señales. El código está en `web/src/pages/diagnosis/WaterChart.tsx`, y `useTrends` pasó a `web/src/features/diagnosis/trends.ts`, que comparten el diagnóstico y el ciclo. Sigue el diseño de `design/pantallas/detalle.py`.
+  - **La gráfica:**
+    - una barra por año con la lluvia de los meses de la ventana, y lo que necesita el cultivo como línea punteada;
+    - los años en que la lluvia no alcanzó van vacíos y punteados, y la leyenda dice cuántos («3 de 9»): forma, no solo color;
+    - un año sin dato no tiene barra y no cuenta (R1); la necesidad se corta donde falta.
+  - **El título:** dice los meses, el cultivo y la unidad: «Lluvia de ago a dic frente a lo que necesita el cultivo (papa), en mm».
+  - **Al pie:** los años, la fuente de la lluvia con su nota (la que calculó la señal, R8) y que es historia, no pronóstico.
+  - **Para leerla:** cada año dice sus cifras al pasar o tocar, y hay una tabla.
+  - **Estados:** mientras carga, si falla o sin datos, lo dice; nunca una gráfica en cero. Un valor que no viene en la respuesta también es «sin dato».
+  - **El tamaño:** la gráfica se dibuja al ancho real de la tarjeta (`web/src/hooks/useWidth.ts`), así que el texto mide lo mismo en el celular y en el escritorio. La gráfica del verdor (HU-215) pasó a dibujarse igual.
+  - **Ejemplo de la API:** el de `/trends` trae diez años de lluvia, con tres que no alcanzaron y uno sin dato.
+  - **Pruebas:** en `web/src/pages/diagnosis/waterChart.test.tsx`. Revisado a 360 y 1440 px.
 
 ### HU-094 · Estados de carga, vacío y error
 
@@ -133,7 +145,7 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 - **Historia:** Como agricultor, quiero ver qué cambió en las heladas, la lluvia y el calor de mi zona, y cómo se movieron las mejores fechas de siembra de mi cultivo, para adaptar mi finca a condiciones que cambian.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Se llega desde el resultado del diagnóstico, desde el ciclo de una estrategia (HU-215) y desde el lote, con el municipio y el cultivo ya elegidos
+  - [ ] Se llega desde el resultado del diagnóstico, desde el ciclo de una estrategia (HU-215) y desde el lote, con el municipio y el cultivo ya elegidos. El ciclo ya enlaza a `/que-cambio?municipio=&cultivo=` (`PATHS.changes`), que hoy dice que está pendiente: esta HU pone ahí la pantalla
   - [ ] Por mes, tres comparaciones (heladas, lluvia y temperatura máxima) entre los dos periodos, cada una con su unidad, los años de cada periodo y la fuente
   - [ ] Las mejores ventanas de cada periodo, lado a lado («Entre 1981 y 2000: …» · «Entre 2005 y 2024: …»)
   - [ ] Rótulo fijo y visible: «Así fue en la historia de su zona. No es un pronóstico»
@@ -158,6 +170,14 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-096 · Uso desde el celular
 
 - **Historia:** Como agricultor, quiero usar la herramienta desde el celular, porque es lo que tengo en el campo.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Usable a 360 px de ancho sin desplazamiento horizontal
+  - [x] Usable a 360 px de ancho sin desplazamiento horizontal
+- **Hecho (12 nov):** `npm run test:responsive` (`web/e2e/responsive-check.mjs`) revisa ahora toda la web.
+  - **Qué se suma:**
+    - las estrategias con resultados y sin ninguna, los dos tipos de ciclo y «Qué cambió»: el área de la consulta se pone en la pestaña antes de abrir cada página;
+    - con `SESSION` y `LOT` (una cuenta de prueba de la base local, nunca de la nube), también Agregar lote, el lote, Editar lote, Registrar siembra, las estrategias desde el lote, Mi cuenta, Cambiar contraseña y Mi actividad.
+  - **La revisión del 12 de noviembre:** 25 pantallas en 11 tamaños (de 320×568 a 1920×1080), con movimiento y en modo ligero, sobre `desarrollo` (824dc43) con las respuestas simuladas: **550 de 550 sin problemas**. Revisa que no haya desplazamiento horizontal ni piezas fuera del ancho, que la barra superior no se salga, que los objetivos táctiles midan al menos 44 px en pantallas táctiles (24 px en escritorio) y que en modo ligero nada siga animado.
+  - **Lo que encontró y se arregló:** dos enlaces sueltos de menos de 44 px, «Leer la política de tratamiento de datos» en Mi cuenta (27 px) y «‹ Mi cuenta» en Mi actividad (23 px).
+  - **La cuenta de prueba** se borró al terminar.
+  - **Lo que no reemplaza:** es Chrome sin ventana con el ancho y el toque de un celular, no un teléfono de verdad (Safari de iPhone y Chrome de Android pueden cambiar un poco las alturas). Antes de la demo conviene abrirla en un celular real con `npm run dev -- --host`.

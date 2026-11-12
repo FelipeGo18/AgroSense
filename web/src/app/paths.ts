@@ -16,6 +16,8 @@ export const PATHS = {
   harvest: (lotId: string, seasonId: string) => `/mi-finca/lotes/${lotId}/siembras/${seasonId}/cosechar` as const,
   editSeason: (lotId: string, seasonId: string) => `/mi-finca/lotes/${lotId}/siembras/${seasonId}/editar` as const,
   howItWorks: "/como-funciona",
+  /** «Qué cambió en su zona» (HU-219), con `?municipio=&cultivo=`. Pendiente: hasta que exista, lleva a una página que lo dice. */
+  changes: "/que-cambio",
   login: "/entrar",
   signup: "/crear-cuenta",
   account: "/mi-cuenta",
