@@ -1,9 +1,6 @@
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRef } from "react";
-
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap, ScrollTrigger } from "@/lib/motion";
 
 /** De qué lado entra una pieza en la variante de lado: `data-reveal="right"` por la derecha; las demás, por la izquierda. */
 const side = (_: number, el: Element) => ((el as HTMLElement).dataset.reveal === "right" ? 1 : -1);
@@ -47,7 +44,7 @@ const REST = { x: 0, y: 0, scale: 1, rotation: 0, autoAlpha: 1 };
  */
 export function useReveal<T extends HTMLElement>(enabled: boolean, variant: RevealVariant = "rise") {
   const scope = useRef<T>(null);
-  useGSAP(
+  useMotionEffect(
     () => {
       if (!enabled || !scope.current) return;
       const items = gsap.utils.toArray<HTMLElement>("[data-reveal]", scope.current);
