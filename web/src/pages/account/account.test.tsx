@@ -74,7 +74,9 @@ describe("Mi cuenta (HU-160, HU-163)", () => {
   it("sin sesión lleva a entrar", async () => {
     fakeApi({});
     open(PATHS.account);
-    expect(await screen.findByRole("heading", { level: 1, name: "Vuelva a su finca" })).toBeInTheDocument();
+    // Lleva a «Entrar», otra página que se carga aparte: con toda la suite en paralelo tarda más del segundo que espera
+    // `findBy` por defecto, y la prueba fallaba sin que nada estuviera mal.
+    expect(await screen.findByRole("heading", { level: 1, name: "Vuelva a su finca" }, { timeout: 10_000 })).toBeInTheDocument();
   });
 
   it("muestra sus datos, lo que se guarda y cuándo aceptó el consentimiento", async () => {

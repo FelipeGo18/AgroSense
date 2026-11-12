@@ -42,7 +42,7 @@ from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
 from pipeline import climate_normals, rotation_rules, schema
 from pipeline.settings import get_settings
-from pipeline.sources import dane, dane_mgn, nasa_power, nasadem, sipsa, sipsa_boletin
+from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
@@ -198,6 +198,20 @@ def validate_climate_month(month: pl.DataFrame, municipalities: pl.DataFrame, so
         raise ValidationError(f"`climate_month` cita una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def validate_precip_month(month: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`precip_month` (HU-207) solo trae municipios publicados (R7), meses de 1 a 12, lluvia no negativa y fuentes que
+    existen (R8)."""
+    extra = set(month["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`precip_month` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    bad = month.filter(~pl.col("month").is_between(1, 12) | (pl.col("precip_mm") < 0) | (pl.col("precip_normal_mm") < 0))
+    if not bad.is_empty():
+        raise ValidationError(f"`precip_month` con un mes o una lluvia fuera de lo permitido: {bad.head(3).to_dicts()}")
+    unknown = set(month["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`precip_month` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`grid_cells` solo trae celdas de municipios publicados (R7) y cita fuentes que existen (R8)."""
     extra = set(grid["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
@@ -220,14 +234,15 @@ def publish(
     climate: pl.DataFrame | None = None,
     grid: pl.DataFrame | None = None,
     climate_month: pl.DataFrame | None = None,
+    precip_month: pl.DataFrame | None = None,
     rules: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
     `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
     `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). `climate`
-    (`climate_day`), `climate_month` (HU-042) y `grid` (`grid_cells`, HU-206) solo se escriben si traen filas: una tabla vacía no es un dato
-    (R1). Todo se valida antes de escribir nada.
+    (`climate_day`), `climate_month` (HU-042), `precip_month` (HU-207) y `grid` (`grid_cells`, HU-206) solo se escriben
+    si traen filas: una tabla vacía no es un dato (R1). Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
     if boundaries is not None:
@@ -250,6 +265,9 @@ def publish(
     has_month = climate_month is not None and not climate_month.is_empty()
     if has_month:
         validate_climate_month(climate_month, municipalities, sources)
+    has_precip = precip_month is not None and not precip_month.is_empty()
+    if has_precip:
+        validate_precip_month(precip_month, municipalities, sources)
     has_grid = grid is not None and not grid.is_empty()
     if has_grid:
         validate_grid(grid, municipalities, sources)
@@ -269,6 +287,8 @@ def publish(
         tables["climate_day"] = climate
     if has_month:
         tables["climate_month"] = climate_month
+    if has_precip:
+        tables["precip_month"] = precip_month
     if has_grid:
         tables["grid_cells"] = grid
     if prices is not None:
@@ -315,6 +335,12 @@ def publish(
         period = f"; normal {normal.first_year}-{normal.last_year}" if normal is not None else ""
         coverage = f"{climate_month['municipality_id'].n_unique()} municipios, meses completos {years}{period}"
         manifest["tables"]["climate_month"] = {"rows": climate_month.height, "coverage": coverage}
+    if has_precip:
+        years = f"de {precip_month['year'].min()} a {precip_month['year'].max()}"
+        periods = sorted(set(precip_month["normal_period"].drop_nulls().to_list()))
+        normal_text = f"; normal {', '.join(periods)}" if periods else "; sin normal"
+        coverage = f"{precip_month['municipality_id'].n_unique()} municipios, lluvia de GPM IMERG {years}{normal_text}"
+        manifest["tables"]["precip_month"] = {"rows": precip_month.height, "coverage": coverage}
     if has_grid:
         coverage = f"Celdas de 0,0025° de {grid['municipality_id'].n_unique()} municipios; sin suelo hasta HU-181"
         manifest["tables"]["grid_cells"] = {"rows": grid.height, "coverage": coverage}
@@ -441,6 +467,34 @@ def climate_from_cache(
     return municipalities, climate, month, sources
 
 
+def precip_from_cache(region: dict[str, Any], boundaries: pl.DataFrame, cache: Path) -> tuple[pl.DataFrame | None, list[dict[str, Any]]]:
+    """La lluvia de GPM IMERG por municipio (HU-207): `precip_month` y su fuente.
+
+    Sin la caché de IMERG (pide cuenta de Earthdata) no devuelve nada: lo demás se publica igual y la lluvia de contraste
+    es `insufficient_data` (R1).
+    """
+    normal = imerg.normal_from_region(region)
+    if normal is None:
+        log.warning("climate_normal_missing", table="precip_month", detail="region.yaml no trae imerg_normal: no hay precip_month")
+        return None, []
+    try:
+        cells, meta = imerg.read_cache(boundaries, cache)
+    except FileNotFoundError as error:
+        log.warning("source_missing", source=imerg.SOURCE_ID, detail=f"Se publica sin la lluvia de GPM IMERG: {error}")
+        return None, []
+    month = imerg.precip_month(cells, imerg.weights(boundaries), normal)
+    partial = month.filter(pl.col("quality") == "partial").height
+    log.info(
+        "source_read",
+        source=imerg.SOURCE_ID,
+        rows_read=cells.height,
+        rows_kept=month.height,
+        detail=f"GPM IMERG: {len(meta['months'])} meses de {cells.select('row', 'col').unique().height} celdas; precip_month "
+        f"con {month.height} filas de {month['municipality_id'].n_unique()} municipios, {partial} partial (R1)",
+    )
+    return month, [imerg.source(cells, meta)]
+
+
 def build(
     download: bool = False,
     folder: Path = PUBLISHED,
@@ -448,12 +502,14 @@ def build(
     market_cache: Path | None = None,
     power_cache: Path | None = None,
     dem_cache: Path | None = None,
+    rain_cache: Path | None = None,
 ) -> dict[str, Any]:
     # Las cachés de SIPSA, NASA POWER y NASADEM se buscan al correr, no al importar: así las pruebas las apuntan a una
     # carpeta vacía y nunca leen las de quien las corre.
     market_cache = market_cache or sipsa.CACHE
     power_cache = power_cache or nasa_power.CACHE
     dem_cache = dem_cache or nasadem.CACHE
+    rain_cache = rain_cache or imerg.CACHE
     region = load_region()
     version, name = region["dataset_version"], region["region"]["name"]
     departments = region["region"]["departments"]
@@ -483,9 +539,16 @@ def build(
     if download:
         nasadem.download(nasadem.tiles(boundaries), dem_cache)
         nasa_power.download(nasa_power.cells(municipalities), power_cache)
+        # IMERG pide una cuenta de NASA Earthdata: sin el token se baja lo demás y se avisa.
+        token = get_settings().earthdata_token
+        if token is not None and token.get_secret_value().strip():
+            imerg.download(boundaries, rain_cache)
+        else:
+            log.warning("source_skipped", source=imerg.SOURCE_ID, detail="Sin AGROSENSE_EARTHDATA_TOKEN no se baja GPM IMERG (HU-207)")
     # Primero la altitud: el clima se corrige con ella (HU-044).
     municipalities, grid, terrain_sources = terrain_from_cache(municipalities, boundaries, dem_cache)
     municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
+    precip_month, rain_sources = precip_from_cache(region, boundaries, rain_cache)
     # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
     normal = climate_normals.Normal.from_region(region)
     if climate is not None and not climate.is_empty():
@@ -533,17 +596,32 @@ def build(
         )
         own.append(sipsa.source(prices, downloaded_at))
         crop_products = load_crops()
-    sources = pl.concat([pl.DataFrame([*own, *terrain_sources, *climate_sources]), catalog_sources, rules_sources], how="diagonal_relaxed")
+    sources = pl.concat(
+        [pl.DataFrame([*own, *terrain_sources, *climate_sources, *rain_sources]), catalog_sources, rules_sources],
+        how="diagonal_relaxed",
+    )
     check_signal_sources(region["region"]["id"], set(sources["source_id"].to_list()))
     crops = (catalog["version"], crops_table, stages_table)
     return publish(
-        region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid, climate_month, rules_table
+        region,
+        municipalities,
+        sources,
+        folder,
+        boundaries,
+        crops,
+        prices,
+        crop_products,
+        climate,
+        grid,
+        climate_month,
+        precip_month,
+        rules_table,
     )
 
 
 SIGNAL_SOURCES_FILE = signal_sources.SIGNAL_SOURCES_FILE
 # Las fuentes que tienen adaptador en el pipeline: si una no se publica, es porque falta su caché, no un error.
-ADAPTERS = frozenset(module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem))
+ADAPTERS = frozenset(module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem, imerg))
 
 
 def check_signal_sources(region_id: str, published: set[str]) -> None:

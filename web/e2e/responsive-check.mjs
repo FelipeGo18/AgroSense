@@ -11,8 +11,12 @@
 //
 // Usa el Chrome instalado en el equipo (playwright-core, canal «chrome»): no descarga navegadores.
 //
-// Las páginas con sesión (Mi finca, Mi cuenta) se revisan con el token de una cuenta de prueba:
-//   SESSION=<valor de la cookie agrosense_session> ROUTES=/mi-finca,/mi-finca/agregar npm run test:responsive
+// Las páginas con sesión (Mi finca, Mi cuenta) se revisan con el token de una cuenta de prueba de la base local, nunca
+// de la nube. `LOT` es un lote de esa cuenta: suma el lote, editarlo, sembrar y las estrategias desde el lote.
+//   SESSION=<valor de la cookie agrosense_session> LOT=<lot_id> npm run test:responsive
+//
+// Las estrategias, sus ciclos y el diagnóstico completo necesitan las respuestas simuladas (`VITE_SIMULATION=true` en la
+// web): con la API real, el motor todavía responde 501 y se revisa el aviso.
 
 import { chromium } from "playwright-core";
 
@@ -21,10 +25,36 @@ const BASE = process.env.BASE ?? "http://127.0.0.1:5190";
 // siempre está entre los doce que se pueden elegir.
 const THIS_MONTH = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit" }).format(new Date());
 /** Rutas de la app. Una vista nueva se agrega aquí. */
+const STRATEGIES = `/consultar?municipio=15646&siembra=${THIS_MONTH}&anterior=papa&riego=no&ciclos=3`;
+const LOT = process.env.LOT;
 const ROUTES = (
   process.env.ROUTES ??
-  `/,/entrar,/crear-cuenta,/consultar,/consultar?municipio=15646&siembra=${THIS_MONTH}&anterior=papa&riego=no,/diagnostico,/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no,/mi-finca,/como-funciona,/politica-de-datos,/precios,/precios?producto=papa-negra,/ruta-que-no-existe`
+  [
+    "/",
+    "/entrar",
+    "/crear-cuenta",
+    "/consultar",
+    STRATEGIES,
+    `${STRATEGIES}&estado=sin_opciones`,
+    `${STRATEGIES}&estrategia=avena_vicia-arveja-papa&ciclo=2`,
+    `${STRATEGIES}&estrategia=descanso-arveja-papa&ciclo=1`,
+    "/diagnostico",
+    `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no`,
+    "/que-cambio?municipio=15646&cultivo=papa",
+    "/mi-finca",
+    "/como-funciona",
+    "/politica-de-datos",
+    "/precios",
+    "/precios?producto=papa-negra",
+    "/ruta-que-no-existe",
+    ...(process.env.SESSION ? ["/mi-finca/agregar", "/mi-cuenta", "/mi-cuenta/contrasena", "/mi-cuenta/actividad"] : []),
+    ...(process.env.SESSION && LOT
+      ? [`/mi-finca/lotes/${LOT}`, `/mi-finca/lotes/${LOT}/editar`, `/mi-finca/lotes/${LOT}/sembrar`, `/consultar?lote=${LOT}`]
+      : []),
+  ].join(",")
 ).split(",");
+/** El área de una consulta sin cuenta vive en la pestaña (HU-214): con ella se ven las estrategias y el agua de sus ciclos. */
+const AREA = ["agrosense.area", "1,26"];
 /** Anchos de los que hay que cuidarse: teléfono chico, teléfonos comunes, tablet, portátiles y pantalla grande. Con altos bajos a propósito. */
 const SIZES = [
   [320, 568],
@@ -143,7 +173,13 @@ for (const light of [false, true]) {
       let problems;
       for (let attempt = 1; attempt <= 3 && !problems; attempt++) {
         const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 768, isMobile: width < 768 });
-        await context.addInitScript(([key, value]) => localStorage.setItem(key, value), [KEY, light ? "on" : "off"]);
+        await context.addInitScript(
+          ([key, value, area]) => {
+            localStorage.setItem(key, value);
+            sessionStorage.setItem(area[0], area[1]);
+          },
+          [KEY, light ? "on" : "off", AREA],
+        );
         if (process.env.SESSION) await context.addCookies([{ name: "agrosense_session", value: process.env.SESSION, url: BASE }]);
         try {
           problems = await check(context, route, width, light);

@@ -114,6 +114,7 @@ signals:
   market: { variable: seasonal_index,  unit: "",   curve: [[0.8, 0], [1.0, 70], [1.2, 100]], critical_below: 10, source_id: "…" }
 ```
 
+- `water` califica `coverage_pct` con la lluvia del **año seco** de la fuente de `sources.yaml` (`precip_dry_mm`, el percentil 20), no con la normal (decidido por Felipe el 11 de noviembre de 2026): es la lluvia confiable de la FAO y deja la señal del lado prudente, porque las dos fuentes de la NASA dan casi el doble de lluvia en los valles del altiplano, donde están los cultivos (259 estaciones del IDEAM; IMERG 1,85 veces, POWER 1,80; PR #44), y con la normal el agua saldría verde donde falta. La lluvia normal se muestra en `signals.water.sources` para contrastar.
 - `curve`: puntos `[valor, calificación]` en orden de valor; entre dos puntos la calificación va en línea recta, y fuera de ellos vale la del punto más cercano. `crop` quiere decir que la curva sale de la ficha del cultivo: `heat` va de 100 en `temp_opt_max_c` a 0 en `heat_max_c`, y `soil` de 0 en `ph_min` a 100 entre `ph_opt_min` y `ph_opt_max` y a 0 en `ph_max`.
 - `critical_below`: una señal es crítica si su calificación baja de ese número (R2). `soil` nunca es crítica (R10).
 - **Los números de este ejemplo son ilustrativos.** Los de verdad los fija HU-075, cada curva con su `source_id` (R8). Sin fuente para una curva, la señal es `insufficient_data` (R1).
@@ -122,20 +123,20 @@ signals:
 ### `catalog/sources.yaml` (HU-122)
 
 ```yaml
-version: "1.0.0"
+version: "1.2.0"
 regions:
   co-boyaca-cundinamarca:
-    water:  { rain: nasa_power, rain_contrast: [imerg], rain_caveat: "La lluvia sale de NASA POWER…", et0: nasa_power,
+    water:  { rain: imerg, rain_contrast: [nasa_power], rain_caveat: "La lluvia sale de GPM IMERG (satélite)…", et0: nasa_power,
               soil_moisture_contrast: [nasa_power, smap] }
     frost:  { used: nasa_power }
     heat:   { used: nasa_power }
     soil:   { used: soilgrids }
     supply: { used: eva, contrast: [] }
     market: { used: dane_sipsa }
-planned: { imerg: HU-207, soilgrids: HU-181, eva: HU-031, smap: HU-210 }
+planned: { soilgrids: HU-181, eva: HU-031, smap: HU-210 }
 ```
 
-Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources`, ni tiene adaptador en el pipeline, ni está en `planned` hace fallar el pipeline (R8). `planned` lista las fuentes que todavía no tienen adaptador, con la HU que las trae: mientras estén ahí, lo que las usa es `insufficient_data` (R1) y el contraste no se muestra; una fuente de `planned` que ya se publica también hace fallar el pipeline, para que no se quede en la lista. `rain_caveat` es el aviso que lleva siempre la señal de agua mientras la lluvia salga de una fuente con un sesgo conocido. **Versión 1.0.0 (decidido por Felipe el 11 de noviembre de 2026):** la lluvia de `water` sale de NASA POWER de forma **temporal**, con el aviso de que en el altiplano la sobrestima (de 1,7 a 2,7 veces la del IDEAM, PR #24); cuando exista GPM IMERG (HU-207), `rain` pasa a `imerg`, POWER pasa al contraste y el aviso se quita. Lo leen el pipeline, antes de publicar, y la API al arrancar (`common/signal_sources.py`). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
+Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources`, ni tiene adaptador en el pipeline, ni está en `planned` hace fallar el pipeline (R8). `planned` lista las fuentes que todavía no tienen adaptador, con la HU que las trae: mientras estén ahí, lo que las usa es `insufficient_data` (R1) y el contraste no se muestra; una fuente de `planned` que ya se publica también hace fallar el pipeline, para que no se quede en la lista. `rain_caveat` es el aviso que lleva siempre la señal de agua mientras la lluvia salga de una fuente con un sesgo conocido. **Versión 1.0.0 (decidido por Felipe el 11 de noviembre de 2026):** la lluvia de `water` sale de NASA POWER de forma **temporal**, con el aviso de que en el altiplano la sobrestima (de 1,7 a 2,7 veces la del IDEAM, PR #24); cuando exista GPM IMERG (HU-207), `rain` pasa a `imerg` y POWER pasa al contraste. **Versión 1.2.0 (aprobado por Felipe el 11 de noviembre de 2026, PR #44, HU-207):** la lluvia de `water` sale de GPM IMERG (`precip_month`), que sigue mejor los meses del año que POWER, y NASA POWER (`climate_month`) pasa al contraste. El aviso no se quita: IMERG también sobrestima la lluvia en los valles del altiplano (cerca de 1,85 veces la del IDEAM en 169 estaciones), así que ahora lo dice de IMERG. `imerg` sale de `planned` porque ya se publica. Lo leen el pipeline, antes de publicar, y la API al arrancar (`common/signal_sources.py`). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
 
 ### Reglas de rotación como datos (`rotation_rules`, HU-062)
 
@@ -579,15 +580,15 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
           "harvest_basis": "calendar", "light": "green", "light_default": "green", "limiting_signal": "frost", "high_risk": false }
       ],
       "soil_health": {
-        "nitrogen": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"],
+        "nitrogen": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID"],
           "reasons": ["Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"] },
-        "organic_carbon": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"],
+        "organic_carbon": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID", "soilgrids"],
           "reasons": ["El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"] },
-        "soil_cover": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"],
+        "soil_cover": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID"],
           "reasons": ["El suelo queda cubierto 11 de los 13 meses de la estrategia"] },
-        "pest_break": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"],
+        "pest_break": { "status": "available", "level": "favorable", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID"],
           "reasons": ["La papa vuelve al terreno después de dos ciclos de otras familias"] },
-        "erosion": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"],
+        "erosion": { "status": "available", "level": "moderate", "rule_ids": ["REGLA_ID"], "source_ids": ["FUENTE_ID", "nasadem"],
           "reasons": ["El lote tiene una pendiente de 14 % y el suelo queda descubierto 2 meses"] }
       },
       "reasons": ["Empieza con un abono verde y su suelo tiene poco carbono orgánico", "Ningún ciclo tiene un riesgo alto de clima"],
@@ -604,16 +605,16 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
     "soil_health": {},
     "issues": [
       { "cycle": 3, "kind": "rule", "rule_id": "REGLA_ID",
-        "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia" }
+        "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia", "source_ids": ["FUENTE_ID"] }
     ],
     "reasons": ["Es la rotación que usted viene haciendo: las demás se comparan contra ella"],
     "limitations": []
   },
   "excluded": [
     { "crop_ids": ["papa", "arveja", "haba"], "cycle": 1, "kind": "rule", "rule_id": "REGLA_ID",
-      "reason": "Repite la familia de la papa, que había antes en el terreno" },
+      "reason": "Repite la familia de la papa, que había antes en el terreno", "source_ids": ["FUENTE_ID"] },
     { "crop_ids": ["arveja", "papa", "maiz"], "cycle": 2, "kind": "high_risk", "signal": "frost",
-      "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa" }
+      "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa", "source_ids": ["nasa_power"] }
   ],
   "weights": { "water": 3, "soil": 5, "income": 2, "risk": 4 },
   "soil_basis": "municipality",
@@ -626,8 +627,9 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - Cada ciclo trae además `diagnosis`: el diagnóstico de esa ventana, con la misma forma de «Respuesta de diagnóstico» (sin `request`, `best_windows` ni `alternatives`). El ejemplo lo omite por brevedad. `light` es la luz con los pesos de quien consulta y `light_default` con los de AgroSense. En un ciclo de descanso, `light`, `light_default`, `limiting_signal` y `diagnosis` vienen nulos.
 - `kind`: `suggested` en las estrategias del ranking y `current` en la de referencia. `vs_current`: en cada sugerida, la diferencia de cada criterio y del total frente a la actual (positivo es mejor); nulo sin rotación actual o si el criterio no califica en alguna de las dos.
 - `current_strategy` (decisión 14, aprobado por Felipe el 8 de noviembre de 2026): la rotación actual evaluada con la misma forma de una estrategia (el ejemplo omite sus ciclos y su salud del suelo por brevedad), con `rank` nulo. **Nunca se excluye:** si viola una regla, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, `issues` lo dice con la misma forma de `excluded` (sin `crop_ids`). Nula sin `current_crop_ids`. Una estrategia sugerida igual a la actual no se repite en `strategies`.
-- `soil_health`: los cinco criterios de salud del suelo (`erosion` desde la decisión 14), cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons` y `rule_ids` (reglas de `rotation_rules`, con fuente). **No es una predicción de cuánto mejora el suelo.**
+- `soil_health`: los cinco criterios de salud del suelo (`erosion` desde la decisión 14), cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons`, `rule_ids` (reglas de `rotation_rules`, con fuente) y `source_ids` (las fuentes de esas reglas y de los datos que usan, para que la web las cite; vacía sin regla con fuente). **No es una predicción de cuánto mejora el suelo.**
 - `excluded`: las estrategias descartadas, con el ciclo y el motivo. **Trae hasta 10** (decisión 15): primero las que quedaron fuera por un solo motivo, y entre ellas, en el orden en que se habrían ordenado. `excluded_counts` cuenta todas las descartadas por `kind` (por ejemplo `{"rule": 212, "high_risk": 48, "not_suitable": 30, "soil_ph": 0}`), para que la web diga cuántas son sin traerlas todas. `kind` es `rule` (viola una regla de filtro; trae `rule_id`), `not_suitable` (un cultivo no se da en la zona), `soil_ph` (el pH queda fuera de todo el intervalo) o `high_risk` (un ciclo con `water`, `frost` o `heat` desfavorable y crítica; trae `signal`).
+- Cada descartada y cada `issues` trae `source_ids`: la fuente de su regla, de la ficha del cultivo, del suelo o del clima de la señal (R8).
 - La oferta y el mercado no excluyen estrategias: entran solo por `income`.
 - `soil_basis` y `slope_basis`: `lot` o `municipality`, de dónde salen el suelo y la pendiente.
 - Sin estrategias válidas, `strategies` viene vacía y `excluded` dice por qué.
@@ -637,6 +639,8 @@ Con cuenta, la web arma `previous_crop_ids` con los cultivos de las temporadas d
 Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 2 ciclos sin `soil_health`, y `previous_crop_ids` pedía al menos un cultivo.
 
 > **8 de noviembre de 2026 (decisión 14, aprobado por Felipe):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta.
+
+> **11 de noviembre de 2026 (HU-102, aprobado por Haider; decisión 15 de `docs/decisiones.md`):** `source_ids` en cada criterio de `soil_health`, en cada `issues` y en cada `excluded`. Es un campo nuevo; los demás no cambian.
 
 ### Cuerpo de `POST /api/v1/water-plans`
 
@@ -724,7 +728,7 @@ La lluvia es la de la fuente que define `sources.yaml` y la ET0 es la de `climat
 
 Tiene dos lecturas, según venga o no `sowing_date`. No guarda los datos de la finca ni quién consultó (R9) y trae `versions` y `reference_date` (el día desde el que se cuentan los doce meses), para que el mismo resultado se pueda reproducir (R4).
 
-Fechas: la ventana de un mes empieza el día 1 y la de una semana, su lunes. `month` se refiere a la próxima vez que llega ese mes desde `reference_date`. En `/diagnostics` y en «Planear una siembra» de `/calendar`, una fecha de siembra anterior a hoy o a más de doce meses responde 422; el mes en curso se acepta aunque su día 1 ya haya pasado. En «Mi cultivo» (`/calendar` con `sowing_date`), la fecha puede ser pasada. **«Hoy» y «el mes en curso» se cuentan en la hora de la región**, nunca en UTC ni en la hora del servidor: en la región piloto (Colombia), `America/Bogota`, UTC−5 todo el año (sin horario de verano). La web cuenta los doce meses con la misma hora, así que el mes que ofrece es siempre uno que la API acepta. Vale para `/diagnostics`, `/rotations` y `/calendar` (decidido el 10 de noviembre de 2026).
+Fechas: la ventana de un mes empieza el día 1 y la de una semana, su lunes. `month` se refiere a la próxima vez que llega ese mes desde `reference_date`. En `/diagnostics` y en «Planear una siembra» de `/calendar`, una fecha de siembra anterior a hoy o a más de doce meses responde 422; el mes en curso se acepta aunque su día 1 ya haya pasado. En «Mi cultivo» (`/calendar` con `sowing_date`), la fecha puede ser pasada. **«Hoy» y «el mes en curso» se cuentan en la hora de la región**, nunca en UTC ni en la hora del servidor: en la región piloto (Colombia), `America/Bogota`, UTC−5 todo el año (sin horario de verano). La zona sale de `region.timezone` en `pipeline/region.yaml`. Es la de la región y no la de quien consulta, aunque consulte desde otro país: el mes de siembra es el del campo (decidido por Felipe el 11 de noviembre de 2026). La web cuenta los doce meses con la misma hora, así que el mes que ofrece es siempre uno que la API acepta. Vale para `/diagnostics`, `/rotations` y `/calendar` (decidido el 10 de noviembre de 2026).
 
 **Planear una siembra (sin `sowing_date`).** Responde `suitability` y `windows`:
 

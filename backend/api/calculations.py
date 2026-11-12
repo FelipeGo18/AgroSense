@@ -34,6 +34,7 @@ from backend.api.errors import ApiError, explain
 from backend.api.lots import _own_lot
 from backend.dataset import Dataset
 from backend.db.session import get_db
+from common.region import region_today
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
 
@@ -50,8 +51,9 @@ def _months_ahead(day: date, months: int) -> date:
 
 
 def _check_sowing_date(sowing_date: date) -> None:
-    """De este mes a doce meses: el mes en curso se acepta aunque su día 1 ya haya pasado (contrato, «Fechas»)."""
-    today = date.today()
+    """De este mes a doce meses: el mes en curso se acepta aunque su día 1 ya haya pasado (contrato, «Fechas»). «Hoy» es
+    el día en la región, no el del servidor ni el de quien consulta (`common/region.py`)."""
+    today = region_today()
     if not date(today.year, today.month, 1) <= sowing_date < _months_ahead(today, 13):
         raise ApiError(
             422,
@@ -128,7 +130,13 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     "/rotations",
     response_model=RotationResponse,
     responses={
-        200: {"content": _examples(estrategias=("Una estrategia sugerida, la rotación actual y dos descartadas", ex.ROTATIONS))},
+        200: {
+            "content": _examples(
+                estrategias=("Dos estrategias sugeridas (una con descanso), la rotación actual y dos descartadas", ex.ROTATIONS),
+                sin_actual=("Sin rotación actual: no hay referencia", ex.ROTATIONS_NO_CURRENT),
+                sin_opciones=("Ninguna estrategia cumple: todas descartadas", ex.ROTATIONS_EMPTY),
+            )
+        },
         **ex.responses(401, 404, 422, 501, 503),
     },
 )
@@ -152,7 +160,9 @@ def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depend
 def water_plans(body: WaterPlanRequest, request: Request, dataset: Dataset = Depends(require_dataset)) -> Any:
     """Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10)."""
     _check_place(dataset, body.municipality_id)
-    _check_crops(dataset, [crop.crop_id for crop in body.crops], only_crops=True)
+    # Un abono verde también crece y necesita agua: el ciclo de una estrategia puede serlo (HU-215). Como en el
+    # contrato, solo el diagnóstico y «Qué cambió» piden `kind = crop`.
+    _check_crops(dataset, [crop.crop_id for crop in body.crops])
     _not_implemented(request, "Plan de agua")
 
 

@@ -31,29 +31,22 @@ import {
   type DiagnosisResponse,
   type Irrigation,
 } from "@/features/diagnosis/consult";
-import { SIGNAL_NAME, harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
-import { sameLight, strategiesLink, whyDifferent } from "@/features/diagnosis/lights";
+import { harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { strategiesLink } from "@/features/diagnosis/lights";
 import { asksOtherWindow } from "@/features/diagnosis/windows";
 import { byId, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
 import { useVersion } from "@/features/version";
-import { asWeights, useSignalPriorities } from "@/features/diagnosis/priorities";
+import { useSignalPriorities } from "@/features/diagnosis/priorities";
+import { useTrends } from "@/features/diagnosis/trends";
+import { DiagnosisLights } from "./Lights";
 import { PrioritiesPanel } from "./PrioritiesPanel";
 import { SignalList } from "./SignalList";
+import { WaterChart } from "./WaterChart";
 import { BestWindows, NotSuitable, SuitabilityScore } from "./Suitability";
 import { formatDate, useCrops } from "@/features/farm/seasons";
 import { irrigationText, placeName } from "@/pages/farm/common";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
-
-type LightResult = DiagnosisResponse["overall"];
-
-/** Lo primero que se lee del resultado: qué hacer (`specs/01-reglas.md`, «Agregación del semáforo»). */
-const ACTION_TEXT: Record<DiagnosisResponse["overall"]["action"], string> = {
-  sow: "Puede sembrar en esa fecha",
-  other_window: "Mejor busque otra fecha de siembra",
-  rotate: "Mejor siembre otro cultivo",
-  review_data: "Faltan datos para evaluar esa fecha",
-};
 
 const IRRIGATION_HINT =
   "Con riego, la falta de lluvia no se cuenta como riesgo. Si no sabe, se evalúa como sin riego y el resultado lo dice.";
@@ -354,9 +347,6 @@ function errorText(error: Error): string {
  * línea que dice por qué difieren. Con «rotar» en cualquiera de las dos, el camino a las estrategias.
  */
 function Summary({ data }: { data: DiagnosisResponse }) {
-  const version = useVersion();
-  const defaults = version.data ? asWeights(version.data.default_weights) : null;
-  const single = sameLight(data.overall, data.overall_default);
   const rotate = data.overall.action === "rotate" || data.overall_default.action === "rotate";
   const example = data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>;
   // Un cultivo que no se da en la zona tiene su propio letrero, sin semáforo, señales ni ventanas (HU-194).
@@ -372,20 +362,7 @@ function Summary({ data }: { data: DiagnosisResponse }) {
   return (
     <Card bodyClassName="gap-4">
       {example}
-      {single ? (
-        <>
-          <p className="font-titulos text-[clamp(1.4rem,3.5vw,2rem)] leading-tight font-semibold">{ACTION_TEXT[data.overall.action]}</p>
-          <TrafficLightBadge light={data.overall.light} className="self-start" />
-          <LimitingLine signal={data.overall.limiting_signal} />
-          <Reasons reasons={data.overall.reasons} />
-        </>
-      ) : (
-        <>
-          <LightBlock title="Con sus prioridades" result={data.overall} primary />
-          <LightBlock title="Con el criterio de AgroSense" result={data.overall_default} />
-          <p className="border-l-4 border-paleta-calabaza pl-3 text-[15px] leading-snug">{whyDifferent(data.weights, defaults)}</p>
-        </>
-      )}
+      <DiagnosisLights overall={data.overall} overallDefault={data.overall_default} weights={data.weights} />
       {data.window && (
         <p>
           Siembra el {formatDate(data.window.sowing_start)} · cosecha estimada el {formatDate(data.window.harvest_estimate)}.{" "}
@@ -404,52 +381,17 @@ function Summary({ data }: { data: DiagnosisResponse }) {
   );
 }
 
-/** Una de las dos luces cuando difieren: de quién es el criterio y su acción, la luz con forma y texto, lo que más la limita y sus razones. */
-function LightBlock({ title, result, primary = false }: { title: string; result: LightResult; primary?: boolean }) {
-  return (
-    <section aria-label={title} className={`flex min-w-0 flex-col gap-2 ${primary ? "" : "border-t-2 border-superficie-borde pt-4"}`}>
-      <p
-        className={`font-titulos leading-tight font-semibold ${
-          primary ? "text-[clamp(1.4rem,3.5vw,2rem)]" : "text-[clamp(1.1rem,2.5vw,1.35rem)]"
-        }`}
-      >
-        {title}: {ACTION_TEXT[result.action]}
-      </p>
-      <TrafficLightBadge light={result.light} className="self-start" />
-      <LimitingLine signal={result.limiting_signal} />
-      <Reasons reasons={result.reasons} />
-    </section>
-  );
-}
-
-/** Cada luz dice cuál es su factor que más limita (`specs/05-frontend.md`, «Dos luces»). */
-function LimitingLine({ signal }: { signal: string | null | undefined }) {
-  if (!signal) return null;
-  return (
-    <p>
-      Lo que más limita: <span className="font-bold">{SIGNAL_NAME[signal] ?? signal}</span>
-    </p>
-  );
-}
-
-function Reasons({ reasons }: { reasons: string[] | null | undefined }) {
-  if (!reasons || reasons.length === 0) return null;
-  return (
-    <ul className="flex list-disc flex-col gap-1 pl-5" aria-label="Por qué esta luz">
-      {reasons.map((reason) => (
-        <li key={reason}>{reason}</li>
-      ))}
-    </ul>
-  );
-}
-
 /**
  * El detalle del resultado (HU-092): las señales de la ventana y las limitaciones. Va a todo el ancho, debajo de la
  * consulta y del resumen. Con un cultivo que no es apto no hay señales (`signals` nulo): solo las limitaciones.
  */
 function Details({ data }: { data: DiagnosisResponse }) {
   const version = useVersion();
+  const crops = useCrops();
   const soil = useMunicipalitySoil(data.signals?.soil ? data.request.municipality_id : null);
+  // La lluvia de la ventana año por año, para la gráfica de la señal de agua (HU-093).
+  const trends = useTrends(data.signals?.water ? data.request.municipality_id : null, data.request.crop_id, data.request.sowing_date);
+  const cropName = crops.data?.find((c) => c.crop_id === data.request.crop_id)?.name_es ?? data.request.crop_id;
   const hasSignals = orderedSignals(data.signals).length > 0;
   return (
     <div className="mt-10 flex min-w-0 flex-col gap-8">
@@ -470,6 +412,16 @@ function Details({ data }: { data: DiagnosisResponse }) {
             supplySemester={data.window?.supply_semester}
             soil={soil.data}
             version={version.data}
+            waterChart={
+              <WaterChart
+                series={trends.data?.water}
+                status={trends.status}
+                cropName={cropName}
+                from={data.window?.sowing_start}
+                to={data.window?.harvest_estimate}
+                version={version.data}
+              />
+            }
           />
         </section>
       )}

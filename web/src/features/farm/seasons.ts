@@ -3,6 +3,28 @@ import { api, type Schemas } from "@/api/client";
 
 export type Crop = Schemas["CropItem"];
 export type Season = Schemas["SeasonOut"];
+
+/**
+ * Una siembra que llega armada desde el primer ciclo de una estrategia (HU-215): su cultivo, su fecha, el terreno del
+ * que viene, su área y el diagnóstico que vio la persona. Se guarda con la siembra solo si no cambia el cultivo ni la
+ * fecha (HU-165): con otro cultivo u otra fecha, ese diagnóstico ya no es el de lo que sembró.
+ */
+export interface SowPlan {
+  crop_id: string;
+  sowing_date: string;
+  follows_season_ids: string[];
+  area_ha: number;
+  diagnosis: Pick<
+    SeasonCreate,
+    | "diagnosis_light"
+    | "diagnosis_light_default"
+    | "diagnosis_action"
+    | "diagnosis_weights"
+    | "diagnosis_irrigated"
+    | "dataset_version"
+    | "rules_version"
+  >;
+}
 export type SeasonCreate = Schemas["SeasonCreate"];
 export type SeasonPatch = Schemas["SeasonPatch"];
 

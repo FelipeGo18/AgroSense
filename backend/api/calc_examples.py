@@ -189,32 +189,45 @@ _HEALTH = {
         "status": "available",
         "level": "favorable",
         "rule_ids": ["leguminosas"],
+        "source_ids": ["agrosavia_rotacion"],
         "reasons": ["Dos de los tres ciclos tienen leguminosas (vicia y arveja), que fijan nitrógeno"],
     },
     "organic_carbon": {
         "status": "available",
         "level": "favorable",
         "rule_ids": ["materia_organica"],
+        "source_ids": ["agrosavia_rotacion", "soilgrids"],
         "reasons": ["El carbono orgánico estimado del suelo es bajo y la estrategia empieza con un abono verde"],
     },
     "soil_cover": {
         "status": "insufficient_data",
         "level": None,
         "rule_ids": [],
+        "source_ids": [],
         "reasons": ["Aún no hay una regla con fuente que diga cuántos meses bastan"],
     },
     "pest_break": {
         "status": "available",
         "level": "favorable",
         "rule_ids": ["papa_espera"],
+        "source_ids": ["agrosavia_rotacion"],
         "reasons": ["La papa vuelve al terreno después de dos ciclos de otras familias"],
     },
     "erosion": {
         "status": "available",
         "level": "moderate",
         "rule_ids": ["suelo_descubierto"],
+        "source_ids": ["agrosavia_rotacion", "nasadem"],
         "reasons": ["Con pendiente de 9 %, el suelo queda descubierto 2 meses"],
     },
+}
+
+
+# El diagnóstico de cada ciclo: el de la ventana, con la misma forma de la respuesta de diagnóstico sin `request`,
+# `best_windows` ni `alternatives` (HU-213). En el ejemplo todos los ciclos traen el mismo; un descanso no trae ninguno.
+_DIAGNOSIS_CORE = {
+    key: DIAGNOSIS_OK[key]
+    for key in ("suitability", "window", "overall", "overall_default", "weights", "signals", "limitations", "versions")
 }
 
 
@@ -229,7 +242,7 @@ def _cycle(n: int, crop: str, sow: str, harvest: str, light: str | None, limitin
         "light_default": light,
         "limiting_signal": limiting,
         "high_risk": False,
-        "diagnosis": None,
+        "diagnosis": None if crop == "descanso" else _DIAGNOSIS_CORE,
     }
 
 
@@ -253,7 +266,35 @@ ROTATIONS = {
                 "Gana 15 puntos frente a lo que siembra hoy, sobre todo en suelo",
             ],
             "limitations": ["Suelo estimado para el municipio, no para su lote"],
-        }
+        },
+        {
+            "rank": 2,
+            "kind": "suggested",
+            "crop_ids": ["descanso", "arveja", "papa"],
+            "total_score": 70,
+            "scores": {"water": 80, "soil": 75, "income": 40, "risk": 64},
+            "vs_current": {"water": 12, "soil": 25, "income": -29, "risk": 5, "total": 9},
+            "cycles": [
+                _cycle(1, "descanso", "2027-01-04", "2027-04-04", None, None),
+                _cycle(2, "arveja", "2027-04-05", "2027-08-02", "yellow", "frost"),
+                _cycle(3, "papa", "2027-08-09", "2028-01-03", "green", None),
+            ],
+            "soil_health": {
+                **_HEALTH,
+                "erosion": {
+                    "status": "available",
+                    "level": "unfavorable",
+                    "rule_ids": ["suelo_descubierto"],
+                    "source_ids": ["agrosavia_rotacion", "nasadem"],
+                    "reasons": ["Con pendiente de 9 %, el descanso deja el suelo descubierto 3 meses"],
+                },
+            },
+            "reasons": [
+                "El terreno descansa el primer ciclo y corta las plagas de la papa",
+                "No deja ingreso hasta la cosecha de la arveja",
+            ],
+            "limitations": ["Suelo estimado para el municipio, no para su lote"],
+        },
     ],
     "current_strategy": {
         "rank": None,
@@ -272,6 +313,7 @@ ROTATIONS = {
                 "status": "available",
                 "level": "unfavorable",
                 "rule_ids": ["papa_espera"],
+                "source_ids": ["agrosavia_rotacion"],
                 "reasons": ["La papa vuelve después de un solo ciclo de otra familia"],
             },
         },
@@ -281,6 +323,7 @@ ROTATIONS = {
                 "kind": "rule",
                 "rule_id": "papa_espera",
                 "reason": "La papa vuelve al terreno después de un solo ciclo de otra familia",
+                "source_ids": ["agrosavia_rotacion"],
             }
         ],
         "reasons": ["Es la rotación que usted viene haciendo: las demás se comparan contra ella"],
@@ -293,6 +336,7 @@ ROTATIONS = {
             "kind": "rule",
             "rule_id": "familia_seguida",
             "reason": "Repite la familia de la papa, que había antes en el terreno",
+            "source_ids": ["agrosavia_rotacion"],
         },
         {
             "crop_ids": ["arveja", "papa", "maiz"],
@@ -300,6 +344,7 @@ ROTATIONS = {
             "kind": "high_risk",
             "signal": "frost",
             "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa",
+            "source_ids": ["nasa_power"],
         },
     ],
     "excluded_counts": {"rule": 212, "high_risk": 48, "not_suitable": 30, "soil_ph": 0},
@@ -309,6 +354,59 @@ ROTATIONS = {
     "limitations": [EXAMPLE_NOTE, "Compara estrategias según reglas con fuente. No predice cuánto va a mejorar el suelo"],
     "versions": EXAMPLE_VERSIONS,
 }
+
+# Sin estrategias válidas: todas quedan descartadas y `excluded` dice por qué (HU-102, estado vacío).
+ROTATIONS_EMPTY = {
+    **ROTATIONS,
+    "strategies": [],
+    "current_strategy": None,
+    "excluded": [
+        {
+            "crop_ids": ["maiz", "arveja", "papa"],
+            "cycle": 1,
+            "kind": "high_risk",
+            "signal": "frost",
+            "reason": "Alto riesgo en el ciclo 1: heladas frecuentes en la floración del maíz",
+            "source_ids": ["nasa_power"],
+        },
+        {
+            "crop_ids": ["cebolla_bulbo", "arveja", "papa"],
+            "cycle": 1,
+            "kind": "soil_ph",
+            "reason": "La cebolla tolera pH de 6,0 a 7,5 y el suelo estimado va de 5,2 a 5,8",
+            "source_ids": ["upra_cebolla_bulbo", "soilgrids"],
+        },
+    ],
+    "excluded_counts": {"rule": 180, "high_risk": 110, "not_suitable": 0, "soil_ph": 40},
+    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
+}
+
+# Sin rotación actual: no hay referencia ni `vs_current`, y la limitación lo dice (decisión 14).
+ROTATIONS_NO_CURRENT = {
+    **ROTATIONS,
+    "strategies": [{**s, "vs_current": None} for s in ROTATIONS["strategies"]],
+    "current_strategy": None,
+    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
+}
+
+
+def _water_month(
+    month: int, stage: str, need: int, rain: tuple[int, int], normal: tuple[int, int] | None, dry: tuple[int, int] | None
+) -> dict[str, Any]:
+    """Un mes del agua del plan: el déficit en mm y el volumen en m³ para 1,26 ha (1 mm en 1 ha son 10 m³). Sin
+    déficit, `[0, 0]`: la lluvia alcanza."""
+    deficit = {"normal": list(normal or (0, 0)), "dry": list(dry or (0, 0))}
+    return {
+        "year": 2027,
+        "month": month,
+        "status": "available",
+        "stage": stage,
+        "need_mm": need,
+        "rain_mm": {"normal": rain[0], "dry": rain[1]},
+        "deficit_mm": deficit,
+        "volume_m3": {key: [round(mm * 12.6) for mm in value] for key, value in deficit.items()},
+    }
+
 
 WATER_PLAN = {
     "request": {
@@ -324,16 +422,8 @@ WATER_PLAN = {
             "harvest_estimate": "2027-12-27",
             "harvest_basis": "calendar",
             "months": [
-                {
-                    "year": 2027,
-                    "month": 9,
-                    "status": "available",
-                    "stage": "development",
-                    "need_mm": 95,
-                    "rain_mm": {"normal": 70, "dry": 41},
-                    "deficit_mm": {"normal": [20, 30], "dry": [48, 62]},
-                    "volume_m3": {"normal": [252, 378], "dry": [605, 781]},
-                },
+                _water_month(8, "initial", 60, (75, 52), None, None),
+                _water_month(9, "development", 95, (70, 41), (20, 30), (48, 62)),
                 {
                     "year": 2027,
                     "month": 10,
@@ -344,6 +434,8 @@ WATER_PLAN = {
                     "deficit_mm": {"normal": None, "dry": None},
                     "volume_m3": {"normal": None, "dry": None},
                 },
+                _water_month(11, "mid", 110, (118, 80), None, (22, 34)),
+                _water_month(12, "late", 70, (52, 30), (12, 20), (34, 44)),
             ],
             "total_volume_m3": {"normal": [900, 1300], "dry": [2100, 2700]},
         }
@@ -352,7 +444,16 @@ WATER_PLAN = {
         "months": [{"year": 2027, "month": 9, "volume_m3": {"normal": [252, 378], "dry": [605, 781]}}],
         "total_volume_m3": {"normal": [900, 1300], "dry": [2100, 2700]},
     },
-    "soil_moisture": [{"month": 9, "source_id": "nasa_power", "indicator": "soil_wetness_root", "value": 0.61, "unit": "fracción"}],
+    "soil_moisture": [
+        *[
+            {"month": month, "source_id": "nasa_power", "indicator": "soil_wetness_root", "value": value, "unit": "fracción"}
+            for month, value in ((8, 0.62), (9, 0.58), (10, 0.66), (11, 0.70), (12, 0.64))
+        ],
+        *[
+            {"month": month, "source_id": "smap", "indicator": "soil_moisture_surface", "value": value, "unit": "m³/m³"}
+            for month, value in ((8, 0.31), (9, 0.29), (10, 0.34), (11, 0.36), (12, 0.30))
+        ],
+    ],
     "sources": {"rain": "imerg", "et0": "nasa_power", "soil": "soilgrids"},
     "soil_basis": "municipality",
     "limitations": [EXAMPLE_NOTE, "Es una estimación con el clima de la zona: verifique la humedad del suelo en su lote"],
@@ -393,9 +494,65 @@ CHANGES = {
 
 TRENDS = {
     "request": {"municipality_id": "15646", "crop_id": "papa", "sowing_date": "2027-08-02"},
-    "water": {"status": "available", "source_id": "imerg", "unit": "mm", "points": [{"year": 2015, "precip_mm": 410, "need_mm": 465}]},
+    # Diez años de la lluvia de la ventana frente a lo que necesitó el cultivo; en 2018, 2019 y 2022 no alcanzó, y 2017
+    # no tiene dato de lluvia (R1).
+    "water": {
+        "status": "available",
+        "source_id": "imerg",
+        "unit": "mm",
+        "points": [
+            {"year": year, "precip_mm": precip, "need_mm": need}
+            for year, precip, need in (
+                (2015, 470, 430),
+                (2016, 505, 432),
+                (2017, None, 428),
+                (2018, 360, 435),
+                (2019, 385, 431),
+                (2020, 540, 429),
+                (2021, 495, 433),
+                (2022, 350, 436),
+                (2023, 455, 430),
+                (2024, 448, 434),
+            )
+        ],
+    },
     "supply": {"status": "insufficient_data", "source_id": "eva", "unit": "ha", "semester": "B", "points": []},
-    "ndvi": {"status": "available", "source_id": "modis_ndvi", "quality": "ok", "points": [{"period": 1, "ndvi_normal": 0.52}]},
+    "ndvi": {
+        "status": "available",
+        "source_id": "modis_ndvi",
+        "quality": "ok",
+        "points": [
+            {"period": period, "ndvi_normal": value}
+            for period, value in enumerate(
+                (
+                    0.52,
+                    0.50,
+                    0.49,
+                    0.50,
+                    0.53,
+                    0.58,
+                    0.63,
+                    0.67,
+                    0.69,
+                    0.70,
+                    0.68,
+                    0.64,
+                    0.60,
+                    0.57,
+                    0.55,
+                    0.54,
+                    0.56,
+                    0.61,
+                    0.66,
+                    0.70,
+                    0.68,
+                    0.62,
+                    0.56,
+                ),
+                start=1,
+            )
+        ],
+    },
     "versions": EXAMPLE_VERSIONS,
 }
 

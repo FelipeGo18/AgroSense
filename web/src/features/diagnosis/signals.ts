@@ -92,12 +92,14 @@ const SOURCE_NOTE: Record<string, string> = {
 };
 export const sourceNote = (sourceId: string) => SOURCE_NOTE[sourceId] ?? null;
 
-/** El nombre de los productos de la NASA y de EVA como los nombra `docs/fuentes.md`, para cuando su fila aún no está publicada. */
+/** El nombre de los productos de la NASA, de EVA y de SoilGrids como los nombra `docs/fuentes.md`, para cuando su fila aún no está publicada. */
 const PRODUCT_NAME: Record<string, string> = {
   nasa_power: "NASA POWER",
   imerg: "GPM IMERG (NASA y JAXA)",
   smap: "SMAP (NASA)",
+  nasadem: "NASADEM (NASA)",
   eva: "EVA (UPRA)",
+  soilgrids: "SoilGrids (ISRIC)",
 };
 
 /**

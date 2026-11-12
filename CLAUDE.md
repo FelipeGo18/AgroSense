@@ -23,7 +23,7 @@ Todo cambio parte de una historia de usuario (HU) escrita en `specs/epicas/`.
 
 1. Lee la HU, su épica y las reglas que aplican (`specs/01-reglas.md`).
 2. Si la HU es ambigua o contradice una regla, **corrige la spec primero** y luego el código.
-3. Un cambio de código corresponde a una HU. Menciona su código (por ejemplo `HU-074`) en el commit y en el PR.
+3. Un cambio de código corresponde a una HU. Su código va en la rama (`tipo/hu-074-descripcion`), al principio de cada commit (`feat(HU-074): descripción`) y en el PR; el CI lo revisa (`docs/revision-de-pr.md`, sección 1).
 4. Cuando termines, marca los criterios de aceptación en el archivo de la épica, actualiza el estado y refleja el cambio en `specs/BACKLOG.md`.
 5. **Haider y Felipe son los responsables del contrato** (`specs/02-contratos.md`): lo cambia uno de los dos o aprueba cada cambio. Avísales antes, porque un cambio de contrato rompe el trabajo en paralelo.
 
