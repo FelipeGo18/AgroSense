@@ -74,7 +74,8 @@ def _secondary_families(crop_id: str, crop: dict[str, Any], known: set[str]) -> 
         raise CatalogError(f"{crop_id}.secondary_families: debe ser una lista de textos no vacíos.")
     if len(set(value)) != len(value):
         raise CatalogError(f"{crop_id}.secondary_families: hay familias repetidas: {value}.")
-    return list(value), entry["s"]
+    # Ordenada: la publicación no depende del orden del YAML (R4).
+    return sorted(value), entry["s"]
 
 
 def _check_ranges(crop_id: str, row: dict[str, Any]) -> None:

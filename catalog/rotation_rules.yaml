@@ -1,6 +1,6 @@
 # Catálogo agronómico: reglas de rotación como datos (EP-06, HU-062; specs/02-contratos.md, «Reglas de rotación como
 # datos»). Armado el 9 de noviembre de 2026 y ampliado el 10 por producto-agro. PENDIENTE: revisión cruzada por otro integrante (calidad)
-# (la regla «sin franja intermedia», `moderate == favorable`, la aprobó Felipe el 10 nov 2026).
+# (`papa_espera`, con 3 ciclos favorable y 2 moderate, la decidió Felipe el 11 nov 2026 en la revisión del PR #46).
 #
 # Regla (R1, R8): toda regla tiene fuente registrada (decisión 16, enmienda del 10 nov 2026). Cada número de una regla se puede señalar en su fuente (página o tabla en el
 # comentario de la regla y en `notes` de la fuente), o es un supuesto declarado con quién lo decidió. Un criterio de
@@ -58,7 +58,7 @@ sources:
     period_covered: "2008"
     coverage: "Mundial"
     license: "Publicación de la FAO, uso con cita"
-    notes: "p. 19 (sección «Cultivation»): «To prevent the build-up of pathogens in the soil, farmers avoid growing potatoes on the same land from year to year. Instead, they grow potatoes in rotations of three or more years, alternating with other, dissimilar crops, such as maize, beans and alfalfa. Crops susceptible to the same pathogens as the potato (e.g. tomato) are avoided». Habla de años, no de ciclos. La regla `papa_espera` usa esta cita como respaldo, pero cita `criterio_equipo_2026`: sus 4 ciclos salen del supuesto del equipo de dos ciclos por año (2 años de otros cultivos = 4 ciclos), decisión de Juan Cárdenas del 10 nov 2026."
+    notes: "p. 19 (sección «Cultivation»): «To prevent the build-up of pathogens in the soil, farmers avoid growing potatoes on the same land from year to year. Instead, they grow potatoes in rotations of three or more years, alternating with other, dissimilar crops, such as maize, beans and alfalfa. Crops susceptible to the same pathogens as the potato (e.g. tomato) are avoided». Habla de años, no de ciclos. La regla `papa_espera` toma sus 3 ciclos como equivalente aproximado de esa rotación de 3 o más años (una analogía: la FAO no da el corte en ciclos) y cita `criterio_equipo_2026`, decisión de Felipe del 11 nov 2026."
   - source_id: agrosavia_tibaitata_2022
     name: "Efecto del establecimiento de sistemas de rotación para el cultivo de la papa sobre las características químicas y físicas del suelo (Vargas Díaz, Wilches Ortiz y Espitia Malagón)"
     institution: "Agrosavia, Centro de Investigación Tibaitatá; revista Siembra 9(2), e4023, Universidad Central del Ecuador"
@@ -114,7 +114,7 @@ sources:
     period_covered: "Decidido el 10 de noviembre de 2026 (propuesta de producto-agro; números aprobados por Juan Cárdenas el mismo día)"
     coverage: "AgroSense, región piloto del altiplano (Colombia)"
     license: "Del proyecto"
-    notes: "Criterio del equipo RealE4Life, NO una fuente agronómica externa, decidido el 10 nov 2026 porque ninguna fuente revisada da estos cortes (nota 9 de HU-062). Fija los cortes de las reglas papa_espera (pest_break: favorable desde 4 ciclos de otras familias antes de volver a Solanaceae, sin franja; los 4 ciclos salen de las «rotations of three or more years» de fao_papa_2008 p. 19 con el supuesto del equipo de dos ciclos por año), leguminosa_en_rotacion (nitrogen: favorable desde 1 ciclo con leguminosa, sin franja), materia_organica_ciclos (organic_carbon: con carbono bajo, favorable desde 2 ciclos de abono verde o descanso y moderate con 1; con carbono normal, favorable con 1 y moderate con 0), suelo_cubierto (soil_cover: favorable desde 80 % y moderate desde 60 %) y erosion_pendiente (erosion: favorable hasta 1 mes descubierto y moderate hasta 3). Se apoya en parte en fuentes externas que no dan estos cortes: fao_iyp_2019 (las leguminosas fijan nitrógeno), fao_papa_2008 p. 19 (leguminosas entre los cultivos que alternan con la papa), cevipapa_taller_2005 (tabla 3, p. 35: materia orgánica baja < 5 %, de donde sale soc_low_g_kg = 29 con el factor 1,724; y el diseño abono verde – papa – abono verde de Murcia, p. 51 a 53), fao_glosolan_wb_2019 p. 4 (factor de 1,7 a 2,0) e igac_capacidad_uso_2021 p. 15 (pendiente desde 12 %). Los números externos (29 g/kg y 12 %) siguen siendo de su fuente; los cortes por ciclos, porcentaje y meses son del equipo. Compara estrategias por reglas; no predice cuánto mejora el suelo. Pendiente de validar por un agrónomo."
+    notes: "Criterio del equipo RealE4Life, NO una fuente agronómica externa, decidido el 10 nov 2026 porque ninguna fuente revisada da estos cortes (nota 9 de HU-062). Fija los cortes de las reglas papa_espera (pest_break: favorable desde 3 ciclos de otras familias antes de volver a Solanaceae, como equivalente aproximado de las «rotations of three or more years» de fao_papa_2008 p. 19, que habla de años y no de ciclos; y moderate con 2, que no sale de Agrosavia: se elige porque agrosavia_tibaitata_2022 evaluó en Tibaitatá una rotación con ese intervalo, papa - avena - arveja, y ese estudio mide propiedades químicas y físicas del suelo, no plagas; es una analogía y ninguna fuente da el corte; decidido por Felipe el 11 nov 2026), leguminosa_en_rotacion (nitrogen: favorable desde 1 ciclo con leguminosa, sin franja), materia_organica_ciclos (organic_carbon: con carbono bajo, favorable desde 2 ciclos de abono verde o descanso y moderate con 1; con carbono normal, favorable con 1 y moderate con 0), suelo_cubierto (soil_cover: favorable desde 80 % y moderate desde 60 %) y erosion_pendiente (erosion: favorable hasta 1 mes descubierto y moderate hasta 3). Se apoya en parte en fuentes externas que no dan estos cortes: fao_iyp_2019 (las leguminosas fijan nitrógeno), fao_papa_2008 p. 19 (leguminosas entre los cultivos que alternan con la papa), cevipapa_taller_2005 (tabla 3, p. 35: materia orgánica baja < 5 %, de donde sale soc_low_g_kg = 29 con el factor 1,724; y el diseño abono verde – papa – abono verde de Murcia, p. 51 a 53), fao_glosolan_wb_2019 p. 4 (factor de 1,7 a 2,0) e igac_capacidad_uso_2021 p. 15 (pendiente desde 12 %). Qué se apoya en qué: son datos externos citados el 29 g/kg (CEVIPAPA y FAO GLOSOLAN), el 12 % (IGAC) y «three or more years» (FAO 2008). Los cortes por ciclos, porcentaje y meses son del equipo: nitrógeno 1, carbono 2/1 y 1/0, cobertura 80/60 %, erosión 1/3 meses y papa_espera 3 y 2. Cada uno tiene una referencia externa y se rotula «criterio del equipo». Compara estrategias por reglas; no predice cuánto mejora el suelo. Pendiente de validar por un agrónomo."
 
 rules:
   # Filtro (R3) general. Fuente: Penn State Extension (no sembrar la misma familia en sucesión, por las plagas
@@ -147,21 +147,24 @@ rules:
     source_id: ica_punta_morada
 
   # Corte de plagas de la papa (kind health: la FAO lo describe como práctica, no como restricción obligatoria).
-  # CRITERIO DEL EQUIPO (criterio_equipo_2026, decisión de Juan Cárdenas del 10 nov 2026). Respaldo externo, que no da
-  # el número en ciclos: FAO 2008 (fao_papa_2008), p. 19: «they grow potatoes in rotations of three or more years, alternating with other, dissimilar
-  # crops». Una rotación de tres años es la papa y 2 años de otros cultivos antes de volver.
-  # SUPUESTO DECLARADO: en el altiplano caben dos ciclos por año, así que 2 años de otros cultivos son unos 4 ciclos de
-  # otras familias (min_cycles = favorable = 4). Supuesto del equipo, decisión de Juan Cárdenas del 9 nov 2026 (opción b);
-  # se pide una fuente andina que lo diga en ciclos.
-  # Sin franja intermedia (aprobada por Felipe el 10 nov 2026): `moderate == favorable`, así que desde 4 ciclos de otras familias es favorable y con menos es
-  # unfavorable; nunca moderate. Así no queda ningún número sin fuente o sin supuesto declarado (R8).
+  # CRITERIO DEL EQUIPO (criterio_equipo_2026), decidido por Felipe el 11 nov 2026 en la revisión del PR #46. Los dos
+  # cortes son del equipo, cada uno con una referencia externa, y es una analogía: ninguna fuente da el corte.
+  # - favorable desde 3 ciclos de otras familias: la FAO 2008 (fao_papa_2008, p. 19) habla de años, no de ciclos
+  #   («in rotations of three or more years, alternating with other, dissimilar crops»). Los 3 ciclos se toman como
+  #   equivalente aproximado de esa rotación de 3 o más años.
+  # - moderate con 2 ciclos: no sale de Agrosavia. Se elige porque Agrosavia evaluó en Tibaitatá una rotación con ese
+  #   intervalo (papa - avena - arveja, agrosavia_tibaitata_2022), y ese estudio mide propiedades químicas y físicas del
+  #   suelo, no plagas. Con 0 o 1 ciclo es unfavorable.
+  # Queda rotulado «criterio del equipo», pendiente de validar por un agrónomo.
+  # El corte cuenta también los cultivos anteriores del terreno (`current_crop_ids`), para que una estrategia de 3 ciclos
+  # pueda llegar a favorable. min_cycles = levels.favorable = 3.
   # Supuesto por confirmar (nota 3 de HU-062): el descanso cuenta como un ciclo sin esa familia.
   - rule_id: papa_espera
     kind: health
     criterion: pest_break
     condition_type: family_return_min_cycles
-    params: {family: Solanaceae, min_cycles: 4}
-    levels: {favorable: 4, moderate: 4}
+    params: {family: Solanaceae, min_cycles: 3}
+    levels: {favorable: 3, moderate: 2}
     reason_template: "La familia {family} vuelve al terreno después de {cycles} ciclos de otras familias"
     source_id: criterio_equipo_2026
 
@@ -185,7 +188,7 @@ rules:
   # - soc_low_g_kg = 29: materia orgánica baja < 5 % en suelos paperos del altiplano (Castro Franco, cevipapa_taller_2005,
   #   tabla 3, p. 35), llevada a carbono orgánico con el factor de Van Bemmelen 1,724, que cae dentro del rango 1,7 a 2,0
   #   de la FAO (fao_glosolan_wb_2019, p. 4): 50 g/kg / 1,724 = 29,0 g/kg. El factor lo eligió el equipo (aprobado por
-  #   Felipe el 10 nov 2026).
+  #   Felipe el 11 nov 2026).
   # - Cortes por ciclos: CRITERIO DEL EQUIPO (criterio_equipo_2026, aprobado por Juan Cárdenas el 10 nov 2026). Con el
   #   carbono bajo, el corte favorable de 2 ciclos sigue el diseño local «abono verde inicial – papa – abono verde final»
   #   (Murcia, Corpoica, en cevipapa_taller_2005, p. 51 a 53), que es un ensayo y no una recomendación de cortes. El mismo
@@ -222,7 +225,7 @@ rules:
   # Erosión (kind health). Combina un dato con fuente externa y cortes del equipo:
   # - slope_pct_from = 12: «el valor 12% del gradiente de la pendiente es el punto crítico … a partir de ese valor se
   #   incrementa la susceptibilidad de los suelos a la erosión» (igac_capacidad_uso_2021, p. 15). Con menos pendiente,
-  #   erosion es favorable (contrato; «a partir de», >=, aprobado por Felipe el 10 nov 2026).
+  #   erosion es favorable (contrato; «a partir de», >=, aprobado por Felipe el 11 nov 2026).
   # - Meses descubiertos (máximos): CRITERIO DEL EQUIPO (criterio_equipo_2026, aprobado por Juan Cárdenas el 10 nov
   #   2026). favorable hasta 1 mes (el paso entre cosecha y siembra y un descanso muy corto); moderate hasta 3 meses; más,
   #   unfavorable. El descanso cuenta como suelo descubierto (decisión 16). Lo debe validar un agrónomo.

@@ -483,6 +483,22 @@ def test_las_demas_aceptan_cortes_minimos_con_moderate_menor_o_igual_que_favorab
     assert rule.levels == levels
 
 
+@pytest.mark.parametrize(
+    ("condition_type", "block", "key", "bad"),
+    [
+        ("bare_months_on_slope", "params", "slope_pct_from", float("inf")),
+        ("legume_cycles", "levels", "favorable", float("nan")),
+    ],
+    ids=["inf_en_un_param", "nan_en_un_level"],
+)
+def test_rechaza_nan_e_infinito_con_el_nombre_de_la_regla_y_el_campo(condition_type, block, key, bad):
+    rule = valid_rule(condition_type)
+    rule[block][key] = bad
+    with pytest.raises(rotation_rules.RotationRulesError, match=re.escape(RULE_ID)) as error:
+        parse(rule)
+    assert f"{block}.{key}" in str(error.value)
+
+
 def test_una_regla_puede_citar_una_fuente_del_catalogo_de_fichas_sin_repetirla():
     # Nota 7 de HU-062.
     rules, new_sources = build(valid_catalog(rules=[valid_rule(source_id="fuente_fichas")]))
@@ -681,7 +697,7 @@ def test_la_lista_cerrada_de_schema_es_la_del_contrato():
 
 
 def test_los_marcadores_de_reason_template_son_los_que_llena_el_motor():
-    # La lista de marcadores de specs/02-contratos.md («Reglas de rotación como datos»), aprobada por Felipe el 10 nov
+    # La lista de marcadores de specs/02-contratos.md («Reglas de rotación como datos»), aprobada por Felipe el 11 nov
     # 2026. Esta prueba fija la de `pipeline/schema.py` para que no cambie sin cambiar el contrato.
     expected = {
         "same_family_consecutive": {"family"},
@@ -792,8 +808,9 @@ def test_el_catalogo_real_tiene_el_filtro_de_familia_en_ciclos_seguidos(real_cat
 
 # Cada criterio de `soil_health` tiene su regla `health` (criterio «como mínimo, una regla por criterio» de HU-062).
 # Hasta el 10 de noviembre de 2026 cuatro criterios no tenían regla (nota 9 de HU-062); ese día el equipo fijó sus cortes
-# como criterio propio registrado (`criterio_equipo_2026`, números aprobados por Juan Cárdenas). También `papa_espera`
-# (pest_break) cita esa fuente desde ese día: sus 4 ciclos son un supuesto del equipo sobre la cita de FAO 2008. Si un criterio pierde su
+# como criterio propio registrado (`criterio_equipo_2026`). También `papa_espera`
+# (pest_break) cita esa fuente desde ese día: sus cortes de 3 y 2 ciclos son criterio del equipo (con la FAO 2008 y
+# Agrosavia como referencia), decididos por Felipe el 11 nov 2026. Si un criterio pierde su
 # regla, la nota de HU-062 debe decirlo y esta prueba se ajusta en el mismo cambio (R1, R8).
 TEAM_CRITERION_SOURCE = "criterio_equipo_2026"
 TEAM_CRITERION_RULES = {
@@ -827,6 +844,15 @@ def test_las_cinco_reglas_del_criterio_del_equipo_citan_su_fuente_propia(real_ca
         assert rule_id in by_id, f"Falta la regla `{rule_id}` ({criterion})."
         rule = by_id[rule_id]
         assert (rule["kind"], rule["criterion"], rule["source_id"]) == ("health", criterion, TEAM_CRITERION_SOURCE), rule_id
+
+
+def test_papa_espera_publica_3_ciclos_favorable_y_2_moderate(real_catalog):
+    # Felipe, 11 nov 2026 (PR #46): FAO 2008 (3 o más) y Agrosavia en Tibaitatá (2: papa - avena - arveja).
+    rules, _ = real_catalog
+    rule = next(r for r in rows(rules) if r["rule_id"] == "papa_espera")
+    assert rule["params"]["min_cycles"] == rule["levels"]["favorable"] == 3
+    assert rule["levels"]["moderate"] == 2
+    assert rule["source_id"] == TEAM_CRITERION_SOURCE
 
 
 def test_en_el_catalogo_real_min_cycles_es_igual_a_favorable_en_pest_break(real_catalog):

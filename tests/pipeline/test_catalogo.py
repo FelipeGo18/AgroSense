@@ -104,3 +104,12 @@ def test_un_limite_nulo_con_fuente_es_un_rango_abierto():
     """La UPRA no pone techo a la cebolla de bulbo: el máximo va nulo, con su fuente, y el catálogo es válido."""
     crops, _, _ = build()
     assert crops.filter(crops["crop_id"] == "cebolla_bulbo")["tmean_max_c"].to_list() == [None]
+
+
+def test_secondary_families_se_publica_ordenada_sin_depender_del_orden_del_yaml():
+    # R4: dos órdenes del YAML dan la misma lista publicada.
+    def published(order):
+        crops, _, _ = build(lambda d: crop(d, "avena_vicia").update(secondary_families={"v": order, "s": "fao_ecocrop"}))
+        return crops.filter(pl.col("crop_id") == "avena_vicia")["secondary_families"].to_list()[0]
+
+    assert published(["Solanaceae", "Leguminosae"]) == published(["Leguminosae", "Solanaceae"]) == ["Leguminosae", "Solanaceae"]

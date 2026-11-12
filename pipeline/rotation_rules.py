@@ -16,6 +16,7 @@ lectura (`MappingProxyType`) y las listas como tuplas. `table` las vuelve a JSON
 
 import copy
 import json
+import math
 import re
 import string
 from collections.abc import Mapping
@@ -65,7 +66,8 @@ def load(path: Path = RULES_FILE) -> dict[str, Any]:
 
 def _is_number(value: Any) -> bool:
     # `bool` es un `int` en Python: «true» no es un número.
-    return isinstance(value, int | float) and not isinstance(value, bool)
+    # NaN e infinito no son JSON válido ni un corte con sentido.
+    return isinstance(value, int | float) and not isinstance(value, bool) and math.isfinite(value)
 
 
 def _freeze(value: Any) -> Any:
@@ -118,7 +120,7 @@ def _check_value(where: str, value: Any, spec: schema.Value, known_families: set
             raise RotationRulesError(f"{where}: debe ser un entero, no {value!r}.")
     elif spec.type == "number":
         if not _is_number(value):
-            raise RotationRulesError(f"{where}: debe ser un número, no {value!r}.")
+            raise RotationRulesError(f"{where}: debe ser un número finito, no {value!r}.")
     else:
         # `schema.check_condition_types` lo impide al importar; si llega aquí, es un error de programación.
         raise ValueError(f"{where}: tipo de valor {spec.type!r} desconocido en `schema.CONDITION_TYPES`.")
@@ -253,7 +255,7 @@ def parse_rule(raw: dict[str, Any], *, known_sources: set[str], known_families: 
 
 def _json(value: Mapping[str, Any] | None) -> str | None:
     # Llaves y listas ordenadas: mismo YAML, mismo texto (R4).
-    return None if value is None else json.dumps(_thaw(value), sort_keys=True, ensure_ascii=False)
+    return None if value is None else json.dumps(_thaw(value), sort_keys=True, ensure_ascii=False, allow_nan=False)
 
 
 def table(rules: list[RotationRule]) -> pl.DataFrame:
