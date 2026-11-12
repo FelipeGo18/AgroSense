@@ -6,19 +6,20 @@
 #
 # La región es la de `pipeline/region.yaml` (`region.id`). Cambia una fuente: cambia aquí y sube la versión (R4).
 
-version: "1.0.0"
+version: "1.2.0"
 
 regions:
   co-boyaca-cundinamarca:
     water:
-      # TEMPORAL (decidido por Felipe el 11 de noviembre de 2026): la lluvia sale de NASA POWER mientras GPM IMERG
-      # (HU-207) no exista. En el altiplano POWER da de 1,7 a 2,7 veces la lluvia del IDEAM (comprobado en el PR #24 en 4
-      # estaciones): por eso la señal lleva siempre el aviso de `rain_caveat`. Cuando llegue IMERG, `rain` pasa a `imerg`,
-      # `nasa_power` pasa a `rain_contrast`, el aviso se quita y sube la versión; el motor no cambia (R6).
-      rain: nasa_power
-      rain_contrast: [imerg]
+      # Decidido por Felipe el 11 de noviembre de 2026 (revisión del PR #44, HU-207): la lluvia sale de GPM IMERG
+      # (`precip_month`), que sigue mejor los meses del año que NASA POWER en todos los pisos (correlación de los 12
+      # meses con el IDEAM 0,87 frente a 0,81 en el altiplano), y la señal mira mes por mes. POWER (`climate_month`) se
+      # muestra para contrastar. Frente a 169 estaciones del IDEAM del altiplano, IMERG da una mediana de 1,85 veces su
+      # lluvia: por eso la señal lleva siempre el aviso de `rain_caveat`. El motor no cambia (R6).
+      rain: imerg
+      rain_contrast: [nasa_power]
       rain_caveat: >-
-        La lluvia sale de NASA POWER, un modelo (reanálisis) que en el altiplano la sobrestima: de 1,7 a 2,7 veces la
+        La lluvia sale de GPM IMERG (satélite), que en los valles del altiplano la sobrestima: cerca de 1,85 veces la
         que miden las estaciones del IDEAM. El agua puede salir mejor de lo que es: verifíquela en campo.
       et0: nasa_power
       soil_moisture_contrast: [nasa_power, smap]
@@ -31,7 +32,6 @@ regions:
 # Fuentes que todavía no tienen adaptador, con la HU que las trae. Mientras estén aquí, lo que las usa es
 # `insufficient_data` (R1) y el contraste no se muestra. Cuando la HU publique la fuente, sale de esta lista.
 planned:
-  imerg: HU-207
   soilgrids: HU-181
   eva: HU-031
   smap: HU-210
