@@ -168,7 +168,7 @@ function StoredCard({ user }: { user: Profile }) {
       <p>
         Aceptó el tratamiento de datos (versión {user.consent_version}) el {date(user.consent_at)}.
       </p>
-      <Link to={PATHS.dataPolicy} className={`${LINK} self-start`}>
+      <Link to={PATHS.dataPolicy} className={`${LINK} inline-flex min-h-11 items-center self-start`}>
         Leer la política de tratamiento de datos
       </Link>
     </Card>

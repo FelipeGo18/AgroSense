@@ -33,7 +33,10 @@ function Loading() {
 }
 
 /** Pantallas ya diseñadas en Figma que todavía no están programadas: cada enlace lleva a un lugar que lo dice. */
-const PENDING: { path: string; title: string }[] = [{ path: PATHS.howItWorks, title: "¿Cómo funciona?" }];
+const PENDING: { path: string; title: string }[] = [
+  { path: PATHS.howItWorks, title: "¿Cómo funciona?" },
+  { path: PATHS.changes, title: "Qué cambió en su zona" },
+];
 
 const pending = ({ path, title }: (typeof PENDING)[number]): RouteObject => ({
   path,
