@@ -15,6 +15,7 @@
     "test:scroll": "node e2e/scroll-stress.mjs",
     "perf": "node e2e/perf.mjs",
     "test:responsive": "node e2e/responsive-check.mjs",
+    "test:motion": "node e2e/motion-check.mjs",
     "api:types": "npx --yes openapi-typescript@7.13.0 http://127.0.0.1:8000/api/openapi.json -o src/api/schema.d.ts",
     "api:examples": "node scripts/api-examples.mjs"
   },
