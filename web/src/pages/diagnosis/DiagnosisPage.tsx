@@ -361,8 +361,7 @@ function Result({
       </h2>
       {diagnosis.isPending ? (
         <DiagnosisSkeleton querySummary={querySummary} />
-      ) :
-      diagnosis.isError ? (
+      ) : diagnosis.isError ? (
         <DiagnosisError
           error={diagnosis.error}
           onRetry={() => void diagnosis.refetch()}
