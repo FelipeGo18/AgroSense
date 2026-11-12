@@ -123,10 +123,10 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-094 · Estados de carga, vacío y error
 
 - **Historia:** Como usuario, quiero mensajes claros cuando algo carga, falla o no tiene datos, para saber qué hacer.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Estados de carga, vacío, sin cobertura y error
-  - [ ] Los datos de ejemplo se rotulan
+  - [X] Estados de carga, vacío, sin cobertura y error
+  - [X] Los datos de ejemplo se rotulan
 
 ### HU-219 · Pantalla «Qué cambió en su zona»
 
