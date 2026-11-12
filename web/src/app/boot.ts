@@ -5,6 +5,7 @@ import "@fontsource/atkinson-hyperlegible/400.css";
 import "@fontsource/atkinson-hyperlegible/700.css";
 import "@/styles/index.css";
 import { initLightMode } from "@/lib/lightMode";
+import { initMotion } from "@/lib/motion";
 
 // El modo ligero se fija antes de pintar: así nada se anima si la persona pidió quietud.
 initLightMode();
@@ -15,6 +16,8 @@ initLightMode();
  * conexión. Lo que se escriba en un campo antes de que arranque la aplicación no se pierde (lib/firstLoad.ts, `rememberTyped`).
  */
 const start = () => {
+  // Con movimiento, el motor (GSAP y Lenis) se pide junto con la aplicación, en paralelo; en modo ligero no se descarga.
+  initMotion();
   // Respuestas simuladas (HU-013). Es la misma condición que `SIMULATION` de app/config.ts, pero escrita aquí: así el
   // empaquetador la ve falsa y quita MSW del build. Importada de config.ts no la quita (se probó con `npm run build`).
   if (import.meta.env.VITE_SIMULATION === "true" && import.meta.env.DEV) {
