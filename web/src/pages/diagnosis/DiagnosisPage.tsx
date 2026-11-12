@@ -13,6 +13,8 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ExampleLabel } from "@/components/ui/Labels";
 import { SelectField } from "@/components/ui/SelectField";
 import { TrafficLightBadge } from "@/components/ui/TrafficLightBadge";
+import { StateCard } from "@/components/ui/StateCard";
+import { DiagnosisSkeleton } from "./DiagnosisSkeleton";
 import { useSession } from "@/features/auth/session";
 import {
   IRRIGATION_CHOICES,
@@ -125,6 +127,32 @@ export function DiagnosisPage() {
       ? toRequest(sent, sentLot, priorities.value)
       : null;
   const diagnosis = useDiagnosis(request);
+  const cropName = crops.data?.find((c) => c.crop_id === sent.cropId)?.name_es;
+  const place = sentLot ? sentLot.name : places.get(sent.municipalityId)?.name;
+  const summaryParts = [cropName, sent.month ? monthName(sent.month) : null, place].filter(Boolean);
+  const querySummary = summaryParts.length > 0 ? summaryParts.join(" · ") : undefined;
+
+  const resetTown = () => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete("municipio");
+        return next;
+      },
+      { preventScrollReset: true },
+    );
+  };
+
+  const resetDate = () => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete("siembra");
+        return next;
+      },
+      { preventScrollReset: true },
+    );
+  };
 
   const change = (patch: Partial<ConsultForm>) => setForm((current) => ({ ...current, ...patch }));
 
@@ -248,6 +276,9 @@ export function DiagnosisPage() {
             waitingLot={waitingLot}
             lotMissing={lotMissing}
             zeroPriorities={hasConsult(params) && priorities.allZero}
+            querySummary={querySummary}
+            onResetTown={resetTown}
+            onResetDate={resetDate}
           />
         </div>
         {request && diagnosis.isSuccess && <Details data={diagnosis.data} />}
@@ -285,7 +316,17 @@ function LotFacts({ lot, place }: { lot: LotListItem; place: string }) {
     </div>
   );
 }
-
+interface ResultProps {
+  request: DiagnosisRequest | null;
+  sentMonth: string;
+  diagnosis: ReturnType<typeof useDiagnosis>;
+  waitingLot: boolean;
+  lotMissing: boolean;
+  zeroPriorities: boolean;
+  querySummary?: string;
+  onResetTown: () => void;
+  onResetDate: () => void;
+}
 function Result({
   request,
   sentMonth,
@@ -293,15 +334,10 @@ function Result({
   waitingLot,
   lotMissing,
   zeroPriorities,
-}: {
-  request: DiagnosisRequest | null;
-  sentMonth: string;
-  diagnosis: ReturnType<typeof useDiagnosis>;
-  waitingLot: boolean;
-  lotMissing: boolean;
-  /** Hay una consulta, pero todas las prioridades están en 0: no se pide (HU-202). */
-  zeroPriorities: boolean;
-}) {
+  querySummary,
+  onResetTown,
+  onResetDate,
+}: Readonly<ResultProps>) {
   if (!request) {
     return (
       <section aria-labelledby="resultado" className="flex min-w-0 flex-col gap-3">
@@ -332,9 +368,16 @@ function Result({
         Resultado para {monthName(sentMonth)}
       </h2>
       {diagnosis.isPending ? (
-        <TrafficLightBadge loading className="self-start" />
-      ) : diagnosis.isError ? (
-        <Alert>{errorText(diagnosis.error)}</Alert>
+        <DiagnosisSkeleton querySummary={querySummary} />
+      ) : //<TrafficLightBadge loading className="self-start" />
+      diagnosis.isError ? (
+        //<Alert>{errorText(diagnosis.error)}</Alert>
+        <DiagnosisError
+          error={diagnosis.error}
+          onRetry={() => void diagnosis.refetch()}
+          onResetTown={onResetTown}
+          onResetDate={onResetDate}
+        />
       ) : (
         <Summary data={diagnosis.data} />
       )}
@@ -342,12 +385,78 @@ function Result({
   );
 }
 
+interface DiagnosisErrorProps {
+  error: Error;
+  onRetry: () => void;
+  onResetTown: () => void;
+  onResetDate: () => void;
+}
+
+/**
+ * Traduce un fallo de la API o de la red a una tarjeta de estado clara (HU-094; W6).
+ * Sigue los 4 estados definidos en `design/pantallas/estados_resultado.py`.
+ */
+function DiagnosisError({ error, onRetry, onResetTown, onResetDate }: Readonly<DiagnosisErrorProps>) {
+  // 1. Sin conexión: falla la red o modo offline (status 0)
+  if (error instanceof ApiError && (error.status === 0 || error.code === "offline")) {
+    return (
+      <StateCard
+        title="Sin conexión"
+        description="Revise la señal. Lo que ya consultó sigue en pantalla; para calcular otra fecha hace falta internet."
+        mood="idle"
+        actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+      />
+    );
+  }
+  // 2. Sin datos de este municipio: municipio fuera de cobertura (404 o municipality_not_found)
+  if (
+    error instanceof ApiError &&
+    (error.status === 404 || error.code === "municipality_not_found" || error.message.toLowerCase().includes("sin cobertura"))
+  ) {
+    return (
+      <StateCard
+        title="Sin datos de este municipio"
+        description="AgroSense cubre la región piloto. No inventamos un resultado: puede consultar un municipio cercano que sí esté."
+        mood="no_data"
+        dashed
+        actions={[{ label: "Buscar otro municipio", variant: "secondary", onClick: onResetTown }]}
+      />
+    );
+  }
+  // 3. Entrada no válida (422): fecha no válida
+  if (error instanceof ApiError && (error.status === 422 || error.code === "invalid_date")) {
+    return (
+      <StateCard
+        title="Esa fecha no se puede consultar"
+        description={
+          error.message && error.message !== "error"
+            ? error.message
+            : "Elija un mes de los próximos doce: una fecha que ya pasó o más lejana no tiene ventana que evaluar."
+        }
+        mood="guide"
+        actions={[{ label: "Cambiar la fecha", variant: "primary", onClick: onResetDate }]}
+      />
+    );
+  }
+  // 4. Error del servidor (500, 501, 503 o general): código para soporte
+  const code = error instanceof ApiError && error.requestId ? error.requestId : null;
+  return (
+    <StateCard
+      title="Algo falló de nuestro lado"
+      description="No pudimos calcular su diagnóstico. No es su culpa: lo que eligió sigue aquí. Vuelva a intentar en un momento."
+      mood="idle"
+      code={code}
+      actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+    />
+  );
+}
+/** 
 function errorText(error: Error): string {
   if (error instanceof ApiError && error.status === 501)
     return "El cálculo del diagnóstico todavía no está listo en el servidor. Intente más tarde.";
   return error.message;
 }
-
+*/
 /**
  * El resumen (HU-092, HU-203). La acción primero. Si la luz con sus prioridades y la del criterio de AgroSense coinciden,
  * se ve una sola; si difieren, las dos con su acción y su factor que más limita, la suya primero y más grande, y una
