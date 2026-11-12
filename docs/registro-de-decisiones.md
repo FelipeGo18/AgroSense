@@ -125,3 +125,4 @@ No se deciden por preferencia: se resuelven con el resultado de la HU indicada y
 | Fuente de las reglas de salud del suelo (cortes de `nitrogen`, `organic_carbon`, `soil_cover` y `pest_break`) | HU-062 | 13 nov (fin de la fase 0) | Producto y agro |
 | Texto del consentimiento del MVP (la versión 3 nombra funciones que pasaron a P1) | HU-163 | 31 oct | Producto |
 | ¿El inicio nombra los datos de la NASA? (hoy «no habla de NASA») | HU-173 | 31 oct | Web y Producto |
+| Columna `article` en `crops` (HU-191): el "el"/"la" de cada cultivo para el texto de aptitud, dato de presentación como `archetype`, sin fuente agronómica (R8 no aplica). Justificación completa en el encabezado de `catalog/crops.yaml` | Aprobación de Haider o Felipe para agregarla a `specs/02-contratos.md` | 13 nov (fin de la fase 0) | David |
