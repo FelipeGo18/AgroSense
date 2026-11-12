@@ -77,15 +77,15 @@
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-194 | Cultivo no apto y mejores ventanas | P0 | S | hecha | Letrero de no apto con nota y semillas; mejores fechas que consultan esa fecha; sin ventanas, el enlace a estrategias (10 nov). Alternativas P1 |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-202 | Ajustar mis prioridades al consultar | P0 | S | hecha | Controles, `priorities`, todo en 0 y guardado (navegador o perfil) (10 nov); se envían como `signal_priorities` a las estrategias (11 nov, HU-214). Lo de HU-180 es P1 |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-203 | Dos luces y cultivos alternativos | P0 | M | hecha | Una o dos luces con su acción, lo que más limita y por qué difieren; «No cuenta» y «Cuenta siempre»; enlace a estrategias (10 nov). Las alternativas son P1 |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-093 | Gráfica de la lluvia de la ventana | P0 | S | pendiente | Reducida a una gráfica (antes M) |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-093 | Gráfica de la lluvia de la ventana | P0 | S | hecha | En la señal de agua del diagnóstico y del ciclo, con la fuente, los años sin lluvia suficiente y su tabla (11 nov). Reducida a una gráfica (antes M) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-094 | Estados de carga, vacío y error | P0 | S | hecha | Esqueleto de carga; estados de sin conexion, sin cobertura y error del servidor (500), con reintento; respuestas de ejemplo rotuladas. Pruebas web check. |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-219 | Pantalla «Qué cambió en su zona» | P0 | M | pendiente | Nueva |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-095 | Mapa regional por semáforo | P1 | L | pendiente | |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-096 | Uso desde el celular | P0 | S | pendiente | |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-096 | Uso desde el celular | P0 | S | hecha | Toda la web revisada: 25 pantallas en 11 tamaños, con y sin modo ligero, 550 de 550; dos enlaces agrandados (12 nov) |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-214 | Entrada a las estrategias, con o sin cuenta | P0 | M | hecha | En `/consultar`, con o sin lote; el área sin cuenta queda en el navegador; un resumen hasta HU-102 (11 nov) |
 | [EP-10](epicas/EP-10-web-rotaciones.md) | HU-101 | Prioridades del agricultor | P0 | S | hecha | Cuatro controles que empiezan en 3; con todas en 0 no se consulta (11 nov, con HU-214) |
-| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-102 | Estrategias con ciclos, desglose y salud del suelo | P0 | L | pendiente | Antes M |
-| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-215 | Ciclo de una estrategia | P0 | M | pendiente | Nueva |
+| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-102 | Estrategias con ciclos, desglose y salud del suelo | P0 | L | hecha | Tarjetas, desglose, lo de hoy, salud del suelo con fuente, descartadas y estado vacío; cada ciclo abre su detalle (11 nov). Antes M |
+| [EP-10](epicas/EP-10-web-rotaciones.md) | HU-215 | Ciclo de una estrategia | P0 | M | hecha | Diagnóstico del ciclo con las piezas del diagnóstico, agua por mes, humedad de la zona, verdor y registrar el primer ciclo (11 nov) |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-111 | Reevaluar con cambios en memoria | P1 | M | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-112 | Endpoint de escenarios | P1 | S | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-113 | Comparación de escenarios | P1 | M | pendiente | |
