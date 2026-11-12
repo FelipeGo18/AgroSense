@@ -61,7 +61,11 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
 
   if (failed) {
     return (
-      <div className="absolute inset-0 grid place-items-center bg-paleta-niebla p-6">
+      // En escritorio el aviso se centra en lo que el panel deja a la vista, igual que el mapa: si no, el panel lo tapa.
+      <div
+        className="absolute inset-0 grid place-items-center bg-paleta-niebla p-6"
+        style={wide && panelWidth ? { paddingLeft: panelWidth + 40 } : undefined}
+      >
         <div role="status" className="max-w-[360px] text-center">
           <p className="font-bold">Su navegador no puede mostrar el mapa.</p>
           {fallback}

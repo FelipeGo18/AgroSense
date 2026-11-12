@@ -1,7 +1,7 @@
-import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import globeUrl from "@/assets/globe.json?url";
 import { lerpLon, lightFactor, parseHex, rotateInto, rotation, seeded, shade, type GlobeData, type Rgb } from "@/lib/globe";
+import { gsap, motionLoaded } from "@/lib/motion";
 
 export interface EarthFrame {
   cx: number;
@@ -268,7 +268,9 @@ export function Earth({ progress, frame = centered, still = false, className = "
       dirty = false;
       draw(now);
     };
-    if (!still) gsap.ticker.add(tick);
+    // Sobre el HTML del build, el primer dibujo se hace como con movimiento aunque el motor no haya llegado (lib/motion.ts).
+    const spinning = !still && motionLoaded();
+    if (spinning) gsap.ticker.add(tick);
 
     loadGlobe()
       .then((loaded) => {
@@ -325,7 +327,7 @@ export function Earth({ progress, frame = centered, still = false, className = "
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerup", onUp);
       el.removeEventListener("pointercancel", onUp);
-      gsap.ticker.remove(tick);
+      if (spinning) gsap.ticker.remove(tick);
       sizes?.disconnect();
       seen?.disconnect();
     };

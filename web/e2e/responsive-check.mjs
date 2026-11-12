@@ -172,13 +172,22 @@ for (const light of [false, true]) {
     for (const route of ROUTES) {
       let problems;
       for (let attempt = 1; attempt <= 3 && !problems; attempt++) {
-        const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 768, isMobile: width < 768 });
+        // El modo ligero se prende como en un teléfono que pide «reducir movimiento» (la preferencia queda en automático):
+        // así se comprueba también que la web le hace caso al equipo. El botón «Modo ligero» lo prueban sus pruebas y
+        // `npm run test:motion`. Con movimiento, la preferencia es «desactivado».
+        const context = await browser.newContext({
+          viewport: { width, height },
+          hasTouch: width < 768,
+          isMobile: width < 768,
+          reducedMotion: light ? "reduce" : "no-preference",
+        });
         await context.addInitScript(
           ([key, value, area]) => {
-            localStorage.setItem(key, value);
+            if (value) localStorage.setItem(key, value);
+            else localStorage.removeItem(key);
             sessionStorage.setItem(area[0], area[1]);
           },
-          [KEY, light ? "on" : "off", AREA],
+          [KEY, light ? null : "off", AREA],
         );
         if (process.env.SESSION) await context.addCookies([{ name: "agrosense_session", value: process.env.SESSION, url: BASE }]);
         try {
