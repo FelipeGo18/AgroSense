@@ -176,7 +176,12 @@ def dataset(tmp_path, monkeypatch):
 # Un municipio cálido real del departamento 25, para HU-191 (aptitud del cultivo): Girardot, el mismo que usa
 # `ex.DIAGNOSIS_NOT_SUITABLE`. No va en `SAMPLE_MUNICIPALITIES`: otros tests dependen de esa lista tal como está.
 SAMPLE_WARM_MUNICIPALITY = {
-    "cod_dpto": "25", "dpto": "CUNDINAMARCA", "cod_mpio": "25307", "nom_mpio": "GIRARDOT", "latitud": "4,3049", "longitud": "-74,8016",
+    "cod_dpto": "25",
+    "dpto": "CUNDINAMARCA",
+    "cod_mpio": "25307",
+    "nom_mpio": "GIRARDOT",
+    "latitud": "4,3049",
+    "longitud": "-74,8016",
 }
 
 # Clima por municipio para `dataset_con_clima` (R5: cifras de ejemplo, no observadas, aunque realistas). Samacá queda
