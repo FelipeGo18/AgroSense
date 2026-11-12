@@ -546,6 +546,25 @@ describe("Editar lote (HU-164)", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
     expect(calls.some((call) => call.key === "DELETE /api/v1/lots/a1")).toBe(true);
   });
+
+  it("si borrar falla, lo dice en la confirmación y el lote sigue ahí", async () => {
+    fakeApi({
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: DETAIL },
+      "DELETE /api/v1/lots/a1": {
+        status: 503,
+        body: { error: { code: "accounts_unavailable", message: "Las cuentas no están disponibles en este momento." } },
+      },
+    });
+    open(PATHS.editLot("a1"));
+    await userEvent.click(await screen.findByRole("button", { name: "Borrar este lote" }));
+    const dialog = await screen.findByRole("dialog", { name: "¿Borrar El Alto?" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sí, borrar el lote" }));
+    expect(await within(dialog).findByText("Las cuentas no están disponibles en este momento.")).toBeInTheDocument();
+    // No se fue a Mi finca: la confirmación sigue abierta para intentar otra vez o volver.
+    expect(screen.getByRole("dialog", { name: "¿Borrar El Alto?" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: "Sus lotes" })).toBeNull();
+  });
 });
 
 describe("Siembras y cosechas (HU-165, HU-220)", () => {
