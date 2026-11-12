@@ -170,6 +170,14 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-096 · Uso desde el celular
 
 - **Historia:** Como agricultor, quiero usar la herramienta desde el celular, porque es lo que tengo en el campo.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Usable a 360 px de ancho sin desplazamiento horizontal
+  - [x] Usable a 360 px de ancho sin desplazamiento horizontal
+- **Hecho (12 nov):** `npm run test:responsive` (`web/e2e/responsive-check.mjs`) revisa ahora toda la web.
+  - **Qué se suma:**
+    - las estrategias con resultados y sin ninguna, los dos tipos de ciclo y «Qué cambió»: el área de la consulta se pone en la pestaña antes de abrir cada página;
+    - con `SESSION` y `LOT` (una cuenta de prueba de la base local, nunca de la nube), también Agregar lote, el lote, Editar lote, Registrar siembra, las estrategias desde el lote, Mi cuenta, Cambiar contraseña y Mi actividad.
+  - **La revisión del 12 de noviembre:** 25 pantallas en 11 tamaños (de 320×568 a 1920×1080), con movimiento y en modo ligero, sobre `desarrollo` (824dc43) con las respuestas simuladas: **550 de 550 sin problemas**. Revisa que no haya desplazamiento horizontal ni piezas fuera del ancho, que la barra superior no se salga, que los objetivos táctiles midan al menos 44 px en pantallas táctiles (24 px en escritorio) y que en modo ligero nada siga animado.
+  - **Lo que encontró y se arregló:** dos enlaces sueltos de menos de 44 px, «Leer la política de tratamiento de datos» en Mi cuenta (27 px) y «‹ Mi cuenta» en Mi actividad (23 px).
+  - **La cuenta de prueba** se borró al terminar.
+  - **Lo que no reemplaza:** es Chrome sin ventana con el ancho y el toque de un celular, no un teléfono de verdad (Safari de iPhone y Chrome de Android pueden cambiar un poco las alturas). Antes de la demo conviene abrirla en un celular real con `npm run dev -- --host`.
