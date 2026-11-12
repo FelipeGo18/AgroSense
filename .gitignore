@@ -18,6 +18,9 @@ web/dist/
 .env
 .env.*
 
+# Notas personales de trabajo entre sesiones (continuidad de Claude, no es spec ni doc del equipo)
+NOTAS.md
+
 # Sistema y editores
 .DS_Store
 Thumbs.db
