@@ -1,8 +1,8 @@
-import gsap from "gsap";
 import { useCallback, useEffect, useState, type RefObject } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { playSound } from "@/lib/sound";
 import type { MascotMood } from "./Mascot";
+import { gsap } from "@/lib/motion";
 
 /**
  * La mascota de un formulario reacciona a lo que hace la persona (HU-172):
