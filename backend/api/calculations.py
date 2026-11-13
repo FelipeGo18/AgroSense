@@ -206,7 +206,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         if body.lot_id is not None:
             # La aptitud usa la temperatura del municipio también con lote: la corrección a su altitud espera
             # HU-206, que calcula la mediana de `grid_cells` en el polígono del lote (R1).
-            limitations.append("Temperatura media anual del municipio, no corregida a la altitud del lote (HU-206).")
+            limitations.append("Temperatura media anual del municipio, no corregida a la altitud del lote.")
 
         return DiagnosisResponse(
             request=DiagnosisRequestEcho(

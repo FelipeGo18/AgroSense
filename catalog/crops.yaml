@@ -11,7 +11,7 @@
 # aptitud alta (A1) y el absoluto va de A3 a A1. Con EcoCrop se usa su rango de temperatura del ciclo, con el supuesto de
 # que en el trópico alto la temperatura media del ciclo es casi la media anual (varía poco entre meses).
 #
-# `article` (HU-191, PENDIENTE de aprobación de Haider o Felipe para `specs/02-contratos.md`): el "el"/"la" de cada
+# `article` (HU-191, aprobado por Felipe el 12 de noviembre de 2026 para `specs/02-contratos.md`): el "el"/"la" de cada
 # cultivo, para el texto que explica por qué no es apto («la papa», «el maíz»). Es presentación, no un dato agronómico:
 # no necesita fuente (R8 no aplica), mismo tipo de campo que `archetype` (aprobado el 16 de oct. para "cómo se dibuja").
 # Se descartó redactar la frase sin artículo de género ("el cultivo papa") porque suena forzado y cambiaría los
