@@ -46,7 +46,7 @@ Antes de evaluar ventanas, el motor comprueba que el cultivo se puede dar en ese
 
 - Un cultivo **no es apto** si la temperatura media anual queda fuera de `tmean_min_c`–`tmean_max_c` de su ficha. Ejemplo: papa en un municipio de la costa. (Cambiado el 16 de octubre de 2026, decisión 13: antes se decidía por la altitud, pero ninguna fuente da bien la altitud de estos cultivos en Colombia y el criterio oficial de la UPRA es la temperatura media anual.)
 - La temperatura media anual es la de NASA POWER corregida por altitud con NASADEM (HU-044): la del municipio o, si se consulta con un lote dibujado, corregida a la altitud del lote. La respuesta dice cuál se usó, con la temperatura y la altitud.
-- Si no es apto, la luz es `red`, la acción es `rotate` («este cultivo no se da en su zona: elija otro»), la razón cita el dato de la ficha y su fuente, y **no se evalúan ventanas**.
+- Si no es apto, la luz es `red`, la acción es `rotate` («este cultivo no se da en su zona: elija otro»), la razón cita el dato de la ficha (el límite que se cruzó; la fuente va en `source_ids` del cultivo, no por valor), y **no se evalúan ventanas**.
 - Si la ficha no tiene ese rango con fuente, la aptitud es `insufficient_data`: no bloquea y se agrega a las limitaciones (R1, R8).
 - La aptitud se decide **solo por la temperatura media anual**. Solo una temperatura fuera del rango absoluto da `not_suitable`.
 - `suitability.score` es una nota informativa de 0 a 100 con la curva de temperatura media: 100 dentro del rango óptimo (`tmean_opt_min_c`–`tmean_opt_max_c`) y 0 fuera del absoluto. No es una señal: no entra al semáforo ni al orden de las ventanas.

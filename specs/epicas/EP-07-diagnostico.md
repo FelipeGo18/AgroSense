@@ -173,20 +173,20 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-191 · Aptitud del cultivo en la zona
 
 - **Historia:** Como agricultor, quiero saber de entrada si mi cultivo se da en mi municipio, para no planear una siembra que no va a prosperar.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Antes de evaluar señales, el motor compara la temperatura media anual con `tmean_min_c`–`tmean_max_c` de la ficha: la del municipio (`tmean_annual_c`) o, si viene `lot_id` con polígono, corregida a la altitud del lote (mediana de `grid_cells` en su polígono, que calcula la API, HU-206) con el gradiente de HU-044. La razón dice cuál se usó, con la temperatura y la altitud
-  - [ ] Fuera del rango: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y la razón cita el dato de la ficha y su fuente. No se evalúa ninguna ventana
+  - [x] Fuera del rango: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y la razón cita el dato de la ficha (el límite que se cruzó); la fuente va en `source_ids` del cultivo. No se evalúa ninguna ventana
   - [ ] Dentro del rango, incluidos los dos límites: `suitable`, y la razón dice la temperatura media de la zona y el rango del cultivo
   - [ ] Si la ficha no tiene el rango con fuente, o el municipio no tiene `tmean_annual_c`: `insufficient_data`; no bloquea y se agrega a las limitaciones (R1, R8)
-  - [ ] Es un filtro: no es una señal ni entra al orden; trae un `score` informativo (R3)
-  - [ ] `suitability.score`: nota informativa de 0 a 100 con la curva de temperatura media (la función de HU-196): 100 dentro del rango óptimo (`tmean_opt_min_c`–`tmean_opt_max_c`) y 0 fuera del absoluto. No entra al semáforo ni al orden de las ventanas
-  - [ ] La aptitud se decide solo por la temperatura media anual: solo fuera del rango absoluto es `not_suitable`; una nota baja dentro del rango sigue siendo `suitable`
+  - [x] Es un filtro: no es una señal ni entra al orden; trae un `score` informativo (R3)
+  - [x] `suitability.score`: nota informativa de 0 a 100 con la curva de temperatura media (la función de HU-196): 100 dentro del rango óptimo (`tmean_opt_min_c`–`tmean_opt_max_c`) y 0 fuera del absoluto. No entra al semáforo ni al orden de las ventanas
+  - [x] La aptitud se decide solo por la temperatura media anual: solo fuera del rango absoluto es `not_suitable`; una nota baja dentro del rango sigue siendo `suitable`
   - [ ] Las estrategias de rotación (HU-081, HU-213), «Qué cambió» (HU-217) y, en P1, el calendario (HU-179) y las alternativas (HU-197) usan esta misma función
-  - [ ] Caso de referencia: un cultivo de clima frío en un municipio a nivel del mar da `not_suitable` sin ventanas
+  - [x] Caso de referencia: un cultivo de clima frío en un municipio a nivel del mar da `not_suitable` sin ventanas
 - **Reglas que aplican:** R1, R3, R4, R5, R6, R8
 - **Contrato que toca:** `suitability` (con `score`) en las respuestas de `/diagnostics`, `/rotations` y `/changes`; `crops.tmean_min_c`, `crops.tmean_max_c`, `crops.tmean_opt_min_c`, `crops.tmean_opt_max_c`, `municipalities.tmean_annual_c`, `municipalities.altitude_m`, `grid_cells`
-- **Notas:** Depende de HU-044 y HU-206 (temperatura media corregida por altitud con NASADEM, del municipio y del lote), HU-061 (rango de temperatura media con fuente) y HU-199 (rango óptimo, para la nota). Cambiada el 16 de octubre de 2026 (decisión 13): antes se decidía por la altitud. El motor recibe la altitud ya calculada: no lee `grid_cells` (R6). Agregada el 11 de octubre de 2026; la altitud del lote se sumó el mismo día (decisión 12).
+- **Notas:** Depende de HU-044 y HU-206 (temperatura media corregida por altitud con NASADEM, del municipio y del lote), HU-061 (rango de temperatura media con fuente) y HU-199 (rango óptimo, para la nota). Cambiada el 16 de octubre de 2026 (decisión 13): antes se decidía por la altitud. El motor recibe la altitud ya calculada: no lee `grid_cells` (R6). Agregada el 11 de octubre de 2026; la altitud del lote se sumó el mismo día (decisión 12). **En curso desde el 12 de noviembre de 2026:** motor (`backend/engine/suitability.py`) y el caso `not_suitable` de `/diagnostics` implementados; falta que esta misma API calcule la altitud del lote (mediana de `grid_cells` en su polígono: HU-206 ya está hecha y publica la altitud por celda, esto es el primer criterio de esta HU, no depende de otra), la razón y las limitaciones del caso `suitable`/`insufficient_data` (esperan las señales, todavía en 501) y el cableado en `/rotations` y `/changes`.
 
 ### HU-192 · Orden de las ventanas por factor limitante y prioridades
 
