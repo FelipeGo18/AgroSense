@@ -40,6 +40,7 @@ const LOT = {
   updated_at: "2026-10-15T10:00:00Z",
   current_crop_ids: [],
 };
+const OTHER_LOT = { ...LOT, lot_id: "a2", name: "La Vega" };
 const MONTHS = sowingMonths();
 const RESPONSE = {
   suitability: { level: "suitable", score: 90 },
@@ -60,13 +61,21 @@ const RESPONSE = {
 
 type Reply = { status: number; body?: unknown; headers?: Record<string, string> };
 
-function fakeApi(replies: Record<string, Reply>) {
+function fakeApi(replies: Record<string, Reply | Reply[]>) {
   const calls: { key: string; body: unknown }[] = [];
+  const replyIndexes = new Map<string, number>();
   vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
     const key = `${init.method ?? "GET"} ${url}`;
     calls.push({ key, body: init.body ? JSON.parse(String(init.body)) : undefined });
-    const reply = replies[key] ?? { status: 401, body: { error: { code: "unauthorized", message: "Inicie sesión para continuar." } } };
-    return new Response(reply.body === undefined ? null : JSON.stringify(reply.body), { status: reply.status, headers: reply.headers });
+    const configured = replies[key];
+    const index = replyIndexes.get(key) ?? 0;
+    const reply = Array.isArray(configured) ? configured[Math.min(index, configured.length - 1)] : configured;
+    if (Array.isArray(configured)) replyIndexes.set(key, index + 1);
+    const response = reply ?? { status: 401, body: { error: { code: "unauthorized", message: "Inicie sesión para continuar." } } };
+    return new Response(response.body === undefined ? null : JSON.stringify(response.body), {
+      status: response.status,
+      headers: response.headers,
+    });
   });
   return calls;
 }
@@ -355,25 +364,97 @@ describe("Pantalla del diagnóstico (HU-091)", () => {
       expect(screen.getByText("req-soporte-789")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
     });
-    it("un municipio sin cobertura (404) muestra la tarjeta sin datos y permite buscar otro municipio", async () => {
+    it("si no hay otro lote, el 404 permite consultar por municipio sin usar el lote", async () => {
+      const calls = fakeApi({
+        ...CATALOGS,
+        "GET /api/v1/me": { status: 200, body: ROSA },
+        "GET /api/v1/lots": { status: 200, body: [LOT] },
+        "POST /api/v1/diagnostics": [
+          { status: 404, body: { error: { code: "not_found", message: "Ese lote no existe o no es suyo." } } },
+          { status: 200, body: RESPONSE },
+        ],
+      });
+      const user = userEvent.setup();
+      const router = open(`${PATHS.diagnosis}?lote=a1&cultivo=papa&siembra=${MONTHS[2].value}`);
+      expect(await screen.findByRole("heading", { name: "Ese lote no existe o no es suyo" })).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+      expect(screen.queryByText("Sin datos de este municipio")).not.toBeInTheDocument();
+      expect(calls.find((call) => call.key === "POST /api/v1/diagnostics")?.body).toMatchObject({ lot_id: "a1" });
+      expect(screen.queryByRole("button", { name: "Elegir otro lote" })).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Consultar sin lote" }));
+      expect(await screen.findByText("Puede sembrar en esa fecha")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(router.state.location.search).toContain("municipio=25899");
+        expect(router.state.location.search).not.toContain("lote=");
+      });
+      const diagnosisCalls = calls.filter((call) => call.key === "POST /api/v1/diagnostics");
+      expect(diagnosisCalls[1].body).toMatchObject({
+        municipality_id: "25899",
+        irrigated: true,
+        crop_id: "papa",
+        lot_id: null,
+      });
+    });
+    it("si hay otros lotes, el botón de elegir otro enfoca el selector", async () => {
+      fakeApi({
+        ...CATALOGS,
+        "GET /api/v1/me": { status: 200, body: ROSA },
+        "GET /api/v1/lots": { status: 200, body: [LOT, OTHER_LOT] },
+        "POST /api/v1/diagnostics": {
+          status: 404,
+          body: { error: { code: "not_found", message: "Ese lote no existe o no es suyo." } },
+        },
+      });
+      const user = userEvent.setup();
+      open(`${PATHS.diagnosis}?lote=a1&cultivo=papa&siembra=${MONTHS[2].value}`);
+      expect(await screen.findByRole("heading", { name: "Ese lote no existe o no es suyo" })).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+      const lotSelector = screen.getByLabelText("¿Para cuál terreno?");
+      await user.click(screen.getByRole("button", { name: "Elegir otro lote" }));
+      expect(lotSelector).toHaveFocus();
+      expect(lotSelector).toHaveTextContent("La Vega");
+    });
+    it("un 422 muestra el mensaje de la API y el botón devuelve el foco al formulario", async () => {
       fakeApi({
         ...CATALOGS,
         "POST /api/v1/diagnostics": {
-          status: 404,
-          body: { error: { code: "municipality_not_found", message: "Municipio fuera de cobertura piloto" } },
+          status: 422,
+          body: { error: { code: "invalid_input", message: "Hay datos que no son válidos. Revise: priorities." } },
         },
       });
       const user = userEvent.setup();
       open(`${PATHS.diagnosis}?municipio=15646&cultivo=papa&siembra=${MONTHS[2].value}&riego=si`);
-      expect(await screen.findByRole("heading", { name: "Sin datos de este municipio" })).toBeInTheDocument();
-      expect(screen.getByText(/AgroSense cubre la región piloto/)).toBeInTheDocument();
-      const changeTownBtn = screen.getByRole("button", { name: "Buscar otro municipio" });
-      expect(changeTownBtn).toBeInTheDocument();
-      // Al presionar el botón, se limpia el municipio para elegir otro
-      await user.click(changeTownBtn);
-      await waitFor(() => {
-        expect(screen.queryByText("Sin datos de este municipio")).not.toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Revise lo que eligió" })).toBeInTheDocument();
+      expect(screen.getByText("Hay datos que no son válidos. Revise: priorities.")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Volver al formulario" }));
+      expect(screen.getByRole("combobox", { name: "Municipio" })).toHaveFocus();
+    });
+    it("un 501 dice que el cálculo aún no está disponible y no permite reintentar", async () => {
+      fakeApi({
+        ...CATALOGS,
+        "POST /api/v1/diagnostics": {
+          status: 501,
+          body: { error: { code: "not_implemented", message: "Este cálculo todavía no está disponible." } },
+        },
       });
+      open(`${PATHS.diagnosis}?municipio=15646&cultivo=papa&siembra=${MONTHS[2].value}&riego=si`);
+      expect(await screen.findByRole("heading", { name: "Este cálculo todavía no está disponible" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
+    });
+    it("un 503 dataset_unavailable permite reintentar", async () => {
+      fakeApi({
+        ...CATALOGS,
+        "POST /api/v1/diagnostics": {
+          status: 503,
+          body: { error: { code: "dataset_unavailable", message: "Los datos no están disponibles." } },
+        },
+      });
+      open(`${PATHS.diagnosis}?municipio=15646&cultivo=papa&siembra=${MONTHS[2].value}&riego=si`);
+      expect(await screen.findByRole("heading", { name: "Los datos no están disponibles en este momento" })).toBeInTheDocument();
+      expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByText("Intente más tarde.")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
     });
     it("sin conexión a internet muestra la tarjeta de sin conexión con botón reintentar", async () => {
       vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
