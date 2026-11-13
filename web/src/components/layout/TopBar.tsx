@@ -86,7 +86,7 @@ function MainNav() {
         <NavLink
           key={item.to}
           to={item.to}
-          className={`border-b-[5px] border-transparent pt-[5px] aria-[current=page]:font-bold ${item.wide ? "hidden xl:inline" : ""}`}
+          className={`border-b-[5px] border-transparent pt-[5px] whitespace-nowrap aria-[current=page]:font-bold ${item.wide ? "hidden xl:inline" : ""}`}
         >
           {item.label}
         </NavLink>
@@ -118,10 +118,13 @@ export function TopBar() {
               <Link
                 to={PATHS.account}
                 aria-label={`Mi cuenta: ${user.display_name}`}
-                className="flex h-11 max-w-40 items-center gap-2 bg-superficie-panel-suave px-3 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)] xl:max-w-56"
+                title={`Mi cuenta: ${user.display_name}`}
+                className="flex h-11 items-center gap-2 bg-superficie-panel-suave px-3 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)] 2xl:max-w-56"
               >
                 <Mascot mood="idle" size={44} decorative />
-                <span className="truncate">{user.display_name}</span>
+                {/* Con sesión la barra lleva la cuenta y «Cerrar sesión»: el nombre solo cabe junto al menú desde 1536 px
+                    (medido con nombres largos). Más angosto, la mascota es el enlace y el nombre va en su aviso. */}
+                <span className="hidden truncate 2xl:inline">{user.display_name}</span>
               </Link>
               <button
                 type="button"

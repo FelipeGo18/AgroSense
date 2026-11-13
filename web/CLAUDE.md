@@ -11,12 +11,15 @@ El modo ligero es la misma información sin scroll suave, sin recorrido animado 
 1. **JS:** pregunte `useAnimated()` (`@/hooks/useLightMode`). Si es falso, dibuje el componente ya colocado y quieto, con los mismos textos, botones y datos. El patrón de la portada: la página decide `animated` una vez y se lo pasa a sus secciones (`<Hero animated={animated} />`).
 2. **CSS:** las animaciones y transiciones van con la variante `animated:` (`animated:transition-transform`). El CSS global (`styles/index.css`) apaga igual toda `animation` y `transition` que se escriba fuera de ella: es la red de seguridad, no la regla.
 3. **Lienzos y bucles** (`canvas`, `gsap.ticker`, `requestAnimationFrame`): en modo ligero dibujan una vez y no corren (como `Earth` con `still`).
-4. **Scroll:** nada secuestra el scroll ni pega («pin») una sección en modo ligero. El contenido tiene su altura natural y los enlaces internos saltan sin animar (`scrollTo` de `SmoothScroll` ya lo hace).
-5. **La información no puede depender de una animación.** Nada empieza escondido (`opacity-0`, `autoAlpha: 0`, fuera de pantalla) si algo que solo corre con movimiento lo tiene que mostrar. Si una pieza entra animada, en modo ligero ya está a la vista.
+4. **GSAP y Lenis se cargan aparte** (`src/lib/motion.ts`): en modo ligero no se descargan.
+   - Se importan de `@/lib/motion` (`gsap`, `ScrollTrigger`, `Lenis`), nunca de `gsap` ni de `lenis`. Los efectos se escriben con `useMotionEffect` (`@/hooks/useMotionEffect`), que es `useGSAP` sin traer GSAP al paquete. El lint lo hace cumplir.
+   - Donde `useAnimated()` es verdadero, el motor ya llegó. Excepción: el primer dibujo sobre el HTML del build (Inicio, Entrar, la política) se hace como con movimiento. Por eso un efecto que use `gsap.ticker` o `Lenis` por fuera de `useMotionEffect` pregunta también `motionLoaded()`.
+5. **Scroll:** nada secuestra el scroll ni pega («pin») una sección en modo ligero. El contenido tiene su altura natural y los enlaces internos saltan sin animar (`scrollTo` de `SmoothScroll` ya lo hace).
+6. **La información no puede depender de una animación.** Nada empieza escondido (`opacity-0`, `autoAlpha: 0`, fuera de pantalla) si algo que solo corre con movimiento lo tiene que mostrar. Si una pieza entra animada, en modo ligero ya está a la vista.
 
 `useReducedMotion()` (`@/hooks/useReducedMotion`) sigue existiendo por compatibilidad y es `!useAnimated()`; en código nuevo se usa `useAnimated()`.
 
-**Prohibido:** leer `prefers-reduced-motion` o `matchMedia` por su cuenta para decidir movimiento (eso es de `lightMode.ts`), crear otro interruptor de movimiento, o usar GSAP, Lenis o ScrollTrigger fuera de un componente que reciba `animated`.
+**Prohibido:** leer `prefers-reduced-motion` o `matchMedia` por su cuenta para decidir movimiento (eso es de `lightMode.ts`), crear otro interruptor de movimiento, usar GSAP, Lenis o ScrollTrigger fuera de un componente que reciba `animated`, o importarlos directo (`gsap`, `gsap/*`, `lenis`, `@gsap/react`): solo el laboratorio lo hace.
 
 **Pantalla nueva, lista cuando:** se ve completa y sin tocar nada en modo ligero (una prueba con `setLightMode(true)`), y está en `ROUTES` de `e2e/responsive-check.mjs`.
 
@@ -42,6 +45,7 @@ Mobile-first. Lo base es la pantalla de 320 px de ancho; `sm`, `md`, `lg` y `xl`
 ```bash
 npm run dev -- --port 5190 --strictPort    # en una terminal
 npm run test:responsive                    # en otra: desborde, tamaños, modo ligero (BASE=http://localhost:5190)
+npm run test:motion                        # sobre el build: GSAP y Lenis no se descargan en modo ligero y nada se rompe
 npm test                                   # vitest
 npm run typecheck && npm run lint
 ```
