@@ -1,6 +1,6 @@
-import gsap from "gsap";
 import { createContext, use, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Mascot, type MascotMood } from "./Mascot";
+import { gsap, motionLoaded } from "@/lib/motion";
 
 /**
  * La mascota como guía de una página larga. Cada sección reserva un lugar para ella (`MascotSlot`) y una sola
@@ -86,7 +86,8 @@ export function MascotFlyer() {
   const flying = guide?.flying ?? false;
   useEffect(() => {
     const node = el.current;
-    if (!node || !slots || !flying) return;
+    // `motionLoaded()`: sobre el HTML del build, el primer dibujo vuela aunque el motor no haya llegado (lib/motion.ts).
+    if (!node || !slots || !flying || !motionLoaded()) return;
     let x = 0;
     let y = 0;
     let w = 0;

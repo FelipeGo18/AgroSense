@@ -1,7 +1,7 @@
 // Revisa que ninguna pantalla se rompa al cambiar de tamaño ni de modo (HU-096, HU-158). Abre cada ruta en un Chrome real,
 // en cada ancho y alto de la lista, con movimiento y en modo ligero, y falla si encuentra:
 //   · desplazamiento horizontal de la página o piezas que se salen del ancho;
-//   · la barra superior con contenido fuera de su caja;
+//   · la barra superior con contenido fuera de su caja, o con un enlace del menú partido en dos líneas o debajo de los botones;
 //   · botones o enlaces más chicos que 44 px (objetivo táctil, `specs/05-frontend.md`);
 //   · en modo ligero: algo que siga animado (CSS) o escondido esperando una animación.
 // Las reglas que comprueba están en `web/CLAUDE.md`. Al crear una pantalla nueva, súmela a ROUTES.
@@ -106,6 +106,16 @@ function inspect({ light, minTarget }) {
       const box = child.getBoundingClientRect();
       if (box.right > outer.right + 1 || box.left < outer.left - 1) problems.push("el contenido de la barra superior se sale de su caja");
     }
+    // Cada enlace del menú en una sola línea y sin meterse debajo de los botones de la derecha (con sesión, la cuenta y
+    // «Cerrar sesión» ocupan más que «Entrar»: así se rompía a 1280 px).
+    const right = bar.querySelector(":scope > div:last-child")?.getBoundingClientRect();
+    for (const link of bar.querySelectorAll('nav[aria-label="Principal"] a')) {
+      const box = link.getBoundingClientRect();
+      if (!box.width) continue;
+      if (link.getClientRects().length > 1 || box.height > parseFloat(getComputedStyle(link).lineHeight) * 1.5 + 10)
+        problems.push(`«${link.textContent}» de la barra superior se parte en dos líneas`);
+      else if (right && box.right > right.left) problems.push(`«${link.textContent}» de la barra superior queda debajo de los botones`);
+    }
   }
 
   const small = [...document.querySelectorAll("a[href], button, input, select, textarea, [role='switch']")].filter((el) => {
@@ -172,13 +182,22 @@ for (const light of [false, true]) {
     for (const route of ROUTES) {
       let problems;
       for (let attempt = 1; attempt <= 3 && !problems; attempt++) {
-        const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 768, isMobile: width < 768 });
+        // El modo ligero se prende como en un teléfono que pide «reducir movimiento» (la preferencia queda en automático):
+        // así se comprueba también que la web le hace caso al equipo. El botón «Modo ligero» lo prueban sus pruebas y
+        // `npm run test:motion`. Con movimiento, la preferencia es «desactivado».
+        const context = await browser.newContext({
+          viewport: { width, height },
+          hasTouch: width < 768,
+          isMobile: width < 768,
+          reducedMotion: light ? "reduce" : "no-preference",
+        });
         await context.addInitScript(
           ([key, value, area]) => {
-            localStorage.setItem(key, value);
+            if (value) localStorage.setItem(key, value);
+            else localStorage.removeItem(key);
             sessionStorage.setItem(area[0], area[1]);
           },
-          [KEY, light ? "on" : "off", AREA],
+          [KEY, light ? null : "off", AREA],
         );
         if (process.env.SESSION) await context.addCookies([{ name: "agrosense_session", value: process.env.SESSION, url: BASE }]);
         try {
