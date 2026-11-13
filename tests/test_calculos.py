@@ -241,8 +241,9 @@ def test_diagnostico_cultivo_no_apto_responde_200_con_la_forma_del_contrato(data
     assert body["request"]["municipality_id"] == "25307"
 
 
-def test_diagnostico_cultivo_no_apto_la_razon_cita_la_ficha_y_su_fuente(dataset_con_clima):
-    """R5, R8: la razón nombra el dato de la ficha que excluye el cultivo (`tmean_max_c` de la papa), no solo la luz."""
+def test_diagnostico_cultivo_no_apto_la_razon_cita_el_limite_de_la_ficha(dataset_con_clima):
+    """R5: la razón nombra el límite de la ficha que excluye el cultivo (`tmean_max_c` de la papa), no solo la luz.
+    No cita la fuente: `crops` no la guarda por valor, solo `source_ids` del cultivo entero (EP-07, HU-191)."""
     response = TestClient(app).post("/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON})
     assert response.status_code == 200, response.json()
     assert response.json()["suitability"]["reasons"] == [
@@ -306,7 +307,7 @@ def test_diagnostico_no_apto_con_lote_dice_que_la_temperatura_es_la_del_municipi
         "/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON, "lot_id": lot["lot_id"]}
     )
     assert response.status_code == 200, response.json()
-    assert response.json()["limitations"] == ["Temperatura media anual del municipio, no corregida a la altitud del lote (HU-206)."]
+    assert response.json()["limitations"] == ["Temperatura media anual del municipio, no corregida a la altitud del lote."]
 
 
 def test_diagnostico_no_apto_sin_lote_no_tiene_limitaciones(dataset_con_clima):

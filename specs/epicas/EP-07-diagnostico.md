@@ -176,7 +176,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Antes de evaluar señales, el motor compara la temperatura media anual con `tmean_min_c`–`tmean_max_c` de la ficha: la del municipio (`tmean_annual_c`) o, si viene `lot_id` con polígono, corregida a la altitud del lote (mediana de `grid_cells` en su polígono, que calcula la API, HU-206) con el gradiente de HU-044. La razón dice cuál se usó, con la temperatura y la altitud
-  - [x] Fuera del rango: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y la razón cita el dato de la ficha y su fuente. No se evalúa ninguna ventana
+  - [x] Fuera del rango: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y la razón cita el dato de la ficha (el límite que se cruzó); la fuente va en `source_ids` del cultivo. No se evalúa ninguna ventana
   - [ ] Dentro del rango, incluidos los dos límites: `suitable`, y la razón dice la temperatura media de la zona y el rango del cultivo
   - [ ] Si la ficha no tiene el rango con fuente, o el municipio no tiene `tmean_annual_c`: `insufficient_data`; no bloquea y se agrega a las limitaciones (R1, R8)
   - [x] Es un filtro: no es una señal ni entra al orden; trae un `score` informativo (R3)
