@@ -178,8 +178,8 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     _check_lot(request, db, body.lot_id)
 
     # Regla 0 de la agregación del semáforo (specs/01-reglas.md, «Agregación del semáforo»): si el cultivo no es
-    # apto para la zona, la luz es roja y no se evalúa nada más. `basis="municipality"` es fijo hasta HU-206, que
-    # corrija la temperatura media a la altitud del lote.
+    # apto para la zona, la luz es roja y no se evalúa nada más. `basis="municipality"` es fijo hasta que la API
+    # calcule la altitud del lote (mediana de `grid_cells` en su polígono, primer criterio de HU-191).
     crop = dataset.crops[body.crop_id]
     municipality = dataset.municipalities[body.municipality_id]
 
@@ -204,8 +204,8 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         reasons = ["Este cultivo no se da en su zona: elija otro"]
         limitations = []
         if body.lot_id is not None:
-            # La aptitud usa la temperatura del municipio también con lote: la corrección a su altitud espera
-            # HU-206, que calcula la mediana de `grid_cells` en el polígono del lote (R1).
+            # La aptitud usa la temperatura del municipio también con lote: falta que esta API calcule la mediana
+            # de `grid_cells` en el polígono del lote (primer criterio de HU-191, sin marcar) (R1).
             limitations.append("Temperatura media anual del municipio, no corregida a la altitud del lote.")
 
         return DiagnosisResponse(
