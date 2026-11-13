@@ -7,7 +7,7 @@
 | Épica | HU | Título | Prio | Tamaño | Estado | Nota |
 |---|---|---|---|---|---|---|
 | [EP-00](epicas/EP-00-alcance.md) | HU-001 | Comparar la cobertura de EVA y elegir región | P0 | M | pendiente | |
-| [EP-00](epicas/EP-00-alcance.md) | HU-002 | Confirmar los datasets NASA del enunciado | P0 | S | en curso | Enunciado leído (8 nov, decisión 14); sede Duitama y región Boyacá y Cundinamarca confirmadas (28 oct); faltan los recursos del 13 de noviembre y la descarga de prueba |
+| [EP-00](epicas/EP-00-alcance.md) | HU-002 | Confirmar los datasets NASA del enunciado | P0 | S | en curso | Datos de la NASA documentados y probados sobre Duitama (12 nov); falta la pestaña de recursos del 13 de noviembre |
 | [EP-00](epicas/EP-00-alcance.md) | HU-003 | Verificar SIPSA y decidir si entra al P0 | P0 | S | hecha | Verificado y mapeado (7 nov): SIPSA cubre papa, arveja, cebolla de bulbo y zanahoria. Entra, aprobado por Felipe (10 nov) |
 | [EP-00](epicas/EP-00-alcance.md) | HU-004 | Confirmar qué se puede preparar antes del evento | P0 | S | hecha | Sí se puede llevar código (8 nov); los términos 2026 no limitan cuándo se crea el trabajo, pero piden licencia OSI, licencias de terceros documentadas y citar todas las fuentes (10 nov) |
 | [EP-01](epicas/EP-01-contratos.md) | HU-011 | Esquema de las tablas publicadas | P0 | M | hecha | `pipeline/schema.py` y los ejemplos en `data/examples/` (8 nov) |
