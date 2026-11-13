@@ -215,11 +215,11 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-168 · Registro, sesión y paso de invitado a cuenta
 
 - **Historia:** Como invitado, quiero crear mi cuenta sin perder lo que ya consulté, para guardarlo.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Vistas de registro, inicio de sesión y perfil con el estilo de `specs/05-frontend.md`
-  - [ ] Al registrarse después de consultar estrategias sin cuenta, el municipio, el área y el cultivo anterior que escribió se ofrecen para crear su primer lote (sin dibujar), que puede dibujar después
-  - [ ] Quien vuelve con sesión entra directo a Mi finca
+  - [X] Vistas de registro, inicio de sesión y perfil con el estilo de `specs/05-frontend.md`
+  - [X] Al registrarse después de consultar estrategias sin cuenta, el municipio, el área y el cultivo anterior que escribió se ofrecen para crear su primer lote (sin dibujar), que puede dibujar después
+  - [X] Quien vuelve con sesión entra directo a Mi finca
   - [ ] P1 (con HU-141): la finca temporal del dispositivo se ofrece para guardar como un lote con una temporada por cultivo, cada una con su parte del área
 - **Reglas que aplican:** R9
 - **Notas:** Ajustada el 11 de octubre de 2026 al recorte del MVP: la finca temporal pasó a P1 y sin cuenta se consulta por municipio, área y cultivo anterior (HU-214).

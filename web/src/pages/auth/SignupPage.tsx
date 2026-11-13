@@ -12,6 +12,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useMotionEffect } from "@/hooks/useMotionEffect";
 import { gsap } from "@/lib/motion";
+import { readGuestConsult } from "@/features/strategies/entry";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -92,7 +93,20 @@ export function SignupPage() {
       { display_name: displayName.trim(), username, password, consent_version: CONSENT_VERSION, consent_accepted: true },
       // Si el usuario ya existe, en pantallas angostas se vuelve al paso donde se corrige.
       {
-        onSuccess: () => celebrateThen(() => navigate(PATHS.farm)),
+        onSuccess: () =>
+          celebrateThen(() => {
+            const guest = readGuestConsult();
+            if (guest) {
+              const params = new URLSearchParams();
+              params.set("desde", "consulta");
+              params.set("municipio", guest.municipalityId);
+              if (guest.areaText) params.set("area", guest.areaText);
+              if (guest.irrigation) params.set("riego", guest.irrigation);
+              navigate(`${PATHS.addLot}?${params}`);
+            } else {
+              navigate(PATHS.farm);
+            }
+          }),
         onError: (error) => error instanceof ApiError && error.status === 409 && setStep(1),
       },
     );
