@@ -1,8 +1,5 @@
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
-import "lenis/dist/lenis.css";
 import { useEffect, useRef } from "react";
+import { gsap, Lenis, motionLoaded, ScrollTrigger } from "@/lib/motion";
 
 /** Mayor avance, en píxeles, que se acepta de un solo golpe de rueda. Un gesto brusco no salta varias paradas. */
 const MAX_WHEEL_STEP = 110;
@@ -16,9 +13,10 @@ const LERP = 0.09;
  * un solo ciclo (el de GSAP) y sin suavizado de retraso. Devuelve la instancia, o null si está apagado.
  */
 export function useSmoothScroll(enabled: boolean) {
-  const ref = useRef<Lenis | null>(null);
+  const ref = useRef<InstanceType<typeof Lenis> | null>(null);
   useEffect(() => {
-    if (!enabled) return;
+    // `motionLoaded()`: sobre el HTML del build, el primer dibujo se hace con movimiento aunque el motor no haya llegado.
+    if (!enabled || !motionLoaded()) return;
     const lenis = new Lenis({
       lerp: LERP,
       wheelMultiplier: 1,

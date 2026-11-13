@@ -102,7 +102,7 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 - **Historia:** Como agricultor con un celular sencillo o poca señal, quiero que la app funcione rápido aunque no muestre el paisaje 3D ni se mueva, para usarla en el campo.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] **En el MVP la web es 2D por defecto:** todas las pantallas del flujo (inicio, entrada, estrategias, ciclo, qué cambió, lote y cuenta) funcionan completas sin WebGL
+  - [x] **En el MVP la web es 2D por defecto:** todas las pantallas del flujo (inicio, entrada, estrategias, ciclo, qué cambió, lote y cuenta) funcionan completas sin WebGL
   - [ ] Cuando exista la escena 3D (P1), sin WebGL o con fps bajo pasa sola a la versión 2D con la misma información, y hay un interruptor manual
   - [x] **Un solo interruptor de movimiento** (`web/src/lib/lightMode.ts`): «activado», «desactivado» o «automático»; se guarda en el navegador. En automático sigue a «reducir movimiento» y al ahorro de datos del equipo. Marca `<html data-light>`
   - [x] **Botón «Modo ligero» en la barra superior**, visible en todas las pantallas. Al pasar el cursor, enfocarlo con el teclado o tocarlo, un aviso corto (título, una frase y qué pasa al tocar) dice qué hace y cambia según el estado (Escape lo cierra). El estado se dice con forma y texto, no solo con color
@@ -110,11 +110,40 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - [x] **Modo ligero = scroll normal:** sin scroll suave (Lenis), sin GSAP en ejecución, sin animaciones ni transiciones de CSS, con la Tierra y la mascota quietas. La información, los textos y los botones son los mismos. Se puede cambiar sin recargar
   - [x] **Regla para lo nuevo:** toda vista o componente animado se escribe compatible con el modo ligero (`useAnimated()`, la variante `animated:`); queda en `web/CLAUDE.md` y en `specs/05-frontend.md`. El CSS apaga cualquier animación o transición que se escriba fuera de ella
   - [x] **Reglas globales de diseño adaptable** (`container-page`, cuadrículas con columnas explícitas, anchos fijos con su versión angosta, alturas mínimas) y verificación automática con `npm run test:responsive`
-  - [ ] GSAP y Lenis no se descargan en modo ligero (carga diferida): hoy no corren, pero el paquete sigue incluyéndolos
+  - [x] GSAP y Lenis no se descargan en modo ligero (carga diferida)
   - [x] Un solo «Modo ligero» en el diseño: salió «Reducir movimiento» de Mi cuenta y del menú del celular, y la barra superior lleva el botón (`design/pantallas/ui.py`, lámina `transversal-06-modo-ligero-*`). Falta enviar los SVG a Figma y que Felipe los apruebe
-  - [ ] Respeta «reducir movimiento»: verificado en las pantallas del MVP cuando existan
-  - [ ] Cumple el JS inicial y el LCP de `specs/05-frontend.md`
+  - [x] Respeta «reducir movimiento»: verificado en las pantallas del MVP
+  - [x] Cumple el JS inicial y el LCP de `specs/05-frontend.md`
 - **Notas:** Desde el 11 de octubre de 2026 el modo ligero 2D es el modo por defecto de la web del MVP (decisión 12). El botón de la barra superior no estaba en Figma: se resolvió con el kit (placa biselada, pluma llena = activo) y quedó dibujado en los generadores; falta enviarlo a Figma y que Felipe lo apruebe. La lámina `inicio` no se regeneró (necesita la imagen Blue Marble, `design/globo/`) y todavía no muestra el botón. Por defecto el modo es «automático»: con movimiento salvo que el equipo pida lo contrario; para que arranque en ligero en todos los equipos, se cambia el valor por defecto en `lightMode.ts`.
+- **Hecho (12 nov): el movimiento se carga aparte.**
+  - **Cómo:**
+    - GSAP, ScrollTrigger y Lenis viven en `web/src/lib/motionEngine.ts` y se piden con `import()` desde `web/src/lib/motion.ts`, solo con movimiento. Pesan unos 48 kB comprimidos.
+    - Con movimiento llegan junto con la aplicación, y cada página los espera antes de montarse (`app/routes.tsx`): la entrada no parpadea. Si la persona apaga el modo ligero sin recargar, se piden en ese momento.
+    - `useAnimated()` no se enciende hasta que llegan.
+    - Los efectos usan `useMotionEffect` en lugar de `useGSAP`, que metía GSAP en el paquete inicial. El lint prohíbe importar `gsap`, `lenis` o `@gsap/react` directo, salvo en el laboratorio.
+  - **Un caso que se encontró y se arregló:** el primer dibujo sobre el HTML del build (Inicio, Entrar, la política) se hace como con movimiento. Con «Modo ligero» elegido y sin el motor, la Tierra, la mascota que vuela y el scroll suave rompían la portada. Ahora esos tres efectos preguntan `motionLoaded()`.
+  - **Cómo se comprueba:**
+    - `npm run test:motion` (nuevo, `web/e2e/motion-check.mjs`), sobre el build:
+      - sin movimiento no se descarga, ni al abrir cinco páginas ni al navegar entre ellas;
+      - con movimiento llega, el scroll suave se activa y la portada se mueve;
+      - al apagar el modo ligero sin recargar se pide;
+      - ninguna página se rompe ni deja errores en la consola.
+      Se comprobó que detecta la caída de arriba si se quitan los arreglos.
+    - Pruebas en `web/src/lib/motion.test.ts`.
+- **Medido (12 nov, `npm run perf`, mediana de 3 pasadas):**
+  - **JS inicial:** sin movimiento, 149 kB en Inicio y 148 kB en Entrar (antes 197 y 195); con movimiento, 198 y 196 kB. Todo bajo el tope de 200 kB.
+  - **LCP:** 1,5 s en el celular simulado y 0,4 s en escritorio (meta: 2,5 s).
+  - **Inicio en el celular sin movimiento:** pasó de nota 87 y 461 ms de bloqueo a 97 y 155 ms.
+  - **Sigue debajo de la meta de Lighthouse (95, bloqueo de 200 ms), que no es criterio de esta HU:** Inicio en el celular con movimiento (94 y 245 ms; antes 92 y 317). El bloqueo que queda es el estilo y el diseño del HTML de la portada y el arranque de React, no GSAP.
+  - **El bloqueo varía mucho entre pasadas en este equipo:** Entrar sin movimiento dio de 209 a 428 ms en cinco pasadas, con mediana de 252; sin el cambio, de 262 a 294, con mediana de 291.
+- **«Reducir movimiento» verificado (12 nov):** `npm run test:responsive` prende ahora el modo ligero como un teléfono que pide reducir movimiento (preferencia en automático), no con el botón. Revisadas las 25 pantallas en 11 tamaños, con movimiento y sin él (también las de cuenta, con una cuenta de prueba de la base local): 550 de 550 sin problemas, nada animado ni escondido.
+- **Sin WebGL verificado (12 nov):** Chrome con WebGL apagado, con y sin movimiento, en 13 pantallas: inicio, entrada, estrategias, ciclo, diagnóstico, qué cambió, Mi finca, agregar, el lote, editar, sembrar, estrategias desde el lote y Mi cuenta.
+  - Todas se ven completas y sin errores. El único WebGL es el mapa de los lotes, que avisa «Su navegador no puede mostrar el mapa» y ofrece «Escribir el área a mano».
+  - Se arregló que el panel tapara el comienzo de ese aviso en escritorio.
+  - Se usó una cuenta de prueba de la base local, borrada al terminar.
+- **Falta:**
+  - enviar el botón a Figma y que Felipe lo apruebe;
+  - el paso automático a 2D cuando exista la escena 3D (P1).
 
 ### HU-159 · Prototipo navegable con datos de ejemplo
 
