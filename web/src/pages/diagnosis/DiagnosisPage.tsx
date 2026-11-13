@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
@@ -12,7 +12,7 @@ import { Combobox, type Option } from "@/components/ui/Combobox";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ExampleLabel } from "@/components/ui/Labels";
 import { SelectField } from "@/components/ui/SelectField";
-import { StateCard } from "@/components/ui/StateCard";
+import { StateCard, type StateCardAction } from "@/components/ui/StateCard";
 import { DiagnosisSkeleton } from "./DiagnosisSkeleton";
 import { useSession } from "@/features/auth/session";
 import {
@@ -69,6 +69,7 @@ export function DiagnosisPage() {
   const myLots = user ? (lots.data ?? []) : [];
 
   const months = useMemo(() => sowingMonths(), []);
+  const formRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<ConsultForm>(() => fromParams(params));
   // Validación inmediata: el error de un campo aparece apenas se usa (al elegir, o al salir del buscador sin escoger).
   // Al intentar enviar, o si la dirección ya traía una consulta, aparecen los de todos.
@@ -103,6 +104,7 @@ export function DiagnosisPage() {
   // Lo que se consulta es lo de la dirección, no lo que se está escribiendo: cambia solo al enviar.
   const sent = fromParams(params);
   const sentLot = myLots.find((l) => l.lot_id === sent.lotId);
+  const hasOtherLots = myLots.some((l) => l.lot_id !== sent.lotId);
   // Con `?lote=`: se espera la sesión y los lotes. Si no hay sesión o el lote no es suyo, se dice y no se consulta.
   const waitingLot = Boolean(sent.lotId) && (sessionLoading || (Boolean(user) && lots.isPending));
   const lotMissing = Boolean(sent.lotId) && !waitingLot && !sentLot;
@@ -124,26 +126,20 @@ export function DiagnosisPage() {
   const summaryParts = [cropName, sent.month ? monthName(sent.month) : null, place].filter(Boolean);
   const querySummary = summaryParts.length > 0 ? summaryParts.join(" · ") : undefined;
 
-  const resetTown = () => {
-    setParams(
-      (current) => {
-        const next = new URLSearchParams(current);
-        next.delete("municipio");
-        return next;
-      },
-      { preventScrollReset: true },
-    );
+  const returnToForm = () => {
+    formRef.current?.querySelector<HTMLElement>("input, select, button")?.focus();
   };
 
-  const resetDate = () => {
-    setParams(
-      (current) => {
-        const next = new URLSearchParams(current);
-        next.delete("siembra");
-        return next;
-      },
-      { preventScrollReset: true },
-    );
+  const focusLotSelector = () => {
+    formRef.current?.querySelector<HTMLSelectElement>("select")?.focus();
+  };
+
+  const consultWithoutLot = () => {
+    const municipalityId = sentLot?.municipality_id ?? sent.municipalityId;
+    if (!municipalityId) return;
+
+    const irrigation = sentLot ? (sentLot.irrigated === null ? "nose" : sentLot.irrigated ? "si" : "no") : sent.irrigation;
+    setParams(toParams({ ...sent, municipalityId, irrigation, lotId: "" }), { preventScrollReset: true });
   };
 
   const change = (patch: Partial<ConsultForm>) => setForm((current) => ({ ...current, ...patch }));
@@ -176,7 +172,13 @@ export function DiagnosisPage() {
             {municipalities.isError || crops.isError ? (
               <Alert>{catalogErrorText(municipalities.error ?? crops.error)}</Alert>
             ) : (
-              <form noValidate onSubmit={submit} className="flex min-w-0 flex-col gap-6" aria-label="Consulta del diagnóstico">
+              <form
+                ref={formRef}
+                noValidate
+                onSubmit={submit}
+                className="flex min-w-0 flex-col gap-6"
+                aria-label="Consulta del diagnóstico"
+              >
                 {myLots.length > 0 && (
                   <SelectField
                     label="¿Para cuál terreno?"
@@ -269,8 +271,10 @@ export function DiagnosisPage() {
             lotMissing={lotMissing}
             zeroPriorities={hasConsult(params) && priorities.allZero}
             querySummary={querySummary}
-            onResetTown={resetTown}
-            onResetDate={resetDate}
+            hasOtherLots={hasOtherLots}
+            onChooseAnotherLot={focusLotSelector}
+            onConsultWithoutLot={consultWithoutLot}
+            onReturnToForm={returnToForm}
           />
         </div>
         {request && diagnosis.isSuccess && <Details data={diagnosis.data} />}
@@ -316,8 +320,10 @@ interface ResultProps {
   lotMissing: boolean;
   zeroPriorities: boolean;
   querySummary?: string;
-  onResetTown: () => void;
-  onResetDate: () => void;
+  hasOtherLots: boolean;
+  onChooseAnotherLot: () => void;
+  onConsultWithoutLot: () => void;
+  onReturnToForm: () => void;
 }
 function Result({
   request,
@@ -327,8 +333,10 @@ function Result({
   lotMissing,
   zeroPriorities,
   querySummary,
-  onResetTown,
-  onResetDate,
+  hasOtherLots,
+  onChooseAnotherLot,
+  onConsultWithoutLot,
+  onReturnToForm,
 }: Readonly<ResultProps>) {
   if (!request) {
     return (
@@ -365,8 +373,10 @@ function Result({
         <DiagnosisError
           error={diagnosis.error}
           onRetry={() => void diagnosis.refetch()}
-          onResetTown={onResetTown}
-          onResetDate={onResetDate}
+          hasOtherLots={hasOtherLots}
+          onChooseAnotherLot={onChooseAnotherLot}
+          onConsultWithoutLot={onConsultWithoutLot}
+          onReturnToForm={onReturnToForm}
         />
       ) : (
         <Summary data={diagnosis.data} />
@@ -378,57 +388,91 @@ function Result({
 interface DiagnosisErrorProps {
   error: Error;
   onRetry: () => void;
-  onResetTown: () => void;
-  onResetDate: () => void;
+  hasOtherLots: boolean;
+  onChooseAnotherLot: () => void;
+  onConsultWithoutLot: () => void;
+  onReturnToForm: () => void;
 }
 
 /**
  * Traduce un fallo de la API o de la red a una tarjeta de estado clara (HU-094; W6).
- * Sigue los 4 estados definidos en `design/pantallas/estados_resultado.py`.
+ * Separa los códigos de error que requieren mensajes o acciones distintos.
  */
-function DiagnosisError({ error, onRetry, onResetTown, onResetDate }: Readonly<DiagnosisErrorProps>) {
+function DiagnosisError({
+  error,
+  onRetry,
+  hasOtherLots,
+  onChooseAnotherLot,
+  onConsultWithoutLot,
+  onReturnToForm,
+}: Readonly<DiagnosisErrorProps>) {
   // 1. Sin conexión: falla la red o modo offline (status 0)
   if (error instanceof ApiError && (error.status === 0 || error.code === "offline")) {
     return (
       <StateCard
         title="Sin conexión"
-        description="Revise la señal. Lo que ya consultó sigue en pantalla; para calcular otra fecha hace falta internet."
+        description="Revise la señal."
         mood="idle"
         actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
       />
     );
   }
-  // 2. Sin datos de este municipio: municipio fuera de cobertura (404 o municipality_not_found)
-  if (
-    error instanceof ApiError &&
-    (error.status === 404 || error.code === "municipality_not_found" || error.message.toLowerCase().includes("sin cobertura"))
-  ) {
+  // 2. Un 404 de /diagnostics indica que el lote no existe o no pertenece a la persona.
+  if (error instanceof ApiError && error.status === 404) {
+    const actions: StateCardAction[] = [];
+    if (hasOtherLots) {
+      actions.push({ label: "Elegir otro lote", variant: "primary", onClick: onChooseAnotherLot });
+    }
+    actions.push({
+      label: "Consultar sin lote",
+      variant: hasOtherLots ? "secondary" : "primary",
+      onClick: onConsultWithoutLot,
+    });
     return (
       <StateCard
-        title="Sin datos de este municipio"
-        description="AgroSense cubre la región piloto. No inventamos un resultado: puede consultar un municipio cercano que sí esté."
-        mood="no_data"
-        dashed
-        actions={[{ label: "Buscar otro municipio", variant: "secondary", onClick: onResetTown }]}
-      />
-    );
-  }
-  // 3. Entrada no válida (422): fecha no válida
-  if (error instanceof ApiError && (error.status === 422 || error.code === "invalid_date")) {
-    return (
-      <StateCard
-        title="Esa fecha no se puede consultar"
+        title="Ese lote no existe o no es suyo"
         description={
-          error.message && error.message !== "error"
-            ? error.message
-            : "Elija un mes de los próximos doce: una fecha que ya pasó o más lejana no tiene ventana que evaluar."
+          hasOtherLots
+            ? "Elija otro de sus lotes o continúe la consulta por municipio."
+            : "Puede continuar la consulta por municipio, sin usar este lote."
         }
         mood="guide"
-        actions={[{ label: "Cambiar la fecha", variant: "primary", onClick: onResetDate }]}
+        actions={actions}
       />
     );
   }
-  // 4. Error del servidor (500, 501, 503 o general): código para soporte
+  // 3. La API explica qué dato de entrada debe revisarse.
+  if (error instanceof ApiError && error.status === 422) {
+    return (
+      <StateCard
+        title="Revise lo que eligió"
+        description={error.message}
+        mood="guide"
+        actions={[{ label: "Volver al formulario", variant: "primary", onClick: onReturnToForm }]}
+      />
+    );
+  }
+  if (error instanceof ApiError && error.status === 501) {
+    return (
+      <StateCard
+        title="Este cálculo todavía no está disponible"
+        description="El cálculo del diagnóstico aún no está construido."
+        mood="idle"
+      />
+    );
+  }
+  if (error instanceof ApiError && error.status === 503 && error.code === "dataset_unavailable") {
+    return (
+      <StateCard
+        title="Los datos no están disponibles en este momento"
+        description="Intente más tarde."
+        mood="no_data"
+        dashed
+        actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+      />
+    );
+  }
+  // 4. Un fallo interno o no reconocido conserva el código de soporte y permite reintentar.
   const code = error instanceof ApiError && error.requestId ? error.requestId : null;
   return (
     <StateCard
@@ -440,13 +484,6 @@ function DiagnosisError({ error, onRetry, onResetTown, onResetDate }: Readonly<D
     />
   );
 }
-/** 
-function errorText(error: Error): string {
-  if (error instanceof ApiError && error.status === 501)
-    return "El cálculo del diagnóstico todavía no está listo en el servidor. Intente más tarde.";
-  return error.message;
-}
-*/
 /**
  * El resumen (HU-092, HU-203). La acción primero. Si la luz con sus prioridades y la del criterio de AgroSense coinciden,
  * se ve una sola; si difieren, las dos con su acción y su factor que más limita, la suya primero y más grande, y una
