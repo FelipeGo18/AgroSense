@@ -215,7 +215,7 @@ La escena refleja la condición aproximada de ahora en el municipio (decisión 7
    - R10: todo resultado de riego lleva «Estimación con el clima de la zona. Verifique la humedad del suelo en su lote» y se muestra en rangos. El suelo lleva «Estimación de un mapa global de 250 m. Un análisis de suelo de su lote es más preciso» y se muestra con su rango.
    - `not_applicable` (por ejemplo, heladas o calor en un cultivo que no los sufre) se muestra como «No aplica», distinto de «datos insuficientes» y de «desfavorable».
    - R3: un cultivo que no es apto para la zona no es un semáforo rojo más: la pantalla dice «Este cultivo no se da en su zona», con el dato de la ficha y su fuente, y no dibuja señales ni ventanas.
-   - R2: una ventana de alto riesgo se rotula «Alto riesgo» con forma y texto, va después de las demás y nunca entre las mejores, por alto que sea su balance.
+   - R2: una ventana de alto riesgo se rotula «Alto riesgo» con forma y texto, va después de todas las que tienen calificación y no son de alto riesgo, y nunca entre las mejores, por alto que sea su balance.
    - El orden de las ventanas lleva siempre «Según la historia de la zona. No es un pronóstico»: es una comparación para que decida el agricultor.
    - La señal de agua dice si se evaluó con riego o sin riego; con riego, el riego que haría falta va en rango y con el rótulo de estimación (R10).
    - Prioridades: cuando la luz con las prioridades del agricultor y la de AgroSense difieren, se muestran las dos con forma y texto; nunca se esconde la de AgroSense. Una señal que no cuenta con sus prioridades se sigue viendo, rotulada; un riesgo grave de clima con peso 0 lleva «Cuenta siempre: riesgo grave» (decisión 10).

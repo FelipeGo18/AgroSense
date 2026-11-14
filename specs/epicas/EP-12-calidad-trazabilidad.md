@@ -31,7 +31,7 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [ ] Varias fuentes de lluvia: si la fuente que calcula `water` no tiene dato para el municipio, la señal es `insufficient_data` aunque la otra tenga, y `sources` trae las dos sin mezclar
   - [ ] «Qué cambió»: un mes sin datos en uno de los dos periodos da la diferencia `insufficient_data`; misma entrada, misma salida
   - [ ] Ficha sin rango de temperatura media con fuente: aptitud `insufficient_data`, no bloquea y aparece en las limitaciones
-  - [ ] Ventana de alto riesgo que no entra en las mejores: una ventana con una señal crítica desfavorable y el balance más alto queda después de las demás y fuera de `best_windows`
+  - [ ] Ventana de alto riesgo que no entra en las mejores: una ventana con una señal crítica desfavorable y el balance más alto queda después de todas las que tienen calificación y no son de alto riesgo, y fuera de `best_windows`
   - [ ] Con y sin riego: la misma ventana con déficit de agua es `unfavorable` en `water` con `irrigated = false` y no lo es con `irrigated = true`; con `irrigated` nulo, se evalúa como sin riego y lo dice en las limitaciones
   - [ ] Acción `other_window` con `best_windows`, y un caso en que `best_windows` viene vacío
   - [ ] Coherencia: una de las mejores ventanas (`best_windows`) y el diagnóstico de esa misma fecha dan las mismas señales y calificaciones

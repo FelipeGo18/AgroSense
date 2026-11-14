@@ -104,7 +104,7 @@ Con `other_window` la respuesta trae las mejores ventanas; con `rotate`, hasta t
 | La misma falta de lluvia, con riego | `water` no es desfavorable por eso: la razón dice cuánto riego haría falta, como estimación |
 | El mismo cultivo y la misma lluvia, en un suelo arenoso | El suelo retiene menos agua: el déficit puede ser mayor y la calificación del agua, más baja |
 | Oferta con dos fuentes que no coinciden | Se ven juntas; la de `sources.yaml` calcula la señal y la otra va «para contrastar» |
-| Una ventana con el mejor promedio y una señal crítica | Se marca `high_risk`: va después de las demás y no entra en `best_windows` |
+| Una ventana con el mejor promedio y una señal crítica | Se marca `high_risk`: va después de todas las que tienen calificación y no son de alto riesgo, y no entra en `best_windows` |
 | Sin datos de agua, cuando el agua cuenta | Luz `not_evaluable`, acción `review_data`. Con peso 0 en el agua, la luz no queda en `not_evaluable` |
 | Sin datos de oferta | Se calcula sin la oferta, como si su peso fuera 0; queda en las limitaciones |
 
@@ -115,7 +115,7 @@ Es el método de la FAO para aptitud de cultivos: primero lo que más limita, de
 1. Cada señal disponible se califica de 0 a 100. Una señal sin datos o que no aplica no califica y va a las limitaciones.
 2. **Factor limitante:** cada ventana vale lo que vale su señal más baja entre las que cuentan. Una ventana con un factor muy malo nunca queda arriba, por buenos que sean los demás.
 3. **Prioridades:** entre ventanas cuyo factor limitante cae en la misma decena (por ejemplo, de 60 a 69), ordena el promedio de las calificaciones ponderado por los pesos (los del agricultor o, si no los cambió, los de AgroSense).
-4. Una ventana con una señal crítica que cuenta es de alto riesgo: va después de las demás y nunca entra entre las mejores.
+4. Una ventana con una señal crítica que cuenta es de alto riesgo: va después de todas las que tienen calificación y no son de alto riesgo, y nunca entra entre las mejores.
 5. En empate, gana la ventana más temprana.
 6. Se muestran todas las ventanas con la calificación de cada señal y su factor limitante. La decisión es del agricultor.
 
