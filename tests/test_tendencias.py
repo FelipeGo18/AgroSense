@@ -273,8 +273,9 @@ def test_una_ventana_dentro_del_anio_usa_todos_los_anios(published_like):
 
 def test_sin_lluvia_de_la_fuente_de_la_region_el_agua_viene_vacia(published_like):
     # Tunja tiene ET0 y lluvia de NASA POWER, pero no de GPM IMERG: no se cambia de fuente (R1).
-    water = trends(TestClient(app), municipality_id=TUNJA).json()["water"]
-    assert water == {"status": "insufficient_data", "source_id": "imerg", "unit": "mm", "points": []}
+    body = trends(TestClient(app), municipality_id=TUNJA).json()
+    assert body["water"] == {"status": "insufficient_data", "source_id": "imerg", "unit": "mm", "points": []}
+    assert body["limitations"][0] == "Sin la lluvia de imerg para esta ventana en la zona: la serie de agua viene vacía"
 
 
 def test_un_cultivo_sin_etapas_no_tiene_ventana_ni_serie_de_agua(published_like):
@@ -291,9 +292,13 @@ def test_sin_tablas_de_oferta_ni_verdor_vienen_vacias(published_like):
     body = trends(TestClient(app)).json()
     assert body["supply"] == {"status": "insufficient_data", "source_id": "eva", "unit": "ha", "semester": "B", "points": []}
     assert body["ndvi"] == {"status": "insufficient_data", "source_id": None, "quality": None, "points": []}
+    assert body["limitations"] == [
+        "Sin el área sembrada de eva del semestre B en la zona: la serie de oferta viene vacía",
+        "El verdor todavía no tiene una fuente asignada para la región: la serie de verdor viene vacía",
+    ]
 
 
-def test_con_las_tablas_lee_la_oferta_del_semestre_y_el_verdor(complete):
+def test_con_las_tablas_lee_la_oferta_del_semestre(complete):
     body = trends(TestClient(app)).json()
     m.TrendsResponse.model_validate(body)
     supply = body["supply"]
@@ -304,22 +309,17 @@ def test_con_las_tablas_lee_la_oferta_del_semestre_y_el_verdor(complete):
         {"year": 2020, "planted_ha": 120.0, "preliminary": False},
         {"year": 2021, "planted_ha": 130.0, "preliminary": True},
     ]
-    ndvi = body["ndvi"]
-    assert (ndvi["status"], ndvi["source_id"], ndvi["quality"]) == ("available", "modis_ndvi", "partial")
-    assert [point["period"] for point in ndvi["points"]] == list(range(1, 24))
-    assert ndvi["points"][0]["ndvi_normal"] == 0.41
 
 
-def test_con_dos_fuentes_de_verdor_se_toma_una_sin_mezclar(complete):
-    # `sources.yaml` no asigna fuente al verdor: regla provisional, la primera por orden alfabético de `source_id`.
+def test_el_verdor_viene_vacio_sin_fuente_asignada_aunque_la_tabla_exista(complete):
+    # `sources.yaml` no asigna fuente al verdor: no se elige una por otra regla (orden alfabético, la única que hay…),
+    # tampoco con dos fuentes en la tabla (R1, R8; Felipe, 14 nov 2026, PR #104).
     table = pl.read_parquet(complete / "ndvi_municipality_normal.parquet")
-    other = table.with_columns(pl.lit("landsat_ndvi").alias("source_id"), pl.lit(0.9).alias("ndvi_normal"), pl.lit("ok").alias("quality"))
-    pl.concat([table, other.filter(pl.col("period") <= 20)]).write_parquet(complete / "ndvi_municipality_normal.parquet")
-    ndvi = trends(TestClient(app)).json()["ndvi"]
-    # «landsat_ndvi» va antes que «modis_ndvi»: solo sus 20 periodos, con su calidad, sin los de MODIS.
-    assert (ndvi["status"], ndvi["source_id"], ndvi["quality"]) == ("available", "landsat_ndvi", "ok")
-    assert [point["period"] for point in ndvi["points"]] == list(range(1, 21))
-    assert {point["ndvi_normal"] for point in ndvi["points"]} == {0.9}
+    other = table.with_columns(pl.lit("landsat_ndvi").alias("source_id"))
+    pl.concat([table, other]).write_parquet(complete / "ndvi_municipality_normal.parquet")
+    body = trends(TestClient(app)).json()
+    assert body["ndvi"] == {"status": "insufficient_data", "source_id": None, "quality": None, "points": []}
+    assert body["limitations"] == ["El verdor todavía no tiene una fuente asignada para la región: la serie de verdor viene vacía"]
 
 
 def test_una_siembra_de_marzo_lee_el_semestre_a(complete):

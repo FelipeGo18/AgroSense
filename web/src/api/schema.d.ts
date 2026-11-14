@@ -1667,6 +1667,8 @@ export interface components {
             water: components["schemas"]["WaterSeries"];
             supply: components["schemas"]["SupplySeries"];
             ndvi: components["schemas"]["NdviSeries"];
+            /** Limitations */
+            limitations: string[];
             versions: components["schemas"]["Versions"];
         };
         /** ValidationError */

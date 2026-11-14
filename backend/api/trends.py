@@ -31,7 +31,6 @@ from datetime import date
 import polars as pl
 
 from backend.api.calc_models import (
-    NdviPoint,
     NdviSeries,
     SupplyPoint,
     SupplySeries,
@@ -47,6 +46,10 @@ from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA
 from backend.engine.stages import CropWindow, crop_window
 from backend.engine.water_need import window_etc_mm, window_rain_mm
 from common import signal_sources
+
+WATER_MISSING = "Sin la lluvia de {source} para esta ventana en la zona: la serie de agua viene vacía"
+SUPPLY_MISSING = "Sin el área sembrada de {source} del semestre {semester} en la zona: la serie de oferta viene vacía"
+NDVI_WITHOUT_SOURCE = "El verdor todavía no tiene una fuente asignada para la región: la serie de verdor viene vacía"
 
 
 def semester(sowing_date: date) -> str:
@@ -129,37 +132,38 @@ def supply_series(dataset: Dataset, municipality_id: str, crop_id: str, sowing_d
     return SupplySeries(status=AVAILABLE, source_id=source_id, semester=half, points=points)
 
 
-def ndvi_series(dataset: Dataset, municipality_id: str) -> NdviSeries:
+def ndvi_series() -> NdviSeries:
     """El verdor normal del municipio por periodo de 16 días (1 a 23), de `ndvi_municipality_normal` (HU-208).
 
-    `catalog/sources.yaml` no asigna fuente al verdor (no es una señal). **Regla provisional:** si el dataset trae más
-    de una fuente para el municipio, se usa solo la primera por orden alfabético de `source_id`, sin mezclar sus
-    periodos con los de otra (R1, R8). Cuando `sources.yaml` asigne la fuente del verdor, se leerá de ahí.
-    `quality` es `partial` si algún periodo lo es. Hoy la tabla no está en el dataset publicado: la publicará HU-208;
-    mientras tanto, la serie es `insufficient_data`.
+    Viene vacía con `insufficient_data` mientras `catalog/sources.yaml` no le asigne una fuente al verdor: hoy solo
+    asigna las seis señales, y el verdor no es una. Nunca se elige una fuente por otra regla, como el orden alfabético
+    (R1, R8; decidido por Felipe el 14 nov 2026, PR #104). `limitations` lo dice.
     """
-    empty = NdviSeries(status=INSUFFICIENT_DATA, source_id=None, quality=None, points=[])
-    table = dataset.ndvi_normal
-    if table is None:
-        return empty
-    rows = table.filter(pl.col("municipality_id") == municipality_id)
-    if rows.is_empty():
-        return empty
-    source_id = min(rows["source_id"].to_list())
-    rows = rows.filter(pl.col("source_id") == source_id).sort("period")
-    points = [NdviPoint(period=int(period), ndvi_normal=value) for period, value in rows.select("period", "ndvi_normal").iter_rows()]
-    if all(point.ndvi_normal is None for point in points):
-        return empty
-    quality = "partial" if "partial" in rows["quality"].to_list() else "ok"
-    return NdviSeries(status=AVAILABLE, source_id=source_id, quality=quality, points=points)
+    return NdviSeries(status=INSUFFICIENT_DATA, source_id=None, quality=None, points=[])
+
+
+def _limitations(water: WaterSeries, supply: SupplySeries, ndvi: NdviSeries) -> list[str]:
+    """Una por serie vacía, en el orden de la respuesta (R1)."""
+    limitations = []
+    if water.status == INSUFFICIENT_DATA:
+        limitations.append(WATER_MISSING.format(source=water.source_id))
+    if supply.status == INSUFFICIENT_DATA:
+        limitations.append(SUPPLY_MISSING.format(source=supply.source_id, semester=supply.semester))
+    if ndvi.status == INSUFFICIENT_DATA:
+        limitations.append(NDVI_WITHOUT_SOURCE)
+    return limitations
 
 
 def trends(dataset: Dataset, municipality_id: str, crop_id: str, sowing_date: date) -> TrendsResponse:
     """Las tres series de una consulta ya validada (municipio y cultivo `kind = crop` del catálogo)."""
+    water = water_series(dataset, municipality_id, crop_id, sowing_date)
+    supply = supply_series(dataset, municipality_id, crop_id, sowing_date)
+    ndvi = ndvi_series()
     return TrendsResponse(
         request=TrendsRequestEcho(municipality_id=municipality_id, crop_id=crop_id, sowing_date=sowing_date),
-        water=water_series(dataset, municipality_id, crop_id, sowing_date),
-        supply=supply_series(dataset, municipality_id, crop_id, sowing_date),
-        ndvi=ndvi_series(dataset, municipality_id),
+        water=water,
+        supply=supply,
+        ndvi=ndvi,
+        limitations=_limitations(water, supply, ndvi),
         versions=Versions(dataset=dataset.version, rules=dataset.rules_version),
     )
