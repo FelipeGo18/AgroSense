@@ -415,6 +415,30 @@ describe("La entrada (HU-214): reglas", () => {
 });
 
 describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
+  it("con sesión abierta, consultar sin lote no guarda una consulta de invitado (HU-168)", async () => {
+    const calls = fakeApi({
+      "GET /api/v1/me": { status: 200, body: ROSA },
+      "GET /api/v1/lots": { status: 200, body: [] },
+    });
+    open();
+    const user = userEvent.setup();
+    await screen.findByRole("button", { name: "Cerrar sesión" });
+    expect(sessionStorage.getItem("agrosense.guest-consult")).toBeNull();
+
+    await user.type(screen.getByRole("combobox", { name: "Municipio" }), "sama");
+    await user.click(await screen.findByRole("option", { name: /Samacá/ }));
+    await user.type(screen.getByLabelText("Área del terreno, en hectáreas"), "2,5");
+    await user.click(group("¿Qué había antes en el terreno?").getByRole("radio", { name: "Uno o más cultivos" }));
+    await user.selectOptions(screen.getByLabelText("Lo último que sembró"), "papa");
+    await user.selectOptions(screen.getByLabelText("¿Cuándo sembraría el primer ciclo?"), MONTH);
+    await user.click(group("¿Tiene riego?").getByRole("radio", { name: "No" }));
+    await user.click(screen.getByRole("button", { name: "Ver estrategias" }));
+
+    await results();
+    expect(rotationCalls(calls)).toHaveLength(1);
+    expect(rotationCalls(calls)[0]).toMatchObject({ lot_id: null, municipality_id: "15646" });
+    expect(sessionStorage.getItem("agrosense.guest-consult")).toBeNull();
+  });
   it("explica qué es un ciclo, con cuánto dura y un ejemplo", async () => {
     open();
     expect(await screen.findByText(/es una siembra completa: de la siembra a la cosecha de un cultivo/)).toBeInTheDocument();
