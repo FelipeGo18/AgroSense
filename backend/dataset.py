@@ -67,6 +67,11 @@ class Dataset:
     market_last_date: date | None = None
     # Las centrales de la región: (código de SIPSA, nombre), de `region.yaml` o, si no las dice, de los precios.
     markets: tuple[tuple[str, str], ...] = ()
+    # Comparación histórica de HU-217/HU-218.
+    # None indica que la tabla todavía no está publicada.
+    climate_change_month: pl.DataFrame | None = None
+    # Periodos definidos por el manifiesto del dataset.
+    periods: tuple[dict[str, Any], ...] = ()
 
 
 def load(folder: Path) -> Dataset:
@@ -90,6 +95,9 @@ def load(folder: Path) -> Dataset:
         market_season = pl.read_parquet(season_path) if season_path.exists() else None
         latest_path = folder / "market_price_latest.parquet"
         market_latest = pl.read_parquet(latest_path) if latest_path.exists() else None
+        changes_path = folder / "climate_change_month.parquet"
+        climate_change_month = pl.read_parquet(changes_path) if changes_path.exists() else None
+        periods = tuple(manifest.get("periods", []))
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -121,6 +129,8 @@ def load(folder: Path) -> Dataset:
         market_latest=market_latest,
         market_last_date=market_latest["market_date"].max() if market_latest is not None and market_latest.height else None,
         markets=_markets(manifest["region"], market_latest),
+        climate_change_month=climate_change_month,
+        periods=periods,
     )
 
 

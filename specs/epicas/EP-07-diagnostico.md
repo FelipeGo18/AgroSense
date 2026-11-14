@@ -271,16 +271,19 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-218 · Endpoint de «Qué cambió»
 
 - **Historia:** Como desarrollador web, quiero el endpoint de «Qué cambió», para mostrar la pantalla «Qué cambió en su zona».
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] `GET /api/v1/changes?municipality_id=&crop_id=&irrigated=` según el contrato; `irrigated` es opcional
-  - [ ] 422 si el municipio o el cultivo no están en el catálogo, o si el cultivo no tiene `kind = crop`
+  - [x] 422 si el municipio o el cultivo no están en el catálogo, o si el cultivo no tiene `kind = crop`
   - [ ] 200 con `insufficient_data` en cada valor que no tiene datos; 200 con `suitability.level = not_suitable` y sin ventanas si el cultivo no es apto
   - [ ] Trae `periods` (cada uno con `period_id`, `start_year`, `end_year` y `source_id`), `weights_basis = default` y `versions` (R4)
-  - [ ] No guarda los datos de la consulta ni quién consultó (R9)
+  - [x] No guarda los datos de la consulta ni quién consultó (R9)
 - **Reglas que aplican:** R1, R4, R9
 - **Contrato que toca:** `GET /api/v1/changes`, tabla de errores
 - **Notas:** Decisión 12. Agregada el 11 de octubre de 2026.
+  - **Avance del 14 de noviembre de 2026:** `backend/dataset.py` carga opcionalmente `climate_change_month` y conserva los periodos del manifiesto. `/changes` valida municipio, cultivo y riego, reutiliza la aptitud de HU-191 y conecta la comparación mensual de HU-217 para el caso `not_suitable`. Ese caso devuelve 200 con los doce meses, razones históricas, ventanas vacías, periodos por fuente, `weights_basis = default`, limitaciones y versiones. No accede a la base de datos ni guarda la consulta.
+  - La selección de fuentes reutiliza `catalog/sources.yaml`: heladas y calor conservan sus periodos y la lluvia los de la fuente configurada, con `precip_periods` cuando es distinta. Los datos ausentes quedan en `insufficient_data`; nunca se sustituyen con otra fuente. Sin periodos suficientes o con metadatos inválidos se responde 503 `dataset_unavailable`, sin inventar años.
+  - **Pendiente:** integrar la evaluación completa de ventanas de HU-217, que reutiliza HU-144, HU-192 y las señales/calificaciones de HU-196, y comprobar el dataset publicado de HU-216. Los casos `suitable` e `insufficient_data` de aptitud siguen en 501 `not_implemented`; no se representan como ventanas vacías. Los criterios de respuesta general permanecen abiertos: el 200 con datos insuficientes está cubierto por ahora solo en el recorrido `not_suitable`. Este avance no cierra HU-218 ni HU-217 y no modifica el contrato.
 
 ### HU-195 · Señales de exceso de lluvia, enfermedad y cosecha
 
