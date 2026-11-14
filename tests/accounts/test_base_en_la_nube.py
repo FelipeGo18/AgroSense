@@ -92,7 +92,8 @@ def test_al_arrancar_sin_migrar_solo_avisa_que_falta_una_migracion(engine, datab
         assert migrate.current_revision(database_url) == "1.2"  # no la tocó
         pending = [entry for entry in logs if entry["event"] == "migration_pending"]
         assert len(pending) == 1
-        assert (pending[0]["log_level"], pending[0]["current_migration"], pending[0]["expected_migration"]) == ("warning", "1.2", expected_revision())
+        entry = pending[0]
+        assert (entry["log_level"], entry["current_migration"], entry["expected_migration"]) == ("warning", "1.2", expected_revision())
     finally:
         command.upgrade(config, "head")
 
