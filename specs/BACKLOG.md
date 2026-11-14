@@ -33,7 +33,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-210 | Humedad del suelo por satélite con SMAP | P0 | M | pendiente | Ya no es lo primero que se recorta: el reto lo nombra primero (decisión 14) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-216 | Clima de dos periodos para «Qué cambió» | P0 | M | pendiente | Nueva |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-044 | Municipios, límites, altitud y corrección de la temperatura | P0 | S | hecha | Municipios de DIVIPOLA, límites del MGN, altitud de NASADEM, altura de la celda de NASA POWER y temperatura media anual publicadas; temperaturas corregidas con el gradiente de `region.yaml`; comprobado contra 4 estaciones del IDEAM: queda un sesgo de POWER entre el día y la noche (ver HU-045) |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Heladas y temperatura máxima por mes | P0 | M | pendiente | |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Heladas y temperatura máxima por mes | P0 | M | hecha | `climate_risk_month` y `climate_frost_month` con la mínima ≤ 2 °C (ZARC); la helada cae en enero, pero POWER cuenta muchas menos de las que mide el IDEAM |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-193 | Riesgo climático por semana | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-043 | Verdor por lote con HLS (30 m) | P1 | L | pendiente | Antes «Humedad del suelo y NDVI» |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-046 | Aguaceros, ventanas secas y gota por mes | P1 | M | pendiente | |
@@ -98,7 +98,7 @@
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-132 | Video y descripción de la entrega | P0 | M | pendiente | |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-133 | Impacto económico, social y ambiental | P0 | S | pendiente | |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-230 | Licencias del proyecto y de lo que usa | P0 | S | en curso | Nueva (10 nov). `LICENSE` Apache 2.0 hecho; falta la lista de licencias de terceros para la entrega |
-| [EP-14](epicas/EP-14-finca-agua.md) | HU-142 | Etapas de cada cultivo con Kc | P0 | S | en curso | Los 7 cultivos del MVP. Helada y calor por etapa, cada valor con su fuente, y el calor del maíz en 35 °C (14 nov, dataset 2026.11.14); falta la revisión cruzada |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-142 | Etapas de cada cultivo con Kc | P0 | S | hecha | Los 7 cultivos del MVP. Helada y calor por etapa, cada valor con su fuente, y el calor del maíz en 35 °C (14 nov, dataset 2026.11.14); revisión cruzada de Luisa (PR #69) |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-220 | Etapas de una ventana por calendario | P0 | S | hecha | `crop_window`: etapas, meses y meses sensibles de una ventana (10 nov). La helada y el calor por etapa están en el catálogo desde HU-142 (14 nov), con nulos donde no hay fuente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-143 | Lluvia y ET0 mensuales por municipio | P0 | M | hecha | ET0 por Penman-Monteith de FAO-56 (`pipeline/et0.py`), su normal y el año seco (percentil 20, decidido por Felipe) en `climate_month` |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-144 | Déficit de agua por cultivo y etapa | P0 | M | pendiente | |

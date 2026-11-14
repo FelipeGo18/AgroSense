@@ -210,3 +210,18 @@ def test_sin_la_cache_de_imerg_se_publica_lo_demas(tmp_path, monkeypatch):
     monkeypatch.setattr(build, "load_region", lambda: {**REGION, "imerg_normal": {"first_year": 2001, "last_year": 2024, "min_years": 20}})
     manifest = build.build(folder=tmp_path / "published", cache=dane_cache(tmp_path / "raw"), power_cache=tmp_path / "sin-power")
     assert "precip_month" not in manifest["tables"] and manifest["tables"]["municipalities"]["rows"] == 3
+
+
+def test_el_mismo_dato_en_otro_orden_da_la_misma_tabla():
+    """R4: la suma de las celdas y el promedio de los años no dependen del orden de las filas (con valores al borde del
+    redondeo, sumar en otro orden cambiaba la normal en 0,1 mm)."""
+    place = boundaries(("15001", shapely.box(-73.4, 5.5, -73.05, 5.6)))
+    weights = imerg.weights(place)
+    values = {(ROW, COL + i): 10.0 / 3 + i * 0.05 for i in range(4)}
+    rain = pl.concat([cell_months(values, years=[y]).with_columns(pl.col("precip_mm") + y / 7) for y in range(2001, 2025)])
+    first = imerg.precip_month(rain, weights, NORMAL)
+    for seed in range(5):
+        shuffled = imerg.precip_month(
+            rain.sample(fraction=1.0, shuffle=True, seed=seed), weights.sample(fraction=1.0, shuffle=True, seed=seed), NORMAL
+        )
+        assert shuffled.equals(first)

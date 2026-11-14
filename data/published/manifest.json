@@ -1,7 +1,7 @@
 {
   "dataset_version": "2026.11.14",
   "rules_version": "0.1.0",
-  "created_at": "2026-11-14T12:51:49+00:00",
+  "created_at": "2026-11-14T15:54:13+00:00",
   "region": {
     "id": "co-boyaca-cundinamarca",
     "name": "Boyacá y Cundinamarca, Colombia",
@@ -54,6 +54,14 @@
     "precip_month": {
       "rows": 79587,
       "coverage": "239 municipios, lluvia de GPM IMERG de 1998 a 2025; normal 2001-2024"
+    },
+    "climate_risk_month": {
+      "rows": 2868,
+      "coverage": "239 municipios con altitud; heladas (mínima ≤ 2 °C) y máxima p90 por mes de 1991-2020"
+    },
+    "climate_frost_month": {
+      "rows": 131689,
+      "coverage": "239 municipios con altitud; días con mínima ≤ 2 °C por mes, de 1981 a 2026"
     },
     "grid_cells": {
       "rows": 593648,
