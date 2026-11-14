@@ -83,6 +83,11 @@ class Dataset:
     markets: tuple[tuple[str, str], ...] = ()
     # La rejilla de 250 m con altitud (HU-191). Nula si el dataset no la trae (R1).
     grid: Grid | None = None
+    # Los días con helada de cada mes de cada año (`climate_frost_month`, HU-045), para la señal de heladas (HU-077), y
+    # la máxima p90 de cada mes del año (`climate_risk_month`), para la de calor (HU-190). Nulas si el dataset no las
+    # trae: entonces esas señales son `insufficient_data` (R1).
+    climate_frost_month: pl.DataFrame | None = None
+    climate_risk_month: pl.DataFrame | None = None
     # Comparación histórica de HU-217/HU-218.
     # None indica que la tabla todavía no está publicada.
     climate_change_month: pl.DataFrame | None = None
@@ -115,6 +120,9 @@ def load(folder: Path) -> Dataset:
         market_month = pl.read_parquet(month_path) if month_path.exists() else None
         grid_path = folder / "grid_cells.parquet"
         grid = _grid(grid_path) if grid_path.exists() else None
+        frost_path, risk_path = folder / "climate_frost_month.parquet", folder / "climate_risk_month.parquet"
+        climate_frost_month = pl.read_parquet(frost_path) if frost_path.exists() else None
+        climate_risk_month = pl.read_parquet(risk_path) if risk_path.exists() else None
         changes_path = folder / "climate_change_month.parquet"
         climate_change_month = pl.read_parquet(changes_path) if changes_path.exists() else None
         periods = tuple(manifest.get("periods", []))
@@ -153,6 +161,8 @@ def load(folder: Path) -> Dataset:
         climate_change_month=climate_change_month,
         periods=periods,
         grid=grid,
+        climate_frost_month=climate_frost_month,
+        climate_risk_month=climate_risk_month,
     )
 
 
