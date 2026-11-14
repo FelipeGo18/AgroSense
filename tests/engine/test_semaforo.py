@@ -11,7 +11,7 @@ Decisiones que fijan estas pruebas (docstring de `backend/engine/traffic_light.p
 - Nivel efectivo: con peso 4 o más, un `moderate` cuenta como `unfavorable` para la luz y para la acción; el factor
   limitante y el alto riesgo usan la calificación y el nivel reales.
 - La tabla de acciones mira las señales que cuentan con nivel efectivo `unfavorable` (specs/01-reglas.md, bajo la
-  tabla de acciones; propuesta pendiente de aprobación en docs/registro-de-decisiones.md).
+  tabla de acciones; aprobado por Felipe el 14 de noviembre de 2026, docs/registro-de-decisiones.md).
 - Regla 1: solo mira el peso de `water`, no `counts`; no hay factor limitante (como `DIAGNOSIS_NOT_EVALUABLE` del
   contrato), pero el alto riesgo sí se calcula y la razón nombra las críticas.
 - Las razones se comprueban por las señales que nombran y por su comienzo, no por la frase exacta.
@@ -540,6 +540,8 @@ def test_una_critica_con_peso_alto_dice_que_es_critica_una_sola_vez_y_no_cuanto_
 
 
 def test_con_todos_los_pesos_en_0_solo_cuentan_los_riesgos_graves_de_clima():
+    """La API rechaza con 422 las prioridades todas en 0, pero el motor no valida rangos y puede recibirlas. El caso
+    que sí llega desde la API está en la prueba siguiente."""
     zero = dict.fromkeys(SIGNALS, 0)
 
     nothing_counts = luz(ventana(water=sig(30), frost=sig(50), soil=sig(5)), zero)
@@ -547,8 +549,29 @@ def test_con_todos_los_pesos_en_0_solo_cuentan_los_riesgos_graves_de_clima():
     # que está bien sin haber evaluado nada, e inconsistente con HU-192, donde este mismo caso tampoco se
     # recomienda). Queda `yellow`/`other_window`, sin factor limitante ni alto riesgo.
     assert core(nothing_counts) == (YELLOW, OTHER_WINDOW, None, False)
-    assert "ninguna señal cuenta" in text(nothing_counts)
+    assert "ninguna señal que cuenta tiene calificación" in text(nothing_counts)
     assert core(luz(ventana(heat=sig(10, critical=True), soil=sig(5)), zero)) == (RED, OTHER_WINDOW, "heat", True)
+
+
+def test_con_peso_solo_en_oferta_y_mercado_sin_datos_la_luz_es_amarilla_y_no_verde():
+    """El caso real de «ninguna señal que cuente y califique» (revisión de Felipe, PR #94): quien solo le pone peso a
+    la oferta y al mercado, que hoy son siempre `insufficient_data`. La oferta sin datos va como peso 0 (regla 1) y el
+    mercado sin datos no cambia la luz (regla 5). Agua, heladas, calor y suelo tienen peso 0 y ninguna es crítica, así
+    que tampoco cuentan por riesgo grave. Nunca `green`: es `yellow`/`other_window`, sin factor limitante ni alto
+    riesgo, y la razón lo explica (R5)."""
+    weights = {**dict.fromkeys(SIGNALS, 0), "supply": 3, "market": 3}
+    signals = ventana(water=sig(30), frost=sig(50), heat=sig(85), soil=sig(20), supply=INSUFFICIENT, market=INSUFFICIENT)
+
+    result = luz(signals, weights)
+
+    assert core(result) == (YELLOW, OTHER_WINDOW, None, False)
+    assert result.reasons[0] == (
+        "Con sus prioridades, la luz es amarilla: con esas prioridades ninguna señal que cuenta tiene calificación; "
+        "no hay evidencia de riesgo ni de que sea buena."
+    )
+    limitations = " ".join(missing_data_limitations(signals))
+    assert "la oferta no se evaluó" in limitations
+    assert "el mercado no se evaluó" in limitations
 
 
 # ------------------------------------------------------------------ determinismo (R4) y errores

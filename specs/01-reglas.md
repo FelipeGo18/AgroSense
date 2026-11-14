@@ -126,7 +126,8 @@ Los umbrales viven en configuración versionada (`backend/config/`). Las reglas 
 0. Si el cultivo no es apto para la zona, la luz es `red` y la acción es `rotate`. No se evalúa nada más.
 1. Si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción es `review_data`. Si `supply` no está disponible, se calcula sin ella, como si su peso fuera 0: no cuenta para la luz ni para el orden de las ventanas, se muestra «sin datos» y se agrega a las limitaciones.
 2. Si alguna señal que cuenta es `unfavorable` y crítica, o dos señales que cuentan son `unfavorable`, la luz es `red`.
-3. Si ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
+3. Si al menos una señal que cuenta califica, ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
+   - Sin ninguna señal que cuente y califique (por ejemplo, con peso solo en la oferta y el mercado, sin datos), la luz es `yellow` y la acción `other_window`, con una razón que lo explica: no hay evidencia de riesgo ni de que la ventana sea buena (R5; HU-074, aprobado por Felipe el 14 de noviembre de 2026, `docs/registro-de-decisiones.md`).
 4. En cualquier otro caso, la luz es `yellow`.
 5. `frost`, `heat`, `soil`, `supply`, `market` y las señales del P1 sin datos **nunca cambian la luz**, pero se agregan a las limitaciones. `not_applicable` tampoco la cambia.
 
@@ -143,7 +144,7 @@ Acción según la luz:
 
 - Con `other_window`, la respuesta trae las mejores ventanas de los próximos doce meses, para que el agricultor vea cuándo sí.
 - Con `rotate`, en el MVP la web lleva a las estrategias de rotación. En P1 (HU-197), la respuesta trae además `alternatives`: hasta tres cultivos aptos para la zona que en esa ventana salen bien en clima y tienen mejor oferta, con su razón. Nunca se sugiere un cultivo que no es apto o que sale mal en clima.
-- La tabla de acciones mira solo las señales que cuentan con los pesos de esa luz. Con peso 4 o 5, un `moderate` cuenta como `unfavorable` también para la tabla de acciones: las «desfavorables» de la tabla son las que cuentan como desfavorables para esa luz. Nunca para el factor limitante ni para el alto riesgo (HU-074; propuesta del 14 de noviembre de 2026 en `docs/registro-de-decisiones.md`, pendiente de aprobación de Haider o Felipe).
+- La tabla de acciones mira solo las señales que cuentan con los pesos de esa luz. Con peso 4 o 5, un `moderate` cuenta como `unfavorable` también para la tabla de acciones: las «desfavorables» de la tabla son las que cuentan como desfavorables para esa luz. Nunca para el factor limitante ni para el alto riesgo (HU-074; aprobado por Felipe el 14 de noviembre de 2026, `docs/registro-de-decisiones.md`).
 - Las alternativas se ordenan igual que las ventanas (factor limitante y después prioridades). Un candidato con aptitud `insufficient_data` puede aparecer, con esa limitación; uno no apto, nunca. Se muestran si cualquiera de las dos luces da `rotate`, también cuando el cultivo consultado no es apto.
 - Las prioridades se recuerdan: en el MVP, en el navegador; con cuenta, en el perfil cuando exista HU-160 (P1).
 - Las señales del P1, cuando existan, también tienen peso. `excess_rain` crítico cuenta como riesgo grave de clima.

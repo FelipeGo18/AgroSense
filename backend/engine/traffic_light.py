@@ -19,8 +19,8 @@ Las reglas, en orden (el detalle está en el docstring de `traffic_light`):
    `red`.
 3. Hay al menos una señal que cuenta, ninguna es desfavorable (nivel efectivo) y `water` es `favorable` o no cuenta:
    `green`.
-4. Si no (incluida la ventana sin ninguna señal que cuente: no hay evidencia de nada, ni a favor ni en contra, igual
-   que en HU-192): `yellow`.
+4. Si no (incluida la ventana sin ninguna señal que cuente y califique: no hay evidencia de nada, ni a favor ni en
+   contra, igual que en HU-192): `yellow`.
 5. Las señales sin datos o que no aplican no cambian la luz; las sin datos van a las limitaciones
    (`missing_data_limitations`, aparte porque no depende de los pesos).
 
@@ -28,8 +28,8 @@ Las reglas, en orden (el detalle está en el docstring de `traffic_light`):
 agricultor»). Solo cambia la luz y la acción: el factor limitante y el alto riesgo usan el nivel y la calificación
 reales.
 
-**Acción (specs/01-reglas.md, bajo la tabla de acciones; propuesta del 14 de noviembre de 2026 en
-docs/registro-de-decisiones.md, pendiente de aprobación):** la tabla de acciones se aplica sobre las señales que cuentan
+**Acción (specs/01-reglas.md, bajo la tabla de acciones; aprobado por Felipe el 14 de noviembre de 2026,
+docs/registro-de-decisiones.md):** la tabla de acciones se aplica sobre las señales que cuentan
 con nivel **efectivo** `unfavorable`, no el real. Por qué: (a) la HU llama a la helada `moderate`
 con peso 4 «una de las dos desfavorables que cuentan» (ejemplo `DIAGNOSIS_OK` del contrato); (b) con el nivel real,
 un rojo por dos `moderate` con peso 4 o más dejaría vacío el conjunto de desfavorables y daría `other_window` aunque
@@ -145,9 +145,9 @@ def traffic_light(suitability: str, signals: Mapping[str, SignalScore], weights:
        `moderate`; si no, el real. `red` si `high_risk(rated)` o si dos o más tienen nivel efectivo `unfavorable`.
     3. `green` si `rated` no está vacía, ninguna tiene nivel efectivo `unfavorable` y `water` no está en `rated` o su
        nivel real es `favorable`.
-    4. Si no, `yellow`. Incluye `rated` vacía (con esos pesos ninguna señal cuenta): no hay evidencia de nada, ni a
-       favor ni en contra, así que nunca es `green` (consistente con HU-192, donde ese mismo caso tampoco se
-       recomienda); la razón lo dice explícitamente.
+    4. Si no, `yellow`. Incluye `rated` vacía (con esos pesos ninguna señal que cuenta califica; por ejemplo, peso
+       solo en la oferta y el mercado, sin datos): no hay evidencia de nada, ni a favor ni en contra, así que nunca es
+       `green` (consistente con HU-192, donde ese mismo caso tampoco se recomienda); la razón lo dice explícitamente.
 
     Acción, sobre las señales de `rated` con nivel efectivo `unfavorable` (specs/01-reglas.md, bajo la tabla de
     acciones; ver el docstring del módulo): `green` → `sow`; `yellow` o `red` → `rotate` si alguna es de
@@ -160,7 +160,8 @@ def traffic_light(suitability: str, signals: Mapping[str, SignalScore], weights:
     - Desde la regla 2 empiezan con «Con sus prioridades» (`farmer`) o «Con el criterio de AgroSense» (`default`).
     - `red` y `yellow`: nombran las desfavorables efectivas con su calificación; una crítica lo dice y una
       `moderate` subida por su peso lleva «(pesa N)». Un amarillo sin desfavorables dice que el agua no es favorable;
-      un amarillo con `rated` vacía dice que ninguna señal cuenta y que no hay evidencia de riesgo ni de que sea buena.
+      un amarillo con `rated` vacía dice que ninguna señal que cuenta tiene calificación y que no hay evidencia de
+      riesgo ni de que sea buena.
     - `green`: ninguna señal que cuenta es desfavorable (y al menos una cuenta).
     - Desde la regla 2, cada señal disponible `unfavorable` que no cuenta por su peso 0 se dice aparte («Con peso 0, la
       oferta es desfavorable pero no cuenta para la luz»).
@@ -216,9 +217,10 @@ def _effective_level(item: RatedSignal) -> str | None:
 
 
 def _light(rated: tuple[RatedSignal, ...], unfavorable: tuple[RatedSignal, ...], risk: bool) -> str:
-    """Reglas 2 a 4. Sin ninguna señal que cuente (`rated` vacía, por ejemplo con todos los pesos en 0 y sin riesgo
-    grave de clima), nunca es `green`: no hay evidencia de nada, ni a favor ni en contra (consistente con HU-192,
-    donde ese mismo caso tampoco se recomienda). Queda `yellow`, con la razón que lo dice."""
+    """Reglas 2 a 4. Sin ninguna señal que cuente y califique (`rated` vacía, por ejemplo con peso solo en la oferta y
+    el mercado, los dos sin datos, y sin riesgo grave de clima), nunca es `green`: no hay evidencia de nada, ni a favor
+    ni en contra (consistente con HU-192, donde ese mismo caso tampoco se recomienda). Queda `yellow`, con la razón que
+    lo dice."""
     if risk or len(unfavorable) >= 2:
         return RED
     water = _find(rated, "water")
@@ -262,7 +264,7 @@ def _light_reason(light: str, prefix: str, rated: tuple[RatedSignal, ...], unfav
     if unfavorable:
         return f"{head}: {'; '.join(_describe(item) for item in unfavorable)}."
     if not rated:
-        return f"{head}: con esas prioridades ninguna señal cuenta para la luz; no hay evidencia de riesgo ni de que sea buena."
+        return f"{head}: con esas prioridades ninguna señal que cuenta tiene calificación; no hay evidencia de riesgo ni de que sea buena."
     if light == YELLOW:
         return f"{head}: {_describe(_find(rated, 'water'))} y no es favorable."
     return f"{head}: ninguna señal que cuenta es desfavorable."
