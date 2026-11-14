@@ -3615,6 +3615,7 @@
               ],
               "cycle": 1,
               "kind": "soil_ph",
+              "crop_id": "cebolla_bulbo",
               "reason": "La cebolla tolera pH de 6,0 a 7,5 y el suelo estimado va de 5,2 a 5,8",
               "source_ids": [
                 "upra_cebolla_bulbo",
@@ -6047,9 +6048,9 @@
       }
     ],
     "version": {
-      "dataset_version": "2026.11.9",
+      "dataset_version": "2026.11.12",
       "rules_version": "0.1.0",
-      "created_at": "2026-11-11T13:25:05Z",
+      "created_at": "2026-11-14T02:59:33Z",
       "region": "Boyacá y Cundinamarca, Colombia",
       "default_weights": {
         "water": 3,
@@ -6188,6 +6189,18 @@
           "license": "Información pública del USGS; las clases, del catálogo de datos del Banco Mundial (CC BY 4.0)",
           "citation": null,
           "notes": "Para los cortes de la señal de agua en backend/config/thresholds.yaml (HU-075). El WRSI es la evapotranspiración real de la temporada sobre la que pide el cultivo, por 100: «A case of 'no deficit' will result in a WRSI value of 100» y «A seasonal WRSI value less than 50 is regarded as a crop failure condition (Smith, 1992)» (USGS). Clases del Banco Mundial (https://datacatalog.worldbank.org/search/dataset/0066866/gridded-dekadal-water-requirement-satisfaction-index-wrsi-for-africa): < 50 Failure; 50-60 Poor; 60-80 Mediocre; 80-95 Average; 95-99 Good; 99-100 Very Good. Es una fuente derivada: solo vale si la cobertura de agua de AgroSense se calcula igual (HU-144)."
+        },
+        {
+          "source_id": "imerg",
+          "name": "GPM IMERG Final Run V07 · Lluvia mensual por satélite (GPM_3IMERGM)",
+          "institution": "NASA y JAXA, misión GPM (Global Precipitation Measurement); distribuido por GES DISC de la NASA",
+          "url": "https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
+          "downloaded_at": "2026-11-11T15:23:13+00:00",
+          "period_covered": "De 1998 a 2025, mensual",
+          "coverage": "333 meses en celdas de 0,1° (unos 11 km) del recuadro que cubre la región",
+          "license": "Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita (https://disc.gsfc.nasa.gov/data-guidelines)",
+          "citation": "Huffman, G.J., Stocker, E.F., Bolvin, D.T., Nelkin, E.J. y Tan, J. (2023). GPM IMERG Final Precipitation L3 1 month 0.1 degree x 0.1 degree V07. Greenbelt, MD, Goddard Earth Sciences Data and Information Services Center (GES DISC). Consultado el 2026-11-11. https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
+          "notes": "Lluvia estimada por satélite (sensores de microondas e infrarrojo) y calibrada cada mes con los pluviómetros del GPCC: no es una medición del lote. Celda de 0,1°: un dato de la zona. La lluvia del municipio es el promedio de las celdas que tocan su polígono, ponderado por área. Un dato que falta (-9999,9) queda nulo, nunca relleno. Se bajó solo el recuadro de la región por OPeNDAP de Earthdata, con cuenta."
         },
         {
           "source_id": "mapa_zarc_2025",
