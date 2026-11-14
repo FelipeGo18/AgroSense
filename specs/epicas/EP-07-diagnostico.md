@@ -80,18 +80,18 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-196 · Calificación de las señales con curvas por cultivo
 
 - **Historia:** Como motor, quiero calificar cada señal de 0 a 100 con una curva por cultivo, para que el nivel, el factor limitante y el orden de las ventanas salgan de la misma cuenta.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Una sola función de curva: 100 dentro del rango óptimo, 0 fuera de los límites absolutos y una recta entre ambos (`specs/01-reglas.md`, «Cómo se califica cada señal»)
-  - [ ] El nivel sale de la calificación con los cortes de `thresholds.yaml` (hoy 70 a 100 `favorable`, 40 a 69 `moderate`, 0 a 39 `unfavorable`)
-  - [ ] Una señal es crítica cuando su calificación baja del umbral crítico de esa señal en `thresholds.yaml`; `soil` no tiene umbral crítico (R10)
-  - [ ] Los límites que dependen del cultivo salen de su ficha con fuente (HU-061, HU-063, HU-199); los que no dependen del cultivo (por ejemplo, el porcentaje de la necesidad de agua que cubre la lluvia o la variación del área sembrada) viven en `thresholds.yaml`
-  - [ ] Sin el límite de la ficha con fuente, o sin el dato de la zona: `insufficient_data`, nivel y `score` nulos (R1, R8). Nunca se usa un límite «típico»
-  - [ ] Pruebas: un valor dentro del óptimo da 100; un valor en el límite absoluto o fuera da 0; el punto medio entre el óptimo y el límite da 50; mismo valor, misma calificación (R4)
-  - [ ] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
+  - [x] Una sola función de curva: 100 dentro del rango óptimo, 0 fuera de los límites absolutos y una recta entre ambos (`specs/01-reglas.md`, «Cómo se califica cada señal»)
+  - [x] El nivel sale de la calificación con los cortes de `thresholds.yaml` (hoy 70 a 100 `favorable`, 40 a 69 `moderate`, 0 a 39 `unfavorable`)
+  - [x] Una señal es crítica cuando su calificación baja del umbral crítico de esa señal en `thresholds.yaml`; `soil` no tiene umbral crítico (R10)
+  - [x] Los límites que dependen del cultivo salen de su ficha con fuente (HU-061, HU-063, HU-199); los que no dependen del cultivo (por ejemplo, el porcentaje de la necesidad de agua que cubre la lluvia o la variación del área sembrada) viven en `thresholds.yaml`
+  - [x] Sin el límite de la ficha con fuente, o sin el dato de la zona: `insufficient_data`, nivel y `score` nulos (R1, R8). Nunca se usa un límite «típico»
+  - [x] Pruebas: un valor dentro del óptimo da 100; un valor en el límite absoluto o fuera da 0; el punto medio entre el óptimo y el límite da 50; mismo valor, misma calificación (R4)
+  - [x] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `score` y `level` de cada señal en `/diagnostics` y en las ventanas de `/calendar`; `crops`; `thresholds.yaml`
-- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha (`temp_*`, `heat_max_c`); `frost` califica el porcentaje de años con helada en los meses sensibles de la ventana (semanas en P1; cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
+- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con una curva de dos puntos de la ficha: 100 en `temp_opt_max_c` y 0 en `heat_max_c`, sin límite inferior (una máxima fría no es calor); `frost` califica el porcentaje de años con helada en los meses sensibles de la ventana (semanas en P1; cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos (**13 de noviembre de 2026:** `thresholds.yaml` 1.0.0 los deja con `curve: null`, porque ninguna fuente publicada da esos cortes; son `insufficient_data` hasta que tengan su curva con fuente: HU-072, HU-073; R1). Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
 
 ### HU-074 · Semáforo con prioridades, dos luces y acción
 
@@ -160,7 +160,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Señal `heat` con `status`, `level`, `critical`, `score`, `counts`, `indicators` (`tmax_p90_c`) y `reasons`, según el contrato
-  - [ ] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (`heat_max_c` y el óptimo, `temp_opt_min_c`–`temp_opt_max_c`, de HU-199) mediante la curva de HU-196
+  - [ ] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (de HU-199) mediante la curva de HU-196: 100 hasta `temp_opt_max_c` y 0 desde `heat_max_c`, recta entre medio y sin límite inferior (una máxima fría no es calor)
   - [ ] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C»)
   - [ ] Grado crítico en `thresholds.yaml`. Un calor crítico cuenta siempre, aunque el agricultor le ponga peso 0
   - [ ] Sin `heat_max_c` con fuente o sin `tmax_p90_c`: `insufficient_data`, nivel y `score` nulos y a las limitaciones; no cambia la luz (R1, R8)
@@ -175,9 +175,9 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-191 · Aptitud del cultivo en la zona
 
 - **Historia:** Como agricultor, quiero saber de entrada si mi cultivo se da en mi municipio, para no planear una siembra que no va a prosperar.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Antes de evaluar señales, el motor compara la temperatura media anual con `tmean_min_c`–`tmean_max_c` de la ficha: la del municipio (`tmean_annual_c`) o, si viene `lot_id` con polígono, corregida a la altitud del lote (mediana de `grid_cells` en su polígono, que calcula la API, HU-206) con el gradiente de HU-044. La razón dice cuál se usó, con la temperatura y la altitud
+  - [x] Antes de evaluar señales, el motor compara la temperatura media anual con `tmean_min_c`–`tmean_max_c` de la ficha: la del municipio (`tmean_annual_c`) o, si viene `lot_id` con polígono, corregida a la altitud del lote (mediana de `grid_cells` en su polígono, que calcula la API, HU-206) con el gradiente de HU-044. La razón dice cuál se usó, con la temperatura y la altitud
   - [x] Fuera del rango: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y la razón cita el dato de la ficha (el límite que se cruzó); la fuente va en `source_ids` del cultivo. No se evalúa ninguna ventana
   - [ ] Dentro del rango, incluidos los dos límites: `suitable`, y la razón dice la temperatura media de la zona y el rango del cultivo
   - [ ] Si la ficha no tiene el rango con fuente, o el municipio no tiene `tmean_annual_c`: `insufficient_data`; no bloquea y se agrega a las limitaciones (R1, R8)
@@ -188,7 +188,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [x] Caso de referencia: un cultivo de clima frío en un municipio a nivel del mar da `not_suitable` sin ventanas
 - **Reglas que aplican:** R1, R3, R4, R5, R6, R8
 - **Contrato que toca:** `suitability` (con `score`) en las respuestas de `/diagnostics`, `/rotations` y `/changes`; `crops.tmean_min_c`, `crops.tmean_max_c`, `crops.tmean_opt_min_c`, `crops.tmean_opt_max_c`, `municipalities.tmean_annual_c`, `municipalities.altitude_m`, `grid_cells`
-- **Notas:** Depende de HU-044 y HU-206 (temperatura media corregida por altitud con NASADEM, del municipio y del lote), HU-061 (rango de temperatura media con fuente) y HU-199 (rango óptimo, para la nota). Cambiada el 16 de octubre de 2026 (decisión 13): antes se decidía por la altitud. El motor recibe la altitud ya calculada: no lee `grid_cells` (R6). Agregada el 11 de octubre de 2026; la altitud del lote se sumó el mismo día (decisión 12). **En curso desde el 12 de noviembre de 2026:** motor (`backend/engine/suitability.py`) y el caso `not_suitable` de `/diagnostics` implementados; falta que esta misma API calcule la altitud del lote (mediana de `grid_cells` en su polígono: HU-206 ya está hecha y publica la altitud por celda, esto es el primer criterio de esta HU, no depende de otra), la razón y las limitaciones del caso `suitable`/`insufficient_data` (esperan las señales, todavía en 501) y el cableado en `/rotations` y `/changes`.
+- **Notas:** Depende de HU-044 y HU-206 (temperatura media corregida por altitud con NASADEM, del municipio y del lote), HU-061 (rango de temperatura media con fuente) y HU-199 (rango óptimo, para la nota). Cambiada el 16 de octubre de 2026 (decisión 13): antes se decidía por la altitud. El motor recibe la altitud ya calculada: no lee `grid_cells` (R6). Agregada el 11 de octubre de 2026; la altitud del lote se sumó el mismo día (decisión 12). **En curso desde el 12 de noviembre de 2026:** motor (`backend/engine/suitability.py`) y el caso `not_suitable` de `/diagnostics` implementados. **13 de noviembre de 2026, primer criterio hecho (tamaño de S a M):** la API calcula la altitud del lote (mediana de las celdas de `grid_cells` cuyo centro cae dentro de su polígono; un lote más chico que una celda usa la celda de su centro) y corrige la temperatura del municipio con el gradiente del manifiesto (`region.temperature_lapse_rate`, ahora publicado: dataset 2026.11.12). `zone_temperature` (`backend/api/lot_terrain.py`) es la única que decide qué temperatura entra a la aptitud; la razón dice la temperatura y la altitud usadas, también con municipio. Un lote sin contorno usa el municipio y lo dice en las limitaciones; un lote con contorno sin altitud usable (celdas sin dato, dataset sin `grid_cells` o sin gradiente) da `insufficient_data`, no la temperatura del municipio (R1). Un lote de otro municipio que el de la consulta responde `422` `invalid_input`. Falta la razón y las limitaciones del caso `suitable`/`insufficient_data` (esperan las señales, todavía en 501) y el cableado en `/rotations` y `/changes`.
 
 ### HU-192 · Orden de las ventanas por factor limitante y prioridades
 

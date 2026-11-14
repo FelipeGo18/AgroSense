@@ -224,6 +224,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - La aptitud compara la temperatura media anual de NASA POWER, corregida por altitud con NASADEM, con `tmean_min_c`–`tmean_max_c` de la ficha. Con un lote dibujado, se corrige a la altitud del lote.
 - Rangos de la UPRA donde hay zonificación (papa, cebolla de bulbo, maíz tradicional): el óptimo es la aptitud alta (A1) y el absoluto, de A3 a A1. Donde no la hay (arveja, haba, zanahoria, avena con vicia), el rango de temperatura de FAO EcoCrop, con un supuesto que se dice: en el trópico alto la temperatura media del ciclo es casi la media anual, porque varía poco entre meses.
 - La NASA queda más en el núcleo: la aptitud usa su temperatura, no solo la altitud.
+- **Con un lote dibujado (13 de noviembre de 2026, HU-191; aprobado por Felipe el 13 de noviembre de 2026):** la API corrige la temperatura del municipio a la altitud del lote (mediana de las celdas de `grid_cells` cuyo centro cae dentro del polígono) con el gradiente que publica el manifiesto (`region.temperature_lapse_rate`), para que nunca sea distinto al usado en `tmean_annual_c` (R4). Sin altitud usable del lote, la aptitud es `insufficient_data` y no la del municipio (R1). Un lote de otro municipio que el de la consulta responde `422`. Detalle en `docs/registro-de-decisiones.md`.
 
 ## 14. El enunciado completo: la rotación actual como referencia, la erosión y más productos de la NASA
 
