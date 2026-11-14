@@ -26,8 +26,9 @@ describe("Pie de página en las pantallas de aviso", () => {
   });
 
   it("una pantalla pendiente lleva el pie", async () => {
-    open(PATHS.howItWorks);
-    expect(await screen.findByRole("heading", { name: "¿Cómo funciona?" })).toBeInTheDocument();
+    open(PATHS.changes);
+    expect(await screen.findByRole("heading", { name: "Qué cambió en su zona" })).toBeInTheDocument();
+    expect(screen.getByText(/todavía no está programada/)).toBeInTheDocument();
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
   });
 });
