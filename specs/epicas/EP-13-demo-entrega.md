@@ -60,11 +60,11 @@ El guion se escribe desde la hora 0; el video y la entrega se cierran a partir d
 ### HU-230 · Licencias del proyecto y de lo que usa
 
 - **Historia:** Como equipo, quiero que el código tenga licencia y que la entrega diga la licencia de cada dato y librería de terceros, para que NASA acepte la solución.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] `LICENSE` en la raíz con Apache 2.0, la misma que NASA aplicaría si no se elige ninguna (10 de noviembre de 2026, aprobado por Felipe)
-  - [ ] La documentación de la entrega lista la licencia de cada material de terceros: los datos (de la tabla `sources`) y las librerías (las de Python de `uv.lock` y las de la web de `web/package-lock.json`)
-  - [ ] Cada material de terceros es libre o tiene una licencia OSI; si alguno no, se reemplaza o se documenta su permiso
-  - [ ] Lo que sale de DIVIPOLA del DANE (CC BY-SA 4.0), como la tabla `municipalities`, se publica con esa misma licencia y la entrega lo dice
+  - [x] La documentación de la entrega lista la licencia de cada material de terceros: los datos (de la tabla `sources`) y las librerías (las de Python de `uv.lock` y las de la web de `web/package-lock.json`)
+  - [x] Cada material de terceros es libre o tiene una licencia OSI; si alguno no, se reemplaza o se documenta su permiso (GSAP: «Standard no-charge license», permiso documentado; decidido por Felipe el 14 de noviembre de 2026)
+  - [x] Lo que sale de DIVIPOLA del DANE (CC BY-SA 4.0), como la tabla `municipalities`, se publica con esa misma licencia y la entrega lo dice
 - **Reglas que aplican:** R8
 - **Notas:** Lo piden los términos 2026 de Space Apps (https://www.spaceappschallenge.org/legal/, 7 de agosto de 2026; ver HU-004): el contenido original debe ser libre o tener licencia OSI; NASA no acepta una solución sin la documentación de las licencias de terceros, y puede quitar premios si no se citan todas las fuentes (HU-132). Agregada el 10 de noviembre de 2026.
