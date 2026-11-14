@@ -1,6 +1,6 @@
 # Licencias de AgroSense y de lo que usa
 
-Documentación de las licencias de terceros que piden los términos de NASA Space Apps 2026 (HU-230; <https://www.spaceappschallenge.org/legal/>): el contenido original debe ser libre o tener una licencia aprobada por la OSI, y la NASA no acepta una solución sin la licencia de cada material de terceros. Se genera con `scripts/licencias.py`.
+Documentación de las licencias de terceros que piden los términos de NASA Space Apps 2026 (HU-230; <https://www.spaceappschallenge.org/legal/>): el contenido original debe ser libre o tener una licencia aprobada por la OSI, y la NASA no acepta una solución sin la licencia de cada material de terceros. Se genera con `scripts/licencias.py`, en Docker (el comando está al principio del script).
 
 ## El código de AgroSense
 
@@ -20,11 +20,14 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 
 | Fuente | Institución | Licencia o condición de uso |
 |---|---|---|
+| `agrosavia_tibaitata_2022` · Efecto del establecimiento de sistemas de rotación para el cultivo de la papa sobre las características químicas y físicas del suelo (Vargas Díaz, Wilches Ortiz y Espitia Malagón) | Agrosavia, Centro de Investigación Tibaitatá; revista Siembra 9(2), e4023, Universidad Central del Ecuador | CC BY-NC (Creative Commons Atribución-NoComercial) |
 | `agrosense_diseno` · Catálogo visual de AgroSense (design/finca/cultivos.py) | Equipo RealE4Life | Del proyecto |
 | `alharbi_2021_faba` · Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925 | MDPI, Plants; doi:10.3390/plants10091925 | Acceso abierto (CC BY 4.0 por confirmar) |
 | `barrales_2002` · Barrales Domínguez et al. (2002): Relaciones térmicas en el sistema suelo-planta-atmósfera durante la incidencia de una helada. Revista Fitotecnia Mexicana 25(3):289-297 | Sociedad Mexicana de Fitogenética; Universidad Autónoma Chapingo | Acceso abierto (Redalyc); licencia por confirmar |
 | `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Sin licencia explícita: se usan cifras con su cita |
+| `cevipapa_taller_2005` · Memorias del I Taller Nacional sobre suelos, fisiología y nutrición vegetal en el cultivo de la papa (capítulos de Hugo E. Castro Franco y de Gilberto A. Murcia Contreras) | CEVIPAPA y Consejo Nacional de la Papa, con el MADR; capítulo de Murcia: Corpoica; copia en el repositorio de Agrosavia | Sin licencia declarada; uso con cita |
 | `ciren_1989_chacras` · CIREN-CORFO: Requerimientos de clima y suelo. Chacras y hortalizas, publicación n.º 85 (1989) | Centro de Información de Recursos Naturales (CIREN), Chile | Sin dato; se cita |
+| `criterio_equipo_2026` · Cortes de salud del suelo de AgroSense: criterio propio del equipo (HU-062) | Equipo RealE4Life (AgroSense) | Del proyecto |
 | `dane_divipola` · DIVIPOLA- Códigos municipios | Departamento Administrativo Nacional de Estadística (DANE) | Creative Commons Attribution \| Share Alike 4.0 International |
 | `dane_mgn_2025` · Marco Geoestadístico Nacional 2025 · Municipios | Departamento Administrativo Nacional de Estadística (DANE) | Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122) |
 | `dane_sipsa` · SIPSA · Precios mayoristas diarios (servicio web) | Departamento Administrativo Nacional de Estadística (DANE) | Términos y condiciones del DANE (https://www.dane.gov.co/index.php/terminos-y-condiciones): se autoriza el uso, aprovechamiento, transformación y análisis de la información citando «Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co». Se rigen por la ley colombiana y el DANE puede cambiarlos sin aviso. |
@@ -34,9 +37,13 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `fao_crop_info_potato` · FAO Land & Water: Crop Information, Potato | FAO, Land and Water Division | Publicación de la FAO, uso con cita |
 | `fao_ecocrop` · FAO EcoCrop · fichas de datos por especie | Organización de las Naciones Unidas para la Alimentación y la Agricultura (FAO) | CC BY 4.0 (catálogo de datos de la FAO) |
 | `fao_frost_2005` · FAO: Frost protection: fundamentals, practice and economics, vol. 1 (Snyder y de Melo-Abreu, 2005). Cap. 4, tabla 4.5; cap. 5 | FAO, Environment and Natural Resources Series 10 | Publicación de la FAO, uso con cita |
+| `fao_glosolan_wb_2019` · Procedimiento operativo estándar para el análisis de carbono orgánico del suelo, Walkley-Black (GLOSOLAN-SOP-02, versión 2) | FAO, Red mundial de laboratorios de suelos (GLOSOLAN) | Publicación de la FAO, uso con cita (licencia por confirmar en la ficha del repositorio) |
 | `fao_iyp_2019` · FAO: The International Year of Pulses, final report (2019) | FAO | Publicación de la FAO, uso con cita |
+| `fao_papa_2008` · International Year of the Potato 2008. New light on a hidden treasure (capítulo «The potato») | FAO | Publicación de la FAO, uso con cita |
 | `fao_soils_bulletin_55` · FAO Soils Bulletin 55: Guidelines, land evaluation for irrigated agriculture (1985), formato 5 | FAO | Publicación de la FAO, uso con cita |
 | `fews_net_wrsi` · FEWS NET · Water Requirement Satisfaction Index (WRSI) y sus clases | Famine Early Warning Systems Network (FEWS NET) y USGS; clases publicadas por el Banco Mundial | Información pública del USGS; las clases, del catálogo de datos del Banco Mundial (CC BY 4.0) |
+| `ica_punta_morada` · Preguntas frecuentes sobre la punta morada de la papa | Instituto Colombiano Agropecuario (ICA) | Documento público del ICA, uso con cita |
+| `igac_capacidad_uso_2021` · Clasificación de las tierras por su capacidad de uso (instructivo IN-GAG-PC05-02, versión 1) | Instituto Geográfico Agustín Codazzi (IGAC) | Documento público del IGAC, uso con cita (copia no controlada) |
 | `imerg` · GPM IMERG Final Run V07 · Lluvia mensual por satélite (GPM_3IMERGM) | NASA y JAXA, misión GPM (Global Precipitation Measurement); distribuido por GES DISC de la NASA | Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita (https://disc.gsfc.nasa.gov/data-guidelines) |
 | `mapa_zarc_2025` · Zoneamento Agrícola de Risco Climático (ZARC): Portaria SPA/MAPA n.º 388, del 21 de agosto de 2025 | Ministério da Agricultura e Pecuária (MAPA), Brasil | Acto oficial del gobierno de Brasil, publicado en el Diário Oficial |
 | `msu_e1307_onion` · Zandstra, Grafius, Lacy y Warncke: Commercial Vegetable Recommendations: Onions, MSU E1307 (revisión de 1996) | Michigan State University Extension | Sin dato; se cita |
@@ -44,6 +51,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `nasa_power` · NASA POWER · Datos diarios por punto (comunidad AG) | NASA Langley Research Center, proyecto POWER (Prediction Of Worldwide Energy Resources) | La página de POWER no da una licencia; pide citar la fuente (https://power.larc.nasa.gov/docs/referencing/) |
 | `nasadem` · NASADEM HGT v001: modelo de elevación de 1 segundo de arco (unos 30 m) | NASA Jet Propulsion Laboratory (JPL); distribuido por el LP DAAC de la NASA y el USGS | Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita |
 | `ndsu_a1166_pea` · NDSU Extension: Field Pea Production, A1166 (revisión de diciembre de 2021) | North Dakota State University Extension | Sin dato; se cita |
+| `psu_rotacion_familias` · Plant Rotation in the Garden Based on Plant Families (Elsa Sánchez y Kathleen Demchak) | Penn State Extension, The Pennsylvania State University | Derechos de Penn State; uso con cita |
 | `purdue_corn07` · Nielsen, R. L.: Drought and Heat Stress Effects on Corn Pollination (Corny News, Purdue, sin fecha) | Purdue University, Agronomy | Sin dato; se cita |
 | `saskpulse_stress_2023` · Saskatchewan Pulse Growers: Environmental Stresses in Pulses (mayo de 2023) | Saskatchewan Pulse Growers | Sin dato; se cita |
 | `senamhi_atlas_heladas_2010` · SENAMHI y FAO: Atlas de heladas del Perú (2010). Tablas 2.2 y 2.3 | Servicio Nacional de Meteorología e Hidrología del Perú (SENAMHI) y FAO | Publicación pública, sin licencia explícita; se cita |
@@ -58,14 +66,14 @@ No salen de `sources` ni de los lockfiles.
 
 | Material | De dónde sale | Licencia |
 |---|---|---|
-| Mapa base de Mi finca | OpenStreetMap, con el estilo «liberty» de OpenFreeMap y el esquema de OpenMapTiles (`web/src/components/map/MapCanvas.tsx`) | Datos: ODbL 1.0 (© colaboradores de OpenStreetMap). El mapa muestra la atribución en pantalla |
+| Mapa base de Mi finca | OpenStreetMap, con el estilo «liberty» de OpenFreeMap y el esquema de OpenMapTiles (`web/src/components/map/MapCanvas.tsx`) | Datos: ODbL 1.0 (© colaboradores de OpenStreetMap). Esquema de las teselas: CC BY 4.0 (© OpenMapTiles). El mapa muestra en pantalla «OpenFreeMap © OpenMapTiles Data from OpenStreetMap» |
 | Íconos de las redes del equipo | Font Awesome Free 6.5.2, copiados como SVG (`web/src/components/layout/brandIcons.ts`) | CC BY 4.0 (https://fontawesome.com/license/free); la atribución está en el archivo |
 | Globo de la portada | Contornos de Natural Earth 1:110m y color de NASA Blue Marble: Next Generation (2004) (`web/src/assets/globe.json`) | Natural Earth: dominio público. Blue Marble: imagen de la NASA, uso libre con crédito. La portada muestra el crédito |
 | Tipografías | Atkinson Hyperlegible y Fredoka, por `@fontsource` | OFL-1.1 |
 
 Las imágenes de referencia del moodboard (HU-151) ya no están en el repositorio: eran solo referencia para Figma; su lista y su licencia quedan en `design/moodboard/FUENTES.md`.
 
-## Librerías de Python (51, de `uv.lock`)
+## Librerías de Python que van en la aplicación (43, de `uv.lock`)
 
 | Paquete | Versión | Licencia |
 |---|---|---|
@@ -82,18 +90,13 @@ Las imágenes de referencia del moodboard (HU-151) ya no están en el repositori
 | et-xmlfile | 2.0.0 | MIT |
 | fastapi | 0.143.0 | MIT |
 | h11 | 0.16.0 | MIT |
-| httpcore | 1.0.9 | BSD-3-Clause |
 | httptools | 0.9.0 | MIT |
-| httpx | 0.28.1 | BSD |
 | idna | 3.20 | BSD-3-Clause |
-| iniconfig | 2.3.1 | MIT |
 | mako | 1.4.3 | MIT |
 | markupsafe | 3.0.4 | BSD-3-Clause |
 | numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
 | openpyxl | 3.1.5 | MIT |
 | opentelemetry-api | 1.45.1 | Apache-2.0 |
-| packaging | 26.3 | Apache-2.0 OR BSD-2-Clause |
-| pluggy | 1.6.0 | MIT |
 | polars | 2.0.0 | MIT |
 | polars-runtime-32 | 2.0.0 | MIT |
 | psycopg | 3.3.6 | LGPL-3.0-only |
@@ -102,12 +105,9 @@ Las imágenes de referencia del moodboard (HU-151) ya no están en el repositori
 | pydantic | 2.14.1 | MIT |
 | pydantic-core | 2.50.1 | MIT |
 | pydantic-settings | 2.15.0 | MIT |
-| pygments | 2.21.0 | BSD-2-Clause |
 | pyproj | 3.8.0 | MIT |
-| pytest | 9.1.1 | MIT |
 | python-dotenv | 1.2.4 | BSD-3-Clause |
 | pyyaml | 6.0.3 | MIT |
-| ruff | 0.17.0 | MIT |
 | shapely | 2.2.0 | BSD-3-Clause |
 | sqlalchemy | 2.1.4 | MIT |
 | starlette | 1.7.0 | BSD-3-Clause |
@@ -120,6 +120,21 @@ Las imágenes de referencia del moodboard (HU-151) ya no están en el repositori
 | uvloop | 0.23.0 | MIT OR Apache-2.0 |
 | watchfiles | 1.3.0 | MIT |
 | websockets | 17.2 | BSD-3-Clause |
+
+## Herramientas de desarrollo de Python (8, grupo `dev` de `uv.lock`; no van en la aplicación)
+
+Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de pruebas de la API).
+
+| Paquete | Versión | Licencia |
+|---|---|---|
+| httpcore | 1.0.9 | BSD-3-Clause |
+| httpx | 0.28.1 | BSD |
+| iniconfig | 2.3.1 | MIT |
+| packaging | 26.3 | Apache-2.0 OR BSD-2-Clause |
+| pluggy | 1.6.0 | MIT |
+| pygments | 2.21.0 | BSD-2-Clause |
+| pytest | 9.1.1 | MIT |
+| ruff | 0.17.0 | MIT |
 
 ## Librerías de la web que van en la aplicación (69, de `web/package-lock.json`)
 

@@ -36,7 +36,7 @@ estado: pendiente
 ### HU-177 · Logs de la terminal
 
 - **Historia:** Como equipo, queremos logs claros en la terminal del backend y del pipeline, para saber qué pasa en el servidor y diagnosticar un fallo durante la demo.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] `structlog` configurado una vez y usado por la API, el pipeline y los avisos de Uvicorn (el log de acceso propio de Uvicorn se apaga): `common/logging.py` (antes `backend/config/logging.py`; se movió el 9 de noviembre de 2026 para que el pipeline no importe el backend), también para las migraciones y, desde el 8 de noviembre de 2026, para `pipeline.build`, que lee solo `AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT` (no necesita la base de datos)
   - [x] En desarrollo, líneas legibles con color; en producción, una línea JSON por evento a la salida estándar (Docker la recoge). Sin archivos de log
@@ -45,11 +45,11 @@ estado: pendiente
   - [x] Cada línea explica qué pasó en palabras (`detail`) y dice qué endpoint atendió (`endpoint`); en la consola, el nivel, el mensaje, el código y el endpoint van cada uno en su color
   - [x] Un procesador de redacción borra de cualquier evento las llaves `password`, `token`, `cookie`, `authorization` y `geometry`; una prueba lo comprueba
   - [x] Cuando las cuentas están apagadas, el log dice por qué: la base de datos no responde, o qué migración no se completó y en cuál está la base
-  - [ ] Los cuerpos de los endpoints de cálculo no se escriben en el log (R9); se registra solo la ruta, el estado, la duración y las versiones del dataset y de las reglas
+  - [x] Los cuerpos de los endpoints de cálculo no se escriben en el log (R9); se registra solo la ruta, el estado, la duración y las versiones del dataset y de las reglas
   - [x] El pipeline registra cada paso con la fuente, filas leídas, filas rechazadas y el motivo: `source_read` por fuente (`rows_read`, `rows_kept`, `rows_rejected` y `reasons`: `outside_region` en DIVIPOLA; `other_market` y `no_average` en SIPSA), `table_written` por tabla y, al final, `dataset_published` o `dataset_not_published` con el motivo (`tests/pipeline/test_reconstruir.py`)
   - [x] Nivel y formato se eligen con `AGROSENSE_LOG_LEVEL` y `AGROSENSE_LOG_FORMAT` (`console` o `json`)
 - **Reglas que aplican:** R4, R9
-- **Notas:** Los logs de la terminal son para operar el servidor y no se consultan desde la web; lo que hace cada usuario va en la trazabilidad de la base de datos (HU-178). La web no envía logs al servidor ni a servicios de terceros. Definido el 10 de octubre de 2026. Desde el 8 de noviembre de 2026 solo falta el criterio de los endpoints de cálculo, que se cumple cuando existan (EP-07, EP-08).
+- **Notas:** Los logs de la terminal son para operar el servidor y no se consultan desde la web; lo que hace cada usuario va en la trazabilidad de la base de datos (HU-178). La web no envía logs al servidor ni a servicios de terceros. Definido el 10 de octubre de 2026. Desde el 8 de noviembre de 2026 solo falta el criterio de los endpoints de cálculo, que se cumple cuando existan (EP-07, EP-08). **14 de noviembre de 2026 (hecho):** los endpoints de cálculo ya existen (responden `501` mientras no esté su parte del motor, y el diagnóstico responde `200` cuando el cultivo no es apto). Su dependencia `calc_dataset` (`backend/api/calculations.py`) deja en la petición las versiones del dataset y de las reglas, y la línea `request` las escribe como `dataset` y `rules` (R4); sin dataset (`503`) no van, nunca inventadas. El cuerpo y los parámetros de la consulta nunca se escriben: la línea lleva la plantilla de la ruta. `tests/test_logs_de_calculo.py` lo comprueba en los cinco endpoints: ni el municipio, ni el cultivo, ni la fecha ni el área aparecen en el log.
 
 ### HU-023 · La app desplegada en Google Cloud Run
 

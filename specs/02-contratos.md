@@ -634,12 +634,15 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - `excluded`: las estrategias descartadas, con el ciclo y el motivo. **Trae hasta 10** (decisión 15): primero las que quedaron fuera por un solo motivo, y entre ellas, en el orden en que se habrían ordenado. `excluded_counts` cuenta todas las descartadas por `kind` (por ejemplo `{"rule": 212, "high_risk": 48, "not_suitable": 30, "soil_ph": 0}`), para que la web diga cuántas son sin traerlas todas. `kind` es `rule` (viola una regla de filtro; trae `rule_id`), `not_suitable` (un cultivo no se da en la zona), `soil_ph` (el pH queda fuera de todo el intervalo) o `high_risk` (un ciclo con `water`, `frost` o `heat` desfavorable y crítica; trae `signal`).
 - Cada descartada y cada `issues` trae `source_ids`: la fuente de su regla, de la ficha del cultivo, del suelo o del clima de la señal (R8).
 - La oferta y el mercado no excluyen estrategias: entran solo por `income`.
+- **Varios motivos** (HU-081, aprobado por Felipe el 14 de noviembre de 2026): una estrategia se descarta una sola vez. Sus motivos son los de la fase en que quedó fuera: los de la fase 1 (`rule`, `not_suitable`, `soil_ph`, que no necesitan fechas) o solo `high_risk` (fase 2), porque a una descartada en la fase 1 nunca se le evalúa el alto riesgo. `excluded` muestra el primero en el orden `rule` → `not_suitable` → `soil_ph` → `high_risk`; `excluded_counts` cuenta cada estrategia una sola vez, por ese primer motivo, así que su suma es el total de descartadas. «Primero las que quedaron fuera por un solo motivo» se ordena por número de motivos, de menos a más; el desempate es el orden del ranking (HU-082) o, mientras no exista, `crop_ids` en orden alfabético (R4).
 - `soil_basis` y `slope_basis`: `lot` o `municipality`, de dónde salen el suelo y la pendiente.
 - Sin estrategias válidas, `strategies` viene vacía y `excluded` dice por qué.
 
 Con cuenta, la web arma `previous_crop_ids` con los cultivos de las temporadas de las que viene el terreno que se va a sembrar (`follows_season_ids`). Con el suelo (del lote o del municipio): un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` excluye la estrategia por regla (R3); el carbono orgánico entra al criterio `organic_carbon` de `soil_health`, con reglas de `rotation_rules` con fuente. Cada estrategia trae de 2 a 4 razones.
 
 Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 2 ciclos sin `soil_health`, y `previous_crop_ids` pedía al menos un cultivo.
+
+> **14 de noviembre de 2026 (HU-081, aprobado por Felipe en la revisión del PR #90):** varios motivos de una estrategia descartada: se muestra el primero en un orden fijo y `excluded_counts` la cuenta una vez. No agrega campos.
 
 > **8 de noviembre de 2026 (decisión 14, aprobado por Felipe):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta.
 

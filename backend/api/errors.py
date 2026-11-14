@@ -142,6 +142,9 @@ def install(app: FastAPI) -> None:
         # Quién fue, si había sesión: el identificador y el rol; nunca el usuario ni el nombre.
         if getattr(request.state, "user_id", None):
             fields |= {"user_id": request.state.user_id, "role": request.state.role}
+        # En los endpoints de cálculo, con qué versiones del dataset y de las reglas se respondió (R4). Nunca el cuerpo.
+        if getattr(request.state, "versions", None):
+            fields |= request.state.versions
         getattr(log, _level(response.status_code))("request", **fields)
         return response
 
