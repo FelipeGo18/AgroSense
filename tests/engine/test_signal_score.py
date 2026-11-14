@@ -69,7 +69,7 @@ def test_los_limites_de_la_papa_son_los_esperados(papa):
 
 def test_los_umbrales_son_los_esperados(thresholds):
     """Fija la versión de `thresholds.yaml` con que se escribieron los casos de abajo: si cambia, se revisan."""
-    assert thresholds.version == "1.1.0"
+    assert thresholds.version == "1.0.0"
     assert (thresholds.favorable, thresholds.moderate) == (70, 40)
 
 
@@ -199,43 +199,6 @@ def test_agua_sigue_los_puntos_de_thresholds(thresholds, value, score):
 )
 def test_heladas_siguen_los_puntos_de_thresholds(thresholds, value, score):
     assert score_signal("frost", value, thresholds).score == pytest.approx(score)
-
-
-@pytest.mark.parametrize(
-    "value,expected",
-    [
-        (0.85, SignalScore(AVAILABLE, 0, UNFAVORABLE, True)),
-        (0.80, SignalScore(AVAILABLE, 0, UNFAVORABLE, True)),
-        (0.90, SignalScore(AVAILABLE, 33, UNFAVORABLE, False)),
-        (0.91, SignalScore(AVAILABLE, 40, MODERATE, False)),
-        (1.0, SignalScore(AVAILABLE, 70, FAVORABLE, False)),
-        (1.15, SignalScore(AVAILABLE, 100, FAVORABLE, False)),
-        (1.30, SignalScore(AVAILABLE, 100, FAVORABLE, False)),
-    ],
-)
-def test_mercado_sigue_los_puntos_de_thresholds(thresholds, value, expected):
-    """HU-073: 0 en 0,85 o menos (crítica), 40 en 0,91 (P25), 70 en 1,0 (precio promedio = P50) y 100 en 1,15 o más.
-    0,90 queda en el tramo 0,85-0,91 (0 a 40): 40 * 0,05 / 0,06 = 33,33, entera 33:
-    `unfavorable` y no crítica. 1,0 (un precio normal) da 70, `favorable` y no `moderate`: así ni con peso 4 o 5
-    (donde un moderate cuenta como desfavorable, HU-074) un precio normal se trata como riesgo."""
-    assert score_signal("market", value, thresholds) == expected
-
-
-def test_un_precio_por_debajo_de_lo_normal_si_pesa_con_peso_alto(thresholds):
-    """Entre P25 (0,91) y la mediana es `moderate`: con peso 4 o 5 cuenta como desfavorable, como se busca."""
-    below = score_signal("market", 0.95, thresholds)
-    assert (below.score, below.level) == (53, MODERATE)  # 40 + 0,04 / 0,09 * 30 = 53,33
-
-
-def test_mercado_entre_dos_puntos_va_en_recta(thresholds):
-    """0,925: 40 + (0,925 - 0,91) / 0,09 * 30 = 45. 1,075: 70 + (1,075 - 1,0) / 0,15 * 30 = 85."""
-    assert score_signal("market", 0.925, thresholds).score == 45
-    assert score_signal("market", 1.075, thresholds).score == 85
-
-
-@pytest.mark.parametrize("value", [None, float("nan")])
-def test_mercado_sin_indice_es_sin_datos(thresholds, value):
-    assert score_signal("market", value, thresholds) == INSUFFICIENT
 
 
 @pytest.mark.parametrize("signal,value", [("water", 70.0), ("frost", 30.0)])
@@ -387,10 +350,11 @@ def test_el_suelo_nunca_es_critico_en_ningun_valor(thresholds, papa):
 # ---------- Sin datos: insufficient_data, nunca un límite «típico» (R1, R8) ----------
 
 
+@pytest.mark.parametrize("signal", ["supply", "market"])
 @pytest.mark.parametrize("value", [None, -50.0, 0.0, 1.0, 35.0, 120.0])
-def test_oferta_sin_curva_es_siempre_sin_datos(thresholds, papa, value):
-    """`curve: null` en thresholds.yaml: sin fuente para los cortes, aunque haya valor medido."""
-    assert score_signal("supply", value, thresholds, papa) == INSUFFICIENT
+def test_oferta_y_mercado_sin_curva_son_siempre_sin_datos(thresholds, papa, signal, value):
+    """`curve: null` en thresholds.yaml 1.0.0: sin fuente para los cortes, aunque haya valor medido."""
+    assert score_signal(signal, value, thresholds, papa) == INSUFFICIENT
 
 
 @pytest.mark.parametrize("signal", ["water", "frost", "heat", "soil"])

@@ -12,13 +12,13 @@ lee archivos.
 
 Qué curva usa cada señal (`thresholds.signals[signal].curve`):
 
-- Una tupla de puntos (valor, calificación) (hoy `water`, `frost` y `market`): la curva fija de `thresholds.yaml`,
-  igual para todos los cultivos. Los límites de la ficha no se usan.
+- Una tupla de puntos (valor, calificación) (hoy `water` y `frost`): la curva fija de `thresholds.yaml`, igual para
+  todos los cultivos. Los límites de la ficha no se usan.
 - `"crop"` (hoy `heat` y `soil`): la curva sale de la ficha del cultivo (`crop_limits`), con los límites de
   `CROP_LIMITS`:
   - `heat`: dos puntos, 100 en `temp_opt_max_c` y 0 en `heat_max_c`. Sin límite inferior: el frío no es calor.
   - `soil`: cuatro puntos, `crop_curve(ph_min, ph_opt_min, ph_opt_max, ph_max)`.
-- `None` (hoy `supply`): sin fuente para los cortes; la señal es `insufficient_data` siempre (R1, R8).
+- `None` (hoy `supply` y `market`): sin fuente para los cortes; la señal es `insufficient_data` siempre (R1, R8).
 
 Sin el valor medido, o sin alguno de los límites de la ficha que pide la curva: `insufficient_data`, con `score` y
 `level` nulos y `critical` falso (R1). Un NaN (en el valor o en un límite de la ficha) cuenta como sin dato. Nunca se
