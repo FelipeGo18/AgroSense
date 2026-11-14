@@ -112,10 +112,6 @@ def test_input_order_does_not_change_result(periods):
         row("before", frost_freq_pct=30),
         row("after", frost_freq_pct=18),
     ]
-    first = compare_climate_months(
-        municipality_id="15238", periods=periods, rows=rows
-    )
-    second = compare_climate_months(
-        municipality_id="15238", periods=periods, rows=reversed(rows)
-    )
+    first = compare_climate_months(municipality_id="15238", periods=periods, rows=rows)
+    second = compare_climate_months(municipality_id="15238", periods=periods, rows=reversed(rows))
     assert first == second

@@ -18,9 +18,7 @@ def main() -> None:
     # Este script carga archivos. La función del motor sigue siendo pura.
     data_dir = Path("data/examples")
 
-    manifest = json.loads(
-        (data_dir / "manifest.json").read_text(encoding="utf-8")
-    )
+    manifest = json.loads((data_dir / "manifest.json").read_text(encoding="utf-8"))
     table = pl.read_parquet(data_dir / "climate_change_month.parquet")
 
     # Los periodos salen del manifiesto, no se escriben manualmente.
@@ -38,9 +36,7 @@ def main() -> None:
 
     # Tunja: municipio presente en el Parquet de ejemplo.
     municipality_id = "15001"
-    rows = table.filter(
-        pl.col("municipality_id") == municipality_id
-    ).to_dicts()
+    rows = table.filter(pl.col("municipality_id") == municipality_id).to_dicts()
 
     if not rows:
         raise ValueError("El municipio no tiene filas en el archivo de ejemplo")
@@ -59,10 +55,7 @@ def main() -> None:
     print(f"Versión del dataset: {manifest['dataset_version']}")
     print(f"Versión de reglas: {manifest['rules_version']}")
     print(f"Fuente: {periods.before.source_id}")
-    print(
-        f"Antes: {periods.before.start_year}–{periods.before.end_year}"
-        f" | Después: {periods.after.start_year}–{periods.after.end_year}"
-    )
+    print(f"Antes: {periods.before.start_year}–{periods.before.end_year} | Después: {periods.after.start_year}–{periods.after.end_year}")
     print("Historia comparada. No es un pronóstico.")
 
     indicators = (
@@ -79,20 +72,13 @@ def main() -> None:
             before = comparison["before"]
             after = comparison["after"]
 
-            before_text = (
-                "Sin datos" if before is None else f"{before:g} {unit}"
-            )
-            after_text = (
-                "Sin datos" if after is None else f"{after:g} {unit}"
-            )
+            before_text = "Sin datos" if before is None else f"{before:g} {unit}"
+            after_text = "Sin datos" if after is None else f"{after:g} {unit}"
 
             print(f"  {label}: {before_text} → {after_text}")
 
             if comparison["status"] == "available":
-                print(
-                    f"    Diferencia: {comparison['change']:+g} "
-                    f"{difference_unit}"
-                )
+                print(f"    Diferencia: {comparison['change']:+g} {difference_unit}")
             else:
                 print("    Diferencia: Sin datos suficientes")
 
@@ -103,11 +89,7 @@ def main() -> None:
     incomplete_rows = [
         row
         for row in rows
-        if not (
-            row["period_id"] == periods.before.period_id
-            and row["source_id"] == periods.before.source_id
-            and row["month"] == 1
-        )
+        if not (row["period_id"] == periods.before.period_id and row["source_id"] == periods.before.source_id and row["month"] == 1)
     ]
 
     incomplete_result = compare_climate_months(
@@ -124,10 +106,7 @@ def main() -> None:
             indent=2,
         )
     )
-    print(
-        "Se conservan los valores posteriores; "
-        "las diferencias quedan en insufficient_data."
-    )
+    print("Se conservan los valores posteriores; las diferencias quedan en insufficient_data.")
 
     print("\nValidación del formato mensual: correcta.")
     print("Esta simulación todavía no calcula aptitud ni mejores ventanas.")
