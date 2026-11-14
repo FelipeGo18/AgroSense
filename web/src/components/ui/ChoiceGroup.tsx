@@ -41,7 +41,7 @@ export function ChoiceGroup<T extends string | number | boolean | null>({
           return (
             <label
               key={String(choice.value)}
-              className="relative flex min-h-12 cursor-pointer items-center justify-center px-3 text-center"
+              className="relative flex min-h-12 cursor-pointer lg:min-h-11 items-center justify-center px-3 text-center"
             >
               {/* Lo elegido va relleno en verde oliva, como en Figma («¿Este lote tiene riego?», Editar lote). */}
               <Plate

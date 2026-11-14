@@ -101,7 +101,7 @@ export function Combobox({
       <label htmlFor={`${id}-input`} className="font-bold">
         {label}
       </label>
-      <div className="relative h-14">
+      <div className="relative h-14 lg:h-11">
         <Plate
           fill={disabled ? "var(--color-superficie-panel-suave)" : "var(--color-superficie-panel)"}
           stroke={error ? "var(--color-oscuro-rojo)" : focused ? "var(--color-accion-foco)" : "var(--color-superficie-borde)"}
@@ -159,7 +159,7 @@ export function Combobox({
                   role="option"
                   aria-disabled="true"
                   aria-selected="false"
-                  className="relative flex min-h-[52px] items-center px-4 text-texto-secundario"
+                  className="relative flex min-h-[52px] items-center px-4 lg:min-h-11 text-texto-secundario"
                 >
                   {message}
                 </li>
@@ -173,7 +173,7 @@ export function Combobox({
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => select(option)}
                     onMouseEnter={() => setActive(i)}
-                    className={`relative flex min-h-[52px] cursor-pointer items-center justify-between gap-4 pr-4 pl-11 ${i === active ? "font-bold" : ""}`}
+                    className={`relative flex min-h-[52px] cursor-pointer items-center lg:min-h-11 justify-between gap-4 pr-4 pl-11 ${i === active ? "font-bold" : ""}`}
                   >
                     {i === active && (
                       <>

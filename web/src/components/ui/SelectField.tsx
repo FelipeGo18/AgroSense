@@ -19,7 +19,7 @@ export function SelectField({ label, options, hint, error, className = "", ...re
       <label htmlFor={id} className="font-bold">
         {label}
       </label>
-      <div className="relative flex h-12 items-center">
+      <div className="relative flex h-12 items-center lg:h-11">
         <Plate
           c={10}
           fill="var(--color-superficie-panel)"
