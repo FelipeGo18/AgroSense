@@ -97,7 +97,8 @@ def heat_signal(
     where = f"en {stages} ({when})" if stages == WHOLE_CROP else _months_first(when, stages)
     hottest_note = f" (el mes más caluroso, {month_name(hottest)})" if len(distinct) > 1 else ""
     reason = (
-        f"{period_phrase(plan.normal).capitalize()}, {where}, la máxima rara vez pasó de {format_number(value)} °C{hottest_note}; "
+        f"{period_phrase(plan.normal).capitalize()}, {where}, "
+        f"la máxima pasó de {format_number(value)} °C uno de cada diez días{hottest_note}; "
         f"{crop_name} aguanta hasta {format_number(float(crop_limits['heat_max_c']))} °C"
     )
     return scored(score, INDICATOR, reason, limitations)
