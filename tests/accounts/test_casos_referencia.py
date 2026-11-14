@@ -61,12 +61,18 @@ def test_sucesoras_que_suman_1_2_ha_en_un_lote_de_1_ha_responden_422(client, lot
 
 
 def test_terreno_anterior_mas_terreno_libre(client, dataset):
-    # Lote de 1,5 ha: la cosechada ocupaba 1 ha y quedan 0,5 ha libres, así que una sucesora de 1,5 ha cabe.
+    # El área libre es la del lote menos las temporadas en curso (`_sown` en backend/api/seasons.py): una cosechada ya
+    # no ocupa nada. Para que la prueba dependa de «anterior más libre» (revisión de Haider, PR #86, punto 9), otra
+    # siembra en curso ocupa parte del lote. Lote de 2 ha: 0,5 ha en curso y la papa de 1 ha cosechada dejan 1,5 ha
+    # libres. Se prueba el límite por los dos lados: 1,5 ha cabe y 1,6 ha no.
     client.post("/api/v1/auth/register", json=ROSA)
-    big = client.post("/api/v1/lots", json={"name": "El Bajo", "municipality_id": "15646", "area_ha": 1.5}).json()["lot_id"]
+    big = client.post("/api/v1/lots", json={"name": "El Bajo", "municipality_id": "15646", "area_ha": 2}).json()["lot_id"]
+    assert sow(client, big, crop_id="haba", area_ha=0.5, sowing_date=ago(30)).status_code == 201
     papa = harvested(client, big, 1)
-    response = sow(client, big, crop_id="arveja", area_ha=1.5, sowing_date=ago(20), follows_season_ids=[papa])
-    assert response.status_code == 201 and response.json()["area_ha"] == 1.5
+    over = sow(client, big, crop_id="arveja", area_ha=1.6, sowing_date=ago(20), follows_season_ids=[papa])
+    assert over.status_code == 422 and over.json()["error"]["code"] == "area_exceeds_free"
+    fits = sow(client, big, crop_id="arveja", area_ha=1.5, sowing_date=ago(20), follows_season_ids=[papa])
+    assert fits.status_code == 201 and fits.json()["area_ha"] == 1.5
 
 
 @pytest.mark.xfail(strict=True, reason="espera HU-167 (P1)")
