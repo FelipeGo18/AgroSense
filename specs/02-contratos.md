@@ -121,7 +121,7 @@ signals:
 ### `catalog/sources.yaml` (HU-122)
 
 ```yaml
-version: "1.2.0"
+version: "1.3.0"
 regions:
   co-boyaca-cundinamarca:
     water:  { rain: imerg, rain_contrast: [nasa_power], rain_caveat: "La lluvia sale de GPM IMERG (satélite)…", et0: nasa_power,
@@ -131,10 +131,10 @@ regions:
     soil:   { used: soilgrids }
     supply: { used: eva, contrast: [] }
     market: { used: dane_sipsa }
-planned: { soilgrids: HU-181, eva: HU-031, smap: HU-210 }
+planned: { eva: HU-031, smap: HU-210 }
 ```
 
-Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources`, ni tiene adaptador en el pipeline, ni está en `planned` hace fallar el pipeline (R8). `planned` lista las fuentes que todavía no tienen adaptador, con la HU que las trae: mientras estén ahí, lo que las usa es `insufficient_data` (R1) y el contraste no se muestra; una fuente de `planned` que ya se publica también hace fallar el pipeline, para que no se quede en la lista. `rain_caveat` es el aviso que lleva siempre la señal de agua mientras la lluvia salga de una fuente con un sesgo conocido. **Versión 1.0.0 (decidido por Felipe el 11 de noviembre de 2026):** la lluvia de `water` sale de NASA POWER de forma **temporal**, con el aviso de que en el altiplano la sobrestima (de 1,7 a 2,7 veces la del IDEAM, PR #24); cuando exista GPM IMERG (HU-207), `rain` pasa a `imerg` y POWER pasa al contraste. **Versión 1.2.0 (aprobado por Felipe el 11 de noviembre de 2026, PR #44, HU-207):** la lluvia de `water` sale de GPM IMERG (`precip_month`), que sigue mejor los meses del año que POWER, y NASA POWER (`climate_month`) pasa al contraste. El aviso no se quita: IMERG también sobrestima la lluvia en los valles del altiplano (cerca de 1,85 veces la del IDEAM en 169 estaciones), así que ahora lo dice de IMERG. `imerg` sale de `planned` porque ya se publica. Lo leen el pipeline, antes de publicar, y la API al arrancar (`common/signal_sources.py`). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
+Por región y por señal: qué fuente la calcula (`used`) y cuáles se muestran para contrastar. Un `source_id` que no está en `sources`, ni tiene adaptador en el pipeline, ni está en `planned` hace fallar el pipeline (R8). `planned` lista las fuentes que todavía no tienen adaptador, con la HU que las trae: mientras estén ahí, lo que las usa es `insufficient_data` (R1) y el contraste no se muestra; una fuente de `planned` que ya se publica también hace fallar el pipeline, para que no se quede en la lista. `rain_caveat` es el aviso que lleva siempre la señal de agua mientras la lluvia salga de una fuente con un sesgo conocido. **Versión 1.0.0 (decidido por Felipe el 11 de noviembre de 2026):** la lluvia de `water` sale de NASA POWER de forma **temporal**, con el aviso de que en el altiplano la sobrestima (de 1,7 a 2,7 veces la del IDEAM, PR #24); cuando exista GPM IMERG (HU-207), `rain` pasa a `imerg` y POWER pasa al contraste. **Versión 1.2.0 (aprobado por Felipe el 11 de noviembre de 2026, PR #44, HU-207):** la lluvia de `water` sale de GPM IMERG (`precip_month`), que sigue mejor los meses del año que POWER, y NASA POWER (`climate_month`) pasa al contraste. El aviso no se quita: IMERG también sobrestima la lluvia en los valles del altiplano (cerca de 1,85 veces la del IDEAM en 169 estaciones), así que ahora lo dice de IMERG. `imerg` sale de `planned` porque ya se publica. **Versión 1.3.0 (HU-181, 13 de noviembre de 2026; por aprobar por Felipe):** `soilgrids` sale de `planned` porque ya se publica (`grid_cells` y `soil_municipality`). Lo leen el pipeline, antes de publicar, y la API al arrancar (`common/signal_sources.py`). Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste (R1).
 
 ### Reglas de rotación como datos (`rotation_rules`, HU-062)
 

@@ -128,9 +128,9 @@ def no_dataset(tmp_path_factory, monkeypatch):
     # Ni versiones de precios bajadas (HU-222): cada prueba parte de una carpeta vacía y la API la vuelve a mirar.
     monkeypatch.setenv("AGROSENSE_MARKET_DIR", str(tmp_path_factory.mktemp("sin-precios")))
     # Ni las cachés de las fuentes de quien corre las pruebas (data/raw/): una prueba que las necesita trae las de ejemplo.
-    from pipeline.sources import imerg, nasa_power, nasadem, sipsa
+    from pipeline.sources import imerg, nasa_power, nasadem, sipsa, soilgrids
 
-    for module in (sipsa, nasa_power, nasadem, imerg):
+    for module in (sipsa, nasa_power, nasadem, imerg, soilgrids):
         monkeypatch.setattr(module, "CACHE", tmp_path_factory.mktemp(f"sin-cache-{module.SOURCE_ID}"))
     # La región de ejemplo de las pruebas usa las mismas fuentes por señal que la región piloto (catalog/sources.yaml).
     import yaml

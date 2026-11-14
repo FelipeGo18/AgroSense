@@ -41,7 +41,7 @@ def test_la_lluvia_es_de_imerg_con_su_aviso_y_power_de_contraste():
 
 
 def test_cada_fuente_esta_publicada_o_por_llegar_en_el_dataset_del_repositorio():
-    """R8 contra lo publicado: hoy POWER, IMERG y SIPSA están; SoilGrids, EVA y SMAP esperan su HU."""
+    """R8 contra lo publicado: hoy POWER, IMERG, SoilGrids y SIPSA están; EVA y SMAP esperan su HU."""
     published = set(pl.read_parquet(Path("data/published/sources.parquet"))["source_id"].to_list())
     assert check_sources(get_signal_sources(), REGION, published, set(ADAPTERS)) == []
 
@@ -54,10 +54,10 @@ def test_una_fuente_que_nadie_conoce_es_un_error():
 
 
 def test_una_fuente_con_adaptador_que_no_se_publico_no_es_un_error_y_se_avisa():
-    """Sin la caché de POWER ni la de IMERG se publica lo demás: la señal será `insufficient_data` (R1), no un pipeline
+    """Sin la caché de POWER, la de IMERG ni la de SoilGrids se publica lo demás: la señal será `insufficient_data` (R1), no un pipeline
     caído."""
     missing = check_sources(get_signal_sources(), REGION, {"dane_divipola", "dane_sipsa"}, set(ADAPTERS))
-    assert missing == ["imerg", "nasa_power"]
+    assert missing == ["imerg", "nasa_power", "soilgrids"]
 
 
 def test_una_fuente_de_planned_que_ya_se_publica_tiene_que_salir_de_la_lista():
