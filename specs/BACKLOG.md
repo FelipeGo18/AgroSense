@@ -16,7 +16,7 @@
 | [EP-01](epicas/EP-01-contratos.md) | HU-014 | Modo simulación para desarrolladores | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-021 | Clonar y ejecutar con pocos comandos | P0 | S | hecha | Probado con y sin Docker en dos máquinas (`docs/reporte-prueba-hu-021.md`) |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-022 | Lint y pruebas automáticas en cada cambio | P0 | S | hecha | Corre el comando de test con `docker compose run --rm test` para Ruff, Ruff format, pytest y web |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | en curso | Hecho para la API, las migraciones y el pipeline (8 nov); falta lo de los endpoints de cálculo, que aún no existen |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | hecha | API, migraciones y pipeline (8 nov); los endpoints de cálculo escriben sus versiones del dataset y de las reglas, nunca la consulta (14 nov) |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | La app desplegada en Google Cloud Run | P0 | M | pendiente | Cambiada el 14 nov: Cloud Run con el crédito del evento. Haider y David |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-229 | Migraciones revisadas y aplicadas con GitHub Actions | P0 | M | en curso | Revisión, comentario con el SQL y bloqueo probados en un PR (14 nov); las pruebas ya no tienen fija la última migración. Falta aplicar una migración real en la nube con su copia cifrada |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-234 | La base de datos de producción | P0 | S | pendiente | Nueva (14 nov): Cloud SQL, separada de la del equipo. Haider y David |
@@ -52,7 +52,7 @@
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | en curso | Fichas de los 7 cultivos y el descanso con fuente por valor; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-199 | Límites óptimos y absolutos de cada cultivo | P0 | M | en curso | Rangos de EcoCrop y UPRA con validación; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | en curso | `weights.yaml` 1.0.0 aprobado por Felipe (14 nov): agua 3, heladas 4, calor 2, suelo 2, oferta 1, mercado 1; falta mostrarlos en el panel de HU-122 |
-| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | L | en revisión | Contrato aprobado por Felipe el 11 nov (decisión 16); siete reglas: dos con fuente externa (Penn State, ICA) y cinco con el criterio propio registrado `criterio_equipo_2026` (enmienda de R8: solo reglas centrales con cada número apoyado en un dato externo; «criterio del equipo» en la respuesta y la web); `papa_espera` con 3 y 2 ciclos (11 nov, PR #46); los cinco criterios de `soil_health` tienen regla; falta cerrar la revisión de Felipe |
+| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | L | hecha | Contrato aprobado por Felipe el 11 nov (decisión 16); siete reglas: dos con fuente externa (Penn State, ICA) y cinco con el criterio propio registrado `criterio_equipo_2026` (enmienda de R8: solo reglas centrales con cada número apoyado en un dato externo; «criterio del equipo» en la respuesta y la web); `papa_espera` con 3 y 2 ciclos (11 nov, PR #46); los cinco criterios de `soil_health` tienen regla; mergeada el 14 nov (PR #62) |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-063 | Suelo, heladas y abonos verdes en el catálogo | P0 | M | en curso | pH con fuente; helada y calor por etapa con fuente desde HU-142 (14 nov); faltan los abonos verdes y el descanso con sus reglas, las reglas de suelo y la revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-227 | Valor como forraje en el catálogo | P1 | S | pendiente | Nueva (8 nov, decisión 14) |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-071 | Señal de agua | P0 | M | pendiente | Suma IMERG y la humedad del suelo |
@@ -64,14 +64,14 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-077 | Señal de heladas | P0 | M | pendiente | Por mes en el MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-190 | Señal de calor | P0 | M | pendiente | Por mes en el MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-191 | Aptitud del cultivo en la zona | P0 | M | en curso | Por temperatura media anual desde el 16 oct (decisión 13); con lote, corregida a su altitud. Motor y caso `not_suitable` de `/diagnostics` listos (PR #56); desde el 13 nov la API calcula la altitud del lote y corrige la temperatura con el gradiente del manifiesto (primer criterio hecho); faltan el caso `suitable`/`insufficient_data` (esperan las señales) y el cableado en `/rotations` y `/changes` |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-192 | Orden de las ventanas por factor limitante y prioridades | P0 | M | pendiente | |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-192 | Orden de las ventanas por factor limitante y prioridades | P0 | M | en curso | Motor listo (14 nov): ventanas por mes, factor limitante, promedio ponderado, alto riesgo y mejores ventanas, con `counts` compartida con HU-074. Falta el cableado a `/diagnostics` (HU-074, HU-076) |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-075 | Umbrales y pesos versionados | P0 | S | en curso | `weights.yaml` y `thresholds.yaml` 1.0.0 hechos (10 nov); oferta y mercado sin fuente (para el mercado se investigó una curva: propuesta en `docs/investigacion-decisiones.md`, 5e). Falta lo que depende del motor |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-076 | Endpoint de diagnóstico con errores claros | P0 | S | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-078 | Endpoints de catálogo y tendencias | P0 | S | en curso | `/municipalities`, `/boundary` y `/crops` hechos; faltan suelo y `/trends` |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-217 | Comparar dos periodos de la historia de la zona | P0 | M | pendiente | Nueva |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-218 | Endpoint de «Qué cambió» | P0 | S | pendiente | Nueva |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-195 | Señales de exceso de lluvia, enfermedad y cosecha | P1 | M | pendiente | |
-| [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | pendiente | Estrategias de hasta 3 ciclos |
+| [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en curso | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | pendiente | Nueva |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar estrategias por prioridades | P0 | M | pendiente | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden de las estrategias | P0 | S | pendiente | |

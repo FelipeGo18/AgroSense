@@ -15,8 +15,9 @@ from typing import Any
 
 import yaml
 
+from common.signals import P0_SIGNALS
+
 SIGNAL_SOURCES_FILE = Path(__file__).resolve().parent.parent / "catalog" / "sources.yaml"
-P0_SIGNALS = ("water", "frost", "heat", "soil", "supply", "market")
 # Lo que dice `water`: de dónde sale la lluvia, la ET0 y la humedad del suelo que se muestra para contrastar.
 WATER_SINGLE = ("rain", "et0")
 WATER_LISTS = ("rain_contrast", "soil_moisture_contrast")
