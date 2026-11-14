@@ -378,7 +378,11 @@ function Result({
     );
   }
   return (
-    <section aria-labelledby="resultado" aria-busy={diagnosis.isPending || undefined} className="flex min-w-0 flex-col gap-4 rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
+    <section
+      aria-labelledby="resultado"
+      aria-busy={diagnosis.isPending || undefined}
+      className="flex min-w-0 flex-col gap-4 rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm"
+    >
       <h2 id="resultado" className="text-[clamp(1.25rem,3vw,1.75rem)]">
         Resultado para {monthName(sentMonth)}
       </h2>
