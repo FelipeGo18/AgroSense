@@ -1,4 +1,5 @@
-"""HU-012: los endpoints de cálculo ya tienen su forma del contrato, sus ejemplos y sus validaciones; responden 501."""
+"""HU-012: los endpoints de cálculo ya tienen su forma del contrato, sus ejemplos y sus validaciones; los que todavía no
+tienen motor responden 501 (el diagnóstico ya responde, HU-076: sus pruebas están en test_diagnostico.py)."""
 
 from datetime import date, timedelta
 from pathlib import Path
@@ -64,7 +65,7 @@ def test_los_ejemplos_cubren_cada_estado():
 def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     paths = app.openapi()["paths"]
     for path, method, codes in [
-        ("/api/v1/diagnostics", "post", {"200", "401", "404", "422", "501", "503"}),
+        ("/api/v1/diagnostics", "post", {"200", "401", "404", "422", "503"}),
         ("/api/v1/rotations", "post", {"200", "401", "404", "422", "501", "503"}),
         ("/api/v1/water-plans", "post", {"200", "422", "501", "503"}),
         ("/api/v1/changes", "get", {"200", "422", "501", "503"}),
@@ -80,7 +81,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
 @pytest.mark.parametrize(
     ("method", "path", "body"),
     [
-        ("post", "/api/v1/diagnostics", DIAGNOSIS),
         ("post", "/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["papa"], "current_crop_ids": ["papa", "arveja"]}),
         ("post", "/api/v1/water-plans", WATER),
         # El agua del ciclo de un abono verde (HU-215): es una entrada válida.
@@ -130,7 +130,7 @@ def test_una_entrada_invalida_responde_422(dataset, path, body):
 
 def test_el_mes_en_curso_se_acepta_aunque_su_dia_1_ya_paso(dataset):
     first = date.today().replace(day=1).isoformat()
-    assert TestClient(app).post("/api/v1/diagnostics", json={**DIAGNOSIS, "sowing_date": first}).status_code == 501
+    assert TestClient(app).post("/api/v1/diagnostics", json={**DIAGNOSIS, "sowing_date": first}).status_code == 200
 
 
 def test_con_lot_id_y_sin_sesion_responde_401(dataset, client):
@@ -216,9 +216,6 @@ def test_suitability_reason_lee_que_limite_se_cruzo_del_motor_sin_repetir_la_com
 
 
 # ---------- HU-191: aptitud del cultivo (regla 0 de la agregación del semáforo) ----------
-# El motor todavía no la calcula: hoy el endpoint responde 501 para toda entrada válida. Estos casos fijan la forma
-# que debe tener la respuesta cuando el cableado exista (200) y la red que impide un 200 adelantado donde la aptitud
-# no se puede decidir (501, por falta de clima del municipio o de rango en la ficha del cultivo).
 
 
 def test_diagnostico_cultivo_no_apto_responde_200_con_la_forma_del_contrato(dataset_con_clima):
@@ -329,24 +326,39 @@ def test_diagnostico_no_apto_sin_lote_no_tiene_limitaciones(dataset_con_clima):
     assert response.json()["limitations"] == []
 
 
-def test_diagnostico_cultivo_apto_sigue_en_501(dataset_con_clima):
-    """Camino feliz: sin las señales todavía no se puede diagnosticar, aunque la aptitud ya se pudiera decidir."""
-    response = TestClient(app).post("/api/v1/diagnostics", json={"municipality_id": "15646", "crop_id": "papa", "sowing_date": SOON})
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "not_implemented"
+def test_diagnostico_apto_dice_la_temperatura_de_la_zona_y_el_rango_del_cultivo(dataset_con_clima):
+    """HU-191: dentro del rango, `suitable`, y la razón dice la temperatura de la zona y el rango de la ficha."""
+    body = TestClient(app).post("/api/v1/diagnostics", json={"municipality_id": "15646", "crop_id": "papa", "sowing_date": SOON}).json()
+    assert body["suitability"]["level"] == "suitable"
+    assert body["suitability"]["reasons"] == [
+        "La temperatura media anual del municipio (12,8 °C, a 2660 m) está dentro del rango de la papa (8 a 16 °C)"
+    ]
+    assert body["window"] is not None and body["signals"] is not None
 
 
-def test_diagnostico_sin_clima_del_municipio_sigue_en_501(dataset_con_clima):
-    """R1: sin `tmean_annual_c`, la aptitud es `insufficient_data` (no bloquea), pero tampoco alcanza para un 200."""
+def test_diagnostico_sin_clima_del_municipio_no_bloquea_y_lo_dice(dataset_con_clima):
+    """R1: sin `tmean_annual_c`, la aptitud es `insufficient_data`: no bloquea (se evalúa la ventana) y va a las
+    limitaciones."""
     response = TestClient(app).post("/api/v1/diagnostics", json={"municipality_id": "25899", "crop_id": "papa", "sowing_date": SOON})
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "not_implemented"
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    reason = "Sin la temperatura media anual del municipio: no se sabe si la papa se da en su zona"
+    assert (body["suitability"]["level"], body["suitability"]["score"], body["suitability"]["reasons"]) == (
+        "insufficient_data",
+        None,
+        [reason],
+    )
+    assert body["limitations"][0] == reason
+    assert body["window"] is not None and set(body["signals"]) == {"water", "frost", "heat", "soil", "supply", "market"}
 
 
-def test_diagnostico_ficha_sin_rango_completo_sigue_en_501(dataset_con_clima):
+def test_diagnostico_ficha_sin_rango_completo_no_inventa_la_aptitud(dataset_con_clima):
     """La cebolla de bulbo no tiene `tmean_max_c` con fuente: la aptitud es `insufficient_data`, nunca inventada (R8)."""
     response = TestClient(app).post(
         "/api/v1/diagnostics", json={"municipality_id": "15646", "crop_id": "cebolla_bulbo", "sowing_date": SOON}
     )
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "not_implemented"
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    reason = "La ficha de la cebolla de bulbo no tiene con fuente su rango de temperatura media anual: no se sabe si se da en su zona"
+    assert body["suitability"]["level"] == "insufficient_data" and body["suitability"]["reasons"] == [reason]
+    assert reason in body["limitations"]
