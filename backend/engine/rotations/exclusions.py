@@ -1,6 +1,7 @@
-"""Fase 1 de HU-081: motivos de exclusión que no necesitan fechas (R3; specs/01-reglas.md, «Aptitud del cultivo en la
-zona» y «Estrategias de rotación», pasos 2 a 4). Junta los motivos `rule`, `not_suitable` y `soil_ph`. Un dato que falta
-nunca excluye: da una limitación (R1). Cada motivo lleva sus fuentes (R8).
+"""Fases 1 y 2 de HU-081 (R3; specs/01-reglas.md, «Aptitud del cultivo en la zona» y «Estrategias de rotación», pasos
+2 a 4). La fase 1 junta los motivos que no necesitan fechas: `rule`, `not_suitable` y `soil_ph`. La fase 2 suma
+`high_risk` con los diagnósticos de ciclo, y el resumen arma `excluded` y los conteos. Un dato que falta nunca
+excluye: da una limitación (R1). Cada motivo lleva sus fuentes (R8).
 """
 
 from collections.abc import Callable, Mapping, Sequence
@@ -8,12 +9,14 @@ from dataclasses import dataclass
 
 from backend.engine.rotations.candidates import FALLOW, CropInfo
 from backend.engine.rotations.rules import FilterRule, Motive, rule_motives
+from backend.engine.signal_score import SignalScore
 from backend.engine.suitability import INSUFFICIENT_DATA, NOT_SUITABLE, Suitability, suitability
 
 # Lo arma la API para que la razón y las fuentes sean las de `/diagnostics`; el motor no arma ese texto.
 SuitabilityExplainer = Callable[[CropInfo, Suitability], tuple[str, tuple[str, ...]]]
 
-_KIND_ORDER = {"rule": 0, "not_suitable": 1, "soil_ph": 2}
+_KIND_ORDER = {"rule": 0, "not_suitable": 1, "soil_ph": 2, "high_risk": 3}
+CLIMATE_SIGNALS = ("water", "frost", "heat")
 
 
 @dataclass(frozen=True)
@@ -111,3 +114,66 @@ def phase1(
     motives = [*rule_motives(sequence, previous_crop_ids, crops, rules), *suit, *ph]
     motives.sort(key=lambda m: (m.cycle, _KIND_ORDER[m.kind], m.rule_id or "", m.crop_id or ""))
     return Phase1Result(tuple(motives), tuple(dict.fromkeys([*suit_lim, *ph_lim])))
+
+
+@dataclass(frozen=True)
+class SignalReason:
+    """Calificación de una señal de un ciclo con la razón y las fuentes que el diagnóstico ya armó (R5, R8)."""
+
+    score: SignalScore
+    reason: str
+    source_ids: tuple[str, ...]
+
+
+CycleDiagnosis = Mapping[str, SignalReason]
+
+
+def high_risk_motives(sequence: Sequence[str | None], diagnoses: Sequence[CycleDiagnosis | None]) -> list[Motive]:
+    """Fase 2: un motivo `high_risk` por cada señal de clima `unfavorable` y crítica de un ciclo, sin mirar los pesos:
+    un riesgo grave no lo compensa nada (R2). El descanso (`None`) no se revisa; `supply`, `market` y `soil` nunca
+    excluyen. Orden: por ciclo y, dentro del ciclo, el de `CLIMATE_SIGNALS` (R4). Un diagnóstico por ciclo: si las
+    longitudes no coinciden, falla (un ciclo sin revisar podría esconder un riesgo grave)."""
+    motives: list[Motive] = []
+    for cycle, (crop_id, diagnosis) in enumerate(zip(sequence, diagnoses, strict=True), start=1):
+        for name in CLIMATE_SIGNALS if diagnosis is not None else ():
+            found = diagnosis.get(name)
+            if found is not None and found.score.level == "unfavorable" and found.score.critical:
+                motives.append(Motive("high_risk", cycle, found.reason, tuple(found.source_ids), signal=name, crop_id=crop_id))
+    return motives
+
+
+@dataclass(frozen=True)
+class Excluded:
+    """Una estrategia descartada con su primer motivo y cuántos motivos tuvo en total."""
+
+    crop_ids: tuple[str, ...]
+    motive: Motive
+    motive_count: int
+
+
+@dataclass(frozen=True)
+class ExclusionSummary:
+    excluded: tuple[Excluded, ...]
+    counts: dict[str, int]
+
+
+def summarize_exclusions(strategies: Sequence[tuple[Sequence[str], Sequence[Motive]]], limit: int = 10) -> ExclusionSummary:
+    """Arma `excluded` y `counts`. Cada descartada cuenta una vez, por su primer motivo en el orden `rule`,
+    `not_suitable`, `soil_ph`, `high_risk`; con el mismo `kind` gana el de menor ciclo (S2). `counts` trae siempre las
+    cuatro llaves. `excluded` va por `motive_count` y luego por `crop_ids` (R4), cortado en `limit`."""
+    counts = dict.fromkeys(_KIND_ORDER, 0)
+    rows: list[Excluded] = []
+    for crop_ids, motives in strategies:
+        first = min(motives, key=lambda m: (_KIND_ORDER[m.kind], m.cycle))
+        counts[first.kind] += 1
+        rows.append(Excluded(tuple(crop_ids), first, len(motives)))
+    rows.sort(key=lambda e: (e.motive_count, e.crop_ids))
+    return ExclusionSummary(tuple(rows[:limit]), counts)
+
+
+def current_issues(result: Phase1Result, high_risk: Sequence[Motive]) -> tuple[Motive, ...]:
+    """`issues` de la estrategia actual: todos los motivos de las dos fases, sin quitar repetidos (S3), por ciclo, luego
+    por `kind` y luego por `rule_id`, `signal` y `crop_id` (S1, R4). Nunca se excluye en silencio."""
+    both = [*result.motives, *high_risk]
+    both.sort(key=lambda m: (m.cycle, _KIND_ORDER[m.kind], m.rule_id or "", m.signal or "", m.crop_id or ""))
+    return tuple(both)
