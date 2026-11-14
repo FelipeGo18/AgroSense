@@ -131,7 +131,7 @@ const DIAGNOSIS = {
   signals: {
     water: signal("favorable", 82, "En 8 de los últimos 10 años la lluvia cubrió lo que necesita"),
     frost: signal("favorable", 72, "Heló en la floración 4 de cada 100 años"),
-    heat: signal("favorable", 95, "La máxima rara vez pasa de 22 °C"),
+    heat: signal("favorable", 95, "La máxima pasó de 22 °C uno de cada diez días"),
     soil: signal("favorable", 78, "pH estimado en el rango del cultivo"),
     supply: signal("favorable", 76, "Se sembró menos que antes"),
     market: signal(null, null, "Sin datos de precios"),
