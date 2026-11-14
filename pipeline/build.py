@@ -39,7 +39,7 @@ import yaml
 from common import signal_sources
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import climate_normals, climate_risk, schema
+from pipeline import climate_change, climate_normals, climate_risk, schema
 from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin
 
@@ -242,6 +242,28 @@ def validate_frost(
         raise ValidationError(f"`climate_frost_month` con un mes o unos días fuera de lo permitido: {bad.head(3).to_dicts()}")
 
 
+def validate_change(change: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame, periods: list) -> None:
+    """`climate_change_month` (HU-216) solo trae municipios publicados (R7), meses de 1 a 12, frecuencias de 0 a 100,
+    lluvia no negativa, periodos de `region.yaml` con su misma fuente (decisión 11) y fuentes que existen (R8)."""
+    extra = set(change["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`climate_change_month` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    bad = change.filter(
+        ~pl.col("month").is_between(1, 12) | ~pl.col("frost_freq_pct").is_between(0, 100) | (pl.col("precip_normal_mm") < 0)
+    )
+    if not bad.is_empty():
+        raise ValidationError(
+            f"`climate_change_month` con un mes, una frecuencia o una lluvia fuera de lo permitido: {bad.head(3).to_dicts()}"
+        )
+    allowed = {(p.period_id, p.source_id) for p in periods}
+    wrong = set(change.select("period_id", "source_id").unique().iter_rows()) - allowed
+    if wrong:
+        raise ValidationError(f"`climate_change_month` trae un periodo que no es de esa fuente en region.yaml: {sorted(wrong)}")
+    unknown = set(change["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`climate_change_month` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`grid_cells` solo trae celdas de municipios publicados (R7) y cita fuentes que existen (R8)."""
     extra = set(grid["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
@@ -284,6 +306,7 @@ def publish(
     climate_month: pl.DataFrame | None = None,
     precip_month: pl.DataFrame | None = None,
     frost: tuple[pl.DataFrame, pl.DataFrame] | None = None,
+    change: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
@@ -318,6 +341,10 @@ def publish(
     if has_precip:
         validate_precip_month(precip_month, municipalities, sources)
     has_frost = frost is not None and not frost[0].is_empty()
+    change_periods = climate_change.periods_from_region(region)
+    has_change = change is not None and not change.is_empty()
+    if has_change:
+        validate_change(change, municipalities, sources, change_periods)
     if has_frost:
         validate_frost(frost[0], frost[1], municipalities, sources, climate_risk.frost_source(region))
     has_grid = grid is not None and not grid.is_empty()
@@ -341,6 +368,8 @@ def publish(
         tables["precip_month"] = precip_month
     if has_frost:
         tables["climate_risk_month"], tables["climate_frost_month"] = frost
+    if has_change:
+        tables["climate_change_month"] = change
     if has_grid:
         tables["grid_cells"] = grid
     if prices is not None:
@@ -363,8 +392,8 @@ def publish(
         "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "region": {**region["region"], **lapse_rate_entry(region)},
-        # Los periodos de «Qué cambió» llegan con HU-216.
-        "periods": [],
+        # Los periodos de «Qué cambió» (HU-216): solo los de las fuentes que se publicaron.
+        "periods": [p.manifest() for p in change_periods if has_change and p.source_id in set(change["source_id"].to_list())],
         "tables": {
             "municipalities": {"rows": municipalities.height, "coverage": region["region"]["name"]},
             "sources": {"rows": sources.height, "coverage": "todas las fuentes de lo publicado"},
@@ -402,6 +431,10 @@ def publish(
         years = f"de {by_year['year'].min()} a {by_year['year'].max()}"
         coverage = f"{by_year['municipality_id'].n_unique()} municipios con altitud; días con mínima ≤ {threshold:g} °C por mes, {years}"
         manifest["tables"]["climate_frost_month"] = {"rows": by_year.height, "coverage": coverage}
+    if has_change:
+        names = ", ".join(f"{p.period_id} ({p.source_id})" for p in change_periods)
+        coverage = f"{change['municipality_id'].n_unique()} municipios; periodos {names}"
+        manifest["tables"]["climate_change_month"] = {"rows": change.height, "coverage": coverage}
     if has_grid:
         coverage = f"Celdas de 0,0025° de {grid['municipality_id'].n_unique()} municipios; sin suelo hasta HU-181"
         manifest["tables"]["grid_cells"] = {"rows": grid.height, "coverage": coverage}
@@ -635,6 +668,8 @@ def build(
     municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
     precip_month, rain_sources = precip_from_cache(region, boundaries, rain_cache)
     frost = frost_tables(region, climate)
+    # «Qué cambió» (HU-216): los indicadores de cada periodo de region.yaml, cada uno de una sola fuente.
+    change = climate_change.climate_change_month(region, climate, climate_month, precip_month)
     # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
     normal = climate_normals.Normal.from_region(region)
     if climate is not None and not climate.is_empty():
@@ -679,7 +714,20 @@ def build(
     check_signal_sources(region["region"]["id"], set(sources["source_id"].to_list()))
     crops = (catalog["version"], crops_table, stages_table)
     return publish(
-        region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid, climate_month, precip_month, frost
+        region,
+        municipalities,
+        sources,
+        folder,
+        boundaries,
+        crops,
+        prices,
+        crop_products,
+        climate,
+        grid,
+        climate_month,
+        precip_month,
+        frost,
+        change,
     )
 
 
