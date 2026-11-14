@@ -64,11 +64,11 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   | «Qué cambió» | HU-216 y HU-218 | Luisa (HU-216) y Juan David (HU-218) | PR 3 |
   | Cuentas | HU-165 | Haider | PR 3 |
 - **Casos de las cuentas** (contra el PostgreSQL de Compose; lo que dicen del progreso se comprueba cuando exista HU-167, P1):
-  - [ ] Dividir: una temporada cosechada de 1 ha con dos sucesoras de 0,5 ha cada una se acepta, y el progreso da dos relaciones
-  - [ ] Juntar: dos temporadas cosechadas de 0,5 ha con una sucesora de 1 ha se acepta, y el progreso da dos relaciones hacia la misma
-  - [ ] Área que no cabe: en un lote de 1 ha, las sucesoras de una temporada cosechada de 1 ha que suman 1,2 ha responden 422, porque las temporadas en curso pasarían del área del lote
-  - [ ] Terreno anterior más terreno libre: después de una temporada cosechada de 1 ha, una sucesora de 1,5 ha se acepta si hay 0,5 ha libres en el lote
-  - [ ] `follows_season_ids` con una temporada de otro lote, sin cosechar o cosechada después de la nueva siembra responde 422
+  - [ ] Dividir: una temporada cosechada de 1 ha con dos sucesoras de 0,5 ha cada una se acepta, y el progreso da dos relaciones (se acepta: `tests/accounts/test_casos_referencia.py`; el progreso queda pendiente de HU-167, P1)
+  - [ ] Juntar: dos temporadas cosechadas de 0,5 ha con una sucesora de 1 ha se acepta, y el progreso da dos relaciones hacia la misma (se acepta: `tests/accounts/test_casos_referencia.py`; el progreso queda pendiente de HU-167, P1)
+  - [x] Área que no cabe: en un lote de 1 ha, las sucesoras de una temporada cosechada de 1 ha que suman 1,2 ha responden 422, porque las temporadas en curso pasarían del área del lote (`tests/accounts/test_casos_referencia.py`)
+  - [x] Terreno anterior más terreno libre: después de una temporada cosechada de 1 ha, una sucesora de 1,5 ha se acepta si hay 0,5 ha libres en el lote (`tests/accounts/test_casos_referencia.py`: lote de 2 ha con 0,5 ha en curso, así que quedan 1,5 ha libres; 1,5 ha cabe y 1,6 ha da 422)
+  - [x] `follows_season_ids` con una temporada de otro lote, sin cosechar o cosechada después de la nueva siembra responde 422 (`tests/accounts/test_siembras.py`, `test_lo_de_antes_tiene_que_ser_una_cosecha_valida_del_mismo_lote`)
   - [ ] P1 (con HU-204): una temporada borrada aparece en el historial con `restorable_until` y vuelve al restaurarla
 - **Reglas que aplican:** R1, R2, R3, R4, R9
 - **Notas:** Los casos nuevos se agregaron el 11 de octubre de 2026 con el cambio a ventanas de siembra y, el mismo día, con las prioridades, el factor limitante, las alternativas y la división de lotes (decisión 10), y después con las estrategias, la salud del suelo, las fuentes de lluvia y «Qué cambió» (decisión 12). Pasa de M a L.
