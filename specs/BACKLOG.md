@@ -17,8 +17,11 @@
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-021 | Clonar y ejecutar con pocos comandos | P0 | S | hecha | Probado con y sin Docker en dos máquinas (`docs/reporte-prueba-hu-021.md`) |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-022 | Lint y pruebas automáticas en cada cambio | P0 | S | hecha | Corre el comando de test con `docker compose run --rm test` para Ruff, Ruff format, pytest y web |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | en curso | Hecho para la API, las migraciones y el pipeline (8 nov); falta lo de los endpoints de cálculo, que aún no existen |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | Esqueleto desplegado en URL pública | P0 | M | pendiente | Con la base de datos en la nube (10 nov) |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | La app desplegada en Google Cloud Run | P0 | M | pendiente | Cambiada el 14 nov: Cloud Run con el crédito del evento. Haider y David |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-229 | Migraciones revisadas y aplicadas con GitHub Actions | P0 | M | en curso | Revisión, comentario con el SQL y bloqueo probados en un PR (14 nov); las pruebas ya no tienen fija la última migración. Falta aplicar una migración real en la nube con su copia cifrada |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-234 | La base de datos de producción | P0 | S | pendiente | Nueva (14 nov): Cloud SQL, separada de la del equipo. Haider y David |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-235 | Desplegar al fusionar en `produccion` | P0 | M | pendiente | Nueva (14 nov): workflow con migraciones y Cloud Run. Haider y David |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-236 | El dominio con HTTPS | P0 | S | pendiente | Nueva (14 nov): dominio gratis de GoDaddy Registry (Porkbun). Haider y David |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-031 | Datos de EVA normalizados por DIVIPOLA | P0 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-032 | Variación del área sembrada y participación departamental | P0 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-200 | Siembras registradas en AgroSense como dato de oferta | P1 | M | pendiente | |
@@ -49,7 +52,7 @@
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | en curso | Fichas de los 7 cultivos y el descanso con fuente por valor; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-199 | Límites óptimos y absolutos de cada cultivo | P0 | M | en curso | Rangos de EcoCrop y UPRA con validación; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | en curso | Archivo con pesos provisionales y `GET /version`; falta la propuesta de Producto y agro y su aprobación |
-| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | M | pendiente | Suma la salud del suelo |
+| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | L | en revisión | Contrato aprobado por Felipe el 11 nov (decisión 16); siete reglas: dos con fuente externa (Penn State, ICA) y cinco con el criterio propio registrado `criterio_equipo_2026` (enmienda de R8: solo reglas centrales con cada número apoyado en un dato externo; «criterio del equipo» en la respuesta y la web); `papa_espera` con 3 y 2 ciclos (11 nov, PR #46); los cinco criterios de `soil_health` tienen regla; falta cerrar la revisión de Felipe |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-063 | Suelo, heladas y abonos verdes en el catálogo | P0 | M | en curso | pH con fuente; helada y calor por etapa con fuente desde HU-142 (14 nov); faltan los abonos verdes y el descanso con sus reglas, las reglas de suelo y la revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-227 | Valor como forraje en el catálogo | P1 | S | pendiente | Nueva (8 nov, decisión 14) |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-071 | Señal de agua | P0 | M | pendiente | Suma IMERG y la humedad del suelo |
@@ -91,7 +94,7 @@
 | [EP-11](epicas/EP-11-escenarios.md) | HU-111 | Reevaluar con cambios en memoria | P1 | M | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-112 | Endpoint de escenarios | P1 | S | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-113 | Comparación de escenarios | P1 | M | pendiente | |
-| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | pendiente | Suma estrategias y «Qué cambió» |
+| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | en curso | Suma estrategias y «Qué cambió». Tres PR: estrategias y suelo, diagnóstico y aptitud, «Qué cambió» y cuentas. Casos de ejemplo y casos reales con dataset fijado |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources`, `/version` y `catalog/sources.yaml` (11 nov, lluvia de POWER temporal con aviso); faltan las fuentes NASA sin adaptador y la web |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-123 | Reconstruir el dataset con un comando | P0 | S | hecha | `pipeline.build` publica y revisa contra el manifiesto; `--verificar` solo revisa (8 nov) |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-131 | Dos casos reales para la demo | P0 | S | pendiente | |
@@ -121,6 +124,7 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente | |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | en curso | GSAP y Lenis se cargan aparte: en modo ligero el JS inicial baja de 197 a 149 kB; verificados sin WebGL y con «reducir movimiento» (12 nov). Falta el Figma y el paso a 2D de la escena 3D (P1) |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P1 | L | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-233 | La web en español y en inglés | P0 | L | pendiente | Nueva (14 nov): la guía de entrega pide todo en inglés. Juan Ortiz |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P1 | S | hecha | Backend, pantallas y «Sus prioridades» hechos; revisión de seguridad hecha. Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P1 | M | en curso | Tabla, eventos de la cuenta y «Mi actividad» hechos; revisión de seguridad hecha y limpieza de 180 días al arrancar; faltan los permisos de solo agregar y la limpieza con otro rol |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-170 | Roles: agricultor, administrador y desarrollador | P1 | L | pendiente | |
