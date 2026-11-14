@@ -88,6 +88,10 @@ def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
         (lambda d: crop(d, "papa")["stages"]["list"][0].update(heat_sensitive={"v": True}), "no cita una fuente"),
         (lambda d: crop(d, "papa")["stages"]["list"][0].update(heat_sensitive={"v": True, "s": "inventada"}), "no cita una fuente"),
         (lambda d: crop(d, "papa")["stages"]["list"][0].update(frost_sensitive={"v": "sí", "s": "fao_ecocrop"}), "true o false"),
+        # HU-144: la raíz va completa, ordenada y con `p` entre 0 y 1.
+        (lambda d: crop(d, "papa").pop("depletion_p"), "completa"),
+        (lambda d: crop(d, "papa").update(root_depth_min_m={"v": 0.9, "s": "fao_56_tabla_22"}), "la mínima primero"),
+        (lambda d: crop(d, "papa").update(depletion_p={"v": 1.5, "s": "fao_56_tabla_22"}), "entre 0 y 1"),
     ],
 )
 def test_un_catalogo_que_no_cumple_no_se_publica(change, message):

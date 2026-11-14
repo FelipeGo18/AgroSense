@@ -37,7 +37,8 @@ def test_lo_que_necesita_el_cultivo_sigue_el_kc_de_cada_etapa():
     result = wb.water_balance(WINDOW, climate(0.0, 0.0))
     april, may = result.months
     # Abril: inicial 10 × 0,5; desarrollo en recta de 0,5 a 1,0 (10 × 0,5 + 0,5 × 5,5); media 10 × 1,0.
-    assert april.need_mm == pytest.approx(5 + 7.75 + 10, abs=0.05)
+    # Se publica con un decimal.
+    assert april.need_mm == pytest.approx(5 + 7.75 + 10, abs=0.06)
     # Mayo: la final en recta de 1,0 a 0,6.
     assert may.need_mm == pytest.approx(10 - 0.4 * 5.5, abs=0.05)
     assert (april.stages, may.stages, may.days) == (("initial", "development", "mid"), ("late",), 10)
@@ -64,10 +65,9 @@ def test_un_suelo_arenoso_da_un_deficit_mayor_o_igual_que_uno_arcilloso():
 def test_el_rango_va_de_la_raiz_y_el_agua_mas_altas_a_las_mas_bajas():
     # Arena: de 0,01 a 0,03 m³/m³; raíz de 0,4 a 0,6 m; p = 0,5: guarda de 2 a 9 mm.
     assert wb.storable_mm("arenoso", ROOT) == pytest.approx((2.0, 9.0))
+    # Abril llena el suelo; mayo necesita 7,8 mm y no llueve: con 9 mm guardados no falta nada, con 2 faltan 5,8.
     result = wb.water_balance(WINDOW, climate(200.0, 0.0), "arenoso", ROOT)
-    low, high = result.deficit_mm["normal"]
-    assert low < high
-    assert high - low == pytest.approx(7.0, abs=0.1)
+    assert result.deficit_mm["normal"] == pytest.approx((0.0, 5.8), abs=0.06)
 
 
 def test_sin_textura_o_sin_raiz_no_hay_agua_guardada_y_se_dice():

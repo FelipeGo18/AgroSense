@@ -255,8 +255,7 @@ def water_balance(
         )
     has_need = all(month.need_mm is not None for month in months)
     deficit_total = {
-        year: (round(total[(year, "low")], 1), round(total[(year, "high")], 1)) if complete[year] and has_need else None
-        for year in YEARS
+        year: (round(total[(year, "low")], 1), round(total[(year, "high")], 1)) if complete[year] and has_need else None for year in YEARS
     }
     status = AVAILABLE if has_need and any(value is not None for value in deficit_total.values()) else INSUFFICIENT_DATA
     return WaterBalance(

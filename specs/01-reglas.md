@@ -102,6 +102,8 @@ Los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de refe
 
 Sin la textura del suelo, el agua se calcula sin retención y se agrega a las limitaciones.
 
+**El balance hídrico (M7, HU-144; `backend/engine/water_balance.py`).** Por mes de la ventana: lo que necesita el cultivo es la ET0 normal por el Kc de cada día (FAO-56, con el Kc en línea recta en el desarrollo y en la etapa final); la lluvia efectiva es 0,8 P - 25 con más de 75 mm al mes y 0,6 P - 10 con menos, nunca negativa (FAO, manual de riego n.º 3, 1986, sección 4.2); lo que sobra un mes queda en el suelo hasta RAW = p × 1000 × agua disponible × raíz (FAO-56, ecuaciones 82 y 83 y tabla 22; el agua disponible de cada textura es la de la tabla 2-1 del NRCS, NEH parte 652, cap. 2) y se gasta en los meses siguientes; el déficit es lo que falta. Es un rango (R10): el más bajo con el agua disponible y la raíz más altas, el más alto con las más bajas. Supuestos por confirmar con Felipe: el suelo empieza la ventana sin agua guardada; la raíz tiene su profundidad máxima desde la siembra; `p` sin el ajuste por la ET del día. Un mes sin ET0 o sin la lluvia de la fuente no tiene déficit, y el total tampoco (R1).
+
 Una señal es **crítica** cuando su calificación baja del umbral crítico de `thresholds.yaml`. Los cortes de la tabla también viven ahí y se pueden ajustar con evidencia.
 
 ## Las prioridades del agricultor
