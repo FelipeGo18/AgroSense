@@ -7,18 +7,97 @@
 import type { MascotMood } from "@/components/mascot/Mascot";
 
 /**
- * Paradas del recorrido, en orden: cada una es una sección con un lugar para la mascota, que va guiando de una a la otra
- * como en Inicio y termina en el pie de página. «Pesos» y «Fuentes» salen de GET /version: sin ellos, el recorrido
+ * Paradas del recorrido, en orden: cada una tiene un lugar para la mascota, que baja por la explicación paso a paso
+ * (como en Inicio) y termina en el pie de página. «Pesos» y «Fuentes» salen de GET /version: sin ellos, el recorrido
  * se las salta.
  */
-export const STOPS_BASE = ["inicio", "como-se-decide", "no-hace"] as const;
-export const STOPS_WITH_DATA = ["inicio", "como-se-decide", "pesos", "fuentes", "no-hace"] as const;
+const PATH = ["inicio", "paso-1", "paso-2", "paso-3", "paso-4", "paso-5", "paso-6", "nota", "luces"] as const;
+export const STOPS_BASE = [...PATH, "no-hace"] as const;
+export const STOPS_WITH_DATA = [...PATH, "pesos", "fuentes", "no-hace"] as const;
 export type StopId = (typeof STOPS_WITH_DATA)[number];
 
-/** Lo que dice la mascota al llegar a cada parada y a dónde invita a seguir. */
-export const GUIDE: Record<Exclude<StopId, "inicio">, { say: string; mood: MascotMood; next: StopId | null; nextLabel: string }> = {
-  "como-se-decide": {
-    say: "Así decido: primero si el cultivo se da en su zona, después seis señales y un semáforo por reglas.",
+/** Lo que dice la mascota en una parada y a dónde invita a seguir. */
+export interface GuideLine {
+  say: string;
+  mood: MascotMood;
+  next: StopId | null;
+  nextLabel: string;
+}
+
+export interface Step extends GuideLine {
+  id: StopId;
+  title: string;
+  body: string;
+}
+
+/** Cómo se decide, en el orden en que lo hace el motor. Cada paso es una parada del recorrido. */
+export const STEPS: Step[] = [
+  {
+    id: "paso-1",
+    title: "Estrategias para su terreno",
+    body: "Armamos rotaciones de hasta 3 ciclos que cumplen las reglas agronómicas, cada una con su fuente, y las comparamos por agua, suelo, ingreso y riesgo, también contra la rotación que usted ya hace. Es una comparación: no predice cuánto mejora su suelo.",
+    say: "Empiezo por su terreno: junto cultivos en orden y descarto los que rompen una regla.",
+    mood: "guide",
+    next: "paso-2",
+    nextLabel: "Siguiente paso",
+  },
+  {
+    id: "paso-2",
+    title: "¿Se da en su zona?",
+    body: "Primero miramos si el cultivo se da con la temperatura media de su municipio (NASA POWER, corregida por la altitud con NASADEM), según su ficha. Si no se da, se lo decimos y no evaluamos fechas.",
+    say: "Antes de mirar fechas, reviso si el cultivo aguanta la temperatura de su zona.",
+    mood: "watch",
+    next: "paso-3",
+    nextLabel: "Siguiente paso",
+  },
+  {
+    id: "paso-3",
+    title: "Seis señales de 0 a 100",
+    body: "Para la fecha que eligió y lo que dura el cultivo: agua, heladas, calor, suelo, oferta y mercado. Cada una se compara con lo que ese cultivo necesita o aguanta.",
+    say: "Luego califico seis señales, cada una contra lo que ese cultivo necesita.",
+    mood: "guide",
+    next: "paso-4",
+    nextLabel: "Siguiente paso",
+  },
+  {
+    id: "paso-4",
+    title: "Un semáforo por reglas",
+    body: "Una señal mala y grave basta para el rojo: no se compensa con las buenas. Sin datos de agua no damos semáforo; sin datos de oferta, se calcula sin ella.",
+    say: "Si una señal grave sale mal, pongo rojo aunque las demás estén bien.",
+    mood: "deny",
+    next: "paso-5",
+    nextLabel: "Siguiente paso",
+  },
+  {
+    id: "paso-5",
+    title: "Sus prioridades",
+    body: "Cada señal pesa de 0 a 5. Un riesgo grave de agua, heladas o calor cuenta siempre. Si su luz y la de AgroSense difieren, le mostramos las dos.",
+    say: "Usted dice qué le importa más. Si su luz y la mía no coinciden, le muestro las dos.",
+    mood: "watch",
+    next: "paso-6",
+    nextLabel: "Siguiente paso",
+  },
+  {
+    id: "paso-6",
+    title: "Las mejores fechas",
+    body: "Ordenamos las fechas del año por lo que más limita a cada una y, entre parecidas, por sus prioridades. Una fecha con un riesgo grave nunca queda entre las mejores.",
+    say: "Al final ordeno las fechas: primero lo que más limita, después lo que usted prefiere.",
+    mood: "celebrate",
+    next: "nota",
+    nextLabel: "Ver cómo leo una nota",
+  },
+];
+
+/** Lo que dice la mascota en las paradas que no son pasos. */
+export const GUIDE: Record<"nota" | "luces" | "pesos" | "fuentes" | "no-hace", GuideLine> = {
+  nota: {
+    say: "Una nota de 70 o más es favorable; por debajo de 40, desfavorable.",
+    mood: "guide",
+    next: "luces",
+    nextLabel: "Ver las luces",
+  },
+  luces: {
+    say: "Y así se ven las luces del semáforo. Sin datos de agua, no doy luz.",
     mood: "guide",
     next: "pesos",
     nextLabel: "Ver cuánto pesa cada señal",
@@ -42,39 +121,6 @@ export const GUIDE: Record<Exclude<StopId, "inicio">, { say: string; mood: Masco
     nextLabel: "Volver arriba",
   },
 };
-
-export interface Step {
-  title: string;
-  body: string;
-}
-
-/** Cómo se decide, en el orden en que lo hace el motor. */
-export const STEPS: Step[] = [
-  {
-    title: "Estrategias para su terreno",
-    body: "Armamos rotaciones de hasta 3 ciclos que cumplen las reglas agronómicas, cada una con su fuente, y las comparamos por agua, suelo, ingreso y riesgo, también contra la rotación que usted ya hace. Es una comparación: no predice cuánto mejora su suelo.",
-  },
-  {
-    title: "¿Se da en su zona?",
-    body: "Primero miramos si el cultivo se da con la temperatura media de su municipio (NASA POWER, corregida por la altitud con NASADEM), según su ficha. Si no se da, se lo decimos y no evaluamos fechas.",
-  },
-  {
-    title: "Seis señales de 0 a 100",
-    body: "Para la fecha que eligió y lo que dura el cultivo: agua, heladas, calor, suelo, oferta y mercado. Cada una se compara con lo que ese cultivo necesita o aguanta.",
-  },
-  {
-    title: "Un semáforo por reglas",
-    body: "Una señal mala y grave basta para el rojo: no se compensa con las buenas. Sin datos de agua no damos semáforo; sin datos de oferta, se calcula sin ella.",
-  },
-  {
-    title: "Sus prioridades",
-    body: "Cada señal pesa de 0 a 5. Un riesgo grave de agua, heladas o calor cuenta siempre. Si su luz y la de AgroSense difieren, le mostramos las dos.",
-  },
-  {
-    title: "Las mejores fechas",
-    body: "Ordenamos las fechas del año por lo que más limita a cada una y, entre parecidas, por sus prioridades. Una fecha con un riesgo grave nunca queda entre las mejores.",
-  },
-];
 
 /** De la calificación al nivel (specs/01-reglas.md, «Cómo se califica cada señal»). */
 export const BANDS = [

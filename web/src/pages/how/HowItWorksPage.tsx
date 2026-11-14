@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { Link } from "react-router";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
@@ -17,7 +17,7 @@ import { useActiveSection } from "@/hooks/useActiveSection";
 import { useAnimated } from "@/hooks/useLightMode";
 import { useMotionEffect } from "@/hooks/useMotionEffect";
 import { gsap } from "@/lib/motion";
-import { BANDS, GUIDE, NEVER, STEPS, STOPS_BASE, STOPS_WITH_DATA, type StopId } from "./content";
+import { BANDS, GUIDE, NEVER, STEPS, STOPS_BASE, STOPS_WITH_DATA, type GuideLine, type StopId } from "./content";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 const LIGHTS: Light[] = ["green", "yellow", "red", "not_evaluable"];
@@ -62,12 +62,12 @@ export function splitSources(rows: Version["sources"]): { nasa: Source[]; others
  * La mascota en una parada: su lugar y lo que dice, con el enlace a la parada siguiente. El texto va en HTML: la mascota
  * es decoración y nunca es la única forma de decirlo.
  */
-function GuideNote({ stop }: { stop: Exclude<StopId, "inicio"> }) {
+function GuideNote({ stop, line, flip = false }: { stop: StopId; line: GuideLine; flip?: boolean }) {
   const { scrollTo } = useScroll();
-  const { say, mood, next, nextLabel } = GUIDE[stop];
+  const { say, mood, next, nextLabel } = line;
   const target = next ?? "inicio";
   return (
-    <div className="flex items-end gap-2 self-end">
+    <div className={`flex items-end gap-2 ${flip ? "md:flex-row-reverse" : ""}`}>
       <MascotSlot id={stop} mood={mood} className="w-[84px] md:w-[120px]" />
       <div className="relative mb-3 max-w-[19rem] min-w-0 px-4 pt-3 pb-4 text-sm">
         <Plate c={12} fill="var(--color-superficie-panel)" stroke="var(--color-paleta-noche)" strokeWidth={2.5} />
@@ -87,15 +87,39 @@ function GuideNote({ stop }: { stop: Exclude<StopId, "inicio"> }) {
   );
 }
 
-function SectionTitle({ title, sub, stop }: { title: string; sub?: string; stop: Exclude<StopId, "inicio"> }) {
+function SectionTitle({ title, sub, stop }: { title: string; sub?: string; stop: keyof typeof GUIDE }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div className="flex max-w-[880px] min-w-0 flex-col gap-2">
         <h2 className="text-[clamp(1.5rem,3vw,2rem)]">{title}</h2>
         {sub && <p className="text-texto-secundario">{sub}</p>}
       </div>
-      <GuideNote stop={stop} />
+      <GuideNote stop={stop} line={GUIDE[stop]} />
     </div>
+  );
+}
+
+/**
+ * Un tramo del camino de «Cómo se decide»: la tarjeta a un lado y la mascota con su frase al otro, alternando en
+ * escritorio. En el celular, la mascota va encima de la tarjeta. Una línea punteada une cada tramo con el anterior.
+ */
+function PathStop({ stop, line, index, children }: { stop: StopId; line: GuideLine; index: number; children: ReactNode }) {
+  const flip = index % 2 === 1;
+  return (
+    <li
+      id={stop}
+      data-reveal-item
+      className={`relative flex scroll-mt-32 flex-col-reverse gap-3 md:flex-row md:items-center md:gap-8 ${flip ? "md:flex-row-reverse" : ""} ${
+        index
+          ? "before:absolute before:-top-8 before:left-1/2 before:h-8 before:border-l-4 before:border-dashed before:border-paleta-calabaza"
+          : ""
+      }`}
+    >
+      <div className="min-w-0 md:w-[58%]">{children}</div>
+      <div className={`flex min-w-0 md:flex-1 ${flip ? "md:justify-end" : ""}`}>
+        <GuideNote stop={stop} line={line} flip={flip} />
+      </div>
+    </li>
   );
 }
 
@@ -328,17 +352,14 @@ export function HowItWorksPage() {
               <MascotSlot id="inicio" mood="guide" className="hidden w-[200px] lg:block" />
             </div>
 
-            <section id="como-se-decide" className="flex scroll-mt-32 flex-col gap-6" aria-labelledby="como-se-decide-titulo">
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <h2 id="como-se-decide-titulo" className="text-[clamp(1.5rem,3vw,2rem)]">
-                  Cómo se decide
-                </h2>
-                <GuideNote stop="como-se-decide" />
-              </div>
-              <ol data-reveal className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <section className="flex flex-col gap-8" aria-labelledby="como-se-decide-titulo">
+              <h2 id="como-se-decide-titulo" className="text-[clamp(1.5rem,3vw,2rem)]">
+                Cómo se decide
+              </h2>
+              <ol data-reveal className="flex flex-col gap-8">
                 {STEPS.map((step, i) => (
-                  <li key={step.title} data-reveal-item className="flex">
-                    <Card className="w-full">
+                  <PathStop key={step.id} stop={step.id} line={step} index={i}>
+                    <Card>
                       <span
                         aria-hidden="true"
                         className="inline-flex size-10 shrink-0 items-center justify-center self-start bg-paleta-calabaza font-bold"
@@ -346,41 +367,43 @@ export function HowItWorksPage() {
                         {i + 1}
                       </span>
                       <h3 className="min-w-0 text-[1.125rem]">{step.title}</h3>
-                      <p className="text-sm">{step.body}</p>
+                      <p>{step.body}</p>
                     </Card>
-                  </li>
+                  </PathStop>
                 ))}
+                <PathStop stop="nota" line={GUIDE.nota} index={STEPS.length}>
+                  <Card>
+                    <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">De la nota al nivel</h3>
+                    <ul data-bands className="flex gap-[3px]">
+                      {BANDS.map((band) => (
+                        <li
+                          key={band.label}
+                          className={`flex min-w-0 flex-col items-center px-1 py-2 text-center text-sm font-bold ${band.ink}`}
+                          style={{ background: band.fill, flexGrow: band.to - band.from + 1, flexBasis: 0 }}
+                        >
+                          {band.label}
+                          <span className="font-normal">
+                            {band.from} a {band.to}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-texto-secundario">Una señal sin datos no tiene nota y no cuenta como riesgo.</p>
+                  </Card>
+                </PathStop>
+                <PathStop stop="luces" line={GUIDE.luces} index={STEPS.length + 1}>
+                  <Card>
+                    <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">Las luces</h3>
+                    <ul className="flex flex-wrap gap-4">
+                      {LIGHTS.map((light) => (
+                        <li key={light}>
+                          <TrafficLightBadge light={light} />
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                </PathStop>
               </ol>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Card>
-                  <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">De la nota al nivel</h3>
-                  <ul data-bands className="flex gap-[3px]">
-                    {BANDS.map((band) => (
-                      <li
-                        key={band.label}
-                        className={`flex min-w-0 flex-col items-center px-1 py-2 text-center text-sm font-bold ${band.ink}`}
-                        style={{ background: band.fill, flexGrow: band.to - band.from + 1, flexBasis: 0 }}
-                      >
-                        {band.label}
-                        <span className="font-normal">
-                          {band.from} a {band.to}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-texto-secundario">Una señal sin datos no tiene nota y no cuenta como riesgo.</p>
-                </Card>
-                <Card>
-                  <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">Las luces</h3>
-                  <ul data-reveal className="flex flex-wrap gap-4">
-                    {LIGHTS.map((light) => (
-                      <li key={light} data-reveal-item>
-                        <TrafficLightBadge light={light} />
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </div>
             </section>
 
             {version.isPending && (
@@ -417,7 +440,7 @@ export function HowItWorksPage() {
                 <h2 id="no-hace-titulo" className="text-[clamp(1.5rem,3vw,2rem)]">
                   Lo que AgroSense no hace
                 </h2>
-                <GuideNote stop="no-hace" />
+                <GuideNote stop="no-hace" line={GUIDE["no-hace"]} />
               </div>
               <Card>
                 <ul data-reveal className="flex flex-col gap-3">
