@@ -17,6 +17,8 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 
 > R9 suma `/changes` a los endpoints de cálculo y R10 suma la humedad del suelo y el verdor desde el 11 de octubre de 2026 (decisión 12 de `docs/decisiones.md`). Las demás reglas no cambiaron.
 
+> R8 se aclara el 10 de noviembre de 2026 (decisión 16, enmienda del 10 nov 2026; aprobado por Felipe el 11 de noviembre de 2026): una regla agronómica para la que ninguna fuente externa da el corte puede apuntar a un **criterio propio del equipo registrado en `sources`** (por ejemplo, `criterio_equipo_2026`), cuya `notes` dice que no es una fuente externa, quién lo aprobó y por qué, y que queda pendiente de validar por un agrónomo. Nunca a un número sin registro ni a la fuente `ejemplo`. **Una regla puede citar `criterio_equipo_2026` solo si (a) es central para el producto y (b) cada número se apoya en un dato externo citado.** La respuesta y la web lo dicen siempre: «criterio del equipo». A juicio de Felipe (11 nov 2026), cumplen las cinco reglas de salud del suelo de las estrategias; la oferta y el mercado de `thresholds.yaml` no cumplen (son valor agregado y ningún dato los apoya) y siguen sin curva. **Qué se apoya en qué:** son datos externos citados el 29 g/kg (CEVIPAPA y FAO GLOSOLAN), el 12 % (IGAC) y «three or more years» (FAO 2008). Los cortes por ciclos, porcentaje y meses son del equipo: nitrógeno 1, carbono 2/1 y 1/0, cobertura 80/60 %, erosión 1/3 meses y `papa_espera` 3 y 2. Cada uno tiene una referencia externa y se rotula «criterio del equipo», pendiente de validar por un agrónomo.
+
 ## Cómo se comprueba cada regla
 
 | Regla | Comprobación sugerida |
@@ -26,7 +28,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 | R3 | Prueba: una estrategia que viola un `filter` entre dos ciclos seguidos no aparece en el ranking y su exclusión cita la regla. Prueba: un cultivo que no es apto para la zona no se evalúa por ventanas y la respuesta cita el dato de su ficha que lo excluye. |
 | R4 | Prueba: dos ejecuciones iguales dan salida idéntica; toda respuesta trae `versions.dataset` y `versions.rules`. |
 | R5 | Revisión: ningún dato ficticio sin rótulo; cada razón de M4 mapea a un indicador o regla evaluados. |
-| R6 | Prueba o lint: `backend/engine/` no importa `fastapi` ni `sqlalchemy` ni abre archivos. |
+| R6 | Prueba o lint: `backend/engine/` no importa `fastapi` ni `sqlalchemy` ni abre archivos. Tampoco importa `polars`: el motor recibe valores, no DataFrames. |
 | R7 | Prueba: las uniones usan `municipality_id`; unicidad de llaves en los Parquet. Revisión: ninguna regla del motor depende de una fuente o un código propios de un país. |
 | R8 | Validación: ninguna fila ni regla con `source_id` vacío o inexistente en `sources`. |
 | R9 | Prueba: los endpoints de cálculo no escriben en la base de datos, salvo el contador `usage_daily` cuando existe (HU-170), que no tiene ninguna columna que identifique a una persona ni datos de la finca. Prueba: sin sesión, ningún endpoint de cuenta acepta escritura. Prueba: borrar la cuenta elimina usuario, sesiones, lotes, temporadas, tickets y sus eventos de `activity_log`. Revisión: el registro guarda el consentimiento y su versión. |

@@ -22,12 +22,24 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
 ### HU-121 · Casos de referencia del motor
 
 - **Historia:** Como equipo, quiero casos de referencia con resultado esperado escrito antes de programar, para saber si el motor acierta.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
 - **Criterios de aceptación:**
+  - [ ] Dos clases de casos, cada una rotulada en su nombre y en su módulo. **Casos de ejemplo:** tablas mínimas armadas en la prueba, rotuladas como ejemplo (R5); prueban cada regla con exactitud. **Casos reales:** municipio, cultivo y fecha reales sobre `data/published`. Cada caso real fija la `dataset_version` con la que se calculó su resultado esperado (R4) y dice de qué tabla y columnas sale el valor esperado y cómo se calcula (R5, R8). Si la versión publicada no es esa, la prueba falla con un mensaje que dice que hay que recalcular el caso; nunca pasa en silencio ni se salta. Un caso real nunca inventa ni rellena un valor: sin dato, el esperado es `insufficient_data` (R1)
+  - [ ] Casos reales mínimos de aptitud: papa en Puerto Salgar (`25572`, `tmean_annual_c` 28,4 °C, sobre el `tmean_max_c` de 16 °C de su ficha) es `not_suitable`, y papa en Duitama (`15238`, 14,4 °C, dentro del óptimo de 12 a 15 °C) es `suitable` con `suitability.score` 100. Los valores se vuelven a comprobar contra la versión fijada (la 2026.11.10 hoy; la 2026.11.11 cuando entre el PR #62)
+  - [ ] Casos que esperan otra HU: un caso cuyo motor aún no existe se escribe ya, con su resultado esperado, y se marca `pytest.mark.xfail(strict=True, reason="espera HU-xxx")` con la HU de la que depende. Con `strict`, cuando esa HU se implemente y el caso pase, la prueba **falla** hasta que se quite la marca, así que un caso pendiente no se puede olvidar en silencio. Nunca se usa `skip` ni un `xfail` sin `strict` en estos casos. Un conteo de los casos pendientes con su HU sale en el resumen de la prueba (`-rx`), y quitar la marca va en el PR de la HU que los activa
   - [ ] De 8 a 12 combinaciones de municipio, cultivo y fecha de siembra, incluidos verde, rojo y «no evaluable», un rojo por helada crítica, un suelo desfavorable que no basta para rojo y una exclusión de rotación por pH
   - [ ] Cultivo no apto para la zona: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y ninguna estrategia que lo use
-  - [ ] Estrategias: una que repite familia en ciclos seguidos se excluye citando la regla; una con un ciclo de helada crítica se excluye citando el ciclo; el primer ciclo y `/diagnostics` con la misma entrada dan las mismas señales; con `soil` en 5, una estrategia con abono verde queda por encima de una igual sin él
-  - [ ] Salud del suelo: sin carbono orgánico, `organic_carbon` es `insufficient_data` y no se pinta como malo; una estrategia con leguminosa da `nitrogen` mejor que una sin ella
+  - [ ] Estrategias, exclusión por regla: una que repite familia en ciclos seguidos no está en `strategies`, está en `excluded` (o la cuenta en `excluded_counts`) con `kind = rule`, `cycle` y `rule_id` de la regla de `same_family_consecutive` (`familia_seguida`), y su razón dice la familia repetida
+  - [ ] Estrategias, exclusión por clima: una con un ciclo de helada crítica (`frost` `unfavorable` y crítica) no está en `strategies` y está en `excluded` con `kind = high_risk`, `signal = frost` y el `cycle` en que ocurre; ninguna otra señal buena la rescata (R2)
+  - [ ] Estrategias, `source_ids`: cada elemento de `excluded` y cada `issues` trae `source_ids` no vacío y cada uno existe en `sources` (R8)
+  - [ ] Estrategias, oferta y mercado: con `supply` o `market` críticos en un ciclo, la estrategia no se excluye (`excluded_counts` no suma por ellos) y el efecto se ve solo en que baja su `scores.income` (R3)
+  - [ ] Estrategias, coherencia: el primer ciclo de una estrategia y `/diagnostics` con la misma entrada (municipio, cultivo, fecha, `irrigated`, `signal_priorities` y suelo) dan las mismas señales, calificaciones y luces
+  - [ ] Estrategias, prioridades: con `soil` en 5 y las demás prioridades iguales, una estrategia con abono verde queda con `rank` menor (mejor) que una igual sin él
+  - [ ] Estrategias, rotación actual: con `current_crop_ids` que viola una regla, `current_strategy` sale con `rank` nulo y `issues` con la regla y su `source_ids`, y no aparece en `excluded`; sin `current_crop_ids`, `current_strategy` es nula y `limitations` lo dice (R1)
+  - [ ] Salud del suelo, carbono: sin carbono orgánico del suelo, `organic_carbon` es `insufficient_data`, con `level` nulo, y la web no lo pinta como malo (R1)
+  - [ ] Salud del suelo, nitrógeno: una estrategia con leguminosa da `nitrogen` mejor (`favorable` o `moderate` frente a `unfavorable`, según los cortes de `legume_cycles`) que una igual sin ella
+  - [ ] Salud del suelo, rotación de referencia (Agrosavia, Tibaitatá): papa → avena con vicia → arveja no sale `unfavorable` en `pest_break`; con `papa_espera` en 3 y 2 sale `moderate` (PR #62)
+  - [ ] Salud del suelo, forma: cada uno de los cinco criterios trae `status`, `level` (nulo con `insufficient_data`), `rule_ids` y `source_ids`; un criterio sin regla `health` con fuente es `insufficient_data` y nunca se inventa un corte (R1, R8)
   - [ ] Varias fuentes de lluvia: si la fuente que calcula `water` no tiene dato para el municipio, la señal es `insufficient_data` aunque la otra tenga, y `sources` trae las dos sin mezclar
   - [ ] «Qué cambió»: un mes sin datos en uno de los dos periodos da la diferencia `insufficient_data`; misma entrada, misma salida
   - [ ] Ficha sin rango de temperatura media con fuente: aptitud `insufficient_data`, no bloquea y aparece en las limitaciones
@@ -42,6 +54,15 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [ ] Factor limitante: una ventana con una señal en 15 y el promedio ponderado más alto nunca queda por encima de una ventana con todas sus señales en 60 o más, ni entra primera en `best_windows`
   - [ ] P1 (con HU-197): con `rotate`, ningún cultivo `not_suitable` ni con una señal de clima `unfavorable` aparece en `alternatives`
   - [ ] Automatizados en pytest y corriendo en Docker, en local y en CI
+  - [ ] Los casos del motor viven en `tests/engine/casos/` (`test_estrategias.py`, `test_salud_del_suelo.py`, `test_diagnostico.py`, `test_aptitud.py`, `test_que_cambio.py`), con lo común (cargar `data/published`, comprobar la `dataset_version`, armar tablas de ejemplo) en `tests/engine/casos/conftest.py`. Los de las cuentas siguen en `tests/accounts/`, contra el PostgreSQL de Compose
+- **Grupos, dependencias y entrega** (HU-121 se entrega en tres PR de 700 líneas o menos, regla del equipo desde el 12 de noviembre de 2026):
+
+  | Grupo de criterios | HU de la que depende el motor | Responsable | PR de HU-121 |
+  |---|---|---|---|
+  | Estrategias y salud del suelo | HU-081, HU-212 y HU-213 | Juan Cárdenas | PR 1 |
+  | Diagnóstico, aptitud, curvas, pesos, factor limitante y fuentes de lluvia | HU-191, HU-071 a HU-074, HU-192 y HU-196 | David Carreño | PR 2 |
+  | «Qué cambió» | HU-216 y HU-218 | Luisa (HU-216) y Juan David (HU-218) | PR 3 |
+  | Cuentas | HU-165 | Haider | PR 3 |
 - **Casos de las cuentas** (contra el PostgreSQL de Compose; lo que dicen del progreso se comprueba cuando exista HU-167, P1):
   - [ ] Dividir: una temporada cosechada de 1 ha con dos sucesoras de 0,5 ha cada una se acepta, y el progreso da dos relaciones
   - [ ] Juntar: dos temporadas cosechadas de 0,5 ha con una sucesora de 1 ha se acepta, y el progreso da dos relaciones hacia la misma
@@ -50,7 +71,10 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [ ] `follows_season_ids` con una temporada de otro lote, sin cosechar o cosechada después de la nueva siembra responde 422
   - [ ] P1 (con HU-204): una temporada borrada aparece en el historial con `restorable_until` y vuelve al restaurarla
 - **Reglas que aplican:** R1, R2, R3, R4, R9
-- **Notas:** Los casos nuevos se agregaron el 11 de octubre de 2026 con el cambio a ventanas de siembra y, el mismo día, con las prioridades, el factor limitante, las alternativas y la división de lotes (decisión 10), y después con las estrategias, la salud del suelo, las fuentes de lluvia y «Qué cambió» (decisión 12). Pasa de M a L. Se escriben con datos de ejemplo rotulados (R5).
+- **Notas:** Los casos nuevos se agregaron el 11 de octubre de 2026 con el cambio a ventanas de siembra y, el mismo día, con las prioridades, el factor limitante, las alternativas y la división de lotes (decisión 10), y después con las estrategias, la salud del suelo, las fuentes de lluvia y «Qué cambió» (decisión 12). Pasa de M a L.
+  **Dos clases de casos (14 de noviembre de 2026):** los de ejemplo, con tablas mínimas rotuladas como ejemplo (R5), prueban cada regla con exactitud; los reales usan municipios, cultivos y fechas de `data/published` con la `dataset_version` fijada, y prueban que el motor acierta con los datos de la demo. Si cambia el dataset publicado, los casos reales fallan hasta que se recalculan a mano y se anota la nueva versión; no se regeneran solos. Los casos de un motor que no existe se escriben ya con `xfail(strict=True)` (ver el criterio). `tests/engine/casos/` es una carpeta nueva con su `__init__.py`; no choca con `tests/engine/test_suitability.py`, `test_curve.py`, `test_ventana.py` ni `test_etapas.py`, que son pruebas unitarias de cada módulo y siguen donde están.
+  **Sin caso en el PR 1 (14 de noviembre de 2026):** exclusión por helada crítica, oferta y mercado que no excluyen, coherencia del primer ciclo con `/diagnostics` y prioridad `soil` en 5. Necesitan que el dataset de ejemplo publique las heladas por mes (`climate_risk_month`, `climate_frost_month`: HU-045, PR #61) y la oferta (`supply_semester`), que `publish()` todavía no escribe; inventar esos Parquet a mano sería suponer cómo los lee el motor. Se escriben en el PR 2.
+  **Supuestos por confirmar (PR 1):** (a) los ids de `rotation_rules` (`familia_seguida`, `papa_espera`) y sus cortes salen del PR #62, que aún no está en esta rama: se confirman al entrar; (b) los municipios, cultivos y fechas de los casos reales de estrategias, y sus resultados esperados, se eligen con el dataset 2026.11.11 y no se inventan aquí; (c) el resultado exacto de `nitrogen` con y sin leguminosa depende de los cortes de `legume_cycles` de HU-062; (d) el contrato no dice si `excluded` trae `cycle` en las exclusiones `not_suitable` y `soil_ph` ni qué trae en `soil_ph` (su ejemplo solo muestra `rule` y `high_risk`): se deja sin comprobar hasta que Haider o Felipe lo precisen; (e) los responsables de «Qué cambió» no se conocen con lo que hay en el repositorio y se confirman en Plane.
 
 ### HU-122 · Procedencia de cada dato
 

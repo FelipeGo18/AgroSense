@@ -51,15 +51,62 @@ estado: pendiente
 - **Reglas que aplican:** R4, R9
 - **Notas:** Los logs de la terminal son para operar el servidor y no se consultan desde la web; lo que hace cada usuario va en la trazabilidad de la base de datos (HU-178). La web no envía logs al servidor ni a servicios de terceros. Definido el 10 de octubre de 2026. Desde el 8 de noviembre de 2026 solo falta el criterio de los endpoints de cálculo, que se cumple cuando existan (EP-07, EP-08). **14 de noviembre de 2026 (hecho):** los endpoints de cálculo ya existen (responden `501` mientras no esté su parte del motor, y el diagnóstico responde `200` cuando el cultivo no es apto). Su dependencia `calc_dataset` (`backend/api/calculations.py`) deja en la petición las versiones del dataset y de las reglas, y la línea `request` las escribe como `dataset` y `rules` (R4); sin dataset (`503`) no van, nunca inventadas. El cuerpo y los parámetros de la consulta nunca se escriben: la línea lleva la plantilla de la ruta. `tests/test_logs_de_calculo.py` lo comprueba en los cinco endpoints: ni el municipio, ni el cultivo, ni la fecha ni el área aparecen en el log.
 
-### HU-023 · Esqueleto desplegado en URL pública
+### HU-023 · La app desplegada en Google Cloud Run
 
-- **Historia:** Como equipo, quiero el esqueleto desplegado, para que el despliegue no sea un riesgo al final.
+- **Historia:** Como equipo y como jurado, queremos AgroSense publicado en una dirección pública, para que el despliegue no sea un riesgo al final y la demo corra contra lo de verdad.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Un contenedor sirve API y web en una URL pública
-  - [ ] `/api/v1/version` responde
-  - [ ] La app desplegada usa la base de datos en la nube (`AGROSENSE_DATABASE_URL` en el panel del alojamiento); credenciales en variables de entorno, ningún secreto en el repositorio
-- **Notas:** Desde el 10 de noviembre de 2026 la base del despliegue es la de la nube, no un PostgreSQL con volumen (`docs/registro-de-decisiones.md`). Sus migraciones las aplica GitHub Actions al fusionar en `desarrollo` (HU-229).
+  - [ ] La imagen de la app (`Dockerfile`: FastAPI sirve la API y el build de la web, con `data/published` adentro) corre en **Google Cloud Run**, en la región `us-east1` o la más cercana con Cloud SQL, en un proyecto de Google Cloud de un integrante con el crédito del evento (300 USD por 90 días, sin cobro automático al terminar)
+  - [ ] `/api/v1/version` responde en la dirección pública y dice la versión del dataset y de las reglas (R4)
+  - [ ] La app usa la base de **producción** (HU-234), nunca la del equipo ni la de Docker; `AGROSENSE_DATABASE_URL` sale de **Secret Manager**, no de una variable escrita a mano ni del repositorio
+  - [ ] Producción: `AGROSENSE_API_DOCS` apagado (sin `/api/docs` ni `/api/openapi.json`), logs en JSON (HU-177), y los endpoints de cálculo no escriben nada en la base (R9)
+  - [ ] Cloud Run con al menos una instancia caliente mientras dure el juzgamiento (`min-instances` 1), para que el jurado no espere un arranque en frío; después vuelve a 0 para no gastar el crédito
+  - [ ] `backend/README.md` dice cómo está desplegada, qué configura el dueño del proyecto de Google Cloud y cómo volver a la versión anterior
+- **Reglas que aplican:** R4, R9
+- **Contrato que toca:** ninguno
+- **Notas:** Cambiada el 14 de noviembre de 2026 (decidido por Felipe): el evento regala créditos de Google Cloud y de Azure, y un dominio de GoDaddy Registry con Porkbun (`docs/registro-de-decisiones.md`). Se eligió Google Cloud porque su crédito dura 90 días y no cobra solo al terminar. El hosting de GoDaddy no corre Docker ni Python: solo se usa su dominio (HU-236). Asignada a Haider y David Carreño.
+
+### HU-234 · La base de datos de producción
+
+- **Historia:** Como equipo, queremos una base de datos solo para la app publicada, separada de la del equipo, para que la demo y el jurado no vean datos de prueba y lo que se pruebe en desarrollo no toque producción.
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Una instancia de **Cloud SQL con PostgreSQL 17**, la más pequeña, en el mismo proyecto y la misma región que Cloud Run, con SSL obligatorio y copias de seguridad automáticas diarias
+  - [ ] Un usuario propio de la app, con permisos solo sobre su base; otro usuario para las migraciones (HU-235). Ninguna contraseña en el repositorio: van en Secret Manager y en los secretos del entorno `produccion` de GitHub
+  - [ ] Las migraciones de Alembic dejan el esquema igual que en `desarrollo`; la base empieza vacía de cuentas (sin copiar la del equipo)
+  - [ ] La base del equipo (`AGROSENSE_DATABASE_URL` de hoy) sigue para el desarrollo y la demo interna, y la de Docker Compose para las pruebas, que nunca usan una base en la nube
+  - [ ] Borrar una cuenta en producción borra todo lo suyo (R9), como en las pruebas
+- **Reglas que aplican:** R9
+- **Contrato que toca:** ninguno
+- **Notas:** Decidido por Felipe el 14 de noviembre de 2026: la demo y el enlace de la entrega van contra la base de producción. Asignada a Haider y David Carreño.
+
+### HU-235 · Desplegar al fusionar en `produccion`
+
+- **Historia:** Como equipo, queremos que fusionar en `produccion` publique solo la app, con sus migraciones, para que nadie despliegue a mano el día de la entrega.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Un workflow de GitHub Actions que corre al fusionar en `produccion` (y a mano, con `workflow_dispatch`), de a una corrida a la vez: construye la imagen, la sube a **Artifact Registry** con la etiqueta del commit, aplica las migraciones a la base de producción (HU-234) y despliega en Cloud Run
+  - [ ] Antes de migrar, una copia de seguridad de la base de producción, cifrada como en HU-229; sin la clave no se migra. Nunca un dato de conexión ni una copia sin cifrar en los logs (el repositorio es público)
+  - [ ] Se conecta a Google Cloud con **Workload Identity Federation** (sin llaves JSON guardadas en GitHub), con una cuenta de servicio que solo puede subir imágenes y desplegar ese servicio
+  - [ ] Después de desplegar, comprueba `/api/v1/version` en la dirección pública y que la versión sea la del commit; si falla, Cloud Run vuelve a la revisión anterior y el workflow termina en rojo
+  - [ ] El entorno `produccion` de GitHub pide la aprobación de un responsable (Felipe o Haider) antes de desplegar
+  - [ ] Los checks obligatorios de `produccion` son los mismos de `desarrollo` (`hu`, `python`, `web`, `Revisar migraciones`)
+- **Reglas que aplican:** R4
+- **Contrato que toca:** ninguno
+- **Notas:** Sigue el flujo de HU-229, que aplica las migraciones a la base del equipo al fusionar en `desarrollo`. Una migración tiene que ser compatible con el código anterior (agregar sí; renombrar o borrar, en dos pasos), porque la base se migra antes de que la nueva versión reemplace a la vieja. Asignada a Haider y David Carreño.
+
+### HU-236 · El dominio con HTTPS
+
+- **Historia:** Como jurado y como agricultor, quiero entrar a AgroSense por una dirección corta y segura, para confiar en el enlace y compartirlo.
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Un dominio gratis de la oferta de GoDaddy Registry (registrado en Porkbun, por un año, no premium), a nombre del equipo; su DNS apunta a Cloud Run con el mapeo de dominio, y el certificado HTTPS es el que maneja Google
+  - [ ] Todo lo que entre por HTTP se redirige a HTTPS; la cookie de sesión va `Secure`, `HttpOnly` y `SameSite=Lax`, y la API solo acepta el dominio propio como origen
+  - [ ] El enlace de la entrega es el dominio con `?lang=en` (HU-233), público y sin inicio de sesión, y se pide la clasificación de FortiGuard que recomienda la guía de entrega, para que el jurado pueda abrirlo
+  - [ ] Si el dominio no queda a tiempo, el enlace de la entrega es la dirección de Cloud Run (`*.run.app`)
+- **Reglas que aplican:** R9
+- **Contrato que toca:** ninguno
+- **Notas:** La oferta de GoDaddy Registry da el dominio, un año de hosting y SSL; solo se usa el dominio (la app va en Cloud Run). Asignada a Haider y David Carreño.
 
 ### HU-229 · Migraciones revisadas y aplicadas con GitHub Actions
 
