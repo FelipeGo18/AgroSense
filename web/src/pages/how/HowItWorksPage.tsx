@@ -2,11 +2,10 @@ import { useRef, type ReactNode } from "react";
 import { Link } from "react-router";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
-import { SmoothScroll, useScroll } from "@/components/layout/SmoothScroll";
+import { SmoothScroll } from "@/components/layout/SmoothScroll";
 import { TopBar } from "@/components/layout/TopBar";
 import type { MascotMood } from "@/components/mascot/Mascot";
 import { MascotFlyer, MascotGuide, MascotSlot } from "@/components/mascot/MascotGuide";
-import { Plate } from "@/components/ui/Plate";
 import { Card } from "@/components/ui/Card";
 import { SignalIcon } from "@/components/ui/SignalIcon";
 import { Spinner } from "@/components/ui/Spinner";
@@ -18,7 +17,7 @@ import { useActiveSection } from "@/hooks/useActiveSection";
 import { useAnimated } from "@/hooks/useLightMode";
 import { useMotionEffect } from "@/hooks/useMotionEffect";
 import { gsap } from "@/lib/motion";
-import { BANDS, GUIDE, NEVER, STEPS, STOPS_BASE, STOPS_WITH_DATA, type GuideLine, type StopId } from "./content";
+import { BANDS, NEVER, SECTION_MOODS, STEPS, STOPS_BASE, STOPS_WITH_DATA, type StopId } from "./content";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 const LIGHTS: Light[] = ["green", "yellow", "red", "not_evaluable"];
@@ -59,63 +58,28 @@ export function splitSources(rows: Version["sources"]): { nasa: Source[]; others
   return { nasa: sources.filter(isNasa).sort(byName), others: sources.filter((s) => !isNasa(s)).sort(byName) };
 }
 
-/**
- * La mascota en una parada: su lugar y lo que dice, con el enlace a la parada siguiente. El texto va en HTML: la mascota
- * es decoración y nunca es la única forma de decirlo.
- */
-function GuideNote({ stop, line }: { stop: StopId; line: GuideLine }) {
-  const { scrollTo } = useScroll();
-  const { say, mood, next, nextLabel } = line;
-  const target = next ?? "inicio";
+/** El título de una sección con el lugar de la mascota a la izquierda: la mascota llega y señala la sección. */
+function SectionTitle({ title, titleId, sub, stop }: { title: string; titleId?: string; sub?: string; stop: keyof typeof SECTION_MOODS }) {
   return (
-    <div className="flex items-end gap-2">
-      <MascotSlot id={stop} mood={mood} className="w-[84px] md:w-[120px]" />
-      <div className="relative mb-3 max-w-[19rem] min-w-0 px-4 pt-3 pb-4 text-sm">
-        <Plate c={12} fill="var(--color-superficie-panel)" stroke="var(--color-paleta-noche)" strokeWidth={2.5} />
-        <p className="relative">{say}</p>
-        <a
-          href={`#${target}`}
-          onClick={(event) => {
-            event.preventDefault();
-            scrollTo(target);
-          }}
-          className={`${LINK} relative mt-1 inline-flex min-h-11 items-center`}
-        >
-          {nextLabel} <span aria-hidden="true">{next ? "↓" : "↑"}</span>
-        </a>
-      </div>
-    </div>
-  );
-}
-
-function SectionTitle({ title, sub, stop }: { title: string; sub?: string; stop: keyof typeof GUIDE }) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="flex items-center gap-4 md:gap-6">
+      <MascotSlot id={stop} mood={SECTION_MOODS[stop]} className="w-[72px] md:w-[120px]" />
       <div className="flex max-w-[880px] min-w-0 flex-col gap-2">
-        <h2 className="text-[clamp(1.5rem,3vw,2rem)]">{title}</h2>
+        <h2 id={titleId} className="text-[clamp(1.5rem,3vw,2rem)]">
+          {title}
+        </h2>
         {sub && <p className="text-texto-secundario">{sub}</p>}
       </div>
-      <GuideNote stop={stop} line={GUIDE[stop]} />
     </div>
   );
 }
 
 /**
- * Un tramo del camino de «Cómo se decide»: el lugar de la mascota a la izquierda, sobre una línea punteada que baja por
- * todos los pasos, y la tarjeta numerada a la derecha. La mascota señala la tarjeta (su brazo apunta a la derecha); sin
+ * Un tramo del camino de «Cómo se decide»: el lugar de la mascota a la izquierda y la tarjeta numerada a la derecha. La mascota señala la tarjeta (su brazo apunta a la derecha); sin
  * globo, porque la tarjeta ya lo explica. En el celular, la mascota va encima de la tarjeta.
  */
-function PathStop({ stop, mood, index, children }: { stop: StopId; mood: MascotMood; index: number; children: ReactNode }) {
+function PathStop({ stop, mood, children }: { stop: StopId; mood: MascotMood; children: ReactNode }) {
   return (
-    <li
-      id={stop}
-      data-reveal-item
-      className={`relative flex scroll-mt-32 flex-col gap-2 md:flex-row md:items-center md:gap-6 ${
-        index
-          ? "before:absolute before:-top-8 before:left-9 before:h-8 before:border-l-4 before:border-dashed before:border-paleta-calabaza md:before:left-[60px]"
-          : ""
-      }`}
-    >
+    <li id={stop} data-reveal-item className="flex scroll-mt-32 flex-col gap-2 md:flex-row md:items-center md:gap-6">
       <MascotSlot id={stop} mood={mood} className="w-[72px] md:w-[120px]" />
       <div className="min-w-0 md:max-w-[880px] md:flex-1">{children}</div>
     </li>
@@ -357,7 +321,7 @@ export function HowItWorksPage() {
               </h2>
               <ol data-reveal className="flex flex-col gap-8">
                 {STEPS.map((step, i) => (
-                  <PathStop key={step.id} stop={step.id} mood={step.mood} index={i}>
+                  <PathStop key={step.id} stop={step.id} mood={step.mood}>
                     <Card>
                       <span
                         aria-hidden="true"
@@ -434,12 +398,7 @@ export function HowItWorksPage() {
             )}
 
             <section id="no-hace" className="flex scroll-mt-32 flex-col gap-6" aria-labelledby="no-hace-titulo">
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <h2 id="no-hace-titulo" className="text-[clamp(1.5rem,3vw,2rem)]">
-                  Lo que AgroSense no hace
-                </h2>
-                <GuideNote stop="no-hace" line={GUIDE["no-hace"]} />
-              </div>
+              <SectionTitle stop="no-hace" titleId="no-hace-titulo" title="Lo que AgroSense no hace" />
               <Card>
                 <ul data-reveal className="flex flex-col gap-3">
                   {NEVER.map((item) => (

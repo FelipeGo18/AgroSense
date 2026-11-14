@@ -15,14 +15,6 @@ export const STOPS_BASE = [...PATH, "no-hace"] as const;
 export const STOPS_WITH_DATA = [...PATH, "pesos", "fuentes", "no-hace"] as const;
 export type StopId = (typeof STOPS_WITH_DATA)[number];
 
-/** Lo que dice la mascota en una sección y a dónde invita a seguir. */
-export interface GuideLine {
-  say: string;
-  mood: MascotMood;
-  next: StopId | null;
-  nextLabel: string;
-}
-
 /** Un paso del camino: su tarjeta y el gesto de la mascota, que la señala (sin globo: lo explica la tarjeta). */
 export interface Step {
   id: StopId;
@@ -71,27 +63,8 @@ export const STEPS: Step[] = [
   },
 ];
 
-/** Lo que dice la mascota en las secciones de abajo, con el enlace a la siguiente (como en Inicio). */
-export const GUIDE: Record<"pesos" | "fuentes" | "no-hace", GuideLine> = {
-  pesos: {
-    say: "Estos son mis pesos por defecto. Usted los puede cambiar en sus prioridades.",
-    mood: "guide",
-    next: "fuentes",
-    nextLabel: "Ver de dónde salen los datos",
-  },
-  fuentes: {
-    say: "Todo sale de estas fuentes, con su licencia. Las de la NASA van primero.",
-    mood: "guide",
-    next: "no-hace",
-    nextLabel: "Ver lo que no hago",
-  },
-  "no-hace": {
-    say: "Y esto nunca lo hago. La decisión es suya.",
-    mood: "idle",
-    next: null,
-    nextLabel: "Volver arriba",
-  },
-};
+/** El gesto de la mascota en las secciones de abajo, donde también señala a qué se refiere. */
+export const SECTION_MOODS: Record<"pesos" | "fuentes" | "no-hace", MascotMood> = { pesos: "guide", fuentes: "guide", "no-hace": "guide" };
 
 /** De la calificación al nivel (specs/01-reglas.md, «Cómo se califica cada señal»). */
 export const BANDS = [
