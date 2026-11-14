@@ -58,6 +58,10 @@ FAVORABLE = "favorable"
 MODERATE = "moderate"
 UNFAVORABLE = "unfavorable"
 
+# Los riesgos graves de clima: críticos, cuentan siempre, aunque su peso sea 0 (R2). `excess_rain` se suma cuando
+# exista (P1); hoy no hay esa señal y no se inventa (R5).
+CLIMATE_CRITICAL_SIGNALS = frozenset({"water", "frost", "heat"})
+
 # El mismo valor que `backend.config.thresholds.FROM_CROP` (una prueba lo comprueba).
 FROM_CROP = "crop"
 
@@ -81,10 +85,23 @@ class SignalScore:
     critical: bool
 
 
-def _round_half_up(score: float) -> int:
+def round_half_up(value: float) -> int:
     """Redondea hacia arriba desde la mitad: nunca el redondeo al par de `round()` (`round(68.5)` da 68, pero
-    aquí 68,5 tiene que dar 69). `score` siempre es 0-100, nunca negativo, así que no hace falta `math.copysign`."""
-    return math.floor(score + 0.5)
+    aquí 68,5 tiene que dar 69). Lo usan las calificaciones (0-100) y los porcentajes de las razones (en valor
+    absoluto): `value` nunca es negativo, así que no hace falta `math.copysign`."""
+    return math.floor(value + 0.5)
+
+
+def counts(signal: str, weight: float, critical: bool) -> bool:
+    """Si una señal «cuenta» para la luz y para el orden de las ventanas (specs/01-reglas.md, «Agregación del
+    semáforo» y «Las prioridades del agricultor»): la que tiene peso mayor que 0, más los riesgos graves de clima
+    (`water`, `frost` o `heat` críticos), que cuentan siempre, aunque su peso sea 0 (R2).
+
+    Es la única definición del motor: la comparten el orden de las ventanas (HU-192, `window_order.py`) y el
+    semáforo (HU-074), que debe reutilizarla, no reimplementarla. Una señal crítica que no es de clima (`soil`,
+    `supply`, `market`) con peso 0 no cuenta.
+    """
+    return weight > 0 or (signal in CLIMATE_CRITICAL_SIGNALS and critical)
 
 
 def score_signal(
@@ -118,7 +135,7 @@ def score_signal(
     else:
         points = curve
 
-    score = _round_half_up(score_from_curve(points, float(value)))
+    score = round_half_up(score_from_curve(points, float(value)))
     if score >= thresholds.favorable:
         level = FAVORABLE
     elif score >= thresholds.moderate:

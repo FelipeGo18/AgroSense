@@ -10,6 +10,7 @@ Es una estimación por calendario, no una observación del lote. Son funciones p
 fecha de hoy y las etapas llegan como argumentos (R4, R6).
 """
 
+import calendar
 from dataclasses import dataclass
 from datetime import date, timedelta
 
@@ -159,6 +160,26 @@ def crop_window(stages: list[StageSpan], sowing_date: date) -> CropWindow | None
         periods.append(StagePeriod(span, start, end))
         start = end + timedelta(days=1)
     return CropWindow(sowing_date=sowing_date, harvest_estimate=start, periods=tuple(periods))
+
+
+def monthly_sowing_windows(stages: list[StageSpan], start: date, months: int = 12) -> tuple[CropWindow, ...]:
+    """Una ventana por mes de siembra, desde `start` y durante `months` meses (HU-192; specs/01-reglas.md, «La
+    ventana de siembra»: las ventanas se comparan por mes).
+
+    El mes `i` se cuenta desde `start`, no encadenado desde el mes anterior: el mismo día del mes, recortado al último
+    día si ese mes es más corto (el 31 de enero da el 28 o 29 de febrero y vuelve al 31 en marzo). Cada ventana es la
+    de `crop_window` para esa fecha, la misma que usa el diagnóstico. Si `crop_window` no da ventana (sin etapas o con
+    una etapa sin días), ese mes se omite (R1). `start` entra como argumento: el motor no lee el reloj (R4).
+    """
+    windows = []
+    for offset in range(months):
+        year, month_index = divmod(start.month - 1 + offset, 12)
+        year, month = start.year + year, month_index + 1
+        sowing = date(year, month, min(start.day, calendar.monthrange(year, month)[1]))
+        window = crop_window(stages, sowing)
+        if window is not None:
+            windows.append(window)
+    return tuple(windows)
 
 
 def stage_today(stages: list[StageSpan], sowing_date: date, today: date) -> StageToday:
