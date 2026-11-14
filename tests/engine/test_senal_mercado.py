@@ -12,8 +12,7 @@ from backend.api.calc_examples import SIGNALS_OK
 from backend.config.thresholds import SignalThreshold, load_thresholds
 from backend.engine.market_signal import NO_CURVE_REASON, NO_DATA_REASON, MarketSignalResult, market_signal
 from backend.engine.signal_score import INSUFFICIENT_DATA
-
-FORECAST_WORDS = re.compile(r"\b(va a|irá|subirá|bajará|estará|será|pronostic\w*|predic\w*|futur\w*)\b", re.IGNORECASE)
+from tests.textos import FORECAST_WORDS
 
 
 @pytest.fixture(scope="module")

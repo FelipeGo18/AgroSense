@@ -10,9 +10,9 @@ from pathlib import Path
 
 import yaml
 
+from common.signals import P0_SIGNALS
+
 WEIGHTS_FILE = Path(__file__).with_name("weights.yaml")
-# Las seis señales del P0, en el orden en que se muestran.
-P0_SIGNALS = ("water", "frost", "heat", "soil", "supply", "market")
 MAX_WEIGHT = 5
 
 
