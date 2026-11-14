@@ -14,4 +14,4 @@ Imágenes de referencia de estilo para el moodboard en Figma. **No son assets de
 | `08-kenney-ui-botones.png` | Botones gruesos de juego | [Kenney · UI Pack](https://kenney.nl/assets/ui-pack) | Kenney | CC0 |
 | `09-nasa-eyes-dato-sobre-escena.jpg` | Dato sobre la escena | Captura de [NASA Eyes on the Earth](https://eyes.nasa.gov/apps/earth/), capa GPM Precipitation | NASA/JPL-Caltech | Referencia interna |
 
-Capturas tomadas el 10 de octubre de 2026. Las imágenes 04, 07 y 09 no se suben a git (ver `.gitignore` de esta carpeta); viven solo en Figma y en la copia local.
+Capturas tomadas el 10 de octubre de 2026. Las imágenes 04, 07 y 09 no se suben a git (ver `.gitignore` de esta carpeta); viven solo en Figma y en la copia local. Desde el 14 de noviembre de 2026 tampoco las de terceros 01, 02, 03, 06 y 08 (HU-230): eran solo referencia para Figma. En git queda la 05, que es propia.

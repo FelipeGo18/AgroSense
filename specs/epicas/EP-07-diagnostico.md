@@ -71,27 +71,30 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-073 · Señal de mercado sin datos
 
 - **Historia:** Como agricultor, quiero saber cuándo no hay datos de mercado, para no confiar en una señal que no existe.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Sin datos: `insufficient_data`, nivel y `score` nulos y razón explícita
-  - [ ] Con EP-05: `score` según el índice estacional (`seasonal_index`) del mes en que saldría la cosecha (`harvest_estimate`), con la curva de HU-196; nunca un precio futuro
+  - [x] Sin datos: `insufficient_data`, nivel y `score` nulos y razón explícita
+  - [x] La central de cada municipio sale de su departamento (`department_markets`, aprobado por Felipe el 14 de noviembre de 2026) y la API lee `market_month` por `crop_id`, `market_id` y mes
+  - [x] El motor da `insufficient_data` porque la curva de `market` espera una fuente (regla del equipo del 11 de noviembre de 2026)
+  - [ ] Con EP-05: `score` según el índice estacional (`seasonal_index`) del mes en que saldría la cosecha (`harvest_estimate`), con la curva de HU-196; nunca un precio futuro. Espera una fuente externa para los cortes
 - **Reglas que aplican:** R1, R5
+- **Notas:** 14 de noviembre de 2026. `backend/engine/market_signal.py` queda listo para calificar el índice cuando `thresholds.yaml` tenga una curva de `market`; hoy la curva es nula y la señal siempre es `insufficient_data` (con o sin índice). La curva propuesta (cuantiles del índice de SIPSA) se rechazó en la revisión del PR #72: la regla del equipo del 11 de noviembre de 2026 pide que un criterio propio sea central para el producto y que cada número se apoye en un dato externo citado, y el mercado es valor agregado (decisión 12). Queda documentada en `docs/investigacion-decisiones.md` (5e). La API (`backend/api/market_signal.py`) elige la central por departamento y lee `market_month`; sin central, sin producto en SIPSA o sin fila, la señal es `insufficient_data`. La razón distingue los dos casos de la curva nula: sin índice dice «Sin datos de mercado para la zona» (texto del contrato) y con índice dice que hay precios de SIPSA pero ninguna fuente dice qué es un precio bajo, así que no se califica (`NO_CURVE_REASON`). El criterio «la API lee `market_month`» todavía no lo usa ningún endpoint: lo conecta HU-076. El mes de cosecha lo pone quien llama: la señal entra a `/diagnostics` con HU-074 y HU-076, que sigue en `501`.
 
 ### HU-196 · Calificación de las señales con curvas por cultivo
 
 - **Historia:** Como motor, quiero calificar cada señal de 0 a 100 con una curva por cultivo, para que el nivel, el factor limitante y el orden de las ventanas salgan de la misma cuenta.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Una sola función de curva: 100 dentro del rango óptimo, 0 fuera de los límites absolutos y una recta entre ambos (`specs/01-reglas.md`, «Cómo se califica cada señal»)
-  - [ ] El nivel sale de la calificación con los cortes de `thresholds.yaml` (hoy 70 a 100 `favorable`, 40 a 69 `moderate`, 0 a 39 `unfavorable`)
-  - [ ] Una señal es crítica cuando su calificación baja del umbral crítico de esa señal en `thresholds.yaml`; `soil` no tiene umbral crítico (R10)
-  - [ ] Los límites que dependen del cultivo salen de su ficha con fuente (HU-061, HU-063, HU-199); los que no dependen del cultivo (por ejemplo, el porcentaje de la necesidad de agua que cubre la lluvia o la variación del área sembrada) viven en `thresholds.yaml`
-  - [ ] Sin el límite de la ficha con fuente, o sin el dato de la zona: `insufficient_data`, nivel y `score` nulos (R1, R8). Nunca se usa un límite «típico»
-  - [ ] Pruebas: un valor dentro del óptimo da 100; un valor en el límite absoluto o fuera da 0; el punto medio entre el óptimo y el límite da 50; mismo valor, misma calificación (R4)
-  - [ ] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
+  - [x] Una sola función de curva: 100 dentro del rango óptimo, 0 fuera de los límites absolutos y una recta entre ambos (`specs/01-reglas.md`, «Cómo se califica cada señal»)
+  - [x] El nivel sale de la calificación con los cortes de `thresholds.yaml` (hoy 70 a 100 `favorable`, 40 a 69 `moderate`, 0 a 39 `unfavorable`)
+  - [x] Una señal es crítica cuando su calificación baja del umbral crítico de esa señal en `thresholds.yaml`; `soil` no tiene umbral crítico (R10)
+  - [x] Los límites que dependen del cultivo salen de su ficha con fuente (HU-061, HU-063, HU-199); los que no dependen del cultivo (por ejemplo, el porcentaje de la necesidad de agua que cubre la lluvia o la variación del área sembrada) viven en `thresholds.yaml`
+  - [x] Sin el límite de la ficha con fuente, o sin el dato de la zona: `insufficient_data`, nivel y `score` nulos (R1, R8). Nunca se usa un límite «típico»
+  - [x] Pruebas: un valor dentro del óptimo da 100; un valor en el límite absoluto o fuera da 0; el punto medio entre el óptimo y el límite da 50; mismo valor, misma calificación (R4)
+  - [x] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `score` y `level` de cada señal en `/diagnostics` y en las ventanas de `/calendar`; `crops`; `thresholds.yaml`
-- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha (`temp_*`, `heat_max_c`); `frost` califica el porcentaje de años con helada en los meses sensibles de la ventana (semanas en P1; cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
+- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con una curva de dos puntos de la ficha: 100 en `temp_opt_max_c` y 0 en `heat_max_c`, sin límite inferior (una máxima fría no es calor); `frost` califica el porcentaje de años con helada en los meses sensibles de la ventana (semanas en P1; cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos (**13 de noviembre de 2026:** `thresholds.yaml` 1.0.0 los deja con `curve: null`, porque ninguna fuente publicada da esos cortes; son `insufficient_data` hasta que tengan su curva con fuente: HU-072, HU-073; R1. Para el mercado se investigó una curva y la propuesta quedó en `docs/investigacion-decisiones.md`, 5e, para cuando exista una fuente). Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
 
 ### HU-074 · Semáforo con prioridades, dos luces y acción
 
@@ -115,6 +118,8 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Prueba: si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción `review_data`; con peso 0 en el agua, la luz no queda en `not_evaluable`
   - [ ] Prueba: sin datos de `supply`, la luz y el orden de las ventanas salen igual que con peso 0 en la oferta, y la limitación lo dice
   - [ ] Prueba: con peso 0 en `water` y sin que sea crítica, la regla 3 no exige `water` `favorable`: la luz es `green` si ninguna señal que cuenta es `unfavorable`
+  - [ ] Prueba, con los pesos por defecto de `weights.yaml` 1.0.0 (heladas 4): una helada `moderate` sola, con las demás señales favorables, da `yellow` y `other_window`
+  - [ ] Prueba, con los pesos por defecto: una helada `moderate` más una oferta `unfavorable` dan `red` y `rotate` (dos desfavorables que cuentan; una es la oferta). Es el ejemplo `DIAGNOSIS_OK` del contrato (revisión de Haider, PR #81)
   - [ ] Prueba: `frost`, `heat`, `soil` o `market` sin datos no cambian la luz y aparecen en las limitaciones; `not_applicable` tampoco la cambia
 - **Reglas que aplican:** R1, R2, R3, R4, R5
 - **Contrato que toca:** `overall`, `overall_default`, `weights`, `limiting_signal`, `counts`, `best_windows`, `alternatives` y `limitations` de la respuesta de diagnóstico
@@ -145,10 +150,12 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Evalúa los meses de la ventana en que el cultivo está en una etapa con `frost_sensitive`: el porcentaje de años con al menos una helada en cualquiera de esos meses, contado con `climate_frost_month` (HU-045; método en el contrato, «Heladas de una ventana»); las etapas de cada mes salen de las etapas por calendario (HU-220). Cuando existan `climate_risk_week` (HU-193, P1) y las etapas por temperatura acumulada (HU-150, P1), evalúa por semana
   - [ ] `score` con la curva de HU-196; el nivel sale de la calificación
   - [ ] La razón nombra la fecha de siembra, la etapa y el mes («Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años»)
-  - [ ] `not_applicable` si ninguna etapa es sensible; `insufficient_data` si falta `climate_risk_month` o la ficha no dice la sensibilidad con fuente
+  - [ ] `not_applicable` solo si todas las etapas de la ventana dicen que no son sensibles; `insufficient_data` si falta `climate_risk_month`, o si ninguna etapa es sensible y alguna no lo dice con fuente (R1)
+  - [ ] Si la ventana toca etapas sensibles y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`sensitive_months` las da en `unknown`); si ninguna es sensible y alguna es nula, `insufficient_data`, nunca `not_applicable` (R1; decidido por Felipe el 14 nov 2026, PR #69)
   - [ ] Grado crítico en `thresholds.yaml`. Una helada crítica cuenta siempre, aunque el agricultor le ponga peso 0
   - [ ] Caso de referencia: helada crítica con agua y oferta favorables da rojo y la acción es `other_window`
   - [ ] Cuando exista «Mi cultivo» en el calendario (HU-179, P1), su bloque `frost` sale de este mismo cálculo
+  - [ ] Si `sources.yaml` trae `frost_caveat` para la región, la señal lo lleva en sus limitaciones en cada respuesta (aprobado por Felipe el 13 de noviembre de 2026, PR #61)
 - **Reglas que aplican:** R1, R2, R4, R5
 - **Contrato que toca:** `signals.frost`; `climate_risk_month` (y `climate_risk_week` en P1), `crop_stages`
 - **Notas:** Depende de HU-045 (riesgo por mes), HU-063 (etapas sensibles), HU-220 (etapas de la ventana) y HU-196. Ya no depende del «mejor mes» ni de HU-179: es HU-179 la que reutiliza esta señal. Cambiada el 11 de octubre de 2026 y, el mismo día, pasada a meses en el MVP (decisión 12). **10 de noviembre de 2026 (HU-075):** los cortes de `thresholds.yaml` vienen del ZARC de Brasil, que cuenta el % de **años** con pérdida. Lo comparable es el % de años con al menos una helada en **cualquiera** de los meses sensibles de la ventana, no el promedio de los meses. Como `climate_risk_month` trae la frecuencia de cada mes por separado y con ella no se puede contar esa unión, se agregó `climate_frost_month` con los días con helada de cada mes de cada año (aprobado por Felipe el 10 de noviembre de 2026); el método está en el contrato («Heladas de una ventana»).
@@ -159,11 +166,12 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Señal `heat` con `status`, `level`, `critical`, `score`, `counts`, `indicators` (`tmax_p90_c`) y `reasons`, según el contrato
-  - [ ] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (`heat_max_c` y el óptimo, `temp_opt_min_c`–`temp_opt_max_c`, de HU-199) mediante la curva de HU-196
+  - [ ] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (de HU-199) mediante la curva de HU-196: 100 hasta `temp_opt_max_c` y 0 desde `heat_max_c`, recta entre medio y sin límite inferior (una máxima fría no es calor)
   - [ ] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C»)
   - [ ] Grado crítico en `thresholds.yaml`. Un calor crítico cuenta siempre, aunque el agricultor le ponga peso 0
   - [ ] Sin `heat_max_c` con fuente o sin `tmax_p90_c`: `insufficient_data`, nivel y `score` nulos y a las limitaciones; no cambia la luz (R1, R8)
-  - [ ] `not_applicable` cuando la ficha dice que ninguna etapa es sensible al calor
+  - [ ] Si la ventana toca etapas sensibles al calor y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`unknown` de `sensitive_months`); si ninguna es sensible y alguna es nula, `insufficient_data` (R1; decidido por Felipe el 14 nov 2026, PR #69). El `heat_max_c` del maíz es 35 °C, la temperatura que daña el polen en la floración (Purdue), no el máximo absoluto de EcoCrop
+  - [ ] `not_applicable` solo si todas las etapas de la ventana dicen que no son sensibles al calor; si ninguna lo es y alguna no lo dice, `insufficient_data` (R1)
   - [ ] Caso de referencia: calor crítico con agua y oferta favorables da rojo y la acción es `other_window`
   - [ ] Cuando exista «Mi cultivo» en el calendario (HU-179, P1), su bloque `heat` sale de este mismo cálculo
 - **Reglas que aplican:** R1, R2, R4, R5, R8
@@ -173,9 +181,9 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-191 · Aptitud del cultivo en la zona
 
 - **Historia:** Como agricultor, quiero saber de entrada si mi cultivo se da en mi municipio, para no planear una siembra que no va a prosperar.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Antes de evaluar señales, el motor compara la temperatura media anual con `tmean_min_c`–`tmean_max_c` de la ficha: la del municipio (`tmean_annual_c`) o, si viene `lot_id` con polígono, corregida a la altitud del lote (mediana de `grid_cells` en su polígono, que calcula la API, HU-206) con el gradiente de HU-044. La razón dice cuál se usó, con la temperatura y la altitud
+  - [x] Antes de evaluar señales, el motor compara la temperatura media anual con `tmean_min_c`–`tmean_max_c` de la ficha: la del municipio (`tmean_annual_c`) o, si viene `lot_id` con polígono, corregida a la altitud del lote (mediana de `grid_cells` en su polígono, que calcula la API, HU-206) con el gradiente de HU-044. La razón dice cuál se usó, con la temperatura y la altitud
   - [x] Fuera del rango: `suitability.level = not_suitable`, luz `red`, acción `rotate`, `window` y `signals` nulos, y la razón cita el dato de la ficha (el límite que se cruzó); la fuente va en `source_ids` del cultivo. No se evalúa ninguna ventana
   - [ ] Dentro del rango, incluidos los dos límites: `suitable`, y la razón dice la temperatura media de la zona y el rango del cultivo
   - [ ] Si la ficha no tiene el rango con fuente, o el municipio no tiene `tmean_annual_c`: `insufficient_data`; no bloquea y se agrega a las limitaciones (R1, R8)
@@ -186,7 +194,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [x] Caso de referencia: un cultivo de clima frío en un municipio a nivel del mar da `not_suitable` sin ventanas
 - **Reglas que aplican:** R1, R3, R4, R5, R6, R8
 - **Contrato que toca:** `suitability` (con `score`) en las respuestas de `/diagnostics`, `/rotations` y `/changes`; `crops.tmean_min_c`, `crops.tmean_max_c`, `crops.tmean_opt_min_c`, `crops.tmean_opt_max_c`, `municipalities.tmean_annual_c`, `municipalities.altitude_m`, `grid_cells`
-- **Notas:** Depende de HU-044 y HU-206 (temperatura media corregida por altitud con NASADEM, del municipio y del lote), HU-061 (rango de temperatura media con fuente) y HU-199 (rango óptimo, para la nota). Cambiada el 16 de octubre de 2026 (decisión 13): antes se decidía por la altitud. El motor recibe la altitud ya calculada: no lee `grid_cells` (R6). Agregada el 11 de octubre de 2026; la altitud del lote se sumó el mismo día (decisión 12). **En curso desde el 12 de noviembre de 2026:** motor (`backend/engine/suitability.py`) y el caso `not_suitable` de `/diagnostics` implementados; falta que esta misma API calcule la altitud del lote (mediana de `grid_cells` en su polígono: HU-206 ya está hecha y publica la altitud por celda, esto es el primer criterio de esta HU, no depende de otra), la razón y las limitaciones del caso `suitable`/`insufficient_data` (esperan las señales, todavía en 501) y el cableado en `/rotations` y `/changes`.
+- **Notas:** Depende de HU-044 y HU-206 (temperatura media corregida por altitud con NASADEM, del municipio y del lote), HU-061 (rango de temperatura media con fuente) y HU-199 (rango óptimo, para la nota). Cambiada el 16 de octubre de 2026 (decisión 13): antes se decidía por la altitud. El motor recibe la altitud ya calculada: no lee `grid_cells` (R6). Agregada el 11 de octubre de 2026; la altitud del lote se sumó el mismo día (decisión 12). **En curso desde el 12 de noviembre de 2026:** motor (`backend/engine/suitability.py`) y el caso `not_suitable` de `/diagnostics` implementados. **13 de noviembre de 2026, primer criterio hecho (tamaño de S a M):** la API calcula la altitud del lote (mediana de las celdas de `grid_cells` cuyo centro cae dentro de su polígono; un lote más chico que una celda usa la celda de su centro) y corrige la temperatura del municipio con el gradiente del manifiesto (`region.temperature_lapse_rate`, ahora publicado: dataset 2026.11.12). `zone_temperature` (`backend/api/lot_terrain.py`) es la única que decide qué temperatura entra a la aptitud; la razón dice la temperatura y la altitud usadas, también con municipio. Un lote sin contorno usa el municipio y lo dice en las limitaciones; un lote con contorno sin altitud usable (celdas sin dato, dataset sin `grid_cells` o sin gradiente) da `insufficient_data`, no la temperatura del municipio (R1). Un lote de otro municipio que el de la consulta responde `422` `invalid_input`. Falta la razón y las limitaciones del caso `suitable`/`insufficient_data` (esperan las señales, todavía en 501) y el cableado en `/rotations` y `/changes`.
 
 ### HU-192 · Orden de las ventanas por factor limitante y prioridades
 
@@ -221,7 +229,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [x] Si falta una señal en `weights.yaml` o un peso está fuera de 0 a 5, la API no arranca y dice por qué. Lo mismo con `thresholds.yaml`: una curva sin orden, una calificación fuera de 0 a 100, una curva sin fuente, un suelo crítico o una señal sin curva con umbral (`backend/config/thresholds.py`, pruebas en `tests/test_umbrales.py`)
   - [ ] La respuesta incluye la versión del dataset y de las reglas, y los pesos usados (`weights`)
 - **Reglas que aplican:** R4, R6, R10
-- **Notas:** **13 de octubre de 2026:** hecha la parte de los pesos (`backend/config/weights.py`, con pruebas en `tests/test_version.py`). Falta `thresholds.yaml` y todo lo que depende del motor. **10 de noviembre de 2026:** hecho `thresholds.yaml` 1.0.0 (decidido por Felipe el 10 de noviembre de 2026). Agua: clases del WRSI de FEWS NET (100 sin déficit, menos de 50 pérdida, Smith 1992); heladas: niveles de riesgo del ZARC de Brasil (20, 30 y 40 % de los años, mínima ≤ 2 °C); calor: crítica solo al llegar a `heat_max_c` de EcoCrop; suelo: de la ficha y nunca crítica; oferta y mercado: **sin fuente**, `insufficient_data`; 70 y 40: convención, con el ejemplo de la FAO de 1985. Las fuentes del agua y las heladas son derivadas y se dice en `sources`. Falta lo que depende del motor: que reciba los umbrales ya leídos y que cada respuesta diga sus versiones.
+- **Notas:** **13 de octubre de 2026:** hecha la parte de los pesos (`backend/config/weights.py`, con pruebas en `tests/test_version.py`). Falta `thresholds.yaml` y todo lo que depende del motor. **10 de noviembre de 2026:** hecho `thresholds.yaml` 1.0.0 (decidido por Felipe el 10 de noviembre de 2026). Agua: clases del WRSI de FEWS NET (100 sin déficit, menos de 50 pérdida, Smith 1992); heladas: niveles de riesgo del ZARC de Brasil (20, 30 y 40 % de los años, mínima ≤ 2 °C); calor: crítica solo al llegar a `heat_max_c` de EcoCrop; suelo: de la ficha y nunca crítica; oferta y mercado: **sin fuente**, `insufficient_data` (para el mercado se investigó una curva: propuesta en `docs/investigacion-decisiones.md`, 5e); 70 y 40: convención, con el ejemplo de la FAO de 1985. Las fuentes del agua y las heladas son derivadas y se dice en `sources`. Falta lo que depende del motor: que reciba los umbrales ya leídos y que cada respuesta diga sus versiones.
 
 ### HU-076 · Endpoint de diagnóstico con errores claros
 

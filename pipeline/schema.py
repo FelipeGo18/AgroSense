@@ -7,14 +7,16 @@ valores. El pipeline la corre antes de publicar y las pruebas la corren sobre lo
 Si el contrato cambia, cambia aquí también (y se registra en `docs/decisiones.md`): las pruebas fallan si no coinciden.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
 
 import polars as pl
 
+from common.grid import GRID_STEP_DEG, cell_center, cell_id  # noqa: F401
+
 # Valores permitidos de `quality` en todas las tablas (contrato, «Valores de `quality`», decisión 15).
 QUALITY = ("ok", "partial")
-# La rejilla común de 250 m (contrato, «La rejilla de 250 m»): `cell_id` = "{fila}_{columna}".
-GRID_STEP_DEG = 0.0025
 
 S, F, I8, I16, I32, I64, B = pl.String, pl.Float64, pl.Int8, pl.Int16, pl.Int32, pl.Int64, pl.Boolean
 IDS = pl.List(pl.String)
@@ -40,19 +42,6 @@ class Table:
 
 def c(dtype: pl.DataType, unit: str = "", nullable: bool = True) -> Column:
     return Column(dtype, unit, nullable)
-
-
-def cell_id(lat: float, lon: float) -> str:
-    """La celda de la rejilla común que contiene un punto: fila y columna desde (90° N, 180° O)."""
-    row = int((90 - lat) // GRID_STEP_DEG)
-    col = int((lon + 180) // GRID_STEP_DEG)
-    return f"{row}_{col}"
-
-
-def cell_center(cell: str) -> tuple[float, float]:
-    """El centro (lat, lon) de una celda de la rejilla común."""
-    row, col = (int(part) for part in cell.split("_"))
-    return 90 - (row + 0.5) * GRID_STEP_DEG, -180 + (col + 0.5) * GRID_STEP_DEG
 
 
 SOIL = {
@@ -97,6 +86,7 @@ TABLES: dict[str, Table] = {
             "kind": c(S, "crop, cover o fallow", False),
             "archetype": c(S),
             "family": c(S),
+            "secondary_families": c(IDS, "", False),
             "water_need": c(S),
             "root_type": c(S),
             "fixes_nitrogen": c(B),
@@ -133,7 +123,9 @@ TABLES: dict[str, Table] = {
             "kc": c(F),
             "gdd": c(F, "°C·día"),
             "frost_sensitive": c(B),
+            "frost_source_id": c(S),
             "heat_sensitive": c(B),
+            "heat_source_id": c(S),
             "source_id": c(S, "", False),
         },
         hu="HU-142",
@@ -480,6 +472,187 @@ TABLES: dict[str, Table] = {
         source_column="",
     ),
 }
+
+
+def _frozen(mapping: Mapping[str, "Value"] | None) -> Mapping[str, "Value"] | None:
+    # Copia y envuelve: el `dict` original no queda a la vista, así que nadie cambia la spec después de importarla.
+    return None if mapping is None else MappingProxyType(dict(mapping))
+
+
+@dataclass(frozen=True)
+class Value:
+    """Qué admite un valor de `params` o de `levels` de una regla de rotación.
+
+    `type` es uno de `VALUE_TYPES`: `family` (una familia de las fichas), `families` (lista de familias), `integer`,
+    `number` u `object` (un objeto anidado con exactamente las llaves de `keys`, por ejemplo los cortes de un grupo de
+    `organic_matter_cycles`, decisión 16). Los límites son inclusivos salvo `strict_minimum`; `nullable` deja el valor
+    nulo (en `families`, nulo es «todas las familias»). `keys` se guarda como un mapa de solo lectura.
+    """
+
+    type: str
+    minimum: float | None = None
+    maximum: float | None = None
+    strict_minimum: bool = False
+    nullable: bool = False
+    keys: Mapping[str, "Value"] | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "keys", _frozen(self.keys))
+
+
+@dataclass(frozen=True)
+class ConditionSpec:
+    """Un tipo de condición de la lista cerrada de «Reglas de rotación como datos» (contrato, HU-062).
+
+    - `kinds`: los `kind` que admite (`filter`, `health`).
+    - `criterion`: el criterio de `soil_health` que decide en un `health`; nulo si solo es `filter`.
+    - `params_keys` y `levels_keys`: las llaves exactas de `params` y de `levels`, con lo que admite cada valor. Un
+      tipo con `health` siempre tiene `levels_keys`; uno que solo es `filter`, nunca. Un valor `object` de `levels` es un
+      grupo de cortes (decisión 16: `low` y `normal` de `organic_matter_cycles`).
+    - `levels_order`: `higher_is_better` (los cortes son mínimos) o `lower_is_better` (los cortes son máximos). Vale para
+      cada par `favorable`/`moderate` de `levels`, también dentro de un grupo. Obligatorio si hay `levels_keys`. Con
+      `higher_is_better`, `moderate <= favorable`; con `lower_is_better`, `favorable <= moderate`. `moderate ==
+      favorable` quiere decir «sin franja intermedia»: el nivel es `favorable` desde ese valor y `unfavorable` del otro
+      lado, nunca `moderate`.
+    - `placeholders`: los `{marcadores}` que admite `reason_template`; el motor solo llena estos (R5).
+    - `params_equal_levels`: pares (`params`, `levels`) que deben valer lo mismo en un `health`.
+
+    `params_keys` y `levels_keys` se guardan como mapas de solo lectura.
+    """
+
+    kinds: tuple[str, ...]
+    criterion: str | None
+    params_keys: Mapping[str, Value]
+    levels_keys: Mapping[str, Value] | None
+    levels_order: str | None
+    placeholders: tuple[str, ...]
+    params_equal_levels: tuple[tuple[str, str], ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "params_keys", _frozen(self.params_keys))
+        object.__setattr__(self, "levels_keys", _frozen(self.levels_keys))
+
+
+RULE_KINDS = ("filter", "health")
+LEVELS_ORDERS = ("higher_is_better", "lower_is_better")
+VALUE_TYPES = ("family", "families", "integer", "number", "object")
+# Las llaves de un par de cortes: desde qué valor el criterio es `favorable` o `moderate` (menos que eso, `unfavorable`).
+CUT_KEYS = frozenset({"favorable", "moderate"})
+_CYCLES = Value("integer", minimum=0)
+CONDITION_TYPES: Mapping[str, ConditionSpec] = MappingProxyType({
+    "same_family_consecutive": ConditionSpec(
+        kinds=("filter",),
+        criterion=None,
+        params_keys={"families": Value("families", nullable=True)},
+        levels_keys=None,
+        levels_order=None,
+        placeholders=("family",),
+    ),
+    "family_return_min_cycles": ConditionSpec(
+        kinds=("filter", "health"),
+        criterion="pest_break",
+        params_keys={"family": Value("family"), "min_cycles": Value("integer", minimum=1)},
+        levels_keys={"favorable": _CYCLES, "moderate": _CYCLES},
+        levels_order="higher_is_better",
+        placeholders=("family", "cycles"),
+        params_equal_levels=(("min_cycles", "favorable"),),
+    ),
+    "legume_cycles": ConditionSpec(
+        kinds=("health",),
+        criterion="nitrogen",
+        params_keys={},
+        levels_keys={"favorable": _CYCLES, "moderate": _CYCLES},
+        levels_order="higher_is_better",
+        placeholders=("count",),
+    ),
+    "organic_matter_cycles": ConditionSpec(
+        kinds=("health",),
+        criterion="organic_carbon",
+        params_keys={"soc_low_g_kg": Value("number", minimum=0, strict_minimum=True)},
+        # Decisión 16 (`docs/decisiones.md`): un grupo de cortes con el suelo bajo y otro con el suelo normal, los dos
+        # obligatorios. Con el carbono bajo, `favorable` pide al menos un ciclo de abono verde o descanso.
+        levels_keys={
+            "low": Value("object", keys={"favorable": Value("integer", minimum=1), "moderate": _CYCLES}),
+            "normal": Value("object", keys={"favorable": _CYCLES, "moderate": _CYCLES}),
+        },
+        levels_order="higher_is_better",
+        # `{soc_range}`: el rango p05–p95 del carbono estimado (R10: el suelo es una estimación de 250 m y se dice).
+        placeholders=("count", "soc_level", "soc_range"),
+    ),
+    "covered_months_pct": ConditionSpec(
+        kinds=("health",),
+        criterion="soil_cover",
+        params_keys={},
+        levels_keys={"favorable": Value("number", 0, 100), "moderate": Value("number", 0, 100)},
+        levels_order="higher_is_better",
+        placeholders=("pct",),
+    ),
+    "bare_months_on_slope": ConditionSpec(
+        kinds=("health",),
+        criterion="erosion",
+        params_keys={"slope_pct_from": Value("number", minimum=0)},
+        levels_keys={"favorable": Value("number", minimum=0), "moderate": Value("number", minimum=0)},
+        levels_order="lower_is_better",
+        placeholders=("slope", "months"),
+    ),
+})  # fmt: skip
+
+
+def _check_value_spec(where: str, value: Value, *, in_levels: bool) -> None:
+    if value.type not in VALUE_TYPES:
+        raise ValueError(f"{where}: tipo de valor {value.type!r} desconocido; los tipos son {list(VALUE_TYPES)}.")
+    if (value.type == "object") != (value.keys is not None):
+        raise ValueError(f"{where}: `keys` va solo, y siempre, en un valor de tipo `object`.")
+    numeric = value.type in ("integer", "number")
+    if not numeric and (value.minimum is not None or value.maximum is not None or value.strict_minimum):
+        raise ValueError(f"{where}: los límites solo valen en `integer` o `number`.")
+    if value.strict_minimum and value.minimum is None:
+        raise ValueError(f"{where}: `strict_minimum` sin `minimum`.")
+    if in_levels and value.type in ("family", "families"):
+        raise ValueError(f"{where}: un corte de `levels` es un número o un grupo de cortes, no una familia.")
+    if value.type == "object":
+        _check_keys_spec(where, value.keys or {}, in_levels=in_levels)
+
+
+def _check_keys_spec(where: str, keys: Mapping[str, Value], *, in_levels: bool) -> None:
+    for key, value in keys.items():
+        _check_value_spec(f"{where}.{key}", value, in_levels=in_levels)
+    if not in_levels:
+        return
+    # En `levels`, cada objeto es un par de cortes o un conjunto de grupos de cortes; nunca una mezcla.
+    groups = [key for key, value in keys.items() if value.type == "object"]
+    if groups and len(groups) != len(keys):
+        raise ValueError(f"{where}: mezcla grupos de cortes con cortes sueltos.")
+    if not groups and set(keys) != CUT_KEYS:
+        raise ValueError(f"{where}: un par de cortes tiene exactamente las llaves {sorted(CUT_KEYS)}, no {sorted(keys)}.")
+
+
+def check_condition_types(types: Mapping[str, ConditionSpec]) -> None:
+    """Autocomprobación de la lista cerrada. Un error aquí es de programación: `ValueError` al importar el módulo."""
+    for name, spec in types.items():
+        where = f"CONDITION_TYPES[{name!r}]"
+        if not spec.kinds or not set(spec.kinds) <= set(RULE_KINDS):
+            raise ValueError(f"{where}.kinds: {spec.kinds!r} debe ser parte de {list(RULE_KINDS)}.")
+        health = "health" in spec.kinds
+        if health != (spec.criterion is not None):
+            raise ValueError(f"{where}.criterion: va solo, y siempre, en un tipo que admite `health`.")
+        if health != (spec.levels_keys is not None):
+            raise ValueError(f"{where}.levels_keys: va solo, y siempre, en un tipo que admite `health`.")
+        if spec.levels_keys is None and spec.levels_order is not None:
+            raise ValueError(f"{where}.levels_order: sin `levels_keys` no hay cortes que ordenar.")
+        if spec.levels_keys is not None and spec.levels_order not in LEVELS_ORDERS:
+            raise ValueError(f"{where}.levels_order: {spec.levels_order!r} debe ser uno de {list(LEVELS_ORDERS)}.")
+        _check_keys_spec(f"{where}.params_keys", spec.params_keys, in_levels=False)
+        if spec.levels_keys is not None:
+            _check_keys_spec(f"{where}.levels_keys", spec.levels_keys, in_levels=True)
+        for param, level in spec.params_equal_levels:
+            if param not in spec.params_keys or level not in (spec.levels_keys or {}):
+                raise ValueError(f"{where}.params_equal_levels: ({param!r}, {level!r}) nombra llaves que no existen.")
+        if not all(isinstance(p, str) and p.isidentifier() for p in spec.placeholders):
+            raise ValueError(f"{where}.placeholders: cada marcador es un nombre sin espacios.")
+
+
+check_condition_types(CONDITION_TYPES)
 
 
 class SchemaError(ValueError):

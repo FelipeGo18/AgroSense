@@ -2,6 +2,7 @@
 
 import copy
 
+import polars as pl
 import pytest
 
 from pipeline import catalog
@@ -54,11 +55,26 @@ def test_las_leguminosas_fijan_nitrogeno_y_las_demas_no():
     assert {k for k, v in fixes.items() if v} == {"arveja", "haba", "avena_vicia"}
 
 
+def test_solo_la_avena_con_vicia_tiene_segunda_familia():
+    crops, _, _ = build()
+    assert crops.schema["secondary_families"] == pl.List(pl.String)
+    by_id = dict(zip(crops["crop_id"].to_list(), crops["secondary_families"].to_list(), strict=True))
+    assert by_id.pop("avena_vicia") == ["Leguminosae"]
+    assert all(v == [] for v in by_id.values())
+    row = crops.filter(crops["crop_id"] == "avena_vicia")["source_ids"].to_list()[0]
+    assert "fao_ecocrop" in row
+
+
 def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
     crops, stages, _ = build()
-    # Sin temperatura que la mate en EcoCrop: la sensibilidad a la helada de la haba queda sin dato (R1).
-    haba = stages.filter(stages["crop_id"] == "haba")
-    assert haba["frost_sensitive"].null_count() == haba.height
+    # Sin una fuente que dé la temperatura de daño en la fase vegetativa, la helada del haba en esas etapas queda sin dato
+    # (R1); en la floración sí hay fuente (HU-142).
+    haba = stages.filter(stages["crop_id"] == "haba").sort("stage")
+    assert dict(zip(haba["stage"].to_list(), haba["frost_sensitive"].to_list(), strict=True)) == {
+        "development": None,
+        "initial": None,
+        "mid": True,
+    }
     assert crops.filter(crops["crop_id"] == "papa")["root_type"].to_list() == [None]
 
 
@@ -78,6 +94,16 @@ def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
         (lambda d: crop(d, "papa")["stages"]["list"][0].update(days=0), "mayor que cero"),
         (lambda d: crop(d, "papa")["stages"]["list"][0].update(kc=3), "fuera de 0 a 2"),
         (lambda d: crop(d, "papa")["stages"].update(list=[]), "necesita sus etapas"),
+        (lambda d: crop(d, "avena_vicia").update(secondary_families={"v": ["Leguminosae"]}), "no cita una fuente"),
+        (lambda d: crop(d, "avena_vicia").update(secondary_families={"v": ["Leguminosa"], "s": "fao_ecocrop"}), "de ninguna ficha"),
+        (lambda d: crop(d, "avena_vicia").update(secondary_families={"v": ["Gramineae"], "s": "fao_ecocrop"}), "propia ficha"),
+        (lambda d: crop(d, "avena_vicia").update(secondary_families={"v": ["Leguminosae"] * 2, "s": "fao_ecocrop"}), "repetidas"),
+        (lambda d: crop(d, "avena_vicia").update(secondary_families={"v": "Leguminosae", "s": "fao_ecocrop"}), "lista de textos"),
+        # HU-142: la sensibilidad de una etapa va con su propia fuente (R8).
+        (lambda d: crop(d, "papa")["stages"]["list"][0].update(frost_sensitive=True), r"\{v: true o false, s: fuente\}"),
+        (lambda d: crop(d, "papa")["stages"]["list"][0].update(heat_sensitive={"v": True}), "no cita una fuente"),
+        (lambda d: crop(d, "papa")["stages"]["list"][0].update(heat_sensitive={"v": True, "s": "inventada"}), "no cita una fuente"),
+        (lambda d: crop(d, "papa")["stages"]["list"][0].update(frost_sensitive={"v": "sí", "s": "fao_ecocrop"}), "true o false"),
     ],
 )
 def test_un_catalogo_que_no_cumple_no_se_publica(change, message):
@@ -85,7 +111,38 @@ def test_un_catalogo_que_no_cumple_no_se_publica(change, message):
         build(change)
 
 
+def test_la_sensibilidad_de_cada_etapa_dice_su_propia_fuente():
+    """HU-142 (aprobado por Felipe el 13 de noviembre de 2026): `frost_source_id` y `heat_source_id` son la fuente de cada
+    sensibilidad, distinta de la de los días y el Kc (`source_id`); nulas cuando el valor es nulo, y ninguna queda fuera
+    de `source_ids` del cultivo (R8)."""
+    crops, stages, _ = build()
+    for flag, source in (("frost_sensitive", "frost_source_id"), ("heat_sensitive", "heat_source_id")):
+        assert stages.filter(stages[flag].is_null() != stages[source].is_null()).is_empty()
+    cited = dict(zip(crops["crop_id"].to_list(), crops["source_ids"].to_list(), strict=True))
+    for row in stages.iter_rows(named=True):
+        for source in (row["frost_source_id"], row["heat_source_id"]):
+            assert source is None or source in cited[row["crop_id"]]
+
+
+def test_un_valor_nulo_de_sensibilidad_no_lleva_fuente():
+    def change(d):
+        crop(d, "papa")["stages"]["list"][0].update(heat_sensitive={"v": None, "s": "fao_ecocrop"})
+
+    _, stages, _ = build(change)
+    papa = stages.filter((stages["crop_id"] == "papa") & (stages["stage"] == "initial"))
+    assert papa.select("heat_sensitive", "heat_source_id").row(0) == (None, None)
+
+
 def test_un_limite_nulo_con_fuente_es_un_rango_abierto():
     """La UPRA no pone techo a la cebolla de bulbo: el máximo va nulo, con su fuente, y el catálogo es válido."""
     crops, _, _ = build()
     assert crops.filter(crops["crop_id"] == "cebolla_bulbo")["tmean_max_c"].to_list() == [None]
+
+
+def test_secondary_families_se_publica_ordenada_sin_depender_del_orden_del_yaml():
+    # R4: dos órdenes del YAML dan la misma lista publicada.
+    def published(order):
+        crops, _, _ = build(lambda d: crop(d, "avena_vicia").update(secondary_families={"v": order, "s": "fao_ecocrop"}))
+        return crops.filter(pl.col("crop_id") == "avena_vicia")["secondary_families"].to_list()[0]
+
+    assert published(["Solanaceae", "Leguminosae"]) == published(["Leguminosae", "Solanaceae"]) == ["Leguminosae", "Solanaceae"]

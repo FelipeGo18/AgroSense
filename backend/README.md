@@ -25,6 +25,11 @@ La API lee el dataset del pipeline de `AGROSENSE_DATA_DIR` (por defecto `data/pu
 Solo lo lee. Si no está, los catálogos y crear o editar un lote responden 503 `dataset_unavailable` y el log dice por qué;
 lo demás sigue. Se publica con `uv run python -m pipeline.build` (`pipeline/README.md`).
 
+Al arrancar, la API también carga `grid_cells.parquet`, la rejilla de 250 m, pero solo las columnas `cell_id` y
+`altitude_m` (unas 594 mil celdas, unos pocos MB en memoria). Con ella corrige la temperatura del municipio a la altitud
+de un lote dibujado para decidir si el cultivo se da. Sin ese archivo, la aptitud de un lote con contorno queda como
+`insufficient_data` y la respuesta lo dice en las limitaciones; no se usa la temperatura del municipio en su lugar.
+
 Para programar contra datos sin esperar el pipeline: `AGROSENSE_DATA_DIR=data/examples` usa el dataset de ejemplo del
 contrato (`uv run python -m pipeline.examples`, HU-011): tres municipios con cifras inventadas que citan la fuente `ejemplo`.
 

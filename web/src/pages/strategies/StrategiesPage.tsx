@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
+import { SceneBackdrop } from "@/components/layout/SceneBackdrop";
 import { TopBar } from "@/components/layout/TopBar";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -202,8 +203,10 @@ export function StrategiesPage() {
   ];
 
   return (
-    <div className="min-h-svh bg-paleta-niebla">
+    <div className="relative isolate min-h-svh bg-paleta-niebla">
       <title>Estrategias de rotación · AgroSense</title>
+      {/* El paisaje del municipio (estrategias.py, ciclo.py): de fondo completo en la entrada, en franja con el resultado. */}
+      <SceneBackdrop scene="municipio" variant={showResult ? "band" : "full"} />
       <TopBar />
       <main className="container-page pt-[112px] pb-40 md:pt-[128px] md:pb-48">
         {openCycle && request ? (
@@ -275,7 +278,8 @@ export function StrategiesPage() {
           </>
         ) : (
           <div className="flex max-w-[760px] min-w-0 flex-col gap-8">
-            <header className="flex min-w-0 flex-col gap-3">
+            {/* Sobre el paisaje, el encabezado va en un panel claro para que se lea (en el diseño va dentro de la tarjeta). */}
+            <header className="flex min-w-0 flex-col gap-3 rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
               <Eyebrow>Estrategias de rotación</Eyebrow>
               <h1 ref={formTitle} tabIndex={-1} className="text-[clamp(1.75rem,4vw,3rem)] outline-none">
                 ¿Qué sembrar en los próximos ciclos?
@@ -283,6 +287,10 @@ export function StrategiesPage() {
               <p>
                 Le mostramos estrategias de dos o tres ciclos que cumplen las reglas de rotación y se dan en su zona, comparadas por agua,
                 suelo, ingreso y riesgo según lo que a usted le importa. Es la historia de su zona, no un pronóstico.
+              </p>
+              <p>
+                Un <strong>ciclo</strong> es una siembra completa: de la siembra a la cosecha de un cultivo, o el tiempo de un abono verde o
+                de un descanso. Cada ciclo empieza cuando termina el anterior.
               </p>
             </header>
 
@@ -297,7 +305,9 @@ export function StrategiesPage() {
             )}
 
             {resolving ? (
-              <p role="status">Cargando su consulta…</p>
+              <p role="status" className="rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
+                Cargando su consulta…
+              </p>
             ) : (
               <Card bodyClassName="gap-6">
                 {municipalities.isError || crops.isError ? (
@@ -437,6 +447,7 @@ export function StrategiesPage() {
 
                     <ChoiceGroup<2 | 3>
                       legend="¿Cuántos ciclos quiere planear?"
+                      hint="Según el cultivo, cada ciclo dura de 3 a 6 meses. Por ejemplo, papa, luego avena con vicia, luego arveja: 3 ciclos, cerca de 14 meses."
                       choices={[
                         { value: 2, label: "2 ciclos" },
                         { value: 3, label: "3 ciclos" },
