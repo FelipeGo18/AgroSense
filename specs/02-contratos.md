@@ -595,7 +595,13 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
     { "crop_ids": ["papa", "arveja", "haba"], "cycle": 1, "kind": "rule", "rule_id": "REGLA_ID",
       "reason": "Repite la familia de la papa, que había antes en el terreno", "source_ids": ["FUENTE_ID"] },
     { "crop_ids": ["arveja", "papa", "maiz"], "cycle": 2, "kind": "high_risk", "signal": "frost",
-      "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa", "source_ids": ["nasa_power"] }
+      "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa", "source_ids": ["nasa_power"] },
+    { "crop_ids": ["arveja", "papa", "haba"], "cycle": 2, "kind": "not_suitable", "crop_id": "papa",
+      "reason": "La temperatura media anual del municipio (28,4 °C) pasa de la que aguanta la papa (hasta 16 °C)",
+      "source_ids": ["upra_papa_diacol", "nasa_power", "cenicafe_lapse_rate"] },
+    { "crop_ids": ["papa", "arveja", "zanahoria"], "cycle": 3, "kind": "soil_ph", "crop_id": "zanahoria",
+      "reason": "El pH del suelo de la zona (3,6 a 4,0) queda fuera del que tolera la zanahoria (4,2 a 8,7)",
+      "source_ids": ["fao_ecocrop", "soilgrids"] }
   ],
   "weights": { "water": 3, "soil": 5, "income": 2, "risk": 4 },
   "soil_basis": "municipality",
@@ -610,6 +616,7 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - `current_strategy` (decisión 14, aprobado por Felipe el 8 de noviembre de 2026): la rotación actual evaluada con la misma forma de una estrategia (el ejemplo omite sus ciclos y su salud del suelo por brevedad), con `rank` nulo. **Nunca se excluye:** si viola una regla, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, `issues` lo dice con la misma forma de `excluded` (sin `crop_ids`). Nula sin `current_crop_ids`. Una estrategia sugerida igual a la actual no se repite en `strategies`.
 - `soil_health`: los cinco criterios de salud del suelo (`erosion` desde la decisión 14), cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons`, `rule_ids` (reglas de `rotation_rules`, con fuente) y `source_ids` (las fuentes de esas reglas y de los datos que usan, para que la web las cite; vacía sin regla con fuente). **No es una predicción de cuánto mejora el suelo.**
 - `excluded`: las estrategias descartadas, con el ciclo y el motivo. **Trae hasta 10** (decisión 15): primero las que quedaron fuera por un solo motivo, y entre ellas, en el orden en que se habrían ordenado. `excluded_counts` cuenta todas las descartadas por `kind` (por ejemplo `{"rule": 212, "high_risk": 48, "not_suitable": 30, "soil_ph": 0}`), para que la web diga cuántas son sin traerlas todas. `kind` es `rule` (viola una regla de filtro; trae `rule_id`), `not_suitable` (un cultivo no se da en la zona), `soil_ph` (el pH queda fuera de todo el intervalo) o `high_risk` (un ciclo con `water`, `frost` o `heat` desfavorable y crítica; trae `signal`).
+  - `not_suitable` y `soil_ph` (aprobado por Felipe el 14 de noviembre de 2026) traen `cycle`, el **primer** ciclo (desde 1) donde aparece el cultivo que causa el descarte, y `crop_id`, ese cultivo. En `not_suitable`, `reason` es **la misma frase** que da `/diagnostics` en `suitability.reasons`, para que el agricultor lea lo mismo en las dos pantallas, y `source_ids` trae la fuente del rango de temperatura media de la ficha, `nasa_power` y `cenicafe_lapse_rate` (la temperatura corregida por altitud). En `soil_ph`, `reason` da el intervalo de pH del suelo y el rango que tolera el cultivo, y `source_ids` trae la fuente del rango de pH de la ficha y la del suelo (SoilGrids, HU-181). Los valores de los dos ejemplos son de ejemplo.
 - Cada descartada y cada `issues` trae `source_ids`: la fuente de su regla, de la ficha del cultivo, del suelo o del clima de la señal (R8).
 - La oferta y el mercado no excluyen estrategias: entran solo por `income`.
 - `soil_basis` y `slope_basis`: `lot` o `municipality`, de dónde salen el suelo y la pendiente.
@@ -622,6 +629,8 @@ Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 
 > **8 de noviembre de 2026 (decisión 14, aprobado por Felipe):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta.
 
 > **11 de noviembre de 2026 (HU-102, aprobado por Haider; decisión 15 de `docs/decisiones.md`):** `source_ids` en cada criterio de `soil_health`, en cada `issues` y en cada `excluded`. Es un campo nuevo; los demás no cambian.
+
+> **14 de noviembre de 2026 (HU-081, aprobado por Felipe en la revisión del PR #70):** `excluded` con `kind = not_suitable` o `soil_ph` trae `cycle` (el primer ciclo con el cultivo que causa el descarte) y `crop_id`; la `reason` de `not_suitable` es la misma de `/diagnostics`. Es un campo nuevo (`crop_id`) y una precisión de `cycle`; los demás no cambian.
 
 ### Cuerpo de `POST /api/v1/water-plans`
 
