@@ -86,6 +86,11 @@ class Dataset:
     # Los días con helada de cada mes de cada año (`climate_frost_month`, HU-045), para la señal de heladas (HU-077).
     # Nula si el dataset no la trae: entonces la señal es `insufficient_data` (R1).
     climate_frost_month: pl.DataFrame | None = None
+    # Comparación histórica de HU-217/HU-218.
+    # None indica que la tabla todavía no está publicada.
+    climate_change_month: pl.DataFrame | None = None
+    # Periodos definidos por el manifiesto del dataset.
+    periods: tuple[dict[str, Any], ...] = ()
 
 
 def load(folder: Path) -> Dataset:
@@ -115,6 +120,9 @@ def load(folder: Path) -> Dataset:
         grid = _grid(grid_path) if grid_path.exists() else None
         frost_path = folder / "climate_frost_month.parquet"
         climate_frost_month = pl.read_parquet(frost_path) if frost_path.exists() else None
+        changes_path = folder / "climate_change_month.parquet"
+        climate_change_month = pl.read_parquet(changes_path) if changes_path.exists() else None
+        periods = tuple(manifest.get("periods", []))
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -147,6 +155,8 @@ def load(folder: Path) -> Dataset:
         market_month=market_month,
         market_last_date=market_latest["market_date"].max() if market_latest is not None and market_latest.height else None,
         markets=_markets(manifest["region"], market_latest),
+        climate_change_month=climate_change_month,
+        periods=periods,
         grid=grid,
         climate_frost_month=climate_frost_month,
     )

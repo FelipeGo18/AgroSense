@@ -68,8 +68,8 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-075 | Umbrales y pesos versionados | P0 | S | en curso | `weights.yaml` y `thresholds.yaml` 1.0.0 hechos (10 nov); oferta y mercado sin fuente (para el mercado se investigó una curva: propuesta en `docs/investigacion-decisiones.md`, 5e). Falta lo que depende del motor |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-076 | Endpoint de diagnóstico con errores claros | P0 | S | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-078 | Endpoints de catálogo y tendencias | P0 | S | en curso | `/municipalities`, `/boundary` y `/crops` hechos; faltan suelo y `/trends` |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-217 | Comparar dos periodos de la historia de la zona | P0 | M | pendiente | Nueva |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-218 | Endpoint de «Qué cambió» | P0 | S | pendiente | Nueva |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-217 | Comparar dos periodos de la historia de la zona | P0 | M | en curso | Se implementa `frost_freq_pct`, `precip_normal_mm` y `tmax_p90_c` de cada periodo y su diferencia (después menos antes), cada uno con `status` en backend/engine/changes.py  y las reazones con periodos y sin pronósticos. Para completar los requisitos se necesitan datos históricos de HU-216, balance hídrico de HU-144, orden de ventanas de HU-192 y calificación de HU-196 |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-218 | Endpoint de «Qué cambió» | P0 | S | en curso | 14 nov: cargador y comparación mensual conectados para `not_suitable`; 200 con clima, razones, periodos por fuente, versiones y sin ventanas; 422 de entrada y pruebas sin sustitución POWER/IMERG. Aptitud `suitable`/`insufficient_data` sigue en 501 hasta integrar ventanas de HU-217 (HU-144, HU-192 y señales de HU-196). Falta verificar datos publicados de HU-216; no cierra la HU |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-195 | Señales de exceso de lluvia, enfermedad y cosecha | P1 | M | pendiente | |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en curso | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | pendiente | Nueva |
@@ -146,7 +146,7 @@
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-174 | Día y noche en la escena | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-175 | Endpoint de condiciones actuales | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-176 | Lluvia, nubes y viento en la escena | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
-| [EP-18](epicas/EP-18-suelo.md) | HU-181 | Suelo de la región publicado | P0 | M | pendiente | |
+| [EP-18](epicas/EP-18-suelo.md) | HU-181 | Suelo de la región publicado | P0 | M | hecha | SoilGrids 2.0 en `grid_cells` y `soil_municipality` (239 municipios); acierta la acidez de la Sabana, pero da ácidos los suelos básicos de la cuenca baja |
 | [EP-18](epicas/EP-18-suelo.md) | HU-182 | Suelo de un lote | P0 | M | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-183 | Señal de suelo en el diagnóstico | P0 | S | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | pendiente | |
