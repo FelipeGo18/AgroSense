@@ -27,6 +27,9 @@ import {
   placeName,
 } from "./common";
 import { ZoneChoice } from "./ZoneChoice";
+import { useSearchParams } from "react-router";
+import { clearGuestConsult, readGuestConsult } from "@/features/strategies/entry";
+import { cropNames, useCrops } from "@/features/farm/seasons";
 
 const OTHER = "otro";
 const option = (m: Municipality): Option => ({ id: m.municipality_id, label: m.name, hint: m.department });
@@ -48,19 +51,39 @@ function AddLot() {
   const lots = useLots();
   const create = useCreateLot();
   const places = byId(municipalities.data);
+  const [search, setSearch] = useSearchParams();
+  const crops = useCrops();
+  const [guestConsult] = useState(() => readGuestConsult());
+  const fromConsult = search.get("desde") === "consulta" && guestConsult !== null;
+  const guestMunicipality = guestConsult?.municipalityId ?? "";
+  const guestArea = guestConsult?.areaText ?? "";
+  const guestIrrigation = guestConsult?.irrigation;
+
+  const names = cropNames(crops.data);
+  const previousCrops = fromConsult ? (guestConsult?.previousCrops ?? []) : [];
+
   // Las zonas donde ya tiene lotes, con cuántos lotes tiene en cada una, en el orden en que las agregó.
   const counts = new Map<string, number>();
   for (const lot of lots.data ?? [])
     if (places.has(lot.municipality_id)) counts.set(lot.municipality_id, (counts.get(lot.municipality_id) ?? 0) + 1);
   const zones = [...counts.keys()];
 
-  const [step, setStep] = useState<1 | 2>(1);
-  const [manual, setManual] = useState(false);
-  const [zone, setZone] = useState<string | null>(null);
-  const [other, setOther] = useState<Option | null>(null);
-  const [area, setArea] = useState("");
+  const [step, setStep] = useState<1 | 2>(fromConsult && guestMunicipality ? 2 : 1);
+  const [manual, setManual] = useState(fromConsult);
+  const [zone, setZone] = useState<string | null>(fromConsult ? guestMunicipality : null);
+  const [other, setOther] = useState<Option | null>(() => {
+    if (!fromConsult || !guestMunicipality) return null;
+    const place = places.get(guestMunicipality);
+    return place ? { id: guestMunicipality, label: place.name, hint: place.department } : null;
+  });
+  const [area, setArea] = useState(fromConsult ? guestArea : "");
   const [name, setName] = useState("");
-  const [irrigated, setIrrigated] = useState<boolean | null>(null);
+  const [irrigated, setIrrigated] = useState<boolean | null>(() => {
+    if (!fromConsult || !guestIrrigation) return null;
+    if (guestIrrigation === "si") return true;
+    if (guestIrrigation === "no") return false;
+    return null; // "nose" → null
+  });
   const [geometry, setGeometry] = useState<LotPolygon | null>(null);
   const [mode, setMode] = useState<DrawMode>("draw");
   const [tried, setTried] = useState(false);
@@ -76,7 +99,10 @@ function AddLot() {
     name: name.trim() ? undefined : NAME_ERROR,
     drawing: geometry ? undefined : NO_DRAWING,
   };
-  const done = (lot: { lot_id: string }) => void navigate(PATHS.lot(lot.lot_id), { state: { notice: "Lote guardado." } });
+  const done = (lot: { lot_id: string }) => {
+    clearGuestConsult();
+    void navigate(PATHS.lot(lot.lot_id), { state: { notice: "Lote guardado." } });
+  };
 
   const saveManual = (event: FormEvent) => {
     event.preventDefault();
@@ -93,7 +119,13 @@ function AddLot() {
   };
 
   const cancel = (
-    <Link to={PATHS.farm} className={`${LINK} min-h-11 self-center py-2`}>
+    <Link
+      to={PATHS.farm}
+      onClick={() => {
+        if (fromConsult) clearGuestConsult();
+      }}
+      className={`${LINK} min-h-11 self-center py-2`}
+    >
       Cancelar
     </Link>
   );
@@ -254,6 +286,36 @@ function AddLot() {
             <Eyebrow>Paso 2 de 2</Eyebrow>
             <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Su lote, sin dibujar</h1>
           </header>
+          {fromConsult && (
+            <div role="status" className="flex flex-col gap-2 border-2 border-superficie-borde bg-superficie-panel-suave p-4">
+              <p className="font-bold">Ya consultó para {town}. ¿Guardar como su primer lote?</p>
+              {previousCrops.length > 0 && <p>Cultivos anteriores: {previousCrops.map((id) => names.get(id) ?? id).join(", ")}.</p>}
+              <p>Solo falta un nombre. Puede dibujar su lote en el mapa después.</p>
+              <p>Los cultivos anteriores son una referencia; no se guardan como siembras.</p>
+            </div>
+          )}
+          {fromConsult && (
+            <button
+              type="button"
+              onClick={() => {
+                clearGuestConsult();
+                setSearch({}, { replace: true });
+                setStep(1);
+                setManual(false);
+                setZone(null);
+                setOther(null);
+                setArea("");
+                setName("");
+                setIrrigated(null);
+                setGeometry(null);
+                setMode("draw");
+                setTried(false);
+              }}
+              className={`${LINK} min-h-11`}
+            >
+              No, empezar de cero
+            </button>
+          )}
           {failed}
           <form onSubmit={saveManual} noValidate className="flex flex-col gap-4">
             <div className="grid grid-cols-1 gap-x-8 gap-y-4 lg:grid-cols-2">

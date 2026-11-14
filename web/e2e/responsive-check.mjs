@@ -176,12 +176,43 @@ async function check(context, route, width, light) {
     page.on("pageerror", (error) => errors.push(error.message));
     const loadingState = new URL(route, BASE).searchParams.get("estado") === "cargando";
 
+    // HU-168: cuenta y consulta de ejemplo, sin usar una base de datos.
+    if (route === "/mi-finca/agregar?desde=consulta") {
+      await page.addInitScript(() => {
+        sessionStorage.setItem(
+          "agrosense.guest-consult",
+          JSON.stringify({
+            municipalityId: "15646",
+            areaText: "1,26",
+            irrigation: "si",
+            previousCrops: ["papa"],
+          }),
+        );
+      });
+
+      await page.route("**/api/v1/me", (request) =>
+        request.fulfill({
+          json: {
+            user_id: "hu168",
+            username: "ejemplo",
+            display_name: "Ejemplo",
+            role: "farmer",
+            consent_version: 3,
+            priorities: null,
+          },
+        }),
+      );
+      await page.route("**/api/v1/lots", (request) => request.fulfill({ json: [] }));
+    }
     await page.goto(`${BASE}${route}`, {
       waitUntil: loadingState ? "domcontentloaded" : "networkidle",
     });
 
     if (loadingState) {
       await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+    }
+    if (route === "/mi-finca/agregar?desde=consulta") {
+      await page.getByRole("status").filter({ hasText: "¿Guardar como su primer lote?" }).waitFor();
     }
     await page.waitForTimeout(1200);
     return [...(await page.evaluate(inspect, { light, minTarget: minTargetFor(width) })), ...errors.map((e) => `error de la página: ${e}`)];

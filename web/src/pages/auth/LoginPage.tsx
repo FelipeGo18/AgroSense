@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useLogin, useSession } from "@/features/auth/session";
 import { typedBefore } from "@/lib/firstLoad";
+import { afterLoginPath } from "@/features/strategies/entry";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -45,7 +46,12 @@ export function LoginPage() {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    login.mutate({ username, password }, { onSuccess: () => celebrateThen(() => navigate(PATHS.farm)) });
+    login.mutate(
+      { username, password },
+      {
+        onSuccess: () => celebrateThen(() => navigate(afterLoginPath())),
+      },
+    );
   };
   const failed = login.error;
 

@@ -1,3 +1,4 @@
+import { EMPTY_STRATEGY, writeGuestConsult } from "@/features/strategies/entry";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router";
@@ -28,6 +29,7 @@ const open = (path: string) => render(<RouterProvider router={createMemoryRouter
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  sessionStorage.clear();
 });
 
 describe("Entrar (HU-162)", () => {
@@ -285,5 +287,25 @@ describe("Sesión", () => {
     await userEvent.click((await screen.findAllByRole("button", { name: "Cerrar sesión" }))[0]);
     expect(await screen.findByRole("link", { name: "Entrar" })).toHaveAttribute("href", PATHS.login);
     expect(calls.some((call) => call.key === "POST /api/v1/auth/logout")).toBe(true);
+  });
+});
+
+describe("Destino después de autenticar (HU-168, R9)", () => {
+  it.each([PATHS.login, PATHS.signup])("con consulta va a agregar lote desde %s sin ?rea en la URL", { timeout: 15000 }, async (path) => {
+    writeGuestConsult({ ...EMPTY_STRATEGY, municipalityId: "15646", areaText: "2,73", irrigation: "no" });
+    fakeApi({ [path === PATHS.login ? "POST /api/v1/auth/login" : "POST /api/v1/auth/register"]: { status: 200, body: ROSA } });
+    const router = createMemoryRouter(routes, { initialEntries: [path] });
+    const addresses: string[] = [];
+    const unsubscribe = router.subscribe((state) => addresses.push(state.location.pathname + state.location.search));
+    render(<RouterProvider router={router} />);
+    if (path === PATHS.signup)
+      fireEvent.change(await screen.findByLabelText("¿Cómo quiere que lo llamemos?"), { target: { value: "Rosa" } });
+    fireEvent.change(await screen.findByLabelText("Usuario"), { target: { value: "rosa.samaca" } });
+    fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "papa-criolla-2026" } });
+    if (path === PATHS.signup) await userEvent.click(screen.getByRole("checkbox"));
+    await userEvent.click(screen.getByRole("button", { name: path === PATHS.login ? "Entrar" : "Crear cuenta" }));
+    await waitFor(() => expect(addresses).toContain(PATHS.addLot + "?desde=consulta"));
+    expect(addresses.every((url) => !url.includes("area") && !url.includes("2,73") && !url.includes("2.73"))).toBe(true);
+    unsubscribe();
   });
 });

@@ -5,7 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SceneBackdrop } from "@/components/layout/SceneBackdrop";
 import { TopBar } from "@/components/layout/TopBar";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChoiceGroup } from "@/components/ui/ChoiceGroup";
 import { Combobox, type Option } from "@/components/ui/Combobox";
@@ -33,6 +33,7 @@ import {
   useRotations,
   validate,
   writeArea,
+  writeGuestConsult,
   type LotFacts,
   type Mode,
   type RotationRequest,
@@ -182,6 +183,7 @@ export function StrategiesPage() {
     setTried(true);
     if (!catalogsReady || !lotReady || Object.keys(validate(form, context)).length > 0) return;
     if (!form.lotId) writeArea(form.areaText.trim());
+    if (!user && !form.lotId) writeGuestConsult(form);
     setEditing(false);
     setParams(toParams(form), { preventScrollReset: true });
   };
@@ -274,6 +276,30 @@ export function StrategiesPage() {
                 onTwoCycles={() => setParams(toParams({ ...sent, cycles: 2 }), { preventScrollReset: true })}
                 cycleLink={(strategy, n) => `${PATHS.consult}?${cycleParams(params, strategyKey(strategy), n)}`}
               />
+            )}
+            {!user && !sessionLoading && (
+              <Card bodyClassName="gap-3">
+                <h2 className="text-[clamp(1.15rem,2.5vw,1.4rem)]">¿Quiere guardar este lote?</h2>
+                <p>
+                  Cree su cuenta y lo que acaba de consultar se convierte en su primer lote, listo para registrar siembras y ver su
+                  historial.
+                </p>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <ButtonLink to={PATHS.signup} onClick={() => writeGuestConsult(sent)}>
+                    Crear cuenta
+                  </ButtonLink>
+                  <span>
+                    ¿Ya tiene cuenta?{" "}
+                    <Link
+                      to={PATHS.login}
+                      onClick={() => writeGuestConsult(sent)}
+                      className={`${LINK} inline-flex min-h-11 min-w-11 items-center justify-center`}
+                    >
+                      Entrar
+                    </Link>
+                  </span>
+                </div>
+              </Card>
             )}
           </>
         ) : (
