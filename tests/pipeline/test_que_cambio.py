@@ -122,6 +122,27 @@ def test_un_periodo_con_la_fuente_equivocada_no_se_publica():
         build.validate_change(table.with_columns(pl.lit("nasa_power").alias("source_id")), municipalities, sources, periods)
 
 
+@pytest.mark.parametrize(
+    "broken",
+    [
+        pl.lit(55.0).alias("tmax_p90_c"),  # un calor imposible (revisión del PR #79)
+        pl.lit(13, dtype=pl.Int16).alias("years"),  # más años de los 12 del periodo de IMERG
+    ],
+)
+def test_un_calor_imposible_o_mas_anos_de_los_del_periodo_no_se_publican(broken):
+    rain = monthly(range(1981, 2025), lambda y, m: 80.0)
+    precip = monthly(range(2001, 2025), lambda y, m: 140.0)
+    table = climate_change.climate_change_month(REGION, None, rain, precip)
+    municipalities = pl.DataFrame({"municipality_id": ["15001"]})
+    sources = pl.DataFrame({"source_id": ["nasa_power", "imerg"]})
+    periods = climate_change.periods_from_region(REGION)
+    build.validate_change(table, municipalities, sources, periods)
+    imerg_rows = pl.col("source_id") == "imerg"
+    wrong = table.with_columns(pl.when(imerg_rows).then(broken).otherwise(pl.col(broken.meta.output_name())).alias(broken.meta.output_name()))
+    with pytest.raises(build.ValidationError):
+        build.validate_change(wrong, municipalities, sources, periods)
+
+
 def test_sin_periodos_en_la_region_no_hay_tabla():
     assert climate_change.climate_change_month({}, None, monthly(range(1981, 2025), lambda y, m: 80.0), None).is_empty()
 

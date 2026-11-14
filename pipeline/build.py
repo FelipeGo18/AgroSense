@@ -244,17 +244,31 @@ def validate_frost(
 
 def validate_change(change: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame, periods: list) -> None:
     """`climate_change_month` (HU-216) solo trae municipios publicados (R7), meses de 1 a 12, frecuencias de 0 a 100,
-    lluvia no negativa, periodos de `region.yaml` con su misma fuente (decisión 11) y fuentes que existen (R8)."""
+    lluvia no negativa, una máxima p90 verosímil (de -10 a 50 °C), años que caben en su periodo, periodos de
+    `region.yaml` con su misma fuente (decisión 11) y fuentes que existen (R8). Las dos comprobaciones del calor y de los
+    años las pidió Haider en la revisión del PR #79."""
     extra = set(change["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
     if extra:
         raise ValidationError(f"`climate_change_month` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
     bad = change.filter(
-        ~pl.col("month").is_between(1, 12) | ~pl.col("frost_freq_pct").is_between(0, 100) | (pl.col("precip_normal_mm") < 0)
+        ~pl.col("month").is_between(1, 12)
+        | ~pl.col("frost_freq_pct").is_between(0, 100)
+        | (pl.col("precip_normal_mm") < 0)
+        | ~pl.col("tmax_p90_c").is_between(-10, 50)
     )
     if not bad.is_empty():
         raise ValidationError(
-            f"`climate_change_month` con un mes, una frecuencia o una lluvia fuera de lo permitido: {bad.head(3).to_dicts()}"
+            f"`climate_change_month` con un mes, una frecuencia, una lluvia o un calor fuera de lo permitido: {bad.head(3).to_dicts()}"
         )
+    lengths = pl.DataFrame(
+        {"period_id": [p.period_id for p in periods], "period_years": [p.end_year - p.start_year + 1 for p in periods]},
+        schema={"period_id": pl.String, "period_years": pl.Int64},
+    )
+    too_many = change.join(lengths, on="period_id", how="left").filter(
+        (pl.col("years") < 1) | (pl.col("years") > pl.col("period_years"))
+    )
+    if not too_many.is_empty():
+        raise ValidationError(f"`climate_change_month` con más años de los que tiene su periodo: {too_many.head(3).to_dicts()}")
     allowed = {(p.period_id, p.source_id) for p in periods}
     wrong = set(change.select("period_id", "source_id").unique().iter_rows()) - allowed
     if wrong:
