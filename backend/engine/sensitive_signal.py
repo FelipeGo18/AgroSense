@@ -1,12 +1,12 @@
-"""Lo que comparten las señales por etapas sensibles (HU-077): se miden solo en los meses de la ventana en que el
-cultivo está en una etapa sensible (`CropWindow.sensitive_months`, HU-142 y HU-220), y todas dicen lo mismo cuando no
-se evalúan (specs/01-reglas.md, «Señales de una ventana»).
+"""Lo que comparten las señales de heladas (HU-077) y calor (HU-190): las dos se miden solo en los meses de la ventana en
+que el cultivo está en una etapa sensible (`CropWindow.sensitive_months`, HU-142 y HU-220), y las dos dicen lo mismo
+cuando no se evalúan (specs/01-reglas.md, «Señales de una ventana»).
 
 - `sensitive_window` traduce la ventana a una de dos cosas: el resultado de una señal que no se evalúa (`not_applicable`
   o `insufficient_data`, con su razón) o los meses que sí se evalúan (`SensitiveWindow`), con la limitación de los
   meses `unknown` (los de etapas sin el dato con fuente, que no se evalúan, R1). Una ventana nula (un cultivo sin
-  etapas, como el descanso) se resuelve aquí, una sola vez para todas las señales.
-- `ClimateSignalResult` es el resultado de las señales, con los nombres de campo del contrato.
+  etapas, como el descanso) se resuelve aquí, una sola vez para las dos señales.
+- `ClimateSignalResult` es el resultado de las dos señales, con los nombres de campo del contrato.
 - Los textos de las razones (meses, etapas y periodo) se arman aquí una sola vez; los números y las listas, con
   `common/text.py`, el mismo formato que la razón de la aptitud.
 
@@ -22,16 +22,17 @@ from datetime import date
 from itertools import pairwise
 
 from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, SignalScore
-from backend.engine.stages import FROST, NOT_APPLICABLE, CropWindow, WindowMonth
+from backend.engine.stages import FROST, HEAT, NOT_APPLICABLE, CropWindow, WindowMonth
 from common.months import month_name
 from common.text import join
 
-# `quality` de las tablas del clima por mes (`climate_frost_month`): el mes está completo. Cualquier otro valor (`partial`)
-# no basta para decir que no pasó nada (R1).
+# `quality` de las tablas del clima por mes (`climate_frost_month`, `climate_risk_month`): el mes está completo (en
+# `climate_risk_month`, con al menos los años que pide el periodo normal). Cualquier otro valor (`partial`) no basta
+# para decir que no pasó nada (R1).
 COMPLETE = "ok"
 
 # A qué es sensible el cultivo, como se dice en una razón.
-SENSITIVE_TO = {FROST: "sensible a la helada"}
+SENSITIVE_TO = {FROST: "sensible a la helada", HEAT: "sensible al calor"}
 # Las etapas de FAO-56 (`crop_stages.stage`), nombradas como las dice el manual y como las muestra la web
 # (`web/src/features/farm/seasons.ts`, `STAGE_NAMES`, que en la ficha abrevia «Desarrollo»): sin inventar otras
 # («floración», «llenado»).
@@ -52,7 +53,7 @@ class ClimateNormal:
 
 @dataclass(frozen=True)
 class ClimateSignalResult:
-    """La señal de una ventana, con los nombres de campo del contrato (specs/02-contratos.md).
+    """La señal `frost` o `heat` de una ventana, con los nombres de campo del contrato (specs/02-contratos.md).
 
     No trae `counts`: si la señal cuenta para la luz lo deciden los pesos en el semáforo (HU-074) y lo pone el
     ensamblado de la respuesta (HU-076), no esta señal. `limitations` son las de la señal: los meses que no se
@@ -98,7 +99,7 @@ class SensitiveWindow:
 def sensitive_window(
     window: CropWindow | None, risk: str, crop_name: str, normal: ClimateNormal | None, notices: tuple[str, ...] = ()
 ) -> ClimateSignalResult | SensitiveWindow:
-    """Los meses que evalúa la señal de `risk` (`frost`), o el resultado si no se evalúa.
+    """Los meses que evalúa la señal de `risk` (`frost` o `heat`), o el resultado si no se evalúa.
 
     `window` es la de `crop_window`, nula si el cultivo no tiene etapas (el descanso): sin etapas no se sabe qué meses
     son sensibles y la señal es `insufficient_data` (R1). `crop_name` es el nombre con su artículo («la papa»).

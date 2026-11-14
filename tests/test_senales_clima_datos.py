@@ -1,16 +1,19 @@
-"""Los datos de la señal de heladas (HU-077): las tablas del clima en el dataset, el periodo normal
+"""Los datos de las señales de heladas y calor (HU-077, HU-190): las tablas del clima en el dataset, el periodo normal
 del manifiesto y el aviso de `catalog/sources.yaml`, leídos por la API y pasados al motor ya resueltos (R6). Usa el
 dataset de ejemplo del repositorio (`data/examples/`, rotulado como ejemplo, R5) y el de las pruebas sin clima."""
 
+import math
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
+import polars as pl
 import pytest
 
-from backend.api.climate_signals import climate_normal, frost_for
+from backend.api.climate_signals import climate_normal, frost_for, heat_for, heat_months
 from backend.config.thresholds import load_thresholds
 from backend.dataset import load
+from backend.engine.heat_signal import HeatMonth
 from backend.engine.sensitive_signal import ClimateNormal
 from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA
 from backend.engine.stages import crop_window
@@ -37,11 +40,12 @@ def papa_window(examples, sowing=date(2026, 8, 3)):
 
 def test_las_tablas_del_clima_se_cargan_del_dataset(examples):
     assert {"municipality_id", "year", "month", "frost_days", "quality"} <= set(examples.climate_frost_month.columns)
+    assert {"municipality_id", "month", "tmax_p90_c", "quality"} <= set(examples.climate_risk_month.columns)
 
 
 def test_sin_tablas_del_clima_quedan_nulas_y_lo_demas_carga(dataset):
     loaded = load(dataset)
-    assert loaded.climate_frost_month is None
+    assert loaded.climate_frost_month is None and loaded.climate_risk_month is None
     assert loaded.municipalities
 
 
@@ -106,11 +110,39 @@ def test_con_un_periodo_que_los_ejemplos_no_cubren_la_helada_es_sin_datos(exampl
     assert get_signal_sources().for_region(examples.region["id"])["frost"].caveat in result.limitations
 
 
-def test_sin_ventana_la_senal_es_sin_datos(examples, thresholds):
+def test_sin_ventana_las_dos_senales_son_sin_datos(examples, thresholds):
     """El descanso no tiene etapas: `crop_window` da None y ninguna señal revienta (R1)."""
     assert frost_for(examples, TUNJA, None, thresholds, "el descanso").status == INSUFFICIENT_DATA
+    assert heat_for(examples, TUNJA, None, examples.crops["papa"], thresholds, "el descanso").status == INSUFFICIENT_DATA
 
 
 def test_un_municipio_sin_filas_es_sin_datos(examples, thresholds):
     window = papa_window(examples)
     assert frost_for(examples, "99999", window, thresholds, "la papa").status == INSUFFICIENT_DATA
+    assert heat_for(examples, "99999", window, examples.crops["papa"], thresholds, "la papa").status == INSUFFICIENT_DATA
+
+
+def test_el_calor_se_califica_con_la_maxima_del_municipio(examples, thresholds):
+    result = heat_for(examples, TUNJA, papa_window(examples), examples.crops["papa"], thresholds, "la papa")
+    assert result.status == AVAILABLE and result.indicators == ("tmax_p90_c",)
+    assert result.reasons[0].startswith("De 2015 a 2024, ")
+    assert "la papa aguanta hasta 30 °C" in result.reasons[0]
+
+
+def test_la_api_pasa_las_filas_de_calor_como_estan(examples):
+    """La API solo lee: los meses `partial`, nulos o NaN llegan al motor, que decide que no sirven."""
+    risk = examples.climate_risk_month.with_columns(
+        pl.when((pl.col("municipality_id") == TUNJA) & (pl.col("month") == 1))
+        .then(pl.lit("partial"))
+        .otherwise(pl.col("quality"))
+        .alias("quality"),
+        pl.when((pl.col("municipality_id") == TUNJA) & (pl.col("month") == 2))
+        .then(None)
+        .when((pl.col("municipality_id") == TUNJA) & (pl.col("month") == 3))
+        .then(float("nan"))
+        .otherwise(pl.col("tmax_p90_c"))
+        .alias("tmax_p90_c"),
+    )
+    rows = heat_months(replace(examples, climate_risk_month=risk), TUNJA)
+    assert set(rows) == set(range(1, 13))
+    assert rows[1].quality == "partial" and rows[2] == HeatMonth(None, "ok") and math.isnan(rows[3].tmax_p90_c)
