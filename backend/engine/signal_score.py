@@ -24,9 +24,15 @@ Sin el valor medido, o sin alguno de los límites de la ficha que pide la curva:
 `level` nulos y `critical` falso (R1). Un NaN (en el valor o en un límite de la ficha) cuenta como sin dato. Nunca se
 usa un límite «típico».
 
-El nivel sale de `thresholds.favorable` y `thresholds.moderate`: `score >= favorable` es `favorable`;
-`score >= moderate` es `moderate`; si no, `unfavorable`. Es crítica si `critical_below` no es nulo y
-`score < critical_below` (estricto). `soil` nunca es crítica (R10) porque su `critical_below` es siempre nulo.
+`score` es el entero que ve el agricultor (el contrato tipa `Score` como `int`): se redondea hacia arriba desde la
+mitad (`floor(x + 0,5)`, nunca el redondeo al par de `round()`) antes de decidir nada más, para que el nivel y si es
+crítica salgan del mismo número que se muestra, no de un decimal que nadie ve (69,6 tiene que dar 70 y `favorable`,
+no quedarse en `moderate` con un 70 en pantalla).
+
+El nivel sale de ese entero contra `thresholds.favorable` y `thresholds.moderate`: `score >= favorable` es
+`favorable`; `score >= moderate` es `moderate`; si no, `unfavorable`. Es crítica si `critical_below` no es nulo y
+ese mismo entero `< critical_below` (estricto). `soil` nunca es crítica (R10) porque su `critical_below` es siempre
+nulo.
 
 `not_applicable` (heladas o calor cuando ninguna etapa es sensible) no lo decide esta función: lo decide quien la
 llama, antes de pedir la calificación. Una señal que no está en los umbrales da `KeyError`: es un error de
@@ -65,13 +71,20 @@ CROP_LIMITS: dict[str, tuple[str, ...]] = {
 
 @dataclass(frozen=True)
 class SignalScore:
-    """Calificación de una señal: `status` es `available` o `insufficient_data`; `score` de 0 a 100 o None; `level`
-    `favorable`, `moderate`, `unfavorable` o None; `critical` es falso siempre que no hay calificación."""
+    """Calificación de una señal: `status` es `available` o `insufficient_data`; `score` es el entero de 0 a 100
+    que ve el agricultor, o None; `level` `favorable`, `moderate`, `unfavorable` o None; `critical` es falso
+    siempre que no hay calificación."""
 
     status: str
-    score: float | None
+    score: int | None
     level: str | None
     critical: bool
+
+
+def _round_half_up(score: float) -> int:
+    """Redondea hacia arriba desde la mitad: nunca el redondeo al par de `round()` (`round(68.5)` da 68, pero
+    aquí 68,5 tiene que dar 69). `score` siempre es 0-100, nunca negativo, así que no hace falta `math.copysign`."""
+    return math.floor(score + 0.5)
 
 
 def score_signal(
@@ -105,7 +118,7 @@ def score_signal(
     else:
         points = curve
 
-    score = score_from_curve(points, float(value))
+    score = _round_half_up(score_from_curve(points, float(value)))
     if score >= thresholds.favorable:
         level = FAVORABLE
     elif score >= thresholds.moderate:

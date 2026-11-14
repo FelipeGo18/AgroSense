@@ -228,9 +228,9 @@ def test_la_curva_fija_sale_de_la_configuracion_recibida(thresholds):
     "value,level",
     [
         (80.0, FAVORABLE),  # 70 exacto
-        (79.9, MODERATE),  # 69,85
+        (79.0, MODERATE),  # 68,5 crudo, 69 ya redondeado: lejos del corte, para que el redondeo no lo cruce
         (60.0, MODERATE),  # 40 exacto
-        (59.9, UNFAVORABLE),  # 39,8
+        (59.0, UNFAVORABLE),  # 38 crudo, lejos del corte por la misma razón
     ],
 )
 def test_cortes_de_nivel_exactos(thresholds, value, level):
@@ -260,7 +260,41 @@ def test_los_cortes_de_nivel_salen_de_la_configuracion_recibida(thresholds):
     assert score_signal("water", 55.0, changed).level == UNFAVORABLE
 
 
-# ---------- Crítica: calificación estrictamente bajo `critical_below` ----------
+# ---------- `score` se redondea antes de decidir el nivel: el agricultor ve un entero (revisión de Felipe, PR #65) ----------
+
+
+@pytest.fixture
+def identidad(thresholds) -> Thresholds:
+    """Los umbrales reales, pero con la curva de `water` cambiada por la identidad (0→0, 100→100): la calificación
+    cruda es el mismo valor que se pide, así que un valor como 69,5 no depende de ningún redondeo de la curva."""
+    water = replace(thresholds.signals["water"], curve=((0.0, 0.0), (100.0, 100.0)))
+    return replace(thresholds, signals={**thresholds.signals, "water": water})
+
+
+def test_69_5_redondea_a_70_y_es_favorable_no_moderada(identidad):
+    """69,5 tiene que dar 70 (favorable, el corte real es 70), no quedarse en 69 (moderada) por decimales que el
+    agricultor nunca ve. Es `floor(x + 0,5)`, no `round()`: `round(69.5)` también da 70, pero por la regla
+    contraria (al par); esta prueba no distingue las dos reglas, la de abajo sí."""
+    result = score_signal("water", 69.5, identidad)
+    assert (result.score, result.level) == (70, FAVORABLE)
+
+
+def test_69_4_redondea_a_69_y_sigue_moderada(identidad):
+    result = score_signal("water", 69.4, identidad)
+    assert (result.score, result.level) == (69, MODERATE)
+
+
+def test_el_redondeo_es_hacia_arriba_desde_la_mitad_no_al_par(identidad):
+    """`round()` redondea 68,5 a 68 (al par) y 69,5 a 70 (también al par, por casualidad). Aquí las dos suben:
+    68,5 → 69, no 68. Si se usara `round()`, esta prueba fallaría para 68,5 aunque la de 69,5 pasara igual."""
+    assert score_signal("water", 68.5, identidad).score == 69
+
+
+def test_critica_tambien_se_decide_con_el_entero_redondeado(thresholds):
+    """`frost` es crítica bajo 40: 39,5 redondea a 40 (no crítica) aunque el decimal crudo esté bajo el corte."""
+    identidad = replace(thresholds.signals["frost"], curve=((0.0, 0.0), (100.0, 100.0)))
+    changed = replace(thresholds, signals={**thresholds.signals, "frost": identidad})
+    assert score_signal("frost", 39.5, changed).critical is False
 
 
 def test_agua_con_calificacion_20_no_es_critica(thresholds):
@@ -269,8 +303,9 @@ def test_agua_con_calificacion_20_no_es_critica(thresholds):
 
 
 def test_agua_bajo_20_es_critica(thresholds):
-    result = score_signal("water", 49.9, thresholds)
-    assert result.score < 20.0
+    # 47,0 → 19 ya redondeado: lejos del corte a propósito, para que el redondeo no lo cruce (revisión de Felipe).
+    result = score_signal("water", 47.0, thresholds)
+    assert result.score < 20
     assert (result.level, result.critical) == (UNFAVORABLE, True)
 
 
@@ -280,8 +315,9 @@ def test_heladas_con_calificacion_40_no_son_criticas(thresholds):
 
 
 def test_heladas_bajo_40_son_criticas(thresholds):
-    result = score_signal("frost", 40.1, thresholds)
-    assert result.score < 40.0
+    # 45,0 → 37 ya redondeado: lejos del corte a propósito, para que el redondeo no lo cruce (revisión de Felipe).
+    result = score_signal("frost", 45.0, thresholds)
+    assert result.score < 40
     assert (result.level, result.critical) == (UNFAVORABLE, True)
 
 
