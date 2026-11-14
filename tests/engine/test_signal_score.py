@@ -7,10 +7,7 @@ umbrales y el catálogo reales); el motor no (R6, cubierto en tests/engine/test_
 """
 
 import copy
-import subprocess
-import sys
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
 
@@ -25,7 +22,10 @@ from backend.engine.signal_score import (
     MODERATE,
     UNFAVORABLE,
     SignalScore,
+    high_risk,
+    rated_signals,
     score_signal,
+    weight_of,
 )
 from pipeline import catalog
 
@@ -430,7 +430,7 @@ def test_infinito_se_califica_con_el_extremo_de_la_curva(thresholds, signal, val
 
 @pytest.mark.parametrize(
     "signal,value",
-    [("water", 73.3), ("frost", 12.5), ("heat", 26.1), ("soil", 4.9), ("supply", 10.0)],
+    [("water", 73.3), ("frost", 12.5), ("heat", 26.1), ("soil", 4.9), ("supply", 10.0), ("market", 0.95)],
 )
 def test_mismo_dato_misma_calificacion(thresholds, papa, signal, value):
     first = score_signal(signal, value, thresholds, papa)
@@ -451,21 +451,26 @@ def test_el_resultado_es_inmutable(thresholds):
         result.score = 0.0  # type: ignore[misc]
 
 
-# ---------- R6 en ejecución ----------
+# ---------- Alto riesgo: desfavorable y crítica (R2) ----------
+# Qué cuenta, el peso efectivo, el desempate y el factor limitante se prueban a través del orden de las ventanas
+# (tests/engine/test_orden_ventanas.py). Aquí solo el caso que el orden no puede mostrar con los umbrales de hoy.
 
 
-def test_importar_el_motor_no_carga_la_configuracion_ni_yaml():
-    """R6: `Thresholds` se importa solo para el tipado. En un intérprete limpio, importar `signal_score` no carga
-    `backend.config.thresholds` (que lee archivos) ni `yaml`."""
-    code = (
-        "import sys; import backend.engine.signal_score; "
-        "loaded = [m for m in ('backend.config.thresholds', 'yaml') if m in sys.modules]; "
-        "print(','.join(loaded))"
-    )
-    root = Path(__file__).resolve().parents[2]
-    # El código es una constante de esta prueba, no una entrada externa.
-    result = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True, check=True)  # noqa: S603
-    assert result.stdout.strip() == ""
+def test_alto_riesgo_exige_desfavorable_y_critica():
+    """Con `thresholds.yaml` 1.0.0 toda crítica es desfavorable; si un umbral cambiara, una crítica `moderate` no
+    sería alto riesgo."""
+    critical_moderate = SignalScore(AVAILABLE, 45, MODERATE, True)
+    critical_unfavorable = SignalScore(AVAILABLE, 10, UNFAVORABLE, True)
+    assert high_risk(rated_signals({"frost": critical_moderate}, {"frost": 3})) is False
+    assert high_risk(rated_signals({"frost": critical_unfavorable}, {"frost": 3})) is True
+    assert high_risk(()) is False
+
+
+@pytest.mark.parametrize("missing", [None, float("nan")])
+def test_un_peso_none_o_nan_vale_0(missing):
+    """Un peso que falta vale 0, también si llega como None o NaN: la señal no cuenta (y no revienta la comparación)."""
+    assert weight_of({"supply": missing}, "supply") == 0
+    assert rated_signals({"supply": SignalScore(AVAILABLE, 30, UNFAVORABLE, False)}, {"supply": missing}) == ()
 
 
 # ---------- Errores: de programación o de catálogo, nunca «sin datos» ----------

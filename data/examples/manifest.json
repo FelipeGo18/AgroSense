@@ -7,6 +7,7 @@
     "id": "co-boyaca-cundinamarca",
     "name": "Ejemplo: Samacá, Toca y Tunja (Boyacá)",
     "country": "CO",
+    "timezone": "America/Bogota",
     "departments": [
       "15",
       "25"
@@ -133,7 +134,7 @@
       "coverage": "ejemplo"
     },
     "sources": {
-      "rows": 9,
+      "rows": 21,
       "coverage": "ejemplo"
     }
   },
