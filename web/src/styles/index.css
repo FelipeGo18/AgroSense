@@ -47,6 +47,22 @@
     line-height: var(--leading-normal);
     -webkit-text-size-adjust: 100%;
   }
+  /*
+   * En escritorio (desde 1024 px) la escala de letra baja un paso: con 18 px de base todo se veía muy grande en una
+   * pantalla ancha (decidido por Felipe el 14 de noviembre de 2026). En el celular sigue la de los tokens, con 18 px,
+   * por legibilidad al sol. Como `html` toma `--text-base`, también baja el `rem`, y con él los espacios y los altos
+   * que se miden en `rem`; los botones siguen midiendo 44 px como mínimo (HU-096).
+   */
+  @media (min-width: 1024px) {
+    :root {
+      --text-sm: 15px;
+      --text-base: 16px;
+      --text-lg: 20px;
+      --text-xl: 25px;
+      --text-2xl: 32px;
+      --text-3xl: 42px;
+    }
+  }
   /* Ninguna palabra larga ensancha la página: se parte antes de salirse del ancho. */
   body {
     overflow-wrap: break-word;
