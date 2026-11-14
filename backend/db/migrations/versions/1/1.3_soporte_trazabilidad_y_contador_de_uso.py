@@ -1,4 +1,4 @@
-"""soporte trazabilidad y contador de uso
+"""soporte trazabilidad y contador de uso (PRUEBA de HU-229: editar una migración fusionada debe fallar)
 
 Migración 1.3 · va después de 1.2
 Creada el 2026-10-12 14:54:34.261811+00:00
