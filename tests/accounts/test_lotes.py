@@ -1,7 +1,7 @@
 """Lotes del agricultor, entrega 1: sin dibujar (HU-164, HU-169; specs/02-contratos.md)."""
 
 import uuid
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from backend.accounts.farm_models import Lot, Season
 from backend.accounts.trace_models import ActivityEvent
+from common.region import region_today
 
 ROSA = {"username": "rosa.samaca", "password": "papa-criolla-2026", "display_name": "Rosa", "consent_version": 3, "consent_accepted": True}
 EL_ALTO = {"name": "El Alto", "municipality_id": "15646", "area_ha": 2.5, "irrigated": False}
@@ -144,7 +145,7 @@ def test_cambiar_de_municipio_un_lote_dibujado_valida_el_dibujo_en_el_nuevo(rosa
 
 def test_el_contorno_dibujado_no_puede_quedar_mas_chico_que_lo_sembrado(rosa, db):
     lot = create(rosa, geometry=square(dlon=3 * SIDE_LON)).json()
-    db.add(Season(lot_id=uuid.UUID(lot["lot_id"]), crop_id="papa", area_ha=Decimal("2"), sowing_date=date.today()))
+    db.add(Season(lot_id=uuid.UUID(lot["lot_id"]), crop_id="papa", area_ha=Decimal("2"), sowing_date=region_today()))
     db.commit()
     response = rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"geometry": square()})
     assert response.status_code == 422 and response.json()["error"]["code"] == "area_below_seasons"
@@ -178,7 +179,7 @@ def test_sin_sesion_los_lotes_responden_401(client, dataset):
 def test_el_detalle_trae_las_temporadas_en_curso_y_el_suelo_nulo(rosa, db):
     lot = create(rosa).json()
     lot_id = uuid.UUID(lot["lot_id"])
-    sown = date.today() - timedelta(days=30)
+    sown = region_today() - timedelta(days=30)
     db.add_all(
         [
             Season(lot_id=lot_id, crop_id="papa", area_ha=Decimal("1.5"), sowing_date=sown),
@@ -218,7 +219,7 @@ def test_la_lista_de_lotes_no_hace_una_consulta_por_lote(rosa, db, engine):
             event.remove(engine, "before_cursor_execute", note)
         return len(statements), body
 
-    sown = date.today() - timedelta(days=10)
+    sown = region_today() - timedelta(days=10)
     first = uuid.UUID(create(rosa, name="Lote 1").json()["lot_id"])
     db.add_all(
         [
@@ -249,7 +250,7 @@ def test_editar_el_nombre_el_area_y_el_riego(rosa, db):
 
 def test_el_lote_no_puede_quedar_mas_chico_que_lo_sembrado(rosa, db):
     lot = create(rosa).json()
-    db.add(Season(lot_id=uuid.UUID(lot["lot_id"]), crop_id="papa", area_ha=Decimal("2"), sowing_date=date.today()))
+    db.add(Season(lot_id=uuid.UUID(lot["lot_id"]), crop_id="papa", area_ha=Decimal("2"), sowing_date=region_today()))
     db.commit()
     response = rosa.patch(f"/api/v1/lots/{lot['lot_id']}", json={"area_ha": 1.5})
     assert response.status_code == 422 and response.json()["error"]["code"] == "area_below_seasons"
@@ -266,7 +267,7 @@ def test_el_nombre_y_el_area_no_se_pueden_vaciar(rosa):
 def test_borrar_el_lote_lo_marca_con_sus_temporadas(rosa, db):
     lot = create(rosa).json()
     lot_id = uuid.UUID(lot["lot_id"])
-    db.add(Season(lot_id=lot_id, crop_id="papa", area_ha=Decimal("1"), sowing_date=date.today()))
+    db.add(Season(lot_id=lot_id, crop_id="papa", area_ha=Decimal("1"), sowing_date=region_today()))
     db.commit()
     assert rosa.delete(f"/api/v1/lots/{lot_id}").status_code == 204
     db.expire_all()
@@ -288,7 +289,7 @@ def test_sin_dataset_el_lote_y_su_historial_se_leen_igual_con_la_etapa_nula(rosa
     from backend.config.settings import get_settings
 
     lot = create(rosa).json()
-    sown = date.today() - timedelta(days=30)
+    sown = region_today() - timedelta(days=30)
     db.add(Season(lot_id=uuid.UUID(lot["lot_id"]), crop_id="papa", area_ha=Decimal("1"), sowing_date=sown))
     db.commit()
     with_data = rosa.get(f"/api/v1/lots/{lot['lot_id']}").json()["current_seasons"][0]
