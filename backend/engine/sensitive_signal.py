@@ -26,8 +26,8 @@ from backend.engine.stages import FROST, NOT_APPLICABLE, CropWindow, WindowMonth
 from common.months import month_name
 from common.text import join
 
-# `quality` de las tablas del clima por mes (`climate_frost_month`): el mes está completo. Cualquier otro valor (`partial`) no basta
-# para decir que no pasó nada (R1).
+# `quality` de las tablas del clima por mes (`climate_frost_month`): el mes está completo. Cualquier otro valor (`partial`)
+# no basta para decir que no pasó nada (R1).
 COMPLETE = "ok"
 
 # A qué es sensible el cultivo, como se dice en una razón.
