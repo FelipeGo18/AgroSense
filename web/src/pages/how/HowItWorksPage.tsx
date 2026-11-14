@@ -2,8 +2,10 @@ import { useRef } from "react";
 import { Link } from "react-router";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
+import { SmoothScroll, useScroll } from "@/components/layout/SmoothScroll";
 import { TopBar } from "@/components/layout/TopBar";
-import { Mascot } from "@/components/mascot/Mascot";
+import { MascotFlyer, MascotGuide, MascotSlot } from "@/components/mascot/MascotGuide";
+import { Plate } from "@/components/ui/Plate";
 import { Card } from "@/components/ui/Card";
 import { SignalIcon } from "@/components/ui/SignalIcon";
 import { Spinner } from "@/components/ui/Spinner";
@@ -11,10 +13,11 @@ import { StateCard } from "@/components/ui/StateCard";
 import { TrafficLightBadge, type Light } from "@/components/ui/TrafficLightBadge";
 import { P0_SIGNALS, SIGNAL_NAME } from "@/features/diagnosis/signals";
 import { useVersion, type Version } from "@/features/version";
+import { useActiveSection } from "@/hooks/useActiveSection";
 import { useAnimated } from "@/hooks/useLightMode";
 import { useMotionEffect } from "@/hooks/useMotionEffect";
 import { gsap } from "@/lib/motion";
-import { BANDS, NEVER, STEPS } from "./content";
+import { BANDS, GUIDE, NEVER, STEPS, STOPS_BASE, STOPS_WITH_DATA, type StopId } from "./content";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 const LIGHTS: Light[] = ["green", "yellow", "red", "not_evaluable"];
@@ -55,11 +58,43 @@ export function splitSources(rows: Version["sources"]): { nasa: Source[]; others
   return { nasa: sources.filter(isNasa).sort(byName), others: sources.filter((s) => !isNasa(s)).sort(byName) };
 }
 
-function SectionTitle({ title, sub }: { title: string; sub?: string }) {
+/**
+ * La mascota en una parada: su lugar y lo que dice, con el enlace a la parada siguiente. El texto va en HTML: la mascota
+ * es decoración y nunca es la única forma de decirlo.
+ */
+function GuideNote({ stop }: { stop: Exclude<StopId, "inicio"> }) {
+  const { scrollTo } = useScroll();
+  const { say, mood, next, nextLabel } = GUIDE[stop];
+  const target = next ?? "inicio";
   return (
-    <div className="flex max-w-[880px] flex-col gap-2">
-      <h2 className="text-[clamp(1.5rem,3vw,2rem)]">{title}</h2>
-      {sub && <p className="text-texto-secundario">{sub}</p>}
+    <div className="flex items-end gap-2 self-end">
+      <MascotSlot id={stop} mood={mood} className="w-[84px] md:w-[120px]" />
+      <div className="relative mb-3 max-w-[19rem] min-w-0 px-4 pt-3 pb-4 text-sm">
+        <Plate c={12} fill="var(--color-superficie-panel)" stroke="var(--color-paleta-noche)" strokeWidth={2.5} />
+        <p className="relative">{say}</p>
+        <a
+          href={`#${target}`}
+          onClick={(event) => {
+            event.preventDefault();
+            scrollTo(target);
+          }}
+          className={`${LINK} relative mt-1 inline-flex min-h-11 items-center`}
+        >
+          {nextLabel} <span aria-hidden="true">{next ? "↓" : "↑"}</span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ title, sub, stop }: { title: string; sub?: string; stop: Exclude<StopId, "inicio"> }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex max-w-[880px] min-w-0 flex-col gap-2">
+        <h2 className="text-[clamp(1.5rem,3vw,2rem)]">{title}</h2>
+        {sub && <p className="text-texto-secundario">{sub}</p>}
+      </div>
+      <GuideNote stop={stop} />
     </div>
   );
 }
@@ -213,6 +248,8 @@ export function HowItWorksPage() {
   const animated = useAnimated();
   const root = useRef<HTMLDivElement>(null);
   const hasData = Boolean(version.data);
+  // Las paradas de «Pesos» y «Fuentes» llegan con /version: con otra lista, la sección activa las vuelve a observar.
+  const active = useActiveSection(hasData ? STOPS_WITH_DATA : STOPS_BASE) as StopId;
 
   // Con movimiento: la cabecera entra de lado, las bandas de la nota crecen y cada grupo de tarjetas aparece uno tras otro
   // al llegar a la vista. En modo ligero no corre: todo se dibuja quieto y a la vista (web/CLAUDE.md, «Modo ligero»).
@@ -236,9 +273,6 @@ export function HowItWorksPage() {
           stagger: 0.1,
           clearProps: "transform,opacity,visibility",
         }),
-      );
-      fresh("[data-intro-mascot]").forEach((el) =>
-        gsap.from(el, { y: -40, rotation: -8, autoAlpha: 0, duration: 0.9, ease: "back.out(1.6)", delay: 0.2, clearProps: "all" }),
       );
       fresh("[data-bands]").forEach((el) =>
         gsap.from(el.children, {
@@ -277,125 +311,138 @@ export function HowItWorksPage() {
   );
 
   return (
-    <div ref={root} className="min-h-svh bg-paleta-niebla">
-      <title>¿Cómo funciona? · AgroSense</title>
-      <TopBar />
-      <main className="container-page flex flex-col gap-12 pt-[112px] pb-40 md:pt-[128px] md:pb-48">
-        <div className="flex items-start justify-between gap-8">
-          <header data-intro className="flex max-w-[880px] min-w-0 flex-col gap-3">
-            <h1 className="text-[clamp(1.75rem,4vw,3rem)]">¿Cómo funciona?</h1>
-            <p className="text-[clamp(1rem,1.6vw,1.125rem)]">
-              AgroSense mira lo que ha pasado en su zona con observaciones de la Tierra de la NASA, datos abiertos y reglas que se pueden
-              leer. No es un pronóstico: usted decide.
-            </p>
-          </header>
-          <div data-intro-mascot className="hidden lg:block">
-            <Mascot mood="guide" decorative lively={animated} className="h-auto w-[200px]" />
-          </div>
-        </div>
+    <SmoothScroll enabled={animated}>
+      <MascotGuide active={active} flying={animated}>
+        <div ref={root} className="min-h-svh bg-paleta-niebla">
+          <title>¿Cómo funciona? · AgroSense</title>
+          <TopBar />
+          <main className="container-page flex flex-col gap-12 pt-[112px] pb-40 md:pt-[128px] md:pb-48">
+            <div id="inicio" className="flex scroll-mt-32 items-start justify-between gap-8">
+              <header data-intro className="flex max-w-[880px] min-w-0 flex-col gap-3">
+                <h1 className="text-[clamp(1.75rem,4vw,3rem)]">¿Cómo funciona?</h1>
+                <p className="text-[clamp(1rem,1.6vw,1.125rem)]">
+                  AgroSense mira lo que ha pasado en su zona con observaciones de la Tierra de la NASA, datos abiertos y reglas que se
+                  pueden leer. No es un pronóstico: usted decide.
+                </p>
+              </header>
+              <MascotSlot id="inicio" mood="guide" className="hidden w-[200px] lg:block" />
+            </div>
 
-        <section className="flex flex-col gap-6" aria-labelledby="como-se-decide">
-          <h2 id="como-se-decide" className="text-[clamp(1.5rem,3vw,2rem)]">
-            Cómo se decide
-          </h2>
-          <ol data-reveal className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {STEPS.map((step, i) => (
-              <li key={step.title} data-reveal-item className="flex">
-                <Card className="w-full">
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex size-10 shrink-0 items-center justify-center self-start bg-paleta-calabaza font-bold"
-                  >
-                    {i + 1}
-                  </span>
-                  <h3 className="min-w-0 text-[1.125rem]">{step.title}</h3>
-                  <p className="text-sm">{step.body}</p>
+            <section id="como-se-decide" className="flex scroll-mt-32 flex-col gap-6" aria-labelledby="como-se-decide-titulo">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <h2 id="como-se-decide-titulo" className="text-[clamp(1.5rem,3vw,2rem)]">
+                  Cómo se decide
+                </h2>
+                <GuideNote stop="como-se-decide" />
+              </div>
+              <ol data-reveal className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                {STEPS.map((step, i) => (
+                  <li key={step.title} data-reveal-item className="flex">
+                    <Card className="w-full">
+                      <span
+                        aria-hidden="true"
+                        className="inline-flex size-10 shrink-0 items-center justify-center self-start bg-paleta-calabaza font-bold"
+                      >
+                        {i + 1}
+                      </span>
+                      <h3 className="min-w-0 text-[1.125rem]">{step.title}</h3>
+                      <p className="text-sm">{step.body}</p>
+                    </Card>
+                  </li>
+                ))}
+              </ol>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Card>
+                  <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">De la nota al nivel</h3>
+                  <ul data-bands className="flex gap-[3px]">
+                    {BANDS.map((band) => (
+                      <li
+                        key={band.label}
+                        className={`flex min-w-0 flex-col items-center px-1 py-2 text-center text-sm font-bold ${band.ink}`}
+                        style={{ background: band.fill, flexGrow: band.to - band.from + 1, flexBasis: 0 }}
+                      >
+                        {band.label}
+                        <span className="font-normal">
+                          {band.from} a {band.to}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-texto-secundario">Una señal sin datos no tiene nota y no cuenta como riesgo.</p>
                 </Card>
-              </li>
-            ))}
-          </ol>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card>
-              <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">De la nota al nivel</h3>
-              <ul data-bands className="flex gap-[3px]">
-                {BANDS.map((band) => (
-                  <li
-                    key={band.label}
-                    className={`flex min-w-0 flex-col items-center px-1 py-2 text-center text-sm font-bold ${band.ink}`}
-                    style={{ background: band.fill, flexGrow: band.to - band.from + 1, flexBasis: 0 }}
-                  >
-                    {band.label}
-                    <span className="font-normal">
-                      {band.from} a {band.to}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-texto-secundario">Una señal sin datos no tiene nota y no cuenta como riesgo.</p>
-            </Card>
-            <Card>
-              <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">Las luces</h3>
-              <ul data-reveal className="flex flex-wrap gap-4">
-                {LIGHTS.map((light) => (
-                  <li key={light} data-reveal-item>
-                    <TrafficLightBadge light={light} />
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-        </section>
-
-        {version.isPending && (
-          <p role="status" className="flex items-center gap-3 text-texto-secundario">
-            <Spinner /> Cargando los pesos, las fuentes y la versión de los datos…
-          </p>
-        )}
-        {version.isError && (
-          <StateCard
-            title="No pudimos cargar las fuentes"
-            description="Los pesos por defecto, las fuentes y la versión de los datos salen del servidor, que no respondió."
-            actions={[{ label: "Volver a intentar", onClick: () => void version.refetch() }]}
-          />
-        )}
-        {version.data && (
-          <>
-            <section className="flex flex-col gap-6" aria-label="Pesos por defecto">
-              <SectionTitle title="Pesos por defecto" sub="Cuánto pesa cada señal si usted no cambia sus prioridades, y por qué." />
-              <Weights version={version.data} />
+                <Card>
+                  <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">Las luces</h3>
+                  <ul data-reveal className="flex flex-wrap gap-4">
+                    {LIGHTS.map((light) => (
+                      <li key={light} data-reveal-item>
+                        <TrafficLightBadge light={light} />
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </div>
             </section>
-            <section className="flex flex-col gap-6" aria-label="Fuentes y versión">
-              <SectionTitle title="Fuentes y versión" sub={versionLine(version.data)} />
-              <Sources version={version.data} />
-            </section>
-          </>
-        )}
 
-        <section className="flex flex-col gap-6" aria-labelledby="no-hace">
-          <h2 id="no-hace" className="text-[clamp(1.5rem,3vw,2rem)]">
-            Lo que AgroSense no hace
-          </h2>
-          <Card>
-            <ul data-reveal className="flex flex-col gap-3">
-              {NEVER.map((item) => (
-                <li key={item} data-reveal-item className="flex gap-3">
-                  <span aria-hidden="true" className="mt-1.5 size-4 shrink-0 bg-oscuro-rojo" />
-                  <span className="min-w-0">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-          <p className="flex flex-wrap gap-x-8 gap-y-3">
-            <Link to={PATHS.consult} className={`${LINK} inline-flex min-h-11 items-center`}>
-              Consultar estrategias
-            </Link>
-            <Link to={PATHS.dataPolicy} className={`${LINK} inline-flex min-h-11 items-center`}>
-              Política de datos
-            </Link>
-          </p>
-        </section>
-      </main>
-      <Footer />
-    </div>
+            {version.isPending && (
+              <p role="status" className="flex items-center gap-3 text-texto-secundario">
+                <Spinner /> Cargando los pesos, las fuentes y la versión de los datos…
+              </p>
+            )}
+            {version.isError && (
+              <StateCard
+                title="No pudimos cargar las fuentes"
+                description="Los pesos por defecto, las fuentes y la versión de los datos salen del servidor, que no respondió."
+                actions={[{ label: "Volver a intentar", onClick: () => void version.refetch() }]}
+              />
+            )}
+            {version.data && (
+              <>
+                <section id="pesos" className="flex scroll-mt-32 flex-col gap-6" aria-label="Pesos por defecto">
+                  <SectionTitle
+                    stop="pesos"
+                    title="Pesos por defecto"
+                    sub="Cuánto pesa cada señal si usted no cambia sus prioridades, y por qué."
+                  />
+                  <Weights version={version.data} />
+                </section>
+                <section id="fuentes" className="flex scroll-mt-32 flex-col gap-6" aria-label="Fuentes y versión">
+                  <SectionTitle stop="fuentes" title="Fuentes y versión" sub={versionLine(version.data)} />
+                  <Sources version={version.data} />
+                </section>
+              </>
+            )}
+
+            <section id="no-hace" className="flex scroll-mt-32 flex-col gap-6" aria-labelledby="no-hace-titulo">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <h2 id="no-hace-titulo" className="text-[clamp(1.5rem,3vw,2rem)]">
+                  Lo que AgroSense no hace
+                </h2>
+                <GuideNote stop="no-hace" />
+              </div>
+              <Card>
+                <ul data-reveal className="flex flex-col gap-3">
+                  {NEVER.map((item) => (
+                    <li key={item} data-reveal-item className="flex gap-3">
+                      <span aria-hidden="true" className="mt-1.5 size-4 shrink-0 bg-oscuro-rojo" />
+                      <span className="min-w-0">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+              <p className="flex flex-wrap gap-x-8 gap-y-3">
+                <Link to={PATHS.consult} className={`${LINK} inline-flex min-h-11 items-center`}>
+                  Consultar estrategias
+                </Link>
+                <Link to={PATHS.dataPolicy} className={`${LINK} inline-flex min-h-11 items-center`}>
+                  Política de datos
+                </Link>
+              </p>
+            </section>
+          </main>
+          <Footer aside={<MascotSlot id="pie" mood="idle" className="w-[84px]" />} />
+          <MascotFlyer />
+        </div>
+      </MascotGuide>
+    </SmoothScroll>
   );
 }

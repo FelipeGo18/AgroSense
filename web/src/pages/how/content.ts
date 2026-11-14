@@ -4,6 +4,45 @@
  * pesos por defecto y su porqué, fuentes) no está aquí: sale de GET /api/v1/version.
  */
 
+import type { MascotMood } from "@/components/mascot/Mascot";
+
+/**
+ * Paradas del recorrido, en orden: cada una es una sección con un lugar para la mascota, que va guiando de una a la otra
+ * como en Inicio y termina en el pie de página. «Pesos» y «Fuentes» salen de GET /version: sin ellos, el recorrido
+ * se las salta.
+ */
+export const STOPS_BASE = ["inicio", "como-se-decide", "no-hace"] as const;
+export const STOPS_WITH_DATA = ["inicio", "como-se-decide", "pesos", "fuentes", "no-hace"] as const;
+export type StopId = (typeof STOPS_WITH_DATA)[number];
+
+/** Lo que dice la mascota al llegar a cada parada y a dónde invita a seguir. */
+export const GUIDE: Record<Exclude<StopId, "inicio">, { say: string; mood: MascotMood; next: StopId | null; nextLabel: string }> = {
+  "como-se-decide": {
+    say: "Así decido: primero si el cultivo se da en su zona, después seis señales y un semáforo por reglas.",
+    mood: "guide",
+    next: "pesos",
+    nextLabel: "Ver cuánto pesa cada señal",
+  },
+  pesos: {
+    say: "Estos son mis pesos por defecto. Usted los puede cambiar en sus prioridades.",
+    mood: "guide",
+    next: "fuentes",
+    nextLabel: "Ver de dónde salen los datos",
+  },
+  fuentes: {
+    say: "Todo sale de estas fuentes, con su licencia. Las de la NASA van primero.",
+    mood: "guide",
+    next: "no-hace",
+    nextLabel: "Ver lo que no hago",
+  },
+  "no-hace": {
+    say: "Y esto nunca lo hago. La decisión es suya.",
+    mood: "idle",
+    next: null,
+    nextLabel: "Volver arriba",
+  },
+};
+
 export interface Step {
   title: string;
   body: string;
