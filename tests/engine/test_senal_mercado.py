@@ -10,7 +10,7 @@ import pytest
 
 from backend.api.calc_examples import SIGNALS_OK
 from backend.config.thresholds import SignalThreshold, load_thresholds
-from backend.engine.market_signal import NO_DATA_REASON, MarketSignalResult, market_signal
+from backend.engine.market_signal import NO_CURVE_REASON, NO_DATA_REASON, MarketSignalResult, market_signal
 from backend.engine.signal_score import INSUFFICIENT_DATA
 
 FORECAST_WORDS = re.compile(r"\b(va a|irá|subirá|bajará|estará|será|pronostic\w*|predic\w*|futur\w*)\b", re.IGNORECASE)
@@ -46,10 +46,16 @@ def test_la_razon_sin_datos_es_la_del_contrato():
     assert SIGNALS_OK["market"]["reasons"] == [NO_DATA_REASON]
 
 
-@pytest.mark.parametrize("index", [None, 0.774, 0.961, 1.0, 1.063, 1.259])
-def test_con_la_curva_nula_siempre_es_sin_datos_aunque_haya_indice(thresholds, index):
-    """Sin fuente para los cortes (`curve: null`), un índice válido tampoco califica (R1, R8)."""
-    assert market_signal(index, 5, thresholds) == MarketSignalResult(INSUFFICIENT_DATA, None, False, None, (), (NO_DATA_REASON,))
+@pytest.mark.parametrize("index", [0.774, 0.961, 1.0, 1.063, 1.259])
+def test_con_indice_y_la_curva_nula_no_califica_y_dice_que_falta_la_curva(thresholds, index):
+    """Sin fuente para los cortes (`curve: null`), un índice válido no califica (R1, R8), pero la razón no dice que
+    falten datos de mercado: hay precios y lo que falta es la curva."""
+    assert market_signal(index, 5, thresholds) == MarketSignalResult(INSUFFICIENT_DATA, None, False, None, (), (NO_CURVE_REASON,))
+
+
+def test_sin_indice_y_la_curva_nula_la_razon_es_la_de_sin_datos(thresholds):
+    assert market_signal(None, 5, thresholds) == MarketSignalResult(INSUFFICIENT_DATA, None, False, None, (), (NO_DATA_REASON,))
+    assert NO_CURVE_REASON != NO_DATA_REASON
 
 
 def test_la_curva_de_mercado_del_proyecto_es_nula(thresholds):

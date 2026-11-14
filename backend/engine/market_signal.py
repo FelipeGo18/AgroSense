@@ -7,8 +7,10 @@ importa la API, el dataset ni FastAPI, y no abre archivos: la curva de `market` 
 
 Hoy la curva de `market` es nula (`curve: null`): ninguna fuente externa dice qué índice estacional es «precio bajo» y
 la regla del equipo del 11 de noviembre de 2026 no deja usar un criterio propio para una señal que no es central. Por
-eso la señal siempre da `insufficient_data`, con o sin índice. La rama con índice (nivel, calificación y razón) queda
-lista para cuando exista una fuente y se escriba la curva; la propuesta está en `docs/investigacion-decisiones.md` (5e).
+eso la señal siempre da `insufficient_data`, con o sin índice, pero la razón es honesta: sin índice dice que no hay
+datos de mercado (`NO_DATA_REASON`, el texto del contrato) y con índice dice que hay precios y que falta la curva
+(`NO_CURVE_REASON`). La rama con curva (nivel, calificación y razón) queda lista para cuando exista una fuente y se
+escriba la curva; la propuesta está en `docs/investigacion-decisiones.md` (5e).
 
 Es historia de precios mayoristas, nunca un pronóstico (decisión 4): la razón solo dice cómo ha sido el precio de ese
 mes frente al promedio del año del propio producto, en los años que respaldan el índice.
@@ -18,6 +20,7 @@ No trae `counts`: si la señal cuenta para la luz lo deciden los pesos en el sem
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -28,6 +31,7 @@ if TYPE_CHECKING:
 
 INDICATOR = "seasonal_index"
 NO_DATA_REASON = "Sin datos de mercado para la zona"
+NO_CURVE_REASON = "Hay precios de SIPSA para este producto, pero ninguna fuente dice qué es un precio bajo: la señal no se califica"
 HISTORY_LABEL = "Es historia de precios, no un pronóstico"
 
 
@@ -46,15 +50,18 @@ class MarketSignalResult:
 def market_signal(seasonal_index: float | None, years: int | None, thresholds: Thresholds) -> MarketSignalResult:
     """Califica el índice estacional del mes de cosecha con la curva de `market` de `thresholds`.
 
-    Sin índice (cultivo sin producto en SIPSA, central sin temporada o departamento sin central) o con la curva nula
-    (la de hoy): `insufficient_data`, nivel y calificación nulos y la razón del contrato (R1). Con curva e índice, la
-    razón dice cuánto por encima o por debajo del promedio de su año ha estado el precio de ese mes, y en cuántos años.
+    Sin índice (cultivo sin producto en SIPSA, central sin temporada o departamento sin central): `insufficient_data`,
+    nivel y calificación nulos y la razón del contrato, `NO_DATA_REASON` (R1). Con índice pero con la curva nula (la de
+    hoy): lo mismo, pero la razón es `NO_CURVE_REASON`, porque sí hay precios. Con curva e índice, la razón dice cuánto
+    por encima o por debajo del promedio de su año ha estado el precio de ese mes, y en cuántos años.
     """
     result = score_signal("market", seasonal_index, thresholds)
     # Nivel, calificación y crítica los decide `score_signal` (también los nulos de `insufficient_data`); aquí solo se
     # suman indicadores y razón. `seasonal_index is None` ya da `insufficient_data`: la comprobación es para el tipado.
     if result.status != AVAILABLE or seasonal_index is None:
-        return MarketSignalResult(result.status, result.level, result.critical, result.score, (), (NO_DATA_REASON,))
+        has_index = seasonal_index is not None and not math.isnan(seasonal_index)
+        reason = NO_CURVE_REASON if has_index else NO_DATA_REASON
+        return MarketSignalResult(result.status, result.level, result.critical, result.score, (), (reason,))
     return MarketSignalResult(
         result.status,
         result.level,
