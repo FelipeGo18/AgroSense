@@ -36,7 +36,7 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [ ] Acción `other_window` con `best_windows`, y un caso en que `best_windows` viene vacío
   - [ ] Coherencia: una de las mejores ventanas (`best_windows`) y el diagnóstico de esa misma fecha dan las mismas señales y calificaciones
   - [ ] Curva: un valor dentro del óptimo califica 100, uno en el límite absoluto califica 0 y el punto medio, 50 (HU-196)
-  - [ ] Peso 0 en oferta cambia la luz: con la oferta `unfavorable` no crítica y las demás señales `favorable`, `overall_default` da `yellow` con `rotate` y, con `supply` en 0, `overall` da `green` con `sow`; la respuesta trae las dos
+  - [ ] Peso 0 en suelo cambia la luz: con `soil` `unfavorable` y las demás señales `favorable`, `overall_default` da `yellow` con `rotate` y, con `soil` en 0, `overall` da `green` con `sow`; la respuesta trae las dos (antes con `supply`; cambiado el 14 nov 2026 porque la oferta no tiene curva)
   - [ ] Riesgo grave de clima con peso 0 sigue contando: una helada crítica con `frost` en 0 da `red` en `overall`, y la señal trae `counts = true`
   - [ ] Peso 4 o 5: un `moderate` en esa señal cuenta como `unfavorable` y cambia la luz frente a la de AgroSense
   - [ ] Factor limitante: una ventana con una señal en 15 y el promedio ponderado más alto nunca queda por encima de una ventana con todas sus señales en 60 o más, ni entra primera en `best_windows`
