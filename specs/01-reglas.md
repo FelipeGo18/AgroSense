@@ -46,7 +46,7 @@ Antes de evaluar ventanas, el motor comprueba que el cultivo se puede dar en ese
 
 - Un cultivo **no es apto** si la temperatura media anual queda fuera de `tmean_min_c`–`tmean_max_c` de su ficha. Ejemplo: papa en un municipio de la costa. (Cambiado el 16 de octubre de 2026, decisión 13: antes se decidía por la altitud, pero ninguna fuente da bien la altitud de estos cultivos en Colombia y el criterio oficial de la UPRA es la temperatura media anual.)
 - La temperatura media anual es la de NASA POWER corregida por altitud con NASADEM (HU-044): la del municipio o, si se consulta con un lote dibujado, corregida a la altitud del lote. La respuesta dice cuál se usó, con la temperatura y la altitud.
-- Si no es apto, la luz es `red`, la acción es `rotate` («este cultivo no se da en su zona: elija otro»), la razón cita el dato de la ficha y su fuente, y **no se evalúan ventanas**.
+- Si no es apto, la luz es `red`, la acción es `rotate` («este cultivo no se da en su zona: elija otro»), la razón cita el dato de la ficha (el límite que se cruzó; la fuente va en `source_ids` del cultivo, no por valor), y **no se evalúan ventanas**.
 - Si la ficha no tiene ese rango con fuente, la aptitud es `insufficient_data`: no bloquea y se agrega a las limitaciones (R1, R8).
 - La aptitud se decide **solo por la temperatura media anual**. Solo una temperatura fuera del rango absoluto da `not_suitable`.
 - `suitability.score` es una nota informativa de 0 a 100 con la curva de temperatura media: 100 dentro del rango óptimo (`tmean_opt_min_c`–`tmean_opt_max_c`) y 0 fuera del absoluto. No es una señal: no entra al semáforo ni al orden de las ventanas.
@@ -93,7 +93,7 @@ Qué mide cada curva:
 |---|---|---|
 | `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia **del año seco** en la ventana (`precip_dry_mm`: la que se supera en 4 de cada 5 años, la lluvia confiable con que la FAO planea el riego), con la retención del suelo. No la normal: decidido por Felipe el 11 de noviembre de 2026, porque las dos fuentes de la NASA dan casi el doble de lluvia en los valles del altiplano, donde están los cultivos (259 estaciones del IDEAM; IMERG 1,85 veces, POWER 1,80; PR #44), y con la normal el agua saldría verde donde falta | `thresholds.yaml` |
 | `frost` | Porcentaje de años con al menos una helada (mínima ≤ 2 °C) en cualquiera de los meses sensibles de la ventana (semanas en P1) | `thresholds.yaml` |
-| `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_*`, `heat_max_c`) |
+| `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_opt_max_c`, `heat_max_c`: 100 en el óptimo alto, 0 en el máximo; sin límite inferior) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
 | `supply` | Variación del área sembrada | `thresholds.yaml` |
 | `market` | Índice estacional de precio en el mes de cosecha | `thresholds.yaml` |

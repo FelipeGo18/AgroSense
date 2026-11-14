@@ -284,6 +284,31 @@ def test_publica_climate_day_con_su_fila_en_el_manifiesto(tmp_path):
     assert pl.read_parquet(tmp_path / "published" / "climate_day.parquet").equals(day)
 
 
+def test_el_manifiesto_publica_el_gradiente_con_que_se_calculo_la_temperatura(tmp_path):
+    """HU-191: la API corrige la temperatura a la altitud del lote con el gradiente del manifiesto, no con otro (R4)."""
+    sources, _ = sources_with_climate(tmp_path)
+    manifest = build.publish(REGION, municipalities(), sources, tmp_path / "published")
+    assert manifest["region"]["temperature_lapse_rate"] == {
+        "temp_max_c_per_m": 0.0058,
+        "temp_min_c_per_m": 0.0059,
+        "source_id": "gradiente_de_ejemplo",
+    }
+    written = json.loads((tmp_path / "published" / "manifest.json").read_text(encoding="utf-8"))
+    assert written["region"]["temperature_lapse_rate"] == manifest["region"]["temperature_lapse_rate"]
+
+
+def test_sin_gradiente_en_region_yaml_el_manifiesto_no_inventa_uno(tmp_path):
+    sources, _ = sources_with_climate(tmp_path)
+    without = {key: value for key, value in REGION.items() if key != "temperature_lapse_rate"}
+    manifest = build.publish(without, municipalities(), sources, tmp_path / "published")
+    assert "temperature_lapse_rate" not in manifest["region"]
+
+
+def test_el_gradiente_publicado_es_el_de_region_yaml():
+    published = json.loads((build.PUBLISHED / "manifest.json").read_text(encoding="utf-8"))["region"]["temperature_lapse_rate"]
+    assert published == build.lapse_rate_entry(build.load_region())["temperature_lapse_rate"]
+
+
 def test_sin_filas_de_clima_no_se_escribe_la_tabla(tmp_path):
     sources, _ = sources_with_climate(tmp_path)
     empty = pl.DataFrame(schema=nasa_power.DAY_SCHEMA)
