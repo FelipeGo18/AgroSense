@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.11"
+dataset_version: "2026.11.14"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"
@@ -46,6 +46,15 @@ imerg_normal:
   first_year: 2001
   last_year: 2024
   min_years: 20
+
+# Heladas (HU-045): un día de helada es uno con la mínima a 2 m, corregida por altitud, menor o igual a 2 °C. Es el
+# criterio del ZARC de Brasil (`mapa_zarc_2025`, punto 1.9.a.1: «temperaturas mínimas menores ou igual a 2°C»), el mismo
+# de los cortes de la señal de heladas en backend/config/thresholds.yaml. Su fila en `sources` sale del catálogo
+# (catalog/crops.yaml). Decidido por Felipe el 10 de noviembre de 2026. Los años y el 90 % de los días por mes son los de
+# `climate_normal`.
+frost:
+  threshold_c: 2.0
+  source_id: mapa_zarc_2025
 
 # Gradiente térmico (HU-044): cuántos °C baja la temperatura por cada metro que se sube. Corrige las temperaturas de
 # NASA POWER, cuya celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio.

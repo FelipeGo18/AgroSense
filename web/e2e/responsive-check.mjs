@@ -46,6 +46,9 @@ const ROUTES = (
     "/politica-de-datos",
     "/precios",
     "/precios?producto=papa-negra",
+    ...["cargando", "sin_conexion", "422", "500", "503"].map(
+      (state) => `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no&estado=${state}`,
+    ),
     "/ruta-que-no-existe",
     ...(process.env.SESSION ? ["/mi-finca/agregar", "/mi-cuenta", "/mi-cuenta/contrasena", "/mi-cuenta/actividad"] : []),
     ...(process.env.SESSION && LOT
@@ -79,6 +82,8 @@ function inspect({ light, minTarget }) {
   const root = document.documentElement;
   const cw = root.clientWidth;
   if (root.scrollWidth > cw + 1) problems.push(`la página se desplaza en horizontal (${root.scrollWidth} > ${cw})`);
+  // El pie de página va en todas las pantallas (specs/05-frontend.md, «Pie de página: todos»): cada página lo agrega.
+  if (!document.querySelector("footer")) problems.push("la página no tiene el pie de página");
 
   const label = (el) =>
     `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}${el.className && typeof el.className === "string" ? `.${el.className.split(" ").slice(0, 2).join(".")}` : ""}`;
@@ -169,6 +174,8 @@ async function check(context, route, width, light) {
   try {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    const loadingState = new URL(route, BASE).searchParams.get("estado") === "cargando";
+
     // HU-168: cuenta y consulta de ejemplo, sin usar una base de datos.
     if (route === "/mi-finca/agregar?desde=consulta") {
       await page.addInitScript(() => {
@@ -197,7 +204,13 @@ async function check(context, route, width, light) {
       );
       await page.route("**/api/v1/lots", (request) => request.fulfill({ json: [] }));
     }
-    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE}${route}`, {
+      waitUntil: loadingState ? "domcontentloaded" : "networkidle",
+    });
+
+    if (loadingState) {
+      await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+    }
     if (route === "/mi-finca/agregar?desde=consulta") {
       await page.getByRole("status").filter({ hasText: "¿Guardar como su primer lote?" }).waitFor();
     }

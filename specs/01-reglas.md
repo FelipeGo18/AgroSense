@@ -68,7 +68,7 @@ Seis señales independientes en el P0 y tres más en el P1. Ninguna se promedia 
 | `disease` (enfermedades por clima) | Semanas húmedas y templadas que favorecen una enfermedad con regla publicada, como la gota de la papa. No cubre plagas en general: no hay datos abiertos | No | P1 |
 | `harvest_weather` (cosecha) | Si en las semanas de cosecha suele haber días secos seguidos | No | P1 |
 
-- `frost` y `heat` son `not_applicable` cuando la ficha dice que ninguna etapa del cultivo es sensible. Sin el dato de la ficha con fuente, son `insufficient_data`.
+- `frost` y `heat` se deciden según la sensibilidad de cada etapa de la ventana: si alguna etapa es sensible, se evalúan los meses en que lo es y los que solo tocan etapas sin el dato con fuente van a las limitaciones; `not_applicable` solo si **todas** las etapas dicen que no son sensibles; si ninguna es sensible y alguna no lo dice, `insufficient_data` (R1; decidido por Felipe el 14 de noviembre de 2026, PR #69). Ejemplo: la helada de la zanahoria (no, sin dato, no, no) es `insufficient_data`, no `not_applicable`: en el desarrollo no se sabe.
 - Una señal del P1 que todavía no existe no aparece en la respuesta: no se inventa (R5).
 - El grado crítico de cada señal lo fija `thresholds.yaml`; la respuesta lo dice en el campo `critical`.
 - Toda razón dice el periodo que se evaluó («en 7 de los últimos 10 años»): es historia, no pronóstico.
@@ -93,7 +93,7 @@ Qué mide cada curva:
 |---|---|---|
 | `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia **del año seco** en la ventana (`precip_dry_mm`: la que se supera en 4 de cada 5 años, la lluvia confiable con que la FAO planea el riego), con la retención del suelo. No la normal: decidido por Felipe el 11 de noviembre de 2026, porque las dos fuentes de la NASA dan casi el doble de lluvia en los valles del altiplano, donde están los cultivos (259 estaciones del IDEAM; IMERG 1,85 veces, POWER 1,80; PR #44), y con la normal el agua saldría verde donde falta | `thresholds.yaml` |
 | `frost` | Porcentaje de años con al menos una helada (mínima ≤ 2 °C) en cualquiera de los meses sensibles de la ventana (semanas en P1) | `thresholds.yaml` |
-| `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_*`, `heat_max_c`) |
+| `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_opt_max_c`, `heat_max_c`: 100 en el óptimo alto, 0 en el máximo; sin límite inferior) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
 | `supply` | Variación del área sembrada | `thresholds.yaml` |
 | `market` | Índice estacional de precio en el mes de cosecha | `thresholds.yaml` |

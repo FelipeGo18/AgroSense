@@ -15,6 +15,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session as Db
 
+from backend.accounts.farm_models import Lot
 from backend.api import calc_examples as ex
 from backend.api.auth import current_session, require_accounts
 from backend.api.calc_models import (
@@ -34,9 +35,10 @@ from backend.api.calc_models import (
 )
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
+from backend.api.lot_terrain import ZoneTemperature, zone_temperature
 from backend.api.lots import _own_lot
 from backend.config.weights import get_default_weights
-from backend.dataset import Dataset
+from backend.dataset import Dataset, Municipality
 from backend.db.session import get_db
 from backend.engine.suitability import ABOVE_MAX, NOT_SUITABLE, Suitability, suitability
 from common.region import region_today
@@ -93,13 +95,18 @@ def _check_crops(dataset: Dataset, crop_ids: list[str], only_crops: bool = False
             )
 
 
-def _check_lot(request: Request, db: Db, lot_id: uuid.UUID | None) -> None:
-    """Con `lot_id` hace falta sesión (401) y el lote debe ser propio (404). Solo se lee el lote, no se guarda nada (R9)."""
+def _check_lot(request: Request, db: Db, lot_id: uuid.UUID | None, municipality_id: str | None = None) -> Lot | None:
+    """Con `lot_id` hace falta sesión (401), el lote debe ser propio (404) y, si se dice el municipio de la consulta, del
+    mismo municipio (422): mezclar un municipio con el terreno de otro daría una temperatura de ningún lugar. Devuelve
+    el lote. Solo se lee, no se guarda nada (R9)."""
     if lot_id is None:
-        return
+        return None
     require_accounts(db)
     session = current_session(request, db)
-    _own_lot(db, session.user, lot_id)
+    lot = _own_lot(db, session.user, lot_id)
+    if municipality_id is not None and lot.municipality_id != municipality_id:
+        raise ApiError(422, "invalid_input", "Ese lote es de otro municipio.", log="Cálculo rechazado: el lote es de otro municipio")
+    return lot
 
 
 def _not_implemented(request: Request, what: str) -> None:
@@ -137,22 +144,34 @@ def _get_article(crop: dict[str, Any]) -> str:
     return article
 
 
-def _suitability_reason(crop: dict[str, Any], result: Suitability, tmean_annual_c: float, tmean_min_c: float, tmean_max_c: float) -> str:
+def _temperature_phrase(zone: ZoneTemperature, municipality: Municipality) -> str:
+    """Dice qué temperatura se usó, con su altitud: la del municipio o la estimada para el lote, y de dónde se corrigió."""
+    municipal = f"{_format_temperature(municipality.tmean_annual_c)} °C"
+    has_altitude = municipality.altitude_m is not None
+    if zone.basis == "municipality":
+        municipal_at = f"{municipal}, a {municipality.altitude_m:.0f} m" if has_altitude else municipal
+        return f"La temperatura media anual del municipio ({municipal_at})"
+    municipal_at = f"{municipal} a {municipality.altitude_m:.0f} m" if has_altitude else municipal
+    # Es un reanálisis corregido por altitud, no una medición del lote: por eso «estimada» (R10).
+    origin = ", la altitud de la celda de 250 m que contiene su centro" if zone.by_center else ""
+    return (
+        f"La temperatura media anual estimada para su lote ({_format_temperature(zone.tmean_annual_c)} °C, "
+        f"a {zone.altitude_m:.0f} m{origin}; corregida desde la del municipio, {municipal_at})"
+    )
+
+
+def _suitability_reason(
+    crop: dict[str, Any], result: Suitability, zone: ZoneTemperature, municipality: Municipality, tmean_min_c: float, tmean_max_c: float
+) -> str:
     """Arma la frase que explica por qué el cultivo no es apto. Solo da formato: qué límite se cruzó ya lo decidió
     el motor (`result.exceeded`), no se repite la comparación aquí (R6: la API es una capa delgada)."""
     article = _get_article(crop)
     name_lower = crop.get("name_es", "cultivo").lower()
-    temperature = _format_temperature(tmean_annual_c)
+    temperature = _temperature_phrase(zone, municipality)
 
     if result.exceeded == ABOVE_MAX:
-        return (
-            f"La temperatura media anual del municipio ({temperature} °C) "
-            f"pasa de la que aguanta {article} {name_lower} (hasta {_format_limit(tmean_max_c)} °C)"
-        )
-    return (
-        f"La temperatura media anual del municipio ({temperature} °C) "
-        f"no alcanza la que necesita {article} {name_lower} (desde {_format_limit(tmean_min_c)} °C)"
-    )
+        return f"{temperature} pasa de la que aguanta {article} {name_lower} (hasta {_format_limit(tmean_max_c)} °C)"
+    return f"{temperature} no alcanza la que necesita {article} {name_lower} (desde {_format_limit(tmean_min_c)} °C)"
 
 
 @router.post(
@@ -167,7 +186,7 @@ def _suitability_reason(crop: dict[str, Any], result: Suitability, tmean_annual_
                 no_aplica=("Una señal que no aplica", ex.DIAGNOSIS_NOT_APPLICABLE),
             )
         },
-        **ex.responses(401, 404, 422, 501, 503),
+        **ex.responses(401, 404, 422, 500, 501, 503),
     },
 )
 def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Depends(require_dataset), db: Db = Depends(get_db)) -> Any:
@@ -175,25 +194,27 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     _check_place(dataset, body.municipality_id)
     _check_crops(dataset, [body.crop_id], only_crops=True)
     _check_sowing_date(body.sowing_date)
-    _check_lot(request, db, body.lot_id)
+    lot = _check_lot(request, db, body.lot_id, body.municipality_id)
 
     # Regla 0 de la agregación del semáforo (specs/01-reglas.md, «Agregación del semáforo»): si el cultivo no es
-    # apto para la zona, la luz es roja y no se evalúa nada más. `basis="municipality"` es fijo hasta que la API
-    # calcule la altitud del lote (mediana de `grid_cells` en su polígono, primer criterio de HU-191).
+    # apto para la zona, la luz es roja y no se evalúa nada más. La temperatura es la del municipio o, con un lote
+    # dibujado, la corregida a su altitud (primer criterio de HU-191). Al log solo va de dónde salió, no el lote (R9).
     crop = dataset.crops[body.crop_id]
     municipality = dataset.municipalities[body.municipality_id]
+    zone = zone_temperature(dataset, municipality, lot)
+    explain(request, f"Aptitud decidida con la temperatura de su {'lote' if zone.basis == 'lot' else 'municipio'}")
 
     result = suitability(
         crop.get("tmean_min_c"),
         crop.get("tmean_opt_min_c"),
         crop.get("tmean_opt_max_c"),
         crop.get("tmean_max_c"),
-        municipality.tmean_annual_c,
+        zone.tmean_annual_c,
     )
 
     if result.level == NOT_SUITABLE:
         # Cultivo no es apto para la zona: devolver 200 con la forma completa
-        reason = _suitability_reason(crop, result, municipality.tmean_annual_c, crop["tmean_min_c"], crop["tmean_max_c"])
+        reason = _suitability_reason(crop, result, zone, municipality, crop["tmean_min_c"], crop["tmean_max_c"])
 
         # Regla 0 ignora los pesos (la luz es roja de todas formas), pero `weights` y `weights_basis` siguen
         # diciendo cuáles se habrían usado (specs/epicas/EP-07-diagnostico.md, HU-074): los del agricultor si
@@ -202,11 +223,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         basis_used = "farmer" if body.priorities is not None else "default"
 
         reasons = ["Este cultivo no se da en su zona: elija otro"]
-        limitations = []
-        if body.lot_id is not None:
-            # La aptitud usa la temperatura del municipio también con lote: falta que esta API calcule la mediana
-            # de `grid_cells` en el polígono del lote (primer criterio de HU-191, sin marcar) (R1).
-            limitations.append("Temperatura media anual del municipio, no corregida a la altitud del lote.")
+        limitations = [zone.limitation] if zone.limitation else []
 
         return DiagnosisResponse(
             request=DiagnosisRequestEcho(
@@ -219,9 +236,9 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
             suitability=SuitabilityResult(
                 level="not_suitable",
                 score=int(round(result.score)),
-                basis="municipality",
-                tmean_annual_c=municipality.tmean_annual_c,
-                altitude_m=municipality.altitude_m,
+                basis=zone.basis,
+                tmean_annual_c=zone.tmean_annual_c,
+                altitude_m=zone.altitude_m,
                 reasons=[reason],
             ),
             window=None,
@@ -260,7 +277,7 @@ def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depend
     _check_place(dataset, body.municipality_id)
     _check_crops(dataset, [*body.previous_crop_ids, *(body.current_crop_ids or [])])
     _check_sowing_date(body.sowing_date)
-    _check_lot(request, db, body.lot_id)
+    _check_lot(request, db, body.lot_id, body.municipality_id)
     _not_implemented(request, "Estrategias de rotación")
 
 

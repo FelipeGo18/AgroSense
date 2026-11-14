@@ -10,9 +10,11 @@ from backend.api import calc_examples as ex
 from backend.api import calc_models as m
 from backend.api.calculations import _get_article, _suitability_reason
 from backend.api.errors import ApiError
+from backend.api.lot_terrain import ZoneTemperature
 from backend.api.main import app
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
+from backend.dataset import Municipality
 from backend.engine.suitability import ABOVE_MAX, BELOW_MIN, Suitability
 
 SOON = (date.today() + timedelta(days=40)).isoformat()
@@ -176,12 +178,18 @@ def test_get_article_sin_el_campo_lanza_error_claro():
     assert "cultivo_ficticio" in excinfo.value.log
 
 
+def municipality(tmean: float, altitude: float | None = 100.0) -> tuple[Municipality, ZoneTemperature]:
+    """Un municipio de ejemplo (R5) y la temperatura de su zona, la del municipio."""
+    place = Municipality("00000", "Ejemplo", "00", "Ejemplo", 0.0, 0.0, tmean_annual_c=tmean, altitude_m=altitude)
+    return place, ZoneTemperature("municipality", tmean, altitude)
+
+
 def test_suitability_reason_sin_article_propaga_el_error():
     """`_suitability_reason` no produce una frase mal escrita cuando la ficha no trae `article`: propaga el error."""
     crop = {"crop_id": "cultivo_ficticio", "name_es": "Cultivo ficticio"}
     result = Suitability("not_suitable", 0.0, ABOVE_MAX)
     with pytest.raises(ApiError) as excinfo:
-        _suitability_reason(crop, result, 30.0, 10.0, 20.0)
+        _suitability_reason(crop, result, municipality(30.0)[1], municipality(30.0)[0], 10.0, 20.0)
     assert "cultivo_ficticio" in excinfo.value.log
 
 
@@ -190,7 +198,8 @@ def test_suitability_reason_usa_el_articulo_del_catalogo():
     bien escrita porque se lee del catálogo, no de la terminación del nombre."""
     crop = {"crop_id": "haba", "name_es": "Haba", "article": "el"}
     result = Suitability("not_suitable", 0.0, ABOVE_MAX)
-    reason = _suitability_reason(crop, result, 35.0, 5.0, 32.0)
+    place, zone = municipality(35.0)
+    reason = _suitability_reason(crop, result, zone, place, 5.0, 32.0)
     assert "aguanta el haba" in reason
 
 
@@ -199,9 +208,11 @@ def test_suitability_reason_lee_que_limite_se_cruzo_del_motor_sin_repetir_la_com
     `backend.engine.suitability.suitability()` (R6, «la API es una capa delgada»)."""
     crop = {"crop_id": "maiz", "name_es": "Maíz", "article": "el"}
     below = Suitability("not_suitable", 0.0, BELOW_MIN)
-    assert "no alcanza la que necesita" in _suitability_reason(crop, below, 6.0, 10.0, 34.0)
+    place, zone = municipality(6.0)
+    assert "no alcanza la que necesita" in _suitability_reason(crop, below, zone, place, 10.0, 34.0)
     above = Suitability("not_suitable", 0.0, ABOVE_MAX)
-    assert "pasa de la que aguanta" in _suitability_reason(crop, above, 40.0, 10.0, 34.0)
+    place, zone = municipality(40.0)
+    assert "pasa de la que aguanta" in _suitability_reason(crop, above, zone, place, 10.0, 34.0)
 
 
 # ---------- HU-191: aptitud del cultivo (regla 0 de la agregación del semáforo) ----------
@@ -247,7 +258,7 @@ def test_diagnostico_cultivo_no_apto_la_razon_cita_el_limite_de_la_ficha(dataset
     response = TestClient(app).post("/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON})
     assert response.status_code == 200, response.json()
     assert response.json()["suitability"]["reasons"] == [
-        "La temperatura media anual del municipio (28,4 °C) pasa de la que aguanta la papa (hasta 16 °C)"
+        "La temperatura media anual del municipio (28,4 °C, a 289 m) pasa de la que aguanta la papa (hasta 16 °C)"
     ]
 
 
@@ -260,7 +271,7 @@ def test_diagnostico_cultivo_no_apto_por_debajo_del_minimo(dataset_con_clima):
     assert body["suitability"]["score"] == 0
     assert body["suitability"]["tmean_annual_c"] == 6.0
     assert body["suitability"]["reasons"] == [
-        "La temperatura media anual del municipio (6,0 °C) no alcanza la que necesita el maíz (desde 10 °C)"
+        "La temperatura media anual del municipio (6,0 °C, a 2900 m) no alcanza la que necesita el maíz (desde 10 °C)"
     ]
     assert body["overall"]["light"] == "red" and body["overall"]["action"] == "rotate"
 
@@ -288,9 +299,9 @@ def test_diagnostico_no_apto_sin_prioridades_usa_los_pesos_por_defecto(dataset_c
     assert body["weights"] == get_default_weights().weights
 
 
-def test_diagnostico_no_apto_con_lote_dice_que_la_temperatura_es_la_del_municipio(dataset_con_clima, client):
-    """Con `lot_id`, la aptitud sigue usando la temperatura del municipio (la del lote espera HU-206) y lo dice en
-    `limitations`, en vez de dejarlas vacías como si no faltara nada."""
+def test_diagnostico_no_apto_con_lote_sin_contorno_dice_que_la_temperatura_es_la_del_municipio(dataset_con_clima, client):
+    """Un lote sin contorno dibujado no tiene altitud propia: la aptitud usa la temperatura del municipio, a la altitud
+    de su cabecera, y lo dice en `limitations` (HU-191; la del lote dibujado está en test_altitud_en_el_diagnostico)."""
     client.post(
         "/api/v1/auth/register",
         json={
@@ -307,7 +318,10 @@ def test_diagnostico_no_apto_con_lote_dice_que_la_temperatura_es_la_del_municipi
         "/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON, "lot_id": lot["lot_id"]}
     )
     assert response.status_code == 200, response.json()
-    assert response.json()["limitations"] == ["Temperatura media anual del municipio, no corregida a la altitud del lote."]
+    assert response.json()["limitations"] == [
+        "Su lote no tiene contorno dibujado: la aptitud usa la temperatura media del municipio, a 289 m. "
+        "Dibuje el lote para corregirla a su altitud."
+    ]
 
 
 def test_diagnostico_no_apto_sin_lote_no_tiene_limitaciones(dataset_con_clima):
