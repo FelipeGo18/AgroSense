@@ -783,6 +783,8 @@ export interface components {
             rule_id?: string | null;
             /** Signal */
             signal?: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Crop Id */
+            crop_id?: string | null;
             /** Reason */
             reason: string;
             /** Source Ids */
@@ -841,6 +843,8 @@ export interface components {
             rule_id?: string | null;
             /** Signal */
             signal?: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Crop Id */
+            crop_id?: string | null;
             /** Reason */
             reason: string;
             /** Source Ids */

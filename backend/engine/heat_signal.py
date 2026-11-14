@@ -5,7 +5,7 @@ El valor es `tmax_p90_c` de `climate_risk_month` (la máxima que se supera uno d
 normal), y de los meses sensibles se toma **el más alto**: el peor caso. Un calor que daña en cualquiera de los meses
 sensibles basta, igual que las heladas cuentan una helada en cualquiera de ellos y que la ventana vale lo que su
 factor más bajo (R2, ley del mínimo); un promedio escondería el mes que daña. Decisión del 14 de noviembre de 2026,
-pendiente de aprobación de Felipe (docs/registro-de-decisiones.md).
+aprobada por Felipe el 14 de noviembre de 2026, PR #99 (docs/registro-de-decisiones.md).
 
 - `climate_risk_month` es climatológica (un valor por mes del año): los meses de la ventana se buscan solo por número
   de mes, y una ventana de más de doce meses no cuenta dos veces el mismo mes.
@@ -97,7 +97,8 @@ def heat_signal(
     where = f"en {stages} ({when})" if stages == WHOLE_CROP else _months_first(when, stages)
     hottest_note = f" (el mes más caluroso, {month_name(hottest)})" if len(distinct) > 1 else ""
     reason = (
-        f"{period_phrase(plan.normal).capitalize()}, {where}, la máxima rara vez pasó de {format_number(value)} °C{hottest_note}; "
+        f"{period_phrase(plan.normal).capitalize()}, {where}, "
+        f"la máxima pasó de {format_number(value)} °C uno de cada diez días{hottest_note}; "
         f"{crop_name} aguanta hasta {format_number(float(crop_limits['heat_max_c']))} °C"
     )
     return scored(score, INDICATOR, reason, limitations)

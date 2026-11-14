@@ -47,7 +47,7 @@ def test_manda_el_mes_sensible_mas_caliente(thresholds):
     assert (result.status, result.score, result.level, result.critical) == (AVAILABLE, 50, MODERATE, False)
     assert result.indicators == ("tmax_p90_c",)
     assert result.reasons == (
-        "De 1991 a 2020, de septiembre a noviembre (la etapa media y la etapa final), la máxima rara vez pasó de 27,5 °C "
+        "De 1991 a 2020, de septiembre a noviembre (la etapa media y la etapa final), la máxima pasó de 27,5 °C uno de cada diez días "
         "(el mes más caluroso, octubre); la papa aguanta hasta 30 °C",
     )
     assert result.limitations == ()
@@ -60,7 +60,7 @@ def test_un_mes_sin_dato_no_cuenta_va_a_las_limitaciones_y_la_razon_no_lo_nombra
     assert (result.score, result.level) == (100, FAVORABLE)
     assert result.limitations == ("Sin temperatura máxima de la zona en octubre: ese mes no se evaluó para el calor",)
     assert result.reasons == (
-        "De 1991 a 2020, en septiembre y noviembre (la etapa media y la etapa final), la máxima rara vez pasó de 24 °C "
+        "De 1991 a 2020, en septiembre y noviembre (la etapa media y la etapa final), la máxima pasó de 24 °C uno de cada diez días "
         "(el mes más caluroso, noviembre); la papa aguanta hasta 30 °C",
     )
 
@@ -92,7 +92,9 @@ def test_sin_ventana_es_sin_datos(thresholds):
 def test_sensible_en_todas_las_etapas_dice_todo_el_cultivo(thresholds):
     window = crop_window([StageSpan("initial", 29, heat_sensitive=True), StageSpan("mid", 61, heat_sensitive=True)], date(2026, 8, 3))
     result = heat_signal(window, TMAX, LIMITS, NORMAL, thresholds, CROP)
-    assert result.reasons[0].startswith("De 1991 a 2020, en todo el cultivo (de agosto a octubre), la máxima rara vez pasó de 40 °C ")
+    assert result.reasons[0].startswith(
+        "De 1991 a 2020, en todo el cultivo (de agosto a octubre), la máxima pasó de 40 °C uno de cada diez días "
+    )
 
 
 def test_una_ventana_de_mas_de_doce_meses_no_repite_meses(thresholds):
@@ -111,7 +113,7 @@ def test_una_ventana_de_mas_de_doce_meses_dice_hasta_donde_llega(thresholds):
     rows = {month: HeatMonth(26.0 if month == 3 else 20.0, "ok") for month in range(1, 13)}
     result = heat_signal(window, rows, LIMITS, NORMAL, thresholds, CROP)
     assert result.reasons == (
-        "De 1991 a 2020, en todo el cultivo (de agosto a octubre del año siguiente), la máxima rara vez pasó de 26 °C "
+        "De 1991 a 2020, en todo el cultivo (de agosto a octubre del año siguiente), la máxima pasó de 26 °C uno de cada diez días "
         "(el mes más caluroso, marzo); la papa aguanta hasta 30 °C",
     )
     assert result.limitations == ()
@@ -130,7 +132,7 @@ def test_una_ventana_que_empieza_en_enero(thresholds):
     result = heat_signal(window, months(m1=22.0, m2=24.0, m3=27.5, m4=23.0, m5=40.0), LIMITS, NORMAL, thresholds, CROP)
     assert (result.score, result.level, result.critical) == (50, MODERATE, False)
     assert result.reasons == (
-        "De 1991 a 2020, de enero a abril (la etapa inicial y la etapa media), la máxima rara vez pasó de 27,5 °C "
+        "De 1991 a 2020, de enero a abril (la etapa inicial y la etapa media), la máxima pasó de 27,5 °C uno de cada diez días "
         "(el mes más caluroso, marzo); la papa aguanta hasta 30 °C",
     )
 
@@ -147,7 +149,7 @@ def test_meses_sensibles_no_seguidos_se_nombran_uno_por_uno(thresholds):
     result = heat_signal(window, months(m10=24.0, m11=40.0, m12=26.0), LIMITS, NORMAL, thresholds, CROP)
     assert (result.score, result.level) == (80, FAVORABLE)
     assert result.reasons == (
-        "De 1991 a 2020, en octubre y diciembre (la etapa inicial y la etapa media), la máxima rara vez pasó de 26 °C "
+        "De 1991 a 2020, en octubre y diciembre (la etapa inicial y la etapa media), la máxima pasó de 26 °C uno de cada diez días "
         "(el mes más caluroso, diciembre); la papa aguanta hasta 30 °C",
     )
 

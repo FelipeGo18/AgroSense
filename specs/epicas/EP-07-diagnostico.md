@@ -168,7 +168,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Criterios de aceptación:**
   - [x] Señal `heat` con `status`, `level`, `critical`, `score`, `counts`, `indicators` (`tmax_p90_c`) y `reasons`, según el contrato (todo menos `counts`, que pone el ensamblado con los pesos, HU-074 y HU-076)
   - [x] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (de HU-199) mediante la curva de HU-196: 100 hasta `temp_opt_max_c` y 0 desde `heat_max_c`, recta entre medio y sin límite inferior (una máxima fría no es calor). Se toma la más alta de los meses sensibles (el peor caso; 14 nov 2026, `docs/registro-de-decisiones.md`)
-  - [x] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C»)
+  - [x] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C»)
   - [x] Grado crítico en `thresholds.yaml`. Un calor crítico cuenta siempre, aunque el agricultor le ponga peso 0 (la señal ya trae `critical`; que cuente con peso 0 lo decide el semáforo, HU-074)
   - [x] Sin `heat_max_c` con fuente o sin `tmax_p90_c`: `insufficient_data`, nivel y `score` nulos y a las limitaciones; no cambia la luz (R1, R8). Un mes sensible sin `tmax_p90_c`, o `partial`, no cuenta y va a las limitaciones
   - [x] Si la ventana toca etapas sensibles al calor y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`unknown` de `sensitive_months`); si ninguna es sensible y alguna es nula, `insufficient_data` (R1; decidido por Felipe el 14 nov 2026, PR #69). El `heat_max_c` del maíz es 35 °C, la temperatura que daña el polen en la floración (Purdue), no el máximo absoluto de EcoCrop
@@ -263,34 +263,40 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-217 · Comparar dos periodos de la historia de la zona
 
 - **Historia:** Como motor, quiero comparar el clima de un municipio y las mejores ventanas de un cultivo entre dos periodos de la misma fuente, para que el agricultor vea qué cambió en su zona y adapte su finca.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Función pura: recibe `climate_change_month` de los dos periodos, los años de cada periodo de `climate_month` y `precip_month`, la ficha del cultivo, el suelo y la oferta del municipio y la configuración; no lee archivos (R6)
-  - [ ] Por mes (1 a 12): `frost_freq_pct`, `precip_normal_mm` y `tmax_p90_c` de cada periodo y su diferencia (después menos antes), cada uno con `status` (R1)
+  - [x] Por mes (1 a 12): `frost_freq_pct`, `precip_normal_mm` y `tmax_p90_c` de cada periodo y su diferencia (después menos antes), cada uno con `status` (R1)
   - [ ] Las mejores ventanas por mes de siembra en cada periodo, con el orden de HU-192 y los pesos por defecto de `weights.yaml`. Solo cambia el clima: la oferta, el mercado y el suelo son los mismos en los dos periodos, y la respuesta lo dice en `limitations`
   - [ ] El agua de cada ventana usa el balance de HU-144 sobre los años de su periodo, con la fuente de lluvia del periodo
   - [ ] Primero la aptitud (HU-191): si el cultivo no es apto, no hay ventanas y la razón lo dice
   - [ ] Un mes sin datos suficientes en alguno de los dos periodos tiene la diferencia en `insufficient_data`; nunca se compara con un solo periodo ni se rellena (R1)
-  - [ ] Cada razón dice el periodo de cada valor («Entre 1981 y 2000 heló en enero en 30 de cada 100 años; entre 2005 y 2024, en 18») y ninguna dice qué pasará (decisión 4, R5)
+  - [x] Cada razón dice el periodo de cada valor («Entre 1981 y 2000 heló en enero en 30 de cada 100 años; entre 2005 y 2024, en 18») y ninguna dice qué pasará (decisión 4, R5)
   - [ ] Los periodos llegan de la configuración versionada, no del código; misma entrada, misma salida (R4)
   - [ ] Caso de referencia: con datos de ejemplo en que las heladas de enero bajan, la diferencia de enero es negativa y la razón lo cuenta como historia
 - **Reglas que aplican:** R1, R2, R4, R5, R6, R8
 - **Contrato que toca:** respuesta de `GET /api/v1/changes`; `climate_change_month`, `climate_month`, `precip_month`
 - **Notas:** Decisión 12. Depende de HU-216, HU-144, HU-191, HU-192 y HU-196. Con IMERG solo hay datos desde 2000, y la respuesta lo dice. Supuesto por confirmar: sin `irrigated`, la comparación del agua se hace sin riego y lo dice en las limitaciones. Agregada el 11 de octubre de 2026.
+  - **Revisión de PR #95 (14 de noviembre):** diferencias redondeadas a un decimal y hasta tres razones del motor, una por indicador, con la mayor diferencia absoluta y cobertura de meses; el detalle queda en `months`. Se usan nombres legibles de las fuentes y lenguaje para el agricultor. El caso de enero sin periodo anterior pasa del script de simulación a una prueba automatizada; se elimina el script. Siguen pendientes las ventanas y la validación con el dataset publicado.
 
 ### HU-218 · Endpoint de «Qué cambió»
 
 - **Historia:** Como desarrollador web, quiero el endpoint de «Qué cambió», para mostrar la pantalla «Qué cambió en su zona».
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] `GET /api/v1/changes?municipality_id=&crop_id=&irrigated=` según el contrato; `irrigated` es opcional
-  - [ ] 422 si el municipio o el cultivo no están en el catálogo, o si el cultivo no tiene `kind = crop`
+  - [x] 422 si el municipio o el cultivo no están en el catálogo, o si el cultivo no tiene `kind = crop`
   - [ ] 200 con `insufficient_data` en cada valor que no tiene datos; 200 con `suitability.level = not_suitable` y sin ventanas si el cultivo no es apto
   - [ ] Trae `periods` (cada uno con `period_id`, `start_year`, `end_year` y `source_id`), `weights_basis = default` y `versions` (R4)
-  - [ ] No guarda los datos de la consulta ni quién consultó (R9)
+  - [x] No guarda los datos de la consulta ni quién consultó (R9)
 - **Reglas que aplican:** R1, R4, R9
 - **Contrato que toca:** `GET /api/v1/changes`, tabla de errores
 - **Notas:** Decisión 12. Agregada el 11 de octubre de 2026.
+  - **Avance del 14 de noviembre de 2026:** `backend/dataset.py` carga opcionalmente `climate_change_month` y conserva los periodos del manifiesto. `/changes` valida municipio, cultivo y riego, reutiliza la aptitud de HU-191 y conecta la comparación mensual de HU-217 para el caso `not_suitable`. Ese caso devuelve 200 con los doce meses, razones históricas, ventanas vacías, periodos por fuente, `weights_basis = default`, limitaciones y versiones. No accede a la base de datos ni guarda la consulta.
+  - La selección de fuentes reutiliza `catalog/sources.yaml`: heladas y calor conservan sus periodos y la lluvia los de la fuente configurada, con `precip_periods` cuando es distinta. Los datos ausentes quedan en `insufficient_data`; nunca se sustituyen con otra fuente. Sin periodos suficientes o con metadatos inválidos se responde 503 `dataset_unavailable`, sin inventar años.
+  - **Revisión de PR #95 (14 de noviembre):** integrado HU-177 desde `desarrollo`: `/changes` usa `calc_dataset` y su 200 explica lo ocurrido en el log sin identificar municipio ni cultivo. Prueba en `tests/test_logs_de_calculo.py` para versiones y privacidad del 200. En `limitations` se advierten los cambios opuestos de lluvia entre POWER/IMERG (cerca de 7 de cada 10 en la comprobación regional) y el posible artefacto de máxima de POWER de hasta +7,3 °C en tierra caliente. Fuente de estos avisos: comprobación de HU-216 en [PR #79](https://github.com/FelipeGo18/AgroSense/pull/79); precisión de los porcentajes y alcance en `backend/README.md`. No se añaden umbrales ni se cambian los valores para ocultar esos límites.
+  - **Verificación local de la revisión:** suite Python completa en Docker con 1401 pruebas aprobadas y 16 `xfail` esperados; Ruff y formato de todo el repositorio pasan. Tras ajustar el texto del aviso se repitieron las 46 pruebas de cambios y logs, también aprobadas. Los `xfail(strict=True)` del caso apto siguen intactos; este avance no completa las ventanas.
+  - **Pendiente:** integrar la evaluación completa de ventanas de HU-217, que reutiliza HU-144, HU-192 y las señales/calificaciones de HU-196, y comprobar el dataset publicado de HU-216. Los casos `suitable` e `insufficient_data` de aptitud siguen en 501 `not_implemented`; no se representan como ventanas vacías. Los criterios de respuesta general permanecen abiertos: el 200 con datos insuficientes está cubierto por ahora solo en el recorrido `not_suitable`. Este avance no cierra HU-218 ni HU-217 y no modifica el contrato.
 
 ### HU-195 · Señales de exceso de lluvia, enfermedad y cosecha
 

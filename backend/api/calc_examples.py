@@ -69,7 +69,7 @@ SIGNALS_OK = {
         "available",
         "favorable",
         94,
-        ["De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"],
+        ["De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"],
         ["tmax_p90_c"],
     ),
     "soil": _signal(
@@ -377,6 +377,7 @@ ROTATIONS_EMPTY = {
             "crop_ids": ["cebolla_bulbo", "arveja", "papa"],
             "cycle": 1,
             "kind": "soil_ph",
+            "crop_id": "cebolla_bulbo",
             "reason": "La cebolla tolera pH de 6,0 a 7,5 y el suelo estimado va de 5,2 a 5,8",
             "source_ids": ["upra_cebolla_bulbo", "soilgrids"],
         },
