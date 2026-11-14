@@ -67,7 +67,8 @@ Se aplican dos veces: con los pesos del agricultor (`overall`) y con los de Agro
 0. **Aptitud.** Si la altitud del municipio queda fuera del rango de la ficha, el cultivo no es apto: luz `red`, acción `rotate`, sin ventanas. Si la ficha no tiene ese rango con fuente, la aptitud es `insufficient_data`: no bloquea y va a las limitaciones.
 1. Si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción es `review_data`. Sin datos de `supply`, se calcula sin ella, como si su peso fuera 0.
 2. Si alguna señal que cuenta es `unfavorable` y crítica, o dos señales que cuentan son `unfavorable`, la luz es `red`.
-3. Si ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
+3. Si al menos una señal que cuenta califica, ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
+   - Sin ninguna señal que cuente y califique (por ejemplo, con peso solo en la oferta y el mercado, sin datos), la luz es `yellow` y la acción `other_window`, con una razón que lo explica: no hay evidencia de riesgo ni de que la ventana sea buena (R5; HU-074, aprobado por Felipe el 14 de noviembre de 2026, `docs/registro-de-decisiones.md`).
 4. En cualquier otro caso, la luz es `yellow`.
 5. `frost`, `heat`, `soil`, `market` y las señales del P1 sin datos nunca cambian la luz, pero van a las limitaciones. `not_applicable` tampoco la cambia.
 
