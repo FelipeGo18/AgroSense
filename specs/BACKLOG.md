@@ -53,7 +53,7 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-071 | Señal de agua | P0 | M | pendiente | Suma IMERG y la humedad del suelo |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-072 | Señal de oferta | P0 | M | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-073 | Señal de mercado sin datos | P0 | S | pendiente | |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-196 | Calificación de las señales con curvas por cultivo | P0 | M | pendiente | |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-196 | Calificación de las señales con curvas por cultivo | P0 | M | hecha | `score_signal` en `backend/engine/signal_score.py` con la curva de `curve.py`: agua y heladas con los puntos de `thresholds.yaml`, calor y suelo con la ficha; oferta y mercado sin datos mientras no tengan curva (13 nov) |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-074 | Semáforo con prioridades, dos luces y acción | P0 | L | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-197 | Cultivos alternativos con mejor oferta | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-077 | Señal de heladas | P0 | M | pendiente | Por mes en el MVP |
