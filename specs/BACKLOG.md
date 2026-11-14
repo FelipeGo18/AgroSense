@@ -152,4 +152,4 @@
 | [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | pendiente | Cinco criterios con la erosión (decisión 14) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | pendiente | Nueva (8 nov, decisión 14) |
-| [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | pendiente | |
+| [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | en curso | El suelo de la zona explicado en el detalle del lote (14 nov); faltan la señal de suelo y la salud del suelo |

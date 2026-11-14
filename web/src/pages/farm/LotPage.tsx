@@ -12,13 +12,16 @@ import { byId, formatHa, useBoundary, useLot, useMunicipalities, type LotDetail 
 import { STAGE_NAMES, STAGE_ORDER, cropNames, formatDate, formatShortDate, useCrops, useSeasons } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
+import { SoilFacts } from "@/components/soil/SoilFacts";
+import { useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { WithoutDrawing, irrigationText, placeName } from "./common";
 
 /**
  * El lote (HU-164, HU-169): su contorno en el mapa, lo que se sabe de él, sus siembras en curso y su suelo. Editar y
  * borrar van en «Editar lote» (Figma: «D1 · Editar lote»). Un lote sin dibujar muestra su municipio y se puede
- * dibujar. Las siembras se registran, cosechan y corrigen en sus pantallas (HU-165). El lote vivo (HU-187) y «Ver
- * estrategias de rotación» (HU-214) llegan después.
+ * dibujar. Las siembras se registran, cosechan y corrigen en sus pantallas (HU-165). «Ver estrategias de rotación» lleva
+ * a las estrategias con este lote (HU-214). El suelo es el estimado de su municipio (HU-185); el del polígono del lote es
+ * HU-182 (P1). El lote vivo es HU-187 (P1).
  */
 export function LotPage() {
   return <RequireSession>{() => <LotView />}</RequireSession>;
@@ -102,7 +105,7 @@ function LotView() {
         )}
       </Section>
       <Seasons lot={lot.data} />
-      <Soil town={town} />
+      <Soil municipalityId={lot.data.municipality_id} town={town} />
     </MapScene>
   );
 }
@@ -229,14 +232,26 @@ function StageBar({ stage, progress }: { stage: string; progress: number }) {
   );
 }
 
-/** El suelo (HU-185): sin el suelo publicado no se inventa nada (R1, R10). */
-function Soil({ town }: { town: string }) {
+/**
+ * El suelo (HU-185): el estimado del municipio del lote (`GET /catalogs/municipalities/{id}/soil`), con su rango y qué
+ * significa cada dato. Sin el suelo publicado no se inventa nada (R1); siempre dice que es de la zona (R10).
+ */
+function Soil({ municipalityId, town }: { municipalityId: string; town: string }) {
+  const soil = useMunicipalitySoil(municipalityId);
   return (
-    <Section title="Suelo">
-      <p className="font-bold">Sin datos del suelo todavía.</p>
-      <p className="text-[14px] text-texto-secundario">
-        Será el estimado de {town} (mapa global de 250 m), con su rango. Para conocer el de su lote, haga un análisis de suelo.
-      </p>
+    <Section title="Suelo de la zona">
+      {soil.isPending ? (
+        <p role="status" className="text-texto-secundario">
+          Cargando el suelo de {town}…
+        </p>
+      ) : soil.data ? (
+        <SoilFacts soil={soil.data} place={town} />
+      ) : (
+        <>
+          <p className="font-bold">Sin datos del suelo de {town}.</p>
+          <p className="text-[14px] text-texto-secundario">Para conocer el suelo de su lote, haga un análisis de suelo.</p>
+        </>
+      )}
     </Section>
   );
 }
