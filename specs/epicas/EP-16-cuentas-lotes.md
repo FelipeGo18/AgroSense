@@ -217,12 +217,12 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Historia:** Como invitado, quiero crear mi cuenta sin perder lo que ya consulté, para guardarlo.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [X] Vistas de registro, inicio de sesión y perfil con el estilo de `specs/05-frontend.md`
-  - [X] Al registrarse después de consultar estrategias sin cuenta, el municipio, el área y el cultivo anterior que escribió se ofrecen para crear su primer lote (sin dibujar), que puede dibujar después
-  - [X] Quien vuelve con sesión entra directo a Mi finca
+  - [x] Vistas de registro, inicio de sesión y perfil con el estilo de `specs/05-frontend.md`
+  - [x] Al registrarse después de consultar estrategias sin cuenta, el municipio, el área y el cultivo anterior que escribió se ofrecen para crear su primer lote (sin dibujar), que puede dibujar después. 
+  - [x] Quien vuelve con sesión entra directo a Mi finca
   - [ ] P1 (con HU-141): la finca temporal del dispositivo se ofrece para guardar como un lote con una temporada por cultivo, cada una con su parte del área
 - **Reglas que aplican:** R9
-- **Notas:** Ajustada el 11 de octubre de 2026 al recorte del MVP: la finca temporal pasó a P1 y sin cuenta se consulta por municipio, área y cultivo anterior (HU-214).
+- **Notas:** Ajustada el 11 de octubre de 2026 al recorte del MVP: la finca temporal pasó a P1 y sin cuenta se consulta por municipio, área y cultivo anterior (HU-214). La consulta del invitado se conserva en `sessionStorage`, solo en la pestaña actual. Registro e inicio de sesión comparten `afterLoginPath()`: con consulta guardada llevan a Agregar lote y, sin ella, a Mi finca. Agregar lote recupera los datos desde `readGuestConsult()` y abre el paso 2 sin incluir el área en la dirección. Comprobados los recorridos desde registro e inicio de sesión, la precarga de datos y la limpieza al guardar, cancelar y empezar de cero. Los cultivos anteriores se muestran solo como referencia y no se guardan como temporadas
 
 ### HU-187 · El lote vivo
 

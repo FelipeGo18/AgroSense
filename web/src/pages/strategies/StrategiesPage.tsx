@@ -4,7 +4,7 @@ import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChoiceGroup } from "@/components/ui/ChoiceGroup";
 import { Combobox, type Option } from "@/components/ui/Combobox";
@@ -282,12 +282,16 @@ export function StrategiesPage() {
                   historial.
                 </p>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                  <Link to={PATHS.signup} onClick={() => writeGuestConsult(sent)}>
-                    <Button>Crear cuenta</Button>
-                  </Link>
+                  <ButtonLink to={PATHS.signup} onClick={() => writeGuestConsult(sent)}>
+                    Crear cuenta
+                  </ButtonLink>
                   <span>
                     ¿Ya tiene cuenta?{" "}
-                    <Link to={PATHS.login} onClick={() => writeGuestConsult(sent)} className={LINK}>
+                    <Link
+                      to={PATHS.login}
+                      onClick={() => writeGuestConsult(sent)}
+                      className={`${LINK} inline-flex min-h-11 min-w-11 items-center justify-center`}
+                    >
                       Entrar
                     </Link>
                   </span>

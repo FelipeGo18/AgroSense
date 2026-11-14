@@ -1,3 +1,4 @@
+import { PATHS } from "@/app/paths";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 import type { Irrigation } from "@/features/diagnosis/consult";
@@ -283,7 +284,7 @@ export function explain422(message: string): string {
  * HU-168 lo que consultó un invitado se podrá ofrecer como lote al registrarse
  */
 
-const GUEST_KEY = "agrosense.gest-consult";
+const GUEST_KEY = "agrosense.guest-consult";
 
 export interface GuestConsult {
   municipalityId: string;
@@ -311,9 +312,29 @@ export function readGuestConsult(): GuestConsult | null {
   try {
     const raw = sessionStorage.getItem(GUEST_KEY);
     if (!raw) return null;
-    const data = JSON.parse(raw) as GuestConsult;
-    // Mínimo: un municipio.
-    return data && typeof data.municipalityId === "string" && data.municipalityId ? data : null;
+
+    const data: unknown = JSON.parse(raw);
+    if (!data || typeof data !== "object") return null;
+
+    const consult = data as Record<string, unknown>;
+
+    if (
+      typeof consult.municipalityId !== "string" ||
+      !/^\d{5}$/.test(consult.municipalityId) ||
+      typeof consult.areaText !== "string" ||
+      !Array.isArray(consult.previousCrops) ||
+      !consult.previousCrops.every((id) => typeof id === "string") ||
+      (consult.irrigation !== "" && consult.irrigation !== "si" && consult.irrigation !== "no" && consult.irrigation !== "nose")
+    ) {
+      return null;
+    }
+
+    return {
+      municipalityId: consult.municipalityId,
+      areaText: consult.areaText,
+      previousCrops: consult.previousCrops,
+      irrigation: consult.irrigation,
+    };
   } catch {
     return null;
   }
@@ -326,4 +347,9 @@ export function clearGuestConsult() {
   } catch {
     // Si el almacenamiento no está disponible, no se puede limpiar la consulta.
   }
+}
+
+/** Redirección sin datos de la finca en la URL (R9). */
+export function afterLoginPath(): string {
+  return readGuestConsult() ? `${PATHS.addLot}?desde=consulta` : PATHS.farm;
 }

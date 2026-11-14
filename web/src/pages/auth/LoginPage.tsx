@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useLogin, useSession } from "@/features/auth/session";
 import { typedBefore } from "@/lib/firstLoad";
-import { readGuestConsult } from "@/features/strategies/entry";
+import { afterLoginPath } from "@/features/strategies/entry";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -49,20 +49,7 @@ export function LoginPage() {
     login.mutate(
       { username, password },
       {
-        onSuccess: () =>
-          celebrateThen(() => {
-            const guest = readGuestConsult();
-            if (guest) {
-              const params = new URLSearchParams();
-              params.set("desde", "consulta");
-              params.set("municipio", guest.municipalityId);
-              if (guest.areaText) params.set("area", guest.areaText);
-              if (guest.irrigation) params.set("riego", guest.irrigation);
-              navigate(`${PATHS.addLot}?${params}`);
-            } else {
-              navigate(PATHS.farm);
-            }
-          }),
+        onSuccess: () => celebrateThen(() => navigate(afterLoginPath())),
       },
     );
   };

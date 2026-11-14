@@ -52,12 +52,12 @@ function AddLot() {
   const create = useCreateLot();
   const places = byId(municipalities.data);
   const [search, setSearch] = useSearchParams();
-  const fromConsult = search.get("desde") === "consulta";
-  const guestMunicipality = search.get("municipio") ?? "";
-  const guestArea = search.get("area") ?? "";
-  const guestIrrigation = search.get("riego");
   const crops = useCrops();
   const [guestConsult] = useState(() => readGuestConsult());
+  const fromConsult = search.get("desde") === "consulta" && guestConsult !== null;
+  const guestMunicipality = guestConsult?.municipalityId ?? "";
+  const guestArea = guestConsult?.areaText ?? "";
+  const guestIrrigation = guestConsult?.irrigation;
 
   const names = cropNames(crops.data);
   const previousCrops = fromConsult ? (guestConsult?.previousCrops ?? []) : [];
@@ -68,7 +68,6 @@ function AddLot() {
     if (places.has(lot.municipality_id)) counts.set(lot.municipality_id, (counts.get(lot.municipality_id) ?? 0) + 1);
   const zones = [...counts.keys()];
 
-  // Ajustes de estado (ejemplo):
   const [step, setStep] = useState<1 | 2>(fromConsult && guestMunicipality ? 2 : 1);
   const [manual, setManual] = useState(fromConsult);
   const [zone, setZone] = useState<string | null>(fromConsult ? guestMunicipality : null);
@@ -288,11 +287,12 @@ function AddLot() {
             <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Su lote, sin dibujar</h1>
           </header>
           {fromConsult && (
-            <Alert>
+            <div role="status" className="flex flex-col gap-2 border-2 border-superficie-borde bg-superficie-panel-suave p-4">
               <p className="font-bold">Ya consultó para {town}. ¿Guardar como su primer lote?</p>
               {previousCrops.length > 0 && <p>Cultivos anteriores: {previousCrops.map((id) => names.get(id) ?? id).join(", ")}.</p>}
               <p>Solo falta un nombre. Puede dibujar su lote en el mapa después.</p>
-            </Alert>
+              <p>Los cultivos anteriores son una referencia; no se guardan como siembras.</p>
+            </div>
           )}
           {fromConsult && (
             <button
