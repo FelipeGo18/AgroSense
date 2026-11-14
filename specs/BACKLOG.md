@@ -7,7 +7,7 @@
 | Épica | HU | Título | Prio | Tamaño | Estado | Nota |
 |---|---|---|---|---|---|---|
 | [EP-00](epicas/EP-00-alcance.md) | HU-001 | Comparar la cobertura de EVA y elegir región | P0 | M | pendiente | |
-| [EP-00](epicas/EP-00-alcance.md) | HU-002 | Confirmar los datasets NASA del enunciado | P0 | S | en curso | Datos de la NASA documentados y probados sobre Duitama (12 nov); falta la pestaña de recursos del 13 de noviembre |
+| [EP-00](epicas/EP-00-alcance.md) | HU-002 | Confirmar los datasets NASA del enunciado | P0 | S | hecha | Datos de la NASA documentados y probados sobre Duitama (12 nov); pestaña de recursos revisada (13 nov): nada cambia el núcleo; ERA5 y GLDAS, en P1, como contraste |
 | [EP-00](epicas/EP-00-alcance.md) | HU-003 | Verificar SIPSA y decidir si entra al P0 | P0 | S | hecha | Verificado y mapeado (7 nov): SIPSA cubre papa, arveja, cebolla de bulbo y zanahoria. Entra, aprobado por Felipe (10 nov) |
 | [EP-00](epicas/EP-00-alcance.md) | HU-004 | Confirmar qué se puede preparar antes del evento | P0 | S | hecha | Sí se puede llevar código (8 nov); los términos 2026 no limitan cuándo se crea el trabajo, pero piden licencia OSI, licencias de terceros documentadas y citar todas las fuentes (10 nov) |
 | [EP-01](epicas/EP-01-contratos.md) | HU-011 | Esquema de las tablas publicadas | P0 | M | hecha | `pipeline/schema.py` y los ejemplos en `data/examples/` (8 nov) |
@@ -33,7 +33,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-210 | Humedad del suelo por satélite con SMAP | P0 | M | pendiente | Ya no es lo primero que se recorta: el reto lo nombra primero (decisión 14) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-216 | Clima de dos periodos para «Qué cambió» | P0 | M | pendiente | Nueva |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-044 | Municipios, límites, altitud y corrección de la temperatura | P0 | S | hecha | Municipios de DIVIPOLA, límites del MGN, altitud de NASADEM, altura de la celda de NASA POWER y temperatura media anual publicadas; temperaturas corregidas con el gradiente de `region.yaml`; comprobado contra 4 estaciones del IDEAM: queda un sesgo de POWER entre el día y la noche (ver HU-045) |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Heladas y temperatura máxima por mes | P0 | M | pendiente | |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Heladas y temperatura máxima por mes | P0 | M | hecha | `climate_risk_month` y `climate_frost_month` con la mínima ≤ 2 °C (ZARC); la helada cae en enero, pero POWER cuenta muchas menos de las que mide el IDEAM |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-193 | Riesgo climático por semana | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-043 | Verdor por lote con HLS (30 m) | P1 | L | pendiente | Antes «Humedad del suelo y NDVI» |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-046 | Aguaceros, ventanas secas y gota por mes | P1 | M | pendiente | |
@@ -41,6 +41,8 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-189 | Lluvia en años de El Niño y La Niña | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-225 | Tendencia del agua almacenada con GRACE-FO | P1 | M | pendiente | Nueva (8 nov, decisión 14) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-226 | Temperatura de la superficie y evapotranspiración con ECOSTRESS | P1 | M | pendiente | Nueva (8 nov, decisión 14) |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-231 | Heladas de ERA5-Land para contrastar las de NASA POWER | P1 | M | pendiente | Nueva (13 nov, recursos del reto): POWER casi no ve heladas en el altiplano |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-232 | Humedad del suelo de GLDAS para contrastar | P1 | S | pendiente | Nueva (13 nov, recursos del reto) |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-051 | Índice estacional de precio | P1 | M | hecha | `market_month` publicada (7 nov); columnas y mapeo aprobados por Felipe (10 nov); el maíz queda sin producto |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-221 | Precios en la central de abastos | P1 | L | en curso | Contrato aprobado por Felipe (10 nov). Falta el diseño en Figma |
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | hecha | Dos crons del servicio `market` (9 nov): boletín diario y serie completa semanal; la API solo lee. Contrato aprobado por Felipe (10 nov) |
@@ -53,12 +55,12 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-071 | Señal de agua | P0 | M | pendiente | Suma IMERG y la humedad del suelo |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-072 | Señal de oferta | P0 | M | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-073 | Señal de mercado sin datos | P0 | S | pendiente | |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-196 | Calificación de las señales con curvas por cultivo | P0 | M | pendiente | |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-196 | Calificación de las señales con curvas por cultivo | P0 | M | hecha | `score_signal` en `backend/engine/signal_score.py` con la curva de `curve.py`: agua y heladas con los puntos de `thresholds.yaml`, calor y suelo con la ficha; oferta y mercado sin datos mientras no tengan curva (13 nov) |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-074 | Semáforo con prioridades, dos luces y acción | P0 | L | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-197 | Cultivos alternativos con mejor oferta | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-077 | Señal de heladas | P0 | M | pendiente | Por mes en el MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-190 | Señal de calor | P0 | M | pendiente | Por mes en el MVP |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-191 | Aptitud del cultivo en la zona | P0 | S | pendiente | Por temperatura media anual desde el 16 oct (decisión 13); con lote, corregida a su altitud |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-191 | Aptitud del cultivo en la zona | P0 | M | en curso | Por temperatura media anual desde el 16 oct (decisión 13); con lote, corregida a su altitud. Motor y caso `not_suitable` de `/diagnostics` listos (PR #56); desde el 13 nov la API calcula la altitud del lote y corrige la temperatura con el gradiente del manifiesto (primer criterio hecho); faltan el caso `suitable`/`insufficient_data` (esperan las señales) y el cableado en `/rotations` y `/changes` |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-192 | Orden de las ventanas por factor limitante y prioridades | P0 | M | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-075 | Umbrales y pesos versionados | P0 | S | en curso | `weights.yaml` y `thresholds.yaml` 1.0.0 hechos (10 nov); oferta y mercado sin fuente. Falta lo que depende del motor |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-076 | Endpoint de diagnóstico con errores claros | P0 | S | pendiente | |
@@ -78,7 +80,7 @@
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-202 | Ajustar mis prioridades al consultar | P0 | S | hecha | Controles, `priorities`, todo en 0 y guardado (navegador o perfil) (10 nov); se envían como `signal_priorities` a las estrategias (11 nov, HU-214). Lo de HU-180 es P1 |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-203 | Dos luces y cultivos alternativos | P0 | M | hecha | Una o dos luces con su acción, lo que más limita y por qué difieren; «No cuenta» y «Cuenta siempre»; enlace a estrategias (10 nov). Las alternativas son P1 |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-093 | Gráfica de la lluvia de la ventana | P0 | S | hecha | En la señal de agua del diagnóstico y del ciclo, con la fuente, los años sin lluvia suficiente y su tabla (11 nov). Reducida a una gráfica (antes M) |
-| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-094 | Estados de carga, vacío y error | P0 | S | pendiente | |
+| [EP-09](epicas/EP-09-web-diagnostico.md) | HU-094 | Estados de carga, vacío y error | P0 | S | en curso | Esqueleto sin cifras ficticias; tarjetas de sin conexión, fecha inválida, lote inexistente y errores de la API, con acciones de recuperación y código de soporte para fallos del servidor. Queda pendiente estado sin cobertura por falta de código propio en el contrato (decidido por Felipe el 13 de noviembre de 2026: no por ahora) |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-219 | Pantalla «Qué cambió en su zona» | P0 | M | pendiente | Nueva |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-095 | Mapa regional por semáforo | P1 | L | pendiente | |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-096 | Uso desde el celular | P0 | S | hecha | Toda la web revisada: 25 pantallas en 11 tamaños, con y sin modo ligero, 550 de 550; dos enlaces agrandados (12 nov) |

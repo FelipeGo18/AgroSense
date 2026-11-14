@@ -22,6 +22,7 @@ ARCHETYPES = {
     "tuber", "root", "bulb", "leafy", "cereal", "climbing_legume", "bush_legume", "creeping", "tall_grass",
     "shrub_fruit", "tree_fruit", "cover", "fallow",
 }  # fmt: skip
+ARTICLES = {"el", "la"}
 STAGES = ("initial", "development", "mid", "late")
 # Los rangos que tienen óptimo y absoluto: (mínimo absoluto, mínimo óptimo, máximo óptimo, máximo absoluto).
 RANGES = {
@@ -32,7 +33,7 @@ RANGES = {
 }
 # Las columnas de `crops` del contrato que salen de un valor con fuente.
 FIELDS = (
-    "name_es", "kind", "archetype", "family", "water_need", "root_type", "fixes_nitrogen",
+    "name_es", "article", "kind", "archetype", "family", "water_need", "root_type", "fixes_nitrogen",
     *RANGES["tmean"], "base_temp_c", "temp_min_c", "temp_opt_min_c", "temp_opt_max_c", "heat_max_c",
     *RANGES["rain"], *RANGES["ph"], "frost_killing_c",
 )  # fmt: skip
@@ -116,6 +117,8 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             raise CatalogError(f"{crop_id}: `kind` {row['kind']!r} no es uno de {sorted(KINDS)}.")
         if row["archetype"] is not None and row["archetype"] not in ARCHETYPES:
             raise CatalogError(f"{crop_id}: `archetype` {row['archetype']!r} no es uno de los del contrato.")
+        if row["article"] not in ARTICLES:
+            raise CatalogError(f"{crop_id}: `article` {row['article']!r} debe ser uno de {sorted(ARTICLES)}.")
         _check_ranges(crop_id, row)
         days = 0
         for stage in (crop.get("stages") or {}).get("list") or []:
@@ -164,7 +167,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
     # Las cifras van todas como decimales, aunque la fuente las dé enteras (mismo tipo en cada columna, R4).
     # Un texto sin fuente en todos los cultivos queda nulo, pero su columna sigue siendo texto (HU-011: el tipo es el del
     # contrato, no el que adivina Polars de una columna vacía).
-    text = ["name_es", "kind", "archetype", "family", "water_need", "root_type"]
+    text = ["name_es", "article", "kind", "archetype", "family", "water_need", "root_type"]
     crops_table = (
         pl.DataFrame(crops, infer_schema_length=None)
         .with_columns(

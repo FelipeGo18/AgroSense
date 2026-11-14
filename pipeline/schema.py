@@ -13,10 +13,10 @@ from types import MappingProxyType
 
 import polars as pl
 
+from common.grid import GRID_STEP_DEG, cell_center, cell_id  # noqa: F401
+
 # Valores permitidos de `quality` en todas las tablas (contrato, «Valores de `quality`», decisión 15).
 QUALITY = ("ok", "partial")
-# La rejilla común de 250 m (contrato, «La rejilla de 250 m»): `cell_id` = "{fila}_{columna}".
-GRID_STEP_DEG = 0.0025
 
 S, F, I8, I16, I32, I64, B = pl.String, pl.Float64, pl.Int8, pl.Int16, pl.Int32, pl.Int64, pl.Boolean
 IDS = pl.List(pl.String)
@@ -42,19 +42,6 @@ class Table:
 
 def c(dtype: pl.DataType, unit: str = "", nullable: bool = True) -> Column:
     return Column(dtype, unit, nullable)
-
-
-def cell_id(lat: float, lon: float) -> str:
-    """La celda de la rejilla común que contiene un punto: fila y columna desde (90° N, 180° O)."""
-    row = int((90 - lat) // GRID_STEP_DEG)
-    col = int((lon + 180) // GRID_STEP_DEG)
-    return f"{row}_{col}"
-
-
-def cell_center(cell: str) -> tuple[float, float]:
-    """El centro (lat, lon) de una celda de la rejilla común."""
-    row, col = (int(part) for part in cell.split("_"))
-    return 90 - (row + 0.5) * GRID_STEP_DEG, -180 + (col + 0.5) * GRID_STEP_DEG
 
 
 SOIL = {
@@ -95,6 +82,7 @@ TABLES: dict[str, Table] = {
         columns={
             "crop_id": c(S, "", False),
             "name_es": c(S, "", False),
+            "article": c(S, "el o la", False),
             "kind": c(S, "crop, cover o fallow", False),
             "archetype": c(S),
             "family": c(S),
