@@ -159,3 +159,20 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 - **Reglas que aplican:** R1, R5, R9, R10
 - **Contrato que toca:** respuestas de ejemplo de `specs/02-contratos.md` (sin cambiarlo)
 - **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Las pantallas del MVP se diseñan y aprueban en Figma (`specs/05-frontend.md`, «Pantallas por diseñar del MVP»).
+
+### HU-233 · La web en español y en inglés
+
+- **Historia:** Como jurado de NASA Space Apps, o como agricultor que lee inglés, quiero usar AgroSense en inglés, para entender el proyecto sin traducirlo; y como agricultor de la región piloto, quiero seguir usándolo en español.
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Un selector **Español / English** en la barra superior, también en el menú del celular, con objetivo táctil de 44 px. El idioma se recuerda en el navegador (`localStorage`), sin cuenta y sin enviarse al servidor (R9)
+  - [ ] Español por defecto. `?lang=en` en la dirección abre la web en inglés, para que el enlace de la entrega llegue al jurado en inglés sin tocar nada; el selector y los enlaces internos conservan el idioma
+  - [ ] Todos los textos de interfaz, en los dos idiomas, de: inicio, entrar y crear cuenta, Mi cuenta, Mi finca y sus formularios, la consulta, las estrategias y el ciclo, el diagnóstico, precios, política de datos, el pie de página, las tarjetas de estado (HU-094) y las páginas de pendiente y 404. Ningún texto queda escrito a mano dentro de un componente: todos salen de los diccionarios de idioma
+  - [ ] Los rótulos obligatorios también se traducen: «Ejemplo» (R5), «estimación» (R10), «Es la historia de su zona, no un pronóstico» y los de NASA POWER como reanálisis
+  - [ ] `<html lang>` y el `<title>` de cada página cambian con el idioma; las fechas, los meses y los números usan el formato del idioma (`Intl`), sin cambiar los valores
+  - [ ] Los valores del contrato (`municipality_id`, `crop_id`, `light`, `action`…) no se traducen; la web traduce cómo los muestra
+  - [ ] Modo ligero (HU-158) y diseño adaptable (HU-096) en los dos idiomas: `npm run test:responsive` pasa también con `?lang=en`, porque los textos en inglés cambian de largo
+  - [ ] Pruebas: el selector cambia el idioma y lo recuerda; `?lang=en` abre en inglés; una pantalla del flujo muestra sus textos en inglés; ninguna clave de un diccionario le falta al otro (prueba que compara los dos)
+- **Reglas que aplican:** R5, R9, R10
+- **Contrato que toca:** ninguno en el P0: las razones, limitaciones y errores que manda la API siguen en español (ver la nota)
+- **Notas:** La guía de entrega de NASA Space Apps 2026 (13 de noviembre) pide que la página del proyecto **y todo lo enlazado** estén en inglés. La web es para agricultores colombianos y sigue en español por defecto; el modo inglés es para el jurado y para quien lo necesite. Decidido por Felipe el 14 de noviembre de 2026, asignada a Juan Ortiz. **Por decidir (Felipe y Haider, es contrato):** que la API mande las razones, limitaciones y errores en inglés con `Accept-Language: en`; mientras tanto, en modo inglés esos textos se muestran en español con un aviso («Calculation details are in Spanish»), sin traducirlos en la web, porque una traducción automática de una razón podría cambiar lo que dice (R5). Biblioteca sugerida: `i18next` con `react-i18next`; si se elige otra, se justifica en `specs/05-frontend.md`.
