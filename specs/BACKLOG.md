@@ -121,6 +121,7 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente | |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | en curso | GSAP y Lenis se cargan aparte: en modo ligero el JS inicial baja de 197 a 149 kB; verificados sin WebGL y con «reducir movimiento» (12 nov). Falta el Figma y el paso a 2D de la escena 3D (P1) |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P1 | L | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-233 | La web en español y en inglés | P0 | L | pendiente | Nueva (14 nov): la guía de entrega pide todo en inglés. Juan Ortiz |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P1 | S | hecha | Backend, pantallas y «Sus prioridades» hechos; revisión de seguridad hecha. Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P1 | M | en curso | Tabla, eventos de la cuenta y «Mi actividad» hechos; revisión de seguridad hecha y limpieza de 180 días al arrancar; faltan los permisos de solo agregar y la limpieza con otro rol |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-170 | Roles: agricultor, administrador y desarrollador | P1 | L | pendiente | |
