@@ -100,11 +100,11 @@ Cada señal se califica de 0 a 100 con una curva por cultivo (100 en su óptimo,
 
 ## Impacto esperado (potencial, no garantizado)
 
-El impacto se presenta como **potencial**: la herramienta apoya decisiones, no garantiza resultados.
+El impacto se presenta como **potencial**: la herramienta apoya decisiones, no garantiza resultados. El texto completo, con el contexto citado, cómo se mediría y los límites, está en `docs/impacto.md` (HU-133).
 
-- **Ambiental:** una rotación válida, con leguminosas, abonos verdes y descanso, reduce el desgaste del suelo y la acumulación de plagas, y el agua del plan apoya un uso más racional del recurso.
+- **Ambiental:** una rotación válida, con leguminosas, abonos verdes y descanso, puede reducir el desgaste del suelo y la acumulación de plagas, y el agua del plan apoya un uso más racional del recurso.
 - **Social:** pone al alcance de pequeños productores datos de la NASA y del suelo que hoy están dispersos, desde el celular y en palabras sencillas.
-- **Económico:** ayuda a elegir fechas y cultivos con menos riesgo de clima y, como valor agregado, avisa si en la zona se está sembrando mucho de un cultivo. No promete mayores ingresos.
+- **Económico:** ayuda a elegir fechas y cultivos con menos riesgo de clima y, como valor agregado, avisa si en la zona se está sembrando mucho de un cultivo, cuando haya una fuente que diga qué es «mucho» (hoy la oferta y el mercado salen «datos insuficientes», HU-072 y HU-073). No promete mayores ingresos.
 
 ## Qué NO es
 
