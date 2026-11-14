@@ -61,6 +61,13 @@ def frost_threshold(region: dict[str, Any]) -> float | None:
     return None if config is None else float(config["threshold_c"])
 
 
+def frost_source(region: dict[str, Any]) -> str | None:
+    """La fuente del umbral de helada (`frost.source_id` de `region.yaml`). El pipeline comprueba que esté en `sources`
+    (R8)."""
+    config = region.get("frost") or {}
+    return config.get("source_id")
+
+
 def _month_years(climate_day: pl.DataFrame, frost_threshold_c: float) -> pl.DataFrame:
     """Por municipio, año y mes: los días con mínima, con máxima, los días de helada y los días que tiene el mes."""
     return (
