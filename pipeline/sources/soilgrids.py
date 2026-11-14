@@ -237,7 +237,8 @@ def read_cache(tile_ids: list[tuple[int, int]], cache: Path = CACHE) -> tuple[pl
 
 def with_soil(grid: pl.DataFrame, soil: pl.DataFrame) -> pl.DataFrame:
     """`grid_cells` con el suelo de SoilGrids. Una celda es `ok` con la altitud y todo el suelo; si le falta algo,
-    `partial` (R1). `source_ids` dice qué fuentes tiene cada celda."""
+    `partial` (R1). `source_ids` dice qué fuentes tiene cada celda: `soilgrids` si tiene suelo y `usda_textura` si
+    tiene clase de textura."""
     columns = list(schema.TABLES["grid_cells"].columns)
     textured = soil.with_columns(
         pl.struct("clay_pct", "sand_pct", "silt_pct")
@@ -257,6 +258,13 @@ def with_soil(grid: pl.DataFrame, soil: pl.DataFrame) -> pl.DataFrame:
             .then(pl.col("source_ids").list.concat(pl.lit([SOURCE_ID])))
             .otherwise(pl.col("source_ids"))
             .alias("source_ids"),
+        )
+        # La clase de textura sale de las reglas del USDA: la celda que la tiene cita esa fuente (R8).
+        .with_columns(
+            pl.when(pl.col("texture_class").is_not_null())
+            .then(pl.col("source_ids").list.concat(pl.lit([TEXTURE_SOURCE_ID])))
+            .otherwise(pl.col("source_ids"))
+            .alias("source_ids")
         )
         .select(columns)
         .sort("cell_id")

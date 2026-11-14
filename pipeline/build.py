@@ -242,13 +242,10 @@ def validate_frost(
         raise ValidationError(f"`climate_frost_month` con un mes o unos días fuera de lo permitido: {bad.head(3).to_dicts()}")
 
 
-def validate_soil(soil: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
-    """`soil_municipality` (HU-181) solo trae municipios publicados (R7), un pH de 0 a 14, porcentajes de 0 a 100,
-    carbono y nitrógeno no negativos, el percentil 5 por debajo del 95 y fuentes que existen (R8)."""
-    extra = set(soil["municipality_id"].to_list()) - set(municipalities["municipality_id"].to_list())
-    if extra:
-        raise ValidationError(f"`soil_municipality` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
-    bad = soil.filter(
+def soil_out_of_range() -> pl.Expr:
+    """Las filas con un suelo imposible: pH fuera de 0 a 14, un porcentaje fuera de 0 a 100, carbono o nitrógeno
+    negativos o el percentil 5 por encima del 95. Un valor nulo (sin suelo) no cuenta: el filtro lo descarta."""
+    return (
         ~pl.col("ph").is_between(0, 14)
         | pl.any_horizontal(~pl.col(c).is_between(0, 100) for c in ("clay_pct", "sand_pct", "silt_pct"))
         | (pl.col("soc_g_kg") < 0)
@@ -256,6 +253,15 @@ def validate_soil(soil: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.
         | (pl.col("ph_p05") > pl.col("ph_p95"))
         | (pl.col("soc_p05") > pl.col("soc_p95"))
     )
+
+
+def validate_soil(soil: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`soil_municipality` (HU-181) solo trae municipios publicados (R7), un pH de 0 a 14, porcentajes de 0 a 100,
+    carbono y nitrógeno no negativos, el percentil 5 por debajo del 95 y fuentes que existen (R8)."""
+    extra = set(soil["municipality_id"].to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`soil_municipality` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    bad = soil.filter(soil_out_of_range())
     if not bad.is_empty():
         raise ValidationError(f"`soil_municipality` con un suelo fuera de lo permitido: {bad.head(3).to_dicts()}")
     unknown = set(soil["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
@@ -264,10 +270,14 @@ def validate_soil(soil: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.
 
 
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
-    """`grid_cells` solo trae celdas de municipios publicados (R7) y cita fuentes que existen (R8)."""
+    """`grid_cells` solo trae celdas de municipios publicados (R7), un suelo posible en las celdas que lo tienen (las
+    mismas comprobaciones de `soil_municipality`: el suelo del lote, HU-182, lee las celdas) y fuentes que existen (R8)."""
     extra = set(grid["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
     if extra:
         raise ValidationError(f"`grid_cells` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    bad = grid.filter(soil_out_of_range())
+    if not bad.is_empty():
+        raise ValidationError(f"`grid_cells` con un suelo fuera de lo permitido: {bad.head(3).to_dicts()}")
     unknown = set(grid["source_ids"].explode().drop_nulls().unique().to_list()) - set(sources["source_id"].to_list())
     if unknown:
         raise ValidationError(f"`grid_cells` cita una fuente que no está en `sources`: {sorted(unknown)}")
@@ -522,6 +532,17 @@ def terrain_from_cache(
     return municipalities, nasadem.grid_cells(cells), [nasadem.source(meta)]
 
 
+def download_soil(tiles: list[tuple[int, int]], cache: Path) -> bool:
+    """Baja SoilGrids. Si ISRIC está caído, avisa y deja seguir con las demás fuentes: sin la caché completa el dataset
+    sale sin suelo y el pipeline lo dice (R1). Lo que alcanzó a bajar queda en la caché y la próxima vez se retoma."""
+    try:
+        soilgrids.download(tiles, cache)
+    except soilgrids.DownloadError as error:
+        log.warning("source_skipped", source=soilgrids.SOURCE_ID, detail=f"SoilGrids no bajó completo: {error}")
+        return False
+    return True
+
+
 def soil_from_cache(
     grid: pl.DataFrame | None, boundaries: pl.DataFrame, cache: Path
 ) -> tuple[pl.DataFrame | None, pl.DataFrame | None, list[dict[str, Any]]]:
@@ -689,7 +710,7 @@ def build(
     boundaries = dane_mgn.boundaries(features)
     if download:
         nasadem.download(nasadem.tiles(boundaries), dem_cache)
-        soilgrids.download(nasadem.tiles(boundaries), soil_cache)
+        download_soil(nasadem.tiles(boundaries), soil_cache)
         nasa_power.download(nasa_power.cells(municipalities), power_cache)
         # IMERG pide una cuenta de NASA Earthdata: sin el token se baja lo demás y se avisa.
         token = get_settings().earthdata_token

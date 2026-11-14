@@ -127,12 +127,25 @@ def grid(cells: list[tuple[str, float, float, str]]) -> pl.DataFrame:
     return schema.typed("grid_cells", pl.DataFrame(rows))
 
 
-def test_la_celda_con_suelo_y_altitud_es_ok_y_cita_las_dos_fuentes(tmp_path):
+def test_la_celda_con_suelo_y_altitud_es_ok_y_cita_sus_tres_fuentes(tmp_path):
     soil, _ = soilgrids.read_cache([(LAT, LON)], write_tile(tmp_path / "soilgrids", typical))
     table = soilgrids.with_soil(grid([("15001", 5.55, -73.35, "")]), soil)
     schema.check("grid_cells", schema.typed("grid_cells", table))
     row = table.to_dicts()[0]
-    assert (row["ph"], row["texture_class"], row["quality"], row["source_ids"]) == (5.5, "franco arcilloso", "ok", ["nasadem", "soilgrids"])
+    # La textura sale de las reglas del USDA: la celda cita esa fuente además de SoilGrids (R8).
+    assert (row["ph"], row["texture_class"], row["quality"], row["source_ids"]) == (
+        5.5, "franco arcilloso", "ok", ["nasadem", "soilgrids", "usda_textura"]
+    )  # fmt: skip
+
+
+def test_una_celda_sin_textura_no_cita_las_reglas_del_usda(tmp_path):
+    # La arcilla vale 0 en toda la capa de 0 a 5 cm: sin arcilla no hay clase de textura.
+    def values(prop, depth, stat):
+        return 0 if prop == "clay" and depth == "0-5cm" else typical(prop, depth, stat)
+
+    soil, _ = soilgrids.read_cache([(LAT, LON)], write_tile(tmp_path / "soilgrids", values))
+    row = soilgrids.with_soil(grid([("15001", 5.55, -73.35, "")]), soil).to_dicts()[0]
+    assert (row["texture_class"], row["source_ids"]) == (None, ["nasadem", "soilgrids"])
 
 
 def test_una_celda_sin_suelo_queda_nula_y_partial(tmp_path):
@@ -183,6 +196,28 @@ def test_un_ph_fuera_de_0_a_14_no_se_publica(tmp_path):
     build.validate_soil(table, municipalities, sources)
     with pytest.raises(build.ValidationError, match="suelo"):
         build.validate_soil(table.with_columns(pl.lit(15.0).alias("ph")), municipalities, sources)
+
+
+def test_una_celda_con_ph_55_no_se_publica_y_las_celdas_sin_suelo_si(tmp_path):
+    # El suelo del lote (HU-182) lee las celdas: un error de unidades en una celda no puede pasar.
+    soil, _ = soilgrids.read_cache([(LAT, LON)], write_tile(tmp_path / "soilgrids", typical))
+    cells = soilgrids.with_soil(grid([("15001", 5.55, -73.35, ""), ("15001", 5.45, -73.25, "")]), soil)
+    without_soil = grid([("15001", 5.35, -73.15, "")])
+    table = pl.concat([cells, without_soil])
+    municipalities = pl.DataFrame({"municipality_id": ["15001"]})
+    sources = pl.DataFrame({"source_id": ["nasadem", "soilgrids", "usda_textura"]})
+    build.validate_grid(table, municipalities, sources)
+    wrong = table.with_columns(pl.when(pl.col("lat") == 5.55).then(55.0).otherwise(pl.col("ph")).alias("ph"))
+    with pytest.raises(build.ValidationError, match="suelo"):
+        build.validate_grid(wrong, municipalities, sources)
+
+
+def test_si_isric_esta_caido_la_descarga_avisa_y_sigue(tmp_path, monkeypatch):
+    def down(tiles, cache):
+        raise soilgrids.DownloadError("SoilGrids: phh2o_0-5cm_mean de N05W074 no bajó (HTTP 503)")
+
+    monkeypatch.setattr(soilgrids, "download", down)
+    assert build.download_soil([(LAT, LON)], tmp_path / "soilgrids") is False
 
 
 def test_lo_publicado_en_el_repositorio_tiene_el_suelo_de_casi_todos_los_municipios():
