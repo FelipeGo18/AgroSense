@@ -21,7 +21,7 @@ Es un rango (R10): el déficit más bajo usa el agua disponible más alta de la 
 alto, las más bajas. Se calcula para el año normal (`precip_normal_mm`) y para el año seco (`precip_dry_mm`); la señal
 `water` usa el seco (decidido por Felipe el 11 de noviembre de 2026).
 
-Supuestos, dichos en `docs/registro-de-decisiones.md` y por confirmar con Felipe:
+Supuestos, dichos en `docs/registro-de-decisiones.md` y aprobados por Felipe el 14 de noviembre de 2026 (PR #96):
 
 - El suelo empieza la ventana sin agua guardada: no se sabe cuánta tiene el lote el día de la siembra, y es lo más
   prudente (nunca promete agua que puede no estar).
@@ -40,7 +40,8 @@ import calendar
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-from backend.engine.stages import AVAILABLE, INSUFFICIENT_DATA, CropWindow
+from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA
+from backend.engine.stages import CropWindow
 
 # Las fuentes del método (R8): el pipeline las publica en `sources` desde `catalog/crops.yaml`.
 SOURCE_IDS = {
