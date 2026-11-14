@@ -33,6 +33,10 @@ class Municipality:
     lon: float | None
     # Mediana de la pendiente de sus celdas de `grid_cells` (decisión 14); nula hasta HU-206.
     slope_pct: float | None = None
+    # Temperatura media anual del municipio (NASA POWER corregida con NASADEM, HU-044); nula si el dataset no la trae (R1).
+    tmean_annual_c: float | None = None
+    # Altitud del municipio (NASADEM, HU-044); nula si el dataset no la trae (R1).
+    altitude_m: float | None = None
 
 
 @dataclass(frozen=True)
@@ -102,6 +106,8 @@ def load(folder: Path) -> Dataset:
                 lat=row["lat"],
                 lon=row["lon"],
                 slope_pct=row.get("slope_pct"),
+                tmean_annual_c=row.get("tmean_annual_c"),
+                altitude_m=row.get("altitude_m"),
             )
             for row in municipalities.iter_rows(named=True)
         },

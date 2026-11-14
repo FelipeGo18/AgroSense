@@ -1,11 +1,9 @@
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { useRef, type ReactNode } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { RAIN_EVENT } from "@/components/layout/SceneAmbient";
 import { playSound } from "@/lib/sound";
-
-gsap.registerPlugin(useGSAP);
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap } from "@/lib/motion";
 
 /**
  * Vida alrededor de la mascota: de vez en cuando pasa una mariposa o sopla el viento, y la mascota reacciona.
@@ -26,7 +24,7 @@ export function SceneLife({ children, className = "relative" }: { children: Reac
   const stage = useRef<HTMLDivElement>(null);
   const animated = !useReducedMotion();
 
-  useGSAP(
+  useMotionEffect(
     (_context, contextSafe) => {
       const root = stage.current;
       const mascot = root?.querySelector<SVGSVGElement>(".mascot");

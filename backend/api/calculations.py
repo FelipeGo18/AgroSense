@@ -21,10 +21,13 @@ from backend.api.calc_models import (
     ChangesResponse,
     CropId,
     DiagnosisRequest,
+    DiagnosisRequestEcho,
     DiagnosisResponse,
+    LightResult,
     MunicipalityId,
     RotationRequest,
     RotationResponse,
+    SuitabilityResult,
     TrendsResponse,
     WaterPlanRequest,
     WaterPlanResponse,
@@ -32,8 +35,10 @@ from backend.api.calc_models import (
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
 from backend.api.lots import _own_lot
+from backend.config.weights import get_default_weights
 from backend.dataset import Dataset
 from backend.db.session import get_db
+from backend.engine.suitability import ABOVE_MAX, NOT_SUITABLE, Suitability, suitability
 from common.region import region_today
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
@@ -102,6 +107,54 @@ def _not_implemented(request: Request, what: str) -> None:
     raise ApiError(501, "not_implemented", NOT_IMPLEMENTED)
 
 
+def _format_temperature(value: float) -> str:
+    """Formatea temperatura con exactamente 1 decimal y coma separadora."""
+    return f"{value:.1f}".replace(".", ",")
+
+
+def _format_limit(value: float) -> str:
+    """Formatea límite: sin decimales si es entero, con coma si tiene decimales."""
+    if value == int(value):
+        return str(int(value))
+    return f"{value:.1f}".replace(".", ",")
+
+
+def _get_article(crop: dict[str, Any]) -> str:
+    """El artículo ('el' o 'la') del nombre del cultivo, tal como lo trae el catálogo (`article`).
+
+    Es un dato de diseño del catálogo (`catalog/crops.yaml`, fuente `agrosense_diseno`), no una heurística: un
+    cultivo que no lo trae es un dataset sin reconstruir o una ficha incompleta, no algo para adivinar en silencio.
+    """
+    article = crop.get("article")
+    if not article:
+        crop_id = crop.get("crop_id", "?")
+        raise ApiError(
+            500,
+            "internal_error",
+            "Algo falló de nuestro lado. Intente de nuevo en un momento.",
+            log=f"Al cultivo {crop_id!r} le falta `article` en el catálogo: reconstruya el dataset.",
+        )
+    return article
+
+
+def _suitability_reason(crop: dict[str, Any], result: Suitability, tmean_annual_c: float, tmean_min_c: float, tmean_max_c: float) -> str:
+    """Arma la frase que explica por qué el cultivo no es apto. Solo da formato: qué límite se cruzó ya lo decidió
+    el motor (`result.exceeded`), no se repite la comparación aquí (R6: la API es una capa delgada)."""
+    article = _get_article(crop)
+    name_lower = crop.get("name_es", "cultivo").lower()
+    temperature = _format_temperature(tmean_annual_c)
+
+    if result.exceeded == ABOVE_MAX:
+        return (
+            f"La temperatura media anual del municipio ({temperature} °C) "
+            f"pasa de la que aguanta {article} {name_lower} (hasta {_format_limit(tmean_max_c)} °C)"
+        )
+    return (
+        f"La temperatura media anual del municipio ({temperature} °C) "
+        f"no alcanza la que necesita {article} {name_lower} (desde {_format_limit(tmean_min_c)} °C)"
+    )
+
+
 @router.post(
     "/diagnostics",
     response_model=DiagnosisResponse,
@@ -123,6 +176,68 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     _check_crops(dataset, [body.crop_id], only_crops=True)
     _check_sowing_date(body.sowing_date)
     _check_lot(request, db, body.lot_id)
+
+    # Regla 0 de la agregación del semáforo (specs/01-reglas.md, «Agregación del semáforo»): si el cultivo no es
+    # apto para la zona, la luz es roja y no se evalúa nada más. `basis="municipality"` es fijo hasta que la API
+    # calcule la altitud del lote (mediana de `grid_cells` en su polígono, primer criterio de HU-191).
+    crop = dataset.crops[body.crop_id]
+    municipality = dataset.municipalities[body.municipality_id]
+
+    result = suitability(
+        crop.get("tmean_min_c"),
+        crop.get("tmean_opt_min_c"),
+        crop.get("tmean_opt_max_c"),
+        crop.get("tmean_max_c"),
+        municipality.tmean_annual_c,
+    )
+
+    if result.level == NOT_SUITABLE:
+        # Cultivo no es apto para la zona: devolver 200 con la forma completa
+        reason = _suitability_reason(crop, result, municipality.tmean_annual_c, crop["tmean_min_c"], crop["tmean_max_c"])
+
+        # Regla 0 ignora los pesos (la luz es roja de todas formas), pero `weights` y `weights_basis` siguen
+        # diciendo cuáles se habrían usado (specs/epicas/EP-07-diagnostico.md, HU-074): los del agricultor si
+        # mandó `priorities`, si no los de AgroSense (cacheados: `weights.yaml` no se vuelve a leer en cada consulta).
+        weights_used = body.priorities if body.priorities is not None else get_default_weights().weights
+        basis_used = "farmer" if body.priorities is not None else "default"
+
+        reasons = ["Este cultivo no se da en su zona: elija otro"]
+        limitations = []
+        if body.lot_id is not None:
+            # La aptitud usa la temperatura del municipio también con lote: falta que esta API calcule la mediana
+            # de `grid_cells` en el polígono del lote (primer criterio de HU-191, sin marcar) (R1).
+            limitations.append("Temperatura media anual del municipio, no corregida a la altitud del lote.")
+
+        return DiagnosisResponse(
+            request=DiagnosisRequestEcho(
+                municipality_id=body.municipality_id,
+                crop_id=body.crop_id,
+                sowing_date=body.sowing_date,
+                irrigated=body.irrigated,
+                lot_id=body.lot_id,
+            ),
+            suitability=SuitabilityResult(
+                level="not_suitable",
+                score=int(round(result.score)),
+                basis="municipality",
+                tmean_annual_c=municipality.tmean_annual_c,
+                altitude_m=municipality.altitude_m,
+                reasons=[reason],
+            ),
+            window=None,
+            signals=None,
+            overall=LightResult(
+                light="red", action="rotate", high_risk=False, weights_basis=basis_used, limiting_signal=None, reasons=reasons
+            ),
+            overall_default=LightResult(
+                light="red", action="rotate", high_risk=False, weights_basis="default", limiting_signal=None, reasons=reasons
+            ),
+            weights=weights_used,
+            limitations=limitations,
+            versions={"dataset": dataset.version, "rules": dataset.rules_version},
+        )
+
+    # Si es suitable o insufficient_data, sigue como antes: no se puede diagnosticar sin las señales
     _not_implemented(request, "Diagnóstico")
 
 

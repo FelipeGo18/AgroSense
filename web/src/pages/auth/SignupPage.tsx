@@ -1,5 +1,3 @@
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError } from "@/api/client";
@@ -12,6 +10,8 @@ import { TextField } from "@/components/ui/TextField";
 import { CONSENT_VERSION, useRegister, useSession } from "@/features/auth/session";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap } from "@/lib/motion";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -44,7 +44,7 @@ export function SignupPage() {
   const form = useRef<HTMLFormElement>(null);
   const shownStep = useRef(step);
   const animated = !useReducedMotion();
-  useGSAP(
+  useMotionEffect(
     () => {
       const from = shownStep.current;
       shownStep.current = step;
