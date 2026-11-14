@@ -19,7 +19,7 @@ from common.region import region_today
 
 PUBLICADO = Path(__file__).resolve().parents[3] / "data" / "published"
 # La `dataset_version` con la que se calcularon a mano los valores esperados de los casos reales.
-VERSION_CASOS_REALES = "2026.11.12"
+VERSION_CASOS_REALES = "2026.11.17"
 
 # Municipios de ejemplo de `tests/conftest.py` (`dataset_con_clima`): Samacá es frío (papa apta); Girardot, cálido (no apta).
 EJEMPLO_FRIO = "15646"
