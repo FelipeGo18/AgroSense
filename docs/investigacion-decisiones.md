@@ -132,6 +132,10 @@ Decidido por Felipe. Explicación en la decisión 12 de `docs/decisiones.md`. Ma
 5. **P0 es el MVP.** El calendario completo, el lote vivo, el clima en vivo, la escena 3D, la finca temporal y los cultivos alternativos pasan a P1. En el MVP las ventanas se comparan por mes y la duración del cultivo sale de su ficha.
 6. **La oferta es valor agregado**, no protagonista: una señal más, dentro del criterio de ingreso de las estrategias, y al final de la demo.
 
+## 5e. Los cortes de la señal de mercado (14 de noviembre de 2026)
+
+Para decidir qué índice estacional de precio es «precio bajo» (HU-073) se investigó la estacionalidad del precio de la papa que publica la UPRA. Se descartó como fuente de los cortes: es propia de la papa y de sus variedades, y no se generaliza a la arveja, la cebolla de bulbo ni la zanahoria, que también tienen precio en SIPSA. En su lugar, los cortes de `thresholds.yaml` salen de la distribución real del índice estacional de SIPSA ya publicado (cada corte anclado a un cuantil de las 63 series producto-central: 1,0 → 70 es el precio promedio y la mediana, P25 = 0,91 → 40, 0,85 ≥ P10 → 0 y 1,15 ≤ P90 → 100), y el archivo lo dice. Detalle en `docs/registro-de-decisiones.md`.
+
 ## 6. Fuentes
 
 - [Reto «Field Shift: Adapting Farms with NASA Data»](https://www.spaceappschallenge.org/2026/challenges/field-shift-adapting-farms-with-nasa-data/)

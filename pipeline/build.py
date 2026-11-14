@@ -114,6 +114,22 @@ def validate_market(prices: pl.DataFrame, sources: pl.DataFrame) -> None:
         raise ValidationError(str(error)) from error
 
 
+def validate_department_markets(region: dict[str, Any]) -> None:
+    """`department_markets` de `region.yaml` (HU-073): cada departamento está en `departments` y cada central en `markets`,
+    los dos como texto (un código sin comillas en el YAML es un número y no se encontraría). Un error de tipeo no puede
+    dar `insufficient_data` en silencio en la señal de mercado (R1). Sin el campo no hay qué validar."""
+    entry = region["region"]
+    mapping = entry.get("department_markets")
+    if not mapping:
+        return
+    unknown_departments = sorted(set(mapping) - set(entry.get("departments") or []), key=str)
+    if unknown_departments:
+        raise ValidationError(f"`department_markets` con departamentos que no están en `departments`: {unknown_departments}.")
+    unknown_markets = sorted(set(mapping.values()) - set(entry.get("markets") or {}), key=str)
+    if unknown_markets:
+        raise ValidationError(f"`department_markets` con centrales que no están en `markets`: {unknown_markets}.")
+
+
 def validate_crops(crops: Any, prices: pl.DataFrame, catalog_ids: set[str] | None = None) -> None:
     """El mapeo de `sipsa_crops.yaml` (HU-003): cada cultivo tiene un producto que SIPSA publica en la región, o ninguno y
     el porqué (R1). Un producto no da el precio de dos cultivos: dos productos tampoco se promedian (decisión 11).
@@ -261,6 +277,7 @@ def publish(
     si traen filas: una tabla vacía no es un dato (R1). Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
+    validate_department_markets(region)
     if boundaries is not None:
         validate_boundaries(boundaries, municipalities, sources)
     season = month = latest = None
