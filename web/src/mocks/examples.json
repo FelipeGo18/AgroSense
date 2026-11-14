@@ -255,12 +255,12 @@
             ]
           },
           "weights": {
-            "water": 4,
+            "water": 3,
             "frost": 4,
-            "heat": 3,
+            "heat": 2,
             "soil": 2,
-            "supply": 2,
-            "market": 2
+            "supply": 1,
+            "market": 1
           },
           "limitations": [
             "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido."
@@ -316,12 +316,12 @@
             ]
           },
           "weights": {
-            "water": 4,
+            "water": 3,
             "frost": 4,
-            "heat": 3,
+            "heat": 2,
             "soil": 2,
-            "supply": 2,
-            "market": 2
+            "supply": 1,
+            "market": 1
           },
           "signals": {
             "water": {
@@ -6047,26 +6047,26 @@
       }
     ],
     "version": {
-      "dataset_version": "2026.11.9",
+      "dataset_version": "2026.11.14",
       "rules_version": "0.1.0",
-      "created_at": "2026-11-11T13:25:05Z",
+      "created_at": "2026-11-14T16:34:49Z",
       "region": "Boyacá y Cundinamarca, Colombia",
       "default_weights": {
         "water": 3,
-        "frost": 3,
-        "heat": 3,
+        "frost": 4,
+        "heat": 2,
         "soil": 2,
-        "supply": 3,
-        "market": 2
+        "supply": 1,
+        "market": 1
       },
-      "weights_version": "0.1.0",
+      "weights_version": "1.0.0",
       "weights_reasons": {
-        "water": "Importancia normal. Un riesgo grave de agua cuenta siempre, tenga el peso que tenga.",
-        "frost": "Importancia normal. Un riesgo grave de heladas cuenta siempre, tenga el peso que tenga.",
-        "heat": "Importancia normal. Un riesgo grave de calor cuenta siempre, tenga el peso que tenga.",
-        "soil": "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición del lote.",
-        "supply": "Importancia normal. Dice si en la zona se está sembrando mucho o poco del cultivo.",
-        "market": "Pesa menos: los precios por mes todavía no tienen datos en el P0."
+        "water": "Importancia normal. La señal ya es prudente: se califica con la lluvia del año seco, la que se supera en 4 de cada 5 años. Un riesgo grave de agua cuenta siempre.",
+        "frost": "Importa mucho: la helada es el riesgo principal del altiplano, y NASA POWER cuenta menos heladas de las que hay. Una helada moderada ya cuenta como desfavorable.",
+        "heat": "Pesa menos: en el altiplano la temperatura máxima rara vez pasa de lo que aguantan estos cultivos. Un calor crítico cuenta siempre.",
+        "soil": "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición de su lote.",
+        "supply": "Pesa poco: la oferta es un dato que suma, no lo que decide. Si a usted le importa, súbala.",
+        "market": "Pesa poco: el precio es un dato que suma, no lo que decide. Todavía no tiene cortes con fuente."
       },
       "sources": [
         {
@@ -6082,6 +6082,30 @@
           "notes": "Solo para cómo se dibuja cada cultivo (`archetype`) y su nombre en la web. No es un dato agronómico."
         },
         {
+          "source_id": "alharbi_2021_faba",
+          "name": "Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925",
+          "institution": "MDPI, Plants; doi:10.3390/plants10091925",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8467580/",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "2021",
+          "coverage": "Ensayos de campo en Australia",
+          "license": "Acceso abierto (CC BY 4.0 por confirmar)",
+          "citation": null,
+          "notes": "«Flowering is the most sensitive time for frost in crops, including faba bean»; la tolerancia vegetativa no predice la reproductiva."
+        },
+        {
+          "source_id": "barrales_2002",
+          "name": "Barrales Domínguez et al. (2002): Relaciones térmicas en el sistema suelo-planta-atmósfera durante la incidencia de una helada. Revista Fitotecnia Mexicana 25(3):289-297",
+          "institution": "Sociedad Mexicana de Fitogenética; Universidad Autónoma Chapingo",
+          "url": "https://www.redalyc.org/pdf/610/61025309.pdf",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "2002",
+          "coverage": "Valles altos de México",
+          "license": "Acceso abierto (Redalyc); licencia por confirmar",
+          "citation": null,
+          "notes": "«Con temperaturas foliares de –0.4 y –0.7 °C ocurrió muerte total de plantas de maíz»; en el haba la helada «afectó sólo a las flores»."
+        },
+        {
           "source_id": "cenicafe_lapse_rate",
           "name": "Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3",
           "institution": "Centro Nacional de Investigaciones de Café (Cenicafé)",
@@ -6092,6 +6116,18 @@
           "license": null,
           "citation": "Chaves Córdoba, B. y Jaramillo Robledo, A. (1999). Regionalización de la temperatura del aire en Colombia. Avances en Recursos Hidráulicos, 6, 37-42.",
           "notes": "Avances en Recursos Hidráulicos, n.º 6 (septiembre de 1999), pp. 37-42. Pendiente de la temperatura máxima media (0,0058 °C/m) y de la mínima media (0,0059 °C/m) con la altitud en la región Andina. Se usa para corregir por altitud las temperaturas de NASA POWER."
+        },
+        {
+          "source_id": "ciren_1989_chacras",
+          "name": "CIREN-CORFO: Requerimientos de clima y suelo. Chacras y hortalizas, publicación n.º 85 (1989)",
+          "institution": "Centro de Información de Recursos Naturales (CIREN), Chile",
+          "url": "https://research.csiro.au/gestionrapel/wp-content/uploads/sites/79/2016/11/Requerimientos-de-clima-y-suelo.-Chacras-y-horatalizas-1989c.pdf",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "1989",
+          "coverage": "Chile",
+          "license": "Sin dato; se cita",
+          "citation": null,
+          "notes": "Fichas con la etapa o parte más sensible a la helada y su temperatura crítica: cebolla (hojas, -1 °C, p. 30), haba (floración, -1 °C, p. 34), maíz (4.ª hoja, p. 20), arveja (floración, -2 °C, p. 12); y límites máximos de crecimiento de todo el ciclo (maíz 40 °C, arveja y haba 28 °C, papa 30 °C, cebolla 35 °C)."
         },
         {
           "source_id": "dane_divipola",
@@ -6130,6 +6166,18 @@
           "notes": "Precio mínimo, medio y máximo por kilo de cada producto en la central de abastos, por día. Es el precio mayorista (lo que se paga en la central), no el de la tienda. Los nombres con asterisco en SIPSA juntan varias variedades. Se publican en pesos enteros."
         },
         {
+          "source_id": "fairlie_ortega_1995",
+          "name": "Fairlie y Ortega (1995): Efecto de la presencia de heladas simuladas en diferentes estados fenológicos de la papa cv. Ccompis. Revista Latinoamericana de la Papa 7/8:86-93",
+          "institution": "Asociación Latinoamericana de la Papa (ALAP); PISA/INIAA, Puno",
+          "url": "https://dialnet.unirioja.es/descarga/articulo/5512072.pdf",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "1995",
+          "coverage": "Altiplano de Puno (Perú)",
+          "license": "Acceso abierto; licencia por confirmar",
+          "citation": null,
+          "notes": "«Los estados fenológicos más susceptibles resultaron ser la emergencia y el inicio de la formación de estolones»; en floración la reducción fue de 15 a 55 %. Daño simulado al follaje, sin temperatura."
+        },
+        {
           "source_id": "fao_56",
           "name": "FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Tablas 11 y 12",
           "institution": "FAO",
@@ -6142,6 +6190,30 @@
           "notes": "Duración de las 4 etapas (inicial, desarrollo, media y final) y coeficientes de cultivo Kc. El Kc inicial que no aparece en la fila del cultivo es el de su grupo (por ejemplo, raíces y tubérculos 0,5)."
         },
         {
+          "source_id": "fao_66",
+          "name": "FAO-66: Crop yield response to water (Steduto, Hsiao, Fereres y Raes, 2012). Sección 3.4, papa, pp. 185-186",
+          "institution": "FAO, Irrigation and Drainage Paper 66",
+          "url": "https://www.fao.org/4/i2800e/i2800e07.pdf",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "2012",
+          "coverage": "Mundial",
+          "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
+          "notes": "Papa: «The temperature for frost or cold stress for potato is considered 1 oC and less, whereas that of heat stress is 35 oC or higher» (p. 186); el calor frena el inicio y el crecimiento de los tubérculos."
+        },
+        {
+          "source_id": "fao_crop_info_potato",
+          "name": "FAO Land & Water: Crop Information, Potato",
+          "institution": "FAO, Land and Water Division",
+          "url": "https://web.archive.org/web/2017/http://www.fao.org/land-water/databases-and-software/crop-information/potato/en/",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "Sin fecha (la ficha ya no está en el sitio de la FAO; se lee en el Internet Archive)",
+          "coverage": "Mundial",
+          "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
+          "notes": "«Tuber growth is sharply inhibited when below 10°C and above 30°C». Contraste de Luisa en la revisión cruzada de HU-142 (PR #69)."
+        },
+        {
           "source_id": "fao_ecocrop",
           "name": "FAO EcoCrop · fichas de datos por especie",
           "institution": "Organización de las Naciones Unidas para la Alimentación y la Agricultura (FAO)",
@@ -6152,6 +6224,18 @@
           "license": "CC BY 4.0 (catálogo de datos de la FAO)",
           "citation": null,
           "notes": "Rangos óptimos y absolutos de temperatura, lluvia anual y pH; temperaturas que matan la planta; duración del ciclo; familia. La propia FAO advierte que son opinión experta. Cada ficha se cita con su URL."
+        },
+        {
+          "source_id": "fao_frost_2005",
+          "name": "FAO: Frost protection: fundamentals, practice and economics, vol. 1 (Snyder y de Melo-Abreu, 2005). Cap. 4, tabla 4.5; cap. 5",
+          "institution": "FAO, Environment and Natural Resources Series 10",
+          "url": "https://www.fao.org/4/y7223e/y7223e0a.htm",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "2005 (la tabla 4.5 es «after Ventskevich, 1958»)",
+          "coverage": "Mundial",
+          "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
+          "notes": "Tabla 4.5: temperaturas críticas de daño (°C) en germinación, floración y fructificación de papa, arveja, maíz, avena, vicia, zanahoria. Cap. 5 (https://www.fao.org/4/y7223e/y7223e0b.htm): la hoja se enfría más que el aire de la caseta."
         },
         {
           "source_id": "fao_iyp_2019",
@@ -6190,6 +6274,18 @@
           "notes": "Para los cortes de la señal de agua en backend/config/thresholds.yaml (HU-075). El WRSI es la evapotranspiración real de la temporada sobre la que pide el cultivo, por 100: «A case of 'no deficit' will result in a WRSI value of 100» y «A seasonal WRSI value less than 50 is regarded as a crop failure condition (Smith, 1992)» (USGS). Clases del Banco Mundial (https://datacatalog.worldbank.org/search/dataset/0066866/gridded-dekadal-water-requirement-satisfaction-index-wrsi-for-africa): < 50 Failure; 50-60 Poor; 60-80 Mediocre; 80-95 Average; 95-99 Good; 99-100 Very Good. Es una fuente derivada: solo vale si la cobertura de agua de AgroSense se calcula igual (HU-144)."
         },
         {
+          "source_id": "imerg",
+          "name": "GPM IMERG Final Run V07 · Lluvia mensual por satélite (GPM_3IMERGM)",
+          "institution": "NASA y JAXA, misión GPM (Global Precipitation Measurement); distribuido por GES DISC de la NASA",
+          "url": "https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
+          "downloaded_at": "2026-11-11T15:23:13+00:00",
+          "period_covered": "De 1998 a 2025, mensual",
+          "coverage": "333 meses en celdas de 0,1° (unos 11 km) del recuadro que cubre la región",
+          "license": "Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita (https://disc.gsfc.nasa.gov/data-guidelines)",
+          "citation": "Huffman, G.J., Stocker, E.F., Bolvin, D.T., Nelkin, E.J. y Tan, J. (2023). GPM IMERG Final Precipitation L3 1 month 0.1 degree x 0.1 degree V07. Greenbelt, MD, Goddard Earth Sciences Data and Information Services Center (GES DISC). Consultado el 2026-11-11. https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
+          "notes": "Lluvia estimada por satélite (sensores de microondas e infrarrojo) y calibrada cada mes con los pluviómetros del GPCC: no es una medición del lote. Celda de 0,1°: un dato de la zona. La lluvia del municipio es el promedio de las celdas que tocan su polígono, ponderado por área. Un dato que falta (-9999,9) queda nulo, nunca relleno. Se bajó solo el recuadro de la región por OPeNDAP de Earthdata, con cuenta."
+        },
+        {
           "source_id": "mapa_zarc_2025",
           "name": "Zoneamento Agrícola de Risco Climático (ZARC): Portaria SPA/MAPA n.º 388, del 21 de agosto de 2025",
           "institution": "Ministério da Agricultura e Pecuária (MAPA), Brasil",
@@ -6200,6 +6296,30 @@
           "license": "Acto oficial del gobierno de Brasil, publicado en el Diário Oficial",
           "citation": null,
           "notes": "Para los cortes de la señal de heladas en backend/config/thresholds.yaml (HU-075). Punto 1.6: tres niveles de riesgo, «20%, 30%, 40%». Punto 1.9.a.1: la helada es la probabilidad de «temperaturas mínimas menores ou igual a 2°C». El ZARC acepta pérdidas en hasta 2 de cada 10 años (Santos y Martins, 2016, Revista de Política Agrícola XXV(3), https://rpa.sede.embrapa.br/RPA/article/download/1157/pdf/2423). Es una fuente derivada y de otro país: el 20/30/40 es el riesgo de todas las amenazas juntas, no solo de la helada. Respaldo cercano: Le Tacon (IRD), «Los riesgos de helada en el altiplano boliviano», planea la papa con un riesgo de helada del 25 % (https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers09-11/38556.pdf)."
+        },
+        {
+          "source_id": "msu_e1307_onion",
+          "name": "Zandstra, Grafius, Lacy y Warncke: Commercial Vegetable Recommendations: Onions, MSU E1307 (revisión de 1996)",
+          "institution": "Michigan State University Extension",
+          "url": "https://archive.lib.msu.edu/DMC/extension_publications/e1307/E1307-1996.PDF",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "1996 (copia de archivo; dice «do not use for current recommendations»)",
+          "coverage": "Michigan (EE. UU.)",
+          "license": "Sin dato; se cita",
+          "citation": null,
+          "notes": "«Onion seedlings can tolerate light frosts (28 degrees F) but may be killed by colder temperatures»; «Growth rate declines when temperatures exceed 90 degrees F for several days. High temperature hastens maturity… smaller bulbs»."
+        },
+        {
+          "source_id": "msu_e1437_carrot",
+          "name": "Zandstra y Baker: Commercial Vegetable Recommendations: Carrots, MSU Extension Bulletin E-1437 (1980)",
+          "institution": "Michigan State University Extension",
+          "url": "https://sanweb.lib.msu.edu/DMC/Ag.%20Ext.%202007-Chelsie/PDF/e1437-1980.pdf",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "1980 (copia de archivo)",
+          "coverage": "Michigan (EE. UU.)",
+          "license": "Sin dato; se cita",
+          "citation": null,
+          "notes": "«Young carrot seedlings can withstand slight frosts»; «Mature carrot leaves tolerate several nights of frosts in the mid 20's»; «Young seedlings are burned off easily by high temperatures… before the plants are 1 inch high»."
         },
         {
           "source_id": "nasa_power",
@@ -6224,6 +6344,78 @@
           "license": "Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita",
           "citation": "NASA JPL (2020). NASADEM Merged DEM Global 1 arc second V001. NASA EOSDIS Land Processes DAAC. https://doi.org/10.5067/MEaSUREs/NASADEM/NASADEM_HGT.001",
           "notes": "Copia en GeoTIFF de Microsoft Planetary Computer, sin cuenta. Altitud de cada celda de 250 m: promedio de sus 9 × 9 píxeles; pendiente: mediana de la de sus píxeles, calculada a 30 m. La de un municipio es la mediana de sus celdas."
+        },
+        {
+          "source_id": "ndsu_a1166_pea",
+          "name": "NDSU Extension: Field Pea Production, A1166 (revisión de diciembre de 2021)",
+          "institution": "North Dakota State University Extension",
+          "url": "https://www.ndsu.edu/agriculture/sites/default/files/2021-12/a1166.pdf",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "2021",
+          "coverage": "Norte de las Grandes Llanuras (EE. UU.)",
+          "license": "Sin dato; se cita",
+          "citation": null,
+          "notes": "«Seedlings are tolerant of spring frosts in the low 20s… a new shoot will emerge… until approximately seven nodes»; «Field pea is sensitive to heat stress at flowering»."
+        },
+        {
+          "source_id": "purdue_corn07",
+          "name": "Nielsen, R. L.: Drought and Heat Stress Effects on Corn Pollination (Corny News, Purdue, sin fecha)",
+          "institution": "Purdue University, Agronomy",
+          "url": "https://www.agry.purdue.edu/ext/corn/pubs/corn-07.htm",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "Sin fecha",
+          "coverage": "Cinturón maicero (EE. UU.)",
+          "license": "Sin dato; se cita",
+          "citation": null,
+          "notes": "«pollen is likely damaged by mid-90's or greater temperatures»; «Temperatures over 100 degrees may literally kill pollen». Sobre Purdue también: Grain Fill Stages in Corn (2021; en R6 el grano está a salvo de la helada) y Assessing Corn Recovery From Early-Season Damage (2003; punto de crecimiento bajo tierra hasta V5-V6)."
+        },
+        {
+          "source_id": "saskpulse_stress_2023",
+          "name": "Saskatchewan Pulse Growers: Environmental Stresses in Pulses (mayo de 2023)",
+          "institution": "Saskatchewan Pulse Growers",
+          "url": "https://saskpulse.com/resources/environmental-stresses-in-pulses",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "2023",
+          "coverage": "Saskatchewan (Canadá)",
+          "license": "Sin dato; se cita",
+          "citation": null,
+          "notes": "«Hot temperatures during flowering may cause plants to abort flowers, resulting in lower pod set» (leguminosas de grano en general)."
+        },
+        {
+          "source_id": "senamhi_atlas_heladas_2010",
+          "name": "SENAMHI y FAO: Atlas de heladas del Perú (2010). Tablas 2.2 y 2.3",
+          "institution": "Servicio Nacional de Meteorología e Hidrología del Perú (SENAMHI) y FAO",
+          "url": "https://web2.senamhi.gob.pe/load/file/01404SENA-1.pdf",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "2010 (la tabla 2.2 es de Ventskevich, 1958)",
+          "coverage": "Perú (Andes)",
+          "license": "Publicación pública, sin licencia explícita; se cita",
+          "citation": null,
+          "notes": "Tabla 2.2 (p. 10 del PDF): temperatura de daño de la hoja y de la caseta por etapa (germinación, floración, fructificación) de avena, maíz y otros; la caseta va unos 4 °C por encima de la hoja."
+        },
+        {
+          "source_id": "ucanr_7226_carrot",
+          "name": "Nuñez, Hartz, Suslow et al.: Carrot Production in California, UC ANR Publication 7226 (2008)",
+          "institution": "University of California, Agriculture and Natural Resources; doi:10.3733/ucanr.7226",
+          "url": "https://escholarship.org/uc/item/5pf563b3",
+          "downloaded_at": "2026-11-13",
+          "period_covered": "2008",
+          "coverage": "California (EE. UU.)",
+          "license": "Sin dato; se cita",
+          "citation": null,
+          "notes": "«Above 86°F (30°C), the growth of foliage is reduced and strong flavors develop in the roots»."
+        },
+        {
+          "source_id": "unlu_horticultura",
+          "name": "Universidad Nacional de Luján: Producción Vegetal III (Horticultura), fichas de cebolla, arveja y zanahoria (sin año)",
+          "institution": "Universidad Nacional de Luján (UNLu), Argentina",
+          "url": "https://www.hort.unlu.edu.ar/sites/www.hort.unlu.edu.ar/files/site/Cebolla.pdf",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "Sin año (material de curso)",
+          "coverage": "Argentina",
+          "license": "Sin dato; se cita",
+          "citation": null,
+          "notes": "Cebolla, p. 3: «Durante su crecimiento la cebolla tolera heladas, pero los bulbos resultan sensibles»; en el crecimiento herbáceo la tasa de crecimiento disminuye con más de 30 °C. Material de curso: rango bajo, se usa solo donde no hay otra fuente."
         },
         {
           "source_id": "upra_cebolla_bulbo",
