@@ -43,7 +43,7 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [ ] Varias fuentes de lluvia: si la fuente que calcula `water` no tiene dato para el municipio, la señal es `insufficient_data` aunque la otra tenga, y `sources` trae las dos sin mezclar
   - [ ] «Qué cambió»: un mes sin datos en uno de los dos periodos da la diferencia `insufficient_data`; misma entrada, misma salida
   - [ ] Ficha sin rango de temperatura media con fuente: aptitud `insufficient_data`, no bloquea y aparece en las limitaciones
-  - [ ] Ventana de alto riesgo que no entra en las mejores: una ventana con una señal crítica desfavorable y el balance más alto queda después de las demás y fuera de `best_windows`
+  - [ ] Ventana de alto riesgo que no entra en las mejores: una ventana con una señal crítica desfavorable y el balance más alto queda después de todas las que tienen calificación y no son de alto riesgo, y fuera de `best_windows`
   - [ ] Con y sin riego: la misma ventana con déficit de agua es `unfavorable` en `water` con `irrigated = false` y no lo es con `irrigated = true`; con `irrigated` nulo, se evalúa como sin riego y lo dice en las limitaciones
   - [ ] Acción `other_window` con `best_windows`, y un caso en que `best_windows` viene vacío
   - [ ] Coherencia: una de las mejores ventanas (`best_windows`) y el diagnóstico de esa misma fecha dan las mismas señales y calificaciones
@@ -64,11 +64,11 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   | «Qué cambió» | HU-216 y HU-218 | Luisa (HU-216) y Juan David (HU-218) | PR 3 |
   | Cuentas | HU-165 | Haider | PR 3 |
 - **Casos de las cuentas** (contra el PostgreSQL de Compose; lo que dicen del progreso se comprueba cuando exista HU-167, P1):
-  - [ ] Dividir: una temporada cosechada de 1 ha con dos sucesoras de 0,5 ha cada una se acepta, y el progreso da dos relaciones
-  - [ ] Juntar: dos temporadas cosechadas de 0,5 ha con una sucesora de 1 ha se acepta, y el progreso da dos relaciones hacia la misma
-  - [ ] Área que no cabe: en un lote de 1 ha, las sucesoras de una temporada cosechada de 1 ha que suman 1,2 ha responden 422, porque las temporadas en curso pasarían del área del lote
-  - [ ] Terreno anterior más terreno libre: después de una temporada cosechada de 1 ha, una sucesora de 1,5 ha se acepta si hay 0,5 ha libres en el lote
-  - [ ] `follows_season_ids` con una temporada de otro lote, sin cosechar o cosechada después de la nueva siembra responde 422
+  - [ ] Dividir: una temporada cosechada de 1 ha con dos sucesoras de 0,5 ha cada una se acepta, y el progreso da dos relaciones (se acepta: `tests/accounts/test_casos_referencia.py`; el progreso queda pendiente de HU-167, P1)
+  - [ ] Juntar: dos temporadas cosechadas de 0,5 ha con una sucesora de 1 ha se acepta, y el progreso da dos relaciones hacia la misma (se acepta: `tests/accounts/test_casos_referencia.py`; el progreso queda pendiente de HU-167, P1)
+  - [x] Área que no cabe: en un lote de 1 ha, las sucesoras de una temporada cosechada de 1 ha que suman 1,2 ha responden 422, porque las temporadas en curso pasarían del área del lote (`tests/accounts/test_casos_referencia.py`)
+  - [x] Terreno anterior más terreno libre: después de una temporada cosechada de 1 ha, una sucesora de 1,5 ha se acepta si hay 0,5 ha libres en el lote (`tests/accounts/test_casos_referencia.py`: lote de 2 ha con 0,5 ha en curso, así que quedan 1,5 ha libres; 1,5 ha cabe y 1,6 ha da 422)
+  - [x] `follows_season_ids` con una temporada de otro lote, sin cosechar o cosechada después de la nueva siembra responde 422 (`tests/accounts/test_siembras.py`, `test_lo_de_antes_tiene_que_ser_una_cosecha_valida_del_mismo_lote`)
   - [ ] P1 (con HU-204): una temporada borrada aparece en el historial con `restorable_until` y vuelve al restaurarla
 - **Reglas que aplican:** R1, R2, R3, R4, R9
 - **Notas:** Los casos nuevos se agregaron el 11 de octubre de 2026 con el cambio a ventanas de siembra y, el mismo día, con las prioridades, el factor limitante, las alternativas y la división de lotes (decisión 10), y después con las estrategias, la salud del suelo, las fuentes de lluvia y «Qué cambió» (decisión 12). Pasa de M a L.
