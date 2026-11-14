@@ -4,12 +4,10 @@ from datetime import date, timedelta
 
 import pytest
 
+from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, NOT_APPLICABLE
 from backend.engine.stages import (
-    AVAILABLE,
     FROST,
     HEAT,
-    INSUFFICIENT_DATA,
-    NOT_APPLICABLE,
     StageSpan,
     crop_window,
     stage_today,
