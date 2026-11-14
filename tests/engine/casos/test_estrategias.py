@@ -9,6 +9,7 @@ TODO(HU-121): casos reales sobre `data/published` con la `dataset_version` 2026.
 
 import pytest
 
+from common.region import region_today
 from tests.engine.casos.conftest import EJEMPLO_CALIDO, rotacion
 
 ESPERA_REGLA = pytest.mark.xfail(strict=True, reason="espera HU-081, HU-084 y HU-062 (PR #62)")
@@ -75,10 +76,22 @@ def test_ejemplo_sin_rotacion_actual_no_hay_referencia_y_las_limitaciones_lo_dic
 
 @ESPERA_ESTRATEGIAS
 def test_ejemplo_cultivo_no_apto_no_entra_a_ninguna_estrategia(api):
-    # Papa en un municipio cálido (28,4 °C, sobre el máximo de su ficha) no es apta: ninguna estrategia la usa.
+    # Papa en un municipio cálido de ejemplo (28,4 °C, sobre el máximo de su ficha) no es apta: ninguna estrategia la usa.
     respuesta = rotacion(api, municipality_id=EJEMPLO_CALIDO)
     assert respuesta["excluded_counts"]["not_suitable"] > 0
     assert all("papa" not in s["crop_ids"] for s in respuesta["strategies"])
+    # Forma de `not_suitable` aprobada por Felipe el 14 nov 2026 (PR #70, contrato en el PR #73): `cycle` es el primer
+    # ciclo donde aparece el cultivo, `crop_id` ese cultivo, `reason` la misma frase de `/diagnostics` y `source_ids` la
+    # fuente del rango de la ficha (`upra_papa_diacol` en `catalog/crops.yaml`), `nasa_power` y `cenicafe_lapse_rate`.
+    diagnostico = api.post(
+        "/api/v1/diagnostics",
+        json={"municipality_id": EJEMPLO_CALIDO, "crop_id": "papa", "sowing_date": region_today().isoformat()},
+    )
+    assert diagnostico.status_code == 200, diagnostico.text
+    razon_diagnostico = diagnostico.json()["suitability"]["reasons"]
     for item in respuesta["excluded"]:
-        if item["kind"] == "not_suitable":
-            assert item["source_ids"]  # Supuesto (d): no se comprueba `cycle` en `not_suitable`.
+        if item["kind"] != "not_suitable" or item.get("crop_id") != "papa":
+            continue
+        assert item["cycle"] == item["crop_ids"].index("papa") + 1
+        assert item["reason"] in razon_diagnostico
+        assert {"upra_papa_diacol", "nasa_power", "cenicafe_lapse_rate"} <= set(item["source_ids"])

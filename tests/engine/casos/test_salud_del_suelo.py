@@ -30,8 +30,9 @@ def test_ejemplo_la_leguminosa_mejora_el_nitrogeno(api, familias):
         ciclos = sum(1 for crop_id in estrategia["crop_ids"] if familias[crop_id][1])
         nitrogeno = estrategia["soil_health"]["nitrogen"]
         assert nitrogeno["status"] == "available"
-        # Supuesto por confirmar (c): los cortes de `legume_cycles` son los del contrato (`favorable` 2, `moderate` 1);
-        # lo que la HU fija es «con leguminosa, favorable o moderate; sin ella, unfavorable».
+        # Cortes de `leguminosa_en_rotacion` en el PR #62: `levels: {favorable: 1, moderate: 1}` (favorable desde 1
+        # ciclo con leguminosa, sin franja intermedia). Lo que la HU fija es «con leguminosa, favorable o moderate; sin
+        # ella, unfavorable». TODO(HU-062): cuando entre el #62, con leguminosa se exige `favorable`.
         if ciclos == 0:
             assert nitrogeno["level"] == "unfavorable"
         else:
