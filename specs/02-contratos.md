@@ -265,7 +265,7 @@ Respuesta de `GET /api/v1/me/activity` (la de `GET /api/v1/admin/activity` es ig
 No son parte de la API ni se consultan desde la web; se documentan aquí porque fijan qué se puede escribir y qué no. Los escribe `structlog` a la salida estándar: con color en desarrollo y una línea JSON por evento en producción. En la consola cada parte tiene su color: el nivel (gris `debug`, verde `info`, amarillo `warning`, rojo `error`), el mensaje (blanco), el código de la respuesta (verde, amarillo o rojo), el endpoint (azul claro) y lo demás atenuado.
 
 ```json
-{"ts": "2026-11-14T15:02:11.204Z", "level": "info", "event": "request", "request_id": "9b1e…", "method": "POST", "route": "/api/v1/lots/{lot_id}/restore", "status": 200, "duration_ms": 18, "user_id": "3c7a…", "role": "farmer", "dataset": "2026.11.1", "rules": "1.4.0"}
+{"ts": "2026-11-14T15:02:11.204Z", "level": "info", "event": "request", "request_id": "9b1e…", "method": "POST", "route": "/api/v1/lots/{lot_id}/restore", "status": 200, "duration_ms": 18, "user_id": "3c7a…", "role": "farmer"}
 ```
 
 | Campo | Siempre | Notas |
@@ -274,7 +274,7 @@ No son parte de la API ni se consultan desde la web; se documentan aquí porque 
 | `detail` | Sí | Qué pasó, en español y en palabras: «Inicio de sesión rechazado: usuario no registrado», «Perfil actualizado: display_name». Puede decir más que la respuesta (por ejemplo, si falló el usuario o la contraseña), porque solo se ve en la terminal del servidor. Nunca repite lo que escribió la persona |
 | `endpoint` | En peticiones que llegan a una ruta | La función que atendió, como `auth.login`. Solo en el log: la respuesta no lo lleva |
 | `method`, `route`, `status`, `duration_ms` | En peticiones | `route` es la plantilla de la ruta, no la URL con sus parámetros de consulta. Una dirección que no existe en la API se escribe `[sin ruta]`: nunca lo que llegó |
-| `user_id`, `role` | Si hay sesión | Nunca el `username` ni el nombre |
+| `user_id`, `role` | Si hay sesión, salvo en los endpoints de cálculo (R9) | Nunca el `username` ni el nombre. Los endpoints de cálculo no guardan quién consultó, tampoco en el log (decidido por Felipe el 14 de noviembre de 2026, PR #102) |
 | `dataset`, `rules` | En endpoints de cálculo | Versiones usadas (R4) |
 
 Cuando las cuentas están apagadas, cada intento de usarlas deja un evento `accounts_unavailable` de nivel `warning` con `reason` (`database_down` o `migration_pending`), `current_migration`, `expected_migration` y `detail` («Cuentas no disponibles (503) porque la migración 2.1 no se completó; la base de datos está en la 1.9»). Al arrancar, la API registra `migration_applied`, `migration_up_to_date`, `migration_skipped` (la base no responde) o `migration_failed` (nivel `error`, con las dos versiones y la traza).

@@ -174,8 +174,10 @@ class DiagnosisRequestEcho(BaseModel):
 
 class DiagnosisResponse(DiagnosisCore):
     request: DiagnosisRequestEcho
-    # Solo cuando alguna acción es `other_window`: hasta tres, nunca de alto riesgo.
-    best_windows: list[WindowSummary] | None = None
+    # Solo cuando alguna acción es `other_window`: hasta tres, nunca de alto riesgo. Si no aplica, no viene (como en
+    # `DIAGNOSIS_OK`): nulo se omite al serializar. Vacío sí viene: no siempre hay un buen mes. Los demás nulos del
+    # contrato (`level`, `score`, `window`, …) se mantienen.
+    best_windows: list[WindowSummary] | None = Field(None, exclude_if=lambda value: value is None)
 
 
 # ------------------------------------------------------------------ estrategias de rotación
