@@ -1,7 +1,7 @@
 """Cómo se escriben los números y las listas en los textos para el agricultor (razones de la API y del motor).
 
 Está en `common/` porque lo usan la API (la razón de la aptitud, `backend/api/calculations.py`) y el motor (las razones
-de heladas, `backend/engine/sensitive_signal.py`), y el motor no importa la API (R6). No lee archivos ni importa
+de heladas y calor, `backend/engine/sensitive_signal.py`), y el motor no importa la API (R6). No lee archivos ni importa
 nada: el motor puede usarlo.
 """
 
