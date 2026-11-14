@@ -107,12 +107,13 @@ def phase1(
     soil: SoilPh | None,
     explain: SuitabilityExplainer,
 ) -> Phase1Result:
-    """Une los motivos de la fase 1, ordenados por ciclo, luego por `kind` (`rule`, `not_suitable`, `soil_ph`) y luego
-    por `rule_id` o `crop_id` (R4). Las limitaciones van sin repetir, por primera aparición: aptitud y luego pH."""
+    """Une los motivos de la fase 1, ordenados por `kind` (`rule`, `not_suitable`, `soil_ph`), luego por ciclo y luego
+    por `rule_id` o `crop_id` (R4): así el primero es el que muestra `excluded` (contrato, «Varios motivos», aprobado por
+    Felipe el 14 de noviembre de 2026). Las limitaciones van sin repetir, por primera aparición: aptitud y luego pH."""
     suit, suit_lim = suitability_motives(sequence, crops, tmean_annual_c, explain)
     ph, ph_lim = ph_motives(sequence, crops, soil)
     motives = [*rule_motives(sequence, previous_crop_ids, crops, rules), *suit, *ph]
-    motives.sort(key=lambda m: (m.cycle, _KIND_ORDER[m.kind], m.rule_id or "", m.crop_id or ""))
+    motives.sort(key=lambda m: (_KIND_ORDER[m.kind], m.cycle, m.rule_id or "", m.crop_id or ""))
     return Phase1Result(tuple(motives), tuple(dict.fromkeys([*suit_lim, *ph_lim])))
 
 

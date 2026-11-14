@@ -12,9 +12,9 @@ por primera aparición, con las de aptitud antes que las de pH.
 from pathlib import Path
 
 import yaml
-from backend.engine.rotations.exclusions import SoilPh, ph_motives, phase1, suitability_motives
 
 from backend.engine.rotations.candidates import CropInfo
+from backend.engine.rotations.exclusions import SoilPh, ph_motives, phase1, suitability_motives
 from backend.engine.rotations.rules import FilterRule
 from backend.engine.suitability import Suitability
 
@@ -193,19 +193,32 @@ def _fase1(secuencia, previos, temp, suelo, reglas=None, cultivos=None):
     return phase1(secuencia, previos, cultivos or CULTIVOS, FILTROS if reglas is None else reglas, temp, suelo, _explica)
 
 
-def test_phase1_junta_y_ordena_por_ciclo_luego_kind_y_luego_rule_id():
+def test_phase1_junta_y_ordena_por_kind_luego_ciclo_y_luego_rule_id():
+    # Orden del contrato («Varios motivos»): primero el `kind` (rule, not_suitable, soil_ph), después el ciclo; así el
+    # primero es el que muestra `excluded` (revisión de Felipe, PR #105).
     r = _fase1(("papa", "papa", "zanahoria"), ["papa"], 28.4, SUELO_ACIDO, reglas=list(reversed(FILTROS)))
     orden = [(m.cycle, m.kind, m.rule_id or m.crop_id) for m in r.motives]
     assert orden == [
         (1, "rule", "familia_seguida"),
         (1, "rule", "papa_seguida"),
-        (1, "not_suitable", "papa"),
-        (1, "soil_ph", "papa"),
         (2, "rule", "familia_seguida"),
         (2, "rule", "papa_seguida"),
+        (1, "not_suitable", "papa"),
+        (1, "soil_ph", "papa"),
         (3, "soil_ph", "zanahoria"),
     ]
     assert isinstance(r.motives, tuple)
+
+
+def test_phase1_una_regla_en_el_ciclo_2_va_antes_que_el_ph_del_ciclo_1():
+    # Caso de la revisión de Felipe (PR #105): pH fuera en el ciclo 1 y regla violada en el ciclo 2 dan `rule` primero.
+    # Con el suelo ácido DE EJEMPLO (3,6 a 4,0), la arveja (pH 4,5-8,3) queda fuera en el ciclo 1; arveja -> haba repite
+    # Leguminosae en el ciclo 2 (`familia_seguida`). Sin temperatura, la aptitud no da `not_suitable` (solo limitación).
+    r = _fase1(("arveja", "haba", "maiz"), [], None, SUELO_ACIDO)
+    assert r.motives
+    assert (r.motives[0].kind, r.motives[0].cycle, r.motives[0].rule_id) == ("rule", 2, "familia_seguida")
+    # El pH del ciclo 1 sí está, pero después de la regla.
+    assert any(m.kind == "soil_ph" and m.cycle == 1 for m in r.motives[1:])
 
 
 def test_phase1_con_suelo_y_temperatura_buenos_y_sin_violaciones_no_tiene_motivos():
