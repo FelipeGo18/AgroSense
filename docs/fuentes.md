@@ -19,6 +19,28 @@ La NASA es el núcleo de los datos. Cada producto entra por su adaptador y `sour
 
 El enunciado completo salió el 28 de octubre y se leyó el 8 de noviembre (decisión 14): no fija una región ni obliga a usar unos datos; sugiere productos, y los que no estaban tienen su HU (HU-002). Esta tabla se verificó el 12 de noviembre de 2026 con una descarga de prueba de POWER para Duitama, una tesela de NDVI de GIBS sobre Duitama y la búsqueda en el catálogo CMR de la NASA de los archivos de MODIS, VIIRS y SMAP sobre Duitama (HU-002). Los recursos del reto, que se publican el 13 de noviembre, se agregan aquí.
 
+## Recursos del reto (13 de noviembre de 2026)
+
+La pestaña de recursos del reto se revisó el 13 de noviembre de 2026 (HU-002). No cambia el núcleo: todos los productos de la NASA que nombra ya estaban en el MVP o tenían su HU. Los recursos hablan de modelos de IA, pero no los exigen: seguimos con reglas (decisión 4).
+
+| Recurso | Quién lo da | En AgroSense |
+|---|---|---|
+| NASA POWER | NASA | En el núcleo (clima, ET0, heladas, calor, aptitud) |
+| GPM IMERG (y sus capas de Worldview) | NASA y JAXA | En el núcleo: la lluvia de la señal de agua (HU-207). Worldview es GIBS, arriba |
+| SRTM | NASA | En el núcleo con NASADEM, que es SRTM reprocesado (altitud y pendiente, HU-206) |
+| MODIS y VIIRS (NDVI) | NASA | MODIS en HU-208; VIIRS es el relevo de Terra MODIS (`docs/riesgos.md`) |
+| Landsat | NASA y USGS | HU-043 (HLS, que armoniza Landsat y Sentinel-2) |
+| SMAP | NASA | HU-210 |
+| ECOSTRESS | NASA | HU-226 (P1) |
+| GEDI | NASA | No entra: mide bosques, no cultivos (decisión 14) |
+| NLDAS / GLDAS | NASA | **Nuevo.** NLDAS solo cubre Norteamérica. GLDAS es global: en P1, como contraste de la humedad del suelo (HU-232) |
+| FAO GAEZ | FAO | Ya citado en el catálogo; sirve para contrastar la aptitud y los rangos de los cultivos |
+| Copernicus Sentinel-2 | ESA | Entra con HLS (HU-043) |
+| ERA5 | ECMWF (Copernicus) | **Nuevo.** En P1, como contraste de las heladas de POWER, que casi no ve heladas en el altiplano (HU-231) |
+| USDA Ag Data Commons, Web Soil Survey, SSURGO/STATSGO2, CropScape (CDL), NASS QuickStats, AMS Market News, PRISM, NAIP, CoCoRaHS, OpenET, USGS NLCD y NWIS, USFS LANDFIRE | Agencias de EE. UU. | No aplican: solo cubren Estados Unidos (o Norteamérica). En la región piloto sus equivalentes son SoilGrids (suelo), EVA (área sembrada), SIPSA (precios) e IDEAM (estaciones, para contrastar) |
+
+GRACE-FO no aparece en los recursos, aunque sí en el enunciado: sigue en HU-225 (P1).
+
 ## Datos
 
 | Fuente | Qué aporta | Estado |

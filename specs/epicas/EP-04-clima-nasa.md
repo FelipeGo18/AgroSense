@@ -269,3 +269,31 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 - **Reglas que aplican:** R1, R8, R10
 - **Contrato que toca:** tabla nueva, por definir en esta HU
 - **Notas:** Decisión 14: el enunciado completo sugiere ECOSTRESS para el estrés por calor y la evaporación. La serie empieza en 2018 y las pasadas no son regulares: sirve de contraste, no para normales. Agregada el 8 de noviembre de 2026.
+
+### HU-231 · Heladas de ERA5-Land para contrastar las de NASA POWER
+
+- **Historia:** Como agricultor, quiero ver junto a la señal de heladas lo que cuenta otro reanálisis, para no confiar en una sola fuente donde POWER cuenta menos heladas de las que hay.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `era5_land` con caché: la temperatura mínima diaria de ERA5-Land (unos 9 km, desde 1950), producto, versión, licencia y acceso (Copernicus Climate Data Store) verificados
+  - [ ] Publica por municipio, año y mes los días con la mínima ≤ al umbral de `region.yaml` (`frost`), con la misma forma que `climate_frost_month` y su `source_id`; corregida por altitud con el mismo gradiente, y se dice
+  - [ ] Se muestra junto a la señal de heladas como contraste, con su fuente y su resolución; **nunca** se mezcla ni se promedia con POWER y no cambia la calificación (decisión 11, R1)
+  - [ ] Comprobación contra el IDEAM en Tibaitatá (Mosquera) y en un municipio de Boyacá: cuántas heladas cuenta cada fuente; el resultado queda en `docs/riesgos.md`
+  - [ ] Entrada en `sources` (R8). ERA5 es un reanálisis del ECMWF, no de la NASA: se dice
+- **Reglas que aplican:** R1, R4, R8
+- **Contrato que toca:** `signals.frost.sources` (contraste) y una tabla nueva, por definir en esta HU
+- **Notas:** Viene de la pestaña de recursos del reto (13 nov de 2026, HU-002), que nombra ERA5 entre los recursos de agencias socias. Motivo: en el #61 (HU-045) POWER cuenta 0 heladas en Tibaitatá entre 2024 y 2026, donde el IDEAM midió 26. Si ERA5-Land las ve mejor, se puede proponer usarla para la señal con `sources.yaml` (decisión aparte, con el contraste hecho). Agregada el 13 de noviembre de 2026.
+
+### HU-232 · Humedad del suelo de GLDAS para contrastar
+
+- **Historia:** Como agricultor, quiero ver otra estimación de la humedad del suelo de mi zona, para contrastar la de SMAP y la de NASA POWER.
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `gldas` con caché: la humedad del suelo de la zona de raíces de GLDAS Noah (0,25°, mensual), producto, versión y acceso (Earthdata) verificados
+  - [ ] Publica por municipio y mes, con su unidad y su `source_id`; un mes sin dato no aparece (R1)
+  - [ ] Se muestra junto a la señal de agua, con SMAP y POWER, cada una en su unidad; nunca se mezclan y no cambia la calificación (decisión 11)
+  - [ ] Dice que es un modelo de la zona, de celdas de unos 25 km, no una medición del lote (R10)
+  - [ ] Entrada en `sources` (R8)
+- **Reglas que aplican:** R1, R8, R10
+- **Contrato que toca:** `signals.water.sources` (contraste) y una tabla nueva, por definir en esta HU
+- **Notas:** Viene de la pestaña de recursos del reto (13 nov de 2026, HU-002), que nombra NLDAS y GLDAS. NLDAS solo cubre Norteamérica: en la región piloto aplica GLDAS. Agregada el 13 de noviembre de 2026.
