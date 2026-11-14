@@ -5,7 +5,7 @@ El valor es `tmax_p90_c` de `climate_risk_month` (la máxima que se supera uno d
 normal), y de los meses sensibles se toma **el más alto**: el peor caso. Un calor que daña en cualquiera de los meses
 sensibles basta, igual que las heladas cuentan una helada en cualquiera de ellos y que la ventana vale lo que su
 factor más bajo (R2, ley del mínimo); un promedio escondería el mes que daña. Decisión del 14 de noviembre de 2026,
-pendiente de aprobación de Felipe (docs/registro-de-decisiones.md).
+aprobada por Felipe el 14 de noviembre de 2026, PR #99 (docs/registro-de-decisiones.md).
 
 - `climate_risk_month` es climatológica (un valor por mes del año): los meses de la ventana se buscan solo por número
   de mes, y una ventana de más de doce meses no cuenta dos veces el mismo mes.
