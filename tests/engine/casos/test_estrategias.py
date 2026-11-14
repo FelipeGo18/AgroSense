@@ -89,8 +89,13 @@ def test_ejemplo_cultivo_no_apto_no_entra_a_ninguna_estrategia(api):
     )
     assert diagnostico.status_code == 200, diagnostico.text
     razon_diagnostico = diagnostico.json()["suitability"]["reasons"]
-    for item in respuesta["excluded"]:
-        if item["kind"] != "not_suitable" or item.get("crop_id") != "papa":
+    # Que el caso no pase sin comprobar nada (revisión de Felipe, PR #70): toda exclusión `not_suitable` trae `crop_id`
+    # y al menos una es de la papa; si el motor olvida `crop_id`, el caso falla aquí en vez de saltarse el `for`.
+    no_aptas = [e for e in respuesta["excluded"] if e["kind"] == "not_suitable"]
+    assert no_aptas and all(e.get("crop_id") for e in no_aptas)
+    assert any(e["crop_id"] == "papa" for e in no_aptas)
+    for item in no_aptas:
+        if item["crop_id"] != "papa":
             continue
         assert item["cycle"] == item["crop_ids"].index("papa") + 1
         assert item["reason"] in razon_diagnostico
