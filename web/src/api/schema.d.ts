@@ -779,6 +779,8 @@ export interface components {
             rule_id?: string | null;
             /** Signal */
             signal?: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Crop Id */
+            crop_id?: string | null;
             /** Reason */
             reason: string;
             /** Source Ids */
@@ -837,6 +839,8 @@ export interface components {
             rule_id?: string | null;
             /** Signal */
             signal?: ("water" | "frost" | "heat" | "soil" | "supply" | "market") | null;
+            /** Crop Id */
+            crop_id?: string | null;
             /** Reason */
             reason: string;
             /** Source Ids */
@@ -2840,6 +2844,15 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
