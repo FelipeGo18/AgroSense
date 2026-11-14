@@ -135,10 +135,12 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-094 · Estados de carga, vacío y error
 
 - **Historia:** Como usuario, quiero mensajes claros cuando algo carga, falla o no tiene datos, para saber qué hacer.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en progreso
 - **Criterios de aceptación:**
-  - [X] Estados de carga, vacío, sin cobertura y error
-  - [X] Los datos de ejemplo se rotulan
+  - [x] Estados de carga, vacío, y error
+  - [ ] Estado sin cobertura
+  - [x] Los datos de ejemplo se rotulan
+- **Pendiente:** Un municipio fuera de la región cae en "Revise lo que eligió"; la tarjeta "Sin datos de este municipio" necesita un código propio en el contrato (decidido por Felipe el 13 de noviembre de 2026: no por ahora).
 
 ### HU-219 · Pantalla «Qué cambió en su zona»
 

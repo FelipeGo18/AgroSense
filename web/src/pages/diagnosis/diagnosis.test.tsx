@@ -414,6 +414,33 @@ describe("Pantalla del diagnóstico (HU-091)", () => {
       expect(lotSelector).toHaveFocus();
       expect(lotSelector).toHaveTextContent("La Vega");
     });
+    it("una fecha fuera de rango permite corregir el mes", async () => {
+      fakeApi({
+        ...CATALOGS,
+        "POST /api/v1/diagnostics": {
+          status: 422,
+          body: {
+            error: {
+              code: "invalid_input",
+              message: "La fecha de siembra debe estar entre este mes y los próximos doce.",
+            },
+          },
+        },
+      });
+
+      const user = userEvent.setup();
+      open(`${PATHS.diagnosis}?municipio=15646&cultivo=papa&siembra=${MONTHS[2].value}&riego=si`);
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Esa fecha no se puede consultar",
+        }),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Cambiar la fecha" }));
+
+      expect(screen.getByRole("combobox", { name: "¿Cuándo quiere sembrar?" })).toHaveFocus();
+    });
     it("un 422 muestra el mensaje de la API y el botón devuelve el foco al formulario", async () => {
       fakeApi({
         ...CATALOGS,
@@ -451,8 +478,7 @@ describe("Pantalla del diagnóstico (HU-091)", () => {
       });
       open(`${PATHS.diagnosis}?municipio=15646&cultivo=papa&siembra=${MONTHS[2].value}&riego=si`);
       expect(await screen.findByRole("heading", { name: "Los datos no están disponibles en este momento" })).toBeInTheDocument();
-      expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
-      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByRole("alert")).toBeInTheDocument();
       expect(screen.getByText("Intente más tarde.")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Reintentar" })).toBeInTheDocument();
     });

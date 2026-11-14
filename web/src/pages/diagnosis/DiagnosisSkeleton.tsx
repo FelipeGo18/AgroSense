@@ -43,7 +43,10 @@ export function DiagnosisSkeleton({ querySummary, className = "" }: Readonly<Dia
         {/* Rejilla de las 6 señales: 2 columnas en celular, 3 en tablet, 6 en escritorio */}
         <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
           {SKELETON_SIGNALS.map((signalId) => (
-            <div key={signalId} className="bg-surface flex min-w-0 flex-col gap-2 rounded-lg border border-superficie-borde/60 p-3">
+            <div
+              key={signalId}
+              className="flex min-w-0 flex-col gap-2 rounded-lg border border-superficie-borde/60 bg-superficie-panel p-3"
+            >
               {/* Título de la señal */}
               <div className="h-3 w-1/2 rounded bg-paleta-niebla animated:animate-pulse" />
               {/* Razón / explicación */}

@@ -129,7 +129,9 @@ export function DiagnosisPage() {
   const returnToForm = () => {
     formRef.current?.querySelector<HTMLElement>("input, select, button")?.focus();
   };
-
+  const changeSowingMonth = () => {
+    formRef.current?.querySelector<HTMLSelectElement>('select[name="sowing_month"]')?.focus();
+  };
   const focusLotSelector = () => {
     formRef.current?.querySelector<HTMLSelectElement>("select")?.focus();
   };
@@ -229,6 +231,7 @@ export function DiagnosisPage() {
                 />
 
                 <SelectField
+                  name="sowing_month"
                   label="¿Cuándo quiere sembrar?"
                   value={form.month}
                   onChange={(e) => {
@@ -275,6 +278,7 @@ export function DiagnosisPage() {
             onChooseAnotherLot={focusLotSelector}
             onConsultWithoutLot={consultWithoutLot}
             onReturnToForm={returnToForm}
+            onChangeSowingMonth={changeSowingMonth}
           />
         </div>
         {request && diagnosis.isSuccess && <Details data={diagnosis.data} />}
@@ -324,6 +328,7 @@ interface ResultProps {
   onChooseAnotherLot: () => void;
   onConsultWithoutLot: () => void;
   onReturnToForm: () => void;
+  onChangeSowingMonth: () => void;
 }
 function Result({
   request,
@@ -337,6 +342,7 @@ function Result({
   onChooseAnotherLot,
   onConsultWithoutLot,
   onReturnToForm,
+  onChangeSowingMonth,
 }: Readonly<ResultProps>) {
   if (!request) {
     return (
@@ -377,6 +383,7 @@ function Result({
           onChooseAnotherLot={onChooseAnotherLot}
           onConsultWithoutLot={onConsultWithoutLot}
           onReturnToForm={onReturnToForm}
+          onChangeSowingMonth={onChangeSowingMonth}
         />
       ) : (
         <Summary data={diagnosis.data} />
@@ -392,6 +399,7 @@ interface DiagnosisErrorProps {
   onChooseAnotherLot: () => void;
   onConsultWithoutLot: () => void;
   onReturnToForm: () => void;
+  onChangeSowingMonth: () => void;
 }
 
 /**
@@ -405,13 +413,14 @@ function DiagnosisError({
   onChooseAnotherLot,
   onConsultWithoutLot,
   onReturnToForm,
+  onChangeSowingMonth,
 }: Readonly<DiagnosisErrorProps>) {
   // 1. Sin conexión: falla la red o modo offline (status 0)
   if (error instanceof ApiError && (error.status === 0 || error.code === "offline")) {
     return (
       <StateCard
         title="Sin conexión"
-        description="Revise la señal."
+        description="Revise la señal. Lo que ya consultó sigue en pantalla; para calcular otra fecha hace falta internet."
         mood="idle"
         actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
       />
@@ -442,13 +451,28 @@ function DiagnosisError({
     );
   }
   // 3. La API explica qué dato de entrada debe revisarse.
+  if (
+    error instanceof ApiError &&
+    error.status === 422 &&
+    error.code === "invalid_input" &&
+    error.message === "La fecha de siembra debe estar entre este mes y los próximos doce."
+  ) {
+    return (
+      <StateCard
+        title="Esa fecha no se puede consultar"
+        description="Elija un mes de los próximos doce: una fecha que ya pasó o más lejana no tiene ventana que evaluar"
+        mood="guide"
+        actions={[{ label: "Cambiar la fecha", variant: "primary", onClick: onChangeSowingMonth }]}
+      />
+    );
+  }
   if (error instanceof ApiError && error.status === 422) {
     return (
       <StateCard
         title="Revise lo que eligió"
         description={error.message}
         mood="guide"
-        actions={[{ label: "Volver al formulario", variant: "primary", onClick: onReturnToForm }]}
+        actions={[{ label: "Volver al formulario", variant: "secondary", onClick: onReturnToForm }]}
       />
     );
   }
@@ -467,7 +491,6 @@ function DiagnosisError({
         title="Los datos no están disponibles en este momento"
         description="Intente más tarde."
         mood="no_data"
-        dashed
         actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
       />
     );
