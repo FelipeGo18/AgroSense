@@ -28,7 +28,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 | R3 | Prueba: una estrategia que viola un `filter` entre dos ciclos seguidos no aparece en el ranking y su exclusión cita la regla. Prueba: un cultivo que no es apto para la zona no se evalúa por ventanas y la respuesta cita el dato de su ficha que lo excluye. |
 | R4 | Prueba: dos ejecuciones iguales dan salida idéntica; toda respuesta trae `versions.dataset` y `versions.rules`. |
 | R5 | Revisión: ningún dato ficticio sin rótulo; cada razón de M4 mapea a un indicador o regla evaluados. |
-| R6 | Prueba o lint: `backend/engine/` no importa `fastapi` ni `sqlalchemy` ni abre archivos. |
+| R6 | Prueba o lint: `backend/engine/` no importa `fastapi` ni `sqlalchemy` ni abre archivos. Tampoco importa `polars`: el motor recibe valores, no DataFrames. |
 | R7 | Prueba: las uniones usan `municipality_id`; unicidad de llaves en los Parquet. Revisión: ninguna regla del motor depende de una fuente o un código propios de un país. |
 | R8 | Validación: ninguna fila ni regla con `source_id` vacío o inexistente en `sources`. |
 | R9 | Prueba: los endpoints de cálculo no escriben en la base de datos, salvo el contador `usage_daily` cuando existe (HU-170), que no tiene ninguna columna que identifique a una persona ni datos de la finca. Prueba: sin sesión, ningún endpoint de cuenta acepta escritura. Prueba: borrar la cuenta elimina usuario, sesiones, lotes, temporadas, tickets y sus eventos de `activity_log`. Revisión: el registro guarda el consentimiento y su versión. |

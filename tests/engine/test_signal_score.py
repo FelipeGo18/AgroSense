@@ -7,10 +7,7 @@ umbrales y el catálogo reales); el motor no (R6, cubierto en tests/engine/test_
 """
 
 import copy
-import subprocess
-import sys
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
 
@@ -433,7 +430,7 @@ def test_infinito_se_califica_con_el_extremo_de_la_curva(thresholds, signal, val
 
 @pytest.mark.parametrize(
     "signal,value",
-    [("water", 73.3), ("frost", 12.5), ("heat", 26.1), ("soil", 4.9), ("supply", 10.0)],
+    [("water", 73.3), ("frost", 12.5), ("heat", 26.1), ("soil", 4.9), ("supply", 10.0), ("market", 0.95)],
 )
 def test_mismo_dato_misma_calificacion(thresholds, papa, signal, value):
     first = score_signal(signal, value, thresholds, papa)
@@ -474,24 +471,6 @@ def test_un_peso_none_o_nan_vale_0(missing):
     """Un peso que falta vale 0, también si llega como None o NaN: la señal no cuenta (y no revienta la comparación)."""
     assert weight_of({"supply": missing}, "supply") == 0
     assert rated_signals({"supply": SignalScore(AVAILABLE, 30, UNFAVORABLE, False)}, {"supply": missing}) == ()
-
-
-# ---------- R6 en ejecución ----------
-
-
-def test_importar_el_motor_no_carga_la_configuracion_ni_yaml():
-    """R6: `Thresholds` se importa solo para el tipado. En un intérprete limpio, importar `signal_score` no carga
-    `backend.config.thresholds` (que lee archivos) ni `yaml`."""
-    code = (
-        "import sys; import backend.engine.signal_score; "
-        "loaded = [m for m in ('backend.config.thresholds', 'yaml') if m in sys.modules]; "
-        "print(','.join(loaded))"
-    )
-    root = Path(__file__).resolve().parents[2]
-    # El código es una constante de esta prueba, no una entrada externa.
-    result = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True, check=True)  # noqa: S603
-    assert result.stdout.strip() == ""
-
 
 # ---------- Errores: de programación o de catálogo, nunca «sin datos» ----------
 
