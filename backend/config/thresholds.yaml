@@ -69,7 +69,10 @@ signals:
     variable: seasonal_index
     unit: ""
     # Sin fuente: ninguna fuente publicada dice qué índice estacional de precio es «precio bajo». La señal es
-    # `insufficient_data` (R1).
+    # `insufficient_data` (R1). Tampoco se usa un criterio del equipo: la regla del equipo del 11 de noviembre de 2026
+    # solo lo permite si es central para el producto y cada número se apoya en un dato externo citado, y el mercado
+    # no es central (decisión 12: valor agregado, no protagonista). La propuesta de curva, con los cuantiles del índice
+    # de SIPSA, está en docs/investigacion-decisiones.md (5e) para el día en que una fuente externa la respalde.
     curve: null
     critical_below: null
     source_id: null

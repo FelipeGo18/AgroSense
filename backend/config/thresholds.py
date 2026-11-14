@@ -11,7 +11,7 @@ from typing import Any
 
 import yaml
 
-from backend.config.weights import P0_SIGNALS
+from common.signals import P0_SIGNALS
 
 THRESHOLDS_FILE = Path(__file__).with_name("thresholds.yaml")
 # Las señales cuya curva sale de la ficha del cultivo (`curve: crop`).

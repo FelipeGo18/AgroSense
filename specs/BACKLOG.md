@@ -16,9 +16,12 @@
 | [EP-01](epicas/EP-01-contratos.md) | HU-014 | Modo simulación para desarrolladores | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-021 | Clonar y ejecutar con pocos comandos | P0 | S | hecha | Probado con y sin Docker en dos máquinas (`docs/reporte-prueba-hu-021.md`) |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-022 | Lint y pruebas automáticas en cada cambio | P0 | S | hecha | Corre el comando de test con `docker compose run --rm test` para Ruff, Ruff format, pytest y web |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | en curso | Hecho para la API, las migraciones y el pipeline (8 nov); falta lo de los endpoints de cálculo, que aún no existen |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | Esqueleto desplegado en URL pública | P0 | M | pendiente | Con la base de datos en la nube (10 nov) |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-229 | Migraciones revisadas y aplicadas con GitHub Actions | P0 | M | en curso | Nueva (10 nov) |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | hecha | API, migraciones y pipeline (8 nov); los endpoints de cálculo escriben sus versiones del dataset y de las reglas, nunca la consulta (14 nov) |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | La app desplegada en Google Cloud Run | P0 | M | pendiente | Cambiada el 14 nov: Cloud Run con el crédito del evento. Haider y David |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-229 | Migraciones revisadas y aplicadas con GitHub Actions | P0 | M | en curso | Revisión, comentario con el SQL y bloqueo probados en un PR (14 nov); las pruebas ya no tienen fija la última migración. Falta aplicar una migración real en la nube con su copia cifrada |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-234 | La base de datos de producción | P0 | S | pendiente | Nueva (14 nov): Cloud SQL, separada de la del equipo. Haider y David |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-235 | Desplegar al fusionar en `produccion` | P0 | M | pendiente | Nueva (14 nov): workflow con migraciones y Cloud Run. Haider y David |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-236 | El dominio con HTTPS | P0 | S | pendiente | Nueva (14 nov): dominio gratis de GoDaddy Registry (Porkbun). Haider y David |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-031 | Datos de EVA normalizados por DIVIPOLA | P0 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-032 | Variación del área sembrada y participación departamental | P0 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-200 | Siembras registradas en AgroSense como dato de oferta | P1 | M | pendiente | |
@@ -48,27 +51,27 @@
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | hecha | Dos crons del servicio `market` (9 nov): boletín diario y serie completa semanal; la API solo lee. Contrato aprobado por Felipe (10 nov) |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | en curso | Fichas de los 7 cultivos y el descanso con fuente por valor; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-199 | Límites óptimos y absolutos de cada cultivo | P0 | M | en curso | Rangos de EcoCrop y UPRA con validación; falta revisión cruzada |
-| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | en curso | Archivo con pesos provisionales y `GET /version`; falta la propuesta de Producto y agro y su aprobación |
-| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | M | pendiente | Suma la salud del suelo |
-| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-063 | Suelo, heladas y abonos verdes en el catálogo | P0 | M | en curso | pH con fuente; helada por etapa parcial (supuesto); calor por etapa sin fuente |
+| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | hecha | `weights.yaml` 1.0.0 aprobado por Felipe (14 nov): agua 3, heladas 4, calor 2, suelo 2, oferta 1, mercado 1; se muestran con su porqué en «¿Cómo funciona?» (14 nov) |
+| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | L | hecha | Contrato aprobado por Felipe el 11 nov (decisión 16); siete reglas: dos con fuente externa (Penn State, ICA) y cinco con el criterio propio registrado `criterio_equipo_2026` (enmienda de R8: solo reglas centrales con cada número apoyado en un dato externo; «criterio del equipo» en la respuesta y la web); `papa_espera` con 3 y 2 ciclos (11 nov, PR #46); los cinco criterios de `soil_health` tienen regla; mergeada el 14 nov (PR #62) |
+| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-063 | Suelo, heladas y abonos verdes en el catálogo | P0 | M | en curso | pH con fuente; helada y calor por etapa con fuente desde HU-142 (14 nov); faltan los abonos verdes y el descanso con sus reglas, las reglas de suelo y la revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-227 | Valor como forraje en el catálogo | P1 | S | pendiente | Nueva (8 nov, decisión 14) |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-071 | Señal de agua | P0 | M | pendiente | Suma IMERG y la humedad del suelo |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-072 | Señal de oferta | P0 | M | pendiente | |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-073 | Señal de mercado sin datos | P0 | S | pendiente | |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-196 | Calificación de las señales con curvas por cultivo | P0 | M | hecha | `score_signal` en `backend/engine/signal_score.py` con la curva de `curve.py`: agua y heladas con los puntos de `thresholds.yaml`, calor y suelo con la ficha; oferta y mercado sin datos mientras no tengan curva (13 nov) |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-074 | Semáforo con prioridades, dos luces y acción | P0 | L | pendiente | |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-073 | Señal de mercado sin datos | P0 | S | en curso | Hecho el 14 nov: central por departamento (`department_markets`, aprobado por Felipe), lectura de `market_month` y `market_signal` que da `insufficient_data` porque la curva espera una fuente (regla del 11 nov); con índice y sin curva la razón dice que falta la curva, no que falten datos. Falta el `score` con curva |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-196 | Calificación de las señales con curvas por cultivo | P0 | M | hecha | `score_signal` en `backend/engine/signal_score.py` con la curva de `curve.py`: agua y heladas con los puntos de `thresholds.yaml`, calor y suelo con la ficha; oferta y mercado sin datos mientras no tengan curva (13 nov); para el mercado se investigó una curva y la propuesta quedó en `docs/investigacion-decisiones.md` (5e) para cuando exista una fuente |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-074 | Semáforo con prioridades, dos luces y acción | P0 | L | en curso | Motor listo (14 nov): reglas 0 a 5, nivel efectivo con peso alto, tabla de acciones, razones y limitaciones, con las primitivas de `signal_score.py`. Falta el cableado a `/diagnostics` (HU-076) |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-197 | Cultivos alternativos con mejor oferta | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-077 | Señal de heladas | P0 | M | pendiente | Por mes en el MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-190 | Señal de calor | P0 | M | pendiente | Por mes en el MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-191 | Aptitud del cultivo en la zona | P0 | M | en curso | Por temperatura media anual desde el 16 oct (decisión 13); con lote, corregida a su altitud. Motor y caso `not_suitable` de `/diagnostics` listos (PR #56); desde el 13 nov la API calcula la altitud del lote y corrige la temperatura con el gradiente del manifiesto (primer criterio hecho); faltan el caso `suitable`/`insufficient_data` (esperan las señales) y el cableado en `/rotations` y `/changes` |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-192 | Orden de las ventanas por factor limitante y prioridades | P0 | M | pendiente | |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-075 | Umbrales y pesos versionados | P0 | S | en curso | `weights.yaml` y `thresholds.yaml` 1.0.0 hechos (10 nov); oferta y mercado sin fuente. Falta lo que depende del motor |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-192 | Orden de las ventanas por factor limitante y prioridades | P0 | M | en curso | Motor listo (14 nov): ventanas por mes, factor limitante, promedio ponderado, alto riesgo y mejores ventanas, con las primitivas de las señales que cuentan (`counts`, `rated_signals`, `limiting`, `high_risk`) en `signal_score.py`, compartidas con HU-074. Falta el cableado a `/diagnostics` (HU-074, HU-076) |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-075 | Umbrales y pesos versionados | P0 | S | en curso | `weights.yaml` y `thresholds.yaml` 1.0.0 hechos (10 nov); oferta y mercado sin fuente (para el mercado se investigó una curva: propuesta en `docs/investigacion-decisiones.md`, 5e). Falta lo que depende del motor |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-076 | Endpoint de diagnóstico con errores claros | P0 | S | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-078 | Endpoints de catálogo y tendencias | P0 | S | en curso | `/municipalities`, `/boundary` y `/crops` hechos; faltan suelo y `/trends` |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-217 | Comparar dos periodos de la historia de la zona | P0 | M | pendiente | Nueva |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-218 | Endpoint de «Qué cambió» | P0 | S | pendiente | Nueva |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-195 | Señales de exceso de lluvia, enfermedad y cosecha | P1 | M | pendiente | |
-| [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | pendiente | Estrategias de hasta 3 ciclos |
+| [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en curso | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | pendiente | Nueva |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar estrategias por prioridades | P0 | M | pendiente | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden de las estrategias | P0 | S | pendiente | |
@@ -91,15 +94,15 @@
 | [EP-11](epicas/EP-11-escenarios.md) | HU-111 | Reevaluar con cambios en memoria | P1 | M | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-112 | Endpoint de escenarios | P1 | S | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-113 | Comparación de escenarios | P1 | M | pendiente | |
-| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | pendiente | Suma estrategias y «Qué cambió» |
-| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources`, `/version` y `catalog/sources.yaml` (11 nov, lluvia de POWER temporal con aviso); faltan las fuentes NASA sin adaptador y la web |
+| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | en curso | Suma estrategias y «Qué cambió». Tres PR: estrategias y suelo, diagnóstico y aptitud, «Qué cambió» y cuentas. Casos de ejemplo y casos reales con dataset fijado |
+| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources`, `/version` y `catalog/sources.yaml` (11 nov, lluvia de POWER temporal con aviso); «¿Cómo funciona?» en la web con fuentes, versión y pesos (14 nov); faltan las fuentes NASA sin adaptador |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-123 | Reconstruir el dataset con un comando | P0 | S | hecha | `pipeline.build` publica y revisa contra el manifiesto; `--verificar` solo revisa (8 nov) |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-131 | Dos casos reales para la demo | P0 | S | pendiente | |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-132 | Video y descripción de la entrega | P0 | M | pendiente | |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-133 | Impacto económico, social y ambiental | P0 | S | pendiente | |
-| [EP-13](epicas/EP-13-demo-entrega.md) | HU-230 | Licencias del proyecto y de lo que usa | P0 | S | en curso | Nueva (10 nov). `LICENSE` Apache 2.0 hecho; falta la lista de licencias de terceros para la entrega |
-| [EP-14](epicas/EP-14-finca-agua.md) | HU-142 | Etapas de cada cultivo con Kc | P0 | S | en curso | Los 7 cultivos del MVP |
-| [EP-14](epicas/EP-14-finca-agua.md) | HU-220 | Etapas de una ventana por calendario | P0 | S | hecha | `crop_window`: etapas, meses y meses sensibles de una ventana (10 nov). Cebolla, haba y maíz no dicen la sensibilidad a la helada, ni ningún cultivo la del calor (HU-063) |
+| [EP-13](epicas/EP-13-demo-entrega.md) | HU-230 | Licencias del proyecto y de lo que usa | P0 | S | hecha | `LICENSE` Apache 2.0 (10 nov); `docs/licencias.md` con las 31 fuentes, las 51 librerías de Python y las de la web; GSAP con su permiso documentado (14 nov) |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-142 | Etapas de cada cultivo con Kc | P0 | S | hecha | Los 7 cultivos del MVP. Helada y calor por etapa, cada valor con su fuente, y el calor del maíz en 35 °C (14 nov, dataset 2026.11.14); revisión cruzada de Luisa (PR #69) |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-220 | Etapas de una ventana por calendario | P0 | S | hecha | `crop_window`: etapas, meses y meses sensibles de una ventana (10 nov). La helada y el calor por etapa están en el catálogo desde HU-142 (14 nov), con nulos donde no hay fuente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-143 | Lluvia y ET0 mensuales por municipio | P0 | M | hecha | ET0 por Penman-Monteith de FAO-56 (`pipeline/et0.py`), su normal y el año seco (percentil 20, decidido por Felipe) en `climate_month` |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-144 | Déficit de agua por cultivo y etapa | P0 | M | pendiente | |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-146 | Endpoint del plan de agua | P0 | S | pendiente | |
@@ -121,6 +124,7 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente | |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | en curso | GSAP y Lenis se cargan aparte: en modo ligero el JS inicial baja de 197 a 149 kB; verificados sin WebGL y con «reducir movimiento» (12 nov). Falta el Figma y el paso a 2D de la escena 3D (P1) |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P1 | L | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-233 | La web en español y en inglés | P0 | L | pendiente | Nueva (14 nov): la guía de entrega pide todo en inglés. Juan Ortiz |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P1 | S | hecha | Backend, pantallas y «Sus prioridades» hechos; revisión de seguridad hecha. Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P1 | M | en curso | Tabla, eventos de la cuenta y «Mi actividad» hechos; revisión de seguridad hecha y limpieza de 180 días al arrancar; faltan los permisos de solo agregar y la limpieza con otro rol |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-170 | Roles: agricultor, administrador y desarrollador | P1 | L | pendiente | |
