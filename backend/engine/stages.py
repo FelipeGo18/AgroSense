@@ -14,6 +14,8 @@ import calendar
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+from common.dates import add_months
+
 CALENDAR = "calendar"
 # Para qué riesgo se pregunta si una etapa es sensible (columnas `frost_sensitive` y `heat_sensitive` de `crop_stages`).
 FROST, HEAT = "frost", "heat"
@@ -114,7 +116,7 @@ class CropWindow:
         first = date(self.sowing_date.year, self.sowing_date.month, 1)
         current = first
         while current <= self.last_day:
-            following = date(current.year + current.month // 12, current.month % 12 + 1, 1)
+            following = date(*add_months(current.year, current.month, 1), 1)
             start, end = max(current, self.sowing_date), min(following - timedelta(days=1), self.last_day)
             periods = tuple(
                 StagePeriod(period.span, max(period.start, start), min(period.end, end))
@@ -173,8 +175,7 @@ def monthly_sowing_windows(stages: list[StageSpan], start: date, months: int = 1
     """
     windows = []
     for offset in range(months):
-        year, month_index = divmod(start.month - 1 + offset, 12)
-        year, month = start.year + year, month_index + 1
+        year, month = add_months(start.year, start.month, offset)
         sowing = date(year, month, min(start.day, calendar.monthrange(year, month)[1]))
         window = crop_window(stages, sowing)
         if window is not None:

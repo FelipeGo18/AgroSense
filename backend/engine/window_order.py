@@ -27,7 +27,7 @@ El orden (R2, R4):
 1. Las ventanas con factor limitante y sin alto riesgo; después las de alto riesgo (traen al menos información real);
    al final, las que no tienen ninguna señal que cuente y califique, por fecha.
 2. En los dos primeros grupos: la decena del factor limitante, de mayor a menor (60 a 69 es una decena; la alta es
-   90 a 100, una sola, para que un 100 no quede en una banda propia); dentro de la decena, el promedio ponderado de
+   90 a 100: un factor limitante de 100 no forma una decena propia); dentro de la decena, el promedio ponderado de
    mayor a menor, con los promedios nulos al final de su decena.
 3. Empate: la ventana más temprana.
 """
@@ -68,11 +68,11 @@ class RankedWindow:
 
 def rank_window(window: WindowSignals, weights: Mapping[str, float]) -> RankedWindow:
     """El factor limitante, el promedio ponderado y el alto riesgo de una ventana con esos pesos."""
-    rated = [
-        (name, signal, _weight(weights, name))
-        for name, signal in window.signals.items()
-        if signal.status == AVAILABLE and signal.score is not None and counts(name, _weight(weights, name), signal.critical)
-    ]
+    rated = []
+    for name, signal in window.signals.items():
+        weight = _weight(weights, name)
+        if signal.status == AVAILABLE and signal.score is not None and counts(name, weight, signal.critical):
+            rated.append((name, signal, weight))
     if not rated:
         return RankedWindow(window.sowing_start, window.harvest_estimate, None, None, None, False)
 
@@ -102,18 +102,20 @@ def best_windows(ranked: Sequence[RankedWindow], limit: int = 3) -> tuple[Ranked
     return tuple(window for window in ranked if not window.high_risk and window.limiting_score is not None)[:limit]
 
 
+def limiting_decade(limiting_score: int) -> int:
+    """La decena del factor limitante, de 0 a 9 (60 a 69 es la 6). La alta es 90 a 100, una sola: un factor
+    limitante de 100 no forma una decena propia."""
+    return min(limiting_score // 10, 9)
+
+
 def _weight(weights: Mapping[str, float], name: str) -> float:
     """El peso de una señal: 0 si falta o es negativo."""
     return max(weights.get(name, 0), 0)
 
 
-def limiting_decade(limiting_score: int) -> int:
-    """La decena del factor limitante, de 0 a 9 (60 a 69 es la 6). La alta es 90 a 100, una sola: en una escala de
-    0 a 100, el 100 no forma una banda propia."""
-    return min(limiting_score // 10, 9)
-
-
 def _order_key(window: RankedWindow) -> tuple:
+    """La llave del orden: grupo, decena del factor limitante (de mayor a menor), promedio ponderado (de mayor a
+    menor, los nulos al final de su decena) y, en empate, la ventana más temprana."""
     if window.limiting_score is None:
         return (_UNRATED, 0, False, 0, window.sowing_start)
     group = _HIGH_RISK if window.high_risk else _RANKED
