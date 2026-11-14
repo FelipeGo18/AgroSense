@@ -1,3 +1,4 @@
+import { PATHS } from "@/app/paths";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 import type { Irrigation } from "@/features/diagnosis/consult";
@@ -277,4 +278,78 @@ export function explain422(message: string): string {
     .map((field) => FIELD_WORDS[field] ?? field);
   const joined = words.length > 1 ? `${words.slice(0, -1).join(", ")} y ${words.at(-1)}` : words[0];
   return `Hay un dato que no sirve para consultar. Revise ${joined}.`;
+}
+
+/**
+ * HU-168 lo que consultó un invitado se podrá ofrecer como lote al registrarse
+ */
+
+const GUEST_KEY = "agrosense.guest-consult";
+
+export interface GuestConsult {
+  municipalityId: string;
+  areaText: string;
+  previousCrops: string[];
+  irrigation: Irrigation | "";
+}
+/** Guarda la consulta del invitado para ofrecerla como lote al crear la cuenta (HU-168). Solo en esta pestaña (R9). */
+export function writeGuestConsult(form: StrategyForm) {
+  try {
+    const data: GuestConsult = {
+      municipalityId: form.municipalityId,
+      areaText: form.areaText.trim(),
+      previousCrops: form.previousMode === "none" ? [] : form.previous.filter(Boolean),
+      irrigation: form.irrigation,
+    };
+    // Solo guarda si hay al menos un municipio: sin él no se puede crear un lote.
+    if (data.municipalityId) sessionStorage.setItem(GUEST_KEY, JSON.stringify(data));
+  } catch {
+    // Si el navegador bloquea el almacenamiento, la consulta sigue funcionando.
+  }
+}
+/** Lee la consulta que guardó el invitado. `null` si no hay o si no es válida. */
+export function readGuestConsult(): GuestConsult | null {
+  try {
+    const raw = sessionStorage.getItem(GUEST_KEY);
+    if (!raw) return null;
+
+    const data: unknown = JSON.parse(raw);
+    if (!data || typeof data !== "object") return null;
+
+    const consult = data as Record<string, unknown>;
+
+    if (
+      typeof consult.municipalityId !== "string" ||
+      !/^\d{5}$/.test(consult.municipalityId) ||
+      typeof consult.areaText !== "string" ||
+      !Array.isArray(consult.previousCrops) ||
+      !consult.previousCrops.every((id) => typeof id === "string") ||
+      (consult.irrigation !== "" && consult.irrigation !== "si" && consult.irrigation !== "no" && consult.irrigation !== "nose")
+    ) {
+      return null;
+    }
+
+    return {
+      municipalityId: consult.municipalityId,
+      areaText: consult.areaText,
+      previousCrops: consult.previousCrops,
+      irrigation: consult.irrigation,
+    };
+  } catch {
+    return null;
+  }
+}
+/** Limpia la consulta del invitado: ya se usó o se descartó. */
+export function clearGuestConsult() {
+  try {
+    sessionStorage.removeItem(GUEST_KEY);
+    sessionStorage.removeItem(AREA_KEY);
+  } catch {
+    // Si el almacenamiento no está disponible, no se puede limpiar la consulta.
+  }
+}
+
+/** Redirección sin datos de la finca en la URL (R9). */
+export function afterLoginPath(): string {
+  return readGuestConsult() ? `${PATHS.addLot}?desde=consulta` : PATHS.farm;
 }
