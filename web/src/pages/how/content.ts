@@ -7,16 +7,15 @@
 import type { MascotMood } from "@/components/mascot/Mascot";
 
 /**
- * Paradas del recorrido, en orden: cada una tiene un lugar para la mascota, que baja por la explicación paso a paso
- * (como en Inicio) y termina en el pie de página. «Pesos» y «Fuentes» salen de GET /version: sin ellos, el recorrido
- * se las salta.
+ * Paradas del recorrido, en orden: la mascota baja por los pasos numerados señalando cada tarjeta (como en Inicio) y
+ * termina en el pie de página. «Pesos» y «Fuentes» salen de GET /version: sin ellos, el recorrido se las salta.
  */
-const PATH = ["inicio", "paso-1", "paso-2", "paso-3", "paso-4", "paso-5", "paso-6", "nota", "luces"] as const;
+const PATH = ["inicio", "paso-1", "paso-2", "paso-3", "paso-4", "paso-5", "paso-6"] as const;
 export const STOPS_BASE = [...PATH, "no-hace"] as const;
 export const STOPS_WITH_DATA = [...PATH, "pesos", "fuentes", "no-hace"] as const;
 export type StopId = (typeof STOPS_WITH_DATA)[number];
 
-/** Lo que dice la mascota en una parada y a dónde invita a seguir. */
+/** Lo que dice la mascota en una sección y a dónde invita a seguir. */
 export interface GuideLine {
   say: string;
   mood: MascotMood;
@@ -24,10 +23,12 @@ export interface GuideLine {
   nextLabel: string;
 }
 
-export interface Step extends GuideLine {
+/** Un paso del camino: su tarjeta y el gesto de la mascota, que la señala (sin globo: lo explica la tarjeta). */
+export interface Step {
   id: StopId;
   title: string;
   body: string;
+  mood: MascotMood;
 }
 
 /** Cómo se decide, en el orden en que lo hace el motor. Cada paso es una parada del recorrido. */
@@ -36,72 +37,42 @@ export const STEPS: Step[] = [
     id: "paso-1",
     title: "Estrategias para su terreno",
     body: "Armamos rotaciones de hasta 3 ciclos que cumplen las reglas agronómicas, cada una con su fuente, y las comparamos por agua, suelo, ingreso y riesgo, también contra la rotación que usted ya hace. Es una comparación: no predice cuánto mejora su suelo.",
-    say: "Empiezo por su terreno: junto cultivos en orden y descarto los que rompen una regla.",
     mood: "guide",
-    next: "paso-2",
-    nextLabel: "Siguiente paso",
   },
   {
     id: "paso-2",
     title: "¿Se da en su zona?",
     body: "Primero miramos si el cultivo se da con la temperatura media de su municipio (NASA POWER, corregida por la altitud con NASADEM), según su ficha. Si no se da, se lo decimos y no evaluamos fechas.",
-    say: "Antes de mirar fechas, reviso si el cultivo aguanta la temperatura de su zona.",
-    mood: "watch",
-    next: "paso-3",
-    nextLabel: "Siguiente paso",
+    mood: "guide",
   },
   {
     id: "paso-3",
     title: "Seis señales de 0 a 100",
     body: "Para la fecha que eligió y lo que dura el cultivo: agua, heladas, calor, suelo, oferta y mercado. Cada una se compara con lo que ese cultivo necesita o aguanta.",
-    say: "Luego califico seis señales, cada una contra lo que ese cultivo necesita.",
     mood: "guide",
-    next: "paso-4",
-    nextLabel: "Siguiente paso",
   },
   {
     id: "paso-4",
     title: "Un semáforo por reglas",
     body: "Una señal mala y grave basta para el rojo: no se compensa con las buenas. Sin datos de agua no damos semáforo; sin datos de oferta, se calcula sin ella.",
-    say: "Si una señal grave sale mal, pongo rojo aunque las demás estén bien.",
-    mood: "deny",
-    next: "paso-5",
-    nextLabel: "Siguiente paso",
+    mood: "guide",
   },
   {
     id: "paso-5",
     title: "Sus prioridades",
     body: "Cada señal pesa de 0 a 5. Un riesgo grave de agua, heladas o calor cuenta siempre. Si su luz y la de AgroSense difieren, le mostramos las dos.",
-    say: "Usted dice qué le importa más. Si su luz y la mía no coinciden, le muestro las dos.",
-    mood: "watch",
-    next: "paso-6",
-    nextLabel: "Siguiente paso",
+    mood: "guide",
   },
   {
     id: "paso-6",
     title: "Las mejores fechas",
     body: "Ordenamos las fechas del año por lo que más limita a cada una y, entre parecidas, por sus prioridades. Una fecha con un riesgo grave nunca queda entre las mejores.",
-    say: "Al final ordeno las fechas: primero lo que más limita, después lo que usted prefiere.",
-    mood: "celebrate",
-    next: "nota",
-    nextLabel: "Ver cómo leo una nota",
+    mood: "guide",
   },
 ];
 
-/** Lo que dice la mascota en las paradas que no son pasos. */
-export const GUIDE: Record<"nota" | "luces" | "pesos" | "fuentes" | "no-hace", GuideLine> = {
-  nota: {
-    say: "Una nota de 70 o más es favorable; por debajo de 40, desfavorable.",
-    mood: "guide",
-    next: "luces",
-    nextLabel: "Ver las luces",
-  },
-  luces: {
-    say: "Y así se ven las luces del semáforo. Sin datos de agua, no doy luz.",
-    mood: "guide",
-    next: "pesos",
-    nextLabel: "Ver cuánto pesa cada señal",
-  },
+/** Lo que dice la mascota en las secciones de abajo, con el enlace a la siguiente (como en Inicio). */
+export const GUIDE: Record<"pesos" | "fuentes" | "no-hace", GuideLine> = {
   pesos: {
     say: "Estos son mis pesos por defecto. Usted los puede cambiar en sus prioridades.",
     mood: "guide",
