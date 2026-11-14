@@ -183,7 +183,7 @@ export function StrategiesPage() {
     setTried(true);
     if (!catalogsReady || !lotReady || Object.keys(validate(form, context)).length > 0) return;
     if (!form.lotId) writeArea(form.areaText.trim());
-    if (!user && !form.lotId) writeGuestConsult(form);
+    if (!sessionLoading && !user && !form.lotId) writeGuestConsult(form);
     setEditing(false);
     setParams(toParams(form), { preventScrollReset: true });
   };

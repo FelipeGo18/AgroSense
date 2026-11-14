@@ -291,7 +291,7 @@ describe("Sesión", () => {
 });
 
 describe("Destino después de autenticar (HU-168, R9)", () => {
-  it.each([PATHS.login, PATHS.signup])("con consulta va a agregar lote desde %s sin ?rea en la URL", { timeout: 15000 }, async (path) => {
+  it.each([PATHS.login, PATHS.signup])("con consulta va a agregar lote desde %s sin área en la URL", { timeout: 15000 }, async (path) => {
     writeGuestConsult({ ...EMPTY_STRATEGY, municipalityId: "15646", areaText: "2,73", irrigation: "no" });
     fakeApi({ [path === PATHS.login ? "POST /api/v1/auth/login" : "POST /api/v1/auth/register"]: { status: 200, body: ROSA } });
     const router = createMemoryRouter(routes, { initialEntries: [path] });
