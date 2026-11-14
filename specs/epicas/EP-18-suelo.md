@@ -22,14 +22,14 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 ### HU-181 · Suelo de la región publicado
 
 - **Historia:** Como motor, quiero el suelo de la región en tablas publicadas, para evaluarlo sin consultar servicios externos.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Adaptador de SoilGrids (ISRIC, CC BY 4.0) con caché: pH, carbono orgánico, nitrógeno, arcilla, arena y limo de 0 a 30 cm, con el intervalo del 90 % del pH y del carbono orgánico
-  - [ ] El suelo en `grid_cells` (la rejilla común de 250 m, decisión 15) y `soil_municipality` (mediana por municipio, con `cells` y `quality`) según el contrato
-  - [ ] Entrada en `sources` con licencia y versión de SoilGrids
-  - [ ] Comprobación manual en 2 municipios contra un estudio de suelos del IGAC, si lo hay (IGAC es de la región piloto supuesta en Colombia; con otra región, el estudio oficial que corresponda)
+  - [x] Adaptador de SoilGrids (ISRIC, CC BY 4.0) con caché: pH, carbono orgánico, nitrógeno, arcilla, arena y limo de 0 a 30 cm, con el intervalo del 90 % del pH y del carbono orgánico
+  - [x] El suelo en `grid_cells` (la rejilla común de 250 m, decisión 15) y `soil_municipality` (mediana por municipio, con `cells` y `quality`) según el contrato
+  - [x] Entrada en `sources` con licencia y versión de SoilGrids
+  - [x] Comprobación manual en 2 municipios contra un estudio de suelos del IGAC, si lo hay (IGAC es de la región piloto supuesta en Colombia; con otra región, el estudio oficial que corresponda)
 - **Reglas que aplican:** R7, R8
-- **Notas:** La textura (`clay_pct`, `sand_pct`, `silt_pct`, `texture_class`) también la usa el balance de agua (HU-144).
+- **Notas:** La textura (`clay_pct`, `sand_pct`, `silt_pct`, `texture_class`) también la usa el balance de agua (HU-144). **14 de noviembre de 2026 (hecho):** `pipeline/sources/soilgrids.py` baja SoilGrids 2.0 por WCS (`maps.isric.org`, sin cuenta) en mosaicos de 1° y ya en la rejilla común de 0,0025°: el servidor lleva su proyección a la rejilla con vecino más cercano, así que cada celda tiene el valor del píxel que contiene su centro, como pide el contrato. Son 30 mapas por mosaico (6 propiedades por 3 capas, más los percentiles 5 y 95 del pH y del carbono orgánico) y 13 mosaicos: 390 mapas, 57 MB en `data/raw/soilgrids/`. El servidor de ISRIC estuvo lento e inestable: la descarga va de a 2 mapas, con 5 intentos, y retoma lo que ya bajó. De 0 a 30 cm: el promedio de las capas 0-5, 5-15 y 15-30 cm ponderado por su grosor; los percentiles se promedian igual, capa por capa (una aproximación, porque los percentiles no se suman). Un píxel en 0 es «sin dato» y queda nulo (R1). La textura sale del triángulo del USDA, con los nombres en español del IGAC (fuente `usda_textura`). Dataset `2026.11.12`: suelo en 587 313 de las 593 648 celdas de `grid_cells` (6335 sin dato, agua o zona urbana) y `soil_municipality` con los 239 municipios (232 `ok` y 7 `partial`, con menos del 90 % de sus celdas con suelo). **Comprobación** frente al estudio geoquímico de suelos de la cuenca del río Bogotá del INGEOMINAS (Prieto, González, Vargas y Matamoros, Boletín Geológico n.º 41), porque no se encontró en línea un estudio del IGAC con cifras por municipio. En la Sabana (cuenca alta: Mosquera, Funza, Madrid, Cota, Tenjo y otros), el INGEOMINAS da suelos ácidos de pH 4 a 6,5, y SoilGrids da de 5,6 a 5,8: **coincide**. En la cuenca baja (Girardot, Tocaima, Ricaurte, Nilo y otros), el INGEOMINAS da pH de 6,6 a 9 y textura sobre todo franco arcillosa; SoilGrids acierta la textura (franco arcilloso) pero da pH de 5,2 a 5,4: **los suelos básicos de la cuenca baja salen ácidos**. Además, SoilGrids es muy parejo en la región: 230 de los 239 municipios salen «franco arcilloso». Es un modelo de 250 m y suaviza: se dice siempre (R10) y queda en `docs/riesgos.md`.
 
 ### HU-182 · Suelo de un lote
 

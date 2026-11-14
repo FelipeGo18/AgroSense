@@ -41,7 +41,7 @@ from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
 from pipeline import climate_normals, climate_risk, schema
 from pipeline.settings import get_settings
-from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin
+from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
@@ -242,6 +242,27 @@ def validate_frost(
         raise ValidationError(f"`climate_frost_month` con un mes o unos días fuera de lo permitido: {bad.head(3).to_dicts()}")
 
 
+def validate_soil(soil: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`soil_municipality` (HU-181) solo trae municipios publicados (R7), un pH de 0 a 14, porcentajes de 0 a 100,
+    carbono y nitrógeno no negativos, el percentil 5 por debajo del 95 y fuentes que existen (R8)."""
+    extra = set(soil["municipality_id"].to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`soil_municipality` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    bad = soil.filter(
+        ~pl.col("ph").is_between(0, 14)
+        | pl.any_horizontal(~pl.col(c).is_between(0, 100) for c in ("clay_pct", "sand_pct", "silt_pct"))
+        | (pl.col("soc_g_kg") < 0)
+        | (pl.col("nitrogen_g_kg") < 0)
+        | (pl.col("ph_p05") > pl.col("ph_p95"))
+        | (pl.col("soc_p05") > pl.col("soc_p95"))
+    )
+    if not bad.is_empty():
+        raise ValidationError(f"`soil_municipality` con un suelo fuera de lo permitido: {bad.head(3).to_dicts()}")
+    unknown = set(soil["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`soil_municipality` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`grid_cells` solo trae celdas de municipios publicados (R7) y cita fuentes que existen (R8)."""
     extra = set(grid["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
@@ -284,14 +305,15 @@ def publish(
     climate_month: pl.DataFrame | None = None,
     precip_month: pl.DataFrame | None = None,
     frost: tuple[pl.DataFrame, pl.DataFrame] | None = None,
+    soil: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
     `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
     `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). `climate`
     (`climate_day`), `climate_month` (HU-042), `precip_month` (HU-207), `frost` (`climate_risk_month` y
-    `climate_frost_month`, HU-045) y `grid` (`grid_cells`, HU-206) solo se escriben si traen filas: una tabla vacía no es
-    un dato (R1). Todo se valida antes de escribir nada.
+    `climate_frost_month`, HU-045), `soil` (`soil_municipality`, HU-181) y `grid` (`grid_cells`, HU-206) solo se
+    escriben si traen filas: una tabla vacía no es un dato (R1). Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
     if boundaries is not None:
@@ -323,6 +345,9 @@ def publish(
     has_grid = grid is not None and not grid.is_empty()
     if has_grid:
         validate_grid(grid, municipalities, sources)
+    has_soil = soil is not None and not soil.is_empty()
+    if has_soil:
+        validate_soil(soil, municipalities, sources)
     # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
     # `sources` junta filas de varias fuentes: va con las columnas del contrato, en su orden. Una fuente sin cita (por
     # ejemplo, las del catálogo) queda con `citation` nula, no inventada (R1).
@@ -343,6 +368,8 @@ def publish(
         tables["climate_risk_month"], tables["climate_frost_month"] = frost
     if has_grid:
         tables["grid_cells"] = grid
+    if has_soil:
+        tables["soil_municipality"] = soil
     if prices is not None:
         tables |= {"market_price_day": prices, "market_price_latest": latest, "market_price_season": season}
     if month is not None:
@@ -403,8 +430,14 @@ def publish(
         coverage = f"{by_year['municipality_id'].n_unique()} municipios con altitud; días con mínima ≤ {threshold:g} °C por mes, {years}"
         manifest["tables"]["climate_frost_month"] = {"rows": by_year.height, "coverage": coverage}
     if has_grid:
-        coverage = f"Celdas de 0,0025° de {grid['municipality_id'].n_unique()} municipios; sin suelo hasta HU-181"
+        with_soil = grid.filter(pl.col("ph").is_not_null()).height
+        soil_text = f"suelo de SoilGrids en {with_soil} celdas" if with_soil else "sin suelo (falta la caché de SoilGrids)"
+        coverage = f"Celdas de 0,0025° de {grid['municipality_id'].n_unique()} municipios; {soil_text}"
         manifest["tables"]["grid_cells"] = {"rows": grid.height, "coverage": coverage}
+    if has_soil:
+        partial = soil.filter(pl.col("quality") == "partial").height
+        coverage = f"{soil.height} municipios, mediana de sus celdas de 0 a 30 cm; {partial} partial"
+        manifest["tables"]["soil_municipality"] = {"rows": soil.height, "coverage": coverage}
     if prices is not None:
         manifest["tables"]["market_price_day"] = {
             "rows": prices.height,
@@ -487,6 +520,37 @@ def terrain_from_cache(
         "quedan con la altitud nula (R1)",
     )
     return municipalities, nasadem.grid_cells(cells), [nasadem.source(meta)]
+
+
+def soil_from_cache(
+    grid: pl.DataFrame | None, boundaries: pl.DataFrame, cache: Path
+) -> tuple[pl.DataFrame | None, pl.DataFrame | None, list[dict[str, Any]]]:
+    """El suelo de SoilGrids (HU-181): `grid_cells` con el suelo, `soil_municipality` y sus fuentes.
+
+    Sin `grid_cells` (falta NASADEM) o sin la caché de SoilGrids, la rejilla queda como estaba y no hay
+    `soil_municipality`: lo demás se publica igual, y la señal de suelo es `insufficient_data` (R1).
+    """
+    if grid is None:
+        return grid, None, []
+    try:
+        cells, meta = soilgrids.read_cache(nasadem.tiles(boundaries), cache)
+    except FileNotFoundError as error:
+        log.warning("source_missing", source=soilgrids.SOURCE_ID, detail=f"Se publica sin el suelo de SoilGrids: {error}")
+        return grid, None, []
+    grid = soilgrids.with_soil(grid, cells)
+    table = soilgrids.soil_municipality(grid)
+    empty = grid.filter(pl.col("ph").is_null()).height
+    log.info(
+        "source_read",
+        source=soilgrids.SOURCE_ID,
+        rows_read=grid.height,
+        rows_kept=grid.height - empty,
+        rows_rejected=empty,
+        reasons={"no_soil_pixel": empty},
+        detail=f"SoilGrids: suelo en {grid.height - empty} de {grid.height} celdas; {empty} sin dato (agua o zona urbana) quedan "
+        f"nulas (R1); soil_municipality con {table.height} municipios",
+    )
+    return grid, table, soilgrids.sources(meta)
 
 
 def climate_from_cache(
@@ -588,12 +652,14 @@ def build(
     power_cache: Path | None = None,
     dem_cache: Path | None = None,
     rain_cache: Path | None = None,
+    soil_cache: Path | None = None,
 ) -> dict[str, Any]:
     # Las cachés de SIPSA, NASA POWER y NASADEM se buscan al correr, no al importar: así las pruebas las apuntan a una
     # carpeta vacía y nunca leen las de quien las corre.
     market_cache = market_cache or sipsa.CACHE
     power_cache = power_cache or nasa_power.CACHE
     dem_cache = dem_cache or nasadem.CACHE
+    soil_cache = soil_cache or soilgrids.CACHE
     rain_cache = rain_cache or imerg.CACHE
     region = load_region()
     version, name = region["dataset_version"], region["region"]["name"]
@@ -623,6 +689,7 @@ def build(
     boundaries = dane_mgn.boundaries(features)
     if download:
         nasadem.download(nasadem.tiles(boundaries), dem_cache)
+        soilgrids.download(nasadem.tiles(boundaries), soil_cache)
         nasa_power.download(nasa_power.cells(municipalities), power_cache)
         # IMERG pide una cuenta de NASA Earthdata: sin el token se baja lo demás y se avisa.
         token = get_settings().earthdata_token
@@ -632,6 +699,7 @@ def build(
             log.warning("source_skipped", source=imerg.SOURCE_ID, detail="Sin AGROSENSE_EARTHDATA_TOKEN no se baja GPM IMERG (HU-207)")
     # Primero la altitud: el clima se corrige con ella (HU-044).
     municipalities, grid, terrain_sources = terrain_from_cache(municipalities, boundaries, dem_cache)
+    grid, soil, soil_sources = soil_from_cache(grid, boundaries, soil_cache)
     municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
     precip_month, rain_sources = precip_from_cache(region, boundaries, rain_cache)
     frost = frost_tables(region, climate)
@@ -675,17 +743,32 @@ def build(
         )
         own.append(sipsa.source(prices, downloaded_at))
         crop_products = load_crops()
-    sources = pl.concat([pl.DataFrame([*own, *terrain_sources, *climate_sources, *rain_sources]), catalog_sources], how="diagonal_relaxed")
+    sources = pl.concat(
+        [pl.DataFrame([*own, *terrain_sources, *soil_sources, *climate_sources, *rain_sources]), catalog_sources], how="diagonal_relaxed"
+    )
     check_signal_sources(region["region"]["id"], set(sources["source_id"].to_list()))
     crops = (catalog["version"], crops_table, stages_table)
     return publish(
-        region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid, climate_month, precip_month, frost
+        region,
+        municipalities,
+        sources,
+        folder,
+        boundaries,
+        crops,
+        prices,
+        crop_products,
+        climate,
+        grid,
+        climate_month,
+        precip_month,
+        frost,
+        soil,
     )
 
 
 SIGNAL_SOURCES_FILE = signal_sources.SIGNAL_SOURCES_FILE
 # Las fuentes que tienen adaptador en el pipeline: si una no se publica, es porque falta su caché, no un error.
-ADAPTERS = frozenset(module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem, imerg))
+ADAPTERS = frozenset(module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem, imerg, soilgrids))
 
 
 def check_signal_sources(region_id: str, published: set[str]) -> None:
