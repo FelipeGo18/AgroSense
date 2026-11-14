@@ -58,6 +58,15 @@ def test_sin_indice_y_la_curva_nula_la_razon_es_la_de_sin_datos(thresholds):
     assert NO_CURVE_REASON != NO_DATA_REASON
 
 
+def test_con_indice_nan_y_la_curva_nula_la_razon_es_la_de_sin_datos(thresholds):
+    result = market_signal(float("nan"), 5, thresholds)
+    assert result.status == INSUFFICIENT_DATA
+    assert result.level is None
+    assert result.score is None
+    assert result.reasons == (NO_DATA_REASON,)
+    assert NO_CURVE_REASON not in result.reasons
+
+
 def test_la_curva_de_mercado_del_proyecto_es_nula(thresholds):
     assert thresholds.signals["market"].curve is None
 
