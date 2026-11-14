@@ -12,6 +12,7 @@ from alembic.config import Config
 from sqlalchemy import inspect, text
 
 from backend.db import migrate
+from backend.db.state import expected_revision
 from tests.conftest import alembic_config
 
 
@@ -40,7 +41,7 @@ def test_antes_de_migrar_se_copia_la_base_y_la_copia_sirve(engine, database_url,
     try:
         saved = migrate.migrate(plain_config(database_url), database_url, target="1.2", down=True, folder=tmp_path)
         assert saved is not None and saved.parent == tmp_path
-        assert saved.name.startswith(f"{database_url.database}_") and saved.name.endswith("_de-1.3_a-1.2.dump")
+        assert saved.name.startswith(f"{database_url.database}_") and saved.name.endswith(f"_de-{expected_revision()}_a-1.2.dump")
         # Un volcado de PostgreSQL de verdad, y con lo que había antes de migrar.
         content = saved.read_bytes()
         assert content[:5] == b"PGDMP" and b"usage_daily" in content
@@ -66,7 +67,8 @@ def test_si_la_copia_falla_no_se_migra(engine, database_url, tmp_path, monkeypat
     monkeypatch.setattr(migrate, "backup", broken)
     with pytest.raises(migrate.BackupError):
         migrate.migrate(plain_config(database_url), database_url, target="-1", down=True, folder=tmp_path)
-    assert migrate.current_revision(database_url) == "1.3"
+    # Sigue en la última migración, sea cual sea: una migración nueva no debe romper esta prueba (HU-229).
+    assert migrate.current_revision(database_url) == expected_revision()
     assert "usage_daily" in inspect(engine).get_table_names()
 
 

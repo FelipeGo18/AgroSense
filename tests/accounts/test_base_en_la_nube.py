@@ -8,6 +8,7 @@ from structlog.testing import capture_logs
 
 from backend.config.settings import Settings, get_settings, is_local
 from backend.db import migrate
+from backend.db.state import expected_revision
 from tests.conftest import alembic_config
 
 # Una cadena de conexión de la nube. Usuario, clave y host de ejemplo (R5).
@@ -91,7 +92,8 @@ def test_al_arrancar_sin_migrar_solo_avisa_que_falta_una_migracion(engine, datab
         assert migrate.current_revision(database_url) == "1.2"  # no la tocó
         pending = [entry for entry in logs if entry["event"] == "migration_pending"]
         assert len(pending) == 1
-        assert (pending[0]["log_level"], pending[0]["current_migration"], pending[0]["expected_migration"]) == ("warning", "1.2", "1.3")
+        entry = pending[0]
+        assert (entry["log_level"], entry["current_migration"], entry["expected_migration"]) == ("warning", "1.2", expected_revision())
     finally:
         command.upgrade(config, "head")
 
@@ -99,7 +101,7 @@ def test_al_arrancar_sin_migrar_solo_avisa_que_falta_una_migracion(engine, datab
 def test_al_arrancar_sin_migrar_y_al_dia_lo_dice(engine, database_url):
     with capture_logs() as logs:
         migrate.on_startup(database_url, alembic_config(database_url), auto=False)
-    assert [(entry["event"], entry["current_migration"]) for entry in logs] == [("migration_up_to_date", "1.3")]
+    assert [(entry["event"], entry["current_migration"]) for entry in logs] == [("migration_up_to_date", expected_revision())]
 
 
 # ---------- Una cadena mal escrita ----------

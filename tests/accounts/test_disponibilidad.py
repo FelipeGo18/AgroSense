@@ -14,6 +14,8 @@ from tests.conftest import alembic_config
 
 ROSA = {"username": "rosa.samaca", "password": "papa-criolla-2026", "display_name": "Rosa", "consent_version": 3, "consent_accepted": True}
 LOGIN = {"username": ROSA["username"], "password": ROSA["password"]}
+# La última migración del código, sea cual sea: una migración nueva no debe romper estas pruebas (HU-229).
+HEAD = state.expected_revision()
 
 
 def offline_client(database_url) -> TestClient:
@@ -63,7 +65,7 @@ def test_con_la_base_apagada_la_api_sigue_respondiendo(database_url):
             "available": False,
             "reason": "database_down",
             "current_migration": None,
-            "expected_migration": "1.3",
+            "expected_migration": HEAD,
         }
     finally:
         app.dependency_overrides.clear()
@@ -98,7 +100,7 @@ def test_con_la_base_apagada_no_se_la_espera_en_cada_peticion(monkeypatch):
             assert state.accounts_state(Db()).reason == "database_down"
         assert Db.attempts == 1  # veinte peticiones más y ni un intento de conexión
         # Aunque la base ya haya vuelto, se sigue diciendo «apagada» hasta que pase la espera.
-        Db.answer = "1.3"
+        Db.answer = HEAD
         now[0] += state.DOWN_MEMORY_SECONDS - 0.1
         assert state.accounts_state(Db()).reason == "database_down"
         now[0] += 0.2
@@ -120,14 +122,14 @@ def test_con_una_migracion_pendiente_las_cuentas_se_apagan_y_el_log_dice_cual(cl
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "accounts_migration_pending"
     entry = next(entry for entry in logs if entry["event"] == "accounts_unavailable")
-    assert (entry["reason"], entry["current_migration"], entry["expected_migration"]) == ("migration_pending", "1.3", "2.1")
-    assert entry["detail"] == "Cuentas no disponibles (503) porque la migración 2.1 no se completó; la base de datos está en la 1.3"
+    assert (entry["reason"], entry["current_migration"], entry["expected_migration"]) == ("migration_pending", HEAD, "2.1")
+    assert entry["detail"] == f"Cuentas no disponibles (503) porque la migración 2.1 no se completó; la base de datos está en la {HEAD}"
     health = client.get("/api/v1/health").json()
     assert health["status"] == "ok"
     assert health["accounts"] == {
         "available": False,
         "reason": "migration_pending",
-        "current_migration": "1.3",
+        "current_migration": HEAD,
         "expected_migration": "2.1",
     }
 
@@ -136,8 +138,8 @@ def test_con_todo_al_dia_las_cuentas_estan_disponibles(client):
     assert client.get("/api/v1/health").json()["accounts"] == {
         "available": True,
         "reason": "ok",
-        "current_migration": "1.3",
-        "expected_migration": "1.3",
+        "current_migration": HEAD,
+        "expected_migration": HEAD,
     }
 
 
@@ -160,14 +162,14 @@ def test_al_arrancar_si_la_migracion_falla_lo_registra_con_las_dos_versiones_y_d
     assert len(logs) == 1
     entry = logs[0]
     assert (entry["event"], entry["log_level"]) == ("migration_failed", "error")
-    assert (entry["current_migration"], entry["expected_migration"]) == ("1.3", "1.3")
+    assert (entry["current_migration"], entry["expected_migration"]) == (HEAD, HEAD)
     assert "no se completó: columna duplicada" in entry["detail"]
 
 
 def test_al_arrancar_con_todo_al_dia_no_hace_nada(engine, database_url):
     with capture_logs() as logs:
         migrate.on_startup(database_url, alembic_config(database_url))
-    assert [(entry["event"], entry["current_migration"]) for entry in logs] == [("migration_up_to_date", "1.3")]
+    assert [(entry["event"], entry["current_migration"]) for entry in logs] == [("migration_up_to_date", HEAD)]
 
 
 # ---------- Logs de la terminal ----------
