@@ -1,15 +1,18 @@
 """Siembras y cosechas de un lote: dividir y juntar terreno (HU-165; specs/02-contratos.md)."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import select
 
 from backend.accounts.farm_models import Season
 from backend.accounts.trace_models import ActivityEvent
+from common.region import region_today
 
 ROSA = {"username": "rosa.samaca", "password": "papa-criolla-2026", "display_name": "Rosa", "consent_version": 3, "consent_accepted": True}
-TODAY = datetime.now(UTC).date()
+# «Hoy» es el de la región (Bogotá), no el de UTC (decidido por Felipe el 11 de nov.): si no, cerca de la medianoche
+# UTC, una siembra "de hace 60 días" queda a 59 o 61 según el reloj del runner de CI.
+TODAY = region_today()
 
 
 def ago(days: int) -> str:
