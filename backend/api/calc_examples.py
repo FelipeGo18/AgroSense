@@ -373,6 +373,7 @@ ROTATIONS_EMPTY = {
             "crop_ids": ["cebolla_bulbo", "arveja", "papa"],
             "cycle": 1,
             "kind": "soil_ph",
+            "crop_id": "cebolla_bulbo",
             "reason": "La cebolla tolera pH de 6,0 a 7,5 y el suelo estimado va de 5,2 a 5,8",
             "source_ids": ["upra_cebolla_bulbo", "soilgrids"],
         },
