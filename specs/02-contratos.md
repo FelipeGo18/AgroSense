@@ -797,12 +797,12 @@ Más `harvest_estimate` y `harvest_basis`. El cruce entre el riesgo y la etapa l
     "reasons": ["Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"]
   },
   "overall_default": {
-    "light": "yellow",
+    "light": "red",
     "action": "rotate",
     "high_risk": false,
     "weights_basis": "default",
     "limiting_signal": "supply",
-    "reasons": ["Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"]
+    "reasons": ["Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"]
   },
   "weights": { "water": 5, "frost": 3, "heat": 3, "soil": 3, "supply": 0, "market": 3 },
   "signals": {
