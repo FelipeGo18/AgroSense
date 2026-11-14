@@ -22,7 +22,7 @@ weights:
     set_on: "2026-11-14"
   frost:
     weight: 4
-    why: "Importa mucho: la helada es el riesgo principal del altiplano, y NASA POWER cuenta menos heladas de las que hay. Una helada moderada ya cuenta como desfavorable."
+    why: "Importa mucho, por prudencia: la helada es el riesgo principal del altiplano. Una helada moderada ya cuenta como desfavorable para la luz."
     set_by: "Felipe"
     set_on: "2026-11-14"
   heat:
@@ -37,11 +37,11 @@ weights:
     set_on: "2026-11-14"
   supply:
     weight: 1
-    why: "Pesa poco: la oferta es un dato que suma, no lo que decide. Si a usted le importa, súbala."
+    why: "Pesa poco en el orden de las ventanas: la oferta es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Si a usted le importa más, súbala; si no le importa, póngala en 0."
     set_by: "Felipe"
     set_on: "2026-11-14"
   market:
     weight: 1
-    why: "Pesa poco: el precio es un dato que suma, no lo que decide. Todavía no tiene cortes con fuente."
+    why: "Pesa poco en el orden de las ventanas: el precio es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Todavía no tiene cortes con fuente."
     set_by: "Felipe"
     set_on: "2026-11-14"

@@ -80,13 +80,13 @@
             ]
           },
           "overall_default": {
-            "light": "yellow",
+            "light": "red",
             "action": "rotate",
             "high_risk": false,
             "weights_basis": "default",
             "limiting_signal": "supply",
             "reasons": [
-              "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+              "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
             ]
           },
           "weights": {
@@ -450,13 +450,13 @@
             ]
           },
           "overall_default": {
-            "light": "yellow",
+            "light": "red",
             "action": "rotate",
             "high_risk": false,
             "weights_basis": "default",
             "limiting_signal": "supply",
             "reasons": [
-              "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+              "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
             ]
           },
           "weights": {
@@ -699,13 +699,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -881,13 +881,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -1063,13 +1063,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -1349,13 +1349,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -1530,13 +1530,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -1801,13 +1801,13 @@
                     ]
                   },
                   "overall_default": {
-                    "light": "yellow",
+                    "light": "red",
                     "action": "rotate",
                     "high_risk": false,
                     "weights_basis": "default",
                     "limiting_signal": "supply",
                     "reasons": [
-                      "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                     ]
                   },
                   "weights": {
@@ -1983,13 +1983,13 @@
                     ]
                   },
                   "overall_default": {
-                    "light": "yellow",
+                    "light": "red",
                     "action": "rotate",
                     "high_risk": false,
                     "weights_basis": "default",
                     "limiting_signal": "supply",
                     "reasons": [
-                      "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                     ]
                   },
                   "weights": {
@@ -2165,13 +2165,13 @@
                     ]
                   },
                   "overall_default": {
-                    "light": "yellow",
+                    "light": "red",
                     "action": "rotate",
                     "high_risk": false,
                     "weights_basis": "default",
                     "limiting_signal": "supply",
                     "reasons": [
-                      "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                      "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                     ]
                   },
                   "weights": {
@@ -2499,13 +2499,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -2681,13 +2681,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -2863,13 +2863,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -3142,13 +3142,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -3323,13 +3323,13 @@
                       ]
                     },
                     "overall_default": {
-                      "light": "yellow",
+                      "light": "red",
                       "action": "rotate",
                       "high_risk": false,
                       "weights_basis": "default",
                       "limiting_signal": "supply",
                       "reasons": [
-                        "Con el criterio de AgroSense, la oferta desfavorable pone la luz en amarillo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
                       ]
                     },
                     "weights": {
@@ -6062,11 +6062,11 @@
       "weights_version": "1.0.0",
       "weights_reasons": {
         "water": "Importancia normal. La señal ya es prudente: se califica con la lluvia del año seco, la que se supera en 4 de cada 5 años. Un riesgo grave de agua cuenta siempre.",
-        "frost": "Importa mucho: la helada es el riesgo principal del altiplano, y NASA POWER cuenta menos heladas de las que hay. Una helada moderada ya cuenta como desfavorable.",
+        "frost": "Importa mucho, por prudencia: la helada es el riesgo principal del altiplano. Una helada moderada ya cuenta como desfavorable para la luz.",
         "heat": "Pesa menos: en el altiplano la temperatura máxima rara vez pasa de lo que aguantan estos cultivos. Un calor crítico cuenta siempre.",
         "soil": "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición de su lote.",
-        "supply": "Pesa poco: la oferta es un dato que suma, no lo que decide. Si a usted le importa, súbala.",
-        "market": "Pesa poco: el precio es un dato que suma, no lo que decide. Todavía no tiene cortes con fuente."
+        "supply": "Pesa poco en el orden de las ventanas: la oferta es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Si a usted le importa más, súbala; si no le importa, póngala en 0.",
+        "market": "Pesa poco en el orden de las ventanas: el precio es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Todavía no tiene cortes con fuente."
       },
       "sources": [
         {
