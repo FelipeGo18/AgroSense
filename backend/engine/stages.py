@@ -13,11 +13,13 @@ fecha de hoy y las etapas llegan como argumentos (R4, R6).
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+# Si un riesgo se evalúa en la ventana: los valores de `status` del contrato, definidos una vez en el motor.
+from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, NOT_APPLICABLE
+from common.dates import add_months
+
 CALENDAR = "calendar"
 # Para qué riesgo se pregunta si una etapa es sensible (columnas `frost_sensitive` y `heat_sensitive` de `crop_stages`).
 FROST, HEAT = "frost", "heat"
-# Si un riesgo se evalúa en la ventana (los valores de `status` del contrato).
-AVAILABLE, NOT_APPLICABLE, INSUFFICIENT_DATA = "available", "not_applicable", "insufficient_data"
 
 
 @dataclass(frozen=True)
@@ -117,7 +119,7 @@ class CropWindow:
         first = date(self.sowing_date.year, self.sowing_date.month, 1)
         current = first
         while current <= self.last_day:
-            following = date(current.year + current.month // 12, current.month % 12 + 1, 1)
+            following = date(*add_months(current.year, current.month, 1), 1)
             start, end = max(current, self.sowing_date), min(following - timedelta(days=1), self.last_day)
             periods = tuple(
                 StagePeriod(period.span, max(period.start, start), min(period.end, end))
@@ -168,6 +170,25 @@ def crop_window(stages: list[StageSpan], sowing_date: date) -> CropWindow | None
         periods.append(StagePeriod(span, start, end))
         start = end + timedelta(days=1)
     return CropWindow(sowing_date=sowing_date, harvest_estimate=start, periods=tuple(periods))
+
+
+def monthly_sowing_windows(stages: list[StageSpan], start: date, months: int = 12) -> tuple[CropWindow, ...]:
+    """Una ventana por mes de siembra, desde el mes en curso de `start` y durante `months` meses (HU-192;
+    specs/01-reglas.md, «La ventana de siembra»: las ventanas se comparan por mes).
+
+    Cada ventana empieza el día 1 de su mes (specs/02-contratos.md, «Fechas»), la misma fecha con que la web pide el
+    diagnóstico. El mes en curso de `start` cuenta aunque su día 1 ya haya pasado, como en la fecha de siembra del
+    diagnóstico. Cada ventana es la de `crop_window` para esa fecha. Si `crop_window` no da ventana (sin etapas o con
+    una etapa sin días), ese mes se omite (R1). `start` entra como argumento: el motor no lee el reloj (R4).
+    """
+    windows = []
+    for offset in range(months):
+        year, month = add_months(start.year, start.month, offset)
+        sowing = date(year, month, 1)
+        window = crop_window(stages, sowing)
+        if window is not None:
+            windows.append(window)
+    return tuple(windows)
 
 
 def stage_today(stages: list[StageSpan], sowing_date: date, today: date) -> StageToday:

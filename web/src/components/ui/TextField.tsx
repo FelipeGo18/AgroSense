@@ -22,7 +22,7 @@ export function TextField({ label, hint, error, type = "text", className = "", .
       <label htmlFor={id} className="font-bold">
         {label}
       </label>
-      <div className="relative flex h-12 items-center">
+      <div className="relative flex h-12 items-center lg:h-11">
         <Plate
           c={10}
           fill="var(--color-superficie-panel)"

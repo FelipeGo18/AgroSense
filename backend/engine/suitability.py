@@ -8,9 +8,11 @@ from dataclasses import dataclass
 
 from backend.engine.curve import crop_curve, score_from_curve
 
+# `insufficient_data` es también un valor de la aptitud: el mismo de `status`, definido una vez en el motor.
+from backend.engine.signal_score import INSUFFICIENT_DATA
+
 SUITABLE = "suitable"
 NOT_SUITABLE = "not_suitable"
-INSUFFICIENT_DATA = "insufficient_data"
 
 # Qué límite absoluto cruzó un `not_suitable`: lo decide el motor, no quien arma el texto de la API (R6, «la API
 # es una capa delgada»). `None` cuando es `suitable` o `insufficient_data`.
