@@ -145,7 +145,8 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Evalúa los meses de la ventana en que el cultivo está en una etapa con `frost_sensitive`: el porcentaje de años con al menos una helada en cualquiera de esos meses, contado con `climate_frost_month` (HU-045; método en el contrato, «Heladas de una ventana»); las etapas de cada mes salen de las etapas por calendario (HU-220). Cuando existan `climate_risk_week` (HU-193, P1) y las etapas por temperatura acumulada (HU-150, P1), evalúa por semana
   - [ ] `score` con la curva de HU-196; el nivel sale de la calificación
   - [ ] La razón nombra la fecha de siembra, la etapa y el mes («Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años»)
-  - [ ] `not_applicable` si ninguna etapa es sensible; `insufficient_data` si falta `climate_risk_month` o la ficha no dice la sensibilidad con fuente
+  - [ ] `not_applicable` solo si todas las etapas de la ventana dicen que no son sensibles; `insufficient_data` si falta `climate_risk_month`, o si ninguna etapa es sensible y alguna no lo dice con fuente (R1)
+  - [ ] Si la ventana toca etapas sensibles y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`sensitive_months` las da en `unknown`); si ninguna es sensible y alguna es nula, `insufficient_data`, nunca `not_applicable` (R1; decidido por Felipe el 14 nov 2026, PR #69)
   - [ ] Grado crítico en `thresholds.yaml`. Una helada crítica cuenta siempre, aunque el agricultor le ponga peso 0
   - [ ] Caso de referencia: helada crítica con agua y oferta favorables da rojo y la acción es `other_window`
   - [ ] Cuando exista «Mi cultivo» en el calendario (HU-179, P1), su bloque `frost` sale de este mismo cálculo
@@ -164,7 +165,8 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C»)
   - [ ] Grado crítico en `thresholds.yaml`. Un calor crítico cuenta siempre, aunque el agricultor le ponga peso 0
   - [ ] Sin `heat_max_c` con fuente o sin `tmax_p90_c`: `insufficient_data`, nivel y `score` nulos y a las limitaciones; no cambia la luz (R1, R8)
-  - [ ] `not_applicable` cuando la ficha dice que ninguna etapa es sensible al calor
+  - [ ] Si la ventana toca etapas sensibles al calor y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`unknown` de `sensitive_months`); si ninguna es sensible y alguna es nula, `insufficient_data` (R1; decidido por Felipe el 14 nov 2026, PR #69). El `heat_max_c` del maíz es 35 °C, la temperatura que daña el polen en la floración (Purdue), no el máximo absoluto de EcoCrop
+  - [ ] `not_applicable` solo si todas las etapas de la ventana dicen que no son sensibles al calor; si ninguna lo es y alguna no lo dice, `insufficient_data` (R1)
   - [ ] Caso de referencia: calor crítico con agua y oferta favorables da rojo y la acción es `other_window`
   - [ ] Cuando exista «Mi cultivo» en el calendario (HU-179, P1), su bloque `heat` sale de este mismo cálculo
 - **Reglas que aplican:** R1, R2, R4, R5, R8
