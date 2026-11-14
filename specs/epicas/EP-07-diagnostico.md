@@ -253,15 +253,15 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-217 · Comparar dos periodos de la historia de la zona
 
 - **Historia:** Como motor, quiero comparar el clima de un municipio y las mejores ventanas de un cultivo entre dos periodos de la misma fuente, para que el agricultor vea qué cambió en su zona y adapte su finca.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Función pura: recibe `climate_change_month` de los dos periodos, los años de cada periodo de `climate_month` y `precip_month`, la ficha del cultivo, el suelo y la oferta del municipio y la configuración; no lee archivos (R6)
-  - [ ] Por mes (1 a 12): `frost_freq_pct`, `precip_normal_mm` y `tmax_p90_c` de cada periodo y su diferencia (después menos antes), cada uno con `status` (R1)
+  - [x] Por mes (1 a 12): `frost_freq_pct`, `precip_normal_mm` y `tmax_p90_c` de cada periodo y su diferencia (después menos antes), cada uno con `status` (R1)
   - [ ] Las mejores ventanas por mes de siembra en cada periodo, con el orden de HU-192 y los pesos por defecto de `weights.yaml`. Solo cambia el clima: la oferta, el mercado y el suelo son los mismos en los dos periodos, y la respuesta lo dice en `limitations`
   - [ ] El agua de cada ventana usa el balance de HU-144 sobre los años de su periodo, con la fuente de lluvia del periodo
   - [ ] Primero la aptitud (HU-191): si el cultivo no es apto, no hay ventanas y la razón lo dice
   - [ ] Un mes sin datos suficientes en alguno de los dos periodos tiene la diferencia en `insufficient_data`; nunca se compara con un solo periodo ni se rellena (R1)
-  - [ ] Cada razón dice el periodo de cada valor («Entre 1981 y 2000 heló en enero en 30 de cada 100 años; entre 2005 y 2024, en 18») y ninguna dice qué pasará (decisión 4, R5)
+  - [x] Cada razón dice el periodo de cada valor («Entre 1981 y 2000 heló en enero en 30 de cada 100 años; entre 2005 y 2024, en 18») y ninguna dice qué pasará (decisión 4, R5)
   - [ ] Los periodos llegan de la configuración versionada, no del código; misma entrada, misma salida (R4)
   - [ ] Caso de referencia: con datos de ejemplo en que las heladas de enero bajan, la diferencia de enero es negativa y la razón lo cuenta como historia
 - **Reglas que aplican:** R1, R2, R4, R5, R6, R8
