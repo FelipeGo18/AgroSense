@@ -50,8 +50,8 @@ from backend.engine.changes import (
 from backend.engine.suitability import ABOVE_MAX, NOT_SUITABLE, Suitability, suitability
 from common.dates import add_months
 from common.region import region_today
-from common.text import format_number
 from common.signal_sources import get_signal_sources
+from common.text import format_number
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
 
