@@ -8,8 +8,8 @@ señales por su cuenta, no leen archivos ni el reloj.
 Para cada ventana, entre las señales que **cuentan** (`counts`: peso mayor que 0, o riesgo grave de clima) y
 **califican** (`status = available` con calificación):
 
-- `limiting_signal` y `limiting_score`: la señal más baja (ley del mínimo). En un empate, la primera en el orden de
-  las señales de la ventana.
+- `limiting_signal` y `limiting_score`: la señal más baja (ley del mínimo). En un empate, la primera en el orden fijo
+  de `P0_SIGNALS` (las demás al final, por nombre), sin depender del orden del mapa.
 - `weighted_score`: el promedio de sus calificaciones ponderado por los pesos, redondeado hacia arriba desde la mitad.
   Nulo si la suma de sus pesos es 0 (solo cuentan riesgos graves de clima con peso 0): no hay prioridades que
   promediar.
@@ -39,6 +39,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from backend.engine.signal_score import AVAILABLE, SignalScore, counts, round_half_up
+from common.signal_sources import P0_SIGNALS
 
 # Grupos del orden: primero las calificadas sin alto riesgo, después las de alto riesgo, al final las sin calificar.
 _RANKED, _HIGH_RISK, _UNRATED = 0, 1, 2
@@ -76,7 +77,8 @@ def rank_window(window: WindowSignals, weights: Mapping[str, float]) -> RankedWi
     if not rated:
         return RankedWindow(window.sowing_start, window.harvest_estimate, None, None, None, False)
 
-    limiting_name, limiting, _ = min(rated, key=lambda item: item[1].score)
+    rated.sort(key=lambda item: _signal_order(item[0]))
+    limiting_name, limiting, _ = min(rated, key=lambda item: (item[1].score, _signal_order(item[0])))
     total_weight = sum(weight for _, _, weight in rated)
     weighted = None if total_weight <= 0 else round_half_up(sum(signal.score * weight for _, signal, weight in rated) / total_weight)
     return RankedWindow(
@@ -106,6 +108,13 @@ def limiting_decade(limiting_score: int) -> int:
     """La decena del factor limitante, de 0 a 9 (60 a 69 es la 6). La alta es 90 a 100, una sola: un factor
     limitante de 100 no forma una decena propia."""
     return min(limiting_score // 10, 9)
+
+
+def _signal_order(name: str) -> tuple[int, str]:
+    """El orden fijo de las señales para desempatar (R4): las del P0 en su orden y las demás al final, por nombre."""
+    if name in P0_SIGNALS:
+        return (P0_SIGNALS.index(name), name)
+    return (len(P0_SIGNALS), name)
 
 
 def _weight(weights: Mapping[str, float], name: str) -> float:

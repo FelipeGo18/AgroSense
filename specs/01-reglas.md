@@ -151,13 +151,13 @@ Acción según la luz:
 
 Casi nunca hay un mes perfecto. El orden sigue el método de la FAO para aptitud de cultivos: **primero el factor que más limita, después lo que el agricultor prefiere**.
 
-1. **Factor que más limita:** la ventana vale lo que vale su señal más baja entre las que cuentan (ley del mínimo). Una ventana con un factor muy malo nunca queda arriba, por buenos que sean los demás.
+1. **Factor que más limita:** la ventana vale lo que vale su señal más baja entre las que cuentan (ley del mínimo). Una ventana con un factor muy malo nunca queda arriba, por buenos que sean los demás. En un empate de la señal más baja, el factor limitante es la primera en el orden `water`, `frost`, `heat`, `soil`, `supply`, `market`; las demás señales van después, por nombre (R4).
 2. **Prioridades:** entre ventanas cuyo factor limitante cae en la misma decena (por ejemplo, de 60 a 69), ordena el promedio de las calificaciones ponderado por los pesos.
    - La decena alta es de 90 a 100: un factor limitante de 100 no forma una decena propia.
    - Un peso que falta, o negativo, vale 0. Si las señales que cuentan tienen todas peso 0 (solo cuentan riesgos graves de clima), el promedio ponderado es nulo y la ventana va al final de su decena.
 3. Una señal sin datos o que no aplica no califica: sale del orden y se agrega a las limitaciones (R1).
    - Una ventana sin ninguna señal que cuente y califique no tiene factor limitante ni promedio (nulos) y no es de alto riesgo: no hay evidencia de riesgo, solo falta de datos. Va después de las de alto riesgo, por fecha, y nunca entra en `best_windows` (HU-192, 14 de noviembre de 2026).
-4. Una ventana con alguna señal crítica que cuenta se marca `high_risk`: va siempre después de las demás y nunca entra en `best_windows` (R2).
+4. Una ventana con alguna señal crítica que cuenta se marca `high_risk`: va después de todas las que tienen calificación y no son de alto riesgo, y nunca entra en `best_windows` (R2).
 5. Empate: gana la ventana más temprana (R4).
 6. La respuesta muestra todas las ventanas con su calificación por señal y cuál es su factor limitante, para que se vea qué gana y qué sacrifica cada una.
 

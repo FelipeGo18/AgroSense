@@ -349,13 +349,46 @@ def test_100_y_95_estan_en_la_misma_decena_y_manda_el_promedio_ponderado():
     assert len({limiting_decade(w.limiting_score) for w in ranked}) == 1
 
 
-def test_en_empate_del_minimo_el_limitante_es_una_de_las_empatadas():
+def test_en_empate_del_minimo_gana_la_primera_en_el_orden_de_p0():
     w = window(1, water=sig(55), frost=sig(55), heat=sig(80), soil=sig(90))
 
     (ranked,) = order_windows([w], ALL_3)
 
     assert ranked.limiting_score == 55
-    assert ranked.limiting_signal in {"water", "frost"}
+    assert ranked.limiting_signal == "water"
+
+
+def test_el_desempate_no_depende_del_orden_del_mapa():
+    start = date(2027, 1, 1)
+    signals = {"frost": sig(55), "water": sig(55), "heat": sig(80), "soil": sig(90)}
+    w = WindowSignals(start, start + timedelta(days=150), signals)
+
+    (ranked,) = order_windows([w], ALL_3)
+
+    assert list(signals)[0] == "frost"
+    assert ranked.limiting_signal == "water"
+
+
+def test_una_senal_fuera_de_p0_empatada_va_al_final():
+    start = date(2027, 1, 1)
+    signals = {"excess_rain": sig(55), "market": sig(55), "heat": sig(80)}
+    weights = {**ALL_3, "excess_rain": 3}
+    w = WindowSignals(start, start + timedelta(days=150), signals)
+
+    (ranked,) = order_windows([w], weights)
+
+    assert ranked.limiting_signal == "market"
+
+
+def test_dos_senales_fuera_de_p0_empatadas_gana_la_primera_por_nombre():
+    start = date(2027, 1, 1)
+    signals = {"harvest_weather": sig(55), "excess_rain": sig(55), "water": sig(90)}
+    weights = {"water": 3, "excess_rain": 3, "harvest_weather": 3}
+    w = WindowSignals(start, start + timedelta(days=150), signals)
+
+    (ranked,) = order_windows([w], weights)
+
+    assert ranked.limiting_signal == "excess_rain"
 
 
 def test_cada_ventana_conserva_sus_fechas_y_el_resultado_es_una_tupla():
