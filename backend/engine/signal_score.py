@@ -81,10 +81,11 @@ class SignalScore:
     critical: bool
 
 
-def _round_half_up(score: float) -> int:
+def round_half_up(value: float) -> int:
     """Redondea hacia arriba desde la mitad: nunca el redondeo al par de `round()` (`round(68.5)` da 68, pero
-    aquí 68,5 tiene que dar 69). `score` siempre es 0-100, nunca negativo, así que no hace falta `math.copysign`."""
-    return math.floor(score + 0.5)
+    aquí 68,5 tiene que dar 69). Lo usan las calificaciones (0-100) y los porcentajes de las razones (en valor
+    absoluto): `value` nunca es negativo, así que no hace falta `math.copysign`."""
+    return math.floor(value + 0.5)
 
 
 def score_signal(
@@ -118,7 +119,7 @@ def score_signal(
     else:
         points = curve
 
-    score = _round_half_up(score_from_curve(points, float(value)))
+    score = round_half_up(score_from_curve(points, float(value)))
     if score >= thresholds.favorable:
         level = FAVORABLE
     elif score >= thresholds.moderate:

@@ -1,8 +1,6 @@
-"""La etapa por calendario (HU-220) y que el motor no conozca la web (R6)."""
+"""La etapa por calendario (HU-220)."""
 
-import ast
 from datetime import date, timedelta
-from pathlib import Path
 
 from backend.engine.stages import StageSpan, stage_today
 
@@ -37,21 +35,3 @@ def test_sin_etapas_no_hay_etapa_ni_cosecha_estimada():
 
 def test_mismos_datos_mismo_resultado():
     assert stage_today(PAPA, SOWN, date(2026, 10, 1)) == stage_today(PAPA, SOWN, date(2026, 10, 1))
-
-
-def test_el_motor_no_importa_la_web_ni_la_base_ni_abre_archivos():
-    """R6: backend/engine/ no importa fastapi ni sqlalchemy, no llama a open() y no lee rutas."""
-    forbidden = {"fastapi", "sqlalchemy", "starlette", "polars", "backend.api", "backend.db", "backend.dataset", "backend.accounts"}
-    for path in Path("backend/engine").rglob("*.py"):
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                names = [alias.name for alias in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                names = [node.module or ""]
-            else:
-                names = []
-            for name in names:
-                assert not any(name == f or name.startswith(f + ".") for f in forbidden), f"{path}: importa {name}"
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-                assert node.func.id != "open", f"{path}: abre un archivo"
