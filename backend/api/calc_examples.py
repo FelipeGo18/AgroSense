@@ -114,7 +114,11 @@ DIAGNOSIS_OK = {
         "green", "sow", "farmer", "frost", ["Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"]
     ),
     "overall_default": _light(
-        "red", "rotate", "default", "supply", ["Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"]
+        "red",
+        "rotate",
+        "default",
+        "supply",
+        ["Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"],
     ),
     "weights": WEIGHTS,
     "signals": SIGNALS_OK,
