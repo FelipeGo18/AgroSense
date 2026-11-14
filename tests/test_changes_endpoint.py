@@ -7,7 +7,6 @@ from fastapi.testclient import TestClient
 
 from backend.api import calculations
 from backend.api.calc_models import ChangesResponse
-from backend.api.catalogs import require_dataset
 from backend.api.main import app
 from backend.dataset import load
 from backend.db.session import get_db
@@ -50,7 +49,9 @@ def changes_api(monkeypatch):
 
     holder = {"dataset": dataset}
     previous_overrides = app.dependency_overrides.copy()
-    app.dependency_overrides[require_dataset] = lambda: holder["dataset"]
+    # calc_dataset llama al cargador y añade las versiones al log. Sustituimos
+    # solo la lectura para mantener ese recorrido real en las pruebas.
+    monkeypatch.setattr(calculations, "require_dataset", lambda: holder["dataset"])
 
     try:
         with TestClient(app) as client:
@@ -250,6 +251,8 @@ def test_power_and_imerg_use_their_own_periods(split_sources_api):
     assert any("reanálisis" in text for text in body["limitations"])
     assert any("desde 2000" in text for text in body["limitations"])
     assert "Aviso de lluvia de ejemplo." in body["limitations"]
+    assert any("7 de cada 10" in text for text in body["limitations"])
+    assert any("7,3 °C" in text and "artefacto" in text for text in body["limitations"])
     assert any("2001–2012" in text and "2013–2024" in text for text in body["reasons"])
 
 

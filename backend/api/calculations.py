@@ -409,6 +409,21 @@ def _change_configuration(
 
     if "nasa_power" in {climate_source, rain_source}:
         limitations.append("NASA POWER es un reanálisis, no una observación directa.")
+        # HU-216, comprobación del PR #79: hasta +7,3 °C en tierra caliente.
+        limitations.append(
+            "En tierra caliente, NASA POWER muestra aumentos de temperatura de hasta 7,3 °C "
+            "que pueden ser un artefacto del reanálisis. No deben interpretarse como un calentamiento local confirmado."
+        )
+
+    if rain_source in {"nasa_power", "imerg"}:
+        # HU-216, PR #79: la revisión inicial midió 68 %; la repetición con
+        # los mismos años y sin el 2021 defectuoso midió 69 %. No es una
+        # incertidumbre por municipio: es el resultado regional de esa comparación.
+        limitations.append(
+            "Al comparar los registros de la región, NASA POWER y GPM IMERG indicaron cambios de lluvia opuestos "
+            "en cerca de 7 de cada 10 comparaciones. El cambio mensual de lluvia depende de la fuente "
+            "y no confirma por sí solo que su municipio se haya vuelto más seco o más lluvioso."
+        )
 
     if "imerg" in {climate_source, rain_source}:
         limitations.append("GPM IMERG tiene datos desde 2000; sus periodos de comparación son más cortos.")
@@ -484,6 +499,7 @@ def changes(
     if dataset.climate_change_month is None:
         limitations.append("La tabla de comparación histórica no está publicada; los indicadores se muestran sin datos suficientes.")
 
+    explain(request, "Qué cambió: el cultivo no es apto en su municipio; clima de dos periodos comparado")
     return ChangesResponse(
         request={
             "municipality_id": municipality_id,

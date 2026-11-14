@@ -115,3 +115,72 @@ def test_input_order_does_not_change_result(periods):
     first = compare_climate_months(municipality_id="15238", periods=periods, rows=rows)
     second = compare_climate_months(municipality_id="15238", periods=periods, rows=reversed(rows))
     assert first == second
+
+
+def test_difference_is_rounded_to_one_decimal(periods):
+    result = compare_climate_months(
+        municipality_id="15238",
+        periods=periods,
+        rows=[row("before", tmax_p90_c=20.1), row("after", tmax_p90_c=21.4)],
+    )
+    assert result["months"][0]["tmax_p90_c"]["change"] == 1.3
+    assert "+1,3 °C" in result["reasons"][2]
+
+
+def test_missing_january_before_keeps_after_values(periods):
+    """Caso que antes se comprobaba a mano con scripts/simular_cambios.py."""
+    result = compare_climate_months(
+        municipality_id="15238",
+        periods=periods,
+        rows=[row("after", frost_freq_pct=18, precip_normal_mm=35, tmax_p90_c=21.4)],
+    )
+    january = result["months"][0]
+    for indicator, expected in (("frost_freq_pct", 18), ("precip_normal_mm", 35), ("tmax_p90_c", 21.4)):
+        assert january[indicator] == {"status": "insufficient_data", "before": None, "after": expected, "change": None}
+    assert len(result["months"]) == 12
+    assert all("No hay datos suficientes" in reason for reason in result["reasons"])
+
+
+def test_reasons_summarize_largest_difference_without_technical_source_ids(periods):
+    result = compare_climate_months(
+        municipality_id="15238",
+        periods=periods,
+        rows=[
+            row("before", frost_freq_pct=30),
+            row("after", frost_freq_pct=18),
+            row("before", month=2, frost_freq_pct=50),
+            row("after", month=2, frost_freq_pct=70),
+        ],
+    )
+    assert len(result["reasons"]) == 3
+    frost = result["reasons"][0]
+    assert "febrero" in frost
+    assert "50 %" in frost and "70 %" in frost
+    assert "+20 puntos porcentuales" in frost
+    assert "2 de los 12 meses" in frost
+    assert "NASA POWER" in frost
+    assert all("nasa_power" not in text and "p90" not in text for text in result["reasons"])
+    assert result["months"][0]["frost_freq_pct"]["change"] == -12
+
+
+def test_tied_summaries_choose_first_month_deterministically(periods):
+    rows = [
+        row("before", month=2, frost_freq_pct=50),
+        row("after", month=2, frost_freq_pct=60),
+        row("before", frost_freq_pct=30),
+        row("after", frost_freq_pct=20),
+    ]
+    result = compare_climate_months(municipality_id="15238", periods=periods, rows=rows)
+    assert "enero" in result["reasons"][0]
+    assert "-10 puntos porcentuales" in result["reasons"][0]
+
+
+def test_zero_change_summary_is_distinct_from_missing_data(periods):
+    result = compare_climate_months(
+        municipality_id="15238",
+        periods=periods,
+        rows=[row("before", frost_freq_pct=0), row("after", frost_freq_pct=0)],
+    )
+    assert "no presentó diferencias a un decimal" in result["reasons"][0]
+    assert "1 de los 12 meses" in result["reasons"][0]
+    assert "No hay datos suficientes" in result["reasons"][1]

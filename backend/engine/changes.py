@@ -23,8 +23,45 @@ MONTH_NAMES = (
 INDICATORS = {
     "frost_freq_pct": ("frecuencia de heladas", "%", "puntos porcentuales"),
     "precip_normal_mm": ("lluvia normal", "mm", "mm"),
-    "tmax_p90_c": ("temperatura máxima p90", "°C", "°C"),
+    "tmax_p90_c": ("temperatura de los días más calurosos", "°C", "°C"),
 }
+
+SOURCE_NAMES = {
+    "nasa_power": "NASA POWER",
+    "imerg": "GPM IMERG",
+    "gpm_imerg": "GPM IMERG",
+    "ejemplo": "los datos de ejemplo",
+}
+
+
+def _summary(months: list[dict[str, Any]], indicator: str, pair: "PeriodPair") -> str:
+    """Una razón por indicador: mayor diferencia absoluta, sin umbral inventado.
+
+    El detalle de todos los meses queda en months. Empate: el primer mes.
+    Se resumen diferencias, no causas ni significación estadística.
+    """
+    label, unit, change_unit = INDICATORS[indicator]
+    source = SOURCE_NAMES.get(pair.before.source_id, "la fuente indicada en los periodos")
+    before_years = f"{pair.before.start_year}–{pair.before.end_year}"
+    after_years = f"{pair.after.start_year}–{pair.after.end_year}"
+    available = [month for month in months if month[indicator]["status"] == "available"]
+    if not available:
+        return f"No hay datos suficientes para comparar la {label} entre {before_years} y {after_years}, según {source}."
+
+    month = max(available, key=lambda item: abs(item[indicator]["change"]))
+    comparison = month[indicator]
+    coverage = f"Se pudieron comparar {len(available)} de los 12 meses."
+    if comparison["change"] == 0:
+        return f"La {label} no presentó diferencias a un decimal entre {before_years} y {after_years}, según {source}. {coverage}"
+
+    before = f"{comparison['before']:g}".replace(".", ",")
+    after = f"{comparison['after']:g}".replace(".", ",")
+    change = f"{comparison['change']:+g}".replace(".", ",")
+    return (
+        f"La mayor diferencia mensual de la {label} fue en {MONTH_NAMES[month['month'] - 1]}: "
+        f"{before} {unit} en {before_years} y {after} {unit} en {after_years} "
+        f"({change} {change_unit}), según {source}. {coverage}"
+    )
 
 
 @dataclass(frozen=True)
@@ -104,20 +141,19 @@ def compare_climate_months(
         index[key] = row
 
     months = []
-    reasons = []
 
     for month in range(1, 13):
         month_result: dict[str, Any] = {"month": month}
-        month_name = MONTH_NAMES[month - 1]
-
-        for indicator, (label, unit, change_unit) in INDICATORS.items():
+        for indicator in INDICATORS:
             pair = rain_periods if indicator == "precip_normal_mm" else periods
             before_row = index.get((pair.before.source_id, pair.before.period_id, month))
             after_row = index.get((pair.after.source_id, pair.after.period_id, month))
             before = _number(before_row.get(indicator) if before_row is not None else None)
             after = _number(after_row.get(indicator) if after_row is not None else None)
             available = before is not None and after is not None
-            difference = after - before if available else None
+            difference = round(after - before, 1) if available else None
+            if difference == 0:
+                difference = 0.0
 
             month_result[indicator] = {
                 "status": "available" if available else "insufficient_data",
@@ -126,21 +162,6 @@ def compare_climate_months(
                 "change": difference,
             }
 
-            before_years = f"{pair.before.start_year}–{pair.before.end_year}"
-            after_years = f"{pair.after.start_year}–{pair.after.end_year}"
-
-            if available:
-                reasons.append(
-                    f"En {month_name}, la {label} fue {before:g} {unit} "
-                    f"en {before_years} y {after:g} {unit} en {after_years} "
-                    f"según {pair.before.source_id}; "
-                    f"la diferencia fue {difference:+g} {change_unit}."
-                )
-            else:
-                reasons.append(
-                    f"No hay datos suficientes para comparar la {label} "
-                    f"de {month_name} entre {before_years} y {after_years} "
-                    f"según {pair.before.source_id}."
-                )
         months.append(month_result)
+    reasons = [_summary(months, indicator, rain_periods if indicator == "precip_normal_mm" else periods) for indicator in INDICATORS]
     return {"months": months, "reasons": reasons}
