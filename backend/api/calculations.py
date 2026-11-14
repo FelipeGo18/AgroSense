@@ -41,6 +41,7 @@ from backend.config.weights import get_default_weights
 from backend.dataset import Dataset, Municipality
 from backend.db.session import get_db
 from backend.engine.suitability import ABOVE_MAX, NOT_SUITABLE, Suitability, suitability
+from common.dates import add_months
 from common.region import region_today
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
@@ -53,8 +54,8 @@ def _examples(**values: tuple[str, Any]) -> dict[str, Any]:
 
 
 def _months_ahead(day: date, months: int) -> date:
-    year, month = divmod(day.month - 1 + months, 12)
-    return date(day.year + year, month + 1, 1)
+    """El día 1 del mes que queda `months` meses después del de `day`."""
+    return date(*add_months(day.year, day.month, months), 1)
 
 
 def _check_sowing_date(sowing_date: date) -> None:
@@ -107,6 +108,15 @@ def _check_lot(request: Request, db: Db, lot_id: uuid.UUID | None, municipality_
     if municipality_id is not None and lot.municipality_id != municipality_id:
         raise ApiError(422, "invalid_input", "Ese lote es de otro municipio.", log="Cálculo rechazado: el lote es de otro municipio")
     return lot
+
+
+def calc_dataset(request: Request) -> Dataset:
+    """El dataset publicado (o 503, como `require_dataset`), y sus versiones para la línea del log de la petición: los
+    endpoints de cálculo dicen con qué dataset y qué reglas respondieron (R4; contrato, «Logs de la terminal»). Solo
+    las versiones: el cuerpo de la consulta nunca va al log (R9)."""
+    dataset = require_dataset()
+    request.state.versions = {"dataset": dataset.version, "rules": dataset.rules_version}
+    return dataset
 
 
 def _not_implemented(request: Request, what: str) -> None:
@@ -189,7 +199,7 @@ def _suitability_reason(
         **ex.responses(401, 404, 422, 500, 501, 503),
     },
 )
-def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Depends(require_dataset), db: Db = Depends(get_db)) -> Any:
+def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Depends(calc_dataset), db: Db = Depends(get_db)) -> Any:
     """Diagnóstico de una ventana de siembra (HU-076). Es historia de la zona, no un pronóstico."""
     _check_place(dataset, body.municipality_id)
     _check_crops(dataset, [body.crop_id], only_crops=True)
@@ -272,7 +282,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         **ex.responses(401, 404, 422, 501, 503),
     },
 )
-def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depends(require_dataset), db: Db = Depends(get_db)) -> Any:
+def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depends(calc_dataset), db: Db = Depends(get_db)) -> Any:
     """Estrategias de rotación de hasta 3 ciclos, comparadas contra la rotación actual (HU-084, HU-223)."""
     _check_place(dataset, body.municipality_id)
     _check_crops(dataset, [*body.previous_crop_ids, *(body.current_crop_ids or [])])
@@ -289,7 +299,7 @@ def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depend
         **ex.responses(422, 501, 503),
     },
 )
-def water_plans(body: WaterPlanRequest, request: Request, dataset: Dataset = Depends(require_dataset)) -> Any:
+def water_plans(body: WaterPlanRequest, request: Request, dataset: Dataset = Depends(calc_dataset)) -> Any:
     """Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10)."""
     _check_place(dataset, body.municipality_id)
     # Un abono verde también crece y necesita agua: el ciclo de una estrategia puede serlo (HU-215). Como en el
@@ -311,7 +321,7 @@ def changes(
     municipality_id: MunicipalityId = Query(),
     crop_id: CropId = Query(),
     irrigated: bool | None = Query(None),
-    dataset: Dataset = Depends(require_dataset),
+    dataset: Dataset = Depends(calc_dataset),
 ) -> Any:
     """«Qué cambió en su zona» (HU-218): historia comparada, nunca pronóstico."""
     _check_place(dataset, municipality_id)
@@ -332,7 +342,7 @@ def trends(
     municipality_id: MunicipalityId = Query(),
     crop_id: CropId = Query(),
     sowing_date: date = Query(),
-    dataset: Dataset = Depends(require_dataset),
+    dataset: Dataset = Depends(calc_dataset),
 ) -> Any:
     """Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad."""
     _check_place(dataset, municipality_id)

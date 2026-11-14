@@ -34,10 +34,7 @@ function Loading() {
 }
 
 /** Pantallas ya diseñadas en Figma que todavía no están programadas: cada enlace lleva a un lugar que lo dice. */
-const PENDING: { path: string; title: string }[] = [
-  { path: PATHS.howItWorks, title: "¿Cómo funciona?" },
-  { path: PATHS.changes, title: "Qué cambió en su zona" },
-];
+const PENDING: { path: string; title: string }[] = [{ path: PATHS.changes, title: "Qué cambió en su zona" }];
 
 const pending = ({ path, title }: (typeof PENDING)[number]): RouteObject => ({
   path,
@@ -72,6 +69,7 @@ const pages: RouteObject[] = [
         path: PATHS.harvest(":lotId", ":seasonId"),
         lazy: async () => ({ Component: (await import("@/pages/farm/HarvestPage")).HarvestPage }),
       },
+      { path: PATHS.howItWorks, lazy: async () => ({ Component: (await import("@/pages/how/HowItWorksPage")).HowItWorksPage }) },
       { path: PATHS.dataPolicy, lazy: async () => ({ Component: (await import("@/pages/policy/PolicyPage")).PolicyPage }) },
       { path: PATHS.prices, lazy: async () => ({ Component: (await import("@/pages/prices/PricesPage")).PricesPage }) },
       // «Consultar» es la entrada a las estrategias de rotación (HU-214, decisión 12).
