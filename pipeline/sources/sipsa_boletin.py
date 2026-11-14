@@ -25,6 +25,7 @@ from typing import Any
 import polars as pl
 from openpyxl import load_workbook
 
+from common.months import MONTH_NAMES
 from pipeline.settings import get_settings
 from pipeline.sources import sipsa
 from pipeline.sources.fetch import fetch
@@ -38,7 +39,6 @@ PAGE_URL = (
 # Así abrevia el DANE los meses en el nombre del archivo: «anex-SIPSADiario-06nov2026.xlsx» (verificado para los 12
 # meses el 9 de noviembre de 2026; septiembre es «sep», no «sept»).
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
-MONTH_NAMES = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
 # La columna de cada central en el anexo, por su código de SIPSA (`fuenId`, el `market_id` de `region.yaml`).
 COLUMNS = {"1": "Bogotá, Corabastos", "9": "Tunja"}
 HEADER = "Precio $/Kg"

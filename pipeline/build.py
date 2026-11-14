@@ -287,6 +287,16 @@ def lapse_rate_entry(region: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def climate_normal_entry(region: dict[str, Any]) -> dict[str, Any]:
+    """El periodo normal del clima, para el manifiesto (HU-077): la señal de heladas cuenta los años de ese periodo y
+    pide al menos `min_years` con dato. Como el gradiente, lo fija la versión del dataset y la API nunca usa otro (R4).
+    Sin `climate_normal` en `region.yaml`, no se publica: las señales que lo necesitan son `insufficient_data` (R1)."""
+    normal = climate_normals.Normal.from_region(region)
+    if normal is None:
+        return {}
+    return {"climate_normal": {"first_year": normal.first_year, "last_year": normal.last_year, "min_years": normal.min_years}}
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -383,7 +393,7 @@ def publish(
         # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
         "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "region": {**region["region"], **lapse_rate_entry(region)},
+        "region": {**region["region"], **lapse_rate_entry(region), **climate_normal_entry(region)},
         # Los periodos de «Qué cambió» llegan con HU-216.
         "periods": [],
         "tables": {

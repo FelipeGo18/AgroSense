@@ -20,6 +20,11 @@
       "temp_max_c_per_m": 0.0058,
       "temp_min_c_per_m": 0.0059,
       "source_id": "cenicafe_lapse_rate"
+    },
+    "climate_normal": {
+      "first_year": 2015,
+      "last_year": 2024,
+      "min_years": 8
     }
   },
   "periods": [

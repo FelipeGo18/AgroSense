@@ -83,6 +83,9 @@ class Dataset:
     markets: tuple[tuple[str, str], ...] = ()
     # La rejilla de 250 m con altitud (HU-191). Nula si el dataset no la trae (R1).
     grid: Grid | None = None
+    # Los días con helada de cada mes de cada año (`climate_frost_month`, HU-045), para la señal de heladas (HU-077).
+    # Nula si el dataset no la trae: entonces la señal es `insufficient_data` (R1).
+    climate_frost_month: pl.DataFrame | None = None
 
 
 def load(folder: Path) -> Dataset:
@@ -110,6 +113,8 @@ def load(folder: Path) -> Dataset:
         market_month = pl.read_parquet(month_path) if month_path.exists() else None
         grid_path = folder / "grid_cells.parquet"
         grid = _grid(grid_path) if grid_path.exists() else None
+        frost_path = folder / "climate_frost_month.parquet"
+        climate_frost_month = pl.read_parquet(frost_path) if frost_path.exists() else None
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -143,6 +148,7 @@ def load(folder: Path) -> Dataset:
         market_last_date=market_latest["market_date"].max() if market_latest is not None and market_latest.height else None,
         markets=_markets(manifest["region"], market_latest),
         grid=grid,
+        climate_frost_month=climate_frost_month,
     )
 
 

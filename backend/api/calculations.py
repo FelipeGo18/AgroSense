@@ -43,6 +43,7 @@ from backend.db.session import get_db
 from backend.engine.suitability import ABOVE_MAX, NOT_SUITABLE, Suitability, suitability
 from common.dates import add_months
 from common.region import region_today
+from common.text import format_number
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
 
@@ -129,13 +130,6 @@ def _format_temperature(value: float) -> str:
     return f"{value:.1f}".replace(".", ",")
 
 
-def _format_limit(value: float) -> str:
-    """Formatea límite: sin decimales si es entero, con coma si tiene decimales."""
-    if value == int(value):
-        return str(int(value))
-    return f"{value:.1f}".replace(".", ",")
-
-
 def _get_article(crop: dict[str, Any]) -> str:
     """El artículo ('el' o 'la') del nombre del cultivo, tal como lo trae el catálogo (`article`).
 
@@ -180,8 +174,8 @@ def _suitability_reason(
     temperature = _temperature_phrase(zone, municipality)
 
     if result.exceeded == ABOVE_MAX:
-        return f"{temperature} pasa de la que aguanta {article} {name_lower} (hasta {_format_limit(tmean_max_c)} °C)"
-    return f"{temperature} no alcanza la que necesita {article} {name_lower} (desde {_format_limit(tmean_min_c)} °C)"
+        return f"{temperature} pasa de la que aguanta {article} {name_lower} (hasta {format_number(tmean_max_c)} °C)"
+    return f"{temperature} no alcanza la que necesita {article} {name_lower} (desde {format_number(tmean_min_c)} °C)"
 
 
 @router.post(
