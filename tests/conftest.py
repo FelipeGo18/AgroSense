@@ -118,6 +118,12 @@ SAMPLE_META = {
 SAMPLE_REGION = {
     "dataset_version": "0.0.0-pruebas",
     "region": {"id": "pruebas", "name": "Región de ejemplo de las pruebas", "country": "CO", "departments": ["15", "25"]},
+    # Las tasas reales de la región piloto (Cenicafé): el manifiesto las publica y la API corrige la altitud del lote con ellas.
+    "temperature_lapse_rate": {
+        "temp_max_c_per_m": 0.0058,
+        "temp_min_c_per_m": 0.0059,
+        "source": {"source_id": "cenicafe_lapse_rate"},
+    },
 }
 
 
