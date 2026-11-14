@@ -159,7 +159,7 @@ export function Combobox({
                   role="option"
                   aria-disabled="true"
                   aria-selected="false"
-                  className="relative flex min-h-[52px] items-center px-4 lg:min-h-11 text-texto-secundario"
+                  className="relative flex min-h-[52px] items-center px-4 text-texto-secundario lg:min-h-11"
                 >
                   {message}
                 </li>
@@ -173,7 +173,7 @@ export function Combobox({
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => select(option)}
                     onMouseEnter={() => setActive(i)}
-                    className={`relative flex min-h-[52px] cursor-pointer items-center lg:min-h-11 justify-between gap-4 pr-4 pl-11 ${i === active ? "font-bold" : ""}`}
+                    className={`relative flex min-h-[52px] cursor-pointer items-center justify-between gap-4 pr-4 pl-11 lg:min-h-11 ${i === active ? "font-bold" : ""}`}
                   >
                     {i === active && (
                       <>
