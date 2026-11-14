@@ -835,7 +835,7 @@ Más `harvest_estimate` y `harvest_basis`. El cruce entre el riesgo y la etapa l
       "score": 94,
       "counts": true,
       "indicators": ["tmax_p90_c"],
-      "reasons": ["De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C"]
+      "reasons": ["De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"]
     },
     "soil": {
       "status": "available",

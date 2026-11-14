@@ -69,7 +69,7 @@ SIGNALS_OK = {
         "available",
         "favorable",
         94,
-        ["De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"],
+        ["De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"],
         ["tmax_p90_c"],
     ),
     "soil": _signal(
