@@ -20,7 +20,7 @@
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | La app desplegada en Google Cloud Run | P0 | M | pendiente | Cambiada el 14 nov: Cloud Run con el crédito del evento. Haider y David |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-229 | Migraciones revisadas y aplicadas con GitHub Actions | P0 | M | en curso | Revisión, comentario con el SQL y bloqueo probados en un PR (14 nov); las pruebas ya no tienen fija la última migración. Falta aplicar una migración real en la nube con su copia cifrada |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-234 | La base de datos de producción | P0 | S | pendiente | Nueva (14 nov): Cloud SQL, separada de la del equipo. Haider y David |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-235 | Desplegar al fusionar en `produccion` | P0 | M | pendiente | Nueva (14 nov): workflow con migraciones y Cloud Run. Haider y David |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-235 | Desplegar al fusionar en `produccion` | P0 | M | pendiente | Nueva (14 nov): workflow con migraciones y Cloud Run, y logs para Cloud Logging (`severity`, `message` y trace). Haider y David |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-236 | El dominio con HTTPS | P0 | S | pendiente | Nueva (14 nov): dominio gratis de GoDaddy Registry (Porkbun). Haider y David |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-031 | Datos de EVA normalizados por DIVIPOLA | P0 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-032 | Variación del área sembrada y participación departamental | P0 | M | pendiente | |
@@ -51,7 +51,7 @@
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | hecha | Dos crons del servicio `market` (9 nov): boletín diario y serie completa semanal; la API solo lee. Contrato aprobado por Felipe (10 nov) |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | en curso | Fichas de los 7 cultivos y el descanso con fuente por valor; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-199 | Límites óptimos y absolutos de cada cultivo | P0 | M | en curso | Rangos de EcoCrop y UPRA con validación; falta revisión cruzada |
-| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | en curso | `weights.yaml` 1.0.0 aprobado por Felipe (14 nov): agua 3, heladas 4, calor 2, suelo 2, oferta 1, mercado 1; falta mostrarlos en el panel de HU-122 |
+| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | hecha | `weights.yaml` 1.0.0 aprobado por Felipe (14 nov): agua 3, heladas 4, calor 2, suelo 2, oferta 1, mercado 1; se muestran con su porqué en «¿Cómo funciona?» (14 nov) |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | L | hecha | Contrato aprobado por Felipe el 11 nov (decisión 16); siete reglas: dos con fuente externa (Penn State, ICA) y cinco con el criterio propio registrado `criterio_equipo_2026` (enmienda de R8: solo reglas centrales con cada número apoyado en un dato externo; «criterio del equipo» en la respuesta y la web); `papa_espera` con 3 y 2 ciclos (11 nov, PR #46); los cinco criterios de `soil_health` tienen regla; mergeada el 14 nov (PR #62) |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-063 | Suelo, heladas y abonos verdes en el catálogo | P0 | M | en curso | pH con fuente; helada y calor por etapa con fuente desde HU-142 (14 nov); faltan los abonos verdes y el descanso con sus reglas, las reglas de suelo y la revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-227 | Valor como forraje en el catálogo | P1 | S | pendiente | Nueva (8 nov, decisión 14) |
@@ -95,7 +95,7 @@
 | [EP-11](epicas/EP-11-escenarios.md) | HU-112 | Endpoint de escenarios | P1 | S | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-113 | Comparación de escenarios | P1 | M | pendiente | |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | en curso | Suma estrategias y «Qué cambió». Tres PR: estrategias y suelo, diagnóstico y aptitud, «Qué cambió» y cuentas. Casos de ejemplo y casos reales con dataset fijado |
-| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources`, `/version` y `catalog/sources.yaml` (11 nov, lluvia de POWER temporal con aviso); faltan las fuentes NASA sin adaptador y la web |
+| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources`, `/version` y `catalog/sources.yaml` (11 nov, lluvia de POWER temporal con aviso); «¿Cómo funciona?» en la web con fuentes, versión y pesos (14 nov); faltan las fuentes NASA sin adaptador |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-123 | Reconstruir el dataset con un comando | P0 | S | hecha | `pipeline.build` publica y revisa contra el manifiesto; `--verificar` solo revisa (8 nov) |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-131 | Dos casos reales para la demo | P0 | S | pendiente | |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-132 | Video y descripción de la entrega | P0 | M | pendiente | |
