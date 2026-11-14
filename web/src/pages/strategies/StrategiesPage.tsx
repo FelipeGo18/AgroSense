@@ -288,6 +288,10 @@ export function StrategiesPage() {
                 Le mostramos estrategias de dos o tres ciclos que cumplen las reglas de rotación y se dan en su zona, comparadas por agua,
                 suelo, ingreso y riesgo según lo que a usted le importa. Es la historia de su zona, no un pronóstico.
               </p>
+              <p>
+                Un <strong>ciclo</strong> es una siembra completa: de la siembra a la cosecha de un cultivo, o el tiempo de un abono verde o
+                de un descanso. Cada ciclo empieza cuando termina el anterior.
+              </p>
             </header>
 
             {lotMissing && (
@@ -443,6 +447,7 @@ export function StrategiesPage() {
 
                     <ChoiceGroup<2 | 3>
                       legend="¿Cuántos ciclos quiere planear?"
+                      hint="Según el cultivo, cada ciclo dura de 3 a 6 meses. Por ejemplo, papa, luego avena con vicia, luego arveja: 3 ciclos, cerca de 14 meses."
                       choices={[
                         { value: 2, label: "2 ciclos" },
                         { value: 3, label: "3 ciclos" },

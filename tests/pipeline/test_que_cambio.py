@@ -138,7 +138,8 @@ def test_un_calor_imposible_o_mas_anos_de_los_del_periodo_no_se_publican(broken)
     periods = climate_change.periods_from_region(REGION)
     build.validate_change(table, municipalities, sources, periods)
     imerg_rows = pl.col("source_id") == "imerg"
-    wrong = table.with_columns(pl.when(imerg_rows).then(broken).otherwise(pl.col(broken.meta.output_name())).alias(broken.meta.output_name()))
+    name = broken.meta.output_name()
+    wrong = table.with_columns(pl.when(imerg_rows).then(broken).otherwise(pl.col(name)).alias(name))
     with pytest.raises(build.ValidationError):
         build.validate_change(wrong, municipalities, sources, periods)
 
