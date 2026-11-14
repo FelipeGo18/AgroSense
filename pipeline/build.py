@@ -211,9 +211,16 @@ def validate_precip_month(month: pl.DataFrame, municipalities: pl.DataFrame, sou
         raise ValidationError(f"`precip_month` cita una fuente que no está en `sources`: {sorted(unknown)}")
 
 
-def validate_frost(risk: pl.DataFrame, frost: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+def validate_frost(
+    risk: pl.DataFrame, frost: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame, threshold_source: str | None
+) -> None:
     """`climate_risk_month` y `climate_frost_month` (HU-045) solo traen municipios publicados (R7), meses de 1 a 12,
-    porcentajes de 0 a 100, días que caben en el mes y fuentes que existen (R8)."""
+    porcentajes de 0 a 100, días que caben en el mes y fuentes que existen (R8). El umbral de helada de `region.yaml` cita
+    una fuente que también está en `sources` (R8)."""
+    if threshold_source is None or threshold_source not in set(sources["source_id"].to_list()):
+        raise ValidationError(
+            f"El umbral de helada de pipeline/region.yaml (`frost.source_id`: {threshold_source!r}) no está en `sources` (R8)."
+        )
     known = set(municipalities["municipality_id"].to_list())
     for name, table in (("climate_risk_month", risk), ("climate_frost_month", frost)):
         extra = set(table["municipality_id"].unique().to_list()) - known
@@ -312,7 +319,7 @@ def publish(
         validate_precip_month(precip_month, municipalities, sources)
     has_frost = frost is not None and not frost[0].is_empty()
     if has_frost:
-        validate_frost(frost[0], frost[1], municipalities, sources)
+        validate_frost(frost[0], frost[1], municipalities, sources, climate_risk.frost_source(region))
     has_grid = grid is not None and not grid.is_empty()
     if has_grid:
         validate_grid(grid, municipalities, sources)

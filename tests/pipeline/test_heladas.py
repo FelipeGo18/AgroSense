@@ -96,12 +96,26 @@ def test_una_frecuencia_fuera_de_0_a_100_no_se_publica():
     by_year = climate_risk.climate_frost_month(climate_day(date(1991, 1, 1), date(2020, 12, 31), lambda day: 6.0), THRESHOLD)
     bad = table.with_columns(pl.lit(120.0).alias("frost_freq_pct"))
     municipalities = pl.DataFrame({"municipality_id": ["15001"]})
-    sources = pl.DataFrame({"source_id": ["nasa_power"]})
+    sources = pl.DataFrame({"source_id": ["nasa_power", "mapa_zarc_2025"]})
+    zarc = "mapa_zarc_2025"
     with pytest.raises(build.ValidationError, match="frecuencia"):
-        build.validate_frost(bad, by_year, municipalities, sources)
+        build.validate_frost(bad, by_year, municipalities, sources, zarc)
     with pytest.raises(build.ValidationError, match="días"):
-        build.validate_frost(table, by_year.with_columns(pl.lit(40).cast(pl.Int16).alias("frost_days")), municipalities, sources)
-    build.validate_frost(table, by_year, municipalities, sources)
+        build.validate_frost(table, by_year.with_columns(pl.lit(40).cast(pl.Int16).alias("frost_days")), municipalities, sources, zarc)
+    build.validate_frost(table, by_year, municipalities, sources, zarc)
+
+
+def test_un_umbral_cuya_fuente_no_esta_en_sources_no_se_publica():
+    """R8 (revisión de Felipe del PR #61): `frost.source_id` de `region.yaml` tiene que estar en `sources`."""
+    series = climate_day(date(1991, 1, 1), date(2020, 12, 31), lambda day: 6.0)
+    table = climate_risk.climate_risk_month(series, THRESHOLD, NORMAL)
+    by_year = climate_risk.climate_frost_month(series, THRESHOLD)
+    municipalities = pl.DataFrame({"municipality_id": ["15001"]})
+    sources = pl.DataFrame({"source_id": ["nasa_power"]})
+    with pytest.raises(build.ValidationError, match="mapa_zarc_2025"):
+        build.validate_frost(table, by_year, municipalities, sources, "mapa_zarc_2025")
+    with pytest.raises(build.ValidationError, match="frost.source_id"):
+        build.validate_frost(table, by_year, municipalities, sources, None)
 
 
 def test_el_umbral_de_la_region_es_el_del_zarc_y_su_fuente_se_publica():
