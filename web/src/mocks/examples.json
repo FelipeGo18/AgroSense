@@ -614,13 +614,6 @@
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
-        "501": {
-          "error": {
-            "code": "not_implemented",
-            "message": "Este cálculo todavía no está disponible.",
-            "request_id": "00000000-0000-4000-8000-000000000000"
-          }
-        },
         "503": {
           "error": {
             "code": "dataset_unavailable",
