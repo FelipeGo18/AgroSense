@@ -118,6 +118,8 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [ ] Prueba: si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción `review_data`; con peso 0 en el agua, la luz no queda en `not_evaluable`
   - [ ] Prueba: sin datos de `supply`, la luz y el orden de las ventanas salen igual que con peso 0 en la oferta, y la limitación lo dice
   - [ ] Prueba: con peso 0 en `water` y sin que sea crítica, la regla 3 no exige `water` `favorable`: la luz es `green` si ninguna señal que cuenta es `unfavorable`
+  - [ ] Prueba, con los pesos por defecto de `weights.yaml` 1.0.0 (heladas 4): una helada `moderate` sola, con las demás señales favorables, da `yellow` y `other_window`
+  - [ ] Prueba, con los pesos por defecto: una helada `moderate` más una oferta `unfavorable` dan `red` y `rotate` (dos desfavorables que cuentan; una es la oferta). Es el ejemplo `DIAGNOSIS_OK` del contrato (revisión de Haider, PR #81)
   - [ ] Prueba: `frost`, `heat`, `soil` o `market` sin datos no cambian la luz y aparecen en las limitaciones; `not_applicable` tampoco la cambia
 - **Reglas que aplican:** R1, R2, R3, R4, R5
 - **Contrato que toca:** `overall`, `overall_default`, `weights`, `limiting_signal`, `counts`, `best_windows`, `alternatives` y `limitations` de la respuesta de diagnóstico
