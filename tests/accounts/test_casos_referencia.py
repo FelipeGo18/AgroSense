@@ -94,8 +94,11 @@ def test_juntar_da_dos_relaciones_hacia_la_misma_en_el_progreso(client, lot):
 @pytest.mark.xfail(strict=True, reason="espera HU-204 (P1)")
 def test_una_temporada_borrada_aparece_con_restorable_until_y_vuelve(client, lot):
     season = sow(client, lot, area_ha=0.5).json()["season_id"]
-    assert client.delete(f"/api/v1/seasons/{season}").status_code in (200, 204)
+    # Borrar responde exactamente 204 (backend/api/seasons.py).
+    assert client.delete(f"/api/v1/seasons/{season}").status_code == 204
     history = {s["season_id"]: s for s in client.get(f"/api/v1/lots/{lot}/seasons").json()}
     assert history[season]["deleted_at"] is not None and history[season]["restorable_until"] is not None
-    restored = client.post(f"/api/v1/seasons/{season}/restore")
-    assert restored.status_code == 200 and restored.json()["deleted_at"] is None
+    # El contrato no dice qué responde `restore`: se comprueba volviendo a leer el historial, no su cuerpo.
+    assert client.post(f"/api/v1/seasons/{season}/restore").status_code < 300
+    history = {s["season_id"]: s for s in client.get(f"/api/v1/lots/{lot}/seasons").json()}
+    assert history[season]["deleted_at"] is None
