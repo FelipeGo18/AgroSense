@@ -91,9 +91,14 @@ estado: pendiente
   - [ ] Después de desplegar, comprueba `/api/v1/version` en la dirección pública y que la versión sea la del commit; si falla, Cloud Run vuelve a la revisión anterior y el workflow termina en rojo
   - [ ] El entorno `produccion` de GitHub pide la aprobación de un responsable (Felipe o Haider) antes de desplegar
   - [ ] Los checks obligatorios de `produccion` son los mismos de `desarrollo` (`hu`, `python`, `web`, `Revisar migraciones`)
-- **Reglas que aplican:** R4
+  - [ ] **Logs en Cloud Logging.** El servicio corre con `AGROSENSE_LOG_FORMAT=json` y `AGROSENSE_LOG_LEVEL=INFO`, y cada línea JSON (`common/logging.py`) trae:
+    - `severity` (`DEBUG`, `INFO`, `WARNING`, `ERROR` o `CRITICAL`), además de `level`. Sin ese campo, Cloud Logging marca todo como `DEFAULT` y no se puede filtrar por nivel;
+    - `message`, con el evento, para que se lea como el resumen de la línea;
+    - `logging.googleapis.com/trace` (`projects/<proyecto>/traces/<trace_id>`), tomado del encabezado `X-Cloud-Trace-Context`, para que las líneas de una petición se vean juntas con la petición de Cloud Run aun con muchas peticiones a la vez. Sin ese encabezado (local, pruebas) el campo no va
+  - [ ] Prueba: con `json`, una línea de error trae `severity = ERROR` y `message`, y con el encabezado, el trace. Los secretos siguen redactados y una consulta de cálculo no escribe datos de la finca en los logs (R9)
+- **Reglas que aplican:** R4, R9
 - **Contrato que toca:** ninguno
-- **Notas:** Sigue el flujo de HU-229, que aplica las migraciones a la base del equipo al fusionar en `desarrollo`. Una migración tiene que ser compatible con el código anterior (agregar sí; renombrar o borrar, en dos pasos), porque la base se migra antes de que la nueva versión reemplace a la vieja. Asignada a Haider y David Carreño.
+- **Notas:** Sigue el flujo de HU-229, que aplica las migraciones a la base del equipo al fusionar en `desarrollo`. Una migración tiene que ser compatible con el código anterior (agregar sí; renombrar o borrar, en dos pasos), porque la base se migra antes de que la nueva versión reemplace a la vieja. Los criterios de los logs se agregaron el 14 de noviembre de 2026 (Felipe, revisión del #89): el `request_id` de `common/logging.py` sigue igual; el trace es lo que Cloud Logging usa para agrupar. Asignada a Haider y David Carreño.
 
 ### HU-236 · El dominio con HTTPS
 
