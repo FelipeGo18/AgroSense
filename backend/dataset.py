@@ -74,6 +74,9 @@ class Dataset:
     market_season: pl.DataFrame | None = None
     # El último precio de cada producto en cada central (`market_price_latest`), ya calculado por el pipeline.
     market_latest: pl.DataFrame | None = None
+    # El precio y la temporada por cultivo y central (`market_month`, HU-051); de aquí sale la señal `market` (HU-073).
+    # Nulo si el dataset no lo trae (R1).
+    market_month: pl.DataFrame | None = None
     # El último día con precios, para compararlo con las versiones de las actualizaciones (HU-222). Nulo sin precios.
     market_last_date: date | None = None
     # Las centrales de la región: (código de SIPSA, nombre), de `region.yaml` o, si no las dice, de los precios.
@@ -103,6 +106,8 @@ def load(folder: Path) -> Dataset:
         market_season = pl.read_parquet(season_path) if season_path.exists() else None
         latest_path = folder / "market_price_latest.parquet"
         market_latest = pl.read_parquet(latest_path) if latest_path.exists() else None
+        month_path = folder / "market_month.parquet"
+        market_month = pl.read_parquet(month_path) if month_path.exists() else None
         grid_path = folder / "grid_cells.parquet"
         grid = _grid(grid_path) if grid_path.exists() else None
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
@@ -134,6 +139,7 @@ def load(folder: Path) -> Dataset:
         market_prices=market_prices,
         market_season=market_season,
         market_latest=market_latest,
+        market_month=market_month,
         market_last_date=market_latest["market_date"].max() if market_latest is not None and market_latest.height else None,
         markets=_markets(manifest["region"], market_latest),
         grid=grid,

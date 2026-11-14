@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.12"
+dataset_version: "2026.11.13"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"
@@ -22,6 +22,12 @@ region:
   markets:
     "1": "Corabastos (Bogotá)"
     "9": "Tunja (Complejo de Servicios del Sur)"
+  # Qué central da el precio de la señal `market` en cada departamento (HU-073), por `department_id` de DIVIPOLA:
+  # Boyacá vende en Tunja y Cundinamarca en Corabastos. Un departamento que no está aquí no tiene central: su señal
+  # de mercado es `insufficient_data`, nunca la de otra central por defecto (R1). Pasa tal cual al manifiesto.
+  department_markets:
+    "15": "9"   # Boyacá → Tunja
+    "25": "1"   # Cundinamarca → Corabastos
 
 # Periodo normal del clima (HU-044; decidido por Felipe el 10 de noviembre de 2026): uno solo para todo lo que se compara
 # con una normal. 1991-2020 es el periodo de referencia de la OMM y el de las normales del IDEAM, que siguen sus

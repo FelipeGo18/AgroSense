@@ -12,13 +12,13 @@ lee archivos.
 
 Qué curva usa cada señal (`thresholds.signals[signal].curve`):
 
-- Una tupla de puntos (valor, calificación) (hoy `water` y `frost`): la curva fija de `thresholds.yaml`, igual para
-  todos los cultivos. Los límites de la ficha no se usan.
+- Una tupla de puntos (valor, calificación) (hoy `water`, `frost` y `market`): la curva fija de `thresholds.yaml`,
+  igual para todos los cultivos. Los límites de la ficha no se usan.
 - `"crop"` (hoy `heat` y `soil`): la curva sale de la ficha del cultivo (`crop_limits`), con los límites de
   `CROP_LIMITS`:
   - `heat`: dos puntos, 100 en `temp_opt_max_c` y 0 en `heat_max_c`. Sin límite inferior: el frío no es calor.
   - `soil`: cuatro puntos, `crop_curve(ph_min, ph_opt_min, ph_opt_max, ph_max)`.
-- `None` (hoy `supply` y `market`): sin fuente para los cortes; la señal es `insufficient_data` siempre (R1, R8).
+- `None` (hoy `supply`): sin fuente para los cortes; la señal es `insufficient_data` siempre (R1, R8).
 
 Sin el valor medido, o sin alguno de los límites de la ficha que pide la curva: `insufficient_data`, con `score` y
 `level` nulos y `critical` falso (R1). Un NaN (en el valor o en un límite de la ficha) cuenta como sin dato. Nunca se
@@ -81,10 +81,11 @@ class SignalScore:
     critical: bool
 
 
-def _round_half_up(score: float) -> int:
+def round_half_up(value: float) -> int:
     """Redondea hacia arriba desde la mitad: nunca el redondeo al par de `round()` (`round(68.5)` da 68, pero
-    aquí 68,5 tiene que dar 69). `score` siempre es 0-100, nunca negativo, así que no hace falta `math.copysign`."""
-    return math.floor(score + 0.5)
+    aquí 68,5 tiene que dar 69). Lo usan las calificaciones (0-100) y los porcentajes de las razones (en valor
+    absoluto): `value` nunca es negativo, así que no hace falta `math.copysign`."""
+    return math.floor(value + 0.5)
 
 
 def score_signal(
@@ -118,7 +119,7 @@ def score_signal(
     else:
         points = curve
 
-    score = _round_half_up(score_from_curve(points, float(value)))
+    score = round_half_up(score_from_curve(points, float(value)))
     if score >= thresholds.favorable:
         level = FAVORABLE
     elif score >= thresholds.moderate:
