@@ -149,6 +149,9 @@ def no_dataset(tmp_path_factory, monkeypatch):
     sources_file = tmp_path_factory.mktemp("fuentes-por-senal") / "sources.yaml"
     sources_file.write_text(yaml.safe_dump(config, allow_unicode=True), encoding="utf-8")
     monkeypatch.setattr(build, "SIGNAL_SOURCES_FILE", sources_file)
+    # La API también la ve (las tendencias leen la fuente de la lluvia, HU-078). Quien la lee por el módulo
+    # (`signal_sources.get_signal_sources()`) recibe esta; `main.py` sigue validando el archivo real al arrancar.
+    monkeypatch.setattr(signal_sources, "get_signal_sources", lambda: signal_sources.check_shape(config))
     get_settings.cache_clear()
     from backend.market import store
 
