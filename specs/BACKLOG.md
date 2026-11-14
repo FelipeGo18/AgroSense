@@ -48,7 +48,7 @@
 | [EP-05](epicas/EP-05-mercado-sipsa.md) | HU-222 | Precios al día | P1 | M | hecha | Dos crons del servicio `market` (9 nov): boletín diario y serie completa semanal; la API solo lee. Contrato aprobado por Felipe (10 nov) |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-061 | Ficha por cultivo | P0 | M | en curso | Fichas de los 7 cultivos y el descanso con fuente por valor; falta revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-199 | Límites óptimos y absolutos de cada cultivo | P0 | M | en curso | Rangos de EcoCrop y UPRA con validación; falta revisión cruzada |
-| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | en curso | Archivo con pesos provisionales y `GET /version`; falta la propuesta de Producto y agro y su aprobación |
+| [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-198 | Pesos por defecto con su porqué | P0 | S | en curso | `weights.yaml` 1.0.0 aprobado por Felipe (14 nov): agua 3, heladas 4, calor 2, suelo 2, oferta 1, mercado 1; falta mostrarlos en el panel de HU-122 |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-062 | Reglas de rotación como datos | P0 | M | pendiente | Suma la salud del suelo |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-063 | Suelo, heladas y abonos verdes en el catálogo | P0 | M | en curso | pH con fuente; helada y calor por etapa con fuente desde HU-142 (14 nov); faltan los abonos verdes y el descanso con sus reglas, las reglas de suelo y la revisión cruzada |
 | [EP-06](epicas/EP-06-catalogo-agronomico.md) | HU-227 | Valor como forraje en el catálogo | P1 | S | pendiente | Nueva (8 nov, decisión 14) |

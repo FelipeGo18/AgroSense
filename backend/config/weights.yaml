@@ -5,42 +5,43 @@
 # mira las seis señales.
 #
 # Son un criterio del equipo, no un dato agronómico: no hay evidencia que fije cuánto pesa cada señal
-# (docs/riesgos.md). Si aparece evidencia, se cambian aquí y sube la versión.
+# (docs/riesgos.md). Cada porqué se apoya en una decisión del proyecto, no en una fuente. Si aparece evidencia (por
+# ejemplo, con agricultores), se cambian aquí y sube la versión.
 #
-# PROVISIONALES: son los valores de muestra de los diseños, aceptados para avanzar el 13 de octubre de 2026. Falta la
-# propuesta del rol Producto y agro y la aprobación del dueño del producto (docs/registro-de-decisiones.md).
+# Propuestos por Producto y agro y aprobados por Felipe el 14 de noviembre de 2026 (docs/registro-de-decisiones.md).
+# Reemplazan a los provisionales del 13 de octubre (agua 3, heladas 3, calor 3, suelo 2, oferta 3, mercado 2).
 
-version: "0.1.0"
-status: provisional
+version: "1.0.0"
+status: approved
 
 weights:
   water:
     weight: 3
-    why: "Importancia normal. Un riesgo grave de agua cuenta siempre, tenga el peso que tenga."
-    set_by: "Felipe (provisional)"
-    set_on: "2026-10-13"
+    why: "Importancia normal. La señal ya es prudente: se califica con la lluvia del año seco, la que se supera en 4 de cada 5 años. Un riesgo grave de agua cuenta siempre."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
   frost:
-    weight: 3
-    why: "Importancia normal. Un riesgo grave de heladas cuenta siempre, tenga el peso que tenga."
-    set_by: "Felipe (provisional)"
-    set_on: "2026-10-13"
+    weight: 4
+    why: "Importa mucho: la helada es el riesgo principal del altiplano, y NASA POWER cuenta menos heladas de las que hay. Una helada moderada ya cuenta como desfavorable."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
   heat:
-    weight: 3
-    why: "Importancia normal. Un riesgo grave de calor cuenta siempre, tenga el peso que tenga."
-    set_by: "Felipe (provisional)"
-    set_on: "2026-10-13"
+    weight: 2
+    why: "Pesa menos: en el altiplano la temperatura máxima rara vez pasa de lo que aguantan estos cultivos. Un calor crítico cuenta siempre."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
   soil:
     weight: 2
-    why: "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición del lote."
-    set_by: "Felipe (provisional)"
-    set_on: "2026-10-13"
+    why: "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición de su lote."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
   supply:
-    weight: 3
-    why: "Importancia normal. Dice si en la zona se está sembrando mucho o poco del cultivo."
-    set_by: "Felipe (provisional)"
-    set_on: "2026-10-13"
+    weight: 1
+    why: "Pesa poco: la oferta es un dato que suma, no lo que decide. Si a usted le importa, súbala."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
   market:
-    weight: 2
-    why: "Pesa menos: los precios por mes todavía no tienen datos en el P0."
-    set_by: "Felipe (provisional)"
-    set_on: "2026-10-13"
+    weight: 1
+    why: "Pesa poco: el precio es un dato que suma, no lo que decide. Todavía no tiene cortes con fuente."
+    set_by: "Felipe"
+    set_on: "2026-11-14"

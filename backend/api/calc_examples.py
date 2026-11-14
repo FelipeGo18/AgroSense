@@ -12,7 +12,7 @@ from backend.api.calc_models import ErrorBody
 EXAMPLE_VERSIONS = {"dataset": "ejemplo", "rules": "ejemplo"}
 EXAMPLE_NOTE = "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido."
 WEIGHTS = {"water": 5, "frost": 3, "heat": 3, "soil": 3, "supply": 0, "market": 3}
-DEFAULT_WEIGHTS = {"water": 4, "frost": 4, "heat": 3, "soil": 2, "supply": 2, "market": 2}
+DEFAULT_WEIGHTS = {"water": 3, "frost": 4, "heat": 2, "soil": 2, "supply": 1, "market": 1}  # los de weights.yaml 1.0.0
 
 
 def _signal(status: str, level: str | None, score: int | None, reasons: list[str], indicators: list[str], **extra: Any) -> dict[str, Any]:
