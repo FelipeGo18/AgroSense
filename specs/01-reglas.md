@@ -68,7 +68,7 @@ Seis señales independientes en el P0 y tres más en el P1. Ninguna se promedia 
 | `disease` (enfermedades por clima) | Semanas húmedas y templadas que favorecen una enfermedad con regla publicada, como la gota de la papa. No cubre plagas en general: no hay datos abiertos | No | P1 |
 | `harvest_weather` (cosecha) | Si en las semanas de cosecha suele haber días secos seguidos | No | P1 |
 
-- `frost` y `heat` son `not_applicable` cuando la ficha dice que ninguna etapa del cultivo es sensible. Sin el dato de la ficha con fuente, son `insufficient_data`.
+- `frost` y `heat` se deciden según la sensibilidad de cada etapa de la ventana: si alguna etapa es sensible, se evalúan los meses en que lo es y los que solo tocan etapas sin el dato con fuente van a las limitaciones; `not_applicable` solo si **todas** las etapas dicen que no son sensibles; si ninguna es sensible y alguna no lo dice, `insufficient_data` (R1; decidido por Felipe el 14 de noviembre de 2026, PR #69). Ejemplo: la helada de la zanahoria (no, sin dato, no, no) es `insufficient_data`, no `not_applicable`: en el desarrollo no se sabe.
 - Una señal del P1 que todavía no existe no aparece en la respuesta: no se inventa (R5).
 - El grado crítico de cada señal lo fija `thresholds.yaml`; la respuesta lo dice en el campo `critical`.
 - Toda razón dice el periodo que se evaluó («en 7 de los últimos 10 años»): es historia, no pronóstico.

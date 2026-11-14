@@ -61,6 +61,24 @@ def _value(crop_id: str, field: str, entry: Any, known: set[str]) -> Any:
     return value
 
 
+def _sensitivity(crop_id: str, stage: str, entry: dict[str, Any], field: str, known: set[str]) -> tuple[bool | None, str | None]:
+    """Si la helada o el calor dañan en una etapa (`frost_sensitive`, `heat_sensitive`), con su propia fuente (HU-142,
+    aprobado por Felipe el 13 de noviembre de 2026): `{v: true, s: fuente}`. La fuente es otra que la de los días y el Kc
+    de la etapa, así que va aparte (`frost_source_id`, `heat_source_id`). Sin dato con fuente, los dos nulos (R1, R8)."""
+    value = entry.get(field)
+    if value is None:
+        return None, None
+    if not isinstance(value, dict) or "v" not in value:
+        raise CatalogError(f"{crop_id}.{stage}: `{field}` va como {{v: true o false, s: fuente}}, con su fuente (R8).")
+    if value["v"] is None:
+        return None, None
+    if not isinstance(value["v"], bool):
+        raise CatalogError(f"{crop_id}.{stage}: `{field}` debe ser true o false, no {value['v']!r}.")
+    if value.get("s") not in known:
+        raise CatalogError(f"{crop_id}.{stage}: `{field}` no cita una fuente de `sources` (R8).")
+    return value["v"], value["s"]
+
+
 def _check_ranges(crop_id: str, row: dict[str, Any]) -> None:
     for name, (low, opt_low, opt_high, high) in RANGES.items():
         values = [row.get(k) for k in (low, opt_low, opt_high, high)]
@@ -112,6 +130,9 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             if kc is not None and not 0 < kc <= 2:
                 raise CatalogError(f"{crop_id}.{name}: `kc` {kc} fuera de 0 a 2.")
             cited.add(stage["s"])
+            frost, frost_source = _sensitivity(crop_id, name, stage, "frost_sensitive", known)
+            heat, heat_source = _sensitivity(crop_id, name, stage, "heat_sensitive", known)
+            cited.update(s for s in (frost_source, heat_source) if s is not None)
             days += stage["days"]
             stages.append(
                 {
@@ -122,8 +143,10 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
                     "kc": kc,
                     # Sin fuente de grados-día: nulo (P1, HU-150).
                     "gdd": None,
-                    "frost_sensitive": stage.get("frost_sensitive"),
-                    "heat_sensitive": stage.get("heat_sensitive"),
+                    "frost_sensitive": frost,
+                    "frost_source_id": frost_source,
+                    "heat_sensitive": heat,
+                    "heat_source_id": heat_source,
                     "source_id": stage["s"],
                 }
             )
@@ -147,7 +170,8 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
     )
     stages_schema = {
         "crop_id": pl.String, "stage": pl.String, "order": pl.Int8, "days": pl.Int32, "kc": pl.Float64, "gdd": pl.Float64,
-        "frost_sensitive": pl.Boolean, "heat_sensitive": pl.Boolean, "source_id": pl.String,
+        "frost_sensitive": pl.Boolean, "frost_source_id": pl.String, "heat_sensitive": pl.Boolean,
+        "heat_source_id": pl.String, "source_id": pl.String,
     }  # fmt: skip
     stages_table = pl.DataFrame(stages, schema=stages_schema).sort("crop_id", "order").drop("order")
     sources_table = pl.DataFrame(sources, infer_schema_length=None)

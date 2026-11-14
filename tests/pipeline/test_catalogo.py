@@ -56,9 +56,14 @@ def test_las_leguminosas_fijan_nitrogeno_y_las_demas_no():
 
 def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
     crops, stages, _ = build()
-    # Sin temperatura que la mate en EcoCrop: la sensibilidad a la helada de la haba queda sin dato (R1).
-    haba = stages.filter(stages["crop_id"] == "haba")
-    assert haba["frost_sensitive"].null_count() == haba.height
+    # Sin una fuente que dé la temperatura de daño en la fase vegetativa, la helada del haba en esas etapas queda sin dato
+    # (R1); en la floración sí hay fuente (HU-142).
+    haba = stages.filter(stages["crop_id"] == "haba").sort("stage")
+    assert dict(zip(haba["stage"].to_list(), haba["frost_sensitive"].to_list(), strict=True)) == {
+        "development": None,
+        "initial": None,
+        "mid": True,
+    }
     assert crops.filter(crops["crop_id"] == "papa")["root_type"].to_list() == [None]
 
 
@@ -78,11 +83,38 @@ def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
         (lambda d: crop(d, "papa")["stages"]["list"][0].update(days=0), "mayor que cero"),
         (lambda d: crop(d, "papa")["stages"]["list"][0].update(kc=3), "fuera de 0 a 2"),
         (lambda d: crop(d, "papa")["stages"].update(list=[]), "necesita sus etapas"),
+        # HU-142: la sensibilidad de una etapa va con su propia fuente (R8).
+        (lambda d: crop(d, "papa")["stages"]["list"][0].update(frost_sensitive=True), r"\{v: true o false, s: fuente\}"),
+        (lambda d: crop(d, "papa")["stages"]["list"][0].update(heat_sensitive={"v": True}), "no cita una fuente"),
+        (lambda d: crop(d, "papa")["stages"]["list"][0].update(heat_sensitive={"v": True, "s": "inventada"}), "no cita una fuente"),
+        (lambda d: crop(d, "papa")["stages"]["list"][0].update(frost_sensitive={"v": "sí", "s": "fao_ecocrop"}), "true o false"),
     ],
 )
 def test_un_catalogo_que_no_cumple_no_se_publica(change, message):
     with pytest.raises(catalog.CatalogError, match=message):
         build(change)
+
+
+def test_la_sensibilidad_de_cada_etapa_dice_su_propia_fuente():
+    """HU-142 (aprobado por Felipe el 13 de noviembre de 2026): `frost_source_id` y `heat_source_id` son la fuente de cada
+    sensibilidad, distinta de la de los días y el Kc (`source_id`); nulas cuando el valor es nulo, y ninguna queda fuera
+    de `source_ids` del cultivo (R8)."""
+    crops, stages, _ = build()
+    for flag, source in (("frost_sensitive", "frost_source_id"), ("heat_sensitive", "heat_source_id")):
+        assert stages.filter(stages[flag].is_null() != stages[source].is_null()).is_empty()
+    cited = dict(zip(crops["crop_id"].to_list(), crops["source_ids"].to_list(), strict=True))
+    for row in stages.iter_rows(named=True):
+        for source in (row["frost_source_id"], row["heat_source_id"]):
+            assert source is None or source in cited[row["crop_id"]]
+
+
+def test_un_valor_nulo_de_sensibilidad_no_lleva_fuente():
+    def change(d):
+        crop(d, "papa")["stages"]["list"][0].update(heat_sensitive={"v": None, "s": "fao_ecocrop"})
+
+    _, stages, _ = build(change)
+    papa = stages.filter((stages["crop_id"] == "papa") & (stages["stage"] == "initial"))
+    assert papa.select("heat_sensitive", "heat_source_id").row(0) == (None, None)
 
 
 def test_un_limite_nulo_con_fuente_es_un_rango_abierto():

@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.13"
+dataset_version: "2026.11.14"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"

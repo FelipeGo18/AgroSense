@@ -95,15 +95,31 @@ def test_sin_ninguna_etapa_sensible_el_riesgo_no_aplica():
     assert window.sensitive_months(FROST).months == ()
 
 
-@pytest.mark.parametrize("frost", [(True, True, None, True), (False, False, None, False), (None, None, None, None)])
-def test_si_una_etapa_no_dice_si_es_sensible_no_se_sabe_donde_mirar(frost):
-    """R1: no se rellena con «no sensible» ni se evalúa a medias."""
+@pytest.mark.parametrize("frost", [(False, False, None, False), (None, None, None, None)])
+def test_si_ninguna_etapa_es_sensible_y_alguna_no_lo_dice_no_se_puede_decir_que_no_aplica(frost):
+    """R1: la helada de la zanahoria (no, nulo, no, no) no es «no aplica»: en el desarrollo no se sabe (PR #69)."""
     sensitive = crop_window(with_sensitivity(frost=frost), SOWN).sensitive_months(FROST)
-    assert (sensitive.status, sensitive.months) == (INSUFFICIENT_DATA, ())
+    assert (sensitive.status, sensitive.months, sensitive.unknown) == (INSUFFICIENT_DATA, (), ())
 
 
-def test_hoy_ninguna_ficha_dice_el_calor_y_la_senal_queda_sin_datos():
-    """Las etapas de la papa no traen `heat_sensitive` (HU-063): el calor es `insufficient_data`."""
+def test_con_alguna_etapa_sensible_se_evaluan_esas_y_las_nulas_van_aparte():
+    """Decidido por Felipe el 14 nov 2026: los meses sensibles se evalúan y los que solo tocan etapas nulas se dicen
+    (`unknown`), para las limitaciones; nunca se rellenan con «no sensible» (R1)."""
+    sensitive = crop_window(with_sensitivity(frost=(None, None, True, None)), SOWN).sensitive_months(FROST)
+    assert sensitive.status == AVAILABLE
+    assert sensitive.months and all(m.sensitive(FROST) for m in sensitive.months)
+    assert sensitive.unknown and all(m.sensitive(FROST) is None for m in sensitive.unknown)
+    assert not set(sensitive.months) & set(sensitive.unknown)
+
+
+def test_una_etapa_nula_entre_sensibles_no_borra_la_senal():
+    sensitive = crop_window(with_sensitivity(frost=(True, True, None, True)), SOWN).sensitive_months(FROST)
+    assert sensitive.status == AVAILABLE
+    assert sensitive.months
+
+
+def test_sin_el_dato_del_calor_en_ninguna_etapa_la_senal_queda_sin_datos():
+    """`PAPA` de estas pruebas no trae `heat_sensitive`: el calor es `insufficient_data` (R1)."""
     assert crop_window(PAPA, SOWN).sensitive_months(HEAT).status == INSUFFICIENT_DATA
 
 
