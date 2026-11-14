@@ -426,7 +426,8 @@ export interface paths {
         };
         /**
          * Trends
-         * @description Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad.
+         * @description Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad. Es historia de la zona,
+         *     no un pronóstico; solo lee el dataset publicado y no guarda nada (R9).
          */
         get: operations["trends_api_v1_trends_get"];
         put?: never;
@@ -1666,6 +1667,8 @@ export interface components {
             water: components["schemas"]["WaterSeries"];
             supply: components["schemas"]["SupplySeries"];
             ndvi: components["schemas"]["NdviSeries"];
+            /** Limitations */
+            limitations: string[];
             versions: components["schemas"]["Versions"];
         };
         /** ValidationError */
@@ -3077,8 +3080,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not Implemented */
-            501: {
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
