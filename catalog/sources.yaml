@@ -6,7 +6,7 @@
 #
 # La región es la de `pipeline/region.yaml` (`region.id`). Cambia una fuente: cambia aquí y sube la versión (R4).
 
-version: "1.2.0"
+version: "1.3.0"
 
 regions:
   co-boyaca-cundinamarca:
@@ -23,7 +23,15 @@ regions:
         que miden las estaciones del IDEAM. El agua puede salir mejor de lo que es: verifíquela en campo.
       et0: nasa_power
       soil_moisture_contrast: [nasa_power, smap]
-    frost: { used: nasa_power }
+    frost:
+      used: nasa_power
+      # Aprobado por Felipe el 13 de noviembre de 2026 (revisión del PR #61, HU-045): con NASA POWER solo 24 de los 239
+      # municipios tienen alguna helada en 1991-2020, y en Tibaitatá el IDEAM midió 26 días de helada de 2024 a 2026 donde
+      # POWER cuenta 0. Sin aviso, la señal casi siempre saldría verde.
+      frost_caveat: >-
+        Las heladas salen de NASA POWER (reanálisis). En los valles del altiplano su temperatura mínima sale más
+        caliente que la de las estaciones del IDEAM, así que cuenta menos heladas de las que hay: revise la
+        experiencia de su zona.
     heat: { used: nasa_power }
     soil: { used: soilgrids }
     supply: { used: eva, contrast: [] }
