@@ -82,6 +82,8 @@ function inspect({ light, minTarget }) {
   const root = document.documentElement;
   const cw = root.clientWidth;
   if (root.scrollWidth > cw + 1) problems.push(`la página se desplaza en horizontal (${root.scrollWidth} > ${cw})`);
+  // El pie de página va en todas las pantallas (specs/05-frontend.md, «Pie de página: todos»): cada página lo agrega.
+  if (!document.querySelector("footer")) problems.push("la página no tiene el pie de página");
 
   const label = (el) =>
     `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}${el.className && typeof el.className === "string" ? `.${el.className.split(" ").slice(0, 2).join(".")}` : ""}`;

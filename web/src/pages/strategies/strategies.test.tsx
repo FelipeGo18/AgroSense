@@ -415,6 +415,12 @@ describe("La entrada (HU-214): reglas", () => {
 });
 
 describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
+  it("explica qué es un ciclo, con cuánto dura y un ejemplo", async () => {
+    open();
+    expect(await screen.findByText(/es una siembra completa: de la siembra a la cosecha de un cultivo/)).toBeInTheDocument();
+    expect(screen.getByText(/cada ciclo dura de 3 a 6 meses/)).toBeInTheDocument();
+  });
+
   it("pide los datos del terreno, envía POST /rotations y el área se queda en el navegador", async () => {
     const calls = fakeApi();
     const router = open();

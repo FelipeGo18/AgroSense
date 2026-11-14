@@ -79,13 +79,17 @@ class WindowMonth:
 class SensitiveMonths:
     """Los meses de la ventana en que el cultivo está en una etapa sensible a un riesgo, y si el riesgo se evalúa:
 
-    - `available`: la ficha dice la sensibilidad de todas las etapas y alguna es sensible;
-    - `not_applicable`: ninguna etapa es sensible;
-    - `insufficient_data`: alguna etapa no dice si es sensible, y no se sabe en qué meses mirar (R1).
+    - `available`: alguna etapa de la ventana es sensible. `months` son los meses en que lo es; `unknown` son los meses
+      que solo tocan etapas sin el dato con fuente, que no se evalúan y van a las limitaciones (R1);
+    - `not_applicable`: todas las etapas dicen que no son sensibles;
+    - `insufficient_data`: ninguna etapa es sensible y alguna no lo dice: no se puede decir «no aplica» (R1).
+
+    Decidido por Felipe el 14 de noviembre de 2026 (revisión del PR #69, HU-142).
     """
 
     status: str
     months: tuple[WindowMonth, ...]
+    unknown: tuple[WindowMonth, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -137,11 +141,16 @@ class CropWindow:
         if risk not in (FROST, HEAT):
             raise ValueError(f"Riesgo desconocido: {risk!r}. Es «{FROST}» o «{HEAT}».")
         values = [period.span.sensitive(risk) for period in self.periods]
-        if any(value is None for value in values):
-            return SensitiveMonths(INSUFFICIENT_DATA, ())
-        if not any(values):
+        if any(values):
+            months = self.months()
+            return SensitiveMonths(
+                AVAILABLE,
+                tuple(month for month in months if month.sensitive(risk)),
+                tuple(month for month in months if month.sensitive(risk) is None),
+            )
+        if all(value is False for value in values):
             return SensitiveMonths(NOT_APPLICABLE, ())
-        return SensitiveMonths(AVAILABLE, tuple(month for month in self.months() if month.sensitive(risk)))
+        return SensitiveMonths(INSUFFICIENT_DATA, ())
 
 
 def crop_window(stages: list[StageSpan], sowing_date: date) -> CropWindow | None:

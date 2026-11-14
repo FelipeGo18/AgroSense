@@ -31,15 +31,15 @@ estado: en curso
 ### HU-002 · Confirmar los datasets NASA del enunciado
 
 - **Historia:** Como equipo, quiero confirmar los datasets NASA que propone el enunciado, para no construir sobre datos que no aplican.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Variables, resolución, periodo y forma de acceso documentados
   - [x] Descarga de prueba para un municipio
   - [x] Dice si el enunciado fija una región o unos datos. Si no es compatible con la región piloto, se registra en `docs/registro-de-decisiones.md` y se lista qué adaptadores y entradas de `sources.yaml` hay que cambiar
   - [x] Cada producto NASA que recomiende el enunciado y no esté en el MVP (POWER, NASADEM, IMERG, MODIS NDVI, SMAP, GIBS) queda listado con su HU nueva, que entra por su propio adaptador (decisión 12). **8 de noviembre de 2026 (decisión 14):** el enunciado sugiere SMAP, ECOSTRESS, GPM, Landsat, MODIS, NASA POWER, GRACE y GRACE-FO, y SRTM u otro modelo de elevación (y nombra GEDI como ejemplo). Faltaban GRACE-FO (HU-225) y ECOSTRESS (HU-226); Landsat sigue en HU-043 (HLS); GEDI no entra
-  - [ ] Revisar la pestaña de recursos del reto el viernes 13 de noviembre, cuando se publica, y agregar lo que traiga
+  - [x] Revisar la pestaña de recursos del reto el viernes 13 de noviembre, cuando se publica, y agregar lo que traiga
   - [x] La sede del equipo queda confirmada (**Duitama, Boyacá, Colombia**, confirmada el 28 de octubre de 2026; aprobado por Felipe, 8 de noviembre de 2026) y la región piloto se mantiene en el altiplano de Boyacá y Cundinamarca, registrada en `docs/registro-de-decisiones.md`
-- **Notas:** El 28 de octubre de 2026 se confirmó la sede **Duitama (Boyacá)** y la región piloto en Boyacá y Cundinamarca, manteniendo intacto el enfoque de no pronóstico (R1–R10). El enunciado completo se leyó el 8 de noviembre de 2026 (decisión 14). Faltan los recursos del 13 de noviembre y la descarga de prueba. Criterios de los productos NASA y de la sede agregados el 11 de octubre de 2026.
+- **Notas:** El 28 de octubre de 2026 se confirmó la sede **Duitama (Boyacá)** y la región piloto en Boyacá y Cundinamarca, manteniendo intacto el enfoque de no pronóstico (R1–R10). El enunciado completo se leyó el 8 de noviembre de 2026 (decisión 14). Los recursos del 13 de noviembre y la descarga de prueba quedaron hechos (ver abajo). Criterios de los productos NASA y de la sede agregados el 11 de octubre de 2026.
 - **Hecho (12 nov):**
   - **Lo documentado:** la tabla de productos de la NASA de `docs/fuentes.md` ya no tiene nada «por verificar» de variables, resolución, periodo ni acceso:
     - **POWER:** nombres y unidades de las 8 variables; la radiación va en su malla de 1° × 1°; los días recientes salen de GEOS-IT, que no corrige la lluvia con pluviómetros.
@@ -53,7 +53,7 @@ estado: en curso
     - Bajar los archivos de MODIS y SMAP pide la cuenta de Earthdata y pesa más de 140 MB cada uno: queda para sus adaptadores (HU-208, HU-210). IMERG y NASADEM ya se bajan en el pipeline (HU-207, HU-206).
   - **La región:** el enunciado habla de agricultores de todo el mundo. No fija región ni obliga a usar unos datos: solo sugiere productos, y los que no estaban tienen su HU. No hay nada que cambiar en los adaptadores ni en `sources.yaml`.
   - **Nuevo riesgo:** la NASA deja de tomar datos de Terra MODIS hacia enero de 2027. El relevo es VIIRS (VNP13A1), en `docs/riesgos.md`.
-  - **Falta:** revisar la pestaña de recursos del reto el 13 de noviembre.
+  - **La pestaña de recursos (13 nov):** se revisó el 13 de noviembre de 2026; el detalle, recurso por recurso, está en `docs/fuentes.md` («Recursos del reto»). No cambia el núcleo: todos los productos de la NASA que nombra ya estaban en el MVP o tenían su HU. Son nuevos NLDAS/GLDAS y ERA5, que entran en P1 solo como contraste (HU-232 y HU-231), y una lista de datos de EE. UU. que no cubren la región piloto (sus equivalentes ya están: SoilGrids, EVA, SIPSA e IDEAM). GRACE-FO no aparece en los recursos, aunque sí en el enunciado: sigue en HU-225. Los recursos hablan de modelos de IA, pero no los exigen: seguimos con reglas (decisión 4).
 
 ### HU-003 · Verificar SIPSA y decidir si entra al P0
 

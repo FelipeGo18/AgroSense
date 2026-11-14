@@ -11,12 +11,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import polars as pl
 import shapely
 from shapely.geometry.base import BaseGeometry
 
 from backend.config.settings import get_settings
 from backend.engine.stages import StageSpan
+from common.grid import GRID_COLUMNS
 
 
 class DatasetUnavailable(RuntimeError):
@@ -37,6 +39,15 @@ class Municipality:
     tmean_annual_c: float | None = None
     # Altitud del municipio (NASADEM, HU-044); nula si el dataset no la trae (R1).
     altitude_m: float | None = None
+
+
+@dataclass(frozen=True, eq=False)
+class Grid:
+    """La altitud de la rejilla de 250 m (`grid_cells`), compacta: `keys` es la llave entera de cada celda
+    (`common.grid.cell_key`), ordenada, y `altitude_m` su altitud, con NaN donde la celda no tiene dato (R1)."""
+
+    keys: np.ndarray
+    altitude_m: np.ndarray
 
 
 @dataclass(frozen=True)
@@ -67,6 +78,8 @@ class Dataset:
     market_last_date: date | None = None
     # Las centrales de la región: (código de SIPSA, nombre), de `region.yaml` o, si no las dice, de los precios.
     markets: tuple[tuple[str, str], ...] = ()
+    # La rejilla de 250 m con altitud (HU-191). Nula si el dataset no la trae (R1).
+    grid: Grid | None = None
 
 
 def load(folder: Path) -> Dataset:
@@ -90,6 +103,8 @@ def load(folder: Path) -> Dataset:
         market_season = pl.read_parquet(season_path) if season_path.exists() else None
         latest_path = folder / "market_price_latest.parquet"
         market_latest = pl.read_parquet(latest_path) if latest_path.exists() else None
+        grid_path = folder / "grid_cells.parquet"
+        grid = _grid(grid_path) if grid_path.exists() else None
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -121,7 +136,18 @@ def load(folder: Path) -> Dataset:
         market_latest=market_latest,
         market_last_date=market_latest["market_date"].max() if market_latest is not None and market_latest.height else None,
         markets=_markets(manifest["region"], market_latest),
+        grid=grid,
     )
+
+
+def _grid(path: Path) -> Grid:
+    """Lee solo `cell_id` y `altitude_m`: el resto de `grid_cells` son unos 86 MB que la altitud del lote no necesita."""
+    table = pl.read_parquet(path, columns=["cell_id", "altitude_m"])
+    parts = table["cell_id"].str.split_exact("_", 1)
+    keys = (parts.struct.field("field_0").cast(pl.Int64) * GRID_COLUMNS + parts.struct.field("field_1").cast(pl.Int64)).to_numpy()
+    order = np.argsort(keys)
+    altitudes = table["altitude_m"].cast(pl.Float64).fill_null(float("nan")).to_numpy()
+    return Grid(keys=keys[order], altitude_m=altitudes[order])
 
 
 def _markets(region: dict[str, Any], latest: pl.DataFrame | None) -> tuple[tuple[str, str], ...]:

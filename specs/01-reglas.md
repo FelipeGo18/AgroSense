@@ -17,6 +17,8 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 
 > R9 suma `/changes` a los endpoints de cálculo y R10 suma la humedad del suelo y el verdor desde el 11 de octubre de 2026 (decisión 12 de `docs/decisiones.md`). Las demás reglas no cambiaron.
 
+> R8 se aclara el 10 de noviembre de 2026 (decisión 16, enmienda del 10 nov 2026; aprobado por Felipe el 11 de noviembre de 2026): una regla agronómica para la que ninguna fuente externa da el corte puede apuntar a un **criterio propio del equipo registrado en `sources`** (por ejemplo, `criterio_equipo_2026`), cuya `notes` dice que no es una fuente externa, quién lo aprobó y por qué, y que queda pendiente de validar por un agrónomo. Nunca a un número sin registro ni a la fuente `ejemplo`. **Una regla puede citar `criterio_equipo_2026` solo si (a) es central para el producto y (b) cada número se apoya en un dato externo citado.** La respuesta y la web lo dicen siempre: «criterio del equipo». A juicio de Felipe (11 nov 2026), cumplen las cinco reglas de salud del suelo de las estrategias; la oferta y el mercado de `thresholds.yaml` no cumplen (son valor agregado y ningún dato los apoya) y siguen sin curva. **Qué se apoya en qué:** son datos externos citados el 29 g/kg (CEVIPAPA y FAO GLOSOLAN), el 12 % (IGAC) y «three or more years» (FAO 2008). Los cortes por ciclos, porcentaje y meses son del equipo: nitrógeno 1, carbono 2/1 y 1/0, cobertura 80/60 %, erosión 1/3 meses y `papa_espera` 3 y 2. Cada uno tiene una referencia externa y se rotula «criterio del equipo», pendiente de validar por un agrónomo.
+
 ## Cómo se comprueba cada regla
 
 | Regla | Comprobación sugerida |
@@ -68,7 +70,7 @@ Seis señales independientes en el P0 y tres más en el P1. Ninguna se promedia 
 | `disease` (enfermedades por clima) | Semanas húmedas y templadas que favorecen una enfermedad con regla publicada, como la gota de la papa. No cubre plagas en general: no hay datos abiertos | No | P1 |
 | `harvest_weather` (cosecha) | Si en las semanas de cosecha suele haber días secos seguidos | No | P1 |
 
-- `frost` y `heat` son `not_applicable` cuando la ficha dice que ninguna etapa del cultivo es sensible. Sin el dato de la ficha con fuente, son `insufficient_data`.
+- `frost` y `heat` se deciden según la sensibilidad de cada etapa de la ventana: si alguna etapa es sensible, se evalúan los meses en que lo es y los que solo tocan etapas sin el dato con fuente van a las limitaciones; `not_applicable` solo si **todas** las etapas dicen que no son sensibles; si ninguna es sensible y alguna no lo dice, `insufficient_data` (R1; decidido por Felipe el 14 de noviembre de 2026, PR #69). Ejemplo: la helada de la zanahoria (no, sin dato, no, no) es `insufficient_data`, no `not_applicable`: en el desarrollo no se sabe.
 - Una señal del P1 que todavía no existe no aparece en la respuesta: no se inventa (R5).
 - El grado crítico de cada señal lo fija `thresholds.yaml`; la respuesta lo dice en el campo `critical`.
 - Toda razón dice el periodo que se evaluó («en 7 de los últimos 10 años»): es historia, no pronóstico.
@@ -93,7 +95,7 @@ Qué mide cada curva:
 |---|---|---|
 | `water` | Porcentaje de lo que el cultivo necesita que cubre la lluvia **del año seco** en la ventana (`precip_dry_mm`: la que se supera en 4 de cada 5 años, la lluvia confiable con que la FAO planea el riego), con la retención del suelo. No la normal: decidido por Felipe el 11 de noviembre de 2026, porque las dos fuentes de la NASA dan casi el doble de lluvia en los valles del altiplano, donde están los cultivos (259 estaciones del IDEAM; IMERG 1,85 veces, POWER 1,80; PR #44), y con la normal el agua saldría verde donde falta | `thresholds.yaml` |
 | `frost` | Porcentaje de años con al menos una helada (mínima ≤ 2 °C) en cualquiera de los meses sensibles de la ventana (semanas en P1) | `thresholds.yaml` |
-| `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_*`, `heat_max_c`) |
+| `heat` | Temperatura máxima que se supera uno de cada diez días, en las etapas sensibles | Ficha (`temp_opt_max_c`, `heat_max_c`: 100 en el óptimo alto, 0 en el máximo; sin límite inferior) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
 | `supply` | Variación del área sembrada | `thresholds.yaml` |
 | `market` | Índice estacional de precio en el mes de cosecha | `thresholds.yaml` |
