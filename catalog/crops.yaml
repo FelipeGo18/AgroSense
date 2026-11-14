@@ -102,6 +102,141 @@ sources:
     coverage: "AgroSense"
     license: "Del proyecto"
     notes: "Solo para cómo se dibuja cada cultivo (`archetype`) y su nombre en la web. No es un dato agronómico."
+  - source_id: fao_crop_info_potato
+    name: "FAO Land & Water: Crop Information, Potato"
+    institution: "FAO, Land and Water Division"
+    url: "https://web.archive.org/web/2017/http://www.fao.org/land-water/databases-and-software/crop-information/potato/en/"
+    downloaded_at: "2026-11-14"
+    period_covered: "Sin fecha (la ficha ya no está en el sitio de la FAO; se lee en el Internet Archive)"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "«Tuber growth is sharply inhibited when below 10°C and above 30°C». Contraste de Luisa en la revisión cruzada de HU-142 (PR #69)."
+  - source_id: senamhi_atlas_heladas_2010
+    name: "SENAMHI y FAO: Atlas de heladas del Perú (2010). Tablas 2.2 y 2.3"
+    institution: "Servicio Nacional de Meteorología e Hidrología del Perú (SENAMHI) y FAO"
+    url: "https://web2.senamhi.gob.pe/load/file/01404SENA-1.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "2010 (la tabla 2.2 es de Ventskevich, 1958)"
+    coverage: "Perú (Andes)"
+    license: "Publicación pública, sin licencia explícita; se cita"
+    notes: "Tabla 2.2 (p. 10 del PDF): temperatura de daño de la hoja y de la caseta por etapa (germinación, floración, fructificación) de avena, maíz y otros; la caseta va unos 4 °C por encima de la hoja."
+  - source_id: ciren_1989_chacras
+    name: "CIREN-CORFO: Requerimientos de clima y suelo. Chacras y hortalizas, publicación n.º 85 (1989)"
+    institution: "Centro de Información de Recursos Naturales (CIREN), Chile"
+    url: "https://research.csiro.au/gestionrapel/wp-content/uploads/sites/79/2016/11/Requerimientos-de-clima-y-suelo.-Chacras-y-horatalizas-1989c.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "1989"
+    coverage: "Chile"
+    license: "Sin dato; se cita"
+    notes: "Fichas con la etapa o parte más sensible a la helada y su temperatura crítica: cebolla (hojas, -1 °C, p. 30), haba (floración, -1 °C, p. 34), maíz (4.ª hoja, p. 20), arveja (floración, -2 °C, p. 12); y límites máximos de crecimiento de todo el ciclo (maíz 40 °C, arveja y haba 28 °C, papa 30 °C, cebolla 35 °C)."
+  - source_id: fairlie_ortega_1995
+    name: "Fairlie y Ortega (1995): Efecto de la presencia de heladas simuladas en diferentes estados fenológicos de la papa cv. Ccompis. Revista Latinoamericana de la Papa 7/8:86-93"
+    institution: "Asociación Latinoamericana de la Papa (ALAP); PISA/INIAA, Puno"
+    url: "https://dialnet.unirioja.es/descarga/articulo/5512072.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "1995"
+    coverage: "Altiplano de Puno (Perú)"
+    license: "Acceso abierto; licencia por confirmar"
+    notes: "«Los estados fenológicos más susceptibles resultaron ser la emergencia y el inicio de la formación de estolones»; en floración la reducción fue de 15 a 55 %. Daño simulado al follaje, sin temperatura."
+  - source_id: barrales_2002
+    name: "Barrales Domínguez et al. (2002): Relaciones térmicas en el sistema suelo-planta-atmósfera durante la incidencia de una helada. Revista Fitotecnia Mexicana 25(3):289-297"
+    institution: "Sociedad Mexicana de Fitogenética; Universidad Autónoma Chapingo"
+    url: "https://www.redalyc.org/pdf/610/61025309.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "2002"
+    coverage: "Valles altos de México"
+    license: "Acceso abierto (Redalyc); licencia por confirmar"
+    notes: "«Con temperaturas foliares de –0.4 y –0.7 °C ocurrió muerte total de plantas de maíz»; en el haba la helada «afectó sólo a las flores»."
+  - source_id: unlu_horticultura
+    name: "Universidad Nacional de Luján: Producción Vegetal III (Horticultura), fichas de cebolla, arveja y zanahoria (sin año)"
+    institution: "Universidad Nacional de Luján (UNLu), Argentina"
+    url: "https://www.hort.unlu.edu.ar/sites/www.hort.unlu.edu.ar/files/site/Cebolla.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "Sin año (material de curso)"
+    coverage: "Argentina"
+    license: "Sin dato; se cita"
+    notes: "Cebolla, p. 3: «Durante su crecimiento la cebolla tolera heladas, pero los bulbos resultan sensibles»; en el crecimiento herbáceo la tasa de crecimiento disminuye con más de 30 °C. Material de curso: rango bajo, se usa solo donde no hay otra fuente."
+  - source_id: fao_frost_2005
+    name: "FAO: Frost protection: fundamentals, practice and economics, vol. 1 (Snyder y de Melo-Abreu, 2005). Cap. 4, tabla 4.5; cap. 5"
+    institution: "FAO, Environment and Natural Resources Series 10"
+    url: "https://www.fao.org/4/y7223e/y7223e0a.htm"
+    downloaded_at: "2026-11-13"
+    period_covered: "2005 (la tabla 4.5 es «after Ventskevich, 1958»)"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Tabla 4.5: temperaturas críticas de daño (°C) en germinación, floración y fructificación de papa, arveja, maíz, avena, vicia, zanahoria. Cap. 5 (https://www.fao.org/4/y7223e/y7223e0b.htm): la hoja se enfría más que el aire de la caseta."
+  - source_id: fao_66
+    name: "FAO-66: Crop yield response to water (Steduto, Hsiao, Fereres y Raes, 2012). Sección 3.4, papa, pp. 185-186"
+    institution: "FAO, Irrigation and Drainage Paper 66"
+    url: "https://www.fao.org/4/i2800e/i2800e07.pdf"
+    downloaded_at: "2026-11-13"
+    period_covered: "2012"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Papa: «The temperature for frost or cold stress for potato is considered 1 oC and less, whereas that of heat stress is 35 oC or higher» (p. 186); el calor frena el inicio y el crecimiento de los tubérculos."
+  - source_id: ndsu_a1166_pea
+    name: "NDSU Extension: Field Pea Production, A1166 (revisión de diciembre de 2021)"
+    institution: "North Dakota State University Extension"
+    url: "https://www.ndsu.edu/agriculture/sites/default/files/2021-12/a1166.pdf"
+    downloaded_at: "2026-11-13"
+    period_covered: "2021"
+    coverage: "Norte de las Grandes Llanuras (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«Seedlings are tolerant of spring frosts in the low 20s… a new shoot will emerge… until approximately seven nodes»; «Field pea is sensitive to heat stress at flowering»."
+  - source_id: saskpulse_stress_2023
+    name: "Saskatchewan Pulse Growers: Environmental Stresses in Pulses (mayo de 2023)"
+    institution: "Saskatchewan Pulse Growers"
+    url: "https://saskpulse.com/resources/environmental-stresses-in-pulses"
+    downloaded_at: "2026-11-13"
+    period_covered: "2023"
+    coverage: "Saskatchewan (Canadá)"
+    license: "Sin dato; se cita"
+    notes: "«Hot temperatures during flowering may cause plants to abort flowers, resulting in lower pod set» (leguminosas de grano en general)."
+  - source_id: alharbi_2021_faba
+    name: "Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925"
+    institution: "MDPI, Plants; doi:10.3390/plants10091925"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8467580/"
+    downloaded_at: "2026-11-13"
+    period_covered: "2021"
+    coverage: "Ensayos de campo en Australia"
+    license: "Acceso abierto (CC BY 4.0 por confirmar)"
+    notes: "«Flowering is the most sensitive time for frost in crops, including faba bean»; la tolerancia vegetativa no predice la reproductiva."
+  - source_id: purdue_corn07
+    name: "Nielsen, R. L.: Drought and Heat Stress Effects on Corn Pollination (Corny News, Purdue, sin fecha)"
+    institution: "Purdue University, Agronomy"
+    url: "https://www.agry.purdue.edu/ext/corn/pubs/corn-07.htm"
+    downloaded_at: "2026-11-13"
+    period_covered: "Sin fecha"
+    coverage: "Cinturón maicero (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«pollen is likely damaged by mid-90's or greater temperatures»; «Temperatures over 100 degrees may literally kill pollen». Sobre Purdue también: Grain Fill Stages in Corn (2021; en R6 el grano está a salvo de la helada) y Assessing Corn Recovery From Early-Season Damage (2003; punto de crecimiento bajo tierra hasta V5-V6)."
+  - source_id: ucanr_7226_carrot
+    name: "Nuñez, Hartz, Suslow et al.: Carrot Production in California, UC ANR Publication 7226 (2008)"
+    institution: "University of California, Agriculture and Natural Resources; doi:10.3733/ucanr.7226"
+    url: "https://escholarship.org/uc/item/5pf563b3"
+    downloaded_at: "2026-11-13"
+    period_covered: "2008"
+    coverage: "California (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«Above 86°F (30°C), the growth of foliage is reduced and strong flavors develop in the roots»."
+  - source_id: msu_e1437_carrot
+    name: "Zandstra y Baker: Commercial Vegetable Recommendations: Carrots, MSU Extension Bulletin E-1437 (1980)"
+    institution: "Michigan State University Extension"
+    url: "https://sanweb.lib.msu.edu/DMC/Ag.%20Ext.%202007-Chelsie/PDF/e1437-1980.pdf"
+    downloaded_at: "2026-11-13"
+    period_covered: "1980 (copia de archivo)"
+    coverage: "Michigan (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«Young carrot seedlings can withstand slight frosts»; «Mature carrot leaves tolerate several nights of frosts in the mid 20's»; «Young seedlings are burned off easily by high temperatures… before the plants are 1 inch high»."
+  - source_id: msu_e1307_onion
+    name: "Zandstra, Grafius, Lacy y Warncke: Commercial Vegetable Recommendations: Onions, MSU E1307 (revisión de 1996)"
+    institution: "Michigan State University Extension"
+    url: "https://archive.lib.msu.edu/DMC/extension_publications/e1307/E1307-1996.PDF"
+    downloaded_at: "2026-11-13"
+    period_covered: "1996 (copia de archivo; dice «do not use for current recommendations»)"
+    coverage: "Michigan (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«Onion seedlings can tolerate light frosts (28 degrees F) but may be killed by colder temperatures»; «Growth rate declines when temperatures exceed 90 degrees F for several days. High temperature hastens maturity… smaller bulbs»."
 
 crops:
   - crop_id: papa
@@ -122,7 +257,7 @@ crops:
     temp_min_c: {v: 7, s: fao_ecocrop}
     temp_opt_min_c: {v: 15, s: fao_ecocrop}
     temp_opt_max_c: {v: 25, s: fao_ecocrop}
-    heat_max_c: {v: 30, s: fao_ecocrop, n: "Máximo absoluto de la temperatura del ciclo en EcoCrop. Supuesto por confirmar en HU-190: se compara con la máxima diaria que se supera uno de cada diez días."}
+    heat_max_c: {v: 30, s: fao_crop_info_potato, n: "Sobre 30 °C el crecimiento del tubérculo se frena en seco («Tuber growth is sharply inhibited when below 10°C and above 30°C», FAO Crop Information). Coincide con el máximo absoluto de EcoCrop. Más prudente que el estrés por calor de 35 °C de FAO-66: se deja en 30 °C (decidido por Felipe el 14 nov 2026, PR #69). Se compara con la máxima que se supera uno de cada diez días."}
     rain_min_mm: {v: 250, s: fao_ecocrop}
     rain_opt_min_mm: {v: 500, s: fao_ecocrop}
     rain_opt_max_mm: {v: 800, s: fao_ecocrop}
@@ -136,12 +271,12 @@ crops:
     stages:
       source_row: "FAO-56, tabla 11, papa, fila «Idaho, USA» (siembra abril/mayo): la más larga de la tabla, la más cercana a los ciclos largos del clima frío. Por confirmar con una fuente local de la papa del altiplano."
       kc_source_row: "FAO-56, tabla 12: papa (Kc media 1,15 y final 0,75); Kc inicial del grupo raíces y tubérculos (0,5)."
-      frost_sensitive_note: "Supuesto por confirmar: sensible a la helada en todas las etapas, porque EcoCrop da 0 °C como temperatura que la mata en crecimiento."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
       list:
-        - {stage: initial, days: 45, kc: 0.5, s: fao_56, frost_sensitive: true}
-        - {stage: development, days: 30, kc: null, s: fao_56, frost_sensitive: true, n: "En FAO-56 el Kc sube en línea recta de la inicial a la media."}
-        - {stage: mid, days: 70, kc: 1.15, s: fao_56, frost_sensitive: true}
-        - {stage: late, days: 20, kc: 0.75, s: fao_56, frost_sensitive: true, n: "Kc al final de la etapa; en FAO-56 baja en línea recta desde la media."}
+        - {stage: initial, days: 45, kc: 0.5, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en germinación de -2 a -3 °C. Refuerza Fairlie y Ortega 1995 (Puno): la emergencia es de los estados más susceptibles"}}
+        - {stage: development, days: 30, kc: null, s: fao_56, frost_sensitive: {v: true, s: fao_66, n: "p. 186: estrés por frío desde 1 °C"}, heat_sensitive: {v: true, s: fao_66, n: "pp. 185-186: la tuberización empieza aquí y el calor la frena; estrés desde 35 °C"}, n: "En FAO-56 el Kc sube en línea recta de la inicial a la media."}
+        - {stage: mid, days: 70, kc: 1.15, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en floración de -1 a -2 °C"}, heat_sensitive: {v: true, s: fao_66, n: "p. 186: el calor frena el inicio y el crecimiento de los tubérculos"}}
+        - {stage: late, days: 20, kc: 0.75, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en fructificación de -1 a -2 °C"}, n: "Kc al final de la etapa; en FAO-56 baja en línea recta desde la media."}
 
   - crop_id: arveja
     name_es: {v: "Arveja", s: agrosense_diseno}
@@ -175,12 +310,12 @@ crops:
     stages:
       source_row: "FAO-56, tabla 11, arveja, fila «Idaho, USA» (siembra en abril): la más larga. Por confirmar con una fuente local (la arveja del altiplano se cosecha en verde)."
       kc_source_row: "FAO-56, tabla 12: arveja fresca (0,5; 1,15; 1,10), porque en el altiplano se cosecha sobre todo en verde."
-      frost_sensitive_note: "Supuesto por confirmar: sensible en todas las etapas (EcoCrop: 0 °C la mata en crecimiento)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
       list:
-        - {stage: initial, days: 35, kc: 0.5, s: fao_56, frost_sensitive: true}
-        - {stage: development, days: 25, kc: null, s: fao_56, frost_sensitive: true}
-        - {stage: mid, days: 30, kc: 1.15, s: fao_56, frost_sensitive: true}
-        - {stage: late, days: 20, kc: 1.10, s: fao_56, frost_sensitive: true}
+        - {stage: initial, days: 35, kc: 0.5, s: fao_56, frost_sensitive: {v: false, s: ndsu_a1166_pea, n: "Las plántulas aguantan heladas de unos -6 °C y rebrotan; Tabla 4.5 de la FAO: germinación -7 a -8 °C. EcoCrop da 0 °C: manda la fuente por etapa"}}
+        - {stage: development, days: 25, kc: null, s: fao_56, frost_sensitive: {v: false, s: ndsu_a1166_pea, n: "Rebrota desde debajo del suelo hasta unos 7 nudos. EcoCrop da 0 °C: manda la fuente por etapa"}}
+        - {stage: mid, days: 30, kc: 1.15, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en floración de -2 a -3 °C"}, heat_sensitive: {v: true, s: ndsu_a1166_pea, n: "Sensible al calor en la floración: baja el cuajado de vainas"}}
+        - {stage: late, days: 20, kc: 1.10, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en fructificación de -3 a -4 °C"}}
 
   - crop_id: haba
     name_es: {v: "Haba", s: agrosense_diseno}
@@ -214,10 +349,11 @@ crops:
     stages:
       source_row: "FAO-56, tabla 11, haba, fila «Europe (- green)» (siembra en noviembre): cosecha en verde, como en el altiplano; no tiene etapa final (0 días)."
       kc_source_row: "FAO-56, tabla 12: haba fresca (0,5; 1,15; 1,10)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
       list:
-        - {stage: initial, days: 90, kc: 0.5, s: fao_56, frost_sensitive: null}
-        - {stage: development, days: 45, kc: null, s: fao_56, frost_sensitive: null}
-        - {stage: mid, days: 40, kc: 1.15, s: fao_56, frost_sensitive: null}
+        - {stage: initial, days: 90, kc: 0.5, s: fao_56}
+        - {stage: development, days: 45, kc: null, s: fao_56}
+        - {stage: mid, days: 40, kc: 1.15, s: fao_56, frost_sensitive: {v: true, s: alharbi_2021_faba, n: "La floración es la etapa más sensible a la helada en el haba. Refuerzan: CIREN 1989 (floración, -1 °C) y Barrales et al. 2002 (a -0,7 °C en la hoja solo se dañaron las flores)"}, heat_sensitive: {v: true, s: saskpulse_stress_2023, n: "El calor en la floración hace abortar flores (leguminosas de grano)"}}
 
   - crop_id: maiz
     name_es: {v: "Maíz", s: agrosense_diseno}
@@ -237,7 +373,7 @@ crops:
     temp_min_c: {v: 10, s: fao_ecocrop}
     temp_opt_min_c: {v: 18, s: fao_ecocrop}
     temp_opt_max_c: {v: 33, s: fao_ecocrop}
-    heat_max_c: {v: 47, s: fao_ecocrop, n: "Supuesto por confirmar en HU-190."}
+    heat_max_c: {v: 35, s: purdue_corn07, n: "Desde unos 35 °C (mid-90s °F) se daña el polen en la floración; sobre 38 °C muere. Antes 47 °C, el máximo absoluto de EcoCrop, que no es la temperatura de daño (aprobado por Felipe el 13 nov 2026)."}
     rain_min_mm: {v: 400, s: fao_ecocrop}
     rain_opt_min_mm: {v: 600, s: fao_ecocrop}
     rain_opt_max_mm: {v: 1200, s: fao_ecocrop}
@@ -251,11 +387,12 @@ crops:
     stages:
       source_row: "FAO-56, tabla 11, maíz en grano, fila «East Africa (alt.)» (siembra en abril): la de altura, la más cercana al altiplano."
       kc_source_row: "FAO-56, tabla 12: maíz de campo (media 1,20; final 0,60 a 0,35: se toma 0,35, cosecha en seco); Kc inicial del grupo cereales (0,3)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
       list:
-        - {stage: initial, days: 30, kc: 0.3, s: fao_56, frost_sensitive: null}
-        - {stage: development, days: 50, kc: null, s: fao_56, frost_sensitive: null}
-        - {stage: mid, days: 60, kc: 1.20, s: fao_56, frost_sensitive: null}
-        - {stage: late, days: 40, kc: 0.35, s: fao_56, frost_sensitive: null}
+        - {stage: initial, days: 30, kc: 0.3, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en germinación de -2 a -3 °C; el punto de crecimiento sigue bajo tierra hasta V5-V6 (Purdue 2003) y suele recuperarse"}}
+        - {stage: development, days: 50, kc: null, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño de -1 a -3 °C. Refuerzan: Barrales et al. 2002 (muerte total con la hoja a -0,7 °C) y CIREN 1989 (lo más sensible es la 4.ª hoja)"}}
+        - {stage: mid, days: 60, kc: 1.20, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en floración de -1 a -2 °C. Refuerza SENAMHI-FAO 2010, tabla 2.2: hoja a -2 °C"}, heat_sensitive: {v: true, s: purdue_corn07, n: "El polen se daña desde unos 35 °C y muere sobre 38 °C"}}
+        - {stage: late, days: 40, kc: 0.35, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en fructificación de -2 a -3 °C; solo en R6 el grano está a salvo (Purdue 2021)"}}
 
   - crop_id: zanahoria
     name_es: {v: "Zanahoria", s: agrosense_diseno}
@@ -289,12 +426,12 @@ crops:
     stages:
       source_row: "FAO-56, tabla 11, zanahoria, fila «Mediterranean» (siembra febrero/marzo)."
       kc_source_row: "FAO-56, tabla 12: zanahoria (media 1,05; final 0,95); Kc inicial del grupo hortalizas pequeñas (0,7)."
-      frost_sensitive_note: "Supuesto por confirmar: sensible en todas las etapas (EcoCrop: 0 °C la mata en crecimiento)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
       list:
-        - {stage: initial, days: 30, kc: 0.7, s: fao_56, frost_sensitive: true}
-        - {stage: development, days: 40, kc: null, s: fao_56, frost_sensitive: true}
-        - {stage: mid, days: 60, kc: 1.05, s: fao_56, frost_sensitive: true}
-        - {stage: late, days: 20, kc: 0.95, s: fao_56, frost_sensitive: true}
+        - {stage: initial, days: 30, kc: 0.7, s: fao_56, frost_sensitive: {v: false, s: msu_e1437_carrot, n: "Las plántulas aguantan heladas leves; Tabla 4.5 de la FAO: germinación -6 a -7 °C. EcoCrop da 0 °C: manda la fuente por etapa"}, heat_sensitive: {v: true, s: msu_e1437_carrot, n: "Las plántulas se queman con calor antes de 2,5 cm de alto"}}
+        - {stage: development, days: 40, kc: null, s: fao_56, heat_sensitive: {v: true, s: ucanr_7226_carrot, n: "Sobre 30 °C se reduce el follaje"}}
+        - {stage: mid, days: 60, kc: 1.05, s: fao_56, frost_sensitive: {v: false, s: msu_e1437_carrot, n: "Las hojas maduras aguantan varias noches de unos -4 °C"}, heat_sensitive: {v: true, s: ucanr_7226_carrot, n: "Sobre 30 °C se reduce el follaje y la raíz toma sabores fuertes"}}
+        - {stage: late, days: 20, kc: 0.95, s: fao_56, frost_sensitive: {v: false, s: msu_e1437_carrot, n: "Las hojas maduras aguantan varias noches de unos -4 °C"}, heat_sensitive: {v: true, s: ucanr_7226_carrot, n: "Sobre 30 °C la raíz toma sabores fuertes; el color se forma en las últimas semanas"}}
 
   - crop_id: cebolla_bulbo
     name_es: {v: "Cebolla de bulbo", s: agrosense_diseno}
@@ -328,11 +465,12 @@ crops:
     stages:
       source_row: "FAO-56, tabla 11, cebolla seca, fila «Mediterranean» (siembra en abril)."
       kc_source_row: "FAO-56, tabla 12: cebolla seca (media 1,05; final 0,75); Kc inicial del grupo hortalizas pequeñas (0,7)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
       list:
-        - {stage: initial, days: 15, kc: 0.7, s: fao_56, frost_sensitive: null}
-        - {stage: development, days: 25, kc: null, s: fao_56, frost_sensitive: null}
-        - {stage: mid, days: 70, kc: 1.05, s: fao_56, frost_sensitive: null}
-        - {stage: late, days: 40, kc: 0.75, s: fao_56, frost_sensitive: null}
+        - {stage: initial, days: 15, kc: 0.7, s: fao_56, frost_sensitive: {v: true, s: msu_e1307_onion, n: "Las plántulas aguantan -2 °C pero mueren con más frío"}}
+        - {stage: development, days: 25, kc: null, s: fao_56, frost_sensitive: {v: true, s: ciren_1989_chacras, n: "CIREN: la parte más sensible son las hojas, con temperatura crítica de -1 °C. Choca con UNLu («durante su crecimiento la cebolla tolera heladas»): manda la cifra"}, heat_sensitive: {v: true, s: unlu_horticultura, n: "UNLu, ficha Cebolla, p. 3: en el crecimiento herbáceo la tasa de crecimiento disminuye con más de 30 °C"}}
+        - {stage: mid, days: 70, kc: 1.05, s: fao_56, frost_sensitive: {v: true, s: ciren_1989_chacras, n: "CIREN: hojas a -1 °C, presentes durante el bulbo; UNLu: «los bulbos resultan sensibles»"}, heat_sensitive: {v: true, s: msu_e1307_onion, n: "Sobre 32 °C varios días baja el crecimiento"}}
+        - {stage: late, days: 40, kc: 0.75, s: fao_56, frost_sensitive: {v: true, s: unlu_horticultura, n: "UNLu, ficha Cebolla, p. 3: «los bulbos resultan sensibles» (sin cifra)"}, heat_sensitive: {v: true, s: msu_e1307_onion, n: "El calor al final del ciclo adelanta la madurez y da bulbos más pequeños"}}
 
   - crop_id: avena_vicia
     name_es: {v: "Avena con vicia (abono verde)", s: agrosense_diseno}
@@ -367,12 +505,12 @@ crops:
     stages:
       source_row: "FAO-56, tabla 11, fila «Barley/Oats/Wheat · East Africa» (siembra en julio): la de altura del grupo. Supuesto por confirmar: como abono verde se corta e incorpora antes de terminar, así que la etapa final podría no cumplirse."
       kc_source_row: "FAO-56, tabla 12: avena (media 1,15; final 0,25); Kc inicial del grupo cereales (0,3). La vicia no tiene fila."
-      frost_sensitive_note: "Supuesto por confirmar: sensible en todas las etapas (EcoCrop: -1 °C mata a las dos especies en crecimiento)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
       list:
-        - {stage: initial, days: 15, kc: 0.3, s: fao_56, frost_sensitive: true}
-        - {stage: development, days: 30, kc: null, s: fao_56, frost_sensitive: true}
-        - {stage: mid, days: 65, kc: 1.15, s: fao_56, frost_sensitive: true}
-        - {stage: late, days: 40, kc: 0.25, s: fao_56, frost_sensitive: true}
+        - {stage: initial, days: 15, kc: 0.3, s: fao_56, frost_sensitive: {v: false, s: fao_frost_2005, n: "Tabla 4.5: germinación de la avena -8 a -9 °C y de la vicia -6 a -7 °C. EcoCrop da -1 °C: manda la fuente por etapa"}}
+        - {stage: development, days: 30, kc: null, s: fao_56, frost_sensitive: {v: false, s: fao_frost_2005, n: "Cap. 4: las plántulas de cereales se recuperan si no se daña el nudo de macollamiento"}}
+        - {stage: mid, days: 65, kc: 1.15, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en floración de la avena de -1 a -2 °C"}}
+        - {stage: late, days: 40, kc: 0.25, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: fructificación de la avena y la vicia de -2 a -4 °C. SENAMHI-FAO 2010 da -4 °C en la hoja para la avena, justo en el límite de no sensible: se deja sensible, lo más prudente, porque la FAO da daño desde -2 °C"}}
 
   - crop_id: descanso
     name_es: {v: "Descanso", s: agrosense_diseno}

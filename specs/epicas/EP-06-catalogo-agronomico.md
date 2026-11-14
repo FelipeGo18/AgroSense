@@ -91,9 +91,9 @@ Los cultivos dependen de la región piloto, confirmada el 28 de octubre de 2026:
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
   - [x] `kind`, `ph_min`, `ph_max`, `ph_opt_min` y `ph_opt_max` en cada ficha, con fuente; nulos si no hay fuente. Son los límites absolutos y óptimos de la curva de la señal de suelo (HU-196)
-  - [ ] `frost_sensitive` y `heat_sensitive` por etapa en `crop_stages`, con fuente
+  - [x] `frost_sensitive` y `heat_sensitive` por etapa en `crop_stages`, con fuente (HU-142, 14 nov 2026: cada valor con `frost_source_id` o `heat_source_id`; nulos sin fuente)
   - [ ] La avena con vicia (abono verde, `kind = cover`) y el descanso (`kind = fallow`), con sus reglas de rotación y su duración con fuente
-  - [ ] Etapas sensibles a la helada de los 7 cultivos, con fuente
+  - [x] Etapas sensibles a la helada de los 7 cultivos, con fuente (HU-142, 14 nov 2026; sin fuente quedan la helada del haba en initial y development y de la zanahoria en development)
   - [ ] Reglas de suelo con fuente: exclusión por pH fuera de rango y bonificación de abonos verdes, descanso y leguminosas con carbono orgánico bajo (umbral con fuente)
   - [ ] Revisión cruzada por otro integrante
 - **Reglas que aplican:** R3, R8
