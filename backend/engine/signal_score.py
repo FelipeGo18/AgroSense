@@ -37,16 +37,21 @@ nulo.
 `not_applicable` (heladas o calor cuando ninguna etapa es sensible) no lo decide esta función: lo decide quien la
 llama, antes de pedir la calificación. Una señal que no está en los umbrales da `KeyError`: es un error de
 programación.
+
+Aquí viven también las primitivas de las señales que **cuentan** y **califican**, que comparten el orden de las
+ventanas (HU-192, `window_order.py`) y el semáforo (HU-074, `traffic_light.py`), para que los dos lean lo mismo:
+`counts`, `weight_of`, `signal_order`, `rated_signals`, `limiting` y `high_risk`.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from backend.engine.curve import CurvePoint, crop_curve, score_from_curve
+from common.signals import P0_SIGNALS
 
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
@@ -102,6 +107,55 @@ def counts(signal: str, weight: float, critical: bool) -> bool:
     `supply`, `market`) con peso 0 no cuenta.
     """
     return weight > 0 or (signal in CLIMATE_CRITICAL_SIGNALS and critical)
+
+
+def weight_of(weights: Mapping[str, float], name: str) -> float:
+    """El peso efectivo de una señal: el del mapa, o 0 si falta o es negativo. El motor no valida el rango de 0 a 5
+    (lo hace la API con 422): un peso mayor que 5 se devuelve tal cual."""
+    return max(weights.get(name, 0), 0)
+
+
+def signal_order(name: str) -> tuple[int, str]:
+    """El orden fijo de las señales para desempatar y para listar (R4): las del P0 en el orden del contrato
+    (`P0_SIGNALS`) y las demás al final, por nombre. No depende del orden del mapa recibido."""
+    if name in P0_SIGNALS:
+        return (P0_SIGNALS.index(name), name)
+    return (len(P0_SIGNALS), name)
+
+
+def rated_signals(signals: Mapping[str, SignalScore], weights: Mapping[str, float]) -> tuple[tuple[str, SignalScore, float], ...]:
+    """Las señales que cuentan (`counts`, con su peso efectivo de `weight_of`) y califican (`status = available` con
+    `score`), como `(nombre, calificación, peso efectivo)`, en el orden de `signal_order`.
+
+    Una señal sin datos, que no aplica o `available` sin calificación no califica: no entra (R1). Un riesgo grave de
+    clima con peso 0 sí entra, con peso 0.
+    """
+    rated = []
+    for name, signal in signals.items():
+        weight = weight_of(weights, name)
+        if signal.status == AVAILABLE and signal.score is not None and counts(name, weight, signal.critical):
+            rated.append((name, signal, weight))
+    return tuple(sorted(rated, key=lambda item: signal_order(item[0])))
+
+
+def limiting(rated: Sequence[tuple[str, SignalScore, float]]) -> tuple[str, SignalScore] | None:
+    """El factor que más limita (ley del mínimo): la señal de `rated` con la calificación más baja; en un empate, la
+    primera en `signal_order`. None si `rated` está vacía."""
+    if not rated:
+        return None
+    name, signal, _ = min(rated, key=lambda item: (item[1].score, signal_order(item[0])))
+    return name, signal
+
+
+def high_risk(rated: Sequence[tuple[str, SignalScore, float]]) -> bool:
+    """Si alguna señal de `rated` es `unfavorable` **y** crítica (R2: «desfavorable y crítica»). La única definición
+    de alto riesgo del motor: la usan el orden de las ventanas y el semáforo.
+
+    Con los umbrales de `thresholds.yaml` 1.0.0, toda señal crítica es además desfavorable (el `critical_below` de
+    cada señal no pasa del corte de `moderate`), así que exigir las dos condiciones no cambia ningún resultado de
+    hoy; lo hace explícito por si un umbral se mueve.
+    """
+    return any(signal.critical and signal.level == UNFAVORABLE for _, signal, _ in rated)
 
 
 def score_signal(

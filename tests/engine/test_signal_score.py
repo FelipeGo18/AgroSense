@@ -25,6 +25,8 @@ from backend.engine.signal_score import (
     MODERATE,
     UNFAVORABLE,
     SignalScore,
+    high_risk,
+    rated_signals,
     score_signal,
 )
 from pipeline import catalog
@@ -449,6 +451,21 @@ def test_el_resultado_es_inmutable(thresholds):
     result = score_signal("water", 80.0, thresholds)
     with pytest.raises(AttributeError):
         result.score = 0.0  # type: ignore[misc]
+
+
+# ---------- Alto riesgo: desfavorable y crítica (R2) ----------
+# Qué cuenta, el peso efectivo, el desempate y el factor limitante se prueban a través del orden de las ventanas
+# (tests/engine/test_orden_ventanas.py). Aquí solo el caso que el orden no puede mostrar con los umbrales de hoy.
+
+
+def test_alto_riesgo_exige_desfavorable_y_critica():
+    """Con `thresholds.yaml` 1.0.0 toda crítica es desfavorable; si un umbral cambiara, una crítica `moderate` no
+    sería alto riesgo."""
+    critical_moderate = SignalScore(AVAILABLE, 45, MODERATE, True)
+    critical_unfavorable = SignalScore(AVAILABLE, 10, UNFAVORABLE, True)
+    assert high_risk(rated_signals({"frost": critical_moderate}, {"frost": 3})) is False
+    assert high_risk(rated_signals({"frost": critical_unfavorable}, {"frost": 3})) is True
+    assert high_risk(()) is False
 
 
 # ---------- R6 en ejecución ----------
