@@ -28,6 +28,7 @@ from backend.engine.signal_score import (
     high_risk,
     rated_signals,
     score_signal,
+    weight_of,
 )
 from pipeline import catalog
 
@@ -466,6 +467,13 @@ def test_alto_riesgo_exige_desfavorable_y_critica():
     assert high_risk(rated_signals({"frost": critical_moderate}, {"frost": 3})) is False
     assert high_risk(rated_signals({"frost": critical_unfavorable}, {"frost": 3})) is True
     assert high_risk(()) is False
+
+
+@pytest.mark.parametrize("missing", [None, float("nan")])
+def test_un_peso_none_o_nan_vale_0(missing):
+    """Un peso que falta vale 0, también si llega como None o NaN: la señal no cuenta (y no revienta la comparación)."""
+    assert weight_of({"supply": missing}, "supply") == 0
+    assert rated_signals({"supply": SignalScore(AVAILABLE, 30, UNFAVORABLE, False)}, {"supply": missing}) == ()
 
 
 # ---------- R6 en ejecución ----------

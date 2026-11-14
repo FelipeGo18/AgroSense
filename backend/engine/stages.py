@@ -14,13 +14,13 @@ import calendar
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+# Si un riesgo se evalúa en la ventana: los valores de `status` del contrato, definidos una vez en el motor.
+from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, NOT_APPLICABLE
 from common.dates import add_months
 
 CALENDAR = "calendar"
 # Para qué riesgo se pregunta si una etapa es sensible (columnas `frost_sensitive` y `heat_sensitive` de `crop_stages`).
 FROST, HEAT = "frost", "heat"
-# Si un riesgo se evalúa en la ventana (los valores de `status` del contrato).
-AVAILABLE, NOT_APPLICABLE, INSUFFICIENT_DATA = "available", "not_applicable", "insufficient_data"
 
 
 @dataclass(frozen=True)

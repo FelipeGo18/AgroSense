@@ -40,7 +40,9 @@ programación.
 
 Aquí viven también las primitivas de las señales que **cuentan** y **califican**, que comparten el orden de las
 ventanas (HU-192, `window_order.py`) y el semáforo (HU-074, `traffic_light.py`), para que los dos lean lo mismo:
-`counts`, `weight_of`, `signal_order`, `rated_signals`, `limiting` y `high_risk`.
+`counts`, `weight_of`, `signal_order`, `rated_signals` (con su tipo `RatedSignal`), `limiting` y `high_risk`. También
+viven aquí los valores de `status` (`AVAILABLE`, `INSUFFICIENT_DATA`, `NOT_APPLICABLE`), una sola vez para todo el
+motor.
 """
 
 from __future__ import annotations
@@ -56,8 +58,10 @@ from common.signals import P0_SIGNALS
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
 
+# Los valores de `status` del contrato: la única definición del motor (los demás módulos los importan de aquí).
 AVAILABLE = "available"
 INSUFFICIENT_DATA = "insufficient_data"
+NOT_APPLICABLE = "not_applicable"
 
 FAVORABLE = "favorable"
 MODERATE = "moderate"
@@ -90,6 +94,10 @@ class SignalScore:
     critical: bool
 
 
+# Una señal que cuenta y califica, como la devuelve `rated_signals`: (nombre, calificación, peso efectivo).
+RatedSignal = tuple[str, SignalScore, float]
+
+
 def round_half_up(value: float) -> int:
     """Redondea hacia arriba desde la mitad: nunca el redondeo al par de `round()` (`round(68.5)` da 68, pero
     aquí 68,5 tiene que dar 69). Lo usan las calificaciones (0-100) y los porcentajes de las razones (en valor
@@ -109,10 +117,13 @@ def counts(signal: str, weight: float, critical: bool) -> bool:
     return weight > 0 or (signal in CLIMATE_CRITICAL_SIGNALS and critical)
 
 
-def weight_of(weights: Mapping[str, float], name: str) -> float:
-    """El peso efectivo de una señal: el del mapa, o 0 si falta o es negativo. El motor no valida el rango de 0 a 5
-    (lo hace la API con 422): un peso mayor que 5 se devuelve tal cual."""
-    return max(weights.get(name, 0), 0)
+def weight_of(weights: Mapping[str, float | None], name: str) -> float:
+    """El peso efectivo de una señal: el del mapa, o 0 si falta, es None, NaN o negativo (un peso que falta vale 0).
+    El motor no valida el rango de 0 a 5 (lo hace la API con 422): un peso mayor que 5 se devuelve tal cual."""
+    weight = weights.get(name)
+    if weight is None or math.isnan(weight):
+        return 0
+    return max(weight, 0)
 
 
 def signal_order(name: str) -> tuple[int, str]:
@@ -123,7 +134,7 @@ def signal_order(name: str) -> tuple[int, str]:
     return (len(P0_SIGNALS), name)
 
 
-def rated_signals(signals: Mapping[str, SignalScore], weights: Mapping[str, float]) -> tuple[tuple[str, SignalScore, float], ...]:
+def rated_signals(signals: Mapping[str, SignalScore], weights: Mapping[str, float | None]) -> tuple[RatedSignal, ...]:
     """Las señales que cuentan (`counts`, con su peso efectivo de `weight_of`) y califican (`status = available` con
     `score`), como `(nombre, calificación, peso efectivo)`, en el orden de `signal_order`.
 
@@ -138,7 +149,7 @@ def rated_signals(signals: Mapping[str, SignalScore], weights: Mapping[str, floa
     return tuple(sorted(rated, key=lambda item: signal_order(item[0])))
 
 
-def limiting(rated: Sequence[tuple[str, SignalScore, float]]) -> tuple[str, SignalScore] | None:
+def limiting(rated: Sequence[RatedSignal]) -> tuple[str, SignalScore] | None:
     """El factor que más limita (ley del mínimo): la señal de `rated` con la calificación más baja; en un empate, la
     primera en `signal_order`. None si `rated` está vacía."""
     if not rated:
@@ -147,7 +158,7 @@ def limiting(rated: Sequence[tuple[str, SignalScore, float]]) -> tuple[str, Sign
     return name, signal
 
 
-def high_risk(rated: Sequence[tuple[str, SignalScore, float]]) -> bool:
+def high_risk(rated: Sequence[RatedSignal]) -> bool:
     """Si alguna señal de `rated` es `unfavorable` **y** crítica (R2: «desfavorable y crítica»). La única definición
     de alto riesgo del motor: la usan el orden de las ventanas y el semáforo.
 
