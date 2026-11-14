@@ -472,6 +472,7 @@ def test_un_peso_none_o_nan_vale_0(missing):
     assert weight_of({"supply": missing}, "supply") == 0
     assert rated_signals({"supply": SignalScore(AVAILABLE, 30, UNFAVORABLE, False)}, {"supply": missing}) == ()
 
+
 # ---------- Errores: de programación o de catálogo, nunca «sin datos» ----------
 
 
