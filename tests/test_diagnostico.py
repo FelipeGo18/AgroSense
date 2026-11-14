@@ -11,18 +11,20 @@ luz roja o verde, las pruebas ponen el agua en 0 con `priorities`.
 """
 
 import shutil
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
 import polars as pl
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from structlog.testing import capture_logs
 
+from backend.accounts.models import Session as AccountSession
 from backend.api import calc_models as m
 from backend.api import calculations
+from backend.api.auth import SESSION_COOKIE
 from backend.api.calculations import IRRIGATION_UNKNOWN
 from backend.api.climate_signals import frost_caveat
 from backend.api.main import app
@@ -324,6 +326,15 @@ def rows(db) -> dict[str, int]:
     return {table.name: db.scalar(select(func.count()).select_from(table)) for table in Base.metadata.sorted_tables}
 
 
+def dump(db) -> dict[str, list[tuple]]:
+    """Todo el contenido de cada tabla, con las filas ordenadas por clave primaria: un UPDATE también cambia el volcado."""
+    db.rollback()
+    return {
+        table.name: [tuple(row) for row in db.execute(select(table).order_by(*table.primary_key.columns)).all()]
+        for table in Base.metadata.sorted_tables
+    }
+
+
 def register(client, username: str) -> None:
     response = client.post(
         "/api/v1/auth/register",
@@ -348,11 +359,13 @@ def test_el_diagnostico_no_escribe_en_la_base_ni_registra_la_consulta(examples, 
     """R9: ninguna tabla de las cuentas cambia, con o sin lote; ni el cuerpo ni las prioridades van al log."""
     register(client, "rosa.samaca")
     lot_id = create_lot(client)
-    before = rows(db)
+    before, content_before = rows(db), dump(db)
     with capture_logs() as logs:
         diagnose(client, NOVEMBER, priorities=NO_WATER)
+        assert dump(db) == content_before
         diagnose(client, NOVEMBER, priorities=NO_WATER, lot_id=lot_id)
     assert rows(db) == before
+    assert dump(db) == content_before
     text = str([{key: value for key, value in entry.items() if key != "request_id"} for entry in logs])
     for value in (SAMACA, "papa", NOVEMBER, lot_id, "priorities", "weights_basis", "El Alto"):
         assert value not in text, value
@@ -382,3 +395,59 @@ def test_con_lote_inexistente_o_ajeno_responde_404(examples, client):
         response = client.post("/api/v1/diagnostics", json={**body, "lot_id": other})
         assert response.status_code == 404, response.json()
         assert response.json()["error"]["code"] == "not_found"
+
+
+def without_request_id(response) -> dict:
+    body = response.json()
+    body["error"] = {key: value for key, value in body["error"].items() if key != "request_id"}
+    return body
+
+
+def diagnose_lot(client, lot_id: str):
+    return client.post("/api/v1/diagnostics", json={"municipality_id": SAMACA, "crop_id": "papa", "sowing_date": APRIL, "lot_id": lot_id})
+
+
+def test_el_404_de_un_lote_ajeno_es_igual_al_de_uno_inexistente(examples, client):
+    register(client, "rosa.samaca")
+    lot_id = create_lot(client)
+    assert client.post("/api/v1/auth/logout").status_code == 204
+    register(client, "fabio.samaca")
+    foreign = diagnose_lot(client, lot_id)
+    missing = diagnose_lot(client, "00000000-0000-4000-8000-000000000001")
+    assert foreign.status_code == missing.status_code == 404
+    assert without_request_id(foreign) == without_request_id(missing)
+    assert lot_id not in foreign.text and "El Alto" not in foreign.text
+
+
+def test_un_lote_borrado_responde_el_mismo_404_que_uno_inexistente(examples, client):
+    register(client, "rosa.samaca")
+    lot_id = create_lot(client)
+    assert diagnose_lot(client, lot_id).status_code == 200
+    assert client.delete(f"/api/v1/lots/{lot_id}").status_code == 204
+    deleted = diagnose_lot(client, lot_id)
+    missing = diagnose_lot(client, "00000000-0000-4000-8000-000000000001")
+    assert deleted.status_code == missing.status_code == 404
+    assert without_request_id(deleted) == without_request_id(missing)
+    assert lot_id not in deleted.text
+
+
+def test_con_cookie_inventada_o_sesion_vencida_responde_401_sin_nada_del_lote(examples, client, db):
+    register(client, "rosa.samaca")
+    lot_id = create_lot(client)
+    real_cookie = client.cookies.get(SESSION_COOKIE)
+    assert real_cookie
+    client.cookies.clear()
+    client.cookies.set(SESSION_COOKIE, "token-inventado-que-no-existe")
+    forged = diagnose_lot(client, lot_id)
+    assert forged.status_code == 401
+    assert lot_id not in forged.text and "El Alto" not in forged.text
+
+    client.cookies.clear()
+    client.cookies.set(SESSION_COOKIE, real_cookie)
+    assert diagnose_lot(client, lot_id).status_code == 200
+    db.execute(update(AccountSession).values(expires_at=datetime.now(UTC) - timedelta(days=1)))
+    db.commit()
+    expired = diagnose_lot(client, lot_id)
+    assert expired.status_code == 401
+    assert lot_id not in expired.text and "El Alto" not in expired.text
+    assert without_request_id(expired)["error"]["code"] == without_request_id(forged)["error"]["code"]
