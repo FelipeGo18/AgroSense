@@ -102,6 +102,15 @@ sources:
     coverage: "AgroSense"
     license: "Del proyecto"
     notes: "Solo para cómo se dibuja cada cultivo (`archetype`) y su nombre en la web. No es un dato agronómico."
+  - source_id: fao_crop_info_potato
+    name: "FAO Land & Water: Crop Information, Potato"
+    institution: "FAO, Land and Water Division"
+    url: "https://web.archive.org/web/2017/http://www.fao.org/land-water/databases-and-software/crop-information/potato/en/"
+    downloaded_at: "2026-11-14"
+    period_covered: "Sin fecha (la ficha ya no está en el sitio de la FAO; se lee en el Internet Archive)"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "«Tuber growth is sharply inhibited when below 10°C and above 30°C». Contraste de Luisa en la revisión cruzada de HU-142 (PR #69)."
   - source_id: senamhi_atlas_heladas_2010
     name: "SENAMHI y FAO: Atlas de heladas del Perú (2010). Tablas 2.2 y 2.3"
     institution: "Servicio Nacional de Meteorología e Hidrología del Perú (SENAMHI) y FAO"
@@ -248,7 +257,7 @@ crops:
     temp_min_c: {v: 7, s: fao_ecocrop}
     temp_opt_min_c: {v: 15, s: fao_ecocrop}
     temp_opt_max_c: {v: 25, s: fao_ecocrop}
-    heat_max_c: {v: 30, s: fao_ecocrop, n: "Máximo absoluto de la temperatura del ciclo en EcoCrop. Supuesto por confirmar en HU-190: se compara con la máxima diaria que se supera uno de cada diez días."}
+    heat_max_c: {v: 30, s: fao_crop_info_potato, n: "Sobre 30 °C el crecimiento del tubérculo se frena en seco («Tuber growth is sharply inhibited when below 10°C and above 30°C», FAO Crop Information). Coincide con el máximo absoluto de EcoCrop. Más prudente que el estrés por calor de 35 °C de FAO-66: se deja en 30 °C (decidido por Felipe el 14 nov 2026, PR #69). Se compara con la máxima que se supera uno de cada diez días."}
     rain_min_mm: {v: 250, s: fao_ecocrop}
     rain_opt_min_mm: {v: 500, s: fao_ecocrop}
     rain_opt_max_mm: {v: 800, s: fao_ecocrop}
