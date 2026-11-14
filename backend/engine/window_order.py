@@ -39,7 +39,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from backend.engine.signal_score import AVAILABLE, SignalScore, counts, round_half_up
-from common.signal_sources import P0_SIGNALS
+from common.signals import P0_SIGNALS
 
 # Grupos del orden: primero las calificadas sin alto riesgo, después las de alto riesgo, al final las sin calificar.
 _RANKED, _HIGH_RISK, _UNRATED = 0, 1, 2
