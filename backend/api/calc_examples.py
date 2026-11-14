@@ -581,6 +581,7 @@ ERRORS = {
     401: error("unauthorized", "Inicie sesión para continuar."),
     404: error("not_found", "Ese lote no existe o no es suyo."),
     422: error("invalid_input", "Hay datos que no son válidos. Revise: priorities."),
+    500: error("internal_error", "Algo falló de nuestro lado. Intente de nuevo en un momento."),
     501: error("not_implemented", "Este cálculo todavía no está disponible."),
     503: error("dataset_unavailable", "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde."),
 }
@@ -589,6 +590,7 @@ SUMMARIES = {
     401: "Sin sesión, o con `lot_id` y sin sesión",
     404: "Un lote o una temporada que no existe o es de otro usuario",
     422: "Entrada inválida",
+    500: "Error interno del servidor",
     501: "El motor todavía no está construido",
     503: "El dataset publicado no está",
 }

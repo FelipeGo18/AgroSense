@@ -46,6 +46,9 @@ const ROUTES = (
     "/politica-de-datos",
     "/precios",
     "/precios?producto=papa-negra",
+    ...["cargando", "sin_conexion", "422", "500", "503"].map(
+      (state) => `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no&estado=${state}`,
+    ),
     "/ruta-que-no-existe",
     ...(process.env.SESSION ? ["/mi-finca/agregar", "/mi-cuenta", "/mi-cuenta/contrasena", "/mi-cuenta/actividad"] : []),
     ...(process.env.SESSION && LOT
@@ -79,6 +82,8 @@ function inspect({ light, minTarget }) {
   const root = document.documentElement;
   const cw = root.clientWidth;
   if (root.scrollWidth > cw + 1) problems.push(`la página se desplaza en horizontal (${root.scrollWidth} > ${cw})`);
+  // El pie de página va en todas las pantallas (specs/05-frontend.md, «Pie de página: todos»): cada página lo agrega.
+  if (!document.querySelector("footer")) problems.push("la página no tiene el pie de página");
 
   const label = (el) =>
     `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}${el.className && typeof el.className === "string" ? `.${el.className.split(" ").slice(0, 2).join(".")}` : ""}`;
@@ -169,7 +174,15 @@ async function check(context, route, width, light) {
   try {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
+    const loadingState = new URL(route, BASE).searchParams.get("estado") === "cargando";
+
+    await page.goto(`${BASE}${route}`, {
+      waitUntil: loadingState ? "domcontentloaded" : "networkidle",
+    });
+
+    if (loadingState) {
+      await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+    }
     await page.waitForTimeout(1200);
     return [...(await page.evaluate(inspect, { light, minTarget: minTargetFor(width) })), ...errors.map((e) => `error de la página: ${e}`)];
   } finally {
