@@ -41,6 +41,7 @@ from backend.config.weights import get_default_weights
 from backend.dataset import Dataset, Municipality
 from backend.db.session import get_db
 from backend.engine.suitability import ABOVE_MAX, NOT_SUITABLE, Suitability, suitability
+from common.dates import add_months
 from common.region import region_today
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
@@ -53,8 +54,8 @@ def _examples(**values: tuple[str, Any]) -> dict[str, Any]:
 
 
 def _months_ahead(day: date, months: int) -> date:
-    year, month = divmod(day.month - 1 + months, 12)
-    return date(day.year + year, month + 1, 1)
+    """El día 1 del mes que queda `months` meses después del de `day`."""
+    return date(*add_months(day.year, day.month, months), 1)
 
 
 def _check_sowing_date(sowing_date: date) -> None:
