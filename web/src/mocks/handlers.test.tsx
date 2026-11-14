@@ -71,12 +71,20 @@ describe("respuestas simuladas (HU-013)", () => {
     expect((await diagnose()).suitability.level).toBe("not_suitable");
   });
 
-  it("fuerza un error por su número o por su código, con la forma de errores del contrato", async () => {
-    for (const estado of ["503", "dataset_unavailable"]) {
+  it("fuerza los errores de diagnóstico por su número y devuelve los códigos del contrato", async () => {
+    const errors = [
+      ["404", 404, "not_found"],
+      ["422", 422, "invalid_input"],
+      ["501", 501, "not_implemented"],
+      ["503", 503, "dataset_unavailable"],
+    ] as const;
+    for (const [estado, status, code] of errors) {
       const error = await diagnose(estado).catch((e: unknown) => e);
       expect(error).toBeInstanceOf(ApiError);
-      expect(error).toMatchObject({ status: 503, code: "dataset_unavailable" });
+      expect(error).toMatchObject({ status, code });
     }
+    const datasetUnavailable = await diagnose("dataset_unavailable").catch((e: unknown) => e);
+    expect(datasetUnavailable).toMatchObject({ status: 503, code: "dataset_unavailable" });
     const unauthorized = await diagnose("unauthorized").catch((e: unknown) => e);
     expect(unauthorized).toMatchObject({ status: 401, code: "unauthorized" });
   });
@@ -95,7 +103,20 @@ describe("respuestas simuladas (HU-013)", () => {
 
   it("lista los estados de cada ruta", () => {
     expect(SIMULATION_STATES["POST /diagnostics"]).toEqual(
-      expect.arrayContaining(["favorable", "no_apto", "sin_agua", "no_aplica", "503", "dataset_unavailable"]),
+      expect.arrayContaining([
+        "favorable",
+        "no_apto",
+        "sin_agua",
+        "no_aplica",
+        "404",
+        "422",
+        "501",
+        "503",
+        "not_found",
+        "invalid_input",
+        "not_implemented",
+        "dataset_unavailable",
+      ]),
     );
     expect(SIMULATION_STATES.todas).toEqual(["cargando", "sin_conexion"]);
   });

@@ -46,6 +46,9 @@ const ROUTES = (
     "/politica-de-datos",
     "/precios",
     "/precios?producto=papa-negra",
+    ...["cargando", "sin_conexion", "422", "500", "503"].map(
+      (state) => `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no&estado=${state}`,
+    ),
     "/ruta-que-no-existe",
     ...(process.env.SESSION ? ["/mi-finca/agregar", "/mi-cuenta", "/mi-cuenta/contrasena", "/mi-cuenta/actividad"] : []),
     ...(process.env.SESSION && LOT
@@ -169,7 +172,15 @@ async function check(context, route, width, light) {
   try {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" });
+    const loadingState = new URL(route, BASE).searchParams.get("estado") === "cargando";
+
+    await page.goto(`${BASE}${route}`, {
+      waitUntil: loadingState ? "domcontentloaded" : "networkidle",
+    });
+
+    if (loadingState) {
+      await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+    }
     await page.waitForTimeout(1200);
     return [...(await page.evaluate(inspect, { light, minTarget: minTargetFor(width) })), ...errors.map((e) => `error de la página: ${e}`)];
   } finally {
