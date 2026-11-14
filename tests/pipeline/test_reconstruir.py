@@ -51,7 +51,7 @@ def rebuild(tmp_path, caches):
 def test_lo_que_se_acaba_de_publicar_coincide_con_su_manifiesto(tmp_path, caches):
     folder = rebuild(tmp_path, caches)
     manifest = build.verify(folder, REGION["dataset_version"])
-    expected = {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
+    expected = {"municipalities", "municipality_boundaries", "crops", "crop_stages", "rotation_rules", "sources"}
     assert set(manifest["tables"]) == expected | {"market_price_day", "market_price_latest", "market_price_season", "market_month"}
 
 
@@ -165,7 +165,7 @@ def test_cada_tabla_escrita_deja_su_linea(tmp_path, caches):
         rebuild(tmp_path, caches)
     written = {line["table"]: line["rows"] for line in logs if line["event"] == "table_written"}
     assert written["municipalities"] == 3 and written["market_price_day"] == 7
-    expected = {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
+    expected = {"municipalities", "municipality_boundaries", "crops", "crop_stages", "rotation_rules", "sources"}
     assert set(written) == expected | {"market_price_day", "market_price_latest", "market_price_season", "market_month"}
 
 
@@ -186,7 +186,7 @@ def test_sin_la_cache_de_sipsa_se_publica_lo_demas_y_el_log_dice_por_que(tmp_pat
     folder = tmp_path / "published"
     with capture_logs() as logs:
         manifest = build.build(folder=folder, cache=cache, market_cache=tmp_path / "sin-sipsa", power_cache=tmp_path / "sin-clima")
-    assert set(manifest["tables"]) == {"municipalities", "municipality_boundaries", "crops", "crop_stages", "sources"}
+    assert set(manifest["tables"]) == {"municipalities", "municipality_boundaries", "crops", "crop_stages", "rotation_rules", "sources"}
     assert "dane_sipsa" not in pl.read_parquet(folder / "sources.parquet")["source_id"].to_list()
     missing = [line for line in logs if line["event"] == "source_missing" and line["source"] == "dane_sipsa"]
     assert missing and missing[0]["log_level"] == "warning"

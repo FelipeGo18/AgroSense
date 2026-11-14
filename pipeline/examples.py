@@ -17,6 +17,7 @@ from typing import Any
 
 import polars as pl
 
+from pipeline import rotation_rules as rotation
 from pipeline import schema
 from pipeline.build import PUBLISHED
 from pipeline.sources import sipsa
@@ -341,31 +342,39 @@ def market_price_season() -> pl.DataFrame:
     return _table("market_price_season", rows)
 
 
-def rotation_rules() -> pl.DataFrame:
-    """Una regla de ejemplo por cada tipo de condición del contrato. Los números son inventados: los fija HU-062."""
+def rotation_rules(crops: pl.DataFrame | None = None, published: Path = PUBLISHED) -> pl.DataFrame:
+    """Una regla de ejemplo por cada tipo de condición del contrato. Los números son inventados: los fija HU-062.
+
+    Pasan por el mismo validador que las reglas reales (`pipeline/rotation_rules.py`), con las familias de las fichas
+    (`crops`; si no se pasan, las publicadas, que son las que copia el dataset de ejemplo).
+    """
+    if crops is None:
+        crops = pl.read_parquet(published / "crops.parquet")
+    families = set(crops["family"].drop_nulls().to_list())
 
     def rule(rule_id, kind, criterion, condition_type, params, levels, reason):
-        return {
+        raw = {
             "rule_id": rule_id, "kind": kind, "criterion": criterion, "condition_type": condition_type,
-            "params": json.dumps(params), "levels": json.dumps(levels) if levels is not None else None,
-            "reason_template": reason, "source_id": SOURCE_ID,
+            "params": params, "levels": levels, "reason_template": reason, "source_id": SOURCE_ID,
         }  # fmt: skip
+        return rotation.parse_rule(raw, known_sources={SOURCE_ID}, known_families=families)
 
-    rows = [
+    rules = [
         rule("ejemplo_familia_seguida", "filter", None, "same_family_consecutive", {"families": None}, None,
              "Repite la familia {family} en dos ciclos seguidos"),
-        rule("ejemplo_papa_espera", "health", "pest_break", "family_return_min_cycles", {"family": "solanaceae", "min_cycles": 2},
+        rule("ejemplo_papa_espera", "health", "pest_break", "family_return_min_cycles", {"family": "Solanaceae", "min_cycles": 2},
              {"favorable": 2, "moderate": 1}, "La papa vuelve después de {cycles} ciclos de otras familias"),
         rule("ejemplo_leguminosas", "health", "nitrogen", "legume_cycles", {}, {"favorable": 2, "moderate": 1},
              "{count} de los ciclos tienen leguminosas, que fijan nitrógeno"),
         rule("ejemplo_materia_organica", "health", "organic_carbon", "organic_matter_cycles", {"soc_low_g_kg": 20},
-             {"favorable": 1, "moderate": 0}, "{count} ciclos devuelven materia orgánica; el carbono del suelo es {soc_level}"),
+             {"low": {"favorable": 2, "moderate": 1}, "normal": {"favorable": 1, "moderate": 0}},
+             "{count} ciclos devuelven materia orgánica; el carbono estimado del suelo es {soc_level} ({soc_range} g/kg)"),
         rule("ejemplo_suelo_cubierto", "health", "soil_cover", "covered_months_pct", {}, {"favorable": 80, "moderate": 60},
              "El suelo queda cubierto {pct} % de los meses de la estrategia"),
         rule("ejemplo_erosion", "health", "erosion", "bare_months_on_slope", {"slope_pct_from": 8}, {"favorable": 1, "moderate": 3},
              "Con pendiente de {slope} %, el suelo queda descubierto {months} meses"),
     ]  # fmt: skip
-    return _table("rotation_rules", rows)
+    return rotation.table(rules)
 
 
 def climate_risk_week(risk_month: pl.DataFrame, month: pl.DataFrame) -> pl.DataFrame:
@@ -415,7 +424,7 @@ def build(published: Path = PUBLISHED) -> dict[str, pl.DataFrame]:
         "municipality_boundaries": real["municipality_boundaries"].filter(pl.col("municipality_id").is_in(list(TOWNS))),
         "crops": real["crops"],
         "crop_stages": real["crop_stages"],
-        "rotation_rules": rotation_rules(),
+        "rotation_rules": rotation_rules(real["crops"]),
         "climate_day": days,
         "climate_month": month,
         "climate_risk_month": risk,
@@ -476,7 +485,7 @@ def write(tables: dict[str, pl.DataFrame], folder: Path = EXAMPLES, published: P
 def main() -> None:
     try:
         manifest = write(build())
-    except (FileNotFoundError, schema.SchemaError) as error:
+    except (FileNotFoundError, schema.SchemaError, rotation.RotationRulesError) as error:
         sys.exit(f"No se escribieron los ejemplos: {error}")
     rows = sum(info["rows"] for info in manifest["tables"].values())
     print(f"Ejemplos escritos en {EXAMPLES}: {len(manifest['tables'])} tablas, {rows} filas.")

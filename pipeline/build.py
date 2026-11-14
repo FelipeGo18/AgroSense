@@ -5,7 +5,8 @@
     uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044, con la altura de su celda de NASA POWER),
-`municipality_boundaries` (MGN del DANE, HU-044), el catálogo (`crops` y `crop_stages`, HU-061), `climate_day` (NASA
+`municipality_boundaries` (MGN del DANE, HU-044), el catálogo (`crops` y `crop_stages`, HU-061), `rotation_rules` (las
+reglas de rotación de `catalog/rotation_rules.yaml`, HU-062), `climate_day` (NASA
 POWER, HU-041), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221), `market_price_latest` (el último
 precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla
 pasa por las validaciones y por su esquema del contrato (`pipeline/schema.py`, HU-011) antes de escribirse: si una
@@ -39,7 +40,7 @@ import yaml
 from common import signal_sources
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import climate_normals, climate_risk, schema
+from pipeline import climate_normals, climate_risk, rotation_rules, schema
 from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin
 
@@ -284,6 +285,7 @@ def publish(
     climate_month: pl.DataFrame | None = None,
     precip_month: pl.DataFrame | None = None,
     frost: tuple[pl.DataFrame, pl.DataFrame] | None = None,
+    rules: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
@@ -333,6 +335,8 @@ def publish(
         tables["municipality_boundaries"] = boundaries
     if crops is not None:
         tables["crops"], tables["crop_stages"] = crops[1], crops[2]
+    if rules is not None:
+        tables["rotation_rules"] = rules
     if has_climate:
         tables["climate_day"] = climate
     if has_month:
@@ -375,6 +379,8 @@ def publish(
     if crops is not None:
         manifest["tables"]["crops"] = {"rows": crops[1].height, "coverage": "cultivos del MVP"}
         manifest["tables"]["crop_stages"] = {"rows": crops[2].height, "coverage": "cultivos del MVP"}
+    if rules is not None:
+        manifest["tables"]["rotation_rules"] = {"rows": rules.height, "coverage": "reglas de rotación de los cultivos del MVP"}
     if has_climate:
         days = f"del {climate['date'].min()} al {climate['date'].max()}"
         coverage = f"{climate['municipality_id'].n_unique()} municipios con altitud, {days}"
@@ -652,6 +658,13 @@ def build(
             )
     catalog = crops_catalog.load()
     crops_table, stages_table, catalog_sources = crops_catalog.build(catalog)
+    # Las reglas citan las fuentes de las fichas y las suyas, y usan las familias de las fichas (HU-062).
+    rules_table, rules_sources = rotation_rules.build(
+        rotation_rules.load(),
+        crop_sources=catalog.get("sources") or [],
+        known_families=set(crops_table["family"].drop_nulls().to_list()),
+        expected_version=catalog["version"],
+    )
     own = [dane.source(meta), dane_mgn.source(mgn_meta)]
     prices = crop_products = None
     counts: Counter[str] = Counter()
@@ -675,11 +688,27 @@ def build(
         )
         own.append(sipsa.source(prices, downloaded_at))
         crop_products = load_crops()
-    sources = pl.concat([pl.DataFrame([*own, *terrain_sources, *climate_sources, *rain_sources]), catalog_sources], how="diagonal_relaxed")
+    sources = pl.concat(
+        [pl.DataFrame([*own, *terrain_sources, *climate_sources, *rain_sources]), catalog_sources, rules_sources],
+        how="diagonal_relaxed",
+    )
     check_signal_sources(region["region"]["id"], set(sources["source_id"].to_list()))
     crops = (catalog["version"], crops_table, stages_table)
     return publish(
-        region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid, climate_month, precip_month, frost
+        region,
+        municipalities,
+        sources,
+        folder,
+        boundaries,
+        crops,
+        prices,
+        crop_products,
+        climate,
+        grid,
+        climate_month,
+        precip_month,
+        frost,
+        rules_table,
     )
 
 
@@ -721,7 +750,14 @@ def main() -> None:
         if not args.verificar:
             build(download=args.descargar)
         manifest = verify(PUBLISHED, expected)
-    except (FileNotFoundError, ValidationError, crops_catalog.CatalogError, nasa_power.DownloadError, nasadem.TileError) as error:
+    except (
+        FileNotFoundError,
+        ValidationError,
+        crops_catalog.CatalogError,
+        rotation_rules.RotationRulesError,
+        nasa_power.DownloadError,
+        nasadem.TileError,
+    ) as error:
         event = "dataset_mismatch" if args.verificar else "dataset_not_published"
         log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")
         sys.exit(1)

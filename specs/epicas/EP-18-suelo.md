@@ -84,11 +84,13 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
   - [ ] Un criterio sin regla con fuente queda `insufficient_data`, no se inventa un corte (R1, R8)
   - [ ] El criterio `soil` del ranking (HU-082) sale de estos cinco, como dice `specs/01-reglas.md` («Estrategias de rotación»)
   - [ ] Ninguna razón dice cuánto va a mejorar el suelo: compara estrategias según reglas (decisión 4, R5)
+  - [ ] La razón de cada criterio de `soil_health` que cite `criterio_equipo_2026` dice «criterio del equipo» (R8, decisión 16, 11 nov 2026). Prueba: una estrategia con `nitrogen` evaluado por esa regla trae la frase en su razón
+  - [ ] `pest_break` cuenta los cultivos anteriores del terreno (`previous_crop_ids`) además de los ciclos de la estrategia. Prueba: papa → avena → arveja (`papa_espera` con `favorable: 3` y `moderate: 2`) no sale `unfavorable`; con 3 ciclos de otros cultivos entre las dos papas, sale `favorable`
   - [ ] Función pura del motor: recibe el suelo y el NDVI ya leídos (R6)
   - [ ] Prueba: dos estrategias iguales salvo una leguminosa dan `nitrogen` mejor a la que la tiene; con carbono bajo, la que tiene abono verde da `organic_carbon` mejor
 - **Reglas que aplican:** R1, R3, R5, R6, R8, R10
 - **Contrato que toca:** `strategies[].soil_health` de `POST /api/v1/rotations`; `rotation_rules`; `grid_cells`, `soil_municipality`, `ndvi_grid`, `ndvi_municipality_normal`
-- **Notas:** Decisión 12. No hay modelo de suelo: es una comparación entre estrategias según reglas con fuente, no una predicción. Depende de HU-062, HU-063, HU-181 y HU-213. Supuesto por confirmar: cómo entra el NDVI al nivel de `soil_cover` (hoy solo en la razón, como contraste). Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. No hay modelo de suelo: es una comparación entre estrategias según reglas con fuente, no una predicción. Depende de HU-062, HU-063, HU-181 y HU-213. Supuesto por confirmar: cómo entra el NDVI al nivel de `soil_cover` (hoy solo en la razón, como contraste). Agregada el 11 de octubre de 2026. A tener en cuenta (HU-062, nota 5, 9 nov 2026): `papa_espera` cita `criterio_equipo_2026` y, desde el 11 nov 2026 (Felipe, revisión del PR #46), pide `min_cycles: 3` con `levels {favorable: 3, moderate: 2}`: 3 o más ciclos de otros cultivos son `favorable`, 2 son `moderate` y 0 o 1 son `unfavorable`; el corte de plagas cuenta también los cultivos anteriores del terreno (`current_crop_ids`; con cuenta, el historial de HU-165), para que una estrategia de 3 ciclos pueda llegar a `favorable`.
 
 ### HU-224 · Erosión en la salud del suelo
 

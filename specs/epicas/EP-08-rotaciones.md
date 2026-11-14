@@ -38,7 +38,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
   - [ ] Prueba: una estrategia con un ciclo de helada crítica no aparece, por buenos que sean sus demás criterios
 - **Reglas que aplican:** R1, R2, R3, R8
 - **Contrato que toca:** `excluded` de la respuesta de `POST /api/v1/rotations`; `rotation_rules`
-- **Notas:** Supuesto por confirmar: la aptitud por altitud no aplica al descanso (`kind = fallow`), que no tiene rango. Con cuenta, los cultivos anteriores son los de todas las temporadas de las que viene el terreno (`follows_season_ids`, HU-165): si el terreno junta dos partes con cultivos distintos, cada regla de filtro se revisa contra cada uno (supuesto por confirmar). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12).
+- **Notas:** Supuesto por confirmar: la aptitud por temperatura media anual (decisión 13) no aplica al descanso (`kind = fallow`), que no tiene rango (`tmean_min_c`–`tmean_max_c`). Con cuenta, los cultivos anteriores son los de todas las temporadas de las que viene el terreno (`follows_season_ids`, HU-165): si el terreno junta dos partes con cultivos distintos, cada regla de filtro se revisa contra cada uno (supuesto por confirmar). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12).
 
 ### HU-213 · Ciclos de una estrategia con su diagnóstico
 
