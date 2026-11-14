@@ -163,15 +163,15 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-190 · Señal de calor
 
 - **Historia:** Como agricultor, quiero saber si en mi ventana suele hacer más calor del que mi cultivo aguanta, para no sembrar cuando el calor lo daña.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso (la señal está en el motor, `backend/engine/heat_signal.py`, y su lectura de datos en `backend/api/climate_signals.py`; falta cablearla en `/diagnostics`, HU-076, y el semáforo, HU-074)
 - **Criterios de aceptación:**
-  - [ ] Señal `heat` con `status`, `level`, `critical`, `score`, `counts`, `indicators` (`tmax_p90_c`) y `reasons`, según el contrato
-  - [ ] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (de HU-199) mediante la curva de HU-196: 100 hasta `temp_opt_max_c` y 0 desde `heat_max_c`, recta entre medio y sin límite inferior (una máxima fría no es calor)
-  - [ ] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C»)
-  - [ ] Grado crítico en `thresholds.yaml`. Un calor crítico cuenta siempre, aunque el agricultor le ponga peso 0
-  - [ ] Sin `heat_max_c` con fuente o sin `tmax_p90_c`: `insufficient_data`, nivel y `score` nulos y a las limitaciones; no cambia la luz (R1, R8)
-  - [ ] Si la ventana toca etapas sensibles al calor y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`unknown` de `sensitive_months`); si ninguna es sensible y alguna es nula, `insufficient_data` (R1; decidido por Felipe el 14 nov 2026, PR #69). El `heat_max_c` del maíz es 35 °C, la temperatura que daña el polen en la floración (Purdue), no el máximo absoluto de EcoCrop
-  - [ ] `not_applicable` solo si todas las etapas de la ventana dicen que no son sensibles al calor; si ninguna lo es y alguna no lo dice, `insufficient_data` (R1)
+  - [ ] Señal `heat` con `status`, `level`, `critical`, `score`, `counts`, `indicators` (`tmax_p90_c`) y `reasons`, según el contrato (todo menos `counts`, que pone el ensamblado con los pesos, HU-074 y HU-076)
+  - [x] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (de HU-199) mediante la curva de HU-196: 100 hasta `temp_opt_max_c` y 0 desde `heat_max_c`, recta entre medio y sin límite inferior (una máxima fría no es calor). Se toma la más alta de los meses sensibles (el peor caso; 14 nov 2026, `docs/registro-de-decisiones.md`)
+  - [x] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C»)
+  - [ ] Grado crítico en `thresholds.yaml`. Un calor crítico cuenta siempre, aunque el agricultor le ponga peso 0 (la señal ya trae `critical`; que cuente con peso 0 lo decide el semáforo, HU-074)
+  - [x] Sin `heat_max_c` con fuente o sin `tmax_p90_c`: `insufficient_data`, nivel y `score` nulos y a las limitaciones; no cambia la luz (R1, R8). Un mes sensible sin `tmax_p90_c`, o `partial`, no cuenta y va a las limitaciones
+  - [x] Si la ventana toca etapas sensibles al calor y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`unknown` de `sensitive_months`); si ninguna es sensible y alguna es nula, `insufficient_data` (R1; decidido por Felipe el 14 nov 2026, PR #69). El `heat_max_c` del maíz es 35 °C, la temperatura que daña el polen en la floración (Purdue), no el máximo absoluto de EcoCrop
+  - [x] `not_applicable` solo si todas las etapas de la ventana dicen que no son sensibles al calor; si ninguna lo es y alguna no lo dice, `insufficient_data` (R1)
   - [ ] Caso de referencia: calor crítico con agua y oferta favorables da rojo y la acción es `other_window`
   - [ ] Cuando exista «Mi cultivo» en el calendario (HU-179, P1), su bloque `heat` sale de este mismo cálculo
 - **Reglas que aplican:** R1, R2, R4, R5, R8
