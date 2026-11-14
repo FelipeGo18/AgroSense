@@ -145,19 +145,19 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-077 · Señal de heladas
 
 - **Historia:** Como agricultor, quiero saber qué tan seguido ha helado en las semanas en que mi cultivo es sensible, para no perder la siembra por una helada.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso (la señal está en el motor, `backend/engine/frost_signal.py`, y su lectura de datos en `backend/api/climate_signals.py`; falta cablearla en `/diagnostics`, HU-076, y el semáforo, HU-074)
 - **Criterios de aceptación:**
-  - [ ] Evalúa los meses de la ventana en que el cultivo está en una etapa con `frost_sensitive`: el porcentaje de años con al menos una helada en cualquiera de esos meses, contado con `climate_frost_month` (HU-045; método en el contrato, «Heladas de una ventana»); las etapas de cada mes salen de las etapas por calendario (HU-220). Cuando existan `climate_risk_week` (HU-193, P1) y las etapas por temperatura acumulada (HU-150, P1), evalúa por semana
-  - [ ] `score` con la curva de HU-196; el nivel sale de la calificación
-  - [ ] La razón nombra la fecha de siembra, la etapa y el mes («Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años»)
-  - [ ] `not_applicable` solo si todas las etapas de la ventana dicen que no son sensibles; `insufficient_data` si falta `climate_risk_month`, o si ninguna etapa es sensible y alguna no lo dice con fuente (R1)
-  - [ ] Si la ventana toca etapas sensibles y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`sensitive_months` las da en `unknown`); si ninguna es sensible y alguna es nula, `insufficient_data`, nunca `not_applicable` (R1; decidido por Felipe el 14 nov 2026, PR #69)
-  - [ ] Grado crítico en `thresholds.yaml`. Una helada crítica cuenta siempre, aunque el agricultor le ponga peso 0
+  - [x] Evalúa los meses de la ventana en que el cultivo está en una etapa con `frost_sensitive`: el porcentaje de años con al menos una helada en cualquiera de esos meses, contado con `climate_frost_month` (HU-045; método en el contrato, «Heladas de una ventana»); las etapas de cada mes salen de las etapas por calendario (HU-220). Cuando existan `climate_risk_week` (HU-193, P1) y las etapas por temperatura acumulada (HU-150, P1), evalúa por semana
+  - [x] `score` con la curva de HU-196; el nivel sale de la calificación
+  - [x] La razón nombra la fecha de siembra, la etapa y el mes («Sembrando en agosto, heló en el llenado (diciembre) 12 de cada 100 años»). Las etapas se nombran como las de FAO-56 del catálogo y de la web («la etapa media», no «el llenado»); con varios meses o etapas sensibles se nombran todas y el rango de meses («todo el cultivo» si lo son todas), y se dicen los años contados y el periodo de siembra (14 nov 2026, `docs/registro-de-decisiones.md`)
+  - [x] `not_applicable` solo si todas las etapas de la ventana dicen que no son sensibles; `insufficient_data` si falta `climate_frost_month` (o no alcanzan los años del periodo normal), o si ninguna etapa es sensible y alguna no lo dice con fuente (R1). Corregido el 14 de noviembre de 2026: decía `climate_risk_month`, pero el método del contrato («Heladas de una ventana») cuenta con `climate_frost_month`
+  - [x] Si la ventana toca etapas sensibles y etapas con la sensibilidad nula, se evalúan las sensibles y las nulas van a las limitaciones (`sensitive_months` las da en `unknown`); si ninguna es sensible y alguna es nula, `insufficient_data`, nunca `not_applicable` (R1; decidido por Felipe el 14 nov 2026, PR #69)
+  - [ ] Grado crítico en `thresholds.yaml`. Una helada crítica cuenta siempre, aunque el agricultor le ponga peso 0 (la señal ya trae `critical` con el corte de `thresholds.yaml`; que cuente con peso 0 lo decide el semáforo, HU-074)
   - [ ] Caso de referencia: helada crítica con agua y oferta favorables da rojo y la acción es `other_window`
   - [ ] Cuando exista «Mi cultivo» en el calendario (HU-179, P1), su bloque `frost` sale de este mismo cálculo
-  - [ ] Si `sources.yaml` trae `frost_caveat` para la región, la señal lo lleva en sus limitaciones en cada respuesta (aprobado por Felipe el 13 de noviembre de 2026, PR #61)
+  - [ ] Si `sources.yaml` trae `frost_caveat` para la región, la señal lo lleva en sus limitaciones en cada respuesta (aprobado por Felipe el 13 de noviembre de 2026, PR #61): también cuando es `not_applicable` o `insufficient_data`. En el motor; llega a la respuesta con HU-076
 - **Reglas que aplican:** R1, R2, R4, R5
-- **Contrato que toca:** `signals.frost`; `climate_risk_month` (y `climate_risk_week` en P1), `crop_stages`
+- **Contrato que toca:** `signals.frost`; `climate_frost_month` (y `climate_risk_week` en P1), `crop_stages`
 - **Notas:** Depende de HU-045 (riesgo por mes), HU-063 (etapas sensibles), HU-220 (etapas de la ventana) y HU-196. Ya no depende del «mejor mes» ni de HU-179: es HU-179 la que reutiliza esta señal. Cambiada el 11 de octubre de 2026 y, el mismo día, pasada a meses en el MVP (decisión 12). **10 de noviembre de 2026 (HU-075):** los cortes de `thresholds.yaml` vienen del ZARC de Brasil, que cuenta el % de **años** con pérdida. Lo comparable es el % de años con al menos una helada en **cualquiera** de los meses sensibles de la ventana, no el promedio de los meses. Como `climate_risk_month` trae la frecuencia de cada mes por separado y con ella no se puede contar esa unión, se agregó `climate_frost_month` con los días con helada de cada mes de cada año (aprobado por Felipe el 10 de noviembre de 2026); el método está en el contrato («Heladas de una ventana»).
 
 ### HU-190 · Señal de calor
