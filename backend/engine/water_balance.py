@@ -137,6 +137,14 @@ class WaterBalance:
         return (low, high)
 
 
+def root_zone(crop: dict) -> RootZone | None:
+    """La raíz de la ficha del cultivo (`crops`): nula si falta alguno de sus tres valores (R1)."""
+    values = [crop.get(k) for k in ("root_depth_min_m", "root_depth_max_m", "depletion_p")]
+    if any(v is None or v != v for v in values):
+        return None
+    return RootZone(*(float(v) for v in values))
+
+
 def effective_rain_mm(rain_mm: float) -> float:
     """La lluvia efectiva de un mes (FAO, manual 3 de riego, 1986, sección 4.2), nunca negativa."""
     value = 0.8 * rain_mm - 25 if rain_mm > 75 else 0.6 * rain_mm - 10
