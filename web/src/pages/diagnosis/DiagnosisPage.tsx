@@ -52,6 +52,9 @@ const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offse
 const IRRIGATION_HINT =
   "Con riego, la falta de lluvia no se cuenta como riesgo. Si no sabe, se evalúa como sin riego y el resultado lo dice.";
 
+// Mensaje de backend/api/calculations.py, _check_sowing_date.
+// Mantener sincronizado: la API usa invalid_input para varias validaciones.
+const SOWING_DATE_OUT_OF_RANGE_MESSAGE = "La fecha de siembra debe estar entre este mes y los próximos doce.";
 /**
  * Diagnóstico de una fecha de siembra, la «consulta suelta» (HU-091; `specs/05-frontend.md`, parte C). El agricultor
  * elige municipio, cultivo, cuándo sembrar y si tiene riego, solo entre opciones válidas; con cuenta, puede elegir uno de
@@ -455,12 +458,12 @@ function DiagnosisError({
     error instanceof ApiError &&
     error.status === 422 &&
     error.code === "invalid_input" &&
-    error.message === "La fecha de siembra debe estar entre este mes y los próximos doce."
+    error.message === SOWING_DATE_OUT_OF_RANGE_MESSAGE
   ) {
     return (
       <StateCard
         title="Esa fecha no se puede consultar"
-        description="Elija un mes de los próximos doce: una fecha que ya pasó o más lejana no tiene ventana que evaluar"
+        description="Elija un mes de los próximos doce: una fecha que ya pasó o más lejana no tiene ventana que evaluar."
         mood="guide"
         actions={[{ label: "Cambiar la fecha", variant: "primary", onClick: onChangeSowingMonth }]}
       />
