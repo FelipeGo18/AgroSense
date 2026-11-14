@@ -109,6 +109,7 @@ Las decisiones de arquitectura se explican en `decisiones.md`. Aquí se registra
 | Reglas tocadas por la decisión 12 | R9 suma `/changes` a los endpoints de cálculo. R10 suma la humedad del suelo y el verdor como datos de la zona, no del lote. La aptitud usa la altitud del lote cuando hay lote dibujado. Las demás reglas no cambian | 11 oct 2026 |
 | La oferta es valor agregado | `supply` sigue siendo una de las seis señales, con su peso; en las estrategias entra solo por el criterio de ingreso y nunca excluye una estrategia; el guion de la demo (HU-131) abre con rotación, suelo, NASA y qué cambió y deja la oferta al final («además, le avisamos si hay mucha papa sembrada en su zona»); ninguno de los dos casos de la demo tiene la sobreoferta como historia principal. Decidido por Felipe | 11 oct 2026 |
 | Columna `article` en `crops` (HU-191) | El "el"/"la" de cada cultivo para el texto de aptitud, dato de presentación como `archetype`, sin fuente agronómica (R8 no aplica). Evita adivinar el artículo por la terminación del nombre («el haba», no «la haba»). Justificación completa en el encabezado de `catalog/crops.yaml`. Aprobado por Felipe | 12 nov 2026 |
+| Recursos del reto (HU-002) | Se revisó la pestaña de recursos del 13 de noviembre: no cambia el núcleo. ERA5 (contraste de las heladas, HU-231) y GLDAS (contraste de la humedad del suelo, HU-232) entran en P1, solo como contraste. Los datos de EE. UU. no aplican a la región piloto. Detalle en `docs/fuentes.md`. Decidido por Felipe | 13 nov 2026 |
 
 ## Dependen de una verificación
 
