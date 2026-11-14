@@ -5,7 +5,7 @@ import { Mascot, type MascotMood } from "@/components/mascot/Mascot";
 
 export interface StateCardAction {
   label: string;
-  variant?: "primary" | "secondary" | "tertiary";
+  variant?: "primary" | "secondary";
   onClick: () => void;
 }
 
@@ -37,19 +37,11 @@ export function StateCard({
   className = "",
 }: Readonly<StateCardProps>) {
   const getActionVariant = (action: StateCardAction, index: number) => {
-    if (action.variant === "tertiary") {
-      return "secondary";
-    }
     return action.variant ?? (index === 0 ? "primary" : "secondary");
   };
 
-  const Container = dashed ? "output" : "div";
   return (
-    <Container
-      role={dashed ? undefined : "alert"}
-      aria-live={dashed ? "polite" : undefined}
-      className={`relative block px-6 pt-5 pb-8 ${className}`}
-    >
+    <div role={dashed ? "status" : "alert"} className={`relative block px-6 pt-5 pb-8 ${className}`}>
       {/* Fondo biselado del estilo diorama (Plate). Si es dashed, dibuja borde punteado. */}
       <Plate
         c={16}
@@ -89,6 +81,6 @@ export function StateCard({
           </div>
         )}
       </div>
-    </Container>
+    </div>
   );
 }

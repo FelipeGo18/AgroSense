@@ -610,11 +610,8 @@
         "500": {
           "error": {
             "code": "internal_error",
-            "message": "Error interno del servidor.",
+            "message": "Algo falló de nuestro lado. Intente de nuevo en un momento.",
             "request_id": "00000000-0000-4000-8000-000000000000"
-          },
-          "headers": {
-            "X-request-id": "00000000-0000-4000-8000-000000000000"
           }
         },
         "501": {
