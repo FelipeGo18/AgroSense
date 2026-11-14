@@ -139,7 +139,7 @@ docker compose run --rm web npm test          # Vitest
 
 Al crear o cambiar cualquier pantalla, vista o componente de `web/`, lea `web/CLAUDE.md` y aplíquelo sin que nadie lo pida:
 
-- **Modo ligero (HU-158):** todo lo que se mueve (GSAP, scroll suave, animaciones, transiciones, la Tierra, la mascota) debe poder quedarse quieto con la misma información. Se pregunta `useAnimated()` o se usa la variante `animated:`; nunca se decide movimiento por cuenta propia.
+- **Modo ligero (HU-158):** todo lo que se mueve (GSAP, scroll suave, animaciones, transiciones, la Tierra, la mascota) debe poder quedarse quieto con la misma información. Se pregunta `useAnimated()` o se usa la variante `animated:`; nunca se decide movimiento por cuenta propia. GSAP y Lenis se cargan aparte y solo con movimiento: se importan de `@/lib/motion`, nunca directo.
 - **Diseño adaptable (HU-096):** reglas globales desde 320 px (`container-page`, `grid-cols-1` en la base, anchos fijos con su versión angosta, `min-h-svh`, sin scroll horizontal, objetivos táctiles de 44 px).
 - Una pantalla nueva no está hecha hasta que se ve completa en modo ligero y pasa `npm run test:responsive` con su ruta agregada.
 

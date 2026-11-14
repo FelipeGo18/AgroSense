@@ -1,10 +1,8 @@
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { useRef } from "react";
 import { isFirstLoad } from "@/lib/firstLoad";
 import { useReducedMotion } from "./useReducedMotion";
-
-gsap.registerPlugin(useGSAP);
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap } from "@/lib/motion";
 
 /**
  * Entrada de una página: las piezas marcadas con `data-enter` suben y aparecen una tras otra; las marcadas
@@ -20,7 +18,7 @@ gsap.registerPlugin(useGSAP);
 export function useEntrance<T extends HTMLElement>({ bold = false }: { bold?: boolean } = {}) {
   const scope = useRef<T>(null);
   const animated = !useReducedMotion();
-  useGSAP(
+  useMotionEffect(
     () => {
       if (!animated || !scope.current) return;
       // Lo que la persona ya está viendo no se esconde para volver a mostrarlo: en ese caso solo hay movimiento.
@@ -78,7 +76,7 @@ export function useRowsEntrance<T extends HTMLElement>(count: number) {
   const list = useRef<T>(null);
   const seen = useRef(0);
   const animated = !useReducedMotion();
-  useGSAP(
+  useMotionEffect(
     () => {
       const rows = list.current ? Array.from(list.current.children).slice(seen.current) : [];
       seen.current = count;

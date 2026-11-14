@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Outlet, ScrollRestoration, createBrowserRouter, useLocation, type RouteObject } from "react-router";
 import { SimulationStrip } from "@/components/layout/SimulationStrip";
+import { motionReady } from "@/lib/motion";
 import { SIMULATION } from "./config";
 import { PATHS } from "./paths";
 
@@ -46,7 +47,7 @@ const pending = ({ path, title }: (typeof PENDING)[number]): RouteObject => ({
   },
 });
 
-export const routes: RouteObject[] = [
+const pages: RouteObject[] = [
   {
     element: <Root />,
     HydrateFallback: Loading,
@@ -90,5 +91,20 @@ export const routes: RouteObject[] = [
     ],
   },
 ];
+
+/**
+ * Con movimiento, cada página espera al motor del movimiento antes de montarse (`lib/motion.ts`): lo encuentra listo y su
+ * entrada no parpadea. En modo ligero no espera nada, y el motor no se descarga (HU-158).
+ */
+const awaitMotion = (route: RouteObject): RouteObject => {
+  const { lazy, children } = route;
+  return {
+    ...route,
+    ...(typeof lazy === "function" ? { lazy: async () => (await Promise.all([lazy(), motionReady()]))[0] } : {}),
+    ...(children ? { children: children.map(awaitMotion) } : {}),
+  } as RouteObject;
+};
+
+export const routes: RouteObject[] = pages.map(awaitMotion);
 
 export const createRouter = () => createBrowserRouter(routes);

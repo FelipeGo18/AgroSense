@@ -1,12 +1,10 @@
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import { useRef, type CSSProperties } from "react";
 import { useDayPhase } from "@/hooks/useDayPhase";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { DayPhase } from "@/lib/dayPhase";
 import { playSound } from "@/lib/sound";
-
-gsap.registerPlugin(useGSAP);
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap } from "@/lib/motion";
 
 /** Aviso de que empezó (`detail: true`) o paró (`false`) la llovizna del paisaje. */
 export const RAIN_EVENT = "agrosense:lluvia";
@@ -49,7 +47,7 @@ export function SceneAmbient({ contained = false }: { contained?: boolean }) {
   const night = phase === "night";
   const tint = TINT[phase];
 
-  useGSAP(
+  useMotionEffect(
     (_context, contextSafe) => {
       const root = layer.current;
       if (!animated || !root || !contextSafe) return;
