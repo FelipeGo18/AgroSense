@@ -52,10 +52,11 @@ El guion se escribe desde la hora 0; el video y la entrega se cierran a partir d
 ### HU-133 · Impacto económico, social y ambiental
 
 - **Historia:** Como jurado, quiero entender el impacto económico, social y ambiental y sus límites, para valorar el alcance.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Impacto presentado como potencial
-  - [ ] Límites dichos con claridad
+  - [x] Impacto presentado como potencial
+  - [x] Límites dichos con claridad
+- **Hecho (14 nov):** `docs/impacto.md`. Abre con «impacto potencial, no garantizado» y con dos cifras de contexto citadas: el 40 % del territorio con algún grado de erosión (IDEAM) y el 63 % de la papa del país en Cundinamarca y Boyacá (Fedepapa). El impacto ambiental, social y económico va atado a lo que hace el producto y a la fuente de cada regla, o a que es criterio del equipo; la oferta y el mercado se dicen como valor agregado que hoy sale «datos insuficientes». Trae una propuesta de cómo medirlo después del reto y los límites: no es pronóstico, la salud del suelo es una comparación, varias reglas son criterio del equipo sin validar por un agrónomo, los datos son de la zona y no del lote (R10), POWER es un reanálisis, es un MVP de hackatón y es una región piloto. Lo usan la descripción de la entrega (HU-132) y el cierre del guion (HU-131).
 
 ### HU-230 · Licencias del proyecto y de lo que usa
 
