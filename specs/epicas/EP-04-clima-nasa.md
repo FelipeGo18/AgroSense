@@ -269,3 +269,35 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 - **Reglas que aplican:** R1, R8, R10
 - **Contrato que toca:** tabla nueva, por definir en esta HU
 - **Notas:** Decisión 14: el enunciado completo sugiere ECOSTRESS para el estrés por calor y la evaporación. La serie empieza en 2018 y las pasadas no son regulares: sirve de contraste, no para normales. Agregada el 8 de noviembre de 2026.
+
+### HU-231 · Heladas de ERA5-Land para contrastar las de NASA POWER
+
+- **Historia:** Como agricultor, quiero ver junto a la señal de heladas lo que cuenta otro reanálisis, para no confiar en una sola fuente donde POWER cuenta menos heladas de las que hay.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `era5_land` con caché: la temperatura mínima diaria de ERA5-Land (unos 9 km, desde 1950), producto, versión, licencia y acceso (Copernicus Climate Data Store) verificados
+  - [ ] Publica por municipio, año y mes los días con la mínima ≤ al umbral de `region.yaml` (`frost`), con la misma forma que `climate_frost_month` y su `source_id`; corregida por altitud con el mismo gradiente, y se dice
+  - [ ] Se muestra junto a la señal de heladas como contraste, con su fuente y su resolución; **nunca** se mezcla ni se promedia con POWER y no cambia la calificación (decisión 11, R1)
+  - [ ] Comprobación contra el IDEAM en Tibaitatá (Mosquera) y en un municipio de Boyacá: cuántas heladas cuenta cada fuente; el resultado queda en `docs/riesgos.md`
+  - [ ] Entrada en `sources` (R8). ERA5 es un reanálisis del ECMWF, no de la NASA: se dice
+- **Reglas que aplican:** R1, R4, R8
+- **Contrato que toca:** `signals.frost.sources` (contraste) y una tabla nueva, por definir en esta HU
+- **Notas:** Viene de la pestaña de recursos del reto (13 nov de 2026, HU-002), que nombra ERA5 entre los recursos de agencias socias. Motivo: en el #61 (HU-045) POWER cuenta 0 heladas en Tibaitatá entre 2024 y 2026, donde el IDEAM midió 26. Si ERA5-Land las ve mejor, se puede proponer usarla para la señal con `sources.yaml` (decisión aparte, con el contraste hecho). Agregada el 13 de noviembre de 2026.
+  - **El producto (verificado el 13 de noviembre de 2026 en el Climate Data Store):** «ERA5-Land post-processed daily statistics from 1950 to present» (`derived-era5-land-daily-statistics`, versión 1.0, DOI 10.24381/cds.e9c9c792). Da la mínima diaria de la temperatura a 2 m (`2m_temperature` con la estadística «daily minimum»), a 0,1° (9 km nativos), desde enero de 1950, con unos 6 días de retraso. La estadística se calcula al pedirla desde los datos por hora: se pide con la hora local de la región. Licencia CC-BY. Se baja con una cuenta gratuita del Climate Data Store (su API). No se usa el ERA5 de niveles simples que enlaza el reto: tiene 0,25° (unos 25 km).
+  - **El formato:** la temperatura viene en kelvin (el adaptador la pasa a °C) y el archivo solo sale en **NetCDF dentro de un zip**. Es el único producto que el pipeline no puede leer hoy: IMERG se pide por OPeNDAP en CSV y NASADEM en GeoTIFF. Hace falta una dependencia nueva para leer NetCDF (por ejemplo `h5netcdf`), que se justifica en esta HU (`specs/04-stack.md`).
+
+### HU-232 · Humedad del suelo de GLDAS para contrastar
+
+- **Historia:** Como agricultor, quiero ver otra estimación de la humedad del suelo de mi zona, para contrastar la de SMAP y la de NASA POWER.
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `gldas` con caché: la humedad del suelo de la zona de raíces de GLDAS Noah (0,25°, mensual), producto, versión y acceso (Earthdata) verificados
+  - [ ] Publica por municipio y mes, con su unidad y su `source_id`; un mes sin dato no aparece (R1)
+  - [ ] Se muestra junto a la señal de agua, con SMAP y POWER, cada una en su unidad; nunca se mezclan y no cambia la calificación (decisión 11)
+  - [ ] Dice que es un modelo de la zona, de celdas de unos 25 km, no una medición del lote (R10)
+  - [ ] Entrada en `sources` (R8)
+- **Reglas que aplican:** R1, R8, R10
+- **Contrato que toca:** `signals.water.sources` (contraste) y una tabla nueva, por definir en esta HU
+- **Notas:** Viene de la pestaña de recursos del reto (13 nov de 2026, HU-002), que nombra NLDAS y GLDAS. NLDAS solo cubre Norteamérica: en la región piloto aplica GLDAS. Agregada el 13 de noviembre de 2026.
+  - **El producto (verificado el 13 de noviembre de 2026 en el catálogo CMR de la NASA):** «GLDAS Noah Land Surface Model L4 monthly 0.25 x 0.25 degree V2.1» (`GLDAS_NOAH025_M`, versión 2.1), en GES DISC, desde enero de 2000; el último mes publicado era julio de 2026 (unos 4 meses de retraso). La versión 2.0 cubre de 1948 a 2014, con otro forzante: nunca se unen las dos (R4). Se baja con la cuenta de Earthdata, la misma de SMAP. **Por confirmar en esta HU:** qué capas de humedad trae y si la de la zona de raíces es una variable propia.
+  - **El formato:** NetCDF, que GES DISC también entrega por OPeNDAP en CSV, como IMERG: no hace falta una dependencia nueva. La humedad viene en kg/m² (la de SMAP en m³/m³ y la de POWER es un índice de 0 a 1): cada una se muestra en su unidad (decisión 11).

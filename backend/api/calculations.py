@@ -186,7 +186,7 @@ def _suitability_reason(
                 no_aplica=("Una señal que no aplica", ex.DIAGNOSIS_NOT_APPLICABLE),
             )
         },
-        **ex.responses(401, 404, 422, 501, 503),
+        **ex.responses(401, 404, 422, 500, 501, 503),
     },
 )
 def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Depends(require_dataset), db: Db = Depends(get_db)) -> Any:

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
@@ -12,7 +12,8 @@ import { Combobox, type Option } from "@/components/ui/Combobox";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ExampleLabel } from "@/components/ui/Labels";
 import { SelectField } from "@/components/ui/SelectField";
-import { TrafficLightBadge } from "@/components/ui/TrafficLightBadge";
+import { StateCard, type StateCardAction } from "@/components/ui/StateCard";
+import { DiagnosisSkeleton } from "./DiagnosisSkeleton";
 import { useSession } from "@/features/auth/session";
 import {
   IRRIGATION_CHOICES,
@@ -51,6 +52,9 @@ const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offse
 const IRRIGATION_HINT =
   "Con riego, la falta de lluvia no se cuenta como riesgo. Si no sabe, se evalúa como sin riego y el resultado lo dice.";
 
+// Mensaje de backend/api/calculations.py, _check_sowing_date.
+// Mantener sincronizado: la API usa invalid_input para varias validaciones.
+const SOWING_DATE_OUT_OF_RANGE_MESSAGE = "La fecha de siembra debe estar entre este mes y los próximos doce.";
 /**
  * Diagnóstico de una fecha de siembra, la «consulta suelta» (HU-091; `specs/05-frontend.md`, parte C). El agricultor
  * elige municipio, cultivo, cuándo sembrar y si tiene riego, solo entre opciones válidas; con cuenta, puede elegir uno de
@@ -68,6 +72,7 @@ export function DiagnosisPage() {
   const myLots = user ? (lots.data ?? []) : [];
 
   const months = useMemo(() => sowingMonths(), []);
+  const formRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<ConsultForm>(() => fromParams(params));
   // Validación inmediata: el error de un campo aparece apenas se usa (al elegir, o al salir del buscador sin escoger).
   // Al intentar enviar, o si la dirección ya traía una consulta, aparecen los de todos.
@@ -102,6 +107,7 @@ export function DiagnosisPage() {
   // Lo que se consulta es lo de la dirección, no lo que se está escribiendo: cambia solo al enviar.
   const sent = fromParams(params);
   const sentLot = myLots.find((l) => l.lot_id === sent.lotId);
+  const hasOtherLots = myLots.some((l) => l.lot_id !== sent.lotId);
   // Con `?lote=`: se espera la sesión y los lotes. Si no hay sesión o el lote no es suyo, se dice y no se consulta.
   const waitingLot = Boolean(sent.lotId) && (sessionLoading || (Boolean(user) && lots.isPending));
   const lotMissing = Boolean(sent.lotId) && !waitingLot && !sentLot;
@@ -118,6 +124,28 @@ export function DiagnosisPage() {
       ? toRequest(sent, sentLot, priorities.value)
       : null;
   const diagnosis = useDiagnosis(request);
+  const cropName = crops.data?.find((c) => c.crop_id === sent.cropId)?.name_es;
+  const place = sentLot ? sentLot.name : places.get(sent.municipalityId)?.name;
+  const summaryParts = [cropName, sent.month ? monthName(sent.month) : null, place].filter(Boolean);
+  const querySummary = summaryParts.length > 0 ? summaryParts.join(" · ") : undefined;
+
+  const returnToForm = () => {
+    formRef.current?.querySelector<HTMLElement>("input, select, button")?.focus();
+  };
+  const changeSowingMonth = () => {
+    formRef.current?.querySelector<HTMLSelectElement>('select[name="sowing_month"]')?.focus();
+  };
+  const focusLotSelector = () => {
+    formRef.current?.querySelector<HTMLSelectElement>("select")?.focus();
+  };
+
+  const consultWithoutLot = () => {
+    const municipalityId = sentLot?.municipality_id ?? sent.municipalityId;
+    if (!municipalityId) return;
+
+    const irrigation = sentLot ? (sentLot.irrigated === null ? "nose" : sentLot.irrigated ? "si" : "no") : sent.irrigation;
+    setParams(toParams({ ...sent, municipalityId, irrigation, lotId: "" }), { preventScrollReset: true });
+  };
 
   const change = (patch: Partial<ConsultForm>) => setForm((current) => ({ ...current, ...patch }));
 
@@ -149,7 +177,13 @@ export function DiagnosisPage() {
             {municipalities.isError || crops.isError ? (
               <Alert>{catalogErrorText(municipalities.error ?? crops.error)}</Alert>
             ) : (
-              <form noValidate onSubmit={submit} className="flex min-w-0 flex-col gap-6" aria-label="Consulta del diagnóstico">
+              <form
+                ref={formRef}
+                noValidate
+                onSubmit={submit}
+                className="flex min-w-0 flex-col gap-6"
+                aria-label="Consulta del diagnóstico"
+              >
                 {myLots.length > 0 && (
                   <SelectField
                     label="¿Para cuál terreno?"
@@ -200,6 +234,7 @@ export function DiagnosisPage() {
                 />
 
                 <SelectField
+                  name="sowing_month"
                   label="¿Cuándo quiere sembrar?"
                   value={form.month}
                   onChange={(e) => {
@@ -241,6 +276,12 @@ export function DiagnosisPage() {
             waitingLot={waitingLot}
             lotMissing={lotMissing}
             zeroPriorities={hasConsult(params) && priorities.allZero}
+            querySummary={querySummary}
+            hasOtherLots={hasOtherLots}
+            onChooseAnotherLot={focusLotSelector}
+            onConsultWithoutLot={consultWithoutLot}
+            onReturnToForm={returnToForm}
+            onChangeSowingMonth={changeSowingMonth}
           />
         </div>
         {request && diagnosis.isSuccess && <Details data={diagnosis.data} />}
@@ -278,7 +319,20 @@ function LotFacts({ lot, place }: { lot: LotListItem; place: string }) {
     </div>
   );
 }
-
+interface ResultProps {
+  request: DiagnosisRequest | null;
+  sentMonth: string;
+  diagnosis: ReturnType<typeof useDiagnosis>;
+  waitingLot: boolean;
+  lotMissing: boolean;
+  zeroPriorities: boolean;
+  querySummary?: string;
+  hasOtherLots: boolean;
+  onChooseAnotherLot: () => void;
+  onConsultWithoutLot: () => void;
+  onReturnToForm: () => void;
+  onChangeSowingMonth: () => void;
+}
 function Result({
   request,
   sentMonth,
@@ -286,15 +340,13 @@ function Result({
   waitingLot,
   lotMissing,
   zeroPriorities,
-}: {
-  request: DiagnosisRequest | null;
-  sentMonth: string;
-  diagnosis: ReturnType<typeof useDiagnosis>;
-  waitingLot: boolean;
-  lotMissing: boolean;
-  /** Hay una consulta, pero todas las prioridades están en 0: no se pide (HU-202). */
-  zeroPriorities: boolean;
-}) {
+  querySummary,
+  hasOtherLots,
+  onChooseAnotherLot,
+  onConsultWithoutLot,
+  onReturnToForm,
+  onChangeSowingMonth,
+}: Readonly<ResultProps>) {
   if (!request) {
     return (
       <section aria-labelledby="resultado" className="flex min-w-0 flex-col gap-3">
@@ -325,9 +377,17 @@ function Result({
         Resultado para {monthName(sentMonth)}
       </h2>
       {diagnosis.isPending ? (
-        <TrafficLightBadge loading className="self-start" />
+        <DiagnosisSkeleton querySummary={querySummary} />
       ) : diagnosis.isError ? (
-        <Alert>{errorText(diagnosis.error)}</Alert>
+        <DiagnosisError
+          error={diagnosis.error}
+          onRetry={() => void diagnosis.refetch()}
+          hasOtherLots={hasOtherLots}
+          onChooseAnotherLot={onChooseAnotherLot}
+          onConsultWithoutLot={onConsultWithoutLot}
+          onReturnToForm={onReturnToForm}
+          onChangeSowingMonth={onChangeSowingMonth}
+        />
       ) : (
         <Summary data={diagnosis.data} />
       )}
@@ -335,12 +395,121 @@ function Result({
   );
 }
 
-function errorText(error: Error): string {
-  if (error instanceof ApiError && error.status === 501)
-    return "El cálculo del diagnóstico todavía no está listo en el servidor. Intente más tarde.";
-  return error.message;
+interface DiagnosisErrorProps {
+  error: Error;
+  onRetry: () => void;
+  hasOtherLots: boolean;
+  onChooseAnotherLot: () => void;
+  onConsultWithoutLot: () => void;
+  onReturnToForm: () => void;
+  onChangeSowingMonth: () => void;
 }
 
+/**
+ * Traduce un fallo de la API o de la red a una tarjeta de estado clara (HU-094; W6).
+ * Separa los códigos de error que requieren mensajes o acciones distintos.
+ */
+function DiagnosisError({
+  error,
+  onRetry,
+  hasOtherLots,
+  onChooseAnotherLot,
+  onConsultWithoutLot,
+  onReturnToForm,
+  onChangeSowingMonth,
+}: Readonly<DiagnosisErrorProps>) {
+  // 1. Sin conexión: falla la red o modo offline (status 0)
+  if (error instanceof ApiError && (error.status === 0 || error.code === "offline")) {
+    return (
+      <StateCard
+        title="Sin conexión"
+        description="Revise la señal. Lo que ya consultó sigue en pantalla; para calcular otra fecha hace falta internet."
+        mood="idle"
+        actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+      />
+    );
+  }
+  // 2. Un 404 de /diagnostics indica que el lote no existe o no pertenece a la persona.
+  if (error instanceof ApiError && error.status === 404) {
+    const actions: StateCardAction[] = [];
+    if (hasOtherLots) {
+      actions.push({ label: "Elegir otro lote", variant: "primary", onClick: onChooseAnotherLot });
+    }
+    actions.push({
+      label: "Consultar sin lote",
+      variant: hasOtherLots ? "secondary" : "primary",
+      onClick: onConsultWithoutLot,
+    });
+    return (
+      <StateCard
+        title="Ese lote no existe o no es suyo"
+        description={
+          hasOtherLots
+            ? "Elija otro de sus lotes o continúe la consulta por municipio."
+            : "Puede continuar la consulta por municipio, sin usar este lote."
+        }
+        mood="guide"
+        actions={actions}
+      />
+    );
+  }
+  // 3. La API explica qué dato de entrada debe revisarse.
+  if (
+    error instanceof ApiError &&
+    error.status === 422 &&
+    error.code === "invalid_input" &&
+    error.message === SOWING_DATE_OUT_OF_RANGE_MESSAGE
+  ) {
+    return (
+      <StateCard
+        title="Esa fecha no se puede consultar"
+        description="Elija un mes de los próximos doce: una fecha que ya pasó o más lejana no tiene ventana que evaluar."
+        mood="guide"
+        actions={[{ label: "Cambiar la fecha", variant: "primary", onClick: onChangeSowingMonth }]}
+      />
+    );
+  }
+  if (error instanceof ApiError && error.status === 422) {
+    return (
+      <StateCard
+        title="Revise lo que eligió"
+        description={error.message}
+        mood="guide"
+        actions={[{ label: "Volver al formulario", variant: "secondary", onClick: onReturnToForm }]}
+      />
+    );
+  }
+  if (error instanceof ApiError && error.status === 501) {
+    return (
+      <StateCard
+        title="Este cálculo todavía no está disponible"
+        description="El cálculo del diagnóstico aún no está construido."
+        mood="idle"
+      />
+    );
+  }
+  if (error instanceof ApiError && error.status === 503 && error.code === "dataset_unavailable") {
+    return (
+      <StateCard
+        title="Los datos no están disponibles en este momento"
+        description="Intente más tarde."
+        mood="no_data"
+        actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+      />
+    );
+  }
+  // 4. Un fallo interno o no reconocido conserva el código de soporte y permite reintentar.
+  const code = error instanceof ApiError && error.requestId ? error.requestId : null;
+  return (
+    <StateCard
+      title="Algo falló de nuestro lado"
+      description="No pudimos calcular su diagnóstico. No es su culpa: lo que eligió sigue aquí. Vuelva a intentar en un momento."
+      mood="idle"
+      code={code}
+      actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+    />
+  );
+}
 /**
  * El resumen (HU-092, HU-203). La acción primero. Si la luz con sus prioridades y la del criterio de AgroSense coinciden,
  * se ve una sola; si difieren, las dos con su acción y su factor que más limita, la suya primero y más grande, y una

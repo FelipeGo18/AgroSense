@@ -80,18 +80,18 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-196 · Calificación de las señales con curvas por cultivo
 
 - **Historia:** Como motor, quiero calificar cada señal de 0 a 100 con una curva por cultivo, para que el nivel, el factor limitante y el orden de las ventanas salgan de la misma cuenta.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Una sola función de curva: 100 dentro del rango óptimo, 0 fuera de los límites absolutos y una recta entre ambos (`specs/01-reglas.md`, «Cómo se califica cada señal»)
-  - [ ] El nivel sale de la calificación con los cortes de `thresholds.yaml` (hoy 70 a 100 `favorable`, 40 a 69 `moderate`, 0 a 39 `unfavorable`)
-  - [ ] Una señal es crítica cuando su calificación baja del umbral crítico de esa señal en `thresholds.yaml`; `soil` no tiene umbral crítico (R10)
-  - [ ] Los límites que dependen del cultivo salen de su ficha con fuente (HU-061, HU-063, HU-199); los que no dependen del cultivo (por ejemplo, el porcentaje de la necesidad de agua que cubre la lluvia o la variación del área sembrada) viven en `thresholds.yaml`
-  - [ ] Sin el límite de la ficha con fuente, o sin el dato de la zona: `insufficient_data`, nivel y `score` nulos (R1, R8). Nunca se usa un límite «típico»
-  - [ ] Pruebas: un valor dentro del óptimo da 100; un valor en el límite absoluto o fuera da 0; el punto medio entre el óptimo y el límite da 50; mismo valor, misma calificación (R4)
-  - [ ] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
+  - [x] Una sola función de curva: 100 dentro del rango óptimo, 0 fuera de los límites absolutos y una recta entre ambos (`specs/01-reglas.md`, «Cómo se califica cada señal»)
+  - [x] El nivel sale de la calificación con los cortes de `thresholds.yaml` (hoy 70 a 100 `favorable`, 40 a 69 `moderate`, 0 a 39 `unfavorable`)
+  - [x] Una señal es crítica cuando su calificación baja del umbral crítico de esa señal en `thresholds.yaml`; `soil` no tiene umbral crítico (R10)
+  - [x] Los límites que dependen del cultivo salen de su ficha con fuente (HU-061, HU-063, HU-199); los que no dependen del cultivo (por ejemplo, el porcentaje de la necesidad de agua que cubre la lluvia o la variación del área sembrada) viven en `thresholds.yaml`
+  - [x] Sin el límite de la ficha con fuente, o sin el dato de la zona: `insufficient_data`, nivel y `score` nulos (R1, R8). Nunca se usa un límite «típico»
+  - [x] Pruebas: un valor dentro del óptimo da 100; un valor en el límite absoluto o fuera da 0; el punto medio entre el óptimo y el límite da 50; mismo valor, misma calificación (R4)
+  - [x] Es una función pura del motor: recibe el valor y los límites, no lee archivos (R6)
 - **Reglas que aplican:** R1, R4, R6, R8, R10
 - **Contrato que toca:** `score` y `level` de cada señal en `/diagnostics` y en las ventanas de `/calendar`; `crops`; `thresholds.yaml`
-- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con el óptimo y el máximo de temperatura de la ficha (`temp_*`, `heat_max_c`); `frost` califica el porcentaje de años con helada en los meses sensibles de la ventana (semanas en P1; cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos. Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
+- **Notas:** Decisión 10. Reemplaza el supuesto de HU-192 sobre cómo se convierte cada señal en puntaje. Qué mide cada curva (`specs/01-reglas.md`, «Cómo se califica cada señal»): `water` califica el porcentaje de la necesidad que cubre la lluvia en la ventana, con cortes en `thresholds.yaml` (los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana); `heat` compara `tmax_p90_c` con una curva de dos puntos de la ficha: 100 en `temp_opt_max_c` y 0 en `heat_max_c`, sin límite inferior (una máxima fría no es calor); `frost` califica el porcentaje de años con helada en los meses sensibles de la ventana (semanas en P1; cortes en `thresholds.yaml`); `soil` usa `ph_opt_min`–`ph_opt_max` y `ph_min`–`ph_max`; `supply` y `market` usan cortes de `thresholds.yaml`, iguales para todos los cultivos (**13 de noviembre de 2026:** `thresholds.yaml` 1.0.0 los deja con `curve: null`, porque ninguna fuente publicada da esos cortes; son `insufficient_data` hasta que tengan su curva con fuente: HU-072, HU-073; R1). Las columnas de `crops` para estos límites ya están en el contrato (`specs/02-contratos.md`, tabla `crops`); las llena HU-199.
 
 ### HU-074 · Semáforo con prioridades, dos luces y acción
 
@@ -159,7 +159,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Señal `heat` con `status`, `level`, `critical`, `score`, `counts`, `indicators` (`tmax_p90_c`) y `reasons`, según el contrato
-  - [ ] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (`heat_max_c` y el óptimo, `temp_opt_min_c`–`temp_opt_max_c`, de HU-199) mediante la curva de HU-196
+  - [ ] Compara `tmax_p90_c` de los meses de la ventana (`climate_risk_month`; por semana con `climate_risk_week` cuando exista, P1) con los límites de temperatura de la ficha (de HU-199) mediante la curva de HU-196: 100 hasta `temp_opt_max_c` y 0 desde `heat_max_c`, recta entre medio y sin límite inferior (una máxima fría no es calor)
   - [ ] La razón dice el periodo, la temperatura de la zona y la que aguanta el cultivo («De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C»)
   - [ ] Grado crítico en `thresholds.yaml`. Un calor crítico cuenta siempre, aunque el agricultor le ponga peso 0
   - [ ] Sin `heat_max_c` con fuente o sin `tmax_p90_c`: `insufficient_data`, nivel y `score` nulos y a las limitaciones; no cambia la luz (R1, R8)
