@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
+import { SceneBackdrop } from "@/components/layout/SceneBackdrop";
 import { TopBar } from "@/components/layout/TopBar";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ChoiceGroup } from "@/components/ui/ChoiceGroup";
 import { Combobox, type Option } from "@/components/ui/Combobox";
@@ -32,6 +33,7 @@ import {
   useRotations,
   validate,
   writeArea,
+  writeGuestConsult,
   type LotFacts,
   type Mode,
   type RotationRequest,
@@ -181,6 +183,7 @@ export function StrategiesPage() {
     setTried(true);
     if (!catalogsReady || !lotReady || Object.keys(validate(form, context)).length > 0) return;
     if (!form.lotId) writeArea(form.areaText.trim());
+    if (!sessionLoading && !user && !form.lotId) writeGuestConsult(form);
     setEditing(false);
     setParams(toParams(form), { preventScrollReset: true });
   };
@@ -202,8 +205,10 @@ export function StrategiesPage() {
   ];
 
   return (
-    <div className="min-h-svh bg-paleta-niebla">
+    <div className="relative isolate min-h-svh bg-paleta-niebla">
       <title>Estrategias de rotación · AgroSense</title>
+      {/* El paisaje del municipio (estrategias.py, ciclo.py): de fondo completo en la entrada, en franja con el resultado. */}
+      <SceneBackdrop scene="municipio" variant={showResult ? "band" : "full"} />
       <TopBar />
       <main className="container-page pt-[112px] pb-40 md:pt-[128px] md:pb-48">
         {openCycle && request ? (
@@ -272,10 +277,35 @@ export function StrategiesPage() {
                 cycleLink={(strategy, n) => `${PATHS.consult}?${cycleParams(params, strategyKey(strategy), n)}`}
               />
             )}
+            {!user && !sessionLoading && (
+              <Card bodyClassName="gap-3">
+                <h2 className="text-[clamp(1.15rem,2.5vw,1.4rem)]">¿Quiere guardar este lote?</h2>
+                <p>
+                  Cree su cuenta y lo que acaba de consultar se convierte en su primer lote, listo para registrar siembras y ver su
+                  historial.
+                </p>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <ButtonLink to={PATHS.signup} onClick={() => writeGuestConsult(sent)}>
+                    Crear cuenta
+                  </ButtonLink>
+                  <span>
+                    ¿Ya tiene cuenta?{" "}
+                    <Link
+                      to={PATHS.login}
+                      onClick={() => writeGuestConsult(sent)}
+                      className={`${LINK} inline-flex min-h-11 min-w-11 items-center justify-center`}
+                    >
+                      Entrar
+                    </Link>
+                  </span>
+                </div>
+              </Card>
+            )}
           </>
         ) : (
           <div className="flex max-w-[760px] min-w-0 flex-col gap-8">
-            <header className="flex min-w-0 flex-col gap-3">
+            {/* Sobre el paisaje, el encabezado va en un panel claro para que se lea (en el diseño va dentro de la tarjeta). */}
+            <header className="flex min-w-0 flex-col gap-3 rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
               <Eyebrow>Estrategias de rotación</Eyebrow>
               <h1 ref={formTitle} tabIndex={-1} className="text-[clamp(1.75rem,4vw,3rem)] outline-none">
                 ¿Qué sembrar en los próximos ciclos?
@@ -283,6 +313,10 @@ export function StrategiesPage() {
               <p>
                 Le mostramos estrategias de dos o tres ciclos que cumplen las reglas de rotación y se dan en su zona, comparadas por agua,
                 suelo, ingreso y riesgo según lo que a usted le importa. Es la historia de su zona, no un pronóstico.
+              </p>
+              <p>
+                Un <strong>ciclo</strong> es una siembra completa: de la siembra a la cosecha de un cultivo, o el tiempo de un abono verde o
+                de un descanso. Cada ciclo empieza cuando termina el anterior.
               </p>
             </header>
 
@@ -297,7 +331,9 @@ export function StrategiesPage() {
             )}
 
             {resolving ? (
-              <p role="status">Cargando su consulta…</p>
+              <p role="status" className="rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
+                Cargando su consulta…
+              </p>
             ) : (
               <Card bodyClassName="gap-6">
                 {municipalities.isError || crops.isError ? (
@@ -437,6 +473,7 @@ export function StrategiesPage() {
 
                     <ChoiceGroup<2 | 3>
                       legend="¿Cuántos ciclos quiere planear?"
+                      hint="Según el cultivo, cada ciclo dura de 3 a 6 meses. Por ejemplo, papa, luego avena con vicia, luego arveja: 3 ciclos, cerca de 14 meses."
                       choices={[
                         { value: 2, label: "2 ciclos" },
                         { value: 3, label: "3 ciclos" },

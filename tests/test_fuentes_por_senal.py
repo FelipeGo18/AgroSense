@@ -40,8 +40,22 @@ def test_la_lluvia_es_de_imerg_con_su_aviso_y_power_de_contraste():
     assert "GPM IMERG" in water.caveat and "sobrestima" in water.caveat and "IDEAM" in water.caveat
 
 
+def test_las_heladas_llevan_su_aviso_fijo():
+    """Aprobado por Felipe el 13 de noviembre de 2026 (PR #61): POWER cuenta menos heladas que el IDEAM en los valles del
+    altiplano, así que la señal de heladas lleva siempre el aviso de `frost_caveat`."""
+    frost = get_signal_sources().for_region(REGION)["frost"]
+    assert frost.used == "nasa_power"
+    assert "NASA POWER" in frost.caveat and "IDEAM" in frost.caveat and "menos heladas" in frost.caveat
+    # El texto llega en una sola línea, sin los saltos del YAML.
+    assert "\n" not in frost.caveat
+
+
+def test_una_senal_sin_aviso_no_lo_inventa():
+    assert get_signal_sources().for_region(REGION)["heat"].caveat is None
+
+
 def test_cada_fuente_esta_publicada_o_por_llegar_en_el_dataset_del_repositorio():
-    """R8 contra lo publicado: hoy POWER, IMERG y SIPSA están; SoilGrids, EVA y SMAP esperan su HU."""
+    """R8 contra lo publicado: hoy POWER, IMERG, SoilGrids y SIPSA están; EVA y SMAP esperan su HU."""
     published = set(pl.read_parquet(Path("data/published/sources.parquet"))["source_id"].to_list())
     assert check_sources(get_signal_sources(), REGION, published, set(ADAPTERS)) == []
 
@@ -54,10 +68,10 @@ def test_una_fuente_que_nadie_conoce_es_un_error():
 
 
 def test_una_fuente_con_adaptador_que_no_se_publico_no_es_un_error_y_se_avisa():
-    """Sin la caché de POWER ni la de IMERG se publica lo demás: la señal será `insufficient_data` (R1), no un pipeline
+    """Sin la caché de POWER, la de IMERG ni la de SoilGrids se publica lo demás: la señal será `insufficient_data` (R1), no un pipeline
     caído."""
     missing = check_sources(get_signal_sources(), REGION, {"dane_divipola", "dane_sipsa"}, set(ADAPTERS))
-    assert missing == ["imerg", "nasa_power"]
+    assert missing == ["imerg", "nasa_power", "soilgrids"]
 
 
 def test_una_fuente_de_planned_que_ya_se_publica_tiene_que_salir_de_la_lista():
@@ -78,6 +92,8 @@ def test_una_region_que_no_esta_en_el_archivo_es_un_error():
         (lambda d: d["regions"][REGION]["water"].pop("rain"), "rain"),
         (lambda d: d["regions"][REGION]["soil"].pop("used"), "debe tener `used`"),
         (lambda d: d["regions"][REGION]["water"].update(rain_contrast="imerg"), "lista"),
+        (lambda d: d["regions"][REGION]["frost"].update(frost_caveat=""), "`frost_caveat`"),
+        (lambda d: d["regions"][REGION]["frost"].update(frost_caveat=3), "`frost_caveat`"),
         (lambda d: d["planned"].update(imerg="pronto"), "HU-xxx"),
         (lambda d: d.update(version=1), "version"),
         (lambda d: d.update(regions={}), "al menos una región"),

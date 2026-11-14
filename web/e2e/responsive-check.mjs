@@ -42,6 +42,7 @@ const ROUTES = (
     `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no`,
     "/que-cambio?municipio=15646&cultivo=papa",
     "/mi-finca",
+    "/mi-finca/agregar?desde=consulta",
     "/como-funciona",
     "/politica-de-datos",
     "/precios",
@@ -176,12 +177,55 @@ async function check(context, route, width, light) {
     page.on("pageerror", (error) => errors.push(error.message));
     const loadingState = new URL(route, BASE).searchParams.get("estado") === "cargando";
 
+    // HU-168: preparar la cuenta y consulta antes de cargar la pantalla.
+    if (route === "/mi-finca/agregar?desde=consulta") {
+      await page.addInitScript(() => {
+        sessionStorage.setItem(
+          "agrosense.guest-consult",
+          JSON.stringify({
+            municipalityId: "15646",
+            areaText: "1,26",
+            irrigation: "si",
+            previousCrops: ["papa"],
+          }),
+        );
+
+        const originalFetch = window.fetch.bind(window);
+
+        window.fetch = async (input, init) => {
+          const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+          const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+
+          if (url.origin === window.location.origin && method === "GET") {
+            if (url.pathname === "/api/v1/me") {
+              return Response.json({
+                user_id: "hu168",
+                username: "ejemplo",
+                display_name: "Ejemplo",
+                role: "farmer",
+                consent_version: 3,
+                priorities: null,
+              });
+            }
+
+            if (url.pathname === "/api/v1/lots") {
+              return Response.json([]);
+            }
+          }
+
+          return originalFetch(input, init);
+        };
+      });
+    }
     await page.goto(`${BASE}${route}`, {
       waitUntil: loadingState ? "domcontentloaded" : "networkidle",
     });
 
     if (loadingState) {
       await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+    }
+    if (route === "/mi-finca/agregar?desde=consulta") {
+      await page.getByRole("status").filter({ hasText: "¿Guardar como su primer lote?" }).waitFor({ state: "visible", timeout: 10000 });
     }
     await page.waitForTimeout(1200);
     return [...(await page.evaluate(inspect, { light, minTarget: minTargetFor(width) })), ...errors.map((e) => `error de la página: ${e}`)];
