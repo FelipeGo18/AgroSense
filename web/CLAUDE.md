@@ -34,7 +34,7 @@ Mobile-first. Lo base es la pantalla de 320 px de ancho; `sm`, `md`, `lg` y `xl`
 - **Alturas:** `min-h-svh`, no `h-svh`, para contenido. Nada depende de que la pantalla sea alta: se prueba con alturas bajas (320, 568 y 600 px).
 - **Posición absoluta:** solo dentro de una caja con tamaño propio. En el celular, lo que esté al lado de otra cosa va en el flujo normal (una columna), no encima.
 - **Tipografía:** títulos grandes con `clamp()`, y que el título más largo quepa a 320 px.
-- **Objetivos táctiles:** ≥ 44 px de alto y de ancho. Ojo: en esta web `1rem` son 18 px, así que `size-11` mide unos 50 px.
+- **Objetivos táctiles:** ≥ 44 px de alto y de ancho. Ojo: en esta web `1rem` son 18 px en el celular y 16 px desde 1024 px de ancho (la escala de letra baja un paso en escritorio, `styles/index.css`), así que `size-11` mide unos 50 px en el celular y 44 px en escritorio: nada táctil más chico que `size-11`.
 - **Una sola columna a 360 px** y **sin scroll horizontal** en ningún ancho (HU-096).
 - **Nada se corta en silencio:** `overflow-hidden` o `overflow-x-clip` no arregla un desborde, lo esconde. Si algo se sale, se corrige.
 

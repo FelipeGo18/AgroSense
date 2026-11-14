@@ -21,7 +21,7 @@ const VARIANTS: Record<Variant, { fill: string; side: string; ink: string }> = {
 
 // Alto mínimo, no fijo: si el texto no cabe en una línea (por ejemplo «Ver estrategias de rotación» a 360 px), el bloque
 // crece y el texto se parte en dos líneas centradas en vez de salirse. La placa se mide sola (`Plate`, ResizeObserver).
-const BLOCK = "plate-button relative inline-flex min-h-[58px] min-w-tactil-minimo items-start justify-center px-6 font-bold outline-none";
+const BLOCK = "plate-button relative inline-flex min-h-[58px] min-w-tactil-minimo lg:min-h-[50px] items-start justify-center px-6 font-bold outline-none";
 
 /** La cara del bloque con su canto y su contenido: la comparten el botón y el enlace con forma de botón. */
 function Block({ variant, children }: { variant: Variant; children: ReactNode }) {
@@ -29,7 +29,7 @@ function Block({ variant, children }: { variant: Variant; children: ReactNode })
   return (
     <>
       <Plate fill={v.fill} side={v.side} depth={6} bottom={6} faceted ring="focus" />
-      <span className="plate-content relative flex min-h-[52px] items-center gap-2 py-1.5 text-center leading-tight">{children}</span>
+      <span className="plate-content relative flex min-h-[52px] items-center gap-2 py-1.5 lg:min-h-11 text-center leading-tight">{children}</span>
     </>
   );
 }
@@ -58,7 +58,7 @@ export function Button({
       {flat ? (
         <>
           <Plate fill="var(--color-superficie-panel-suave)" top={6} />
-          <span className="plate-content relative flex min-h-[52px] translate-y-[6px] items-center gap-2 py-1.5 text-center leading-tight">
+          <span className="plate-content relative flex min-h-[52px] translate-y-[6px] items-center gap-2 py-1.5 lg:min-h-11 text-center leading-tight">
             {children}
           </span>
         </>
