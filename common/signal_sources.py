@@ -32,9 +32,10 @@ class SignalSource:
 
     used: str
     contrast: tuple[str, ...] = ()
-    # Solo `water`: la ET0, la humedad del suelo para contrastar y el aviso que va con la lluvia, si lo hay.
+    # Solo `water`: la ET0 y la humedad del suelo para contrastar.
     et0: str | None = None
     soil_moisture_contrast: tuple[str, ...] = ()
+    # El aviso fijo que lleva la señal, si lo hay: `rain_caveat` en `water` y `frost_caveat` en `frost`.
     caveat: str | None = None
 
     def source_ids(self) -> set[str]:
@@ -94,7 +95,15 @@ def _signal(region: str, signal: str, entry: Any) -> SignalSource:
         )
     if "used" not in entry:
         raise SignalSourcesError(f"{where} debe tener `used`: la fuente que la calcula.")
-    return SignalSource(used=_text(entry["used"], f"`used` de {where}"), contrast=_texts(entry.get("contrast"), f"`contrast` de {where}"))
+    # Solo `frost`: el aviso que va con la señal de heladas, si lo hay (aprobado por Felipe el 13 de noviembre de 2026).
+    caveat = entry.get("frost_caveat") if signal == "frost" else None
+    if caveat is not None and (not isinstance(caveat, str) or not caveat.strip()):
+        raise SignalSourcesError(f"`frost_caveat` de {where} debe ser un texto.")
+    return SignalSource(
+        used=_text(entry["used"], f"`used` de {where}"),
+        contrast=_texts(entry.get("contrast"), f"`contrast` de {where}"),
+        caveat=" ".join(caveat.split()) if caveat else None,
+    )
 
 
 def check_shape(data: Any) -> SignalSources:

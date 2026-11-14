@@ -140,14 +140,14 @@ def precip_month(cell_months: pl.DataFrame, cell_weights: pl.DataFrame, normal: 
     """
     if cell_months.is_empty() or cell_weights.is_empty():
         return pl.DataFrame(schema=PRECIP_MONTH_SCHEMA)
-    total = cell_weights.group_by("municipality_id").agg(pl.col("weight").sum().alias("total_weight"))
+    total = cell_weights.group_by("municipality_id").agg(pl.col("weight").sort().sum().alias("total_weight"))
     valid = pl.col("precip_mm").is_not_null()
     months = (
         cell_weights.join(cell_months, on=["row", "col"])
         .group_by("municipality_id", "year", "month")
         .agg(
-            (pl.col("precip_mm") * pl.col("weight")).filter(valid).sum().alias("weighted"),
-            pl.col("weight").filter(valid).sum().alias("valid_weight"),
+            (pl.col("precip_mm") * pl.col("weight")).filter(valid).sort().sum().alias("weighted"),
+            pl.col("weight").filter(valid).sort().sum().alias("valid_weight"),
         )
         .join(total, on="municipality_id")
         .with_columns((pl.col("valid_weight") / pl.col("total_weight")).alias("share"))
@@ -162,7 +162,7 @@ def precip_month(cell_months: pl.DataFrame, cell_weights: pl.DataFrame, normal: 
         months.filter(pl.col("complete") & pl.col("year").is_between(normal.first_year, normal.last_year))
         .group_by("municipality_id", "month")
         .agg(
-            pl.col("precip_mm").mean().round(1).alias("precip_normal_mm"),
+            pl.col("precip_mm").sort().mean().round(1).alias("precip_normal_mm"),
             pl.col("precip_mm").quantile(normal.dry_quantile, interpolation="linear").round(1).alias("precip_dry_mm"),
             pl.len().alias("years"),
         )

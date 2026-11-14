@@ -39,7 +39,7 @@ import yaml
 from common import signal_sources
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import climate_normals, schema
+from pipeline import climate_normals, climate_risk, schema
 from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
 
@@ -211,6 +211,37 @@ def validate_precip_month(month: pl.DataFrame, municipalities: pl.DataFrame, sou
         raise ValidationError(f"`precip_month` cita una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def validate_frost(
+    risk: pl.DataFrame, frost: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame, threshold_source: str | None
+) -> None:
+    """`climate_risk_month` y `climate_frost_month` (HU-045) solo traen municipios publicados (R7), meses de 1 a 12,
+    porcentajes de 0 a 100, días que caben en el mes y fuentes que existen (R8). El umbral de helada de `region.yaml` cita
+    una fuente que también está en `sources` (R8)."""
+    if threshold_source is None or threshold_source not in set(sources["source_id"].to_list()):
+        raise ValidationError(
+            f"El umbral de helada de pipeline/region.yaml (`frost.source_id`: {threshold_source!r}) no está en `sources` (R8)."
+        )
+    known = set(municipalities["municipality_id"].to_list())
+    for name, table in (("climate_risk_month", risk), ("climate_frost_month", frost)):
+        extra = set(table["municipality_id"].unique().to_list()) - known
+        if extra:
+            raise ValidationError(f"`{name}` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+        unknown = set(table["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+        if unknown:
+            raise ValidationError(f"`{name}` cita una fuente que no está en `sources`: {sorted(unknown)}")
+    bad = risk.filter(~pl.col("month").is_between(1, 12) | ~pl.col("frost_freq_pct").is_between(0, 100) | (pl.col("frost_days_mean") < 0))
+    if not bad.is_empty():
+        raise ValidationError(f"`climate_risk_month` con un mes o una frecuencia fuera de lo permitido: {bad.head(3).to_dicts()}")
+    bad = frost.filter(
+        ~pl.col("month").is_between(1, 12)
+        | (pl.col("frost_days") < 0)
+        | (pl.col("frost_days") > pl.col("valid_days"))
+        | (pl.col("valid_days") > 31)
+    )
+    if not bad.is_empty():
+        raise ValidationError(f"`climate_frost_month` con un mes o unos días fuera de lo permitido: {bad.head(3).to_dicts()}")
+
+
 def validate_soil(soil: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`soil_municipality` (HU-181) solo trae municipios publicados (R7), un pH de 0 a 14, porcentajes de 0 a 100,
     carbono y nitrógeno no negativos, el percentil 5 por debajo del 95 y fuentes que existen (R8)."""
@@ -242,6 +273,24 @@ def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.
         raise ValidationError(f"`grid_cells` cita una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def lapse_rate_entry(region: dict[str, Any]) -> dict[str, Any]:
+    """El gradiente térmico con que se calculó `tmean_annual_c`, para el manifiesto (HU-191, decisión del equipo).
+
+    La API corrige la temperatura a la altitud de un lote con estas mismas tasas, así que la versión del dataset las
+    fija y la API nunca aplica otras (R4). Sin gradiente en `region.yaml`, no se publica ninguno: nada se inventa (R1).
+    """
+    lapse = region.get("temperature_lapse_rate")
+    if lapse is None:
+        return {}
+    return {
+        "temperature_lapse_rate": {
+            "temp_max_c_per_m": lapse["temp_max_c_per_m"],
+            "temp_min_c_per_m": lapse["temp_min_c_per_m"],
+            "source_id": lapse["source"]["source_id"],
+        }
+    }
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -255,14 +304,16 @@ def publish(
     grid: pl.DataFrame | None = None,
     climate_month: pl.DataFrame | None = None,
     precip_month: pl.DataFrame | None = None,
+    frost: tuple[pl.DataFrame, pl.DataFrame] | None = None,
     soil: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
     `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
     `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). `climate`
-    (`climate_day`), `climate_month` (HU-042), `precip_month` (HU-207), `soil` (`soil_municipality`, HU-181) y `grid`
-    (`grid_cells`, HU-206) solo se escriben si traen filas: una tabla vacía no es un dato (R1). Todo se valida antes de escribir nada.
+    (`climate_day`), `climate_month` (HU-042), `precip_month` (HU-207), `frost` (`climate_risk_month` y
+    `climate_frost_month`, HU-045), `soil` (`soil_municipality`, HU-181) y `grid` (`grid_cells`, HU-206) solo se
+    escriben si traen filas: una tabla vacía no es un dato (R1). Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
     if boundaries is not None:
@@ -288,6 +339,9 @@ def publish(
     has_precip = precip_month is not None and not precip_month.is_empty()
     if has_precip:
         validate_precip_month(precip_month, municipalities, sources)
+    has_frost = frost is not None and not frost[0].is_empty()
+    if has_frost:
+        validate_frost(frost[0], frost[1], municipalities, sources, climate_risk.frost_source(region))
     has_grid = grid is not None and not grid.is_empty()
     if has_grid:
         validate_grid(grid, municipalities, sources)
@@ -310,6 +364,8 @@ def publish(
         tables["climate_month"] = climate_month
     if has_precip:
         tables["precip_month"] = precip_month
+    if has_frost:
+        tables["climate_risk_month"], tables["climate_frost_month"] = frost
     if has_grid:
         tables["grid_cells"] = grid
     if has_soil:
@@ -333,7 +389,7 @@ def publish(
         # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
         "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "region": region["region"],
+        "region": {**region["region"], **lapse_rate_entry(region)},
         # Los periodos de «Qué cambió» llegan con HU-216.
         "periods": [],
         "tables": {
@@ -362,6 +418,17 @@ def publish(
         normal_text = f"; normal {', '.join(periods)}" if periods else "; sin normal"
         coverage = f"{precip_month['municipality_id'].n_unique()} municipios, lluvia de GPM IMERG {years}{normal_text}"
         manifest["tables"]["precip_month"] = {"rows": precip_month.height, "coverage": coverage}
+    if has_frost:
+        risk, by_year = frost
+        normal = climate_normals.Normal.from_region(region)
+        period = f" de {normal.first_year}-{normal.last_year}" if normal is not None else ""
+        threshold = climate_risk.frost_threshold(region)
+        towns = risk["municipality_id"].n_unique()
+        coverage = f"{towns} municipios con altitud; heladas (mínima ≤ {threshold:g} °C) y máxima p90 por mes{period}"
+        manifest["tables"]["climate_risk_month"] = {"rows": risk.height, "coverage": coverage}
+        years = f"de {by_year['year'].min()} a {by_year['year'].max()}"
+        coverage = f"{by_year['municipality_id'].n_unique()} municipios con altitud; días con mínima ≤ {threshold:g} °C por mes, {years}"
+        manifest["tables"]["climate_frost_month"] = {"rows": by_year.height, "coverage": coverage}
     if has_grid:
         with_soil = grid.filter(pl.col("ph").is_not_null()).height
         soil_text = f"suelo de SoilGrids en {with_soil} celdas" if with_soil else "sin suelo (falta la caché de SoilGrids)"
@@ -553,6 +620,30 @@ def precip_from_cache(region: dict[str, Any], boundaries: pl.DataFrame, cache: P
     return month, [imerg.source(cells, meta)]
 
 
+def frost_tables(region: dict[str, Any], climate: pl.DataFrame | None) -> tuple[pl.DataFrame, pl.DataFrame] | None:
+    """Las heladas y la máxima por mes (HU-045): `climate_risk_month` y `climate_frost_month`, desde `climate_day`.
+
+    Sin `climate_day` (falta la caché de POWER o la altitud), sin el umbral de helada o sin el periodo normal en
+    `region.yaml`, no se publican: no se inventan (R1, R8), y el log lo dice.
+    """
+    threshold, normal = climate_risk.frost_threshold(region), climate_normals.Normal.from_region(region)
+    if climate is None or climate.is_empty():
+        return None
+    if threshold is None or normal is None:
+        log.warning("frost_config_missing", table="climate_risk_month", detail="region.yaml no trae frost o climate_normal: no hay heladas")
+        return None
+    risk = climate_risk.climate_risk_month(climate, threshold, normal)
+    by_year = climate_risk.climate_frost_month(climate, threshold)
+    partial = risk.filter(pl.col("quality") == "partial").height
+    log.info(
+        "frost_computed",
+        rows=risk.height,
+        detail=f"Heladas (mínima ≤ {threshold:g} °C) y máxima p90: {risk.height} filas de climate_risk_month ({partial} partial) y "
+        f"{by_year.height} de climate_frost_month",
+    )
+    return risk, by_year
+
+
 def build(
     download: bool = False,
     folder: Path = PUBLISHED,
@@ -611,6 +702,7 @@ def build(
     grid, soil, soil_sources = soil_from_cache(grid, boundaries, soil_cache)
     municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
     precip_month, rain_sources = precip_from_cache(region, boundaries, rain_cache)
+    frost = frost_tables(region, climate)
     # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
     normal = climate_normals.Normal.from_region(region)
     if climate is not None and not climate.is_empty():
@@ -657,7 +749,20 @@ def build(
     check_signal_sources(region["region"]["id"], set(sources["source_id"].to_list()))
     crops = (catalog["version"], crops_table, stages_table)
     return publish(
-        region, municipalities, sources, folder, boundaries, crops, prices, crop_products, climate, grid, climate_month, precip_month, soil
+        region,
+        municipalities,
+        sources,
+        folder,
+        boundaries,
+        crops,
+        prices,
+        crop_products,
+        climate,
+        grid,
+        climate_month,
+        precip_month,
+        frost,
+        soil,
     )
 
 
