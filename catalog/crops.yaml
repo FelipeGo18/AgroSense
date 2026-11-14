@@ -14,6 +14,9 @@
 # `article` (HU-191, aprobado por Felipe el 12 de noviembre de 2026 para `specs/02-contratos.md`): el "el"/"la" de cada
 # cultivo, para el texto que explica por qué no es apto («la papa», «el maíz»). Es presentación, no un dato agronómico:
 # no necesita fuente (R8 no aplica), mismo tipo de campo que `archetype` (aprobado el 16 de oct. para "cómo se dibuja").
+# Raíz (HU-144, por aprobar por Felipe o Haider): `root_depth_min_m`, `root_depth_max_m` y `depletion_p` son la
+# profundidad máxima efectiva de la raíz y la fracción del agua que se puede gastar sin estrés, de la tabla 22 de
+# FAO-56. Las usa el balance hídrico para saber cuánta agua del suelo alcanza la raíz.
 # Se descartó redactar la frase sin artículo de género ("el cultivo papa") porque suena forzado y cambiaría los
 # ejemplos ya documentados del OpenAPI. Sin este campo, el código antes adivinaba por la terminación del nombre
 # (heurística frágil, nunca llegó a producción); ahora, si falta, la API lanza un error explícito en vez de adivinar.
@@ -30,6 +33,33 @@ sources:
     coverage: "Mundial"
     license: "CC BY 4.0 (catálogo de datos de la FAO)"
     notes: "Rangos óptimos y absolutos de temperatura, lluvia anual y pH; temperaturas que matan la planta; duración del ciclo; familia. La propia FAO advierte que son opinión experta. Cada ficha se cita con su URL."
+  - source_id: fao_56_tabla_22
+    name: "FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Capítulo 8, tabla 22 y ecuaciones 82 y 83"
+    institution: "FAO"
+    url: "https://www.fao.org/4/x0490e/x0490e0e.htm"
+    downloaded_at: "2026-11-14"
+    period_covered: "1998"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Tabla 22: profundidad máxima efectiva de la raíz (Zr, m) y fracción del agua disponible que se puede gastar sin estrés (p). Ecuaciones 82 y 83: TAW = 1000 (θFC - θWP) Zr y RAW = p TAW. Las usa el balance hídrico (HU-144)."
+  - source_id: nrcs_neh652_cap2
+    name: "NRCS, National Engineering Handbook, parte 652 (Irrigation Guide), capítulo 2 (Soils). Tabla 2-1, agua disponible por textura"
+    institution: "Natural Resources Conservation Service, Departamento de Agricultura de los Estados Unidos (USDA)"
+    url: "https://mail.irrigationtoolbox.com/NEH/Part652_NationalIrrigationGuide/ch2.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "Septiembre de 1997 (210-vi-NEH)"
+    coverage: "Estados Unidos (clases de textura del USDA)"
+    license: "Publicación del gobierno de los Estados Unidos, dominio público"
+    notes: "Tabla 2-1, p. 2-5: rango de agua disponible (AWC) de cada clase de textura, en pulgadas por pulgada (lo mismo que m³ de agua por m³ de suelo). Trae las 12 clases del triángulo del USDA; la tabla 19 de FAO-56 no trae franco arcilloso, franco arcillo arenoso ni arcillo arenoso. La usa el balance hídrico (HU-144)."
+  - source_id: fao_manual_riego_3
+    name: "Irrigation Water Management: Irrigation Water Needs. Training manual n.º 3 (Brouwer y Heibloem, 1986). Sección 4.2, lluvia efectiva"
+    institution: "FAO"
+    url: "https://www.fao.org/4/s2022e/s2022e08.htm"
+    downloaded_at: "2026-11-14"
+    period_covered: "1986"
+    coverage: "Mundial (zonas con pendiente de hasta 4 a 5 %)"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Lluvia efectiva del mes: Pe = 0,8 P - 25 si P > 75 mm/mes; Pe = 0,6 P - 10 si P < 75 mm/mes; nunca negativa. El manual dice que vale para pendientes de hasta 4 a 5 %: en ladera la lluvia efectiva es menor y el déficit se subestima. La usa el balance hídrico (HU-144)."
   - source_id: fao_56
     name: "FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Tablas 11 y 12"
     institution: "FAO"
@@ -268,6 +298,9 @@ crops:
     ph_max: {v: 8.5, s: fao_ecocrop}
     base_temp_c: {v: null, n: "Sin fuente de temperatura base; los grados-día son P1 (HU-150)."}
     frost_killing_c: {v: 0, s: fao_ecocrop, n: "Temperatura que mata la planta en crecimiento temprano (-1 °C en reposo)."}
+    root_depth_min_m: {v: 0.4, s: fao_56_tabla_22, n: "Tabla 22, fila «Potato»: profundidad máxima efectiva de la raíz, de 0.4 a 0.6 m."}
+    root_depth_max_m: {v: 0.6, s: fao_56_tabla_22}
+    depletion_p: {v: 0.35, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
     stages:
       source_row: "FAO-56, tabla 11, papa, fila «Idaho, USA» (siembra abril/mayo): la más larga de la tabla, la más cercana a los ciclos largos del clima frío. Por confirmar con una fuente local de la papa del altiplano."
       kc_source_row: "FAO-56, tabla 12: papa (Kc media 1,15 y final 0,75); Kc inicial del grupo raíces y tubérculos (0,5)."
@@ -307,6 +340,9 @@ crops:
     ph_max: {v: 8.3, s: fao_ecocrop}
     base_temp_c: {v: null, n: "Sin fuente."}
     frost_killing_c: {v: 0, s: fao_ecocrop, n: "Crecimiento temprano (-2 °C en reposo)."}
+    root_depth_min_m: {v: 0.6, s: fao_56_tabla_22, n: "Tabla 22, fila «Peas, fresh (la arveja del altiplano se cosecha en verde, como su Kc)»: profundidad máxima efectiva de la raíz, de 0.6 a 1.0 m."}
+    root_depth_max_m: {v: 1.0, s: fao_56_tabla_22}
+    depletion_p: {v: 0.35, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
     stages:
       source_row: "FAO-56, tabla 11, arveja, fila «Idaho, USA» (siembra en abril): la más larga. Por confirmar con una fuente local (la arveja del altiplano se cosecha en verde)."
       kc_source_row: "FAO-56, tabla 12: arveja fresca (0,5; 1,15; 1,10), porque en el altiplano se cosecha sobre todo en verde."
@@ -346,6 +382,9 @@ crops:
     ph_max: {v: 8.6, s: fao_ecocrop}
     base_temp_c: {v: null, n: "Sin fuente."}
     frost_killing_c: {v: null, n: "EcoCrop no da temperatura que la mate: la sensibilidad a la helada queda en «datos insuficientes»."}
+    root_depth_min_m: {v: 0.5, s: fao_56_tabla_22, n: "Tabla 22, fila «Broad bean, fresh (cosecha en verde, como su Kc)»: profundidad máxima efectiva de la raíz, de 0.5 a 0.7 m."}
+    root_depth_max_m: {v: 0.7, s: fao_56_tabla_22}
+    depletion_p: {v: 0.45, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
     stages:
       source_row: "FAO-56, tabla 11, haba, fila «Europe (- green)» (siembra en noviembre): cosecha en verde, como en el altiplano; no tiene etapa final (0 días)."
       kc_source_row: "FAO-56, tabla 12: haba fresca (0,5; 1,15; 1,10)."
@@ -384,6 +423,9 @@ crops:
     ph_max: {v: 8.5, s: fao_ecocrop}
     base_temp_c: {v: null, n: "Sin fuente."}
     frost_killing_c: {v: null, n: "EcoCrop no da temperatura que lo mate: «datos insuficientes»."}
+    root_depth_min_m: {v: 1.0, s: fao_56_tabla_22, n: "Tabla 22, fila «Maize, field (grain)»: profundidad máxima efectiva de la raíz, de 1.0 a 1.7 m."}
+    root_depth_max_m: {v: 1.7, s: fao_56_tabla_22}
+    depletion_p: {v: 0.55, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
     stages:
       source_row: "FAO-56, tabla 11, maíz en grano, fila «East Africa (alt.)» (siembra en abril): la de altura, la más cercana al altiplano."
       kc_source_row: "FAO-56, tabla 12: maíz de campo (media 1,20; final 0,60 a 0,35: se toma 0,35, cosecha en seco); Kc inicial del grupo cereales (0,3)."
@@ -423,6 +465,9 @@ crops:
     ph_max: {v: 8.7, s: fao_ecocrop}
     base_temp_c: {v: null, n: "Sin fuente."}
     frost_killing_c: {v: 0, s: fao_ecocrop, n: "Crecimiento temprano (-1 °C en reposo; EcoCrop: las hojas no aguantan -1,5 °C)."}
+    root_depth_min_m: {v: 0.5, s: fao_56_tabla_22, n: "Tabla 22, fila «Carrots»: profundidad máxima efectiva de la raíz, de 0.5 a 1.0 m."}
+    root_depth_max_m: {v: 1.0, s: fao_56_tabla_22}
+    depletion_p: {v: 0.35, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
     stages:
       source_row: "FAO-56, tabla 11, zanahoria, fila «Mediterranean» (siembra febrero/marzo)."
       kc_source_row: "FAO-56, tabla 12: zanahoria (media 1,05; final 0,95); Kc inicial del grupo hortalizas pequeñas (0,7)."
@@ -462,6 +507,9 @@ crops:
     ph_max: {v: 8.3, s: fao_ecocrop}
     base_temp_c: {v: null, n: "Sin fuente."}
     frost_killing_c: {v: null, n: "EcoCrop no da temperatura que la mate: «datos insuficientes»."}
+    root_depth_min_m: {v: 0.3, s: fao_56_tabla_22, n: "Tabla 22, fila «Onions, dry»: profundidad máxima efectiva de la raíz, de 0.3 a 0.6 m."}
+    root_depth_max_m: {v: 0.6, s: fao_56_tabla_22}
+    depletion_p: {v: 0.3, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
     stages:
       source_row: "FAO-56, tabla 11, cebolla seca, fila «Mediterranean» (siembra en abril)."
       kc_source_row: "FAO-56, tabla 12: cebolla seca (media 1,05; final 0,75); Kc inicial del grupo hortalizas pequeñas (0,7)."
@@ -502,6 +550,9 @@ crops:
     ph_max: {v: 7.5, s: fao_ecocrop, n: "Avena 7,5 (vicia 8,2)."}
     base_temp_c: {v: null, n: "Sin fuente."}
     frost_killing_c: {v: -1, s: fao_ecocrop, n: "Las dos: -1 °C en crecimiento temprano."}
+    root_depth_min_m: {v: 1.0, s: fao_56_tabla_22, n: "Tabla 22, fila «Oats (la vicia no tiene fila)»: profundidad máxima efectiva de la raíz, de 1.0 a 1.5 m."}
+    root_depth_max_m: {v: 1.5, s: fao_56_tabla_22}
+    depletion_p: {v: 0.55, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
     stages:
       source_row: "FAO-56, tabla 11, fila «Barley/Oats/Wheat · East Africa» (siembra en julio): la de altura del grupo. Supuesto por confirmar: como abono verde se corta e incorpora antes de terminar, así que la etapa final podría no cumplirse."
       kc_source_row: "FAO-56, tabla 12: avena (media 1,15; final 0,25); Kc inicial del grupo cereales (0,3). La vicia no tiene fila."

@@ -33,8 +33,10 @@ RANGES = {
 FIELDS = (
     "name_es", "article", "kind", "archetype", "family", "water_need", "root_type", "fixes_nitrogen",
     *RANGES["tmean"], "base_temp_c", "temp_min_c", "temp_opt_min_c", "temp_opt_max_c", "heat_max_c",
-    *RANGES["rain"], *RANGES["ph"], "frost_killing_c",
+    *RANGES["rain"], *RANGES["ph"], "frost_killing_c", "root_depth_min_m", "root_depth_max_m", "depletion_p",
 )  # fmt: skip
+# La raíz (FAO-56, tabla 22; HU-144): profundidad en m y fracción de 0 a 1.
+ROOT_FIELDS = ("root_depth_min_m", "root_depth_max_m", "depletion_p")
 
 
 class CatalogError(ValueError):
@@ -79,6 +81,19 @@ def _sensitivity(crop_id: str, stage: str, entry: dict[str, Any], field: str, kn
     return value["v"], value["s"]
 
 
+def _check_root(crop_id: str, row: dict[str, Any]) -> None:
+    """La raíz va completa o nula, con la mínima no mayor que la máxima, de 0 a 3 m, y `p` entre 0 y 1 (HU-144)."""
+    low, high, p = (row.get(k) for k in ROOT_FIELDS)
+    if {low is None, high is None, p is None} == {True, False}:
+        raise CatalogError(f"{crop_id}: la raíz va completa (profundidad mínima, máxima y `depletion_p`) o nula.")
+    if low is None:
+        return
+    if not 0 < low <= high <= 3:
+        raise CatalogError(f"{crop_id}: la profundidad de la raíz ({low} a {high} m) debe ir de 0 a 3 m, la mínima primero.")
+    if not 0 < p < 1:
+        raise CatalogError(f"{crop_id}: `depletion_p` {p} debe estar entre 0 y 1.")
+
+
 def _check_ranges(crop_id: str, row: dict[str, Any]) -> None:
     for name, (low, opt_low, opt_high, high) in RANGES.items():
         values = [row.get(k) for k in (low, opt_low, opt_high, high)]
@@ -117,6 +132,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
         if row["article"] not in ARTICLES:
             raise CatalogError(f"{crop_id}: `article` {row['article']!r} debe ser uno de {sorted(ARTICLES)}.")
         _check_ranges(crop_id, row)
+        _check_root(crop_id, row)
         days = 0
         for stage in (crop.get("stages") or {}).get("list") or []:
             name = stage.get("stage")
@@ -158,7 +174,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
         crops.append(row)
     if not crops:
         raise CatalogError("El catálogo no tiene cultivos.")
-    numeric = [f for f in FIELDS if f.endswith(("_c", "_mm")) or f.startswith("ph_")]
+    numeric = [f for f in FIELDS if f.endswith(("_c", "_mm")) or f.startswith("ph_") or f in ROOT_FIELDS]
     # Las cifras van todas como decimales, aunque la fuente las dé enteras (mismo tipo en cada columna, R4).
     # Un texto sin fuente en todos los cultivos queda nulo, pero su columna sigue siendo texto (HU-011: el tipo es el del
     # contrato, no el que adivina Polars de una columna vacía).
