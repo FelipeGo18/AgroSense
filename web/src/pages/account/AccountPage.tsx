@@ -1,4 +1,3 @@
-import gsap from "gsap";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router";
 import region from "../../../../design/paisaje/svg/a3-region.svg?url";
@@ -21,6 +20,7 @@ import { useLightMode, useReducedMotion } from "@/hooks/useReducedMotion";
 import { useSound } from "@/hooks/useSound";
 import { AccountShell, LINK } from "./AccountShell";
 import { PrioritiesCard } from "./PrioritiesCard";
+import { gsap, motionLoaded } from "@/lib/motion";
 
 const USERNAME = /^[a-z0-9._]{3,30}$/;
 const DATE = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
@@ -63,7 +63,8 @@ function DataCard({ user }: { user: Profile }) {
     if (!card) return;
     const from = before.current;
     const changed = from !== null && from.editing !== editing;
-    if (changed) {
+    // Si el motor del movimiento nunca llegó (modo ligero desde el principio), no hay nada que detener.
+    if (changed && motionLoaded()) {
       gsap.killTweensOf(card);
       gsap.set(card, { clearProps: "height,overflow" });
     }

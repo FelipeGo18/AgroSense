@@ -1,7 +1,4 @@
 import { isFirstLoad } from "@/lib/firstLoad";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useCallback, useRef } from "react";
 import { PATHS } from "@/app/paths";
 import { Earth, type EarthFrame } from "@/components/globe/Earth";
@@ -9,8 +6,8 @@ import { useScroll } from "@/components/layout/SmoothScroll";
 import { MascotSlot } from "@/components/mascot/MascotGuide";
 import { ButtonLink } from "@/components/ui/Button";
 import { GLOBE_CREDIT } from "../content";
-
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap } from "@/lib/motion";
 
 /**
  * Dónde va la Tierra: a la derecha en pantallas anchas y asomando por abajo en las angostas. Al bajar, se acerca.
@@ -42,7 +39,7 @@ export function Hero({ animated }: { animated: boolean }) {
   );
   const { scrollTo } = useScroll();
 
-  useGSAP(
+  useMotionEffect(
     () => {
       if (!animated || !root.current) return;
       // Entrada: el nombre, la frase y los botones aparecen uno tras otro, de izquierda a derecha.

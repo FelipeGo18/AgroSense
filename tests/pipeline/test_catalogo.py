@@ -71,6 +71,7 @@ def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
         (lambda d: crop(d, "papa").update(tmean_opt_min_c={"v": 16, "s": "upra_papa_diacol"}), "mayor que el máximo"),
         (lambda d: crop(d, "papa").update(kind={"v": "arbusto", "s": "agrosense_diseno"}), "`kind`"),
         (lambda d: crop(d, "papa").update(archetype={"v": "nube", "s": "agrosense_diseno"}), "`archetype`"),
+        (lambda d: crop(d, "papa").update(article={"v": "los", "s": "agrosense_diseno"}), "`article`"),
         (lambda d: crop(d, "arveja").update(crop_id="papa"), "repetido"),
         (lambda d: crop(d, "papa").update(crop_id="Papa Criolla"), "snake_case"),
         (lambda d: crop(d, "papa")["stages"]["list"][0].update(s="otra"), "no cita una fuente"),

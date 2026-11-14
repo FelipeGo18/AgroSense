@@ -7,7 +7,7 @@
 | Épica | HU | Título | Prio | Tamaño | Estado | Nota |
 |---|---|---|---|---|---|---|
 | [EP-00](epicas/EP-00-alcance.md) | HU-001 | Comparar la cobertura de EVA y elegir región | P0 | M | pendiente | |
-| [EP-00](epicas/EP-00-alcance.md) | HU-002 | Confirmar los datasets NASA del enunciado | P0 | S | en curso | Enunciado leído (8 nov, decisión 14); sede Duitama y región Boyacá y Cundinamarca confirmadas (28 oct); faltan los recursos del 13 de noviembre y la descarga de prueba |
+| [EP-00](epicas/EP-00-alcance.md) | HU-002 | Confirmar los datasets NASA del enunciado | P0 | S | en curso | Datos de la NASA documentados y probados sobre Duitama (12 nov); falta la pestaña de recursos del 13 de noviembre |
 | [EP-00](epicas/EP-00-alcance.md) | HU-003 | Verificar SIPSA y decidir si entra al P0 | P0 | S | hecha | Verificado y mapeado (7 nov): SIPSA cubre papa, arveja, cebolla de bulbo y zanahoria. Entra, aprobado por Felipe (10 nov) |
 | [EP-00](epicas/EP-00-alcance.md) | HU-004 | Confirmar qué se puede preparar antes del evento | P0 | S | hecha | Sí se puede llevar código (8 nov); los términos 2026 no limitan cuándo se crea el trabajo, pero piden licencia OSI, licencias de terceros documentadas y citar todas las fuentes (10 nov) |
 | [EP-01](epicas/EP-01-contratos.md) | HU-011 | Esquema de las tablas publicadas | P0 | M | hecha | `pipeline/schema.py` y los ejemplos en `data/examples/` (8 nov) |
@@ -27,7 +27,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-042 | Lluvia mensual y su normal | P0 | M | hecha | `climate_month` con la lluvia de NASA POWER y su normal 1991–2020; en el altiplano es de 1,7 a 2,7 veces la del IDEAM (riesgo para la señal de agua) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-205 | NASA POWER ampliado: humedad, radiación y viento | P0 | M | hecha | Humedad del suelo, radiación (desde 1984), viento y humedad relativa en la caché; la humedad del suelo, en `climate_month` |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-206 | Altitud de municipios y lotes con NASADEM | P0 | M | hecha | `grid_cells` con altitud y pendiente de NASADEM; la altitud del municipio es la de la celda de la cabecera y su pendiente, la mediana (decidido por Felipe) |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-207 | Lluvia por satélite con GPM IMERG | P0 | L | pendiente | Nueva |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-207 | Lluvia por satélite con GPM IMERG | P0 | L | hecha | `precip_month` con IMERG mensual V07; `water` usa IMERG con el aviso de que sobrestima en el altiplano (1,85 veces el IDEAM) y POWER de contraste (decidido por Felipe) |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-208 | Verdor del campo por municipio con MODIS NDVI | P0 | L | pendiente | Nueva |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-209 | Verdor por lote con MODIS NDVI | P1 | M | pendiente | Pasó a P1 el 8 de noviembre de 2026 (decisión 15): toda la región serían unos 14 millones de filas |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-210 | Humedad del suelo por satélite con SMAP | P0 | M | pendiente | Ya no es lo primero que se recorta: el reto lo nombra primero (decisión 14) |
@@ -58,7 +58,7 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-197 | Cultivos alternativos con mejor oferta | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-077 | Señal de heladas | P0 | M | pendiente | Por mes en el MVP |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-190 | Señal de calor | P0 | M | pendiente | Por mes en el MVP |
-| [EP-07](epicas/EP-07-diagnostico.md) | HU-191 | Aptitud del cultivo en la zona | P0 | S | pendiente | Por temperatura media anual desde el 16 oct (decisión 13); con lote, corregida a su altitud |
+| [EP-07](epicas/EP-07-diagnostico.md) | HU-191 | Aptitud del cultivo en la zona | P0 | S | en curso | Por temperatura media anual desde el 16 oct (decisión 13); con lote, corregida a su altitud. Motor y caso `not_suitable` de `/diagnostics` listos (PR #56); falta que la API calcule la altitud del lote (primer criterio de esta HU; HU-206 ya está hecha) |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-192 | Orden de las ventanas por factor limitante y prioridades | P0 | M | pendiente | |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-075 | Umbrales y pesos versionados | P0 | S | en curso | `weights.yaml` y `thresholds.yaml` 1.0.0 hechos (10 nov); oferta y mercado sin fuente. Falta lo que depende del motor |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-076 | Endpoint de diagnóstico con errores claros | P0 | S | pendiente | |
@@ -117,7 +117,7 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-155 | Descenso de cámara del satélite al lote | P1 | L | en curso | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-156 | Sistema de motion | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente | |
-| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | en curso | Interruptor, botón en la barra y reglas para lo nuevo hechos; falta cargar GSAP solo con movimiento y el Figma |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | en curso | GSAP y Lenis se cargan aparte: en modo ligero el JS inicial baja de 197 a 149 kB; verificados sin WebGL y con «reducir movimiento» (12 nov). Falta el Figma y el paso a 2D de la escena 3D (P1) |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-159 | Prototipo navegable con datos de ejemplo | P1 | L | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-160 | Editar mi perfil y cambiar la contraseña | P1 | S | hecha | Backend, pantallas y «Sus prioridades» hechos; revisión de seguridad hecha. Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-178 | Trazabilidad de lo que hacen agricultores y administradores | P1 | M | en curso | Tabla, eventos de la cuenta y «Mi actividad» hechos; revisión de seguridad hecha y limpieza de 180 días al arrancar; faltan los permisos de solo agregar y la limpieza con otro rol |
@@ -125,7 +125,7 @@
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-161 | Esquema de cuentas y migraciones | P0 | M | hecha | Esquema completo del contrato; `municipality_id` y `crop_id` se validan contra el catálogo publicado. Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-162 | Autenticación | P0 | L | hecha | Backend y pantallas hechos; revisión de seguridad hecha y arreglada; entrar y la sesión vencida no escriben de más (PR #19 y #20). Cerrada el 10 de noviembre de 2026 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-163 | Consentimiento y tratamiento de datos | P0 | S | en curso | Página de la política hecha, con el aviso de que falta la revisión legal; falta esa revisión y el canal de contacto |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | L | en curso | Entregas 1 y 2: lotes dibujados en el mapa o con el área a mano; «Ver estrategias» desde el lote (11 nov); falta el riego del lote en el motor y el criterio de «Borrar este lote» (su parte P1 es HU-204) |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-164 | Lotes del usuario | P0 | L | en curso | Entregas 1 y 2: lotes dibujados en el mapa o con el área a mano; «Ver estrategias» desde el lote (11 nov); «Borrar este lote» con confirmación, probado (12 nov); falta el riego del lote en el motor |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-165 | Temporadas e historial del lote | P0 | L | en curso | Entrega 3: API y pantallas de siembra, cosecha y corregir; falta pasar el historial a las estrategias (EP-08) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-204 | Historial con lo borrado y «Restaurar» | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-166 | Borrar mi cuenta | P0 | S | hecha | `DELETE /me` con la contraseña, borrado en cascada probado y confirmación en Mi cuenta. Cerrada el 10 de noviembre de 2026 |

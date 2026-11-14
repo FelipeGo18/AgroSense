@@ -10,6 +10,13 @@
 # Aptitud (decisión 13): la temperatura media anual del municipio contra `tmean_*`. Con la UPRA, el óptimo es la
 # aptitud alta (A1) y el absoluto va de A3 a A1. Con EcoCrop se usa su rango de temperatura del ciclo, con el supuesto de
 # que en el trópico alto la temperatura media del ciclo es casi la media anual (varía poco entre meses).
+#
+# `article` (HU-191, aprobado por Felipe el 12 de noviembre de 2026 para `specs/02-contratos.md`): el "el"/"la" de cada
+# cultivo, para el texto que explica por qué no es apto («la papa», «el maíz»). Es presentación, no un dato agronómico:
+# no necesita fuente (R8 no aplica), mismo tipo de campo que `archetype` (aprobado el 16 de oct. para "cómo se dibuja").
+# Se descartó redactar la frase sin artículo de género ("el cultivo papa") porque suena forzado y cambiaría los
+# ejemplos ya documentados del OpenAPI. Sin este campo, el código antes adivinaba por la terminación del nombre
+# (heurística frágil, nunca llegó a producción); ahora, si falta, la API lanza un error explícito en vez de adivinar.
 
 version: "0.1.0"
 
@@ -99,6 +106,7 @@ sources:
 crops:
   - crop_id: papa
     name_es: {v: "Papa", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
     kind: {v: crop, s: agrosense_diseno}
     archetype: {v: tuber, s: agrosense_diseno}
     species: "Solanum tuberosum"
@@ -137,6 +145,7 @@ crops:
 
   - crop_id: arveja
     name_es: {v: "Arveja", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
     kind: {v: crop, s: agrosense_diseno}
     archetype: {v: climbing_legume, s: agrosense_diseno}
     species: "Pisum sativum"
@@ -175,6 +184,7 @@ crops:
 
   - crop_id: haba
     name_es: {v: "Haba", s: agrosense_diseno}
+    article: {v: "el", s: agrosense_diseno, n: "Excepción fonética: femenino con «a» tónica inicial, como «el agua»."}
     kind: {v: crop, s: agrosense_diseno}
     archetype: {v: bush_legume, s: agrosense_diseno}
     species: "Vicia faba"
@@ -211,6 +221,7 @@ crops:
 
   - crop_id: maiz
     name_es: {v: "Maíz", s: agrosense_diseno}
+    article: {v: "el", s: agrosense_diseno}
     kind: {v: crop, s: agrosense_diseno}
     archetype: {v: cereal, s: agrosense_diseno}
     species: "Zea mays"
@@ -248,6 +259,7 @@ crops:
 
   - crop_id: zanahoria
     name_es: {v: "Zanahoria", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
     kind: {v: crop, s: agrosense_diseno}
     archetype: {v: root, s: agrosense_diseno}
     species: "Daucus carota"
@@ -286,6 +298,7 @@ crops:
 
   - crop_id: cebolla_bulbo
     name_es: {v: "Cebolla de bulbo", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
     kind: {v: crop, s: agrosense_diseno}
     archetype: {v: bulb, s: agrosense_diseno}
     species: "Allium cepa"
@@ -323,6 +336,7 @@ crops:
 
   - crop_id: avena_vicia
     name_es: {v: "Avena con vicia (abono verde)", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
     kind: {v: cover, s: agrosense_diseno}
     archetype: {v: cover, s: agrosense_diseno, n: "El diseño lo dibuja como mezcla de avena y vicia (design/finca/cultivos.py)."}
     species: "Avena sativa + Vicia sativa ssp. sativa"
@@ -362,6 +376,7 @@ crops:
 
   - crop_id: descanso
     name_es: {v: "Descanso", s: agrosense_diseno}
+    article: {v: "el", s: agrosense_diseno}
     kind: {v: fallow, s: agrosense_diseno}
     archetype: {v: fallow, s: agrosense_diseno, n: "El diseño lo dibuja como suelo en descanso con cobertura natural."}
     notes: "El descanso no tiene rangos ni etapas: no se evalúa por ventanas ni tiene diagnóstico (specs/01-reglas.md). Su duración la elige quien arma la estrategia."

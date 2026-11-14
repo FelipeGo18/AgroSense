@@ -183,3 +183,11 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
   - **Lo que encontró y se arregló:** dos enlaces sueltos de menos de 44 px, «Leer la política de tratamiento de datos» en Mi cuenta (27 px) y «‹ Mi cuenta» en Mi actividad (23 px).
   - **La cuenta de prueba** se borró al terminar.
   - **Lo que no reemplaza:** es Chrome sin ventana con el ancho y el toque de un celular, no un teléfono de verdad (Safari de iPhone y Chrome de Android pueden cambiar un poco las alturas). Antes de la demo conviene abrirla en un celular real con `npm run dev -- --host`.
+- **Arreglo (12 nov): la barra superior con sesión.**
+  - **Qué pasaba:** con sesión, la cuenta y «Cerrar sesión» ocupan más que «Entrar». De 1024 a 1100 px y de 1280 a 1400 px, «Mi finca» y «Cómo funciona» se partían en dos líneas y «Cómo funciona» quedaba debajo del botón de sonido. `test:responsive` no lo veía, porque nada se salía de la barra.
+  - **Arreglo:**
+    - los enlaces del menú no se parten;
+    - por debajo de 1536 px, la ficha de la cuenta muestra solo la mascota, con el nombre en su nombre accesible y en el aviso al pasar el cursor;
+    - desde 1536 px se ve el nombre.
+  - **Medido** de 1024 a 1600 px, sin sesión y con nombres cortos y largos: ningún ancho falla.
+  - **`test:responsive` ahora lo revisa:** un enlace del menú partido o debajo de los botones es un problema. Se comprobó que detecta el caso de antes.

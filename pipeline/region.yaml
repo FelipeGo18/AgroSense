@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.9"
+dataset_version: "2026.11.11"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"
@@ -35,6 +35,17 @@ climate_normal:
   # El año seco (HU-143): la lluvia de cada mes que se supera en 4 de cada 5 años del periodo (el percentil 20), la
   # lluvia confiable con que la FAO planea el riego. Decidido por Felipe el 10 de noviembre de 2026.
   dry_quantile: 0.2
+
+# La normal de GPM IMERG (HU-207): IMERG no tiene 1991-2020, así que su normal es otra y `precip_month` dice cuál
+# (`normal_period`). 2001-2024 son los años completos de la corrida final (llega a septiembre de 2025) y los mismos de los
+# dos periodos de «Qué cambió» con IMERG (2001-2012 y 2013-2024, specs/01-reglas.md). 20 años son el 80 % del periodo,
+# la misma proporción que 24 de 30. Nunca se completa con años de NASA POWER (R1). Aprobado por Felipe el 11 de
+# noviembre de 2026 (PR #44).
+# El mes `partial` y el año seco usan los cortes de `climate_normal`.
+imerg_normal:
+  first_year: 2001
+  last_year: 2024
+  min_years: 20
 
 # Gradiente térmico (HU-044): cuántos °C baja la temperatura por cada metro que se sube. Corrige las temperaturas de
 # NASA POWER, cuya celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio.
