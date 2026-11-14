@@ -93,6 +93,7 @@ TABLES: dict[str, Table] = {
         columns={
             "crop_id": c(S, "", False),
             "name_es": c(S, "", False),
+            "article": c(S, "el o la", False),
             "kind": c(S, "crop, cover o fallow", False),
             "archetype": c(S),
             "family": c(S),

@@ -173,6 +173,61 @@ def dataset(tmp_path, monkeypatch):
     return folder
 
 
+# Un municipio cálido real del departamento 25, para HU-191 (aptitud del cultivo): Girardot, el mismo que usa
+# `ex.DIAGNOSIS_NOT_SUITABLE`. No va en `SAMPLE_MUNICIPALITIES`: otros tests dependen de esa lista tal como está.
+SAMPLE_WARM_MUNICIPALITY = {
+    "cod_dpto": "25",
+    "dpto": "CUNDINAMARCA",
+    "cod_mpio": "25307",
+    "nom_mpio": "GIRARDOT",
+    "latitud": "4,3049",
+    "longitud": "-74,8016",
+}
+
+# Clima por municipio para `dataset_con_clima` (R5: cifras de ejemplo, no observadas, aunque realistas). Samacá queda
+# frío (papa apta, maíz no apta); Villa de Leyva queda aún más frío, por debajo del mínimo de cualquier cultivo del
+# catálogo real, para probar el borde inferior de la aptitud; Girardot queda cálido (papa no apta). Zipaquirá se deja
+# sin clima a propósito: sirve para el caso `insufficient_data` (R1).
+SAMPLE_CLIMATE = {
+    "15646": {"tmean_annual_c": 12.8, "altitude_m": 2660.0},  # Samacá
+    "15407": {"tmean_annual_c": 6.0, "altitude_m": 2900.0},  # Villa de Leyva
+    "25307": {"tmean_annual_c": 28.4, "altitude_m": 289.0},  # Girardot
+}
+
+
+@pytest.fixture
+def dataset_con_clima(tmp_path, monkeypatch):
+    """Un dataset de ejemplo publicado como `dataset`, pero con `tmean_annual_c` y `altitude_m` poblados (HU-044,
+    HU-206) para poder probar la regla 0 de HU-191 (aptitud del cultivo). Las cifras de clima son de ejemplo (R5):
+    quién las trae y quién no está en `SAMPLE_CLIMATE`.
+    """
+    import polars as pl
+
+    from pipeline import catalog as crops_catalog
+    from pipeline.build import publish
+    from pipeline.sources import dane, dane_mgn
+
+    folder = tmp_path / "published"
+    sources = pl.DataFrame([dane.source(SAMPLE_META), dane_mgn.source(SAMPLE_META)])
+    municipalities = dane.municipalities([*SAMPLE_MUNICIPALITIES, SAMPLE_WARM_MUNICIPALITY], ["15", "25"])
+
+    def column(name: str) -> pl.Expr:
+        expr = pl.lit(None, dtype=pl.Float64)
+        for municipality_id, values in SAMPLE_CLIMATE.items():
+            expr = pl.when(pl.col("municipality_id") == municipality_id).then(pl.lit(values[name])).otherwise(expr)
+        return expr.alias(name)
+
+    municipalities = municipalities.with_columns(column("tmean_annual_c"), column("altitude_m"))
+    # El catálogo es el real (catalog/crops.yaml): son datos con fuente, no de ejemplo.
+    catalog = crops_catalog.load()
+    crops, stages, catalog_sources = crops_catalog.build(catalog)
+    sources = pl.concat([sources, catalog_sources], how="diagonal_relaxed")
+    publish(SAMPLE_REGION, municipalities, sources, folder, sample_boundaries(municipalities), (catalog["version"], crops, stages))
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(folder))
+    get_settings.cache_clear()
+    return folder
+
+
 def sample_boundaries(municipalities):
     """Límites de ejemplo (R5): un cuadrado de 0,1° (unos 11 km) alrededor del punto de cada municipio."""
     import polars as pl
