@@ -91,6 +91,9 @@ class Dataset:
     # (`ndvi_municipality_normal`, HU-208). Nulos mientras el pipeline no los publique (R1).
     supply_semester: pl.DataFrame | None = None
     ndvi_normal: pl.DataFrame | None = None
+    # Los días con helada de cada mes de cada año (`climate_frost_month`, HU-045), para la señal de heladas (HU-077).
+    # Nula si el dataset no la trae: entonces la señal es `insufficient_data` (R1).
+    climate_frost_month: pl.DataFrame | None = None
     # Comparación histórica de HU-217/HU-218.
     # None indica que la tabla todavía no está publicada.
     climate_change_month: pl.DataFrame | None = None
@@ -127,6 +130,8 @@ def load(folder: Path) -> Dataset:
             _optional(folder / f"{name}.parquet")
             for name in ("climate_month", "precip_month", "supply_semester", "ndvi_municipality_normal")
         )
+        frost_path = folder / "climate_frost_month.parquet"
+        climate_frost_month = pl.read_parquet(frost_path) if frost_path.exists() else None
         changes_path = folder / "climate_change_month.parquet"
         climate_change_month = pl.read_parquet(changes_path) if changes_path.exists() else None
         periods = tuple(manifest.get("periods", []))
@@ -169,6 +174,7 @@ def load(folder: Path) -> Dataset:
         precip_month=precip_month,
         supply_semester=supply_semester,
         ndvi_normal=ndvi_normal,
+        climate_frost_month=climate_frost_month,
     )
 
 
