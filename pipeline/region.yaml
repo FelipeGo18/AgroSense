@@ -71,6 +71,6 @@ temperature_lapse_rate:
     downloaded_at: "2026-11-09"
     period_covered: null
     coverage: "Región Andina de Colombia, de 100 a 4482 m"
-    license: null
+    license: "Artículo de acceso abierto con derechos de autor reservados (revista Avances en Recursos Hidráulicos, Universidad Nacional): se usan dos cifras con su cita"
     citation: "Chaves Córdoba, B. y Jaramillo Robledo, A. (1999). Regionalización de la temperatura del aire en Colombia. Avances en Recursos Hidráulicos, 6, 37-42."
     notes: "Avances en Recursos Hidráulicos, n.º 6 (septiembre de 1999), pp. 37-42. Pendiente de la temperatura máxima media (0,0058 °C/m) y de la mínima media (0,0059 °C/m) con la altitud en la región Andina. Se usa para corregir por altitud las temperaturas de NASA POWER."
