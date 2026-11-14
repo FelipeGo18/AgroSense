@@ -1,12 +1,23 @@
 """Comparación mensual de clima histórico (HU-217)"""
+
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from math import isfinite
 from typing import Any
 
 MONTH_NAMES = (
-    "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
 )
 
 INDICATORS = {
@@ -14,6 +25,7 @@ INDICATORS = {
     "precip_normal_mm": ("lluvia normal", "mm", "mm"),
     "tmax_p90_c": ("temperatura máxima p90", "°C", "°C"),
 }
+
 
 @dataclass(frozen=True)
 class Period:
@@ -30,6 +42,7 @@ class Period:
         if self.start_year > self.end_year:
             raise ValueError("El inicio del periodo no puede superar su final")
 
+
 @dataclass(frozen=True)
 class PeriodPair:
     before: Period
@@ -41,6 +54,7 @@ class PeriodPair:
         if self.before.end_year >= self.after.start_year:
             raise ValueError("El periodo anterior debe terminar antes del posterior")
 
+
 def _number(value: Any) -> float | None:
     """Un nulo o un valor no finito nunca se convierte en cero."""
     if value is None:
@@ -48,7 +62,8 @@ def _number(value: Any) -> float | None:
     number = float(value)
     return number if isfinite(number) else None
 
-def compare_climate_months (
+
+def compare_climate_months(
     *,
     municipality_id: str,
     rows: Iterable[Mapping[str, Any]],
@@ -66,16 +81,12 @@ def compare_climate_months (
     """
     rain_periods = precip_periods if precip_periods is not None else periods
 
-    selected_periods = {
-        (period.source_id, period.period_id)
-        for pair in (periods, rain_periods)
-        for period in (pair.before, pair.after)
-    }
+    selected_periods = {(period.source_id, period.period_id) for pair in (periods, rain_periods) for period in (pair.before, pair.after)}
 
     # Fuente, periodo y mes. No se unen datos por nombre
     index: dict[tuple[str, str, int], Mapping[str, Any]] = {}
 
-    for row  in rows:
+    for row in rows:
         if row["municipality_id"] != municipality_id:
             continue
         source_id = row["source_id"]
@@ -95,7 +106,7 @@ def compare_climate_months (
     months = []
     reasons = []
 
-    for month in range(1,13):
+    for month in range(1, 13):
         month_result: dict[str, Any] = {"month": month}
         month_name = MONTH_NAMES[month - 1]
 
@@ -115,12 +126,8 @@ def compare_climate_months (
                 "change": difference,
             }
 
-            before_years = (
-                f"{pair.before.start_year}–{pair.before.end_year}"
-            )
-            after_years = (
-                f"{pair.after.start_year}–{pair.after.end_year}"
-            )
+            before_years = f"{pair.before.start_year}–{pair.before.end_year}"
+            after_years = f"{pair.after.start_year}–{pair.after.end_year}"
 
             if available:
                 reasons.append(
