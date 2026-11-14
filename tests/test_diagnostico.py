@@ -371,6 +371,20 @@ def test_el_diagnostico_no_escribe_en_la_base_ni_registra_la_consulta(examples, 
         assert value not in text, value
 
 
+def test_el_log_del_diagnostico_no_dice_quien_consulto_aunque_haya_sesion(examples, client):
+    """R9: con sesión y lote, la línea del diagnóstico lleva las versiones (R4), pero no `user_id` ni `role`."""
+    register(client, "rosa.samaca")
+    with capture_logs() as logs:
+        lot_id = create_lot(client)
+        diagnose(client, NOVEMBER, lot_id=lot_id)
+    requests = {entry["route"]: entry for entry in logs if entry.get("event") == "request"}
+    # La sesión existe: la línea de crear el lote sí dice quién fue.
+    assert "user_id" in requests["/api/v1/lots"]
+    line = requests["/api/v1/diagnostics"]
+    assert {"dataset", "rules"} <= line.keys()
+    assert "user_id" not in line and "role" not in line
+
+
 # ---------- el lote ----------
 
 
