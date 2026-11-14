@@ -38,7 +38,8 @@ FIELDS = (
     *RANGES["rain"], *RANGES["ph"], "frost_killing_c",
 )  # fmt: skip
 # El orden de las columnas de `crops` es el del contrato: `secondary_families` va tras `family`.
-ORDER = ("crop_id", *FIELDS[:4], "secondary_families", *FIELDS[4:], "cycle_months", "source_ids")
+_FAMILY = FIELDS.index("family") + 1
+ORDER = ("crop_id", *FIELDS[:_FAMILY], "secondary_families", *FIELDS[_FAMILY:], "cycle_months", "source_ids")
 
 
 class CatalogError(ValueError):
