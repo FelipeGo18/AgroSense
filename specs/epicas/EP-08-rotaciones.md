@@ -24,7 +24,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 ### HU-081 · Filtrar estrategias válidas
 
 - **Historia:** Como agricultor, quiero ver solo estrategias agronómicamente válidas, que se den en mi zona y sin ciclos de alto riesgo, para no recibir recomendaciones dañinas.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en revisión (PR #105 y PR D; código en `backend/engine/rotations/`)
 - **Criterios de aceptación:**
   - **Candidatas (decisión 15, paso 0)**
   - [x] El motor arma todas las secuencias de `cycles` ciclos (2 o 3) con los cultivos del catálogo, de cualquier `kind` (`crop`, `cover`, `fallow`; HU-063), sin el mismo `crop_id` en dos ciclos seguidos y sin dos descansos seguidos
@@ -40,22 +40,22 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
   - [x] Un cultivo sin rango de temperatura media o de pH con fuente, o sin suelo publicado (HU-181), no se excluye: se agrega a `limitations` (R1, R8)
   - [x] Abonos verdes (`kind = cover`) y descanso (`kind = fallow`) entran como ciclos (HU-063)
   - **Fase 2: `high_risk`**
-  - [ ] Solo las candidatas que sobreviven la fase 1 se diagnostican (HU-213). El filtro **recibe** el diagnóstico de cada ciclo como entrada y no lo calcula: no lee archivos ni base de datos (R6)
-  - [ ] Un ciclo con `water`, `frost` o `heat` desfavorable y crítica da el motivo `high_risk` con `signal`; cita el ciclo, la señal crítica y su razón (R2)
-  - [ ] La oferta y el mercado nunca excluyen una estrategia: un ciclo con `supply` o `market` desfavorable, aunque sea crítico, baja el criterio `income` y se dice en las razones (hoy `supply` y `market` son siempre `insufficient_data`: sin curva, decisión de Felipe del 11 nov 2026)
+  - [x] Solo las candidatas que sobreviven la fase 1 se diagnostican (HU-213). El filtro **recibe** el diagnóstico de cada ciclo como entrada y no lo calcula: no lee archivos ni base de datos (R6)
+  - [x] Un ciclo con `water`, `frost` o `heat` desfavorable y crítica da el motivo `high_risk` con `signal`; cita el ciclo, la señal crítica y su razón (R2)
+  - [x] La oferta y el mercado nunca excluyen una estrategia: un ciclo con `supply` o `market` desfavorable, aunque sea crítico, baja el criterio `income` y se dice en las razones (que no excluyen lo cumple el motor; bajar `income` es de HU-082) (hoy `supply` y `market` son siempre `insufficient_data`: sin curva, decisión de Felipe del 11 nov 2026)
   - **Salida**
-  - [ ] Cada exclusión registra `crop_ids`, el ciclo, el `kind` del motivo, la regla o la señal, la razón y `source_ids` (R8), con la forma de `excluded` del contrato
-  - [ ] Una estrategia con varios motivos se excluye una sola vez: el motor junta todos sus motivos de la fase en que quedó fuera (los de la fase 1, o solo `high_risk`: a una descartada en la fase 1 nunca se le evalúa `high_risk`), `excluded` muestra el primero en el orden `rule` → `not_suitable` → `soil_ph` → `high_risk` y `excluded_counts` la cuenta una sola vez, por ese primer motivo, así que su suma es el total de descartadas (aprobado por Felipe el 14 de noviembre de 2026)
-  - [ ] Mientras HU-082 no exista, `excluded` se ordena por número de motivos (menos primero) y después por `crop_ids` en orden alfabético (R4); con HU-082, en el orden que habría tenido en el ranking (aprobado por Felipe el 14 de noviembre de 2026)
-  - [ ] Modo «actual» (decisión 14, HU-223): el mismo filtro, sobre la rotación actual, devuelve todos sus motivos como `issues` y nunca la excluye
-  - [ ] Prueba: una estrategia que repite familia en dos ciclos seguidos no aparece en el ranking y su exclusión cita la regla
-  - [ ] Prueba: una estrategia con un ciclo de helada crítica no aparece, por buenos que sean sus demás criterios
+  - [x] Cada exclusión registra `crop_ids`, el ciclo, el `kind` del motivo, la regla o la señal, la razón y `source_ids` (R8), con la forma de `excluded` del contrato
+  - [x] Una estrategia con varios motivos se excluye una sola vez: el motor junta todos sus motivos de la fase en que quedó fuera (los de la fase 1, o solo `high_risk`: a una descartada en la fase 1 nunca se le evalúa `high_risk`), `excluded` muestra el primero en el orden `rule` → `not_suitable` → `soil_ph` → `high_risk` y `excluded_counts` la cuenta una sola vez, por ese primer motivo, así que su suma es el total de descartadas (aprobado por Felipe el 14 de noviembre de 2026)
+  - [x] Mientras HU-082 no exista, `excluded` se ordena por número de motivos (menos primero) y después por `crop_ids` en orden alfabético (R4); con HU-082, en el orden que habría tenido en el ranking (aprobado por Felipe el 14 de noviembre de 2026)
+  - [x] Modo «actual» (decisión 14, HU-223): el mismo filtro, sobre la rotación actual, devuelve todos sus motivos como `issues` y nunca la excluye
+  - [x] Prueba: una estrategia que repite familia en dos ciclos seguidos no aparece en el ranking y su exclusión cita la regla
+  - [x] Prueba: una estrategia con un ciclo de helada crítica no aparece, por buenos que sean sus demás criterios
   - [x] Prueba: papa en un municipio cálido de la región (por ejemplo, Puerto Salgar, 28,4 °C frente a un máximo de 16 °C) da `not_suitable`; el descanso nunca
-  - [ ] Prueba: `backend/engine/` no importa `fastapi` ni `sqlalchemy` ni abre archivos (R6)
-  - [ ] HU-081 se da por hecha con sus pruebas unitarias; los casos de referencia de `tests/engine/casos/test_estrategias.py` (PR #70) siguen en `xfail` hasta HU-084
+  - [x] Prueba: `backend/engine/` no importa `fastapi` ni `sqlalchemy` ni abre archivos (R6)
+  - [x] HU-081 se da por hecha con sus pruebas unitarias; los casos de referencia de `tests/engine/casos/test_estrategias.py` (PR #70) siguen en `xfail` hasta HU-084
 - **Reglas que aplican:** R1, R2, R3, R4, R6, R8
 - **Contrato que toca:** `excluded` y `excluded_counts` de la respuesta de `POST /api/v1/rotations`; `rotation_rules`
-- **Notas:** HU-081 es el motor (`backend/engine/`); el endpoint es HU-084. Entrega en 3 PR de código: B (candidatas y reglas; `backend/engine/rotations/`, hecho), C (aptitud y pH; `backend/engine/rotations/exclusions.py`, hecho) y D (alto riesgo y `excluded`). Las reglas de filtro miran solo el cultivo anterior más reciente (el primero de `previous_crop_ids`), como dice el contrato para el primer ciclo. Supuesto por confirmar: si con cuenta el terreno junta dos partes con cultivos distintos (`follows_season_ids`, HU-165), cuál de ellos es «el más reciente». `previous_crop_ids` va del más reciente al más antiguo. Las 392 y 56 candidatas salen de 8 cultivos del catálogo; «sin dos descansos seguidos» ya lo cubre la regla del mismo `crop_id`, porque hay un solo descanso. El `cycle` de una exclusión por `not_suitable` o `soil_ph` es el primero donde aparece el cultivo (contrato, aprobado por Felipe el 14 de noviembre de 2026, PR #73). La decisión 16 y `crops.secondary_families` llegan con el PR #62 (HU-062). La forma de los motivos múltiples y su orden los aprobó Felipe el 14 de noviembre de 2026 (revisión del PR #90); el cambio del contrato va en su propio PR. Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12). Precisada el 14 de noviembre de 2026.
+- **Notas:** HU-081 es el motor (`backend/engine/`); el endpoint es HU-084. Entrega en 3 PR de código: B (candidatas y reglas; `backend/engine/rotations/`, hecho), C (aptitud y pH; `backend/engine/rotations/exclusions.py`, hecho) y D (alto riesgo y `excluded`; hecho). Las reglas de filtro miran solo el cultivo anterior más reciente (el primero de `previous_crop_ids`), como dice el contrato para el primer ciclo. Supuesto por confirmar: si con cuenta el terreno junta dos partes con cultivos distintos (`follows_season_ids`, HU-165), cuál de ellos es «el más reciente». `previous_crop_ids` va del más reciente al más antiguo. Las 392 y 56 candidatas salen de 8 cultivos del catálogo; «sin dos descansos seguidos» ya lo cubre la regla del mismo `crop_id`, porque hay un solo descanso. El `cycle` de una exclusión por `not_suitable` o `soil_ph` es el primero donde aparece el cultivo (contrato, aprobado por Felipe el 14 de noviembre de 2026, PR #73). La decisión 16 y `crops.secondary_families` llegan con el PR #62 (HU-062). La forma de los motivos múltiples y su orden los aprobó Felipe el 14 de noviembre de 2026 (revisión del PR #90); el cambio del contrato va en su propio PR. Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12). Precisada el 14 de noviembre de 2026.
 
 ### HU-213 · Ciclos de una estrategia con su diagnóstico
 

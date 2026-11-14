@@ -71,7 +71,7 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-217 | Comparar dos periodos de la historia de la zona | P0 | M | en curso | Se implementa `frost_freq_pct`, `precip_normal_mm` y `tmax_p90_c` de cada periodo y su diferencia (después menos antes), cada uno con `status` en backend/engine/changes.py  y las reazones con periodos y sin pronósticos. Para completar los requisitos se necesitan datos históricos de HU-216, balance hídrico de HU-144, orden de ventanas de HU-192 y calificación de HU-196 |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-218 | Endpoint de «Qué cambió» | P0 | S | en curso | 14 nov: cargador y comparación mensual conectados para `not_suitable`; 200 con clima, razones, periodos por fuente, versiones y sin ventanas; 422 de entrada y pruebas sin sustitución POWER/IMERG. Aptitud `suitable`/`insufficient_data` sigue en 501 hasta integrar ventanas de HU-217 (HU-144, HU-192 y señales de HU-196). Falta verificar datos publicados de HU-216; no cierra la HU |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-195 | Señales de exceso de lluvia, enfermedad y cosecha | P1 | M | pendiente | |
-| [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en curso | Estrategias de hasta 3 ciclos |
+| [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en revisión | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | pendiente | Nueva |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar estrategias por prioridades | P0 | M | pendiente | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden de las estrategias | P0 | S | pendiente | |
