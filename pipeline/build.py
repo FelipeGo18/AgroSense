@@ -221,6 +221,24 @@ def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.
         raise ValidationError(f"`grid_cells` cita una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def lapse_rate_entry(region: dict[str, Any]) -> dict[str, Any]:
+    """El gradiente térmico con que se calculó `tmean_annual_c`, para el manifiesto (HU-191, decisión del equipo).
+
+    La API corrige la temperatura a la altitud de un lote con estas mismas tasas, así que la versión del dataset las
+    fija y la API nunca aplica otras (R4). Sin gradiente en `region.yaml`, no se publica ninguno: nada se inventa (R1).
+    """
+    lapse = region.get("temperature_lapse_rate")
+    if lapse is None:
+        return {}
+    return {
+        "temperature_lapse_rate": {
+            "temp_max_c_per_m": lapse["temp_max_c_per_m"],
+            "temp_min_c_per_m": lapse["temp_min_c_per_m"],
+            "source_id": lapse["source"]["source_id"],
+        }
+    }
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -306,7 +324,7 @@ def publish(
         # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
         "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "region": region["region"],
+        "region": {**region["region"], **lapse_rate_entry(region)},
         # Los periodos de «Qué cambió» llegan con HU-216.
         "periods": [],
         "tables": {
