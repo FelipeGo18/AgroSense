@@ -51,6 +51,9 @@ class PendingSignal:
     limitations: tuple[str, ...] = ()
 
 
+PENDING_SIGNALS = ("water", "soil", "supply")
+
+
 def pending_reason(name: str) -> str:
     """La razón de una señal del P0 sin motor todavía: dice que esta versión no la evalúa (R5)."""
     return f"Esta versión de AgroSense todavía no evalúa {SIGNAL_NAMES_ES[name]}."
@@ -59,8 +62,8 @@ def pending_reason(name: str) -> str:
 def pending_signal(name: str) -> PendingSignal:
     """Provisional: la señal `name` mientras no exista su motor. Se reemplaza, una por una, cuando lleguen `water`
     (HU-071, con el balance hídrico de HU-144), `soil` (HU-183) y `supply` (HU-072). No inventa un nivel ni una
-    calificación (R1): la razón dice que esta versión no la evalúa (R5), y la limitación de «sin datos» la agrega el
-    diagnóstico como a cualquier otra señal sin datos (`missing_data_limitations`)."""
+    calificación (R1): la razón dice que esta versión no la evalúa (R5).
+    La limitación es esa misma frase y no «sin datos para la zona»: no faltan datos, falta el motor."""
     return PendingSignal(INSUFFICIENT_DATA, None, False, None, (), (pending_reason(name),))
 
 

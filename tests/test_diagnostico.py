@@ -128,8 +128,11 @@ def test_las_limitaciones_dicen_cada_senal_sin_datos_y_el_aviso_de_heladas_sin_r
     body = diagnose(TestClient(app))
     limitations = body["limitations"]
     assert len(limitations) == len(set(limitations))
-    for name in ("el agua", "el suelo", "la oferta", "el mercado"):
-        assert f"Sin datos para la zona: {name} no se evaluó." in limitations
+    assert "Sin datos para la zona: el mercado no se evaluó." in limitations
+    # Las que no tienen motor dicen lo verdadero: no faltan datos, falta el motor (R5).
+    for reason in PENDING.values():
+        assert limitations.count(reason) == 1
+    assert "Sin datos para la zona: el agua no se evaluó." not in limitations
     assert not any("la helada no se evaluó" in text or "el calor no se evaluó" in text for text in limitations)
     # El `frost_caveat` de la región va siempre que se evalúa la ventana (HU-077).
     assert frost_caveat(get_dataset()) in limitations
@@ -262,8 +265,12 @@ def test_una_entrada_valida_sin_datos_responde_200_con_insufficient_data(dataset
     for signal in body["signals"].values():
         assert (signal["status"], signal["level"], signal["score"], signal["critical"]) == ("insufficient_data", None, None, False)
     assert (body["overall"]["light"], body["overall"]["action"]) == ("not_evaluable", "review_data")
-    for name in ("el agua", "la helada", "el calor", "el suelo", "la oferta", "el mercado"):
+    for name in ("la helada", "el calor", "el mercado"):
         assert f"Sin datos para la zona: {name} no se evaluó." in body["limitations"]
+    for name in ("el agua", "el suelo", "la oferta"):
+        assert f"Sin datos para la zona: {name} no se evaluó." not in body["limitations"]
+    for reason in PENDING.values():
+        assert body["limitations"].count(reason) == 1
 
 
 def test_sin_las_etapas_del_cultivo_no_hay_ventana_y_nada_se_inventa(examples_copy):

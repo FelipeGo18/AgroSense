@@ -40,7 +40,15 @@ from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
 from backend.api.lot_terrain import ZoneTemperature, zone_temperature
 from backend.api.lots import _own_lot
-from backend.api.window_signals import SignalResult, SignalZone, signal_scores, signal_zone, window_signals
+from backend.api.window_signals import (
+    PENDING_SIGNALS,
+    SignalResult,
+    SignalZone,
+    pending_reason,
+    signal_scores,
+    signal_zone,
+    window_signals,
+)
 from backend.config.thresholds import Thresholds, get_thresholds
 from backend.config.weights import get_default_weights
 from backend.dataset import Dataset, Municipality
@@ -328,7 +336,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds)
         scores = signal_scores(signals)
         limitations.extend(text for signal in signals.values() for text in signal.limitations)
-        limitations.extend(missing_data_limitations(scores))
+        limitations.extend(missing_data_limitations(scores, {name: pending_reason(name) for name in PENDING_SIGNALS}))
 
     overall = traffic_light(fit.level, scores, weights, basis)
     overall_default = traffic_light(fit.level, scores, defaults, DEFAULT)
