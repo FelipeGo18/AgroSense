@@ -59,14 +59,14 @@ Los cultivos dependen de la región piloto, confirmada el 28 de octubre de 2026:
 ### HU-198 · Pesos por defecto con su porqué
 
 - **Historia:** Como equipo, queremos fijar el peso por defecto de cada señal con quién lo definió y por qué, para que el criterio de AgroSense sea explicable y se pueda revisar.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] `weights.yaml` tiene un peso entero de 0 a 5 para cada señal del P0 (`water`, `frost`, `heat`, `soil`, `supply`, `market`), con número de versión (`backend/config/weights.yaml`, versión 0.1.0)
   - [x] Cada peso lleva, en el mismo archivo o en una nota enlazada, quién lo definió, cuándo y su porqué en una frase
   - [x] El porqué se presenta como criterio del equipo, no como dato agronómico: no cita una fuente que no lo dice (R5, R8)
   - [x] Ningún peso por defecto es 0: el criterio de AgroSense mira las seis señales (la API no arranca si alguno lo es)
   - [x] Los pesos los propone el rol Producto y agro y los aprueba el dueño del producto; el cambio queda en `docs/registro-de-decisiones.md` (agua 3, heladas 4, calor 2, suelo 2, oferta 1 y mercado 1; `weights.yaml` 1.0.0, aprobado por Felipe el 14 de noviembre de 2026)
-  - [ ] El panel «¿Cómo funciona y de dónde sale esto?» (HU-122) muestra los pesos por defecto y su porqué
+  - [x] El panel «¿Cómo funciona y de dónde sale esto?» (HU-122) muestra los pesos por defecto y su porqué (`/como-funciona`, 14 nov 2026)
 - **Reglas que aplican:** R4, R5, R8
 - **Contrato que toca:** `weights` y `overall_default` de la respuesta de diagnóstico; `priorities` de `/calendar`
 - **Notas:** Decisión 10. Los valores no están decididos: no hay evidencia que fije cuánto pesa cada señal (`docs/riesgos.md`). Se revisan si aparece evidencia, por ejemplo con agricultores en la fase 0. El mecanismo de carga y validación del archivo es HU-075. **13 de octubre de 2026:** el archivo existe con valores **provisionales** (los de muestra de los diseños: agua 3, heladas 3, calor 3, suelo 2, oferta 3 y mercado 2), aceptados por Felipe para avanzar con «Sus prioridades». Falta la propuesta del rol Producto y agro, la aprobación formal y mostrarlos en «¿Cómo funciona?» (HU-122). `GET /api/v1/version` ya los publica.
