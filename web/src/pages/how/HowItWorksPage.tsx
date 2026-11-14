@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Link } from "react-router";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
@@ -10,6 +11,9 @@ import { StateCard } from "@/components/ui/StateCard";
 import { TrafficLightBadge, type Light } from "@/components/ui/TrafficLightBadge";
 import { P0_SIGNALS, SIGNAL_NAME } from "@/features/diagnosis/signals";
 import { useVersion, type Version } from "@/features/version";
+import { useAnimated } from "@/hooks/useLightMode";
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap } from "@/lib/motion";
 import { BANDS, NEVER, STEPS } from "./content";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
@@ -108,7 +112,7 @@ function SourceRows({ group, sources }: { group: string; sources: Source[] }) {
 
 function SourceTable({ group, sources }: { group: string; sources: Source[] }) {
   return (
-    <table className="block w-full border-collapse text-left md:table md:table-fixed">
+    <table data-sources className="block w-full border-collapse text-left md:table md:table-fixed">
       <thead className="hidden md:table-header-group">
         <tr className="text-sm text-texto-secundario">
           <th scope="col" className="pr-4 pb-2 font-bold">
@@ -165,9 +169,9 @@ function Sources({ version }: { version: Version }) {
 function Weights({ version }: { version: Version }) {
   return (
     <Card>
-      <ul className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <ul data-reveal className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {P0_SIGNALS.map((key) => (
-          <li key={key} className="flex min-w-0 flex-col gap-2">
+          <li key={key} data-reveal-item className="flex min-w-0 flex-col gap-2">
             <span className="flex items-center gap-3">
               <SignalIcon signal={key} />
               <span className="flex flex-col">
@@ -206,29 +210,97 @@ function versionLine(version: Version): string {
  */
 export function HowItWorksPage() {
   const version = useVersion();
+  const animated = useAnimated();
+  const root = useRef<HTMLDivElement>(null);
+  const hasData = Boolean(version.data);
+
+  // Con movimiento: la cabecera entra de lado, las bandas de la nota crecen y cada grupo de tarjetas aparece uno tras otro
+  // al llegar a la vista. En modo ligero no corre: todo se dibuja quieto y a la vista (web/CLAUDE.md, «Modo ligero»).
+  // Corre otra vez cuando llegan los pesos y las fuentes, para animar solo lo que aún no se animó.
+  useMotionEffect(
+    () => {
+      if (!animated || !root.current) return;
+      const fresh = (selector: string) =>
+        gsap.utils.toArray<HTMLElement>(selector, root.current).filter((el) => {
+          // Lo que está dentro de una lista cerrada («Ver las … fuentes») no se anima: al abrirla, ya está a la vista.
+          if (el.dataset.revealed || el.closest("details")) return false;
+          el.dataset.revealed = "1";
+          return true;
+        });
+      fresh("[data-intro]").forEach((el) =>
+        gsap.from(el.children, {
+          x: -28,
+          autoAlpha: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          stagger: 0.1,
+          clearProps: "transform,opacity,visibility",
+        }),
+      );
+      fresh("[data-intro-mascot]").forEach((el) =>
+        gsap.from(el, { y: -40, rotation: -8, autoAlpha: 0, duration: 0.9, ease: "back.out(1.6)", delay: 0.2, clearProps: "all" }),
+      );
+      fresh("[data-bands]").forEach((el) =>
+        gsap.from(el.children, {
+          scaleX: 0,
+          transformOrigin: "left center",
+          duration: 0.6,
+          ease: "power3.out",
+          stagger: 0.15,
+          clearProps: "transform",
+          scrollTrigger: { trigger: el, start: "top 90%", once: true },
+        }),
+      );
+      fresh("[data-reveal]").forEach((el) =>
+        gsap.from(el.querySelectorAll(":scope > [data-reveal-item]"), {
+          y: 28,
+          autoAlpha: 0,
+          duration: 0.55,
+          ease: "power2.out",
+          stagger: 0.08,
+          clearProps: "transform,opacity,visibility",
+          scrollTrigger: { trigger: el, start: "top 88%", once: true },
+        }),
+      );
+      fresh("[data-sources] tbody tr").forEach((el) =>
+        gsap.from(el, {
+          x: -16,
+          autoAlpha: 0,
+          duration: 0.4,
+          ease: "power2.out",
+          clearProps: "transform,opacity,visibility",
+          scrollTrigger: { trigger: el, start: "top 95%", once: true },
+        }),
+      );
+    },
+    { scope: root, dependencies: [animated, hasData] },
+  );
+
   return (
-    <div className="min-h-svh bg-paleta-niebla">
+    <div ref={root} className="min-h-svh bg-paleta-niebla">
       <title>¿Cómo funciona? · AgroSense</title>
       <TopBar />
       <main className="container-page flex flex-col gap-12 pt-[112px] pb-40 md:pt-[128px] md:pb-48">
         <div className="flex items-start justify-between gap-8">
-          <header className="flex max-w-[880px] min-w-0 flex-col gap-3">
+          <header data-intro className="flex max-w-[880px] min-w-0 flex-col gap-3">
             <h1 className="text-[clamp(1.75rem,4vw,3rem)]">¿Cómo funciona?</h1>
             <p className="text-[clamp(1rem,1.6vw,1.125rem)]">
               AgroSense mira lo que ha pasado en su zona con observaciones de la Tierra de la NASA, datos abiertos y reglas que se pueden
               leer. No es un pronóstico: usted decide.
             </p>
           </header>
-          <Mascot mood="guide" decorative className="hidden h-auto w-[200px] lg:block" />
+          <div data-intro-mascot className="hidden lg:block">
+            <Mascot mood="guide" decorative lively={animated} className="h-auto w-[200px]" />
+          </div>
         </div>
 
         <section className="flex flex-col gap-6" aria-labelledby="como-se-decide">
           <h2 id="como-se-decide" className="text-[clamp(1.5rem,3vw,2rem)]">
             Cómo se decide
           </h2>
-          <ol className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <ol data-reveal className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {STEPS.map((step, i) => (
-              <li key={step.title} className="flex">
+              <li key={step.title} data-reveal-item className="flex">
                 <Card className="w-full">
                   <span
                     aria-hidden="true"
@@ -245,7 +317,7 @@ export function HowItWorksPage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">De la nota al nivel</h3>
-              <ul className="flex gap-[3px]">
+              <ul data-bands className="flex gap-[3px]">
                 {BANDS.map((band) => (
                   <li
                     key={band.label}
@@ -263,9 +335,9 @@ export function HowItWorksPage() {
             </Card>
             <Card>
               <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">Las luces</h3>
-              <ul className="flex flex-wrap gap-4">
+              <ul data-reveal className="flex flex-wrap gap-4">
                 {LIGHTS.map((light) => (
-                  <li key={light}>
+                  <li key={light} data-reveal-item>
                     <TrafficLightBadge light={light} />
                   </li>
                 ))}
@@ -304,9 +376,9 @@ export function HowItWorksPage() {
             Lo que AgroSense no hace
           </h2>
           <Card>
-            <ul className="flex flex-col gap-3">
+            <ul data-reveal className="flex flex-col gap-3">
               {NEVER.map((item) => (
-                <li key={item} className="flex gap-3">
+                <li key={item} data-reveal-item className="flex gap-3">
                   <span aria-hidden="true" className="mt-1.5 size-4 shrink-0 bg-oscuro-rojo" />
                   <span className="min-w-0">{item}</span>
                 </li>
