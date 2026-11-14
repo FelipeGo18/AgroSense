@@ -431,13 +431,15 @@ def changes(
 
     crop = dataset.crops[crop_id]
     municipality = dataset.municipalities[municipality_id]
+    # /changes no recibe lot_id: la aptitud usa siempre el municipio.
+    zone = zone_temperature(dataset, municipality, None)
 
     aptitude = suitability(
         crop.get("tmean_min_c"),
         crop.get("tmean_opt_min_c"),
         crop.get("tmean_opt_max_c"),
         crop.get("tmean_max_c"),
-        municipality.tmean_annual_c,
+        zone.tmean_annual_c,
     )
 
     # Todavía no tenemos la evaluación completa de ventanas.
@@ -457,7 +459,8 @@ def changes(
     aptitude_reason = _suitability_reason(
         crop,
         aptitude,
-        municipality.tmean_annual_c,
+        zone,
+        municipality,
         crop["tmean_min_c"],
         crop["tmean_max_c"],
     )
@@ -492,9 +495,9 @@ def changes(
         suitability=SuitabilityResult(
             level="not_suitable",
             score=int(round(aptitude.score)),
-            basis="municipality",
-            tmean_annual_c=municipality.tmean_annual_c,
-            altitude_m=municipality.altitude_m,
+            basis=zone.basis,
+            tmean_annual_c=zone.tmean_annual_c,
+            altitude_m=zone.altitude_m,
             reasons=[aptitude_reason],
         ),
         months=comparison["months"],
