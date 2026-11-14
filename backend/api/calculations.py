@@ -57,6 +57,8 @@ from common.text import format_number
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
 
 NOT_IMPLEMENTED = "Este cálculo todavía no está disponible."
+# `irrigated` nulo, en la consulta o en el lote: se evalúa como sin riego y se dice (contrato, cuerpo de `/diagnostics`).
+IRRIGATION_UNKNOWN = "Sin dato de riego: se evaluó como sin riego"
 
 
 def _examples(**values: tuple[str, Any]) -> dict[str, Any]:
@@ -307,13 +309,16 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     defaults = get_default_weights().weights
     weights, basis = (body.priorities.model_dump(), FARMER) if body.priorities is not None else (defaults, DEFAULT)
     # Con `lot_id`, el riego es el del lote, también cuando el lote no lo dice (nulo: se evalúa como sin riego; contrato y
-    # EP-16). El eco dice el que se usó, que es el que la web guarda con la temporada (`diagnosis_irrigated`). Hoy ninguna
-    # señal lo usa: el agua, y su limitación de «riego sin dato», son de HU-071.
+    # EP-16). El eco dice el que se usó, que es el que la web guarda con la temporada (`diagnosis_irrigated`).
     irrigated = lot.irrigated if lot is not None else body.irrigated
 
     limitations = [zone.limitation] if zone.limitation else []
     if fit.level == INSUFFICIENT_DATA:
         limitations.extend(fit_result.reasons)
+    # Nulo se trata como sin riego y se dice (contrato, cuerpo de `/diagnostics`; EP-16), con o sin lote. Con el cultivo
+    # no apto no: no se evalúa ninguna ventana, así que no hay nada que se haya evaluado sin riego (regla 0).
+    if irrigated is None and fit.level != NOT_SUITABLE:
+        limitations.append(IRRIGATION_UNKNOWN)
     thresholds = get_thresholds()
     signal_place = signal_zone(dataset, municipality)
     window = signals = None
@@ -357,7 +362,8 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         overall_default=_light(overall_default, DEFAULT),
         weights=weights,
         best_windows=best,
-        # Sin repetir y en un orden fijo (R4): la zona, la aptitud, lo que dice cada señal y las señales sin datos.
+        # Sin repetir y en un orden fijo (R4): la zona, la aptitud, el riego sin dato, lo que dice cada señal y las
+        # señales sin datos.
         limitations=list(dict.fromkeys(limitations)),
         versions={"dataset": dataset.version, "rules": dataset.rules_version},
     )

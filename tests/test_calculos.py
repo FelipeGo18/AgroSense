@@ -322,6 +322,7 @@ def test_diagnostico_no_apto_con_lote_sin_contorno_dice_que_la_temperatura_es_la
 
 
 def test_diagnostico_no_apto_sin_lote_no_tiene_limitaciones(dataset_con_clima):
+    """Tampoco la del riego nulo: sin ventana no se evaluó nada sin riego (regla 0; contrato, `DIAGNOSIS_NOT_SUITABLE`)."""
     response = TestClient(app).post("/api/v1/diagnostics", json={"municipality_id": "25307", "crop_id": "papa", "sowing_date": SOON})
     assert response.json()["limitations"] == []
 

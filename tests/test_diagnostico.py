@@ -13,6 +13,7 @@ luz roja o verde, las pruebas ponen el agua en 0 con `priorities`.
 import shutil
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import polars as pl
 import pytest
@@ -21,8 +22,11 @@ from sqlalchemy import func, select
 from structlog.testing import capture_logs
 
 from backend.api import calc_models as m
+from backend.api import calculations
+from backend.api.calculations import IRRIGATION_UNKNOWN
 from backend.api.climate_signals import frost_caveat
 from backend.api.main import app
+from backend.api.window_signals import pending_reason
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
 from backend.dataset import get_dataset
@@ -37,11 +41,7 @@ TODAY = datetime(2026, 11, 14, 17, 0, tzinfo=UTC)
 NOVEMBER, APRIL = "2026-11-01", "2027-04-01"
 # El agua en 0: sin su motor, con peso la luz sería siempre `not_evaluable`.
 NO_WATER = {"water": 0, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
-PENDING = {
-    "water": "Esta versión de AgroSense todavía no evalúa el agua.",
-    "soil": "Esta versión de AgroSense todavía no evalúa el suelo.",
-    "supply": "Esta versión de AgroSense todavía no evalúa la oferta.",
-}
+PENDING = {name: pending_reason(name) for name in ("water", "soil", "supply")}
 
 
 @pytest.fixture(autouse=True)
@@ -118,7 +118,8 @@ def test_sin_prioridades_las_dos_luces_coinciden_con_los_pesos_por_defecto(examp
         "review_data",
         None,
     )
-    assert "best_windows" not in body or body["best_windows"] is None
+    # Ninguna acción es `other_window`: `best_windows` no viene (no viene nulo), como `DIAGNOSIS_OK` del contrato.
+    assert "best_windows" not in body
     # Con los pesos por defecto (todos de 1 a 5) cuentan todas, también las que no tienen datos.
     assert all(body["signals"][name]["counts"] for name in SIGNALS)
 
@@ -147,7 +148,7 @@ def test_con_prioridades_overall_usa_las_del_agricultor_y_counts_sigue_sus_pesos
     # Abril: heladas y calor en 100, lo demás sin datos. Con sus prioridades es verde; con las de AgroSense, no evaluable.
     assert (body["overall"]["light"], body["overall"]["action"]) == ("green", "sow")
     assert body["overall_default"]["light"] == "not_evaluable"
-    assert body["best_windows"] is None
+    assert "best_windows" not in body
 
 
 def test_caso_de_referencia_helada_critica_da_rojo_y_busca_otra_ventana(examples):
@@ -196,6 +197,43 @@ def test_caso_de_referencia_calor_critico_da_rojo_y_ninguna_ventana_de_alto_ries
     # Un calor crítico cuenta aunque el agricultor le ponga peso 0 (R2).
     ignored = diagnose(TestClient(app), APRIL, priorities={**NO_WATER, "heat": 0})
     assert ignored["signals"]["heat"]["counts"] is True and ignored["overall"]["light"] == "red"
+
+
+def test_con_otra_ventana_solo_en_la_luz_de_agrosense_tambien_trae_las_mejores_ventanas(examples, monkeypatch):
+    """HU-074: `best_windows` viene cuando la acción de `overall` **o** de `overall_default` es `other_window`. Con los
+    pesos reales de `weights.yaml` el agua pesa y, sin su motor (HU-071), la luz de AgroSense es siempre `not_evaluable`;
+    para ver la rama de `overall_default`, la prueba cambia los pesos por defecto por unos con el agua en 0. Quien
+    consulta pone el agua en 3: su luz es `not_evaluable`. Las ventanas se ordenan entonces con los pesos de AgroSense,
+    y salen iguales a las de quien consulta con esos mismos pesos."""
+    monkeypatch.setattr(calculations, "get_default_weights", lambda: SimpleNamespace(weights=NO_WATER))
+    all_3 = dict.fromkeys(SIGNALS, 3)
+    body = diagnose(TestClient(app), NOVEMBER, priorities=all_3)
+    assert (body["overall"]["light"], body["overall"]["action"]) == ("not_evaluable", "review_data")
+    assert (body["overall_default"]["light"], body["overall_default"]["action"]) == ("red", "other_window")
+    same = diagnose(TestClient(app), NOVEMBER, priorities=NO_WATER)
+    assert body["best_windows"] == same["best_windows"]
+    assert [window["sowing_start"] for window in body["best_windows"]] == ["2027-04-01", "2027-05-01", "2027-03-01"]
+
+
+# ---------- riego sin dato ----------
+
+
+def test_riego_nulo_sin_lote_se_evalua_como_sin_riego_y_lo_dicen_las_limitaciones(examples):
+    """Contrato (cuerpo de `/diagnostics`): `irrigated` nulo se trata como sin riego y se agrega a las limitaciones."""
+    client = TestClient(app)
+    assert diagnose(client)["limitations"].count(IRRIGATION_UNKNOWN) == 1
+    assert diagnose(client, irrigated=None)["limitations"].count(IRRIGATION_UNKNOWN) == 1
+    for value in (True, False):
+        assert IRRIGATION_UNKNOWN not in diagnose(client, irrigated=value)["limitations"]
+
+
+def test_riego_nulo_del_lote_lo_dicen_las_limitaciones_aunque_la_consulta_lo_diga(examples, client):
+    """EP-16: con `lot_id`, el riego es el del lote; si el lote no lo dice, se evalúa como sin riego y se dice."""
+    register(client, "rosa.samaca")
+    unknown = create_lot(client)
+    assert IRRIGATION_UNKNOWN in diagnose(client, lot_id=unknown, irrigated=True)["limitations"]
+    known = create_lot(client, name="El Bajo", irrigated=False)
+    assert IRRIGATION_UNKNOWN not in diagnose(client, lot_id=known)["limitations"]
 
 
 # ---------- HU-192: el orden de las ventanas y el diagnóstico salen del mismo cálculo ----------
