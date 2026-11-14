@@ -91,7 +91,7 @@
 | [EP-11](epicas/EP-11-escenarios.md) | HU-111 | Reevaluar con cambios en memoria | P1 | M | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-112 | Endpoint de escenarios | P1 | S | pendiente | |
 | [EP-11](epicas/EP-11-escenarios.md) | HU-113 | Comparación de escenarios | P1 | M | pendiente | |
-| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | pendiente | Suma estrategias y «Qué cambió» |
+| [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | en curso | Suma estrategias y «Qué cambió». Tres PR: estrategias y suelo, diagnóstico y aptitud, «Qué cambió» y cuentas. Casos de ejemplo y casos reales con dataset fijado |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources`, `/version` y `catalog/sources.yaml` (11 nov, lluvia de POWER temporal con aviso); faltan las fuentes NASA sin adaptador y la web |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-123 | Reconstruir el dataset con un comando | P0 | S | hecha | `pipeline.build` publica y revisa contra el manifiesto; `--verificar` solo revisa (8 nov) |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-131 | Dos casos reales para la demo | P0 | S | pendiente | |
