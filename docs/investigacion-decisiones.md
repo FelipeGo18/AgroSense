@@ -132,6 +132,15 @@ Decidido por Felipe. Explicación en la decisión 12 de `docs/decisiones.md`. Ma
 5. **P0 es el MVP.** El calendario completo, el lote vivo, el clima en vivo, la escena 3D, la finca temporal y los cultivos alternativos pasan a P1. En el MVP las ventanas se comparan por mes y la duración del cultivo sale de su ficha.
 6. **La oferta es valor agregado**, no protagonista: una señal más, dentro del criterio de ingreso de las estrategias, y al final de la demo.
 
+## 5e. Los cortes de la señal de mercado: propuesta, no en uso (14 de noviembre de 2026)
+
+**Estado: propuesta, no en uso.** `market` sigue sin curva (`curve: null` en `thresholds.yaml` 1.0.0) y es `insufficient_data`.
+
+- **Estacionalidad de la UPRA, descartada.** Para decidir qué índice estacional de precio es «precio bajo» (HU-073) se investigó la estacionalidad del precio de la papa que publica la UPRA. Se descartó como fuente de los cortes: es propia de la papa y de sus variedades, y no se generaliza a la arveja, la cebolla de bulbo ni la zanahoria, que también tienen precio en SIPSA.
+- **Cuantiles documentados.** El índice estacional de `market_price_season.parquet` (dataset 2026.11.12; 756 meses de 63 series producto-central, de todos los productos de SIPSA publicados y no solo de los cultivos del catálogo) tiene: P10 ≈ 0,82, P25 ≈ 0,91, P50 ≈ 1,00, P75 ≈ 1,08 y P90 ≈ 1,16.
+- **Curva propuesta**, para el día en que una fuente externa diga qué índice estacional es «precio bajo»: `[[0,85, 0], [0,91, 40], [1,0, 70], [1,15, 100]]`, con calificación crítica solo en 0 y `source_id = dane_sipsa`. Cada punto se anclaría a un cuantil: 1,0 → 70 (el precio promedio, ≈ P50), 0,91 → 40 (≈ P25), 0,85 → 0 (≥ P10) y 1,15 → 100 (≤ P90).
+- **Hoy no se usa.** `market` y `supply` no son protagonistas (decisión 12: valor agregado) y no cumplen el criterio de la regla del equipo del 11 de noviembre de 2026, citada por Felipe en la revisión del PR #72: un criterio del equipo se acepta solo si (a) es central para el producto y (b) cada número se apoya en un dato externo citado. Los cuantiles cumplen (b) pero no (a), y por eso Felipe rechazó la curva: decidir que el cuarto más barato es `unfavorable` sigue siendo un criterio propio sin fuente externa, y con la curva el precio podría mandar sobre el semáforo (rojo o `rotate`), justo lo que la decisión 12 quería evitar. Revisión de Felipe del PR #72, 14 de noviembre de 2026.
+
 ## 6. Fuentes
 
 - [Reto «Field Shift: Adapting Farms with NASA Data»](https://www.spaceappschallenge.org/2026/challenges/field-shift-adapting-farms-with-nasa-data/)

@@ -4,6 +4,8 @@ Validaciones (si una falla, no se publica nada):
 - R8: todo valor no nulo cita una fuente que está en `sources`; un valor nulo dice por qué (nota).
 - Contrato: `crop_id` en `snake_case` sin repetir; `kind` y `archetype` de los valores permitidos; etapas conocidas, con
   días mayores que cero; `kc` entre 0 y 2.
+- Decisión 16: `secondary_families` es una lista de textos con fuente (vacía si falta), sin repetidos, sin la `family` de la
+  propia ficha y con valores que son la `family` de alguna ficha del catálogo.
 - HU-199: cada óptimo cae dentro de su rango absoluto (un límite nulo con fuente es un rango abierto).
 """
 
@@ -37,6 +39,9 @@ FIELDS = (
 )  # fmt: skip
 # La raíz (FAO-56, tabla 22; HU-144): profundidad en m y fracción de 0 a 1.
 ROOT_FIELDS = ("root_depth_min_m", "root_depth_max_m", "depletion_p")
+# El orden de las columnas de `crops` es el del contrato: `secondary_families` va tras `family`.
+_FAMILY = FIELDS.index("family") + 1
+ORDER = ("crop_id", *FIELDS[:_FAMILY], "secondary_families", *FIELDS[_FAMILY:], "cycle_months", "source_ids")
 
 
 class CatalogError(ValueError):
@@ -61,6 +66,20 @@ def _value(crop_id: str, field: str, entry: Any, known: set[str]) -> Any:
     if value is None and not (entry.get("n") or source):
         raise CatalogError(f"{crop_id}.{field}: está nulo y no dice por qué.")
     return value
+
+
+def _secondary_families(crop_id: str, crop: dict[str, Any], known: set[str]) -> tuple[list[str], str | None]:
+    """Las otras familias de una ficha que mezcla especies, con su fuente. Ausente o vacía: lista vacía (R1, R8)."""
+    entry = crop.get("secondary_families")
+    value = _value(crop_id, "secondary_families", entry, known)
+    if value is None or value == []:
+        return [], None
+    if not isinstance(value, list) or not all(isinstance(v, str) and v for v in value):
+        raise CatalogError(f"{crop_id}.secondary_families: debe ser una lista de textos no vacíos.")
+    if len(set(value)) != len(value):
+        raise CatalogError(f"{crop_id}.secondary_families: hay familias repetidas: {value}.")
+    # Ordenada: la publicación no depende del orden del YAML (R4).
+    return sorted(value), entry["s"]
 
 
 def _sensitivity(crop_id: str, stage: str, entry: dict[str, Any], field: str, known: set[str]) -> tuple[bool | None, str | None]:
@@ -125,6 +144,9 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             row[field] = _value(crop_id, field, entry, known)
             if isinstance(entry, dict) and entry.get("v") is not None:
                 cited.add(entry["s"])
+        row["secondary_families"], secondary_source = _secondary_families(crop_id, crop, known)
+        if secondary_source:
+            cited.add(secondary_source)
         if row["kind"] not in KINDS:
             raise CatalogError(f"{crop_id}: `kind` {row['kind']!r} no es uno de {sorted(KINDS)}.")
         if row["archetype"] is not None and row["archetype"] not in ARCHETYPES:
@@ -174,6 +196,13 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
         crops.append(row)
     if not crops:
         raise CatalogError("El catálogo no tiene cultivos.")
+    families = {r["family"] for r in crops if r["family"] is not None}
+    for r in crops:
+        for family in r["secondary_families"]:
+            if family == r["family"]:
+                raise CatalogError(f"{r['crop_id']}.secondary_families: {family!r} es la `family` de la propia ficha.")
+            if family not in families:
+                raise CatalogError(f"{r['crop_id']}.secondary_families: {family!r} no es la `family` de ninguna ficha del catálogo.")
     numeric = [f for f in FIELDS if f.endswith(("_c", "_mm")) or f.startswith("ph_") or f in ROOT_FIELDS]
     # Las cifras van todas como decimales, aunque la fuente las dé enteras (mismo tipo en cada columna, R4).
     # Un texto sin fuente en todos los cultivos queda nulo, pero su columna sigue siendo texto (HU-011: el tipo es el del
@@ -181,7 +210,13 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
     text = ["name_es", "article", "kind", "archetype", "family", "water_need", "root_type"]
     crops_table = (
         pl.DataFrame(crops, infer_schema_length=None)
-        .with_columns(pl.col(numeric).cast(pl.Float64), pl.col(text).cast(pl.String), pl.col("fixes_nitrogen").cast(pl.Boolean))
+        .with_columns(
+            pl.col(numeric).cast(pl.Float64),
+            pl.col(text).cast(pl.String),
+            pl.col("fixes_nitrogen").cast(pl.Boolean),
+            pl.col("secondary_families").cast(pl.List(pl.String)),
+        )
+        .select(*ORDER)
         .sort("crop_id")
     )
     stages_schema = {
