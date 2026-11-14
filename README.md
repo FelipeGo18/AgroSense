@@ -174,7 +174,7 @@ usa el agente motor-api para implementar HU-074
 
 ## Licencias
 
-El código es Apache 2.0 (`LICENSE`). La licencia de cada dato y librería de terceros está en `docs/licencias.md`.
+El código es Apache 2.0 (`LICENSE`); Apache cubre solo el código: los datos y los materiales de terceros conservan su propia licencia. La de cada uno está en `docs/licencias.md`, que se regenera con `uv run python scripts/licencias.py`.
 
 ## Reglas esenciales
 

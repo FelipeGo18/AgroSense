@@ -1,29 +1,29 @@
 # Licencias de AgroSense y de lo que usa
 
-Documentación de las licencias de terceros que piden los términos de NASA Space Apps 2026 (HU-230; <https://www.spaceappschallenge.org/legal/>): el contenido original debe ser libre o tener una licencia aprobada por la OSI, y la NASA no acepta una solución sin la licencia de cada material de terceros.
+Documentación de las licencias de terceros que piden los términos de NASA Space Apps 2026 (HU-230; <https://www.spaceappschallenge.org/legal/>): el contenido original debe ser libre o tener una licencia aprobada por la OSI, y la NASA no acepta una solución sin la licencia de cada material de terceros. Se genera con `scripts/licencias.py`.
 
 ## El código de AgroSense
 
-Apache 2.0 (`LICENSE`, en la raíz del repositorio; aprobado por Felipe el 10 de noviembre de 2026).
+Apache 2.0 (`LICENSE`, en la raíz del repositorio; aprobado por Felipe el 10 de noviembre de 2026). **Apache 2.0 cubre solo el código escrito por el equipo.** Los datos de `data/` y `catalog/` y los materiales de terceros conservan su propia licencia, la que dice cada tabla de abajo: el repositorio no los vuelve a licenciar bajo Apache. Por ejemplo, lo que sale de DIVIPOLA sigue siendo CC BY-SA 4.0 y las fichas de la UPRA siguen siendo de uso no comercial.
 
 ## Lo que hay que saber
 
-- **GSAP** (`gsap` y `@gsap/react`, las animaciones de la web) no tiene una licencia de la OSI: usa la «Standard no-charge license» de GreenSock (<https://gsap.com/standard-license>), gratis para todo uso, también el comercial. Es su permiso documentado. Solo se carga con movimiento: en modo ligero no se descarga (HU-158), y la web funciona igual sin él.
+- **GSAP** (`gsap` y `@gsap/react`, las animaciones de la web) no tiene una licencia de la OSI: usa la «Standard no-charge license» de GreenSock (<https://gsap.com/standard-license>), gratis para todo uso, también el comercial. Es su permiso documentado (decidido por Felipe el 14 de noviembre de 2026). Solo se carga con movimiento: en modo ligero no se descarga (HU-158).
 - **psycopg** (el conector de PostgreSQL) es LGPL-3.0, una licencia de la OSI; AgroSense lo usa como librería, sin modificarlo.
-- **Las tipografías** (Atkinson Hyperlegible y Fredoka, por `@fontsource`) son OFL-1.1, una licencia de la OSI.
-- **Los datos** no son software: cada fuente dice abajo con qué condición se usa. Todas permiten usarlas citándolas. Las fichas de la UPRA permiten la «reproducción parcial sin fines comerciales con cita»: AgroSense solo toma sus rangos de temperatura media, con la cita, y no es comercial.
+- **Las fuentes sin licencia explícita** («Sin dato; se cita», «por confirmar» o «derechos reservados»): de esas publicaciones AgroSense solo toma cifras y hechos (temperaturas de daño, días por etapa, rangos de cultivo), con su cita. Los hechos no tienen derechos de autor, y no se reproduce el texto ni las figuras de ninguna.
+- **Las fichas de la UPRA** permiten la «reproducción parcial sin fines comerciales con cita»: AgroSense solo toma sus rangos de temperatura media, con la cita, y no es comercial.
 - **Lo que sale de DIVIPOLA del DANE** (CC BY-SA 4.0), como la tabla `municipalities`, se publica con esa misma licencia.
 
 ## Datos y fuentes (tabla `sources` del dataset publicado)
 
-Cada dato y cada regla agronómica apunta a una de estas fuentes (R8). La licencia es la que dice cada fuente; sin licencia explícita, se usa con cita, como pide la fuente.
+Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 
 | Fuente | Institución | Licencia o condición de uso |
 |---|---|---|
 | `agrosense_diseno` · Catálogo visual de AgroSense (design/finca/cultivos.py) | Equipo RealE4Life | Del proyecto |
 | `alharbi_2021_faba` · Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925 | MDPI, Plants; doi:10.3390/plants10091925 | Acceso abierto (CC BY 4.0 por confirmar) |
 | `barrales_2002` · Barrales Domínguez et al. (2002): Relaciones térmicas en el sistema suelo-planta-atmósfera durante la incidencia de una helada. Revista Fitotecnia Mexicana 25(3):289-297 | Sociedad Mexicana de Fitogenética; Universidad Autónoma Chapingo | Acceso abierto (Redalyc); licencia por confirmar |
-| `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Artículo de acceso abierto con derechos de autor reservados: se usan dos cifras (el gradiente térmico) con su cita |
+| `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Sin licencia explícita: se usan cifras con su cita |
 | `ciren_1989_chacras` · CIREN-CORFO: Requerimientos de clima y suelo. Chacras y hortalizas, publicación n.º 85 (1989) | Centro de Información de Recursos Naturales (CIREN), Chile | Sin dato; se cita |
 | `dane_divipola` · DIVIPOLA- Códigos municipios | Departamento Administrativo Nacional de Estadística (DANE) | Creative Commons Attribution \| Share Alike 4.0 International |
 | `dane_mgn_2025` · Marco Geoestadístico Nacional 2025 · Municipios | Departamento Administrativo Nacional de Estadística (DANE) | Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122) |
@@ -51,6 +51,19 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8). La licenc
 | `unlu_horticultura` · Universidad Nacional de Luján: Producción Vegetal III (Horticultura), fichas de cebolla, arveja y zanahoria (sin año) | Universidad Nacional de Luján (UNLu), Argentina | Sin dato; se cita |
 | `upra_cebolla_bulbo` · UPRA: Cultivo comercial de cebolla de bulbo, identificación de zonas aptas en Colombia, escala 1:100.000 | Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura | Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita |
 | `upra_papa_diacol` · UPRA: Cultivo de papa Diacol Capiro para uso industrial, identificación de zonas aptas en Colombia, escala 1:100.000 | Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura | Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita |
+
+## Otros materiales de terceros en la web
+
+No salen de `sources` ni de los lockfiles.
+
+| Material | De dónde sale | Licencia |
+|---|---|---|
+| Mapa base de Mi finca | OpenStreetMap, con el estilo «liberty» de OpenFreeMap y el esquema de OpenMapTiles (`web/src/components/map/MapCanvas.tsx`) | Datos: ODbL 1.0 (© colaboradores de OpenStreetMap). El mapa muestra la atribución en pantalla |
+| Íconos de las redes del equipo | Font Awesome Free 6.5.2, copiados como SVG (`web/src/components/layout/brandIcons.ts`) | CC BY 4.0 (https://fontawesome.com/license/free); la atribución está en el archivo |
+| Globo de la portada | Contornos de Natural Earth 1:110m y color de NASA Blue Marble: Next Generation (2004) (`web/src/assets/globe.json`) | Natural Earth: dominio público. Blue Marble: imagen de la NASA, uso libre con crédito. La portada muestra el crédito |
+| Tipografías | Atkinson Hyperlegible y Fredoka, por `@fontsource` | OFL-1.1 |
+
+Las imágenes de referencia del moodboard (HU-151) ya no están en el repositorio: eran solo referencia para Figma; su lista y su licencia quedan en `design/moodboard/FUENTES.md`.
 
 ## Librerías de Python (51, de `uv.lock`)
 
@@ -199,6 +212,4 @@ Solo se usan para construir y probar la web (Vite, TypeScript, Vitest, ESLint, P
 | (MIT OR CC0-1.0) | 2 |
 | CC-BY-4.0 | 1 |
 | CC0-1.0 | 1 |
-| ? | 1 |
-
-Se regenera con los paquetes de `uv.lock`, `web/package-lock.json` y `data/published/sources.parquet` (14 de noviembre de 2026).
+| Sin licencia declarada (solo herramienta de desarrollo, no va en la aplicación) | 1 |
