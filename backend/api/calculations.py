@@ -9,9 +9,11 @@ No guardan los datos de la finca ni quién consultó (R9): solo leen el dataset 
 """
 
 import uuid
+from dataclasses import asdict
 from datetime import date
 from typing import Any
 
+import polars as pl
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session as Db
 
@@ -40,9 +42,15 @@ from backend.api.lots import _own_lot
 from backend.config.weights import get_default_weights
 from backend.dataset import Dataset, Municipality
 from backend.db.session import get_db
+from backend.engine.changes import (
+    Period,
+    PeriodPair,
+    compare_climate_months,
+)
 from backend.engine.suitability import ABOVE_MAX, NOT_SUITABLE, Suitability, suitability
 from common.dates import add_months
 from common.region import region_today
+from common.signal_sources import get_signal_sources
 from common.text import format_number
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
@@ -302,6 +310,125 @@ def water_plans(body: WaterPlanRequest, request: Request, dataset: Dataset = Dep
     _not_implemented(request, "Plan de agua")
 
 
+def _compare_changes(
+    dataset: Dataset,
+    municipality_id: str,
+    periods: PeriodPair,
+    precip_periods: PeriodPair | None = None,
+) -> dict[str, Any]:
+    """Conecta los datos cargados por la API con el motor de HU-217."""
+    table = dataset.climate_change_month
+
+    # Sin tabla, pasamos una lista vacía. El motor devolverá
+    # insufficient_data para los indicadores de los doce meses.
+    rows = table.filter(pl.col("municipality_id") == municipality_id).to_dicts() if table is not None else []
+
+    return compare_climate_months(
+        municipality_id=municipality_id,
+        rows=rows,
+        periods=periods,
+        precip_periods=precip_periods,
+    )
+
+
+def _change_period_pair(dataset: Dataset, source_id: str) -> PeriodPair:
+    """Selecciona exactamente dos periodos de la fuente solicitada.
+
+    Nunca utiliza periodos de otra fuente ni inventa años.
+    """
+    selected = []
+
+    for item in dataset.periods:
+        if not isinstance(item, dict):
+            raise ValueError("El manifiesto contiene un periodo inválido")
+
+        if item.get("source_id") != source_id:
+            continue
+
+        # Validar antes de construir Period: el motor compara los años
+        # en __post_init__ y no debe recibir tipos inválidos del manifiesto.
+        for field in ("period_id", "source_id"):
+            if not isinstance(item.get(field), str) or not item[field].strip():
+                raise ValueError(f"{field} debe ser un texto no vacío")
+        for field in ("start_year", "end_year"):
+            if isinstance(item.get(field), bool) or not isinstance(item.get(field), int):
+                raise ValueError("Los años de los periodos deben ser enteros")
+
+        period = Period(**item)
+        selected.append(period)
+
+    if len(selected) != 2:
+        raise ValueError(f"Se necesitan exactamente dos periodos para {source_id}")
+
+    selected.sort(key=lambda period: period.start_year)
+
+    if selected[0].period_id == selected[1].period_id:
+        raise ValueError("Los periodos deben tener identificadores distintos")
+
+    return PeriodPair(before=selected[0], after=selected[1])
+
+
+def _change_configuration(
+    dataset: Dataset,
+) -> tuple[PeriodPair, PeriodPair | None, list[str]]:
+    """Obtiene fuentes y periodos sin sustituir fuentes ausentes."""
+    try:
+        sources = get_signal_sources().for_region(dataset.region["id"])
+
+        climate_source = sources["frost"].used
+        if sources["heat"].used != climate_source:
+            raise ValueError("La comparación de heladas y calor necesita los mismos periodos")
+
+        rain_source = sources["water"].used
+
+        periods = _change_period_pair(dataset, climate_source)
+        precip_periods = _change_period_pair(dataset, rain_source) if rain_source != climate_source else None
+
+    except (
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as error:
+        raise ApiError(
+            503,
+            "dataset_unavailable",
+            "La comparación histórica no está disponible en este momento.",
+            log=(f"Qué cambió: faltan periodos o la configuración de fuentes no es compatible: {error}"),
+        ) from error
+
+    limitations = [
+        "Así fue en la historia de su zona. No es un pronóstico.",
+        "La oferta, el mercado y el suelo son los mismos en los dos periodos.",
+    ]
+
+    if "nasa_power" in {climate_source, rain_source}:
+        limitations.append("NASA POWER es un reanálisis, no una observación directa.")
+        # HU-216, comprobación del PR #79: hasta +7,3 °C en tierra caliente.
+        limitations.append(
+            "En tierra caliente, NASA POWER muestra aumentos de temperatura de hasta 7,3 °C "
+            "que pueden ser un artefacto del reanálisis. No deben interpretarse como un calentamiento local confirmado."
+        )
+
+    if rain_source in {"nasa_power", "imerg"}:
+        # HU-216, PR #79: la revisión inicial midió 68 %; la repetición con
+        # los mismos años y sin el 2021 defectuoso midió 69 %. No es una
+        # incertidumbre por municipio: es el resultado regional de esa comparación.
+        limitations.append(
+            "Al comparar los registros de la región, NASA POWER y GPM IMERG indicaron cambios de lluvia opuestos "
+            "en cerca de 7 de cada 10 comparaciones. El cambio mensual de lluvia depende de la fuente "
+            "y no confirma por sí solo que su municipio se haya vuelto más seco o más lluvioso."
+        )
+
+    if "imerg" in {climate_source, rain_source}:
+        limitations.append("GPM IMERG tiene datos desde 2000; sus periodos de comparación son más cortos.")
+
+    rain_caveat = sources["water"].caveat
+    if rain_caveat:
+        limitations.append(rain_caveat)
+
+    return periods, precip_periods, limitations
+
+
 @router.get(
     "/changes",
     response_model=ChangesResponse,
@@ -320,7 +447,93 @@ def changes(
     """«Qué cambió en su zona» (HU-218): historia comparada, nunca pronóstico."""
     _check_place(dataset, municipality_id)
     _check_crops(dataset, [crop_id], only_crops=True)
-    _not_implemented(request, "Qué cambió")
+
+    crop = dataset.crops[crop_id]
+    municipality = dataset.municipalities[municipality_id]
+    # /changes no recibe lot_id: la aptitud usa siempre el municipio.
+    zone = zone_temperature(dataset, municipality, None)
+
+    aptitude = suitability(
+        crop.get("tmean_min_c"),
+        crop.get("tmean_opt_min_c"),
+        crop.get("tmean_opt_max_c"),
+        crop.get("tmean_max_c"),
+        zone.tmean_annual_c,
+    )
+
+    # Todavía no tenemos la evaluación completa de ventanas.
+    # No representamos esa implementación pendiente como una lista vacía.
+    if aptitude.level != NOT_SUITABLE:
+        _not_implemented(request, "Qué cambió")
+
+    periods, precip_periods, limitations = _change_configuration(dataset)
+
+    comparison = _compare_changes(
+        dataset=dataset,
+        municipality_id=municipality_id,
+        periods=periods,
+        precip_periods=precip_periods,
+    )
+
+    aptitude_reason = _suitability_reason(
+        crop,
+        aptitude,
+        zone,
+        municipality,
+        crop["tmean_min_c"],
+        crop["tmean_max_c"],
+    )
+
+    if irrigated is None:
+        limitations.append("No se indicó si hay riego; se asume sin riego.")
+
+    if dataset.version == "ejemplo":
+        limitations.append("Datos de ejemplo: no representan observaciones reales.")
+
+    if dataset.climate_change_month is None:
+        limitations.append("La tabla de comparación histórica no está publicada; los indicadores se muestran sin datos suficientes.")
+
+    explain(request, "Qué cambió: el cultivo no es apto en su municipio; clima de dos periodos comparado")
+    return ChangesResponse(
+        request={
+            "municipality_id": municipality_id,
+            "crop_id": crop_id,
+            "irrigated": irrigated,
+        },
+        periods={
+            "before": asdict(periods.before),
+            "after": asdict(periods.after),
+        },
+        precip_periods=(
+            {
+                "before": asdict(precip_periods.before),
+                "after": asdict(precip_periods.after),
+            }
+            if precip_periods is not None
+            else None
+        ),
+        suitability=SuitabilityResult(
+            level="not_suitable",
+            score=int(round(aptitude.score)),
+            basis=zone.basis,
+            tmean_annual_c=zone.tmean_annual_c,
+            altitude_m=zone.altitude_m,
+            reasons=[aptitude_reason],
+        ),
+        months=comparison["months"],
+        best_windows={"before": [], "after": []},
+        weights_basis="default",
+        reasons=[
+            "No se calculan ventanas porque el cultivo no es apto para la zona.",
+            aptitude_reason,
+            *comparison["reasons"],
+        ],
+        limitations=limitations,
+        versions={
+            "dataset": dataset.version,
+            "rules": dataset.rules_version,
+        },
+    )
 
 
 @router.get(
