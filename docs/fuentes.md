@@ -33,10 +33,10 @@ La pestaña de recursos del reto se revisó el 13 de noviembre de 2026 (HU-002).
 | SMAP | NASA | HU-210 |
 | ECOSTRESS | NASA | HU-226 (P1) |
 | GEDI | NASA | No entra: mide bosques, no cultivos (decisión 14) |
-| NLDAS / GLDAS | NASA | **Nuevo.** NLDAS solo cubre Norteamérica. GLDAS es global: en P1, como contraste de la humedad del suelo (HU-232) |
+| NLDAS / GLDAS | NASA | **Nuevo.** NLDAS solo cubre Norteamérica. GLDAS es global: en P1, como contraste de la humedad del suelo (HU-232): GLDAS Noah 2.1 mensual, 0,25°, desde 2000, por OPeNDAP como IMERG |
 | FAO GAEZ | FAO | Ya citado en el catálogo; sirve para contrastar la aptitud y los rangos de los cultivos |
 | Copernicus Sentinel-2 | ESA | Entra con HLS (HU-043) |
-| ERA5 | ECMWF (Copernicus) | **Nuevo.** En P1, como contraste de las heladas de POWER, que casi no ve heladas en el altiplano (HU-231) |
+| ERA5 | ECMWF (Copernicus) | **Nuevo.** En P1, como contraste de las heladas de POWER, que casi no ve heladas en el altiplano (HU-231): ERA5-Land, mínima diaria a 0,1° (9 km), desde 1950, CC-BY; solo sale en NetCDF y pide una dependencia nueva |
 | USDA Ag Data Commons, Web Soil Survey, SSURGO/STATSGO2, CropScape (CDL), NASS QuickStats, AMS Market News, PRISM, NAIP, CoCoRaHS, OpenET, USGS NLCD y NWIS, USFS LANDFIRE | Agencias de EE. UU. | No aplican: solo cubren Estados Unidos (o Norteamérica). En la región piloto sus equivalentes son SoilGrids (suelo), EVA (área sembrada), SIPSA (precios) e IDEAM (estaciones, para contrastar) |
 
 GRACE-FO no aparece en los recursos, aunque sí en el enunciado: sigue en HU-225 (P1).
