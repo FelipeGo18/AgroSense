@@ -170,3 +170,38 @@ def test_las_fuentes_del_dane_traen_su_cita():
     assert sipsa.source(read(SAMPLE_SIPSA_ROWS), "2026-10-20T15:34:00+00:00")["citation"] == dane.CITATION
     assert dane.source(SAMPLE_META)["citation"] == dane.CITATION
     assert dane.CITATION == "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co"
+
+
+# ---------- Qué central da el precio de mercado en cada departamento (department_markets, HU-073) ----------
+
+MARKET_REGION = {
+    "dataset_version": "0.0.0-pruebas",
+    "region": {**SAMPLE_REGION["region"], "markets": SAMPLE_MARKETS, "department_markets": {"15": "9", "25": "1"}},
+}
+
+
+def test_los_departamentos_y_centrales_que_existen_son_validos():
+    build.validate_department_markets(MARKET_REGION)
+    build.validate_department_markets(SAMPLE_REGION)
+
+
+def test_la_region_del_repositorio_cumple_department_markets():
+    build.validate_department_markets(build.load_region())
+
+
+@pytest.mark.parametrize(
+    ("department_markets", "message"),
+    [
+        ({"15": "99", "25": "1"}, "centrales que no están en `markets`.*99"),
+        ({"15": 9, "25": "1"}, r"centrales que no están en `markets`: \[9\]"),
+        ({15: "9", "25": "1"}, r"departamentos que no están en `departments`: \[15\]"),
+        ({"15": "9", "52": "1"}, "departamentos que no están en `departments`.*52"),
+    ],
+)
+def test_una_central_o_un_departamento_que_no_existen_hacen_fallar_el_build(tmp_path, department_markets, message):
+    region = {**MARKET_REGION, "region": {**MARKET_REGION["region"], "department_markets": department_markets}}
+    prices = read(SAMPLE_SIPSA_ROWS)
+    sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
+    with pytest.raises(build.ValidationError, match=message):
+        build.publish(region, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), sources, tmp_path, prices=prices)
+    assert not (tmp_path / "manifest.json").exists()
