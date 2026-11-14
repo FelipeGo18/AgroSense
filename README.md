@@ -172,6 +172,10 @@ usa el agente especificador para afinar los criterios de HU-074
 usa el agente motor-api para implementar HU-074
 ```
 
+## Licencias
+
+El código es Apache 2.0 (`LICENSE`); Apache cubre solo el código: los datos y los materiales de terceros conservan su propia licencia. La de cada uno está en `docs/licencias.md`, que se regenera con `uv run python scripts/licencias.py`.
+
 ## Reglas esenciales
 
 Diez reglas de diseño (R1–R10) en `specs/01-reglas.md`. Una HU que viole una regla no se acepta, aunque funcione.
