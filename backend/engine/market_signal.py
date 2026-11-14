@@ -5,6 +5,11 @@ Función pura (R6): recibe el índice estacional de precio del mes de cosecha ya
 (`backend/api/market_signal.py`, de `market_month`) y los umbrales ya leídos y validados (`Thresholds`, HU-075). No
 importa la API, el dataset ni FastAPI, y no abre archivos: la curva de `market` vive en `thresholds.yaml`.
 
+Hoy la curva de `market` es nula (`curve: null`): ninguna fuente externa dice qué índice estacional es «precio bajo» y
+la regla del equipo del 11 de noviembre de 2026 no deja usar un criterio propio para una señal que no es central. Por
+eso la señal siempre da `insufficient_data`, con o sin índice. La rama con índice (nivel, calificación y razón) queda
+lista para cuando exista una fuente y se escriba la curva; la propuesta está en `docs/investigacion-decisiones.md` (5e).
+
 Es historia de precios mayoristas, nunca un pronóstico (decisión 4): la razón solo dice cómo ha sido el precio de ese
 mes frente al promedio del año del propio producto, en los años que respaldan el índice.
 
@@ -41,9 +46,9 @@ class MarketSignalResult:
 def market_signal(seasonal_index: float | None, years: int | None, thresholds: Thresholds) -> MarketSignalResult:
     """Califica el índice estacional del mes de cosecha con la curva de `market` de `thresholds`.
 
-    Sin índice (cultivo sin producto en SIPSA, central sin temporada o departamento sin central): `insufficient_data`,
-    nivel y calificación nulos y la razón del contrato (R1). Con índice, la razón dice cuánto por encima o por debajo
-    del promedio de su año ha estado el precio de ese mes, y en cuántos años.
+    Sin índice (cultivo sin producto en SIPSA, central sin temporada o departamento sin central) o con la curva nula
+    (la de hoy): `insufficient_data`, nivel y calificación nulos y la razón del contrato (R1). Con curva e índice, la
+    razón dice cuánto por encima o por debajo del promedio de su año ha estado el precio de ese mes, y en cuántos años.
     """
     result = score_signal("market", seasonal_index, thresholds)
     # Nivel, calificación y crítica los decide `score_signal` (también los nulos de `insufficient_data`); aquí solo se

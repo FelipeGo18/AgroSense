@@ -1,11 +1,10 @@
 """Los umbrales de las señales (`thresholds.yaml`, HU-075): su forma, sus fuentes y lo que la API no deja pasar."""
 
-import polars as pl
 import pytest
 
 from backend.config.thresholds import FROM_CROP, ThresholdsError, get_thresholds, load_thresholds
 from backend.config.weights import P0_SIGNALS
-from pipeline import build, catalog
+from pipeline import catalog
 
 GOOD = """
 version: "9.9.9"
@@ -37,24 +36,21 @@ def test_el_archivo_del_repositorio_tiene_las_seis_senales_con_version():
     assert (thresholds.favorable, thresholds.moderate) == (70, 40)
 
 
-def test_cada_fuente_de_los_umbrales_esta_en_sources():
-    """R8: lo que cita `thresholds.yaml` está en las fuentes que publica el catálogo o, la del mercado, cuyos cortes
-    salen de los datos de SIPSA (HU-073), en las que publica su adaptador en el dataset del repositorio."""
+def test_cada_fuente_de_los_umbrales_esta_en_sources(tmp_path):
+    """R8: lo que cita `thresholds.yaml` está en las fuentes que publica el catálogo."""
     _, _, sources = catalog.build(catalog.load())
-    from_catalog = set(sources["source_id"].to_list())
-    published = set(pl.read_parquet(build.PUBLISHED / "sources.parquet")["source_id"].to_list())
-    assert get_thresholds().source_ids() <= from_catalog | {"dane_sipsa"}
-    assert "dane_sipsa" in published
+    assert get_thresholds().source_ids() <= set(sources["source_id"].to_list())
 
 
 def test_el_suelo_nunca_es_critico_y_lo_que_no_tiene_fuente_no_se_califica():
     signals = get_thresholds().signals
     assert signals["soil"].critical_below is None  # R10
     assert signals["heat"].curve == FROM_CROP and signals["soil"].curve == FROM_CROP
-    # Oferta: ninguna fuente dice sus cortes, así que no hay curva ni umbral (R1, R8).
-    assert not signals["supply"].available
-    assert (signals["supply"].critical_below, signals["supply"].source_id) == (None, None)
-    assert all(signals[s].available and signals[s].source_id for s in ("water", "frost", "heat", "soil", "market"))
+    # Oferta y mercado: ninguna fuente dice sus cortes, así que no hay curva ni umbral (R1, R8).
+    for signal in ("supply", "market"):
+        assert not signals[signal].available
+        assert (signals[signal].critical_below, signals[signal].source_id) == (None, None)
+    assert all(signals[s].available and signals[s].source_id for s in ("water", "frost", "heat", "soil"))
 
 
 def test_el_umbral_critico_cae_en_la_curva_donde_dice_la_fuente():
@@ -62,29 +58,6 @@ def test_el_umbral_critico_cae_en_la_curva_donde_dice_la_fuente():
     signals = get_thresholds().signals
     assert dict(signals["water"].curve)[50] == signals["water"].critical_below == 20
     assert dict(signals["frost"].curve)[40] == signals["frost"].critical_below == 40
-
-
-def test_la_curva_de_mercado_se_ancla_a_cuantiles_de_sipsa_y_solo_el_extremo_es_critico():
-    """Mercado (HU-073): 0 en 0,85 (crítica), 40 en 0,91 (P25), 70 en 1,0 (el precio promedio, P50) y 100 en 1,15.
-    Crítica solo con calificación 0, como el calor: un precio bajo fuerza el rojo solo en el extremo de la historia."""
-    market = get_thresholds().signals["market"]
-    assert market.curve == ((0.85, 0.0), (0.91, 40.0), (1.0, 70.0), (1.15, 100.0))
-    assert market.critical_below == 1
-    assert market.source_id == "dane_sipsa"
-
-
-def test_los_cortes_de_mercado_siguen_siendo_coherentes_con_el_indice_publicado():
-    """R8: los cortes se recalculan desde `market_price_season` publicado: P10 <= 0,85 <= P50; 0,91 a +-0,01 de P25;
-    1,0 a +-0,02 de P50 (el índice está normalizado al promedio del producto); P50 <= 1,15 <= P90. Si el dataset
-    cambia y dejan de cumplirse, hay que revisar la curva de `market` en `thresholds.yaml` (y su nota)."""
-    index = pl.read_parquet(build.PUBLISHED / "market_price_season.parquet")["seasonal_index"].drop_nulls()
-    p10, p25, p50, p90 = (index.quantile(q, "linear") for q in (0.1, 0.25, 0.5, 0.9))
-    curve = dict((score, value) for value, score in get_thresholds().signals["market"].curve)
-    where = f"P10={p10:.4f}, P25={p25:.4f}, P50={p50:.4f}, P90={p90:.4f}: revisar la curva de `market` en thresholds.yaml"
-    assert p10 <= curve[0.0] <= p50, where
-    assert abs(curve[40.0] - p25) <= 0.01, where
-    assert abs(curve[70.0] - p50) <= 0.02, where
-    assert p50 <= curve[100.0] <= p90, where
 
 
 def test_un_archivo_bien_formado_se_lee(tmp_path):

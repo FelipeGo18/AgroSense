@@ -11,7 +11,7 @@
 # Decidido por Felipe el 10 de noviembre de 2026 (docs/registro-de-decisiones.md). Si aparece evidencia mejor, se
 # cambian aquí y sube la versión: el motor no cambia (R4).
 
-version: "1.1.0"
+version: "1.0.0"
 
 # Desde qué calificación una señal es favorable o moderada; por debajo de `moderate`, desfavorable. Son una convención
 # del proyecto, al estilo de EcoCrop: el respaldo más cercano es el ejemplo de clases de la FAO de 1985, que coinciden
@@ -68,19 +68,11 @@ signals:
   market:
     variable: seasonal_index
     unit: ""
-    # Cada corte de `levels` se ancla a un cuantil de la distribución real del índice estacional de SIPSA publicado
-    # (market_price_season.parquet, dataset 2026.11.12: 756 meses de 63 series producto-central, de todos los productos
-    # de SIPSA publicados y no solo de los cultivos del catálogo; P10 = 0,8195, P25 = 0,91, P50 = 1,0025, P75 = 1,0825,
-    # P90 = 1,16). 1,0 -> 70 (inicio de `favorable`): el índice está normalizado para que 1,0 sea el precio promedio del
-    # propio producto en el año (y coincide con P50); un mes de precio normal no es un riesgo, así que es favorable. No
-    # se pide margen sobre el promedio porque el nivel mide el riesgo de vender barato, no la oportunidad de vender
-    # caro: lo que hay por encima (hasta 1,15 -> 100) solo cambia el orden de las ventanas, nunca la luz. 0,91 -> 40
-    # (inicio de `moderate`): P25; un mes en el cuarto más barato de la historia del producto es desfavorable y entre
-    # P25 y la mediana es moderado (con peso 4 o 5 cuenta como desfavorable: a quien le importa mucho el mercado, un
-    # precio por debajo de lo normal sí le pesa). 0,85 -> 0 y crítica: el extremo bajo, un poco más estricto que P10
-    # (0,85 >= P10), igual que el calor solo es crítico en el extremo. 1,15 -> 100: <= P90. Lo comprueba
-    # tests/test_umbrales.py. Pendiente de aprobación de Felipe o Haider.
-    curve: [[0.85, 0], [0.91, 40], [1.0, 70], [1.15, 100]]
-    critical_below: 1
-    source_id: dane_sipsa
-    note: "Cortes propios del proyecto, anclados a cuantiles del índice estacional de SIPSA publicado: ninguna fuente publicada dice qué índice estacional es «precio bajo». Es historia de precios, no pronóstico."
+    # Sin fuente: ninguna fuente publicada dice qué índice estacional de precio es «precio bajo». La señal es
+    # `insufficient_data` (R1). Tampoco se usa un criterio del equipo: la regla del equipo del 11 de noviembre de 2026
+    # solo lo permite si es central para el producto y cada número se apoya en un dato externo citado, y el mercado
+    # no es central (decisión 12: valor agregado, no protagonista). La propuesta de curva, con los cuantiles del índice
+    # de SIPSA, está en docs/investigacion-decisiones.md (5e) para el día en que una fuente externa la respalde.
+    curve: null
+    critical_below: null
+    source_id: null
