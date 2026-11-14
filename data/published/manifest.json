@@ -1,7 +1,7 @@
 {
-  "dataset_version": "2026.11.13",
+  "dataset_version": "2026.11.14",
   "rules_version": "0.1.0",
-  "created_at": "2026-11-14T14:30:44+00:00",
+  "created_at": "2026-11-14T15:59:49+00:00",
   "region": {
     "id": "co-boyaca-cundinamarca",
     "name": "Boyacá y Cundinamarca, Colombia",
@@ -28,7 +28,7 @@
       "coverage": "Boyacá y Cundinamarca, Colombia"
     },
     "sources": {
-      "rows": 16,
+      "rows": 24,
       "coverage": "todas las fuentes de lo publicado"
     },
     "municipality_boundaries": {
@@ -43,9 +43,13 @@
       "rows": 27,
       "coverage": "cultivos del MVP"
     },
+    "rotation_rules": {
+      "rows": 7,
+      "coverage": "reglas de rotación de los cultivos del MVP"
+    },
     "climate_day": {
-      "rows": 4002533,
-      "coverage": "239 municipios con altitud, del 1981-01-01 al 2026-11-07"
+      "rows": 4002772,
+      "coverage": "239 municipios con altitud, del 1981-01-01 al 2026-11-08"
     },
     "climate_month": {
       "rows": 131450,
@@ -68,8 +72,8 @@
       "coverage": "Celdas de 0,0025° de 239 municipios; sin suelo hasta HU-181"
     },
     "market_price_day": {
-      "rows": 100764,
-      "coverage": "Corabastos (Bogotá) · Tunja (Complejo de Servicios del Sur); del 2020-02-01 al 2026-10-19"
+      "rows": 101706,
+      "coverage": "Corabastos (Bogotá) · Tunja (Complejo de Servicios del Sur); del 2020-02-01 al 2026-11-10"
     },
     "market_price_latest": {
       "rows": 69,
