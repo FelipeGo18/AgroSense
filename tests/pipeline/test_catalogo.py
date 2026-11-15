@@ -5,7 +5,8 @@ import copy
 import polars as pl
 import pytest
 
-from pipeline import catalog
+from pipeline import build as pipeline_build
+from pipeline import catalog, rotation_rules, schema
 
 REAL = catalog.load()
 
@@ -226,3 +227,53 @@ def test_secondary_families_se_publica_ordenada_sin_depender_del_orden_del_yaml(
         return crops.filter(pl.col("crop_id") == "avena_vicia")["secondary_families"].to_list()[0]
 
     assert published(["Solanaceae", "Leguminosae"]) == published(["Leguminosae", "Solanaceae"]) == ["Leguminosae", "Solanaceae"]
+
+
+def test_las_fuentes_publicadas_son_las_del_catalogo():
+    """Las fuentes que salen de `catalog/crops.yaml` y de `catalog/rotation_rules.yaml` (las que `pipeline.build` publica
+    desde el catálogo) coinciden con `data/published/sources.parquet`: mismos `source_id` y, en cada una, las mismas
+    columnas del contrato. Un catálogo cambiado sin reconstruir contradice lo publicado (R5, R8)."""
+    folder = pipeline_build.PUBLISHED
+    if not (folder / "sources.parquet").exists():
+        pytest.skip("data/published no está en esta imagen")
+    data = catalog.load()
+    _, _, catalog_sources = catalog.build(data)
+    _, rules_sources = rotation_rules.build(
+        rotation_rules.load(),
+        crop_sources=data.get("sources") or [],
+        known_families=set(catalog.build(data)[0]["family"].drop_nulls().to_list()),
+        expected_version=data["version"],
+    )
+    columns = list(schema.TABLES["sources"].columns)
+
+    def rows(table):
+        return {r["source_id"]: {c: (None if r.get(c) is None else str(r[c])) for c in columns} for r in table.to_dicts()}
+
+    expected = {**rows(catalog_sources), **rows(rules_sources)}
+    published = rows(pl.read_parquet(folder / "sources.parquet"))
+    fix = "Reconstruya el dataset con `uv run python -m pipeline.build`."
+    missing = sorted(set(expected) - set(published))
+    assert not missing, f"El catálogo trae fuentes que no están en data/published/sources.parquet: {missing}. {fix}"
+    # Lo que ya no está en el catálogo: una fuente publicada que ni el catálogo ni las reglas dan y que ninguna tabla
+    # publicada cita (las de los adaptadores sí las citan sus tablas) es una fila vieja que sobró (R5, R8).
+    cited = set()
+    for path in folder.glob("*.parquet"):
+        if path.stem == "sources":
+            continue
+        table = pl.read_parquet(path)
+        for name, dtype in table.schema.items():
+            if name.endswith("source_id") and dtype == pl.String:
+                cited |= set(table[name].drop_nulls().to_list())
+            elif name.endswith("source_ids"):
+                cited |= set(table[name].explode().drop_nulls().to_list())
+    # Las que cita `pipeline/region.yaml` (por ejemplo, el gradiente térmico) tampoco son del catálogo.
+    region = str(pipeline_build.load_region())
+    stale = sorted(source_id for source_id in set(published) - set(expected) - cited if source_id not in region)
+    assert not stale, f"data/published/sources.parquet trae fuentes que el catálogo ya no tiene y nadie cita: {stale}. {fix}"
+    differences = [
+        f"{source_id}.{column}: catálogo={expected[source_id][column]!r}, publicado={published[source_id][column]!r}"
+        for source_id in sorted(expected)
+        for column in columns
+        if expected[source_id][column] != published[source_id][column]
+    ]
+    assert not differences, "Lo publicado contradice el catálogo:\n" + "\n".join(differences) + f"\n{fix}"
