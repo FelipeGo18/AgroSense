@@ -269,9 +269,11 @@ def _erosion(
             f"de {cut} %: con esa pendiente el suelo descubierto no se cuenta para la erosión"
         )
         return Criterion("available", "favorable", (_text(reason, rule),), (rule.rule_id,), sources)
+    if not cycle_days or len(cycle_days) != len(sequence) or None in cycle_days:
+        return _no_data("Falta la duración de algún ciclo de la estrategia", rule)
     counts = _day_counts(sequence, crops, cycle_days, gap_days)
     if counts is None:
-        return _no_data("Falta la duración de algún ciclo de la estrategia", rule)
+        return _no_data("Falta el hueco entre algún par de ciclos de la estrategia", rule)
     months = (counts[1] + counts[2] - sum(cycle_days)) / DAYS_PER_MONTH  # descanso + huecos, sin redondear
     reason = rule.reason_template.format(slope=_dec(slope.slope_pct), months=_dec(months))
     return Criterion(
