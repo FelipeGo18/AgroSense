@@ -140,7 +140,7 @@
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-187 | El lote vivo | P0 | L | en curso | Vuelve a P0 el 14 nov con un alcance para la demo (Felipe): el diorama con la finca y las siembras en curso en el detalle del lote; recorrer, línea de tiempo y clima en vivo siguen en P1 |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-169 | Mi finca con varios lotes y zonas | P0 | M | hecha | Entrega 2: Mi finca con el mapa; la capa de la NASA va en HU-211; los cultivos en curso ya se ven (HU-165); una sola zona con «En otro municipio» (14 nov) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-211 | Capa satelital de la NASA en el mapa del lote | P0 | M | pendiente | Nueva |
-| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-173 | Pantalla de inicio | P0 | M | en curso | Sin 3D; recorrido con la mascota guía y la Tierra girando |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-173 | Pantalla de inicio | P0 | M | hecha | Sin 3D; recorrido con la mascota guía y la Tierra girando; nombra los datos de la NASA en la portada y en «Los datos» (14 nov) |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-171 | Diseño de la mascota satélite | P1 | M | en curso | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-172 | Expresiones y animaciones de la mascota | P1 | M | en curso | Reacciones en los formularios y en Mi cuenta hechas; faltan las expresiones de los resultados |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-174 | Día y noche en la escena | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
@@ -150,6 +150,6 @@
 | [EP-18](epicas/EP-18-suelo.md) | HU-182 | Suelo de un lote | P0 | M | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-183 | Señal de suelo en el diagnóstico | P0 | S | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | pendiente | |
-| [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | pendiente | Cinco criterios con la erosión (decisión 14) |
+| [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | en curso | Cinco criterios con la erosión (decisión 14); spec precisada el 14 nov |
 | [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | pendiente | Nueva (8 nov, decisión 14) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | en curso | El suelo de la zona explicado en el detalle del lote (14 nov); faltan la señal de suelo y la salud del suelo |

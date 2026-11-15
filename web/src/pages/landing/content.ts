@@ -80,8 +80,18 @@ export const PREVIEW = {
   ] satisfies { key: SignalKey; name: string; tone: keyof typeof TONE_LABEL; detail: string }[],
 };
 
+/**
+ * Las fuentes, como las calcula AgroSense: los productos de la NASA primero (decisión 12). La lluvia es GPM IMERG
+ * (`catalog/sources.yaml`); NASA POWER es un reanálisis y se dice así (R8).
+ */
 export const SOURCES = [
-  { kind: "Clima", name: "NASA POWER", text: "Lluvia, temperatura, heladas y calor de su municipio." },
+  { kind: "Lluvia", name: "GPM IMERG · NASA", text: "La lluvia de su municipio vista por satélite, desde 2000." },
+  {
+    kind: "Clima",
+    name: "NASA POWER",
+    text: "Temperatura, heladas, calor y evaporación. Es un reanálisis (un modelo con observaciones), no una foto del satélite.",
+  },
+  { kind: "Altitud", name: "NASADEM · NASA", text: "La altura y la pendiente de su municipio o de su lote, a 30 m." },
   { kind: "Suelo", name: "SoilGrids · ISRIC", text: "pH, carbono orgánico y textura, estimados en celdas de 250 m." },
   {
     kind: "Oferta",
@@ -89,7 +99,7 @@ export const SOURCES = [
     full: "Evaluaciones Agropecuarias",
     text: "Cuánto se sembró de cada cultivo, por municipio, junto a otras fuentes.",
   },
-  { kind: "Mercado", name: "SIPSA · DANE", text: "Precios mayoristas, cuando hay datos de la zona." },
+  { kind: "Mercado", name: "SIPSA · DANE", text: "Precios mayoristas de Corabastos y Tunja." },
 ];
 
 export const GLOBE_CREDIT = "Contornos: Natural Earth · Color: NASA Blue Marble";
