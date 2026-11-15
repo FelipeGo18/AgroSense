@@ -2,6 +2,7 @@
 
     uv run python -m pipeline.build              # lee la caché de data/raw/ y publica
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
+    uv run python -m pipeline.build --traer-cache  # antes, trae la caché compartida (HU-237)
     uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044, con la altura de su celda de NASA POWER),
@@ -40,7 +41,7 @@ import yaml
 from common import signal_sources
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import climate_change, climate_normals, climate_risk, rotation_rules, schema
+from pipeline import climate_change, climate_normals, climate_risk, raw_cache, rotation_rules, schema
 from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
 
@@ -905,6 +906,9 @@ def check_signal_sources(region_id: str, published: set[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reconstruye data/published desde la caché.")
     parser.add_argument("--descargar", action="store_true", help="Baja otra vez las fuentes a data/raw/ antes de publicar.")
+    parser.add_argument(
+        "--traer-cache", action="store_true", help="Antes de publicar, trae la caché compartida de pipeline/raw_cache.json (HU-237)."
+    )
     parser.add_argument("--verificar", action="store_true", help="No publica: solo revisa que data/published coincida con su manifiesto.")
     args = parser.parse_args()
     # El pipeline no usa la base de datos: lee su configuración de `pipeline/settings.py`, no la de la API.
@@ -912,6 +916,8 @@ def main() -> None:
     configure(settings.log_level, settings.log_format)
     expected = load_region()["dataset_version"]
     try:
+        if args.traer_cache and not args.verificar:
+            raw_cache.pull()
         if not args.verificar:
             build(download=args.descargar)
         manifest = verify(PUBLISHED, expected)
@@ -922,6 +928,7 @@ def main() -> None:
         rotation_rules.RotationRulesError,
         nasa_power.DownloadError,
         nasadem.TileError,
+        raw_cache.CacheError,
     ) as error:
         event = "dataset_mismatch" if args.verificar else "dataset_not_published"
         log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")

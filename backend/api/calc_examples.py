@@ -8,6 +8,7 @@ Una prueba revisa que cada uno cumpla su modelo de `backend/api/calc_models.py`.
 from typing import Any
 
 from backend.api.calc_models import ErrorBody
+from backend.api.soil_signals import LOT_SOIL_LIMITATION
 
 EXAMPLE_VERSIONS = {"dataset": "ejemplo", "rules": "ejemplo"}
 EXAMPLE_NOTE = "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido."
@@ -122,7 +123,7 @@ DIAGNOSIS_OK = {
     ),
     "weights": WEIGHTS,
     "signals": SIGNALS_OK,
-    "limitations": [EXAMPLE_NOTE, "Datos EVA del último año son preliminares", "Suelo estimado para el municipio, no para su lote"],
+    "limitations": [EXAMPLE_NOTE, "Datos EVA del último año son preliminares", LOT_SOIL_LIMITATION],
     "versions": EXAMPLE_VERSIONS,
 }
 
@@ -269,7 +270,7 @@ ROTATIONS = {
                 "Empieza con un abono verde y su suelo tiene poco carbono orgánico",
                 "Gana 15 puntos frente a lo que siembra hoy, sobre todo en suelo",
             ],
-            "limitations": ["Suelo estimado para el municipio, no para su lote"],
+            "limitations": [LOT_SOIL_LIMITATION],
         },
         {
             "rank": 2,
@@ -297,7 +298,7 @@ ROTATIONS = {
                 "El terreno descansa el primer ciclo y corta las plagas de la papa",
                 "No deja ingreso hasta la cosecha de la arveja",
             ],
-            "limitations": ["Suelo estimado para el municipio, no para su lote"],
+            "limitations": [LOT_SOIL_LIMITATION],
         },
     ],
     "current_strategy": {
