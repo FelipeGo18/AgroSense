@@ -1,6 +1,6 @@
 """HU-012: los endpoints de cálculo ya tienen su forma del contrato, sus ejemplos y sus validaciones; los que todavía no
-tienen motor responden 501. El diagnóstico (HU-076) y las tendencias (HU-078) ya responden: sus pruebas están en
-`tests/test_diagnostico.py` y `tests/test_tendencias.py`."""
+tienen motor responden 501. El diagnóstico (HU-076), las tendencias (HU-078) y el plan de agua (HU-146) ya responden: sus
+pruebas están en `tests/test_diagnostico.py`, `tests/test_tendencias.py` y `tests/test_endpoint_plan_de_agua.py`."""
 
 from datetime import date, timedelta
 from pathlib import Path
@@ -68,7 +68,8 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     for path, method, codes in [
         ("/api/v1/diagnostics", "post", {"200", "401", "404", "422", "503"}),
         ("/api/v1/rotations", "post", {"200", "401", "404", "422", "501", "503"}),
-        ("/api/v1/water-plans", "post", {"200", "422", "501", "503"}),
+        # Ya responde (HU-146): no anuncia 501.
+        ("/api/v1/water-plans", "post", {"200", "422", "500", "503"}),
         ("/api/v1/changes", "get", {"200", "422", "501", "503"}),
         # Ya responde (HU-078): no anuncia 501.
         ("/api/v1/trends", "get", {"200", "422", "500", "503"}),
@@ -76,6 +77,7 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     ]:
         responses = paths[path][method]["responses"]
         assert codes <= set(responses), path
+        assert ("501" in responses) == ("501" in codes), path
         content = responses["200"]["content"]["application/json"]
         assert "examples" in content or "example" in content, path
 
@@ -84,9 +86,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     ("method", "path", "body"),
     [
         ("post", "/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["papa"], "current_crop_ids": ["papa", "arveja"]}),
-        ("post", "/api/v1/water-plans", WATER),
-        # El agua del ciclo de un abono verde (HU-215): es una entrada válida.
-        ("post", "/api/v1/water-plans", {**WATER, "crops": [{"crop_id": "avena_vicia", "area_pct": 100, "sowing_date": SOON}]}),
         ("get", "/api/v1/changes?municipality_id=15646&crop_id=papa", None),
     ],
 )

@@ -45,7 +45,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, missing, no_stages_reason, score_signal
-from common.text import format_precise, of
+from common.text import capitalized, format_precise, of
 
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
@@ -107,7 +107,7 @@ def soil_signal(soil: ZoneSoilPh | None, crop_limits: Mapping[str, Any], thresho
     tolerated = f"({format_precise(ph_min)} a {format_precise(ph_max)})"
     if missing(soil.ph_p05) or missing(soil.ph_p95):
         head = f"pH estimado de {format_precise(ph)}"
-        interval = f"{crop_name[:1].upper()}{crop_name[1:]} tolera de {format_precise(ph_min)} a {format_precise(ph_max)}"
+        interval = f"{capitalized(crop_name)} tolera de {format_precise(ph_min)} a {format_precise(ph_max)}"
         limitations: tuple[str, ...] = (
             "Sin el rango del pH estimado de la zona (percentiles 5 y 95): no se revisó si parte del suelo queda fuera de "
             f"lo que tolera {crop_name}",
