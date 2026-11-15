@@ -1255,6 +1255,42 @@ export interface components {
             /** Max Cop Kg */
             max_cop_kg: number | null;
         };
+        /**
+         * PriceHistory
+         * @description De dónde sale la historia del precio de la señal `market` (HU-073, decisión 17): la central (`market_basis`:
+         *     `department` si es la del departamento, `crop_override` si es la de `region.crop_market_overrides`), el producto de
+         *     SIPSA, el mes de la cosecha estimada y, de `market_month`, el índice y los años por encima y por debajo del promedio
+         *     de su año. Es historia, no un pronóstico del precio.
+         */
+        PriceHistory: {
+            /** Market Id */
+            market_id: string;
+            /** Market */
+            market: string;
+            /**
+             * Market Basis
+             * @enum {string}
+             */
+            market_basis: "department" | "crop_override";
+            /** Product Id */
+            product_id: string;
+            /** Month */
+            month: number;
+            /** Seasonal Index */
+            seasonal_index: number;
+            /** Years */
+            years: number;
+            /** Years Above */
+            years_above: number;
+            /** Years Below */
+            years_below: number;
+            /** First Year */
+            first_year: number | null;
+            /** Last Year */
+            last_year: number | null;
+            /** Source Id */
+            source_id: string;
+        };
         /** ProductHistory */
         ProductHistory: {
             /** Version */
@@ -1591,6 +1627,7 @@ export interface components {
             reasons: string[];
             /** Sources */
             sources?: components["schemas"]["SourceValue"][] | null;
+            price_history?: components["schemas"]["PriceHistory"] | null;
         };
         /**
          * SignalWeights

@@ -102,7 +102,7 @@ def starts_with(result: TrafficLight, prefix: str) -> bool:
 
 def test_los_pesos_por_defecto_son_los_de_weights_yaml_1_0_0():
     weights = load_weights()
-    assert weights.version == "1.0.0"
+    assert weights.version == "1.1.0"
     assert weights.weights == {"water": 3, "frost": 4, "heat": 2, "soil": 2, "supply": 1, "market": 1}
 
 
@@ -642,7 +642,7 @@ def test_una_base_de_pesos_desconocida_da_value_error(suitability, basis):
 def umbrales():
     """`thresholds.yaml` 1.0.0, leído con su cargador: los cortes reales, no calificaciones a mano."""
     thresholds = load_thresholds()
-    assert thresholds.version == "1.0.0"
+    assert thresholds.version == "1.1.0"
     return thresholds
 
 
