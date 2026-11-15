@@ -380,7 +380,7 @@ def test_sin_dataset_responde_503():
 
 
 def test_trae_las_versiones_del_dataset_y_de_las_reglas(complete):
-    assert trends(TestClient(app)).json()["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.2.0"}
+    assert trends(TestClient(app)).json()["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.3.0"}
 
 
 def test_mismos_datos_misma_respuesta_byte_a_byte(complete):
