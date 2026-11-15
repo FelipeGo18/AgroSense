@@ -5,7 +5,8 @@ Para cada mes que toca la ventana de siembra:
 - **Lo que necesita el cultivo** (`need_mm`) es la ET0 normal de la zona por el Kc de cada día de la ventana (FAO-56,
   `fao_56`). El Kc de un día sale de las etapas de la ficha como en la figura 25 de FAO-56: constante en la inicial;
   en línea recta de la inicial a la media en el desarrollo; constante en la media; y en línea recta de la media al Kc
-  final en la etapa final (el `kc` de la etapa final de la ficha es el del final de la etapa). La ET0 normal de un mes
+  final en la etapa final (el `kc` de la etapa final de la ficha es el del final de la etapa). Es la curva de
+  `water_need.daily_kc` (HU-078), la misma de `/trends`: no hay dos cuentas del agua. La ET0 normal de un mes
   se reparte por igual entre sus días.
 - **La lluvia efectiva** sale de la lluvia del mes con las fórmulas del manual de la FAO para planear el riego
   (Brouwer y Heibloem, 1986, sección 4.2, `fao_manual_riego_3`): 0,8 P - 25 con más de 75 mm al mes y 0,6 P - 10 con
@@ -38,10 +39,11 @@ resultado.
 
 import calendar
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 
 from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA
 from backend.engine.stages import CropWindow
+from backend.engine.water_need import daily_kc
 
 # Las fuentes del método (R8): el pipeline las publica en `sources` desde `catalog/crops.yaml`.
 SOURCE_IDS = {
@@ -164,30 +166,6 @@ def storable_mm(texture_class: str | None, root: RootZone | None) -> Range | Non
     )
 
 
-def _daily_kc(window: CropWindow) -> dict[date, float] | None:
-    """El Kc de cada día de la ventana (FAO-56, figura 25). Nulo si falta el Kc que pide alguna etapa."""
-    spans = [period.span for period in window.periods]
-    by_stage = {span.stage: span.kc for span in spans}
-    initial, mid = by_stage.get("initial"), by_stage.get("mid")
-    result: dict[date, float] = {}
-    for period in window.periods:
-        stage, length = period.span.stage, period.span.days
-        if stage == "initial":
-            start = end = initial
-        elif stage == "development":
-            start, end = initial, mid
-        elif stage == "mid":
-            start = end = mid
-        else:
-            start, end = mid, period.span.kc
-        if start is None or end is None:
-            return None
-        for offset in range(length):
-            # En las etapas de cambio, el Kc del día i (de 1 a L) es el de la recta en i / L (FAO-56, ecuación 66).
-            result[period.start + timedelta(days=offset)] = start + (end - start) * (offset + 1) / length
-    return result
-
-
 def _month_rain(climate: MonthClimate | None, year: str, share: float) -> tuple[float | None, float | None]:
     """La lluvia de los días de la ventana en el mes y su parte efectiva."""
     rain = None if climate is None else climate.rain(year)
@@ -200,8 +178,9 @@ def water_balance(
     window: CropWindow, climate: dict[int, MonthClimate], texture_class: str | None = None, root: RootZone | None = None
 ) -> WaterBalance:
     """El balance de la ventana, mes por mes. `climate` va por mes del año (1 a 12): el clima normal de la zona."""
-    kc = _daily_kc(window)
-    if kc is None:
+    # El Kc de cada día del ciclo sale de `water_need` (HU-078), el mismo de `/trends`: no hay dos cuentas del agua.
+    kc = daily_kc([period.span for period in window.periods])
+    if kc is None or len(kc) != window.length_days:
         return WaterBalance(INSUFFICIENT_DATA, KC_MISSING, (), False, None, {NORMAL: None, DRY: None})
     storable = storable_mm(texture_class, root)
     capacity = {"low": storable[1], "high": storable[0]} if storable else {"low": 0.0, "high": 0.0}
@@ -216,8 +195,8 @@ def water_balance(
         et0 = None if normal is None else normal.et0_mm
         need = None
         if et0 is not None:
-            first = max(window.sowing_date, date(month.year, month.month, 1))
-            need = sum(et0 / days_in_month * kc[first + timedelta(days=d)] for d in range(month.days))
+            first = (max(window.sowing_date, date(month.year, month.month, 1)) - window.sowing_date).days
+            need = sum(et0 / days_in_month * kc[first + d] for d in range(month.days))
             total_need += need
         rain, deficit = {}, {}
         for year in YEARS:
