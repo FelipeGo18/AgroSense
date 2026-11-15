@@ -1,0 +1,103 @@
+# Despliegue a producción (HU-235): al fusionar en `produccion` (o a mano), construye la imagen con la web, la sube a
+# Artifact Registry, aplica las migraciones con el job `agrosense-migrate` (que antes sube una copia de la base a Cloud
+# Storage y, si no puede, no migra) y despliega en Cloud Run. Si la dirección pública no responde, o no responde la
+# revisión de este commit, vuelve a la revisión anterior y termina en rojo. La infraestructura está en `infra/`.
+#
+# Lo que configura el dueño del repositorio (backend/README.md, «Producción en Google Cloud»):
+#   - el entorno `produccion`, con la aprobación de Felipe o Haider antes de desplegar, y en él:
+#     - variable GCP_WIF_PROVIDER: salida `github_wif_provider` de Terraform
+#     - variable GCP_DEPLOY_SA: salida `github_deploy_service_account`
+#   - la regla de la rama `produccion`: los mismos checks obligatorios que `desarrollo`.
+# No hay llaves JSON: GitHub se identifica con Workload Identity Federation, y solo desde `produccion`.
+# Las acciones de terceros van fijadas a un commit exacto, no a una etiqueta que se pueda mover (como en ci.yml).
+name: Desplegar a producción
+
+on:
+  push:
+    branches: [produccion]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-produccion
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: agrosense-prod-2026
+  REGION: us-east1
+  SERVICE: agrosense
+  JOB: agrosense-migrate
+  IMAGE: us-east1-docker.pkg.dev/agrosense-prod-2026/agrosense/app:${{ github.sha }}
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
+
+      - name: Construir y subir la imagen (API + web)
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build --target produccion -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      # `backend.db.migrate` copia la base y sube la copia al bucket de copias (`AGROSENSE_BACKUP_BUCKET`, 7 días) antes
+      # de migrar; si la copia o la subida fallan, no migra y el job termina en rojo.
+      - name: Aplicar las migraciones (con copia en Cloud Storage antes)
+        run: |
+          gcloud run jobs update "$JOB" --image "$IMAGE" --region "$REGION" --quiet
+          gcloud run jobs execute "$JOB" --region "$REGION" --wait
+
+      - name: Desplegar en Cloud Run
+        id: deploy
+        run: |
+          # La revisión que sirve hoy (no la última creada: tras volver atrás, la última es la que falló).
+          previous="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json | jq -r '[.status.traffic[] | select(.percent == 100) | .revisionName][0] // empty')"
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+          gcloud run services update "$SERVICE" --image "$IMAGE" --region "$REGION" --quiet
+          # Si un despliegue anterior volvió atrás, el tráfico quedó fijo en esa revisión: se devuelve a la nueva.
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest --quiet
+          echo "url=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"
+
+      - name: Comprobar la dirección pública
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          # La que sirve es la revisión de este commit: la última lista usa esta imagen y tiene todo el tráfico.
+          described="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json)"
+          latest="$(jq -r '.status.latestReadyRevisionName' <<<"$described")"
+          serving="$(jq -r '[.status.traffic[] | select(.percent == 100) | .revisionName][0] // empty' <<<"$described")"
+          latest_image="$(gcloud run revisions describe "$latest" --region "$REGION" --format='value(spec.containers[0].image)')"
+          if [ "$latest_image" != "$IMAGE" ] || [ "$serving" != "$latest" ]; then
+            echo "::error::La revisión que sirve ($serving) no es la de este commit ($latest, con $latest_image)"
+            exit 1
+          fi
+          for _ in 1 2 3 4 5; do
+            # La API, la web y las cuentas (la base de producción y sus migraciones al día).
+            if curl -fsS --max-time 30 "$URL/api/v1/version" > /dev/null \
+              && curl -fsS --max-time 30 "$URL/" > /dev/null \
+              && curl -fsS --max-time 30 "$URL/api/v1/health" | jq -e '.accounts.available == true' > /dev/null; then
+              echo "La API, la web y las cuentas responden en $URL"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$URL no responde"
+          exit 1
+
+      - name: Volver a la revisión anterior
+        if: failure() && steps.deploy.outputs.previous != ''
+        env:
+          PREVIOUS: ${{ steps.deploy.outputs.previous }}
+        run: gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-revisions "$PREVIOUS=100" --quiet

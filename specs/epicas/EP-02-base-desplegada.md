@@ -56,7 +56,7 @@ estado: pendiente
 - **Historia:** Como equipo y como jurado, queremos AgroSense publicado en una dirección pública, para que el despliegue no sea un riesgo al final y la demo corra contra lo de verdad.
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] La imagen de la app (`Dockerfile`: FastAPI sirve la API y el build de la web, con `data/published` adentro) corre en **Google Cloud Run**, en la región `us-east1` o la más cercana con Cloud SQL, en un proyecto de Google Cloud de un integrante con el crédito del evento (300 USD por 90 días, sin cobro automático al terminar)
+  - [ ] La imagen de la app (`Dockerfile`: FastAPI sirve la API y el build de la web, con `data/published` adentro) corre en **Google Cloud Run**, en la región `us-east1` (la de la capa gratuita de la base, HU-234), en un proyecto de Google Cloud de un integrante con el crédito del evento (300 USD por 90 días, sin cobro automático al terminar)
   - [ ] `/api/v1/version` responde en la dirección pública y dice la versión del dataset y de las reglas (R4)
   - [ ] La app usa la base de **producción** (HU-234), nunca la del equipo ni la de Docker; `AGROSENSE_DATABASE_URL` sale de **Secret Manager**, no de una variable escrita a mano ni del repositorio
   - [ ] Producción: `AGROSENSE_API_DOCS` apagado (sin `/api/docs` ni `/api/openapi.json`), logs en JSON (HU-177), y los endpoints de cálculo no escriben nada en la base (R9)
@@ -71,14 +71,15 @@ estado: pendiente
 - **Historia:** Como equipo, queremos una base de datos solo para la app publicada, separada de la del equipo, para que la demo y el jurado no vean datos de prueba y lo que se pruebe en desarrollo no toque producción.
 - **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] Una instancia de **Cloud SQL con PostgreSQL 17**, la más pequeña, en el mismo proyecto y la misma región que Cloud Run, con SSL obligatorio y copias de seguridad automáticas diarias
-  - [ ] Un usuario propio de la app, con permisos solo sobre su base; otro usuario para las migraciones (HU-235). Ninguna contraseña en el repositorio: van en Secret Manager y en los secretos del entorno `produccion` de GitHub
+  - [ ] **PostgreSQL 17** en una VM **e2-micro de Compute Engine** (capa gratuita; Cloud SQL no la tiene), en el mismo proyecto y la misma región que Cloud Run, sin puerto público (solo Cloud Run llega, por la red privada), con SSL obligatorio y clave `scram-sha-256`
+  - [ ] Copias de seguridad diarias **fuera de la VM**, en un bucket privado de Cloud Storage, por 7 días; y la VM protegida contra el borrado (`deletion_protection` y `prevent_destroy`), porque sus datos viven en su disco
+  - [ ] Un usuario propio de la app, con permisos solo sobre su base; otro usuario para las migraciones (HU-235). Ninguna contraseña en el repositorio: van en Secret Manager (GitHub entra con Workload Identity Federation, sin secretos)
   - [ ] Las migraciones de Alembic dejan el esquema igual que en `desarrollo`; la base empieza vacía de cuentas (sin copiar la del equipo)
   - [ ] La base del equipo (`AGROSENSE_DATABASE_URL` de hoy) sigue para el desarrollo y la demo interna, y la de Docker Compose para las pruebas, que nunca usan una base en la nube
   - [ ] Borrar una cuenta en producción borra todo lo suyo (R9), como en las pruebas
 - **Reglas que aplican:** R9
 - **Contrato que toca:** ninguno
-- **Notas:** Decidido por Felipe el 14 de noviembre de 2026: la demo y el enlace de la entrega van contra la base de producción. Asignada a Haider y David Carreño.
+- **Notas:** Decidido por Felipe el 14 de noviembre de 2026: la demo y el enlace de la entrega van contra la base de producción. Asignada a Haider y David Carreño. **15 de noviembre de 2026 (propuesta de David, pendiente de aprobar por Felipe):** la base de producción es PostgreSQL 17 en una VM e2-micro de Compute Engine (`infra/`, Terraform) y no Cloud SQL, porque Cloud SQL no tiene capa gratuita y la VM sí (us-east1). Sin puerto público: solo Cloud Run llega por la red privada, con SSL y clave. Copia diaria con `pg_dump`, 7 días, en la VM y en el bucket de copias. Un solo usuario (`agrosense`) para la app y las migraciones: separar el de migraciones queda pendiente. Los criterios de la base y de las copias se reescribieron para la VM (antes, uno solo: «una instancia de Cloud SQL con PostgreSQL 17, la más pequeña, con SSL obligatorio y copias automáticas diarias»), y el de las contraseñas ya no habla de secretos de GitHub (entra con Workload Identity Federation); también pendientes de Felipe.
 
 ### HU-235 · Desplegar al fusionar en `produccion`
 
@@ -86,7 +87,7 @@ estado: pendiente
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Un workflow de GitHub Actions que corre al fusionar en `produccion` (y a mano, con `workflow_dispatch`), de a una corrida a la vez: construye la imagen, la sube a **Artifact Registry** con la etiqueta del commit, aplica las migraciones a la base de producción (HU-234) y despliega en Cloud Run
-  - [ ] Antes de migrar, una copia de seguridad de la base de producción, cifrada como en HU-229; sin la clave no se migra. Nunca un dato de conexión ni una copia sin cifrar en los logs (el repositorio es público)
+  - [ ] Antes de migrar, una copia de seguridad de la base de producción en el bucket privado de copias (HU-234), cifrada en reposo por Google, por 7 días; si no sube completa, no se migra. Nunca un dato de conexión ni una copia en los logs (el repositorio es público)
   - [ ] Se conecta a Google Cloud con **Workload Identity Federation** (sin llaves JSON guardadas en GitHub), con una cuenta de servicio que solo puede subir imágenes y desplegar ese servicio
   - [ ] Después de desplegar, comprueba `/api/v1/version` en la dirección pública y que la versión sea la del commit; si falla, Cloud Run vuelve a la revisión anterior y el workflow termina en rojo
   - [ ] El entorno `produccion` de GitHub pide la aprobación de un responsable (Felipe o Haider) antes de desplegar
@@ -98,7 +99,7 @@ estado: pendiente
   - [ ] Prueba: con `json`, una línea de error trae `severity = ERROR` y `message`, y con el encabezado, el trace. Los secretos siguen redactados y una consulta de cálculo no escribe datos de la finca en los logs (R9)
 - **Reglas que aplican:** R4, R9
 - **Contrato que toca:** ninguno
-- **Notas:** Sigue el flujo de HU-229, que aplica las migraciones a la base del equipo al fusionar en `desarrollo`. Una migración tiene que ser compatible con el código anterior (agregar sí; renombrar o borrar, en dos pasos), porque la base se migra antes de que la nueva versión reemplace a la vieja. Los criterios de los logs se agregaron el 14 de noviembre de 2026 (Felipe, revisión del #89): el `request_id` de `common/logging.py` sigue igual; el trace es lo que Cloud Logging usa para agrupar. Asignada a Haider y David Carreño.
+- **Notas:** Sigue el flujo de HU-229, que aplica las migraciones a la base del equipo al fusionar en `desarrollo`. Una migración tiene que ser compatible con el código anterior (agregar sí; renombrar o borrar, en dos pasos), porque la base se migra antes de que la nueva versión reemplace a la vieja. Los criterios de los logs se agregaron el 14 de noviembre de 2026 (Felipe, revisión del #89): el `request_id` de `common/logging.py` sigue igual; el trace es lo que Cloud Logging usa para agrupar. Asignada a Haider y David Carreño. **15 de noviembre de 2026 (PR #181):** el workflow `deploy-produccion.yml` construye, sube, migra con copia en Cloud Storage, despliega, comprueba que sirve la revisión del commit y vuelve atrás si falla. La copia ya no se cifra con `gpg` como en HU-229 (el job de Cloud Run no tiene disco que dure): va al bucket privado, cifrada en reposo por Google y sin que el job la pueda leer ni borrar; pendiente de aprobar por Felipe con HU-234. **Falta:** los logs para Cloud Logging (`severity`, `message` y el trace no están en `common/logging.py`), y lo que configura el dueño del repositorio: el entorno `produccion` con aprobación y los checks obligatorios de `produccion` (`backend/README.md`).
 
 ### HU-236 · El dominio con HTTPS
 

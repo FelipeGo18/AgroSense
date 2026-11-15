@@ -1,0 +1,7 @@
+# El estado trae la clave de la base: nunca va a git.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+tfplan
