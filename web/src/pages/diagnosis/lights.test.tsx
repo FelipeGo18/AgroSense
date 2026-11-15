@@ -89,8 +89,12 @@ afterEach(() => {
 
 describe("Dos luces: reglas (HU-203)", () => {
   it("dice por qué difieren las luces con los pesos que la persona cambió", () => {
-    expect(whyDifferent(MINE, DEFAULTS)).toBe("Usted puso las heladas en 0 (AgroSense: 3) y la oferta en 0 (AgroSense: 2).");
-    expect(whyDifferent({ ...DEFAULTS, supply: 0 }, DEFAULTS)).toBe("Usted puso la oferta en 0 (AgroSense: 2).");
+    expect(whyDifferent({ ...DEFAULTS, frost: 0, soil: 5 }, DEFAULTS)).toBe(
+      "Usted puso las heladas en 0 (AgroSense: 3) y el suelo en 5 (AgroSense: 2).",
+    );
+    // La oferta y el mercado no cambian la luz (decisión 17): un peso suyo distinto no explica por qué difieren.
+    expect(whyDifferent(MINE, DEFAULTS)).toBe("Usted puso las heladas en 0 (AgroSense: 3).");
+    expect(whyDifferent({ ...DEFAULTS, supply: 0 }, DEFAULTS)).toBe("Las luces difieren porque usted usa sus propias prioridades.");
     expect(whyDifferent(MINE, null)).toBe("Las luces difieren porque usted usa sus propias prioridades.");
   });
 
@@ -137,7 +141,7 @@ describe("Dos luces en la pantalla (HU-203)", () => {
     expect(within(agrosense).getByText("Luz amarilla")).toBeInTheDocument();
     expect(within(agrosense).getByText("Lo que más limita:").parentElement).toHaveTextContent("Lo que más limita: Oferta");
 
-    expect(await screen.findByText("Usted puso las heladas en 0 (AgroSense: 3) y la oferta en 0 (AgroSense: 2).")).toBeInTheDocument();
+    expect(await screen.findByText("Usted puso las heladas en 0 (AgroSense: 3).")).toBeInTheDocument();
     expect(screen.getByText("Es información para decidir. La decisión es suya.")).toBeInTheDocument();
   });
 

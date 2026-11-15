@@ -4,7 +4,7 @@ import { StatusIcon, TONE_STYLE, type Tone } from "./StatusMark";
 /** Forma de cada señal en la respuesta de diagnóstico (specs/02-contratos.md). */
 export interface Signal {
   status: "available" | "insufficient_data" | "not_applicable";
-  level: "favorable" | "moderate" | "unfavorable" | null;
+  level?: "favorable" | "moderate" | "unfavorable" | null;
   indicators: string[];
   reasons: string[];
 }
@@ -24,14 +24,16 @@ const LEVEL: Record<NonNullable<Signal["level"]>, { tone: Tone; label: string }>
 };
 
 /**
- * R1: disponibilidad y nivel son campos distintos; sin datos nunca se pinta como riesgo. Con dato y sin nivel (la oferta
- * y el mercado, decisión 17) es «Sin calificar», en tono neutro: se muestra, pero no es un riesgo ni «No aplica».
+ * R1: disponibilidad y nivel son campos distintos; sin datos nunca se pinta como riesgo. Con dato y sin nivel
+ * (`available` con `level` nulo o ausente) la señal está «sin calificar» (decisión 17: la oferta y el mercado): ni
+ * riesgo, ni favorable, ni «No aplica».
  */
-export function signalTone(signal: Signal): { tone: Tone; label: string } {
+export function signalTone(signal: Pick<Signal, "status" | "level">): { tone: Tone; label: string } {
   if (signal.status === "insufficient_data") return { tone: "insufficient_data", label: "Datos insuficientes" };
-  if (signal.status === "available" && signal.level === null) return { tone: "not_applicable", label: "Sin calificar" };
-  if (signal.status === "not_applicable" || signal.level === null) return { tone: "not_applicable", label: "No aplica" };
-  return LEVEL[signal.level];
+  if (signal.status === "not_applicable") return { tone: "not_applicable", label: "No aplica" };
+  const level = signal.level ?? null;
+  if (level === null || !(level in LEVEL)) return { tone: "unrated", label: "Sin calificar" };
+  return LEVEL[level];
 }
 
 /** Íconos low-poly del tipo de señal: nube con gota, brote en el surco y costal. */

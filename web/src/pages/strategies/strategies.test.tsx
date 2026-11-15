@@ -20,6 +20,7 @@ import {
   type StrategyForm,
 } from "@/features/strategies/entry";
 import { formatRange, ndviPeriod, noShortfall, windowSpans } from "@/features/strategies/cycle";
+import { totalBasisNote } from "@/features/strategies/strategies";
 import { setLightMode } from "@/lib/lightMode";
 
 // Datos de ejemplo de las pruebas (R5): catálogo, lote, siembras y respuesta de muestra.
@@ -998,5 +999,14 @@ describe("Registrar el primer ciclo desde el lote (HU-215, HU-165)", () => {
     expect(await screen.findByText(/Cuando la siembre, desde el 5 de enero de 2099, regístrela en su lote/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Registrar esta siembra/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ir a mi lote" })).toHaveAttribute("href", PATHS.lot("a1"));
+  });
+});
+
+describe("El aviso junto al total (revisión del #179)", () => {
+  it("dice qué criterio no calificó y con cuáles se comparó", () => {
+    const scores = { water: 74, soil: 90, income: null, risk: 65 };
+    expect(totalBasisNote({ scores, total_score: 76 })).toBe("Sin ingreso: comparada solo por agua, suelo y riesgo.");
+    expect(totalBasisNote({ scores: { ...scores, income: 60 }, total_score: 66 })).toBeNull();
+    expect(totalBasisNote({ scores, total_score: null })).toBeNull();
   });
 });
