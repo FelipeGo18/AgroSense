@@ -49,17 +49,16 @@ def _same_family(rule: FilterRule, prev: CropInfo | None, cur: CropInfo | None) 
     return cur.family if wanted is None or cur.family in wanted else None
 
 
-def _return_gap(rule: FilterRule, history: list[CropInfo | None]) -> tuple[int, int] | None:
+def _return_gap(rule: FilterRule, history: list[CropInfo | None]) -> int | None:
     """Ciclos de otras familias desde la aparición anterior de `params["family"]` hasta el último ciclo de
     `history` (del más reciente al más antiguo; el primero es el ciclo evaluado). None si ese ciclo no tiene la
-    familia, si no hay aparición anterior o si los ciclos intermedios no son menos que `min_cycles`. Devuelve también
-    la posición de la aparición anterior en `history`, para saber si cae en los cultivos anteriores del terreno."""
+    familia, si no hay aparición anterior o si los ciclos intermedios no son menos que `min_cycles`."""
     family = rule.params["family"]
     if family not in _families(history[0], secondary=True):
         return None
     for gap, crop in enumerate(history[1:]):
         if family in _families(crop, secondary=True):
-            return (gap, gap + 1) if gap < rule.params["min_cycles"] else None
+            return gap if gap < rule.params["min_cycles"] else None
     return None
 
 
@@ -94,15 +93,14 @@ def rule_motives(
                 reason = rule.reason_template.format(family=family) if family else None
                 touches_before = i == 0 and bool(before)
             else:
-                found = _return_gap(rule, [*chain[i::-1], *before])
+                gap = _return_gap(rule, [*chain[i::-1], *before])
                 reason = None
                 touches_before = False
-                if found is not None:
-                    gap, position = found
+                if gap is not None:
                     reason = rule.reason_template.format(family=rule.params["family"], cycles=gap)
-                    # `position > i`: la aparición anterior está después de los i + 1 ciclos de la estrategia, o sea
-                    # en los cultivos anteriores del terreno.
-                    touches_before = position > i
+                    # La aparición anterior está en la posición gap + 1; `gap + 1 > i` significa que cae en los
+                    # cultivos anteriores del terreno.
+                    touches_before = gap + 1 > i
             if reason:
                 if assumed and touches_before:
                     reason = f"{reason}. {HISTORY_TEXT['current_rotation']}"

@@ -13,9 +13,17 @@ from pathlib import Path
 import pytest
 import yaml
 
+from backend.api.calc_models import RotationRequest
 from backend.engine.rotations.candidates import CropInfo
 from backend.engine.rotations.exclusions import current_issues, filter_strategies, phase1
-from backend.engine.rotations.history import HISTORY_BASES, HISTORY_TEXT, TerrainHistory, check_history, terrain_history
+from backend.engine.rotations.history import (
+    HISTORY_BASES,
+    HISTORY_TEXT,
+    MAX_HISTORY,
+    TerrainHistory,
+    check_history,
+    terrain_history,
+)
 from backend.engine.rotations.rules import FilterRule, rule_motives
 from backend.engine.rotations.soil_health import HealthRule, SoilCrop, soil_health
 
@@ -293,3 +301,10 @@ def test_family_return_del_ciclo_2_lleva_la_frase_solo_si_la_aparicion_anterior_
     assert _reglas(dentro) == [
         (3, "prueba_retorno_solanaceae", "La familia Solanaceae vuelve al terreno después de 1 ciclos de otras familias"),
     ]  # fmt: skip
+
+
+def test_max_history_coincide_con_el_limite_de_la_api():
+    """El motor no importa la API (R6): esta prueba evita que `MAX_HISTORY` y el `max_length` se desalineen."""
+    metadata = RotationRequest.model_fields["previous_crop_ids"].metadata
+    limits = [m.max_length for m in metadata if getattr(m, "max_length", None) is not None]
+    assert limits == [MAX_HISTORY]
