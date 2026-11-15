@@ -296,9 +296,7 @@ describe("Resultado del diagnóstico (HU-092)", () => {
     fakeApi(replies());
     open();
     expect(
-      await within(await screen.findByText("Suelo").then((h) => h.closest("li") as HTMLElement)).findByText(
-        "pH estimado de 5,2 a 5,8 (valor central 5,5), en el municipio.",
-      ),
+      await within(await screen.findByText("Suelo").then((h) => h.closest("li") as HTMLElement)).findByText("rango probable de 5,2 a 5,8"),
     ).toBeInTheDocument();
     expect(within(card("Suelo")).getByText(/Estimación de un mapa global de 250 m/)).toBeInTheDocument();
   });

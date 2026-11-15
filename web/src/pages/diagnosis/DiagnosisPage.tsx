@@ -33,7 +33,7 @@ import {
   type DiagnosisResponse,
   type Irrigation,
 } from "@/features/diagnosis/consult";
-import { harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { harvestNote, orderedSignals } from "@/features/diagnosis/signals";
 import { strategiesLink } from "@/features/diagnosis/lights";
 import { asksOtherWindow } from "@/features/diagnosis/windows";
 import { byId, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
@@ -577,7 +577,6 @@ function Summary({ data }: { data: DiagnosisResponse }) {
 function Details({ data }: { data: DiagnosisResponse }) {
   const version = useVersion();
   const crops = useCrops();
-  const soil = useMunicipalitySoil(data.signals?.soil ? data.request.municipality_id : null);
   // La lluvia de la ventana año por año, para la gráfica de la señal de agua (HU-093).
   const trends = useTrends(data.signals?.water ? data.request.municipality_id : null, data.request.crop_id, data.request.sowing_date);
   const cropName = crops.data?.find((c) => c.crop_id === data.request.crop_id)?.name_es ?? data.request.crop_id;
@@ -599,7 +598,7 @@ function Details({ data }: { data: DiagnosisResponse }) {
             irrigated={data.request.irrigated}
             weights={data.weights}
             supplySemester={data.window?.supply_semester}
-            soil={soil.data}
+            soilContext={{ municipalityId: data.request.municipality_id, lotId: data.request.lot_id }}
             version={version.data}
             waterChart={
               <WaterChart

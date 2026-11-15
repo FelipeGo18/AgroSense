@@ -270,6 +270,7 @@ export function StrategiesPage() {
             ) : (
               <StrategyResults
                 rotations={rotations}
+                soilContext={{ municipalityId: request.municipality_id, lotId: request.lot_id }}
                 weights={priorities}
                 cycles={sent.cycles}
                 names={names}
