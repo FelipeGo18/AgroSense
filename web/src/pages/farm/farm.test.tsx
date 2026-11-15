@@ -437,6 +437,15 @@ describe("El lote (HU-164)", () => {
     expect(screen.getByText("Ilustración de su lote, no una imagen de él.")).toBeInTheDocument();
   });
 
+  it("en modo ligero el lote vivo se ve quieto: sin la vida de la finca, con el perro dormido (HU-158, HU-187)", async () => {
+    setLightMode(true);
+    fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: DETAIL } });
+    const { container } = open(PATHS.lot("a1"));
+    expect(await screen.findByRole("img", { name: /Ilustración de su lote/ })).toBeInTheDocument();
+    expect(container.querySelectorAll("animateMotion, animate, animateTransform")).toHaveLength(0);
+    expect(container.querySelector(".live-sway")).toBeNull();
+  });
+
   it("un lote ajeno o que no existe lo dice", async () => {
     fakeApi({
       ...BASE,

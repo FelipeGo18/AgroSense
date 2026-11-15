@@ -1,5 +1,8 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap } from "@/lib/motion";
 import { allocateCells, drawStage, timeOfDay, DRAWN_CROPS, type LiveSeason } from "./cells";
+import { FarmLifeSky, FarmLifeWorld, type FarmAnchors } from "./FarmLife";
 
 /** Las piezas que exporta el diseño (`design/finca/exportar_web.py`): se descargan solo al abrir el lote vivo. */
 interface DioramaBase {
@@ -12,7 +15,15 @@ interface DioramaBase {
   free: string;
   layouts: Record<
     string,
-    { cells: { i: number; j: number; x: number; y: number }[]; ground: string; back: string; front: string; top: number }
+    {
+      cells: { i: number; j: number; x: number; y: number }[];
+      ground: string;
+      back: string;
+      front: string;
+      dog: string;
+      top: number;
+      anchors: FarmAnchors;
+    }
   >;
 }
 type CropStages = Record<string, string>;
@@ -49,6 +60,7 @@ export function LiveLot({
   now?: Date;
 }) {
   const clip = useId();
+  const root = useRef<SVGSVGElement>(null);
   const [base, setBase] = useState<DioramaBase | null>(null);
   const [crops, setCrops] = useState<Record<string, CropStages>>({});
   const drawn = [...new Set(seasons.map((s) => s.cropId).filter(isDrawn))].sort();
@@ -72,6 +84,29 @@ export function LiveLot({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` resume la lista de cultivos del lote
   }, [key]);
 
+  // Con la pestaña oculta, todo se queda quieto: SMIL se pausa y el CSS también (`farm-paused`).
+  useEffect(() => {
+    const svg = root.current;
+    if (!svg || !animated) return;
+    const sync = () => {
+      const hidden = document.visibilityState === "hidden";
+      if (hidden) svg.pauseAnimations?.();
+      else svg.unpauseAnimations?.();
+      svg.classList.toggle("farm-paused", hidden);
+    };
+    document.addEventListener("visibilitychange", sync);
+    return () => document.removeEventListener("visibilitychange", sync);
+  }, [animated, base]);
+
+  // 10. Al llegar a su finca, las camas suben desde el suelo una tras otra (solo con movimiento).
+  useMotionEffect(
+    () => {
+      if (!animated || !base) return;
+      gsap.from("[data-bed]", { y: 36, opacity: 0, duration: 0.6, ease: "back.out(1.6)", stagger: 0.12, clearProps: "opacity,transform" });
+    },
+    { scope: root, dependencies: [animated, Boolean(base)] },
+  );
+
   if (!base) {
     return (
       <div role="status" className="flex size-full items-center justify-center bg-paleta-niebla text-texto-secundario">
@@ -85,6 +120,16 @@ export function LiveLot({
   const place = `translate(${base.lot.x} ${base.lot.y}) scale(${base.lot.scale})`;
   // Los cubos se dibujan de atrás hacia adelante, como en el diseño.
   const order = shape.cells.map((cell, index) => ({ ...cell, index })).sort((a, b) => a.i + a.j - (b.i + b.j) || a.i - b.i);
+  const xs = shape.cells.map((cell) => cell.x);
+  const minX = Math.min(...xs);
+  const spanX = Math.max(Math.max(...xs) - minX, 1);
+  // Los cubos con cultivos en flor (etapa media o final), donde zumban las abejas.
+  const flowering = shape.cells
+    .filter((_, index) => {
+      const stage = cells[index].season?.stage;
+      return stage === "mid" || stage === "late";
+    })
+    .map((cell) => [cell.x, cell.y] as [number, number]);
   // Un rótulo por siembra, sobre su primer cubo.
   const labelled = new Set<string>();
   const labels: { x: number; y: number; title: string; sub: string }[] = [];
@@ -104,6 +149,7 @@ export function LiveLot({
 
   return (
     <svg
+      ref={root}
       viewBox={`0 0 ${base.width} ${base.height}`}
       preserveAspectRatio="xMidYMid slice"
       className="size-full"
@@ -111,6 +157,7 @@ export function LiveLot({
       aria-label={`Ilustración de su lote: ${labels.map((l) => `${l.title}, ${l.sub}`).join("; ")}`}
     >
       <Svg markup={base.sky[time]} />
+      {animated && <FarmLifeSky width={base.width} height={base.height} time={time} />}
       <defs>
         <clipPath id={clip}>
           <rect y={base.horizon} width={base.width} height={base.height} />
@@ -126,16 +173,26 @@ export function LiveLot({
           const markup = season && isDrawn(season.cropId) ? crops[season.cropId]?.[String(drawStage(season.stage))] : base.free;
           return (
             <g key={index} transform={`translate(${x} ${y})`}>
-              <Svg
-                markup={markup ?? base.free}
-                className={animated && season ? "live-sway" : undefined}
-                style={{ animationDelay: `${index * -0.7}s` }}
-              />
+              <g data-bed>
+                {/* 5. La ola de viento cruza las camas de izquierda a derecha: cada cama se inclina un poco después. */}
+                <Svg
+                  markup={markup ?? base.free}
+                  className={animated && season ? "live-sway" : undefined}
+                  style={{ animationDelay: `${((x - minX) / spanX) * 1.2}s` }}
+                />
+              </g>
             </g>
           );
         })}
       </g>
       <Svg markup={shape.front} transform={place} />
+      <g transform={place}>
+        {animated ? (
+          <FarmLifeWorld anchors={shape.anchors} time={time} dogMarkup={shape.dog} flowering={flowering} />
+        ) : (
+          <Svg markup={shape.dog} transform={`translate(${shape.anchors.dog[0]} ${shape.anchors.dog[1]})`} />
+        )}
+      </g>
       {base.tint[time] && <Svg markup={base.tint[time]} />}
       {labels.map((label) => (
         <g key={`${label.title}-${label.x}`} transform={`translate(${label.x} ${label.y})`} aria-hidden="true">

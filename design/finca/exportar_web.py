@@ -29,7 +29,7 @@ from sheet import ridges  # noqa: E402
 OUT = DIR.parent.parent / "web" / "src" / "components" / "farm" / "diorama"
 W, H = 960, 600
 K = W / am.W
-LOT_K = 0.62 * W / 620  # como el lote vivo de finca.py en el celular (lot_k = 0.62): se ve la finca entera, con la casa
+LOT_K = 0.5 * W / 620  # la finca entera cabe en la vista, de la huerta a la cerca del frente
 CX, CY = W * 0.55, H * 0.62
 
 # Los cultivos del catálogo de AgroSense, con su dibujo del diseño (cultivos.py).
@@ -79,6 +79,32 @@ def sky(time):
     return join(out), hy + rh
 
 
+def farm_anchors(farm):
+    """Dónde queda cada cosa de la finca, en las coordenadas del lote, para las animaciones de la web: el humo sale de
+    la chimenea, los faroles y la ventana se encienden de noche, el gato está en el porche, el colibrí en la huerta, el
+    pájaro en la cerca y el perro corre alrededor del lote. Mismas cuentas que granja.py."""
+    pt = lambda a, b, z=0.0: [round(v, 1) for v in farm.pt(a, b, z)]  # noqa: E731
+    a0h, a1h = farm.a0 - 2.35, farm.a0 - 1.25  # la casa
+    b0h, b1h = farm.GATE[0] - 0.5, farm.GATE[1] + 0.2
+    bm, height, steps, dz = (b0h + b1h) / 2, 50, 4, 11
+    ca, cb = a0h + 0.25, bm - 0.36
+    a0, a1, b0, b1 = farm.a0, farm.a1, farm.b0, farm.b1
+    out = 0.55  # el camino del perro, por fuera de la cerca
+    return {
+        "chimney": pt(ca + 0.12, cb + 0.12, height + steps * dz + 30),
+        "window": pt(a1h + 0.002, b0h + 0.24, 31),
+        "porch": pt(a1h + 0.2, bm + 0.18, 6),
+        "garden": pt((a0 - 2.3 + a0 - 1.4) / 2, farm.GATE[1] + 0.97, 14),
+        "dog": [round(v, 1) for v in farm.dog_spot()],
+        "fence": pt(a1, (b0 + b1) / 2, 24),
+        "lanterns": [pt(a, b, 42) for a, b in ((a0, b0), (a1, b0), (a1, b1), (a0, b1))],
+        "path": [pt(a, b) for a, b in ((a0 - out, b1 + out), (a1 + out, b1 + out), (a1 + out, b0 - out), (a0 - out, b0 - out))],
+        "hens": [pt(a0 - 0.55, farm.GATE[1] + 0.6), pt(a0 - 0.35, farm.GATE[1] + 0.95), pt(a0 - 0.8, farm.GATE[1] + 1.15)],
+        "meadow": [pt(a0 - 0.6, b0 - 1.7), pt(a0 - 1.5, b0 - 0.9)],  # detrás del lote, entre la casa y el árbol
+        "field": [pt(a0, b0), pt(a1, b1)],
+    }
+
+
 def tint(time):
     if time == "noche":
         return f'<rect width="{W}" height="{H}" fill="#0B1A3A" fill-opacity="0.28"/>'
@@ -98,13 +124,16 @@ def main():
         for name, cells in LAYOUTS.items():
             layout = [(i, j, "x", None, 0) for i, j in cells]
             farm = granja.Farm(layout)
-            dog_x, dog_y = farm.dog_spot()
+            anchors = farm_anchors(farm)
             data["layouts"][name] = {
                 "cells": [{"i": i, "j": j, "x": round(x, 2), "y": round(y, 2)} for (i, j) in cells for x, y in [escena.cube_pos(layout, i, j)]],
                 "ground": join(farm.ground()),
                 "back": join(farm.back()),
-                "front": join(farm.front() + escena.dog(dog_x, dog_y, 1.25)),
+                "front": join(farm.front()),
+                # El perro va aparte, centrado en su sitio: la web lo esconde cuando sale a correr detrás de la gallina.
+                "dog": join(escena.dog(0, 0, 1.25)),
                 "top": round(-cv.B * 1.2, 2),  # dónde va el rótulo sobre el centro del cubo
+                "anchors": anchors,
             }
         data["free"] = join(escena.cell(None, 0))
         crops = {c[0]: c for c in cv.CROPS}
