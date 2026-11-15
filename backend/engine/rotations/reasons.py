@@ -1,4 +1,4 @@
-"""Las razones del orden de una estrategia sugerida (HU-083; specs/01-reglas.md, «Estrategias de rotación»).
+"""Las razones del orden de una estrategia (HU-083; specs/01-reglas.md, «Estrategias de rotación»).
 
 Plantillas fijas. Cada razón cita un criterio, una señal o una regla que el motor ya evaluó y con el mismo número que
 muestra la respuesta (R5): ninguna dice cuánto va a mejorar el suelo ni cuánto se va a cosechar (decisión 4). En orden:
@@ -13,8 +13,12 @@ muestra la respuesta (R5): ninguna dice cuánto va a mejorar el suelo ni cuánto
 4. **El factor que más limita:** la señal y el ciclo de `risk`, con su calificación.
 
 Si con eso quedan menos de dos, se agrega que ninguna regla de rotación del catálogo la descarta, que es cierto de toda
-estrategia sugerida (pasó el filtro de HU-081). Una razón cuyo dato falta no se escribe: no se rellena (R1). Así
-salen siempre de 2 a 4 razones, como pide el contrato. Python puro (R6).
+estrategia sugerida (pasó el filtro de HU-081). La rotación actual (decisión 14) empieza por «Es la rotación que usted
+viene haciendo» y nunca lleva esa frase: no se descarta aunque viole una regla, y eso va en `issues`. Una razón cuyo
+dato falta no se escribe: no se rellena (R1). Así salen siempre de 2 a 4 razones, como pide el contrato.
+
+Las calificaciones se dicen como calificaciones («califica 71 de 100»), y en `risk` se aclara que más alto es menos
+riesgo, para que no se lean al revés (revisión de Haider, PR #150). Python puro (R6).
 """
 
 from collections.abc import Mapping, Sequence
@@ -43,6 +47,10 @@ SOIL_CRITERION_NAMES = {
 }
 LEVEL_NAMES = {"favorable": "favorable", "moderate": "moderado", "unfavorable": "desfavorable"}
 PASSES_RULES = "Ninguna regla de rotación del catálogo la descarta"
+CURRENT_REASON = "Es la rotación que usted viene haciendo: las demás se comparan contra ella"
+SUGGESTED, CURRENT = "suggested", "current"
+# En `risk` la calificación es el factor que más limita: más alta es menos riesgo, y se dice para que no se lea al revés.
+RISK_SCALE = " (en riesgo, más alto es menos riesgo)"
 NO_TOTAL_WEIGHTS = "Los criterios que califican tienen prioridad 0: no tiene total y va al final del orden"
 NO_TOTAL_DATA = "Ningún criterio califica con los datos que hay: no tiene total y va al final del orden"
 
@@ -61,7 +69,11 @@ def _top_criterion(scores: StrategyScores, priorities: Mapping[str, float | None
     weight = weight_of(priorities, name)
     weight_text = f"{weight:g}".replace(".", ",")
     score = scores.scores[name]
-    return f"Lo que más suma a su total es el criterio de {CRITERION_NAMES[name]}: {score} de 100, con prioridad {weight_text} de 5"
+    scale = RISK_SCALE if name == "risk" else ""
+    return (
+        f"Lo que más suma a su total es el criterio de {CRITERION_NAMES[name]}, que califica {score} de 100{scale}, "
+        f"con prioridad {weight_text} de 5"
+    )
 
 
 def _versus_current(vs_current: Mapping[str, int | None] | None) -> str | None:
@@ -70,18 +82,23 @@ def _versus_current(vs_current: Mapping[str, int | None] | None) -> str | None:
     rated = [(diff, name) for name in CRITERIA if (diff := vs_current.get(name)) is not None]
     if not rated:
         return None
+    # Es una comparación de calificaciones, no un pronóstico (decisión 4): «califica N puntos más», nunca «sale mejor».
     best = max(diff for diff, _ in rated)
     if best > 0:
         name = next(name for diff, name in rated if diff == best)
-        change = f"sale {best} {'punto' if best == 1 else 'puntos'} mejor"
+        change = f"{best} {'punto' if best == 1 else 'puntos'} más"
     else:
         worst = min(diff for diff, _ in rated)
         if worst == 0:
             names = ", ".join(CRITERION_NAMES[name] for _, name in rated)
-            return f"Frente a su rotación actual queda igual en los criterios que se pueden comparar ({names})"
+            return f"Sus criterios que se pueden comparar ({names}) califican igual que los de su rotación actual"
         name = next(name for diff, name in rated if diff == worst)
-        change = f"sale {-worst} {'punto' if worst == -1 else 'puntos'} peor"
-    return f"Frente a su rotación actual {change} en {CRITERION_NAMES[name]}: ese criterio es {CRITERION_RULES[name]}"
+        change = f"{-worst} {'punto' if worst == -1 else 'puntos'} menos"
+    scale = RISK_SCALE if name == "risk" else ""
+    return (
+        f"Su criterio de {CRITERION_NAMES[name]} califica {change} que el de su rotación actual{scale}: "
+        f"ese criterio es {CRITERION_RULES[name]}"
+    )
 
 
 def _soil(soil_health: Mapping[str, Criterion]) -> str | None:
@@ -102,7 +119,8 @@ def _limiting(scores: StrategyScores, cycles: Sequence[CycleScores], signal_weig
     if not lowest:
         raise ValueError(f"Ningún ciclo de {scores.crop_ids} tiene el riesgo {risk}: los ciclos no son los de sus criterios")
     number, (signal, _) = lowest[0]
-    return f"El factor que más limita entre sus ciclos es {SIGNAL_NAMES_ES.get(signal, signal)} del ciclo {number}: {risk} de 100"
+    name = SIGNAL_NAMES_ES.get(signal, signal)
+    return f"El factor que más limita entre sus ciclos es {name} del ciclo {number}, que califica {risk} de 100 (100 es favorable)"
 
 
 def strategy_reasons(
@@ -112,12 +130,22 @@ def strategy_reasons(
     soil_health: Mapping[str, Criterion],
     signal_weights: Mapping[str, float | None],
     vs_current: Mapping[str, int | None] | None = None,
+    *,
+    kind: str = SUGGESTED,
 ) -> tuple[str, ...]:
-    """Las razones de una estrategia sugerida, de 2 a 4, con los mismos `cycles`, `soil_health` y pesos de las señales
-    con que se calcularon sus `scores` (HU-082) y, si hay rotación actual, su `vs_current` (HU-223)."""
+    """Las razones de una estrategia, de 2 a 4, con los mismos `cycles`, `soil_health` y pesos de las señales con que se
+    calcularon sus `scores` (HU-082) y, en una sugerida con rotación actual, su `vs_current` (HU-223).
+
+    `kind = current` es la rotación actual (decisión 14): empieza por `CURRENT_REASON`, no se compara con ella misma y
+    nunca dice `PASSES_RULES`, que en ella puede ser falso (nunca se descarta: lo que viola va en `issues`)."""
+    if kind not in (SUGGESTED, CURRENT):
+        raise ValueError(f"kind desconocido: {kind!r}")
+    if kind == CURRENT and vs_current is not None:
+        raise ValueError("La rotación actual no tiene vs_current: es la referencia")
     reasons = [
         text
         for text in (
+            CURRENT_REASON if kind == CURRENT else None,
             _top_criterion(scores, priorities),
             _versus_current(vs_current),
             _soil(soil_health),
@@ -125,6 +153,6 @@ def strategy_reasons(
         )
         if text is not None
     ]
-    if len(reasons) < 2:
+    if len(reasons) < 2 and kind == SUGGESTED:
         reasons.append(PASSES_RULES)
     return tuple(reasons[:MAX_REASONS])
