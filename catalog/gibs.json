@@ -1,0 +1,12 @@
+{
+  "source_id": "nasa_gibs",
+  "name": "NASA GIBS · MODIS Terra",
+  "institution": "NASA ESDIS / EOSDIS",
+  "url": "https://nasa-gibs.github.io/gibs-api-docs/",
+  "downloaded_at": null,
+  "period_covered": "Color real desde 2000-02-24; NDVI móvil de 8 días desde 2025-02-12. El final disponible se consulta en GetCapabilities.",
+  "coverage": "Global, EPSG:3857 entre ±85,051129°; puede haber nubes o zonas sin observación.",
+  "license": "NASA promueve el acceso y uso abierto de estas imágenes; solicita reconocimiento de GIBS, NASA ESDIS. https://nasa-gibs.github.io/gibs-api-docs/#data-use-guidance-and-acknowledgements",
+  "citation": "Reconocemos el uso de imágenes proporcionadas por NASA Global Imagery Browse Services (GIBS), parte del sistema de datos e información de ciencias de la Tierra de la NASA (ESDIS).",
+  "notes": "HU-211. Instrumento MODIS, misión Terra. Capas MODIS_Terra_CorrectedReflectance_TrueColor (JPEG) y MODIS_Terra_NDVI_8Day (PNG): resolución nominal de imagen 250 m, matriz Web Mercator GoogleMapsCompatible_Level9 (unos 306 m/píxel en el ecuador). WMTS público sin cuenta ni clave. Verificado en GetCapabilities el 15 de noviembre de 2026. Acceso directo desde el navegador: no se descarga al dataset ni se usa en el motor. NDVI es un compuesto móvil de 8 días, no una medición del lote. Las fechas y los intervalos disponibles se leen del servicio."
+}

@@ -6,6 +6,7 @@ Lo de la NASA se comprueba sobre el dataset publicado de verdad (`data/published
 import json
 from pathlib import Path
 
+import polars as pl
 import pytest
 from fastapi.testclient import TestClient
 
@@ -15,9 +16,9 @@ from backend.dataset import load
 
 PUBLISHED = Path(__file__).resolve().parents[1] / "data" / "published"
 CONTRACT_SOURCE_FIELDS = {"source_id", "name", "institution", "url", "coverage", "license"}
-# Los productos de la NASA que ya tienen adaptador y entran al núcleo (decisión 12). MODIS NDVI desde HU-208; SMAP y GIBS
-# se suman con su HU (HU-210 y HU-211), que publica su entrada en `sources`.
-NASA_IN_USE = ("nasa_power", "nasadem", "imerg", "modis_ndvi")
+# Los productos de la NASA que ya tienen adaptador y entran al núcleo (decisión 12). MODIS NDVI desde HU-208 y GIBS desde
+# HU-211; SMAP se suma con HU-210, que publica su entrada en `sources`.
+NASA_IN_USE = ("nasa_power", "nasadem", "imerg", "modis_ndvi", "nasa_gibs")
 
 
 def test_version_con_dataset_responde_lo_que_pide_el_contrato(dataset):

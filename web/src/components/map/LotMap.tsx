@@ -6,6 +6,8 @@ import type { Boundary, LotPolygon } from "@/features/farm/geo";
 import { useAnimated } from "@/hooks/useLightMode";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { DrawMode, Editing, MapControls, MapLot } from "./MapCanvas";
+import { GibsPanel } from "./GibsPanel";
+import { useGibs } from "./useGibs";
 
 // MapLibre pesa: se descarga solo en las páginas que muestran el mapa.
 const MapCanvas = lazy(() => import("./MapCanvas"));
@@ -45,6 +47,7 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
   const wide = useMediaQuery("(min-width: 768px)");
   const [failed, setFailed] = useState(false);
   const [controls, setControls] = useState<MapControls | null>(null);
+  const gibs = useGibs();
   // Lo que se dibujó antes de cada cambio, para «Deshacer».
   const [history, setHistory] = useState<(LotPolygon | null)[]>([]);
 
@@ -86,6 +89,7 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
         }
       >
         <MapCanvas
+          gibs={gibs}
           animated={animated}
           boundary={boundary}
           focus={focus}
@@ -101,6 +105,11 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
           onFail={() => setFailed(true)}
         />
       </Suspense>
+      {controls && (
+        <div className="absolute top-[104px] right-[64px] z-20 md:right-[80px]">
+          <GibsPanel gibs={gibs} />
+        </div>
+      )}
       {controls && (
         <div className="absolute top-[104px] right-3 z-10 flex flex-col gap-2 md:right-6">
           <MapButton label={t("components.map.LotMap.zoomIn")} onClick={controls.zoomIn}>
