@@ -16,6 +16,7 @@ from backend.api import rotations as rotations_module
 from backend.api.main import app
 from backend.api.soil_signals import LOT_SOIL_LIMITATION
 from backend.dataset import SOIL_COLUMNS
+from backend.engine.diagnosis import IRRIGATION_UNKNOWN
 from backend.engine.rotations.current import NO_CURRENT_LIMITATION
 from common.grid import cell_id
 from common.region import region_today
@@ -185,6 +186,25 @@ def test_con_un_lote_ajeno_o_inexistente_responde_404(api, client):
     for otro in (lot_id, "00000000-0000-4000-8000-000000000001"):
         respuesta = client.post("/api/v1/rotations", json=cuerpo(lot_id=otro, cycles=2))
         assert respuesta.status_code == 404, respuesta.json()
+
+
+def test_con_lote_el_riego_es_el_del_lote_y_sin_dato_cada_ciclo_lo_dice(api, client):
+    """HU-164: con `lot_id`, el riego es el del lote, aunque la consulta diga otro; nulo se evalúa como sin riego y la
+    limitación lo dice en el diagnóstico de cada ciclo. Se prueba en los dos sentidos: si mandara la consulta, el lote
+    con riego consultado sin dato traería la limitación, y el lote sin dato consultado con riego no la traería."""
+    register(client, "rosa.rotacion")
+    con_riego = create_lot(client, irrigated=True)
+    sin_dato = create_lot(client, name="El Bajo")
+
+    def ciclos(respuesta: dict) -> list[dict]:
+        evaluados = [c for s in respuesta["strategies"] for c in s["cycles"] if c["diagnosis"] is not None]
+        assert evaluados
+        return evaluados
+
+    regado = consultar(client, lot_id=con_riego, cycles=2)
+    assert not any(IRRIGATION_UNKNOWN in c["diagnosis"]["limitations"] for c in ciclos(regado))
+    desconocido = consultar(client, lot_id=sin_dato, cycles=2, irrigated=True)
+    assert all(IRRIGATION_UNKNOWN in c["diagnosis"]["limitations"] for c in ciclos(desconocido))
 
 
 @pytest.fixture
