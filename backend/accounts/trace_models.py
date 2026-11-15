@@ -37,6 +37,9 @@ class SupportTicket(Base):
     status: Mapped[str] = mapped_column(String(16), default="open", server_default="open")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # La respuesta del responsable y cuándo se dio (HU-163; migración 1.5). Nula mientras no se conteste.
+    reply: Mapped[str | None] = mapped_column(Text)
+    replied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class ActivityEvent(Base):

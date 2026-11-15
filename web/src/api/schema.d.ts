@@ -292,13 +292,14 @@ export interface paths {
         };
         /**
          * List Tickets
-         * @description Los mensajes del usuario, del más reciente al más antiguo. Nunca los de otro usuario.
+         * @description Los mensajes del usuario, del más reciente al más antiguo, hasta los 50 últimos. Nunca los de otro usuario.
          */
         get: operations["list_tickets_api_v1_me_tickets_get"];
         put?: never;
         /**
          * Open Ticket
-         * @description Abre un mensaje al responsable. Si nombra un lote, tiene que ser uno suyo y sin borrar (404 si no).
+         * @description Abre un mensaje al responsable. Si nombra un lote, tiene que ser uno suyo y sin borrar (404 si no). Hasta
+         *     `DAILY_LIMIT` por día (429 después).
          */
         post: operations["open_ticket_api_v1_me_tickets_post"];
         delete?: never;
@@ -1700,6 +1701,10 @@ export interface components {
             created_at: string;
             /** Closed At */
             closed_at: string | null;
+            /** Reply */
+            reply: string | null;
+            /** Replied At */
+            replied_at: string | null;
         };
         /** TrendsRequestEcho */
         TrendsRequestEcho: {
@@ -2739,6 +2744,15 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

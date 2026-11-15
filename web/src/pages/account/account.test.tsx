@@ -439,6 +439,8 @@ describe("Escribir al responsable (HU-163)", () => {
     status: "open",
     created_at: "2026-11-14T10:00:00Z",
     closed_at: null,
+    reply: null,
+    replied_at: null,
   };
   const LOTS = [
     {
@@ -482,6 +484,43 @@ describe("Escribir al responsable (HU-163)", () => {
     expect(await screen.findByText("Recibimos su mensaje. Abajo puede ver cómo va.")).toBeInTheDocument();
     const post = calls.find((call) => call.key === "POST /api/v1/me/tickets");
     expect(post?.body).toEqual({ message: "¿Qué guardan de mi lote?", lot_id: "a1" });
+  });
+
+  it("muestra la respuesta del responsable y dice en cuánto tiempo se contesta", async () => {
+    const answered = {
+      ...TICKET,
+      status: "closed",
+      closed_at: "2026-11-15T10:00:00Z",
+      reply: "Guardamos su usuario, su nombre y sus lotes.",
+      replied_at: "2026-11-15T10:00:00Z",
+    };
+    fakeApi({ ...ME, "GET /api/v1/lots": { status: 200, body: LOTS }, "GET /api/v1/me/tickets": { status: 200, body: [answered] } });
+    open(PATHS.messages);
+    expect(await screen.findByText(/máximo 10 días hábiles/)).toBeInTheDocument();
+    const sent = within(await screen.findByRole("region", { name: "Mis mensajes" }));
+    expect(await sent.findByText("Guardamos su usuario, su nombre y sus lotes.")).toBeInTheDocument();
+    expect(sent.getByText(/Respondido · El Alto/)).toBeInTheDocument();
+  });
+
+  it("si ya escribió 5 mensajes hoy, lo dice", async () => {
+    fakeApi({
+      ...ME,
+      "GET /api/v1/lots": { status: 200, body: [] },
+      "GET /api/v1/me/tickets": { status: 200, body: [] },
+      "POST /api/v1/me/tickets": {
+        status: 429,
+        body: {
+          error: {
+            code: "too_many_requests",
+            message: "Ya nos escribió 5 mensajes hoy. Espere nuestra respuesta o vuelva a escribir mañana.",
+          },
+        },
+      },
+    });
+    open(PATHS.messages);
+    await userEvent.type(await screen.findByLabelText("Su mensaje"), "Otro más");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    expect(await screen.findByText(/Ya nos escribió 5 mensajes hoy/)).toBeInTheDocument();
   });
 
   it("la política nombra el canal de contacto", async () => {

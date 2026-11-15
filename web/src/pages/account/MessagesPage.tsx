@@ -10,7 +10,7 @@ import { MESSAGE_MAX, useOpenTicket, useTickets, type Ticket } from "@/features/
 import { useLots } from "@/features/farm/lots";
 import { LINK, RequireSession } from "./AccountShell";
 
-const STATUS: Record<string, string> = { open: "Recibido", in_progress: "En revisión", closed: "Resuelto" };
+const STATUS: Record<string, string> = { open: "Recibido", in_progress: "En revisión", closed: "Respondido" };
 const DATE = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
 
 function message(error: Error) {
@@ -64,6 +64,10 @@ function Messages() {
         <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">Mi cuenta</p>
         <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Escribir al responsable</h1>
         <p>Para preguntar qué datos suyos guardamos, pedir que los corrijamos o reportar un problema.</p>
+        <p className="text-[15px] text-texto-secundario">
+          Le respondemos aquí mismo, en «Mis mensajes», en máximo 10 días hábiles si es una consulta y 15 si es un reclamo (Ley 1581 de
+          2012).
+        </p>
       </header>
       {open.error && <Alert>{message(open.error)}</Alert>}
       {sent && (
@@ -143,6 +147,12 @@ function TicketRow({ ticket, lot }: { ticket: Ticket; lot?: string }) {
         {lot ? ` · ${lot}` : ""}
       </p>
       <p className="break-words whitespace-pre-line">{ticket.message}</p>
+      {ticket.reply && (
+        <div className="mt-1 rounded-sm bg-paleta-niebla px-3 py-2">
+          <p className="text-[14px] font-bold">Respuesta{ticket.replied_at ? ` · ${DATE.format(new Date(ticket.replied_at))}` : ""}</p>
+          <p className="break-words whitespace-pre-line">{ticket.reply}</p>
+        </div>
+      )}
     </li>
   );
 }

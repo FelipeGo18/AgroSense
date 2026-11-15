@@ -1,8 +1,13 @@
 """Escribirle al responsable de los datos: `POST` y `GET /api/v1/me/tickets` (HU-163, HU-170; R9)."""
 
-from sqlalchemy import select
+import uuid
+from datetime import UTC, datetime, timedelta
+
+import pytest
+from sqlalchemy import func, select
 from structlog.testing import capture_logs
 
+from backend.accounts import tickets
 from backend.accounts.trace_models import ActivityEvent, SupportTicket
 
 ROSA = {"username": "rosa.samaca", "password": "papa-criolla-2026", "display_name": "Rosa", "consent_version": 3, "consent_accepted": True}
@@ -61,3 +66,45 @@ def test_sin_sesion_no_se_escribe_ni_se_lee(client, dataset, db):
     assert client.post("/api/v1/me/tickets", json={"message": MESSAGE}).status_code == 401
     assert client.get("/api/v1/me/tickets").status_code == 401
     assert db.scalar(select(SupportTicket)) is None
+
+
+def test_hasta_5_mensajes_por_dia(client, dataset, db):
+    client.post("/api/v1/auth/register", json=ROSA)
+    for n in range(5):
+        assert client.post("/api/v1/me/tickets", json={"message": f"Mensaje {n}"}).status_code == 201
+    response = client.post("/api/v1/me/tickets", json={"message": "El sexto"})
+    assert response.status_code == 429 and "mañana" in response.json()["error"]["message"]
+    assert db.scalar(select(func.count()).select_from(SupportTicket)) == 5
+
+
+def test_la_lista_trae_los_50_mas_recientes(client, dataset, db):
+    client.post("/api/v1/auth/register", json=ROSA)
+    user_id = db.scalar(select(ActivityEvent.actor_user_id))
+    for n in range(55):
+        db.add(SupportTicket(user_id=user_id, message=f"Mensaje {n}", created_at=datetime.now(UTC) - timedelta(days=60 - n)))
+    db.commit()
+    listed = client.get("/api/v1/me/tickets").json()
+    assert len(listed) == 50 and listed[0]["message"] == "Mensaje 54"
+
+
+def test_el_responsable_contesta_y_la_respuesta_se_ve_en_mis_mensajes(client, dataset, db):
+    client.post("/api/v1/auth/register", json=ROSA)
+    ticket_id = client.post("/api/v1/me/tickets", json={"message": MESSAGE}).json()["ticket_id"]
+    assert [str(t.ticket_id) for t in tickets.open_tickets(db)] == [ticket_id]
+    tickets.answer(db, uuid.UUID(ticket_id), "  Guardamos su usuario, su nombre y sus lotes.  ")
+    db.commit()
+    shown = client.get("/api/v1/me/tickets").json()[0]
+    assert (shown["reply"], shown["status"]) == ("Guardamos su usuario, su nombre y sus lotes.", "closed")
+    assert shown["replied_at"] and shown["closed_at"]
+    assert tickets.open_tickets(db) == []
+    event = db.scalar(select(ActivityEvent).where(ActivityEvent.action == "admin.ticket_updated"))
+    assert (event.actor_role, str(event.object_id), event.details) == ("admin", ticket_id, None)
+
+
+def test_contestar_un_mensaje_que_no_existe_o_vacio_falla(client, dataset, db):
+    client.post("/api/v1/auth/register", json=ROSA)
+    ticket_id = client.post("/api/v1/me/tickets", json={"message": MESSAGE}).json()["ticket_id"]
+    with pytest.raises(LookupError):
+        tickets.answer(db, uuid.uuid4(), "Hola")
+    with pytest.raises(ValueError, match="vacía"):
+        tickets.answer(db, uuid.UUID(ticket_id), "   ")
