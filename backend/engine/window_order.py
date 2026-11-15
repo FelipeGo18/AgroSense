@@ -26,7 +26,14 @@ El orden (R2, R4):
 2. En los dos primeros grupos: la decena del factor limitante, de mayor a menor (60 a 69 es una decena; la alta es
    90 a 100: un factor limitante de 100 no forma una decena propia); dentro de la decena, el promedio ponderado de
    mayor a menor, con los promedios nulos al final de su decena.
-3. Empate: la ventana más temprana.
+3. Con peso 4 o 5 en `market` («me importa mucho»; HU-240, decisión 17), entre la decena y el promedio ponderado va el
+   precio del mes de cosecha (`harvest_price`, la historia de HU-073): primero la ventana cuyo mes estuvo más años por
+   encima del promedio de su año (`years_above` / `years`, como fracción exacta), en empate la de mayor
+   `seasonal_index`, y las que no tienen historia (o sin los años contados) al final de su decena. El precio nunca saca
+   a una ventana de su decena ni de su grupo, así que nunca sube una de alto riesgo (R2), y no toca la luz: el mercado
+   no califica. Con peso de 0 a 3 (el de AgroSense es 1) no entra. Cuenta años y no promedia el índice: un año muy caro
+   sube el índice de un mes que casi siempre estuvo por debajo.
+4. Empate: la ventana más temprana.
 """
 
 from __future__ import annotations
@@ -34,8 +41,25 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
+from fractions import Fraction
 
-from backend.engine.signal_score import SignalScore, high_risk, limiting, rated_signals, round_half_up
+from backend.engine.market_signal import PriceHistory
+from backend.engine.signal_score import SignalScore, high_risk, limiting, rated_signals, round_half_up, weight_of
+from backend.engine.traffic_light import HIGH_WEIGHT
+
+
+def price_order_limitation(weights: Mapping[str, float]) -> str | None:
+    """La limitación que explica el orden cuando el precio ordena (peso 4 o 5 en `market`), o None: sin ella, el
+    agricultor vería primero una ventana con menos calificación sin saber por qué (R5; revisión del PR #176)."""
+    weight = weight_of(weights, "market")
+    if weight < HIGH_WEIGHT:
+        return None
+    return (
+        f"Con el mercado en {int(weight)}, entre las ventanas con el factor que más limita en la misma decena va primero "
+        "la que cosecha en el mes que más años tuvo mejor precio que el resto de su año: una ventana con menos "
+        "calificación puede ir antes. El clima sigue mandando: el precio no sube una ventana de alto riesgo"
+    )
+
 
 # Grupos del orden: primero las calificadas sin alto riesgo, después las de alto riesgo, al final las sin calificar.
 _RANKED, _HIGH_RISK, _UNRATED = 0, 1, 2
@@ -48,6 +72,9 @@ class WindowSignals:
     sowing_start: date
     harvest_estimate: date
     signals: Mapping[str, SignalScore]
+    # La historia del precio del mes de cosecha (`signals.market.price_history`, HU-073), o None sin historia. Solo
+    # ordena con peso 4 o 5 en `market` (HU-240).
+    harvest_price: PriceHistory | None = None
 
 
 @dataclass(frozen=True)
@@ -86,7 +113,9 @@ def rank_window(window: WindowSignals, weights: Mapping[str, float]) -> RankedWi
 def order_windows(windows: Iterable[WindowSignals], weights: Mapping[str, float]) -> tuple[RankedWindow, ...]:
     """Las ventanas calificadas y ordenadas: la posición en la tupla es su puesto. Mismas ventanas y pesos, mismo
     orden, sin importar el orden de entrada (R4)."""
-    return tuple(sorted((rank_window(window, weights) for window in windows), key=_order_key))
+    by_price = weight_of(weights, "market") >= HIGH_WEIGHT
+    ranked = [(rank_window(window, weights), _price_key(window.harvest_price) if by_price else _NO_PRICE) for window in windows]
+    return tuple(window for window, _ in sorted(ranked, key=lambda pair: _order_key(*pair)))
 
 
 def best_windows(ranked: Sequence[RankedWindow], limit: int = 3) -> tuple[RankedWindow, ...]:
@@ -102,11 +131,24 @@ def limiting_decade(limiting_score: int) -> int:
     return min(limiting_score // 10, 9)
 
 
-def _order_key(window: RankedWindow) -> tuple:
-    """La llave del orden: grupo, decena del factor limitante (de mayor a menor), promedio ponderado (de mayor a
-    menor, los nulos al final de su decena) y, en empate, la ventana más temprana."""
+# El término del precio cuando no ordena (peso de 0 a 3): igual para todas las ventanas, así que no cambia nada.
+_NO_PRICE: tuple[bool, Fraction, float] = (False, Fraction(0), 0.0)
+
+
+def _price_key(history: PriceHistory | None) -> tuple[bool, Fraction, float]:
+    """El término del precio en la llave (HU-240): sin historia al final; después, más años por encima primero (la
+    fracción exacta, sin redondeo: R4) y, en empate, mayor `seasonal_index`."""
+    if history is None or history.years_above is None or history.years <= 0:
+        return (True, Fraction(0), 0.0)
+    return (False, -Fraction(history.years_above, history.years), -history.seasonal_index)
+
+
+def _order_key(window: RankedWindow, price: tuple[bool, Fraction, float]) -> tuple:
+    """La llave del orden: grupo, decena del factor limitante (de mayor a menor), el precio del mes de cosecha (solo
+    con peso 4 o 5 en `market`), promedio ponderado (de mayor a menor, los nulos al final de su decena) y, en empate,
+    la ventana más temprana."""
     if window.limiting_score is None:
-        return (_UNRATED, 0, False, 0, window.sowing_start)
+        return (_UNRATED, 0, *_NO_PRICE, False, 0, window.sowing_start)
     group = _HIGH_RISK if window.high_risk else _RANKED
     weighted = window.weighted_score
-    return (group, -limiting_decade(window.limiting_score), weighted is None, -(weighted or 0), window.sowing_start)
+    return (group, -limiting_decade(window.limiting_score), *price, weighted is None, -(weighted or 0), window.sowing_start)

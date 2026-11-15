@@ -123,7 +123,7 @@ export function DiagnosisPage() {
     priorities.ready &&
     !priorities.allZero &&
     Object.keys(validate(sent, { ...catalogs, lot: sentLot })).length === 0
-      ? toRequest(sent, sentLot, priorities.value)
+      ? toRequest(sent, sentLot, priorities.request)
       : null;
   const diagnosis = useDiagnosis(request);
   const cropName = crops.data?.find((c) => c.crop_id === sent.cropId)?.name_es;

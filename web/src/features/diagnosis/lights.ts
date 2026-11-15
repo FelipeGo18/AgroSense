@@ -1,6 +1,6 @@
 import type { Schemas } from "@/api/client";
 import { PATHS } from "@/app/paths";
-import { PRIORITY_SIGNALS, type SignalWeights } from "@/features/diagnosis/priorities";
+import { LIGHT_PRIORITY_SIGNALS, type SignalWeights } from "@/features/diagnosis/priorities";
 import { SIGNAL_NAME, type Signal } from "@/features/diagnosis/signals";
 
 type DiagnosisRequestEcho = Schemas["DiagnosisRequestEcho"];
@@ -42,7 +42,8 @@ const WITH_ARTICLE: Record<string, string> = {
  */
 export function whyDifferent(weights: Partial<SignalWeights> | null | undefined, defaults: SignalWeights | null | undefined): string {
   if (!weights || !defaults) return "Las luces difieren porque usted usa sus propias prioridades.";
-  const changes = PRIORITY_SIGNALS.filter(({ key }) => weights[key] !== undefined && weights[key] !== defaults[key]).map(
+  // La oferta y el mercado no cambian la luz (decisión 17): un peso suyo distinto nunca explica por qué difieren.
+  const changes = LIGHT_PRIORITY_SIGNALS.filter(({ key }) => weights[key] !== undefined && weights[key] !== defaults[key]).map(
     ({ key }) => `${WITH_ARTICLE[key] ?? SIGNAL_NAME[key]} en ${weights[key]} (AgroSense: ${defaults[key]})`,
   );
   if (changes.length === 0) return "Las luces difieren porque usted usa sus propias prioridades.";

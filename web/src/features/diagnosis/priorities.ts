@@ -11,14 +11,54 @@ export type SignalWeights = Schemas["SignalWeights"];
  * de clima llevan su nota: un riesgo grave cuenta siempre, aunque su peso sea 0 (`specs/01-reglas.md`).
  */
 export const PRIORITY_SIGNALS = [
-  { key: "water", label: "Agua", hint: "que la lluvia alcance", climate: true },
-  { key: "frost", label: "Heladas", hint: "que no hiele en lo sensible", climate: true },
-  { key: "heat", label: "Calor", hint: "que no haga más calor del que aguanta", climate: true },
-  { key: "soil", label: "Suelo", hint: "que el pH le sirva", climate: false },
-  { key: "supply", label: "Oferta", hint: "que no haya demasiado sembrado", climate: false },
-  { key: "market", label: "Mercado", hint: "que el precio suela estar bien", climate: false },
+  { key: "water", label: "Agua", hint: "que la lluvia alcance", climate: true, control: true, light: true },
+  { key: "frost", label: "Heladas", hint: "que no hiele en lo sensible", climate: true, control: true, light: true },
+  { key: "heat", label: "Calor", hint: "que no haga más calor del que aguanta", climate: true, control: true, light: true },
+  { key: "soil", label: "Suelo", hint: "que el pH le sirva", climate: false, control: true, light: true },
+  { key: "supply", label: "Oferta", hint: "que no haya demasiado sembrado", climate: false, control: false, light: false },
+  {
+    key: "market",
+    label: "Mercado",
+    hint: "que la cosecha salga cuando el precio suele estar mejor",
+    climate: false,
+    control: true,
+    light: false,
+  },
 ] as const;
 export type PriorityKey = (typeof PRIORITY_SIGNALS)[number]["key"];
+
+/**
+ * Las señales que tienen control de prioridad. La oferta se muestra sin calificar (decisión 17, HU-072): su peso no tiene
+ * ningún efecto y un control sin función no se dibuja. El mercado tampoco cambia la luz, pero con 4 o 5 ordena las
+ * ventanas dentro de su decena (HU-240): por eso tiene control, con su nota.
+ */
+export const PRIORITY_CONTROLS = PRIORITY_SIGNALS.filter((signal) => signal.control);
+
+/** Las señales cuyo peso puede cambiar la luz. La oferta y el mercado no (decisión 17). */
+export const LIGHT_PRIORITY_SIGNALS = PRIORITY_SIGNALS.filter((signal) => signal.light);
+
+/** La nota bajo el nombre de cada control: lo que su peso no puede cambiar. */
+export function priorityNote(signal: (typeof PRIORITY_SIGNALS)[number]): string | undefined {
+  if (signal.climate) return "Un riesgo grave cuenta siempre";
+  if (signal.key === "market") return MARKET_PRIORITY_NOTE;
+  return undefined;
+}
+
+export const MARKET_PRIORITY_NOTE = "Solo ordena las ventanas con 4 o 5; no cambia la luz";
+
+/**
+ * Los pesos que se envían a los cálculos (`/diagnostics` y `signal_priorities` de `/rotations`): los de la persona en
+ * las señales con control y, en la oferta, siempre el de AgroSense mientras no tenga control (revisión de Haider del
+ * #175). Lo guardado no cambia: un peso viejo de la oferta se conserva en el perfil o el navegador, pero no llega al
+ * cálculo. Sin el criterio de AgroSense no hay con qué reemplazarlo y se envía como está.
+ */
+export function forCalculation(weights: SignalWeights | null, defaults: SignalWeights | null): SignalWeights | null {
+  if (!weights || !defaults) return weights;
+  const hidden = PRIORITY_SIGNALS.filter((signal) => !signal.control).map(({ key }) => [key, defaults[key]]);
+  return { ...weights, ...Object.fromEntries(hidden) } as SignalWeights;
+}
+
+export const UNRATED_PRIORITIES_NOTE = "La oferta se muestra sin calificar y no tiene prioridad.";
 
 export const PRIORITIES_HINT = "0: no cambia la luz, salvo un riesgo grave de clima. 4 o 5: un resultado medio cuenta como desfavorable.";
 
@@ -92,8 +132,10 @@ export function useSignalPriorities() {
   };
 
   return {
-    /** Los pesos con que se consulta; nulos si el criterio de AgroSense no cargó (la API usa los suyos). */
+    /** Los pesos de la persona (o los de AgroSense), los que muestran los controles y se guardan. */
     value,
+    /** Los pesos con que se consulta: `value` con la oferta del criterio de AgroSense. Nulos si no cargó (la API usa los suyos). */
+    request: forCalculation(value, defaults),
     defaults,
     ready,
     /** Si son las de la persona y no las de AgroSense. */

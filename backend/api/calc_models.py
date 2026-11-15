@@ -97,9 +97,16 @@ class SuitabilityResult(BaseModel):
 
 
 class SupplySemester(BaseModel):
+    """El semestre de EVA en que cae la siembra (HU-072, decisión 17): el último año con dato de ese semestre, el área
+    sembrada, su variación frente al promedio del mismo semestre de los tres años anteriores (HU-032; nula sin ellos) y
+    si repite el área del mismo semestre del año anterior (nulo sin ese año)."""
+
     year: int
     semester: Literal["A", "B"]
     preliminary: bool
+    planted_ha: float | None = None
+    planted_change_pct: float | None = None
+    same_as_previous: bool | None = None
 
 
 class Window(BaseModel):

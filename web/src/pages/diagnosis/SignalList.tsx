@@ -17,6 +17,7 @@ import {
   sourceName,
   sourceNote,
   supplyNote,
+  type PriceHistory as PriceHistoryData,
   type Signal,
   type SourceValue,
   type SupplySemester,
@@ -61,6 +62,7 @@ export function SignalList({ signals, limiting, irrigated, weights, supplySemest
               ))}
             </ul>
           )}
+          {key === "market" && signal.price_history && <PriceHistory history={signal.price_history} version={version} />}
           {key === "water" && waterChart}
           {signal.sources && signal.sources.length > 0 && <Sources sources={signal.sources} version={version} />}
         </SignalItem>
@@ -102,7 +104,8 @@ function SignalItem({
       {notCounted(signal) && <CountTag kind="not_counted" />}
       {always && <CountTag kind="always" />}
       <StatusBadge signal={signal} grave={isGrave(id, signal)} />
-      <Score score={signal.score} />
+      {/* «Sin calificar» (decisión 17) no tiene calificación: ni barra ni número, aunque llegara uno. */}
+      {signal.level != null && <Score score={signal.score} />}
       {children}
     </li>
   );
@@ -144,7 +147,10 @@ function CountTag({ kind }: { kind: "not_counted" | "always" }) {
   );
 }
 
-/** El estado con silueta, ícono y texto (W2): «Desfavorable» es un cuadrado; «Datos insuficientes», una línea punteada con «?»; «No aplica», un guion. */
+/**
+ * El estado con silueta, ícono y texto (W2): «Desfavorable» es un cuadrado; «Datos insuficientes», una línea punteada
+ * con «?»; «No aplica», un guion; «Sin calificar», tres barras sobre un borde liso, sin colores del semáforo.
+ */
 function StatusBadge({ signal, grave }: { signal: Signal; grave: boolean }) {
   const { tone, label } = signalTone({ ...signal, level: signal.level ?? null });
   const style = TONE_STYLE[tone];
@@ -174,6 +180,36 @@ function Score({ score }: { score: number | null | undefined }) {
       <div aria-hidden="true" className="h-3 w-full overflow-hidden bg-superficie-panel-suave">
         <div className="h-full bg-oscuro-oliva" style={{ width: `${value}%` }} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * De dónde sale la historia del precio del mercado (HU-073, decisión 17): la central (y si es la de ese cultivo), el
+ * periodo y la fuente, nombrada como las demás (`GET /version`). Lo que dice la historia (los años por encima y por
+ * debajo, y que no es un pronóstico) ya está en las razones: no se repite. Sin colores del semáforo: no califica.
+ */
+export function PriceHistory({ history, version }: { history: PriceHistoryData; version: Version | undefined }) {
+  const period =
+    history.first_year !== null && history.last_year !== null
+      ? history.first_year === history.last_year
+        ? `${history.first_year}`
+        : `${history.first_year}–${history.last_year}`
+      : null;
+  const note = sourceNote(history.source_id);
+  return (
+    <div
+      data-price-history
+      className="relative flex min-w-0 flex-col gap-1 border-l-4 border-superficie-borde py-1 pl-3 text-[15px] leading-snug"
+    >
+      <p className="font-bold">Historia del precio</p>
+      <p>
+        Central: {history.market}
+        {history.market_basis === "crop_override" && " (la de este cultivo: la central de su departamento no lo publica)"}
+      </p>
+      {period && <p>Periodo: {period}.</p>}
+      <p className="text-texto-secundario">Fuente: {sourceName(history.source_id, version)}</p>
+      {note && <p className="text-texto-secundario">{note}</p>}
     </div>
   );
 }

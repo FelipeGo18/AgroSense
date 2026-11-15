@@ -17,6 +17,7 @@ import {
   healthTone,
   sequence,
   sourcesText,
+  totalBasisNote,
   type Cycle,
   type Delta,
   type Issue,
@@ -67,6 +68,9 @@ export function StrategyCard({ strategy, names, kinds, weights, version, cycleLi
               </p>
             )}
             {total && <DeltaText delta={total} suffix="en total" />}
+            {totalBasisNote(strategy) && (
+              <p className="max-w-[16rem] text-right text-[14px] text-texto-secundario">{totalBasisNote(strategy)}</p>
+            )}
           </div>
         </header>
 

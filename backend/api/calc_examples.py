@@ -14,7 +14,7 @@ from backend.engine.market_signal import UNRATED_LIMITATION
 EXAMPLE_VERSIONS = {"dataset": "ejemplo", "rules": "ejemplo"}
 EXAMPLE_NOTE = "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido."
 WEIGHTS = {"water": 5, "frost": 3, "heat": 3, "soil": 3, "supply": 0, "market": 3}
-DEFAULT_WEIGHTS = {"water": 3, "frost": 4, "heat": 2, "soil": 2, "supply": 1, "market": 1}  # los de weights.yaml 1.1.0
+DEFAULT_WEIGHTS = {"water": 3, "frost": 4, "heat": 2, "soil": 2, "supply": 1, "market": 1}  # los de weights.yaml 1.3.0
 
 
 def _signal(status: str, level: str | None, score: int | None, reasons: list[str], indicators: list[str], **extra: Any) -> dict[str, Any]:
@@ -81,20 +81,25 @@ SIGNALS_OK = {
         ["pH estimado de 5,2 a 5,8, dentro del rango de la papa. Estimación de 250 m: confírmelo con un análisis de suelo"],
         ["ph"],
     ),
+    # Sin calificar (HU-072, decisión 17): el área de EVA y su variación (HU-032) como contexto; nunca cambia la luz.
     "supply": _signal(
         "available",
-        "unfavorable",
-        30,
-        ["En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"],
-        ["planted_change_pct"],
+        None,
+        None,
+        [
+            "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+            "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de "
+            "los tres semestres B anteriores",
+        ],
+        ["planted_ha", "planted_change_pct"],
         counts=False,
         sources=[
             {
                 "source_id": "eva",
-                "indicator": "planted_change_pct",
-                "value": 35,
-                "unit": "%",
-                "period": "2025-B",
+                "indicator": "planted_ha",
+                "value": 420,
+                "unit": "ha",
+                "period": "2025 B",
                 "preliminary": True,
                 "used": True,
             }
@@ -138,18 +143,36 @@ DIAGNOSIS_OK = {
         "sowing_start": "2027-08-02",
         "harvest_estimate": "2027-12-27",
         "harvest_basis": "calendar",
-        "supply_semester": {"year": 2025, "semester": "B", "preliminary": True},
+        "supply_semester": {
+            "year": 2025,
+            "semester": "B",
+            "preliminary": True,
+            "planted_ha": 420,
+            "planted_change_pct": 35,
+            "same_as_previous": False,
+        },
     },
     "overall": _light(
-        "green", "sow", "farmer", "frost", ["Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"]
+        "green", "sow", "farmer", "frost", ["Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"]
     ),
     "overall_default": _light(
-        "red",
-        "rotate",
+        "yellow",
+        "other_window",
         "default",
-        "supply",
-        ["Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"],
+        "frost",
+        ["Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"],
     ),
+    # Viene porque `overall_default` es `other_window`; los valores son de ejemplo.
+    "best_windows": [
+        {
+            "sowing_start": "2027-10-04",
+            "harvest_estimate": "2028-02-28",
+            "limiting_signal": "frost",
+            "limiting_score": 72,
+            "weighted_score": 84,
+            "high_risk": False,
+        }
+    ],
     "weights": WEIGHTS,
     "signals": SIGNALS_OK,
     "limitations": [EXAMPLE_NOTE, "Datos EVA del último año son preliminares", LOT_SOIL_LIMITATION, UNRATED_LIMITATION],
