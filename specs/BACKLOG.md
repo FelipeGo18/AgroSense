@@ -23,7 +23,7 @@
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-235 | Desplegar al fusionar en `produccion` | P0 | M | pendiente | Nueva (14 nov): workflow con migraciones y Cloud Run, y logs para Cloud Logging (`severity`, `message` y trace). Haider y David |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-236 | El dominio con HTTPS | P0 | S | pendiente | Nueva (14 nov): dominio gratis de GoDaddy Registry (Porkbun). Haider y David |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-031 | Datos de EVA normalizados por DIVIPOLA | P0 | M | hecha | |
-| [EP-03](epicas/EP-03-oferta-eva.md) | HU-032 | Variación del área sembrada y participación departamental | P0 | M | pendiente | |
+| [EP-03](epicas/EP-03-oferta-eva.md) | HU-032 | Variación del área sembrada y participación departamental | P0 | M | hecha | `planted_change_pct` contra el mismo semestre de los 3 años anteriores con dato y `dept_share_pct` entre los municipios que reportan; comprobados a mano en Villapinzón y Duitama; dataset 2026.11.25. Definiciones por aprobar por Haider o Felipe |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-200 | Siembras registradas en AgroSense como dato de oferta | P1 | M | pendiente | |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-201 | Fuentes de contraste para la oferta | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-041 | Series diarias de lluvia y temperatura | P0 | M | hecha | Adaptador de NASA POWER con caché por celda (20 celdas) y `climate_day` corregida por altitud, publicada con la de NASADEM (HU-206) |
