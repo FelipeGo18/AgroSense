@@ -4,12 +4,13 @@
 Los diagnósticos, razones, fuentes y descartadas de estas pruebas son DE EJEMPLO (R5): los arma la prueba, no salen del
 motor ni de un dato real. La integración final usa los `phase1` y el catálogo reales con diagnósticos de ejemplo.
 Supuestos por confirmar: (S1) los motivos de `current_issues` con el mismo ciclo y `kind` se ordenan por
-`rule_id`, luego `signal`, luego `crop_id`; (S2) con varios motivos del mismo `kind` en `summarize_exclusions`, el
-mostrado es el de menor ciclo; (S3) `current_issues` no quita motivos repetidos.
+`rule_id`, luego la señal en el orden del contrato (`P0_SIGNALS`), luego `crop_id`; (S2) con varios motivos del mismo
+`kind` en `summarize_exclusions`, el mostrado es el de menor ciclo; (S3) `current_issues` no quita motivos repetidos.
 """
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 from backend.engine.rotations.candidates import CropInfo, candidates
@@ -17,9 +18,11 @@ from backend.engine.rotations.exclusions import (
     CLIMATE_SIGNALS,
     Excluded,
     ExclusionSummary,
+    Phase1Result,
     SignalReason,
     SoilPh,
     current_issues,
+    filter_strategies,
     high_risk_motives,
     phase1,
     summarize_exclusions,
@@ -172,12 +175,21 @@ def test_summarize_exclusions_es_determinista_y_no_depende_del_orden_de_entrada(
     assert summarize_exclusions(descartadas[::-1]) == primero
 
 
+def test_el_motivo_mostrado_no_depende_del_orden_de_los_motivos_de_la_estrategia():
+    for orden in (("frost", "water"), ("water", "frost")):
+        (e,) = summarize_exclusions([(("a", "b"), [_m("high_risk", signal=s) for s in orden])]).excluded
+        assert e.motive.signal == "water" and e.motive_count == 2
+
+
+def test_una_estrategia_sin_motivos_lanza_value_error_con_sus_crop_ids():
+    with pytest.raises(ValueError, match="papa.*maiz"):
+        summarize_exclusions([(("papa", "maiz"), [])])
+
+
 # ---------- current_issues ----------
 
 
 def test_current_issues_junta_las_dos_fases_sin_descartar_y_ordena_por_ciclo_y_kind():
-    from backend.engine.rotations.exclusions import Phase1Result
-
     fase1 = Phase1Result((_m("rule", 1, rule_id="r1"), _m("soil_ph", 2, crop_id="a")), ("limitacion de ejemplo",))
     hr = [_m("high_risk", 2, signal="frost"), _m("high_risk", 1, signal="water")]
     issues = current_issues(fase1, hr)
@@ -186,9 +198,12 @@ def test_current_issues_junta_las_dos_fases_sin_descartar_y_ordena_por_ciclo_y_k
     assert issues[3].signal == "frost" and issues[1].signal == "water"
 
 
-def test_current_issues_sin_motivos_es_la_tupla_vacia_y_con_solo_una_fase_devuelve_esa():
-    from backend.engine.rotations.exclusions import Phase1Result
+def test_current_issues_ordena_las_senales_como_el_contrato_y_no_por_nombre():
+    hr = [_m("high_risk", signal="frost"), _m("high_risk", signal="water")]
+    assert [m.signal for m in current_issues(Phase1Result((), ()), hr)] == ["water", "frost"]  # por nombre: frost, water
 
+
+def test_current_issues_sin_motivos_es_la_tupla_vacia_y_con_solo_una_fase_devuelve_esa():
     assert current_issues(Phase1Result((), ()), []) == ()
     assert [m.kind for m in current_issues(Phase1Result((), ()), [_m("high_risk", signal="heat")])] == ["high_risk"]
     solo1 = Phase1Result((_m("not_suitable", crop_id="a"),), ())
@@ -224,26 +239,21 @@ def test_integracion_cycles_2_solo_diagnostica_las_que_pasaron_la_fase_1():
     cultivos, filtros = _catalogo(), _filtros()
     explica = lambda crop, apt: (f"RAZON DE EJEMPLO {crop.crop_id}", ("fuente_ejemplo_a",))  # noqa: E731
     suelo = SoilPh(4.5, 6.5, "ejemplo")  # DE EJEMPLO (R5)
-    fase1 = {c: phase1(c, [], cultivos, filtros, 14.4, suelo, explica) for c in candidates(list(cultivos.values()), 2)}
+    todas = candidates(list(cultivos.values()), 2)
+    fase1 = {c: phase1(c, [], cultivos, filtros, 14.4, suelo, explica) for c in todas}
     fuera1 = {c for c, r in fase1.items() if r.motives}
-    vivas = [c for c in fase1 if c not in fuera1]
-    assert len(fase1) == 56 and fuera1 and vivas  # hay de las dos clases: si no, la prueba no prueba nada
+    assert len(todas) == 56 and fuera1 and len(fuera1) < 56  # hay de las dos clases: si no, la prueba no prueba nada
 
     def diagnostica(secuencia):  # DOBLE DE PRUEBA (R5): helada crítica en todo ciclo de arveja; el resto, bueno
-        assert secuencia not in fuera1, f"se diagnosticó {secuencia}, descartada en la fase 1"
+        assert tuple(secuencia) not in fuera1, f"se diagnosticó {secuencia}, descartada en la fase 1"
         helada = {"frost": _r(CRITICA, "frost")}
         return [None if cultivos[c].kind == "fallow" else {**_bueno(), **(helada if c == "arveja" else {})} for c in secuencia]
 
-    descartadas = [(c, list(fase1[c].motives)) for c in fuera1]
-    fuera2 = []
-    for c in vivas:
-        hr = high_risk_motives(c, diagnostica(c))
-        assert ("arveja" in c) == bool(hr)
-        if hr:
-            fuera2.append((c, hr))
-    assert fuera2 and all(m.kind == "high_risk" for _, hr in fuera2 for m in hr)
-    assert all(m.kind != "high_risk" for _, ms in descartadas for m in ms)  # precisión de Felipe en el #90
-    resumen = summarize_exclusions(descartadas + fuera2)
-    assert sum(resumen.counts.values()) == len(descartadas) + len(fuera2) == len(fuera1) + len(fuera2)
-    assert resumen.counts["high_risk"] == len(fuera2) and len(resumen.excluded) == min(10, len(fuera1) + len(fuera2))
-    assert all(e.motive.kind in KINDS and e.motive_count >= 1 for e in resumen.excluded)
+    r = filter_strategies(todas, [], cultivos, filtros, 14.4, suelo, explica, diagnostica, limit=1000)
+    vivas = [c for c in todas if c not in fuera1]
+    assert r.survivors == tuple(c for c in vivas if "arveja" not in c) and r.survivors  # en el orden recibido
+    n_hr = len([c for c in vivas if "arveja" in c])
+    assert n_hr and r.summary.counts["high_risk"] == n_hr  # precisión de Felipe en el #90: solo las vivas
+    assert sum(r.summary.counts.values()) == len(fuera1) + n_hr == len(todas) - len(r.survivors)
+    assert len(r.limitations) == len(set(r.limitations))
+    assert filter_strategies(todas, [], cultivos, filtros, 14.4, suelo, explica, diagnostica, limit=1000) == r  # R4
