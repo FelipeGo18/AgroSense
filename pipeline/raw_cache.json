@@ -1,0 +1,94 @@
+{
+  "release": "cache-datos",
+  "folders": {
+    "dane": {
+      "asset": "cache-dane-3b20daa3192e4b47.tar.gz",
+      "sha256": "21f9364226a80f53b905c03fb6db7be315f26b4efa78aed68faa2281309c8c00",
+      "tree": "3b20daa3192e4b47b592c39b09c566f95c23a6ad5fbde7ae286e4f7119579234",
+      "bytes": 11317329,
+      "files": 5,
+      "source_ids": [
+        "dane_divipola",
+        "dane_mgn_2025"
+      ],
+      "uploaded_at": "2026-11-15T22:15:44+00:00"
+    },
+    "eva": {
+      "asset": "cache-eva-ac9bbf2d0f0c88b8.tar.gz",
+      "sha256": "c21e31967148e552c586fc1d9fdc26444547c32a0d8ee720a9d123192221b240",
+      "tree": "ac9bbf2d0f0c88b801ef995d04ca489356ccea7aeeb6a4de511697510337a329",
+      "bytes": 413485,
+      "files": 2,
+      "source_ids": [
+        "eva"
+      ],
+      "uploaded_at": "2026-11-15T22:15:49+00:00"
+    },
+    "imerg": {
+      "asset": "cache-imerg-dd511846033f4165.tar.gz",
+      "sha256": "c3f486e5565c41d26180fbc216b16b73661cede3101b08b1220c604e3025ca7d",
+      "tree": "dd511846033f416599f46e238d088e389a5fb26e0c82965983909ff5ac5028e3",
+      "bytes": 520700,
+      "files": 334,
+      "source_ids": [
+        "imerg"
+      ],
+      "uploaded_at": "2026-11-15T22:15:56+00:00"
+    },
+    "modis_ndvi": {
+      "asset": "cache-modis_ndvi-b93aaf284c6d1f34.tar.gz",
+      "sha256": "c7bfb610c2cdbe8037d273c673ad843c4b3c10e71ef68e7d7f4edc5b19de8a9c",
+      "tree": "b93aaf284c6d1f3462f4c0c8e57d018d674b86ae8a29556fe8019359e30df397",
+      "bytes": 32779773,
+      "files": 90,
+      "source_ids": [
+        "modis_ndvi"
+      ],
+      "uploaded_at": "2026-11-15T22:16:43+00:00"
+    },
+    "nasa_power": {
+      "asset": "cache-nasa_power-7b1fe253f014a586.tar.gz",
+      "sha256": "0ec2ec5d05129cdbd0469127bd56f31baa79ec4bec0122932667b92320732568",
+      "tree": "7b1fe253f014a58621bf74cf8b84336de702ce64d0851e663d301a92be04f096",
+      "bytes": 11671279,
+      "files": 42,
+      "source_ids": [
+        "nasa_power"
+      ],
+      "uploaded_at": "2026-11-15T22:17:23+00:00"
+    },
+    "nasadem": {
+      "asset": "cache-nasadem-d09ad38c770cd755.tar.gz",
+      "sha256": "0bb95e61c882ce31f92755269541a89897e61ff2e75b3cec75ba7ccbd660dceb",
+      "tree": "d09ad38c770cd7559e6d02e2931eee497a4764b07511b4eca7dd9cb9a624cc6c",
+      "bytes": 233212788,
+      "files": 14,
+      "source_ids": [
+        "nasadem"
+      ],
+      "uploaded_at": "2026-11-15T22:22:45+00:00"
+    },
+    "sipsa": {
+      "asset": "cache-sipsa-0a3332177e442c66.tar.gz",
+      "sha256": "36a82341ad79e70ebe86c5bd14aa4a4a64bcd01359c3597a7394d3a27be9e0fc",
+      "tree": "0a3332177e442c665ccbe89e1728c9d074f504f9f4560b98fcdf3075f40e7192",
+      "bytes": 13424945,
+      "files": 2,
+      "source_ids": [
+        "dane_sipsa"
+      ],
+      "uploaded_at": "2026-11-15T22:23:13+00:00"
+    },
+    "soilgrids": {
+      "asset": "cache-soilgrids-d7572a08f6912952.tar.gz",
+      "sha256": "926bb21a43e6cf085af1129684ea89391c7e33330603c9ec2884d9def1438b55",
+      "tree": "d7572a08f6912952f272b91826e2f2665e8d5a84d678363a26cc97c8efdf7d35",
+      "bytes": 58606998,
+      "files": 391,
+      "source_ids": [
+        "soilgrids"
+      ],
+      "uploaded_at": "2026-11-15T22:24:38+00:00"
+    }
+  }
+}
