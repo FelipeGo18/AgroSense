@@ -196,11 +196,15 @@ def test_caso_de_referencia_helada_critica_da_rojo_y_busca_otra_ventana(examples
 
 
 def with_favorable_water_and_supply(monkeypatch, folder: Path) -> None:
-    """El agua y la oferta favorables, para los casos de referencia de HU-077 y HU-190. El agua sale de la lluvia del
-    ejemplo rotulada con su fuente y de un balance DE EJEMPLO que cubre toda la necesidad; la oferta, de una señal DE
-    EJEMPLO (R5), porque la oferta todavía no tiene curva ni motor (HU-072). Las heladas y el calor son los del dataset."""
+    """El agua y la oferta favorables, para los casos de referencia de HU-077 y HU-190. El agua pasa por el motor real
+    (el balance hídrico de HU-144 y la señal de HU-071): en Samacá la lluvia del ejemplo se cambia a 200 mm al mes, en
+    el año normal y en el seco (cifras DE EJEMPLO, R5), y la lluvia efectiva cubre lo que pide el cultivo. La oferta sale
+    de una señal DE EJEMPLO, porque todavía no tiene curva ni motor (HU-072). Las heladas y el calor son los del dataset."""
+    table = folder / "precip_month.parquet"
+    rows = pl.read_parquet(table)
+    rainy = pl.when(pl.col("municipality_id") == SAMACA).then(pl.lit(200.0))
+    rows.with_columns(rainy.otherwise(pl.col(name)).alias(name) for name in ("precip_normal_mm", "precip_dry_mm")).write_parquet(table)
     use(monkeypatch, folder)
-    monkeypatch.setattr(window_signals, "balance_for", lambda *args, **kwargs: NO_DEFICIT)
     favorable_supply = window_signals.PendingSignal("available", "favorable", False, 90, (), ("Oferta DE EJEMPLO, favorable",))
     real = window_signals.pending_signal
     monkeypatch.setattr(window_signals, "pending_signal", lambda name: favorable_supply if name == "supply" else real(name))
