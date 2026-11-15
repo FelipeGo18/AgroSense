@@ -50,10 +50,11 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from backend.engine.curve import CurvePoint, crop_curve, score_from_curve
 from common.signals import P0_SIGNALS
+from common.text import of
 
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
@@ -195,7 +196,7 @@ def score_signal(
     """
     config = thresholds.signals[signal]
     curve = config.curve
-    if curve is None or _missing(value):
+    if curve is None or missing(value):
         return _insufficient()
 
     if curve == FROM_CROP:
@@ -216,7 +217,7 @@ def score_signal(
     return SignalScore(AVAILABLE, score, level, critical)
 
 
-def _missing(value: float | None) -> bool:
+def missing(value: float | None) -> bool:
     """Sin dato: None o NaN (R1). Un NaN no se califica: no tiene tramo en la curva."""
     return value is None or math.isnan(float(value))
 
@@ -228,9 +229,29 @@ def _insufficient() -> SignalScore:
 def _crop_points(signal: str, crop_limits: Mapping[str, float | None]) -> tuple[CurvePoint, ...] | None:
     """Puntos de la curva de la ficha, o None si falta algún límite (R1: nunca un límite «típico»)."""
     limits = [crop_limits.get(field) for field in CROP_LIMITS[signal]]
-    if any(_missing(limit) for limit in limits):
+    if any(missing(limit) for limit in limits):
         return None
     if signal == "heat":
         temp_opt_max, heat_max = limits
         return (float(temp_opt_max), 100.0), (float(heat_max), 0.0)
     return crop_curve(*limits)
+
+
+def no_stages_reason(crop_name: str) -> str:
+    """La razón de una señal que no se evalúa porque el cultivo no tiene etapas publicadas (sin ventana). La comparten
+    las heladas, el calor y el suelo."""
+    return f"Sin las etapas {of(crop_name)}: la señal no se evalúa"
+
+
+class Scored(Protocol):
+    """Lo que el semáforo y el orden leen de una señal ya calculada (`SignalScore` y los resultados de cada señal)."""
+
+    status: str
+    score: int | None
+    level: str | None
+    critical: bool
+
+
+def signal_scores(signals: Mapping[str, Scored]) -> dict[str, SignalScore]:
+    """Las calificaciones que leen el semáforo y el orden de las ventanas, de las señales ya calculadas."""
+    return {name: SignalScore(signal.status, signal.score, signal.level, signal.critical) for name, signal in signals.items()}

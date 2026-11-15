@@ -21,10 +21,10 @@ from dataclasses import dataclass
 from datetime import date
 from itertools import pairwise
 
-from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, SignalScore
+from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, SignalScore, no_stages_reason
 from backend.engine.stages import FROST, HEAT, NOT_APPLICABLE, CropWindow, WindowMonth
 from common.months import month_name
-from common.text import join
+from common.text import join, of
 
 # `quality` de las tablas del clima por mes (`climate_frost_month`, `climate_risk_month`): el mes está completo (en
 # `climate_risk_month`, con al menos los años que pide el periodo normal). Cualquier otro valor (`partial`) no basta
@@ -108,20 +108,22 @@ def sensitive_window(
     cuentan: `insufficient_data` (R1).
     """
     if window is None:
-        return insufficient(f"Sin las etapas de {crop_name}: la señal no se evalúa", notices)
+        return insufficient(no_stages_reason(crop_name), notices)
     sensitive = window.sensitive_months(risk)
     sensitive_to = SENSITIVE_TO[risk]
     if sensitive.status == NOT_APPLICABLE:
-        reason = f"Según su ficha, ninguna etapa de {crop_name} es {sensitive_to}"
+        reason = f"Según su ficha, ninguna etapa {of(crop_name)} es {sensitive_to}"
         return ClimateSignalResult(NOT_APPLICABLE, None, False, None, (), (reason,), notices)
     if sensitive.status == INSUFFICIENT_DATA:
-        return insufficient(f"La ficha de {crop_name} no dice con fuente si alguna etapa es {sensitive_to}: la señal no se evalúa", notices)
+        return insufficient(
+            f"La ficha {of(crop_name)} no dice con fuente si alguna etapa es {sensitive_to}: la señal no se evalúa", notices
+        )
     if normal is None:
         return insufficient("Sin el periodo de referencia del clima de la zona: la señal no se evalúa", notices)
     unknown = ()
     if sensitive.unknown:
         unknown = (
-            f"La ficha de {crop_name} no dice con fuente si es {sensitive_to} en "
+            f"La ficha {of(crop_name)} no dice con fuente si es {sensitive_to} en "
             f"{_stage_names(_stages(sensitive.unknown, None, risk))} ({months_phrase(sensitive.unknown)}): "
             f"{not_evaluated(sensitive.unknown)}",
         )
