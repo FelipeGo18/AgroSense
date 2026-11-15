@@ -26,9 +26,13 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
   usan el mismo o si falta el porqué, no se publica nada.
 - Los días de precios que faltan después del dataset los suman los crons del servicio `market` (HU-222,
   `backend/README.md`): lo publicado aquí es el punto de partida.
-- `--descargar` baja también SIPSA (unos 300 MB que tardan un par de minutos, a `data/raw/sipsa/`) y NASA POWER.
+- `pipeline/eva_crops.yaml` dice qué códigos de EVA son cada cultivo del catálogo (HU-031). Un cultivo con varios
+  códigos suma sus áreas y su producción; uno sin códigos lleva su porqué. Si un cultivo no está en el catálogo, si un
+  código está en dos cultivos o si falta el porqué, no se publica nada.
+- `--descargar` baja también SIPSA (unos 300 MB que tardan un par de minutos, a `data/raw/sipsa/`), EVA (unos 5 MB, a
+  `data/raw/eva/`) y NASA POWER.
 - Sin `--descargar` el pipeline no usa la red. Si falta la caché de una fuente que no es imprescindible (hoy, NASA
-  POWER y SIPSA), publica lo demás sin ella y el log lo dice (`source_missing`).
+  POWER, SIPSA y EVA), publica lo demás sin ella y el log lo dice (`source_missing`).
 
 ## Qué publica hoy
 
@@ -46,6 +50,7 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 | `rotation_rules` | Reglas de rotación de `catalog/rotation_rules.yaml`, cada una con su fuente (`pipeline/rotation_rules.py`) | HU-062 |
 | `market_price_day`, `market_price_latest`, `market_price_season` | SIPSA del DANE, servicio web (`pipeline/sources/sipsa.py`): precios de Corabastos y Tunja desde 2020, el último de cada producto con el de hace una semana y su cambio (lo que lee `/market/prices`, que no calcula nada), y su temporada. Sin la caché de SIPSA se publica lo demás y el log dice `source_missing`. Los días que faltan después del dataset los suman los crons de precios (HU-222, `backend/README.md`), también con el boletín diario (`pipeline/sources/sipsa_boletin.py`) | HU-221, HU-222 |
 | `market_month` | Lo mismo por cultivo, con el producto de `pipeline/sipsa_crops.yaml`: índice estacional y precio de cada mes del último año completo | HU-051 |
+| `supply_semester` | EVA de la UPRA (`pipeline/sources/eva.py`): área sembrada y cosechada, producción y rendimiento por municipio, cultivo (los códigos de `pipeline/eva_crops.yaml`) y semestre de siembra, con los dos últimos años como preliminares. La variación del área sembrada y la participación del departamento llegan con HU-032. Sin la caché de EVA se publica lo demás y el log dice `source_missing` | HU-031 |
 | `sources` | Una fila por fuente, con la cita textual que pide (`citation`, nula si no pide una) | HU-122, HU-221 |
 | `manifest.json` | Versión, región, filas y cobertura por tabla | HU-122 |
 

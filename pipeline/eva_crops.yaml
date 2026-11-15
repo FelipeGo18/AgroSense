@@ -1,0 +1,46 @@
+# Qué códigos de EVA son cada cultivo del catálogo (HU-031). Con ellos se arma `supply_semester` y, con ella, la señal
+# `supply` (HU-072).
+#
+# Es lo propio de Colombia (R7): los códigos son los de la clasificación EVA (`c_digo_del_cultivo` de la base agrícola
+# de la UPRA, datos.gov.co `uejq-wxrr`). Los `crop_id` son los del catálogo (`catalog/crops.yaml`): si allí cambia uno,
+# cambia aquí.
+#
+# Un cultivo puede tener varios códigos: sus áreas y su producción se suman (es el área sembrada de ese cultivo, lo que
+# mide la oferta). Solo se suman códigos con el mismo estado físico de la producción, para que las toneladas sean
+# comparables. Sin códigos, `reason` dice por qué, y la señal `supply` de ese cultivo será `insufficient_data` (R1).
+# `pipeline.build` falla si un cultivo no está en el catálogo, si un código está en dos cultivos o si falta el porqué.
+#
+# Verificado el 14 de noviembre de 2026 contra la descarga de EVA de ese día (Boyacá y Cundinamarca, 2019A a 2025B).
+# Es la propuesta de Datos (HU-031): falta la revisión de Producto y agro.
+
+crops:
+  papa:
+    eva_codes: [1080701]
+    notes: >-
+      «Papa todas las variedades» es la papa común, el cultivo del MVP. «Papa criolla» (1080702) es otra papa, con otro
+      ciclo: no entra, como en el precio de SIPSA (`sipsa_crops.yaml`).
+  arveja:
+    eva_codes: [1060100]
+    notes: EVA publica la arveja en grano; es el único código de arveja.
+  haba:
+    eva_codes: [1060500]
+    notes: Haba en grano seco; es el único código de haba.
+  maiz:
+    eva_codes: [1010401, 1010402, 1010403, 1010404]
+    notes: >-
+      El maíz en grano seco: amarillo y blanco, tecnificado y tradicional. Se suman porque son el mismo cultivo y su
+      producción va en el mismo estado. El maíz «en fresco» (1010497 y 1010498, el que se cosecha tierno como chócolo)
+      no entra: tiene otra cosecha, y el precio tampoco lo usa (`sipsa_crops.yaml`).
+  zanahoria:
+    eva_codes: [1053000]
+  cebolla_bulbo:
+    eva_codes: [1051100]
+    notes: La cebolla de bulbo (cabezona). La de rama (1051200) es otro cultivo y no entra.
+  avena_vicia:
+    eva_codes: null
+    reason: >-
+      Es abono verde: se incorpora al suelo y no se cosecha, así que no tiene oferta. La «Avena» de EVA (1010200) es
+      avena que se cosecha, otro uso.
+  descanso:
+    eva_codes: null
+    reason: Es un descanso del terreno, no un cultivo.

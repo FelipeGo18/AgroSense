@@ -26,15 +26,24 @@ estado: pendiente
 ### HU-031 · Datos de EVA normalizados por DIVIPOLA
 
 - **Historia:** Como motor, quiero los datos de EVA normalizados por DIVIPOLA, cultivo, año y semestre, para evaluar la oferta.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Script reproducible desde el CSV crudo
-  - [ ] Filas rechazadas reportadas con motivo
-  - [ ] Datos preliminares marcados
-  - [ ] `semester` toma solo `A` (enero a junio) o `B` (julio a diciembre); la correspondencia con los periodos de EVA queda documentada (supuesto por confirmar en HU-001)
-  - [ ] Entrada de EVA en `sources` con `coverage` (el país y los municipios que cubre); `sources.yaml` la nombra como la fuente que calcula `supply` en la región piloto
+  - [x] Script reproducible desde el CSV crudo
+  - [x] Filas rechazadas reportadas con motivo
+  - [x] Datos preliminares marcados
+  - [x] `semester` toma solo `A` (enero a junio) o `B` (julio a diciembre); la correspondencia con los periodos de EVA queda documentada (supuesto por confirmar en HU-001)
+  - [x] Entrada de EVA en `sources` con `coverage` (el país y los municipios que cubre); `sources.yaml` la nombra como la fuente que calcula `supply` en la región piloto
 - **Reglas que aplican:** R7, R8
 - **Contrato que toca:** `supply_semester`, `sources`
+- **Hecho (14 de noviembre de 2026):**
+  - **La fuente:** «Evaluaciones Agropecuarias Municipales – EVA. 2019 - 2025. Base Agrícola» de la UPRA en datos.gov.co (`uejq-wxrr`, CC BY-SA 4.0, actualizada el 28 de agosto de 2026). Trae el DIVIPOLA de 5 dígitos, el código del cultivo de la clasificación EVA y el periodo. `pipeline/sources/eva.py` baja las filas de Boyacá y Cundinamarca (33 263, todos los cultivos) a `data/raw/eva/eva.csv` y las normaliza desde ahí, sin red.
+  - **Los semestres:** el metadato de `periodo` dice «Periodo de siembra (Año y semestre para transitorios) y solo año para los cultivos permanentes»: `2024A` y `2024B` son las siembras del primero y del segundo semestre. Se toma A = enero a junio y B = julio a diciembre, el supuesto del contrato, que confirma HU-001. Una fila de un cultivo del MVP sin semestre se descarta (`no_semester`).
+  - **Las filas descartadas** se cuentan por motivo en la línea `source_read` de la terminal: fuera de la región, municipio que no está en `municipalities`, sin semestre, valor que no es número, valor negativo, sin ningún dato y repetida. Las de cultivos que no son del MVP se cuentan aparte (`other_crop`). Ninguna fila se pierde sin motivo. Con la descarga del 14 de noviembre no se descarta ninguna: 9120 filas de los cultivos del MVP dan 8456 de `supply_semester` en 238 municipios.
+  - **Preliminares:** la nota de EVA dice que «las cifras de los dos últimos años son susceptibles de modificación»: `preliminary` es verdadero en los dos últimos años de la descarga (hoy 2024 y 2025).
+  - **Los cultivos:** `pipeline/eva_crops.yaml` dice qué códigos de EVA son cada cultivo del catálogo, como `sipsa_crops.yaml` con los precios. El maíz suma sus cuatro códigos en grano seco (amarillo y blanco, tecnificado y tradicional); la papa es «todas las variedades», sin la criolla; el abono verde y el descanso no tienen oferta y dicen por qué. Si una de las filas sumadas no trae un valor, el total de ese valor queda nulo (R1). Es la propuesta de Datos: falta la revisión de Producto y agro.
+  - **Lo que cambió en 2022:** desde 2022, según la nota de EVA, el área cosechada, la producción y el rendimiento son las cosechas efectivas de cada semestre (antes, las de sus siembras): el área cosechada de un semestre puede pasar a la sembrada. No se descarta y la entrada de `sources` lo dice. El área sembrada, la que usa la oferta, significa lo mismo todos los años.
+  - **`quality`:** `partial` cuando EVA no trae alguno de los cuatro valores (29 filas); HU-032 suma su regla de los semestres anteriores. `planted_change_pct` y `dept_share_pct` van nulos hasta HU-032.
+  - **Sin la caché de EVA** se publica lo demás y el log dice `source_missing`; si datos.gov.co falla en `--descargar`, `source_skipped`. `catalog/sources.yaml` 1.5.0 saca `eva` de `planned`.
 
 ### HU-032 · Variación del área sembrada y participación departamental
 
