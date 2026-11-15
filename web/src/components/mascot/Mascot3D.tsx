@@ -1,5 +1,5 @@
 import { useFrame, type ThreeElements } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 /**
@@ -41,6 +41,8 @@ function Tube({ from, to, radius, color }: { from: THREE.Vector3Tuple; to: THREE
     };
   }, [from, to]);
   const material = useMemo(() => flat(color), [color]);
+  // React Three Fiber solo libera lo que crea en JSX: estos materiales se liberan al salir.
+  useEffect(() => () => material.dispose(), [material]);
   return (
     <mesh position={position} quaternion={quaternion} material={material}>
       <cylinderGeometry args={[radius, radius, length, 6]} />
@@ -64,6 +66,8 @@ export function Mascot3D({ waving = true, ...props }: { waving?: boolean } & Thr
     }),
     [],
   );
+
+  useEffect(() => () => Object.values(materials).forEach((material) => material.dispose()), [materials]);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;

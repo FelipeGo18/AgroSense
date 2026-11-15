@@ -1,8 +1,8 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import a1 from "../../../../design/paisaje/svg/a1-orbita.svg?raw";
-import a3 from "../../../../design/paisaje/svg/a3-region.svg?raw";
-import a5 from "../../../../design/paisaje/svg/a5-municipio.svg?raw";
-import a7 from "../../../../design/paisaje/svg/a7-lote.svg?raw";
+import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import a1 from "../../../../design/paisaje/svg/a1-orbita.svg?url";
+import a3 from "../../../../design/paisaje/svg/a3-region.svg?url";
+import a5 from "../../../../design/paisaje/svg/a5-municipio.svg?url";
+import a7 from "../../../../design/paisaje/svg/a7-lote.svg?url";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
@@ -34,7 +34,7 @@ const LEVELS: {
     id: "orbita",
     label: "Satélite",
     title: "Desde la órbita",
-    text: "Los satélites de la NASA miden la Tierra todos los días: la lluvia (GPM IMERG), la temperatura y las heladas (NASA POWER, un reanálisis) y la altura del terreno (NASADEM).",
+    text: "Los satélites de la NASA miden la lluvia (GPM IMERG) y midieron la altura del terreno (NASADEM). La temperatura y las heladas salen de NASA POWER, un reanálisis que combina un modelo con observaciones.",
     say: "Desde aquí arriba empieza todo.",
     mood: "flying",
     scene: a1,
@@ -43,7 +43,7 @@ const LEVELS: {
     id: "region",
     label: "Región",
     title: "Boyacá y Cundinamarca",
-    text: "AgroSense toma esos datos para la región piloto, municipio por municipio: décadas de historia del clima y el suelo de cada zona.",
+    text: "AgroSense toma esos datos para la región piloto, municipio por municipio: décadas de historia del clima y el mapa de suelo de cada zona.",
     say: "Bajamos al altiplano.",
     mood: "guide",
     scene: a3,
@@ -68,13 +68,33 @@ const LEVELS: {
   },
 ];
 
-function Scene2D({ markup }: { markup: string }) {
-  const svg = markup.replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" ');
-  return <div aria-hidden="true" className="absolute inset-0" dangerouslySetInnerHTML={{ __html: svg }} />;
+/** La ilustración 2D del guion (`design/paisaje/`), como imagen: no se descarga hasta que se ve, y no repite ids. */
+function Scene2D({ src }: { src: string }) {
+  return <img data-scene src={src} alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 size-full object-cover" />;
+}
+
+/**
+ * Si la escena 3D falla (sin WebGL, se pierde el contexto o no baja el paquete), la página pasa a las ilustraciones 2D,
+ * como en modo ligero, en vez de caerse: `Canvas` vuelve a lanzar los errores de la escena.
+ */
+class Fallback3D extends Component<{ onFail: () => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onFail();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
 }
 
 export function JourneyPage() {
   const animated = useAnimated();
+  const [failed, setFailed] = useState(false);
+  // La escena 3D solo con movimiento y si no falló; si no, las ilustraciones 2D quietas.
+  const threeD = animated && !failed;
   const progress = useRef(0);
   const sections = useRef<(HTMLElement | null)[]>([]);
   const [active, setActive] = useState(0);
@@ -89,7 +109,7 @@ export function JourneyPage() {
         const box = section.getBoundingClientRect();
         const center = box.top + box.height / 2;
         if (center <= middle) value = i;
-        else if (i > 0 && box.top < middle) value = i - 1 + (middle - box.top) / (box.height / 2 + 1e-6) / 2;
+        else if (i > 0 && box.top < middle) value = i - 1 + (middle - box.top) / (box.height / 2 + 1e-6);
       });
       progress.current = Math.min(LEVELS.length - 1, Math.max(0, value));
       setActive(Math.round(progress.current));
@@ -104,7 +124,7 @@ export function JourneyPage() {
   }, []);
 
   const go = (i: number) => {
-    sections.current[i]?.scrollIntoView({ behavior: animated ? "smooth" : "auto", block: "center" });
+    sections.current[i]?.scrollIntoView({ behavior: threeD ? "smooth" : "auto", block: "center" });
     sections.current[i]?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
   };
 
@@ -112,11 +132,13 @@ export function JourneyPage() {
     <div className="relative min-h-svh bg-[#0B1226]">
       <title>Del satélite a su finca · AgroSense</title>
       <TopBar />
-      {animated && (
+      {threeD && (
         <div className="fixed inset-0">
-          <Suspense fallback={null}>
-            <JourneyCanvas progress={progress} />
-          </Suspense>
+          <Fallback3D onFail={() => setFailed(true)}>
+            <Suspense fallback={null}>
+              <JourneyCanvas progress={progress} />
+            </Suspense>
+          </Fallback3D>
         </div>
       )}
       <main className="relative">
@@ -148,7 +170,7 @@ export function JourneyPage() {
             aria-labelledby={`${level.id}-titulo`}
             className="relative flex min-h-svh items-center"
           >
-            {!animated && <Scene2D markup={level.scene} />}
+            {!threeD && <Scene2D src={level.scene} />}
             <div className="relative container-page flex w-full flex-col items-start gap-4 py-16 md:flex-row md:items-center">
               <Card className="w-full max-w-[520px]">
                 <p className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
@@ -177,7 +199,7 @@ export function JourneyPage() {
               </Card>
               {/* La mascota dice lo suyo al lado (nunca es la única señal). Con movimiento, su versión 3D vuela en la escena. */}
               <div className="flex items-center gap-3 rounded-sm bg-superficie-panel/90 px-4 py-3 shadow-md">
-                {!animated && <Mascot mood={level.mood} size={72} decorative />}
+                {!threeD && <Mascot mood={level.mood} size={72} decorative />}
                 <p className="font-bold">{level.say}</p>
               </div>
             </div>

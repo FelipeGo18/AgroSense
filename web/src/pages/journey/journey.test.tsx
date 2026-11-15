@@ -1,10 +1,24 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATHS } from "@/app/paths";
 import { routes } from "@/app/routes";
 import { setLightMode } from "@/lib/lightMode";
+
+// Con movimiento o sin él, según la prueba (en jsdom el motor de animaciones no está y la página sería siempre ligera).
+const motion = vi.hoisted(() => ({ animated: false }));
+vi.mock("@/hooks/useLightMode", async (original) => ({
+  ...(await original<typeof import("@/hooks/useLightMode")>()),
+  useAnimated: () => motion.animated,
+}));
+
+// En jsdom no hay WebGL: la escena 3D lanza un error al montar, como en un equipo sin WebGL.
+vi.mock("./JourneyCanvas", () => ({
+  default: () => {
+    throw new Error("WebGL no disponible");
+  },
+}));
 
 const open = () => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [PATHS.journeyTour] })} />);
 
@@ -16,6 +30,7 @@ describe("Del satélite a su finca (HU-155)", () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    motion.animated = false;
     setLightMode(false);
   });
 
@@ -26,8 +41,8 @@ describe("Del satélite a su finca (HU-155)", () => {
       expect(await screen.findByRole("heading", { level: 2, name: title })).toBeInTheDocument();
     }
     expect(container.querySelector("canvas")).toBeNull();
-    // Cada nivel con su ilustración del guion y la mascota quieta que dice lo suyo.
-    expect(container.querySelectorAll("section svg").length).toBeGreaterThanOrEqual(4);
+    // Cada nivel con su ilustración del guion (una imagen por nivel) y la mascota quieta que dice lo suyo.
+    expect(container.querySelectorAll("section img[data-scene]")).toHaveLength(4);
     expect(screen.getByText("Y llegamos a su lote.")).toBeInTheDocument();
     expect(screen.getByText(/el relieve y la finca son dibujos/)).toBeInTheDocument();
   });
@@ -42,6 +57,18 @@ describe("Del satélite a su finca (HU-155)", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Su finca" })).toHaveFocus();
     await userEvent.click(screen.getByRole("button", { name: "Bajar a: Región ↓" }));
     expect(screen.getByRole("heading", { level: 2, name: "Boyacá y Cundinamarca" })).toHaveFocus();
+  });
+
+  it("si la escena 3D falla (sin WebGL), la página sigue con las ilustraciones 2D en vez de caerse", async () => {
+    motion.animated = true;
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { container } = open();
+    expect(await screen.findByRole("heading", { level: 2, name: "Desde la órbita" })).toBeInTheDocument();
+    await waitFor(() => expect(container.querySelectorAll("section img[data-scene]")).toHaveLength(4));
+    expect(container.querySelector("canvas")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "Su finca" })).toBeInTheDocument();
+    // La escena sí se intentó montar (con movimiento) y falló: la barrera lo atrapó.
+    expect(logged.mock.calls.some((call) => String(call[0]).includes("WebGL") || String(call[1] ?? "").includes("WebGL"))).toBe(true);
   });
 
   it("termina invitando a consultar y a ver cómo funciona", async () => {
