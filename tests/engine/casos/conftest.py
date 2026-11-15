@@ -141,6 +141,58 @@ def datos_con_heladas(datos):
     return _publicar_heladas(datos, con_helada=lambda año: año % AÑOS_SIN_HELADA != 0, frecuencia=80.0)
 
 
+# Contorno del lote de ejemplo (dos celdas de la rejilla de `datos_con_suelo`).
+CONTORNO_LOTE = {
+    "type": "Polygon",
+    "coordinates": [[[-73.487, 5.4905], [-73.483, 5.4905], [-73.483, 5.492], [-73.487, 5.492], [-73.487, 5.4905]]],
+}
+
+
+@pytest.fixture
+def datos_con_suelo(datos):
+    """`datos` con suelo de EJEMPLO (R5): el del municipio de Samacá (pH 6,0, carbono orgánico bajo: 20 g/kg, bajo los 29 de
+    `materia_organica_ciclos`) y el de las dos celdas de la rejilla bajo `CONTORNO_LOTE`, con otro pH (6,3 de mediana) para que se
+    note de cuál de los dos sale. La pendiente es de 2 % (sin erosión). Cifras inventadas, como en `tests/test_endpoint_rotaciones.py`."""
+    from backend.dataset import SOIL_COLUMNS
+    from common.grid import cell_id
+
+    filas = [
+        {
+            "cell_id": cell_id(5.49125, lon),
+            "altitude_m": 2700.0,
+            "slope_pct": 2.0,
+            **dict.fromkeys(SOIL_COLUMNS, 10.0),
+            "ph": ph,
+            "ph_p05": ph - 0.2,
+            "ph_p95": ph + 0.2,
+            "soc_g_kg": 20.0,
+            "soc_p05": 15.0,
+            "soc_p95": 25.0,
+            "texture_class": "franco",
+            "quality": "ok",
+            "source_ids": ["soilgrids"],
+        }
+        for lon, ph in [(-73.48375, 6.2), (-73.48625, 6.4)]
+    ]
+    pl.DataFrame(filas).write_parquet(datos / "grid_cells.parquet")
+    municipio = {
+        "municipality_id": EJEMPLO_FRIO,
+        **dict.fromkeys(SOIL_COLUMNS, 10.0),
+        "ph": 6.0,
+        "ph_p05": 5.7,
+        "ph_p95": 6.3,
+        "soc_g_kg": 20.0,
+        "soc_p05": 15.0,
+        "soc_p95": 25.0,
+        "texture_class": "franco",
+        "cells": 30,
+        "quality": "ok",
+        "source_id": "soilgrids",
+    }
+    pl.DataFrame([municipio]).write_parquet(datos / "soil_municipality.parquet")
+    return datos
+
+
 @pytest.fixture
 def api(datos) -> TestClient:
     return TestClient(app)
