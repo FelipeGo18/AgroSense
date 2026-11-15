@@ -72,7 +72,7 @@ def test_los_limites_de_la_papa_son_los_esperados(papa):
 
 def test_los_umbrales_son_los_esperados(thresholds):
     """Fija la versión de `thresholds.yaml` con que se escribieron los casos de abajo: si cambia, se revisan."""
-    assert thresholds.version == "1.0.0"
+    assert thresholds.version == "1.1.0"
     assert (thresholds.favorable, thresholds.moderate) == (70, 40)
 
 

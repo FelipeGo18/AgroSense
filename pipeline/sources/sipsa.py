@@ -189,7 +189,9 @@ def seasonal(prices: pl.DataFrame) -> pl.DataFrame:
 
     Para cada año completo (los doce meses con precio), el promedio del mes se divide por el promedio de ese año: así la
     inflación entre años no cuenta. El índice del mes es el promedio de esos cocientes (1,00 = un mes como cualquiera).
-    Con menos de `MIN_YEARS` años completos el producto no tiene índice: no se inventa (R1).
+    `years_above` y `years_below` cuentan los años completos en que el cociente del mes fue mayor o menor que 1 (HU-073,
+    decisión 17): un año justo en el promedio no cuenta en ninguno. Con menos de `MIN_YEARS` años completos el producto
+    no tiene índice: no se inventa (R1).
     """
     monthly = (
         prices.with_columns(pl.col("date").dt.year().alias("year"), pl.col("date").dt.month().alias("month"))
@@ -205,11 +207,30 @@ def seasonal(prices: pl.DataFrame) -> pl.DataFrame:
     )
     return (
         ratios.group_by("product_id", "market_id", "month")
-        .agg(pl.col("ratio").mean().round(3).alias("seasonal_index"))
+        .agg(
+            pl.col("ratio").mean().round(3).alias("seasonal_index"),
+            (pl.col("ratio") > 1).sum().alias("years_above"),
+            (pl.col("ratio") < 1).sum().alias("years_below"),
+        )
         .join(years, on=["product_id", "market_id"])
         .filter(pl.col("years") >= MIN_YEARS)
-        .with_columns(pl.col("month").cast(pl.Int8), pl.col("years").cast(pl.Int16), pl.lit(SOURCE_ID).alias("source_id"))
-        .select("product_id", "market_id", "month", "seasonal_index", "years", "first_year", "last_year", "source_id")
+        .with_columns(
+            pl.col("month").cast(pl.Int8),
+            pl.col("years", "years_above", "years_below").cast(pl.Int16),
+            pl.lit(SOURCE_ID).alias("source_id"),
+        )
+        .select(
+            "product_id",
+            "market_id",
+            "month",
+            "seasonal_index",
+            "years",
+            "years_above",
+            "years_below",
+            "first_year",
+            "last_year",
+            "source_id",
+        )
         .sort("product_id", "market_id", "month")
     )
 
@@ -224,6 +245,10 @@ MONTH_SCHEMA = {
     "volume_t": pl.Float64,
     "seasonal_index": pl.Float64,
     "years": pl.Int16,
+    "years_above": pl.Int16,
+    "years_below": pl.Int16,
+    "first_year": pl.Int32,
+    "last_year": pl.Int32,
     "quality": pl.String,
     "source_id": pl.String,
 }
@@ -233,7 +258,8 @@ def monthly(prices: pl.DataFrame, season: pl.DataFrame, crops: dict[str, Any]) -
     """La tabla `market_month` (HU-051): por cultivo, central y mes, el índice estacional y el precio de ese mes.
 
     - El cultivo sale de `crops` (`sipsa_crops.yaml`, HU-003). Un cultivo sin producto no tiene filas (R1).
-    - `seasonal_index` y `years` son los de `market_price_season`: sin 3 años completos no hay filas (R1).
+    - `seasonal_index`, `years`, `years_above`, `years_below`, `first_year` y `last_year` son los de
+      `market_price_season`: sin 3 años completos no hay filas (R1).
     - `price_cop_kg` es el precio medio de ese mes en `price_year`, el último año completo del producto en esa central.
       Es lo que se pagó, no un precio estimado: los 12 meses salen del mismo año, así que se comparan sin inflación.
     - `volume_t` va nulo: `promediosSipsaParcial` no trae volumen (R1).

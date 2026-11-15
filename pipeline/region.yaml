@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.25"
+dataset_version: "2026.11.26"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"
@@ -28,6 +28,15 @@ region:
   department_markets:
     "15": "9"   # Boyacá → Tunja
     "25": "1"   # Cundinamarca → Corabastos
+  # La central de un cultivo cuando la del departamento no lo publica (HU-073, decisión 17), con su porqué: la API la usa
+  # solo si la central del departamento no tiene fila del cultivo, y la razón lo dice. Nunca otra central por defecto
+  # (R1). Tunja publicó papa negra solo del 4 de febrero de 2020 al 27 de julio de 2021; de 2013 a 2020 su temporada y
+  # la de Corabastos se parecen casi del todo (r = 0,979, microdatos de SIPSA; docs/investigacion-decisiones.md, 5f).
+  crop_market_overrides:
+    "15":
+      papa:
+        market_id: "1"
+        reason: "Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos"
 
 # Periodo normal del clima (HU-044; decidido por Felipe el 10 de noviembre de 2026): uno solo para todo lo que se compara
 # con una normal. 1991-2020 es el periodo de referencia de la OMM y el de las normales del IDEAM, que siguen sus
