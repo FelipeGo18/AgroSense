@@ -1,3 +1,4 @@
+import { EMPTY_STRATEGY, readGuestConsult, writeGuestConsult } from "@/features/strategies/entry";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
@@ -170,6 +171,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   setLightMode(false);
   DRAWN.value = null;
+  sessionStorage.clear();
 });
 
 describe("Mi finca (HU-169)", () => {
@@ -689,5 +691,49 @@ describe("El área escrita a mano", () => {
       null,
       null,
     ]);
+  });
+});
+
+describe("Consulta al crear lote (HU-168)", () => {
+  it.each(["Guardar lote", "Cancelar", "No, empezar de cero"])("precarga desde la pestaña y limpia con %s", async (action) => {
+    setLightMode(true);
+    writeGuestConsult({
+      ...EMPTY_STRATEGY,
+      municipalityId: "15646",
+      areaText: "2,73",
+      irrigation: "si",
+      previousMode: "crops",
+      previous: ["papa", "", ""],
+    });
+    const calls = fakeApi({
+      ...BASE,
+      "GET /api/v1/lots": { status: 200, body: [] },
+      "POST /api/v1/lots": { status: 201, body: LOT },
+      "GET /api/v1/lots/a1": { status: 200, body: DETAIL },
+    });
+    const router = createMemoryRouter(routes, { initialEntries: [PATHS.addLot + "?desde=consulta"] });
+    const addresses: string[] = [];
+    const unsubscribe = router.subscribe((state) => addresses.push(state.location.pathname + state.location.search));
+    render(<RouterProvider router={router} />);
+    expect(await screen.findByRole("heading", { name: "Su lote, sin dibujar" })).toBeInTheDocument();
+    expect(screen.getByText("Paso 2 de 2")).toBeInTheDocument();
+    expect(screen.getByLabelText("Área del lote (ha)")).toHaveValue("2,73");
+    expect(await screen.findByText(/Ya consultó para Samacá/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cultivos anteriores: Papa/)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Sí$/ })).toBeChecked();
+    if (action === "Guardar lote") {
+      await userEvent.type(screen.getByLabelText("Nombre del lote"), "Mi lote");
+      await userEvent.click(screen.getByRole("button", { name: action }));
+      await screen.findByText("Lote guardado.");
+      expect(calls.find((c) => c.key === "POST /api/v1/lots")?.body).toEqual({
+        name: "Mi lote",
+        municipality_id: "15646",
+        area_ha: 2.73,
+        irrigated: true,
+      });
+    } else await userEvent.click(screen.getByRole(action === "Cancelar" ? "link" : "button", { name: action }));
+    expect(readGuestConsult()).toBeNull();
+    expect(addresses.every((url) => !url.includes("area") && !url.includes("2,73") && !url.includes("2.73"))).toBe(true);
+    unsubscribe();
   });
 });

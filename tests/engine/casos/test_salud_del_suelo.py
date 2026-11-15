@@ -4,12 +4,21 @@ Esperan `/rotations` con `soil_health` y van con `xfail(strict=True)`. No predic
 El dataset de ejemplo no trae carbono orgánico del suelo (SoilGrids), así que `organic_carbon` no tiene dato.
 """
 
+import json
+
+import polars as pl
 import pytest
 
 from tests.engine.casos.conftest import SOIL_CRITERIA, rotacion
 
 ESPERA_SUELO = pytest.mark.xfail(strict=True, reason="espera HU-081, HU-213, HU-212 y HU-084")
-ESPERA_SUELO_REGLAS = pytest.mark.xfail(strict=True, reason="espera HU-081, HU-213, HU-212, HU-084 y HU-062 (PR #62)")
+
+
+def niveles_de(datos, rule_id: str) -> dict:
+    """Los cortes de una regla tal como quedan publicados en `rotation_rules` (el PR #62 ya está dentro)."""
+    regla = pl.read_parquet(datos / "rotation_rules.parquet").filter(pl.col("rule_id") == rule_id)
+    assert regla.height == 1, rule_id
+    return json.loads(regla["levels"][0])
 
 
 @ESPERA_SUELO
@@ -22,34 +31,39 @@ def test_ejemplo_sin_carbono_organico_el_criterio_es_insufficient_data(api):
         assert carbono["level"] is None  # R1: nunca se pinta como malo
 
 
-@ESPERA_SUELO_REGLAS
-def test_ejemplo_la_leguminosa_mejora_el_nitrogeno(api, familias):
+@ESPERA_SUELO
+def test_ejemplo_la_leguminosa_mejora_el_nitrogeno(api, datos, familias):
+    # `leguminosa_en_rotacion` publica `levels: {favorable: 1, moderate: 1}`: favorable desde 1 ciclo con leguminosa, sin
+    # franja intermedia. Con ninguno, `unfavorable`. Si el catálogo cambia los cortes, el caso falla aquí.
+    assert niveles_de(datos, "leguminosa_en_rotacion") == {"favorable": 1, "moderate": 1}
     respuesta = rotacion(api)
     assert respuesta["strategies"]
+    vistos = set()
     for estrategia in respuesta["strategies"]:
         ciclos = sum(1 for crop_id in estrategia["crop_ids"] if familias[crop_id][1])
         nitrogeno = estrategia["soil_health"]["nitrogen"]
         assert nitrogeno["status"] == "available"
-        # Cortes de `leguminosa_en_rotacion` en el PR #62: `levels: {favorable: 1, moderate: 1}` (favorable desde 1
-        # ciclo con leguminosa, sin franja intermedia). Lo que la HU fija es «con leguminosa, favorable o moderate; sin
-        # ella, unfavorable». TODO(HU-062): cuando entre el #62, con leguminosa se exige `favorable`.
-        if ciclos == 0:
-            assert nitrogeno["level"] == "unfavorable"
-        else:
-            assert nitrogeno["level"] in ("favorable", "moderate")
+        assert nitrogeno["level"] == ("favorable" if ciclos else "unfavorable"), estrategia["crop_ids"]
+        vistos.add(bool(ciclos))
+    # Los dos lados: hay estrategias con y sin leguminosa (si todas fueran de un lado, el caso no prueba el corte).
+    assert vistos == {True, False}
 
 
-@ESPERA_SUELO_REGLAS
-def test_ejemplo_rotacion_de_referencia_agrosavia_no_sale_unfavorable_en_pest_break(api):
-    # Papa -> avena con vicia -> arveja (Agrosavia, Tibaitatá). El caso con `papa_espera` en 3 y 2 (`moderate`) necesita
-    # cambiar la regla del dataset: queda para cuando el dataset de ejemplo publique `rotation_rules` (TODO(HU-062)).
-    respuesta = rotacion(api, current_crop_ids=["papa", "avena_vicia", "arveja"])
-    pest_break = respuesta["current_strategy"]["soil_health"]["pest_break"]
-    assert pest_break["status"] == "available"
-    assert pest_break["level"] != "unfavorable"
+@ESPERA_SUELO
+def test_ejemplo_rotacion_de_referencia_agrosavia_sale_moderate_en_pest_break(api, datos):
+    # Papa -> avena con vicia -> arveja (Agrosavia, Tibaitatá). `papa_espera`: Solanaceae, `levels: {favorable: 3, moderate: 2}`.
+    # Cálculo (supuesto por confirmar en HU-212: la rotación se repite): entre una papa y la siguiente quedan 2 ciclos de
+    # otras familias (avena con vicia, Gramineae; arveja, Leguminosae), que llegan al corte `moderate` (2) y no al
+    # `favorable` (3): `moderate`. Con papa -> arveja -> papa (el ejemplo del contrato) queda 1 ciclo, bajo 2: `unfavorable`.
+    assert niveles_de(datos, "papa_espera") == {"favorable": 3, "moderate": 2}
+    agrosavia = rotacion(api, current_crop_ids=["papa", "avena_vicia", "arveja"])["current_strategy"]["soil_health"]["pest_break"]
+    assert (agrosavia["status"], agrosavia["level"]) == ("available", "moderate")
+    assert "papa_espera" in agrosavia["rule_ids"]
+    sola = rotacion(api, current_crop_ids=["papa", "arveja", "papa"])["current_strategy"]["soil_health"]["pest_break"]
+    assert (sola["status"], sola["level"]) == ("available", "unfavorable")
 
 
-@ESPERA_SUELO_REGLAS
+@ESPERA_SUELO
 def test_ejemplo_forma_de_los_cinco_criterios_de_salud_del_suelo(api, fuentes):
     respuesta = rotacion(api, current_crop_ids=["papa", "avena_vicia", "arveja"])
     estrategias = [*respuesta["strategies"], respuesta["current_strategy"]]
