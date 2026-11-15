@@ -24,7 +24,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 ### HU-081 · Filtrar estrategias válidas
 
 - **Historia:** Como agricultor, quiero ver solo estrategias agronómicamente válidas, que se den en mi zona y sin ciclos de alto riesgo, para no recibir recomendaciones dañinas.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (PR #108 y #140, 15 nov 2026; código en `backend/engine/rotations/`)
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (PR #97, #105, #108 y #140; código en `backend/engine/rotations/`)
 - **Criterios de aceptación:**
   - **Candidatas (decisión 15, paso 0)**
   - [x] El motor arma todas las secuencias de `cycles` ciclos (2 o 3) con los cultivos del catálogo, de cualquier `kind` (`crop`, `cover`, `fallow`; HU-063), sin el mismo `crop_id` en dos ciclos seguidos y sin dos descansos seguidos
@@ -56,7 +56,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
   - **Historia del terreno (decisión 6)**
   - [x] El motor tiene una sola función que arma la historia del terreno: `terrain_history(previous_crop_ids, current_crop_ids)` en `backend/engine/rotations/history.py`. Devuelve la lista de cultivos anteriores (del más reciente al más antiguo) y su `history_basis`:
     - `previous_crop_ids` no vacía: esa lista, tal cual, `declared`
-    - vacía y `current_crop_ids` con cultivos: la rotación actual repetida hacia atrás, `current_rotation`. Se recorre del último al primero y la historia supuesta tiene siempre 3 cultivos (el máximo de `previous_crop_ids` del contrato): se repite o se recorta. Ejemplos: `[papa, avena_vicia, arveja]` da `(arveja, avena_vicia, papa)`; `[papa, arveja]` da `(arveja, papa, arveja)`; `[a, b, c, d]` da `(d, c, b)`; un solo cultivo se repite tres veces. Supuesto por confirmar con Felipe: el largo de 3
+    - vacía y `current_crop_ids` con cultivos: la rotación actual repetida hacia atrás, `current_rotation`. Se recorre del último al primero y la historia supuesta tiene siempre 3 cultivos (el máximo de `previous_crop_ids` del contrato): se repite o se recorta. Ejemplos: `[papa, avena_vicia, arveja]` da `(arveja, avena_vicia, papa)`; `[papa, arveja]` da `(arveja, papa, arveja)`; `[a, b, c, d]` da `(d, c, b)`; un solo cultivo se repite tres veces. Aprobado por Felipe el 15 de noviembre de 2026 (PR #140)
     - ninguna de las dos: `()`, `none`
   - [x] `terrain_history` devuelve una sola `TerrainHistory` (lista y `history_basis`) que se pasa igual al filtro y a `soil_health` (R4); con la misma historia, los dos dicen lo mismo de los cultivos anteriores (prueba: papa → avena_vicia → arveja con la rotación actual supuesta da `pest_break` `moderate` y el filtro cuenta los mismos 2 ciclos)
   - [x] El filtro (`rule_motives`, `phase1`, `filter_strategies`) recibe `history_basis` obligatorio, con la misma validación que `soil_health`: un valor fuera de `declared`, `current_rotation`, `none`, o que contradice la lista, lanza `ValueError`. Los valores válidos y sus textos viven en un solo lugar (`history.py`) y `soil_health` los importa
@@ -67,7 +67,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
   - [x] Prueba: con `history_basis = current_rotation`, un `family_return_min_cycles` del ciclo 2 cuya aparición anterior es un cultivo anterior lleva la frase; si la aparición anterior es un ciclo de la estrategia, no
 - **Reglas que aplican:** R1, R2, R3, R4, R6, R8
 - **Contrato que toca:** `excluded` y `excluded_counts` de la respuesta de `POST /api/v1/rotations`; `rotation_rules`
-- **Notas:** HU-081 es el motor (`backend/engine/`); el endpoint es HU-084. Entrega en 4 PR de código: B (candidatas y reglas; `backend/engine/rotations/`, hecho), C (aptitud y pH; `backend/engine/rotations/exclusions.py`, hecho), D (alto riesgo y `excluded`; #108, hecho) y E (historia única del terreno; `backend/engine/rotations/history.py`; #140). Con los cultivos anteriores, `same_family_consecutive` compara solo el más reciente (el primero de `previous_crop_ids`) con el primer ciclo; `family_return_min_cycles` cuenta todos los cultivos anteriores como ciclos previos, el más reciente primero. **Decisión 6 de Felipe (14 nov 2026, PR #109):** el filtro entre el cultivo anterior y el primer ciclo usa la misma historia del terreno que `pest_break` (HU-212): los `previous_crop_ids` si llegan y, si llegan vacíos y hay `current_crop_ids`, la rotación actual repetida hacia atrás, para todas las estrategias; el cambio de código va en HU-081 (decidido por Juan el 15 de noviembre de 2026), con la función `terrain_history` y los criterios «Historia del terreno (decisión 6)». Supuesto por confirmar: si con cuenta el terreno junta dos partes con cultivos distintos (`follows_season_ids`, HU-165), cuál de ellos es «el más reciente». `previous_crop_ids` va del más reciente al más antiguo. Las 392 y 56 candidatas salen de 8 cultivos del catálogo; «sin dos descansos seguidos» ya lo cubre la regla del mismo `crop_id`, porque hay un solo descanso. El `cycle` de una exclusión por `not_suitable` o `soil_ph` es el primero donde aparece el cultivo (contrato, aprobado por Felipe el 14 de noviembre de 2026, PR #73). La decisión 16 y `crops.secondary_families` llegan con el PR #62 (HU-062). La forma de los motivos múltiples y su orden los aprobó Felipe el 14 de noviembre de 2026 (revisión del PR #90); el cambio del contrato va en su propio PR. Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12). Precisada el 14 de noviembre de 2026.
+- **Notas:** HU-081 es el motor (`backend/engine/`); el endpoint es HU-084. Entrega en 4 PR de código: B (candidatas y reglas; `backend/engine/rotations/`, hecho), C (aptitud y pH; `backend/engine/rotations/exclusions.py`, hecho), D (alto riesgo y `excluded`; #108, hecho) y E (historia única del terreno; `backend/engine/rotations/history.py`; #140). Con los cultivos anteriores, `same_family_consecutive` compara solo el más reciente (el primero de `previous_crop_ids`) con el primer ciclo; `family_return_min_cycles` cuenta todos los cultivos anteriores como ciclos previos, el más reciente primero. **Decisión 6 de Felipe (14 nov 2026, PR #109):** el filtro entre el cultivo anterior y el primer ciclo usa la misma historia del terreno que `pest_break` (HU-212): los `previous_crop_ids` si llegan y, si llegan vacíos y hay `current_crop_ids`, la rotación actual repetida hacia atrás, para todas las estrategias; el cambio de código va en HU-081 (decidido por Juan el 15 de noviembre de 2026), con la función `terrain_history` y los criterios «Historia del terreno (decisión 6)». Si con cuenta el terreno junta dos partes con cultivos distintos (`follows_season_ids`, HU-165), «el más reciente» es el de la parte que se cosechó más tarde; si empatan, el de mayor área (decidido por Felipe el 15 de noviembre de 2026, PR #140). El texto del contrato (línea 149) y la historia supuesta de 3 cultivos también los aprobó Felipe ese día. `previous_crop_ids` va del más reciente al más antiguo. Las 392 y 56 candidatas salen de 8 cultivos del catálogo; «sin dos descansos seguidos» ya lo cubre la regla del mismo `crop_id`, porque hay un solo descanso. El `cycle` de una exclusión por `not_suitable` o `soil_ph` es el primero donde aparece el cultivo (contrato, aprobado por Felipe el 14 de noviembre de 2026, PR #73). La decisión 16 y `crops.secondary_families` llegan con el PR #62 (HU-062). La forma de los motivos múltiples y su orden los aprobó Felipe el 14 de noviembre de 2026 (revisión del PR #90); el cambio del contrato va en su propio PR. Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12). Precisada el 14 de noviembre de 2026.
 
 ### HU-213 · Ciclos de una estrategia con su diagnóstico
 
@@ -89,28 +89,35 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 ### HU-082 · Ordenar estrategias por prioridades
 
 - **Historia:** Como agricultor, quiero ordenar las estrategias según mis prioridades (agua, suelo, ingreso y riesgo), para elegir la que me conviene.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (la ruta `/rotations` lo llama con HU-084)
 - **Criterios de aceptación:**
-  - [ ] Puntaje de 0 a 100 por criterio (`water`, `soil`, `income`, `risk`) y total ponderado por `priorities` (un entero de 0 a 5 por criterio)
-  - [ ] Cada criterio sale de los ciclos con una regla documentada en `specs/01-reglas.md` («Estrategias de rotación»): `water` de las señales `water` de sus ciclos, `soil` de `soil_health` (HU-212), `income` de las señales `supply` y `market` de sus ciclos, y `risk` del factor que más limita entre sus ciclos
-  - [ ] Un criterio sin datos tiene puntaje nulo, no entra al total y va a las limitaciones (R1); nunca se rellena
-  - [ ] Devuelve hasta 10 estrategias; misma entrada, mismo orden; desempate determinista (R4)
-  - [ ] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
+  - [x] Puntaje de 0 a 100 por criterio (`water`, `soil`, `income`, `risk`) y total ponderado por `priorities` (un entero de 0 a 5 por criterio)
+  - [x] Cada criterio sale de los ciclos con una regla documentada en `specs/01-reglas.md` («Estrategias de rotación»): `water` de las señales `water` de sus ciclos, `soil` de `soil_health` (HU-212), `income` de las señales `supply` y `market` de sus ciclos, y `risk` del factor que más limita entre sus ciclos
+  - [x] Un criterio sin datos tiene puntaje nulo, no entra al total y va a las limitaciones (R1); nunca se rellena
+  - [x] Devuelve hasta 10 estrategias; misma entrada, mismo orden; desempate determinista (R4)
+  - [x] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
 - **Reglas que aplican:** R1, R4, R5
 - **Contrato que toca:** `strategies[].scores`, `total_score` y `rank` de `POST /api/v1/rotations`
-- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213.
+- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213. Hecha el 15 de noviembre de 2026 en `backend/engine/rotations/ranking.py`; `StrategyCycles.cycle_scores` (HU-213) le da a cada ciclo su `kind` y sus calificaciones. El `risk` de cada ciclo es la calificación más baja entre sus señales que cuentan y califican, también si su luz es `not_evaluable` por falta del agua; un ciclo sin ninguna no cuenta, y se dice (aprobado por Haider el 15 de noviembre de 2026, PR #146, con los demás supuestos del registro). El mismo cálculo sirve para la rotación actual (HU-223), que no entra al orden.
 
 ### HU-083 · Explicar el orden de las estrategias
 
 - **Historia:** Como agricultor, quiero entender por qué una estrategia quedó arriba, para confiar en ella.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha (la ruta `/rotations` la llama con HU-084)
 - **Criterios de aceptación:**
-  - [ ] De 2 a 4 razones por estrategia, de plantillas fijas
-  - [ ] Cada razón cita una regla o un indicador que el motor evaluó (R5)
-  - [ ] Al menos una razón cita un criterio de salud del suelo (HU-212) cuando está disponible
-  - [ ] Con rotación actual (HU-223), al menos una razón dice en qué gana o pierde la estrategia frente a ella, con el criterio y la regla que lo explican
-  - [ ] Ninguna razón dice cuánto va a mejorar el suelo ni cuánto se va a cosechar: es una comparación entre estrategias según reglas (decisión 4)
+  - [x] De 2 a 4 razones por estrategia, de plantillas fijas
+  - [x] Cada razón cita una regla o un indicador que el motor evaluó (R5)
+  - [x] Al menos una razón cita un criterio de salud del suelo (HU-212) cuando está disponible
+  - [x] Con rotación actual (HU-223), al menos una razón dice en qué gana o pierde la estrategia frente a ella, con el criterio y la regla que lo explican
+  - [x] Ninguna razón dice cuánto va a mejorar el suelo ni cuánto se va a cosechar: es una comparación entre estrategias según reglas (decisión 4)
 - **Reglas que aplican:** R5, R8
+- **Notas:** Hecha el 15 de noviembre de 2026 en `backend/engine/rotations/reasons.py`, con cuatro plantillas fijas en este orden:
+  1. el criterio que más suma al total (calificación por prioridad) o, sin total, por qué no lo tiene; en `risk` se aclara que más alto es menos riesgo;
+  2. frente a la rotación actual, el criterio en que más gana o, si no gana en ninguno, en el que más pierde, dicho como comparación de calificaciones («califica 38 puntos más que el de su rotación actual»), nunca como «sale mejor», y con la regla de la que sale ese criterio;
+  3. el primer criterio de salud del suelo `favorable` o, sin ninguno, el primero con nivel, con la razón que da `soil_health` (y su nota de «criterio del equipo» si la regla es `criterio_equipo_2026`);
+  4. el factor que más limita, con la señal, el ciclo y la calificación de `risk`.
+
+  Una razón cuyo dato falta no se escribe (R1). Si quedan menos de dos, una sugerida agrega «Ninguna regla de rotación del catálogo la descarta», que es cierto de toda estrategia sugerida. **La rotación actual** (`kind = current`, decisión 14) empieza por «Es la rotación que usted viene haciendo: las demás se comparan contra ella», no se compara con ella misma y nunca lleva esa frase, porque en ella puede ser falsa (no se descarta aunque viole una regla: eso va en `issues`). La razón frente a la rotación actual lee `vs_current`, que calcula HU-223 (Juan Cárdenas): hasta que HU-223 lo calcule y HU-084 conecte `/rotations`, solo existe en las pruebas. Plantillas aprobadas por Haider el 15 de noviembre de 2026 (PR #150), en el registro.
 
 ### HU-084 · Endpoint de estrategias de rotación
 
