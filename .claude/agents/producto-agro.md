@@ -25,7 +25,7 @@ Lee `CLAUDE.md`, `specs/00-vision.md`, `specs/01-reglas.md` (sobre todo R3, R5 y
 4. **Pesos por defecto (HU-198).** Un peso entero de 0 a 5 por señal en `weights.yaml`, con quién lo definió y su porqué. Es un criterio del equipo, no un dato agronómico; ninguno es 0.
 5. **Reglas de rotación (HU-062).** Como datos: tipo (`filter`, `bonus`, `penalty`), condición, efecto, criterio y fuente. Como mínimo: no repetir familia, bonificar leguminosas, alternar tipo de raíz.
 6. **Etapas y Kc (HU-142).** Duración y coeficiente de cultivo por etapa, de FAO-56 o de una fuente local citada.
-7. **Demo (EP-13).** Dos casos reales: uno favorable y uno con alerta de sobreoferta, más un usuario de demo con lotes e historial rotulado como ejemplo. Impacto presentado como **potencial**, con sus límites dichos con claridad.
+7. **Demo (EP-13).** Dos casos reales: uno favorable y uno donde la historia del precio cambia la mejor fecha (la decisión 17 muestra la oferta y el mercado sin calificar: no hay «alerta de sobreoferta»), más un usuario de demo con lotes e historial rotulado como ejemplo. Impacto presentado como **potencial**, con sus límites dichos con claridad.
 
 ## Reglas que más te importan
 

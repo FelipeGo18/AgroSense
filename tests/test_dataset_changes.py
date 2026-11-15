@@ -2,9 +2,10 @@ import json
 import shutil
 from pathlib import Path
 
-from backend.api.calculations import _compare_changes
+import polars as pl
+
 from backend.dataset import load
-from backend.engine.changes import Period, PeriodPair
+from backend.engine.changes import Period, PeriodPair, compare_climate_months
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "data" / "examples"
 
@@ -73,11 +74,9 @@ def test_loaded_dataset_connects_to_changes_engine():
         after=configured_periods[1],
     )
 
-    result = _compare_changes(
-        dataset=dataset,
-        municipality_id="15001",  # Tunja, presente en el ejemplo.
-        periods=periods,
-    )
+    # Tunja, presente en el ejemplo. Las filas del dataset cargado van al motor de HU-217 (R6).
+    rows = dataset.climate_change_month.filter(pl.col("municipality_id") == "15001").to_dicts()
+    result = compare_climate_months(municipality_id="15001", rows=rows, periods=periods, precip_periods=None)
 
     january = result["months"][0]["frost_freq_pct"]
 

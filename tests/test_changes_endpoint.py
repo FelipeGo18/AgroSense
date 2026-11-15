@@ -11,6 +11,7 @@ from backend.api.main import app
 from backend.config.versions import rules_version
 from backend.dataset import load
 from backend.db.session import get_db
+from backend.engine.stages import StageSpan
 from common.signal_sources import SignalSource, SignalSources
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "data" / "examples"
@@ -38,7 +39,7 @@ def changes_api(monkeypatch):
             dataset.region["id"]: {
                 "frost": SignalSource(used="ejemplo"),
                 "heat": SignalSource(used="ejemplo"),
-                "water": SignalSource(used="ejemplo"),
+                "water": SignalSource(used="ejemplo", et0="ejemplo"),
             }
         },
     )
@@ -83,7 +84,7 @@ def test_not_suitable_returns_complete_response(changes_api):
     assert body["months"][0]["frost_freq_pct"]["before"] == 60
     assert body["periods"]["before"]["source_id"] == "ejemplo"
     assert body["request"]["irrigated"] is None
-    assert any("riego" in text for text in body["limitations"])
+    assert not any("se evaluó como sin riego" in text for text in body["limitations"])
     assert any("Datos de ejemplo" in text for text in body["limitations"])
 
 
@@ -143,7 +144,7 @@ def test_missing_periods_returns_503(changes_api):
     assert response.json()["error"]["code"] == "dataset_unavailable"
 
 
-def test_suitable_crop_remains_unimplemented(changes_api):
+def test_suitable_crop_returns_complete_response(changes_api):
     client, holder = changes_api
     dataset = holder["dataset"]
     municipalities = dict(dataset.municipalities)
@@ -155,11 +156,15 @@ def test_suitable_crop_remains_unimplemented(changes_api):
 
     response = client.get(URL, params=PARAMS)
 
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "not_implemented"
+    assert response.status_code == 200, response.text
+    body = response.json()
+    ChangesResponse.model_validate(body)
+    assert body["suitability"]["level"] == "suitable"
+    assert len(body["months"]) == 12
+    assert any("Sin dato de riego" in text for text in body["limitations"])
 
 
-def test_unknown_suitability_remains_unimplemented(changes_api):
+def test_unknown_suitability_returns_200_with_limitation(changes_api):
     client, holder = changes_api
     dataset = holder["dataset"]
     municipalities = dict(dataset.municipalities)
@@ -169,7 +174,12 @@ def test_unknown_suitability_remains_unimplemented(changes_api):
     )
     holder["dataset"] = replace(dataset, municipalities=municipalities)
 
-    assert client.get(URL, params=PARAMS).status_code == 501
+    response = client.get(URL, params=PARAMS)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["suitability"]["level"] == "insufficient_data"
+    assert body["suitability"]["score"] is None
+    assert any("Sin la temperatura" in text for text in body["limitations"])
 
 
 def test_irrigated_parameter_is_preserved(changes_api):
@@ -226,7 +236,7 @@ def split_sources_api(changes_api, monkeypatch):
             dataset.region["id"]: {
                 "frost": SignalSource(used="nasa_power"),
                 "heat": SignalSource(used="nasa_power"),
-                "water": SignalSource(used="imerg", caveat="Aviso de lluvia de ejemplo."),
+                "water": SignalSource(used="imerg", et0="nasa_power", caveat="Aviso de lluvia de ejemplo."),
             }
         },
     )
@@ -365,3 +375,128 @@ def test_endpoint_does_not_access_database_or_modify_dataset(changes_api):
     assert second.status_code == 200, second.text
     assert first.json() == second.json()
     assert dataset.climate_change_month.equals(original)
+
+
+@pytest.fixture
+def complete_api(split_sources_api):
+    """Datos ficticios suficientes para las 24 ventanas: lluvia cambia, resto constante."""
+    client, holder = split_sources_api
+    dataset = holder["dataset"]
+    municipalities = dict(dataset.municipalities)
+    municipalities["15001"] = replace(municipalities["15001"], tmean_annual_c=12)
+    crops = {key: dict(value) for key, value in dataset.crops.items()}
+    crops["papa"].update(temp_opt_max_c=25, heat_max_c=35)
+    stage = StageSpan("initial", 40, 1, True, True)
+    holder["dataset"] = replace(
+        dataset,
+        municipalities=municipalities,
+        crops=crops,
+        stages={**dataset.stages, "papa": [stage]},
+        climate_month=pl.DataFrame(
+            [
+                {"municipality_id": "15001", "source_id": "nasa_power", "year": y, "month": m, "et0_mm": 100, "precip_mm": 9999}
+                for y in range(1981, 2026)
+                for m in range(1, 13)
+            ]
+        ),
+        precip_month=pl.DataFrame(
+            [
+                {"municipality_id": "15001", "source_id": "imerg", "year": y, "month": m, "precip_mm": 200 if y <= 2012 else 10}
+                for y in range(2001, 2025)
+                for m in range(1, 13)
+            ]
+        ),
+        climate_frost_month=pl.DataFrame(
+            [
+                {"municipality_id": "15001", "source_id": "nasa_power", "year": y, "month": m, "frost_days": 0, "quality": "ok"}
+                for y in range(1981, 2026)
+                for m in range(1, 13)
+            ]
+        ),
+        climate_change_month=pl.DataFrame(
+            [
+                {**row, "month": m, "tmax_p90_c": 20 if row["source_id"] == "nasa_power" else None}
+                for row in dataset.climate_change_month.to_dicts()
+                for m in range(1, 13)
+            ]
+        ),
+    )
+    return client, holder
+
+
+def test_complete_endpoint_returns_real_ranked_windows_and_excludes_high_risk(complete_api):
+    client, _ = complete_api
+    response = client.get(URL, params={**PARAMS, "irrigated": "false"})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    ChangesResponse.model_validate(body)
+    assert len(body["best_windows"]["before"]) == 3
+    assert body["best_windows"]["after"] == []  # Agua crítica en el periodo seco.
+    assert all(not w["high_risk"] for w in body["best_windows"]["before"])
+    assert "window_evaluations" not in body
+
+
+def test_irrigation_changes_window_evaluation_and_not_historical_months(complete_api):
+    client, _ = complete_api
+    dry = client.get(URL, params={**PARAMS, "irrigated": "false"}).json()
+    irrigated = client.get(URL, params={**PARAMS, "irrigated": "true"}).json()
+    assert len(irrigated["best_windows"]["after"]) == 3
+    assert dry["months"] == irrigated["months"]
+    assert dry["best_windows"]["after"] != irrigated["best_windows"]["after"]
+
+
+def test_suitable_endpoint_does_not_use_database_or_mutate_data(complete_api):
+    client, holder = complete_api
+    dataset = holder["dataset"]
+    originals = [
+        table.clone() for table in (dataset.climate_month, dataset.precip_month, dataset.climate_frost_month, dataset.climate_change_month)
+    ]
+
+    def forbidden_database():
+        pytest.fail("/changes no debe acceder a la base de datos")
+
+    app.dependency_overrides[get_db] = forbidden_database
+    first, second = client.get(URL, params=PARAMS), client.get(URL, params=PARAMS)
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json()
+    for table, original in zip(
+        (dataset.climate_month, dataset.precip_month, dataset.climate_frost_month, dataset.climate_change_month), originals, strict=True
+    ):
+        assert table.equals(original)
+
+
+def test_suitable_without_any_climate_still_returns_200(complete_api):
+    client, holder = complete_api
+    holder["dataset"] = replace(
+        holder["dataset"], climate_month=None, precip_month=None, climate_frost_month=None, climate_change_month=None, soil={}
+    )
+    response = client.get(URL, params=PARAMS)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["suitability"]["level"] == "suitable"
+    assert body["best_windows"] == {"before": [], "after": []}
+    assert all(
+        m[indicator]["status"] == "insufficient_data"
+        for m in body["months"]
+        for indicator in ("frost_freq_pct", "precip_normal_mm", "tmax_p90_c")
+    )
+
+
+def test_invalid_calculation_configuration_returns_503(changes_api, monkeypatch):
+    from backend.api import historical_changes
+    from backend.config.changes import ChangeParametersError
+
+    def invalid():
+        raise ChangeParametersError("Configuración incompleta")
+
+    monkeypatch.setattr(historical_changes, "get_change_parameters", invalid)
+    client, _ = changes_api
+    response = client.get(URL, params=PARAMS)
+    assert response.status_code == 503, response.text
+    assert response.json()["error"]["code"] == "dataset_unavailable"
+
+
+def test_openapi_no_longer_announces_unimplemented_changes():
+    codes = app.openapi()["paths"][URL]["get"]["responses"]
+    assert "501" not in codes
+    assert {"200", "422", "500", "503"} <= set(codes)

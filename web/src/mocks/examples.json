@@ -4038,6 +4038,237 @@
                 "status": "insufficient_data",
                 "after": 21.4
               }
+            },
+            {
+              "month": 2,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 25,
+                "after": 15,
+                "change": -10
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 40,
+                "after": 45,
+                "change": 5
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 20,
+                "after": 21,
+                "change": 1
+              }
+            },
+            {
+              "month": 3,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 15,
+                "after": 10,
+                "change": -5
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 70,
+                "after": 80,
+                "change": 10
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 20.5,
+                "after": 21.2,
+                "change": 0.7
+              }
+            },
+            {
+              "month": 4,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 10,
+                "after": 8,
+                "change": -2
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 110,
+                "after": 105,
+                "change": -5
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 20,
+                "after": 20.8,
+                "change": 0.8
+              }
+            },
+            {
+              "month": 5,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 5,
+                "after": 4,
+                "change": -1
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 130,
+                "after": 120,
+                "change": -10
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 19.5,
+                "after": 20.2,
+                "change": 0.7
+              }
+            },
+            {
+              "month": 6,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 8,
+                "after": 6,
+                "change": -2
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 90,
+                "after": 85,
+                "change": -5
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 19,
+                "after": 19.7,
+                "change": 0.7
+              }
+            },
+            {
+              "month": 7,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 12,
+                "after": 10,
+                "change": -2
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 70,
+                "after": 65,
+                "change": -5
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 18.5,
+                "after": 19.4,
+                "change": 0.9
+              }
+            },
+            {
+              "month": 8,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 10,
+                "after": 8,
+                "change": -2
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 75,
+                "after": 70,
+                "change": -5
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 19,
+                "after": 19.8,
+                "change": 0.8
+              }
+            },
+            {
+              "month": 9,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 8,
+                "after": 6,
+                "change": -2
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 100,
+                "after": 110,
+                "change": 10
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 19.5,
+                "after": 20.3,
+                "change": 0.8
+              }
+            },
+            {
+              "month": 10,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 5,
+                "after": 4,
+                "change": -1
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 140,
+                "after": 150,
+                "change": 10
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 20,
+                "after": 20.9,
+                "change": 0.9
+              }
+            },
+            {
+              "month": 11,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 10,
+                "after": 8,
+                "change": -2
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 110,
+                "after": 100,
+                "change": -10
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 20.5,
+                "after": 21.3,
+                "change": 0.8
+              }
+            },
+            {
+              "month": 12,
+              "frost_freq_pct": {
+                "status": "available",
+                "before": 20,
+                "after": 12,
+                "change": -8
+              },
+              "precip_normal_mm": {
+                "status": "available",
+                "before": 50,
+                "after": 45,
+                "change": -5
+              },
+              "tmax_p90_c": {
+                "status": "available",
+                "before": 20,
+                "after": 21.1,
+                "change": 1.1
+              }
             }
           ],
           "best_windows": {
@@ -4081,10 +4312,10 @@
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
-        "501": {
+        "500": {
           "error": {
-            "code": "not_implemented",
-            "message": "Este cálculo todavía no está disponible.",
+            "code": "internal_error",
+            "message": "Algo falló de nuestro lado. Intente de nuevo en un momento.",
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
@@ -6044,9 +6275,9 @@
       }
     ],
     "version": {
-      "dataset_version": "2026.11.20",
+      "dataset_version": "2026.11.21",
       "rules_version": "0.1.0",
-      "created_at": "2026-11-15T01:48:13Z",
+      "created_at": "2026-11-15T04:23:11Z",
       "region": "Boyacá y Cundinamarca, Colombia",
       "default_weights": {
         "water": 3,
@@ -6167,7 +6398,7 @@
           "name": "DIVIPOLA- Códigos municipios",
           "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
           "url": "https://www.datos.gov.co/d/gdxc-w37w",
-          "downloaded_at": "2026-11-11T16:33:52+00:00",
+          "downloaded_at": "2026-11-15T03:47:06+00:00",
           "period_covered": "Actualizada por el DANE el 2025-01-24",
           "coverage": "Colombia",
           "license": "Creative Commons Attribution | Share Alike 4.0 International",
@@ -6179,7 +6410,7 @@
           "name": "Marco Geoestadístico Nacional 2025 · Municipios",
           "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
           "url": "https://geoportal.dane.gov.co/mparcgis/rest/services/Divipola/Serv_DIVIPOLA_MGN_2025/FeatureServer/317",
-          "downloaded_at": "2026-11-11T16:34:03+00:00",
+          "downloaded_at": "2026-11-15T03:47:54+00:00",
           "period_covered": "Versión 2025 del Marco Geoestadístico Nacional",
           "coverage": "Colombia",
           "license": "Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122)",
@@ -6191,12 +6422,24 @@
           "name": "SIPSA · Precios mayoristas diarios (servicio web)",
           "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
           "url": "https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa/servicio-web-para-consulta-de-la-base-de-datos-de-sipsa",
-          "downloaded_at": "2026-11-11T16:35:24+00:00",
-          "period_covered": "Del 2020-02-01 al 2026-11-10",
+          "downloaded_at": "2026-11-15T04:02:50+00:00",
+          "period_covered": "Del 2020-02-01 al 2026-11-13",
           "coverage": "Colombia; publicadas: Corabastos (Bogotá) · Tunja (Complejo de Servicios del Sur)",
           "license": "Términos y condiciones del DANE (https://www.dane.gov.co/index.php/terminos-y-condiciones): se autoriza el uso, aprovechamiento, transformación y análisis de la información citando «Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co». Se rigen por la ley colombiana y el DANE puede cambiarlos sin aviso.",
           "citation": "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co",
           "notes": "Precio mínimo, medio y máximo por kilo de cada producto en la central de abastos, por día. Es el precio mayorista (lo que se paga en la central), no el de la tienda. Los nombres con asterisco en SIPSA juntan varias variedades. Se publican en pesos enteros."
+        },
+        {
+          "source_id": "eva",
+          "name": "Evaluaciones Agropecuarias Municipales – EVA. 2019 - 2025. Base Agrícola",
+          "institution": "Unidad de Planificación de Tierras Rurales, Adecuación de Tierras y Usos Agropecuarios (UPRA)",
+          "url": "https://www.datos.gov.co/d/uejq-wxrr",
+          "downloaded_at": "2026-11-15T04:05:09+00:00",
+          "period_covered": "Siembras de 2019A a 2025B; actualizada por la UPRA el 2026-08-28",
+          "coverage": "Colombia: 1.103 municipios según la UPRA. En la región, 238 municipios con algún cultivo del MVP (arveja, cebolla_bulbo, haba, maiz, papa, zanahoria); un municipio sin fila de un cultivo en un semestre es sin dato: EVA no dice si no se sembró o no se reportó",
+          "license": "CC BY-SA 4.0",
+          "citation": null,
+          "notes": "Área sembrada y cosechada, producción y rendimiento por municipio (DIVIPOLA), cultivo y semestre de siembra (A = enero a junio, B = julio a diciembre; supuesto por confirmar en HU-001). Desde 2022 el área cosechada, la producción y el rendimiento son las cosechas efectivas de cada semestre; antes, las de sus siembras. Las cifras de los dos últimos años son preliminares. Los cultivos salen de pipeline/eva_crops.yaml (HU-031)."
         },
         {
           "source_id": "fairlie_ortega_1995",
@@ -6383,11 +6626,11 @@
           "name": "GPM IMERG Final Run V07 · Lluvia mensual por satélite (GPM_3IMERGM)",
           "institution": "NASA y JAXA, misión GPM (Global Precipitation Measurement); distribuido por GES DISC de la NASA",
           "url": "https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
-          "downloaded_at": "2026-11-12T21:23:27+00:00",
+          "downloaded_at": "2026-11-15T04:18:12+00:00",
           "period_covered": "De 1998 a 2025, mensual",
           "coverage": "333 meses en celdas de 0,1° (unos 11 km) del recuadro que cubre la región",
           "license": "Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita (https://disc.gsfc.nasa.gov/data-guidelines)",
-          "citation": "Huffman, G.J., Stocker, E.F., Bolvin, D.T., Nelkin, E.J. y Tan, J. (2023). GPM IMERG Final Precipitation L3 1 month 0.1 degree x 0.1 degree V07. Greenbelt, MD, Goddard Earth Sciences Data and Information Services Center (GES DISC). Consultado el 2026-11-12. https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
+          "citation": "Huffman, G.J., Stocker, E.F., Bolvin, D.T., Nelkin, E.J. y Tan, J. (2023). GPM IMERG Final Precipitation L3 1 month 0.1 degree x 0.1 degree V07. Greenbelt, MD, Goddard Earth Sciences Data and Information Services Center (GES DISC). Consultado el 2026-11-15. https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
           "notes": "Lluvia estimada por satélite (sensores de microondas e infrarrojo) y calibrada cada mes con los pluviómetros del GPCC: no es una medición del lote. Celda de 0,1°: un dato de la zona. La lluvia del municipio es el promedio de las celdas que tocan su polígono, ponderado por área. Un dato que falta (-9999,9) queda nulo, nunca relleno. Se bajó solo el recuadro de la región por OPeNDAP de Earthdata, con cuenta."
         },
         {
@@ -6431,11 +6674,11 @@
           "name": "NASA POWER · Datos diarios por punto (comunidad AG)",
           "institution": "NASA Langley Research Center, proyecto POWER (Prediction Of Worldwide Energy Resources)",
           "url": "https://power.larc.nasa.gov/",
-          "downloaded_at": "2026-11-11T16:38:05+00:00",
-          "period_covered": "Del 1981-01-01 al 2026-11-08",
+          "downloaded_at": "2026-11-15T04:16:41+00:00",
+          "period_covered": "Del 1981-01-01 al 2026-11-11",
           "coverage": "20 celdas de 0,5° × 0,625° que cubren la región",
           "license": "La página de POWER no da una licencia; pide citar la fuente (https://power.larc.nasa.gov/docs/referencing/)",
-          "citation": "The data was obtained from National Aeronautics and Space Administration (NASA) Langley Research Center's Prediction Of Worldwide Energy Resources (POWER) project funded through the NASA Earth Science Division. The data was obtained from the POWER Project's Daily 2.10.3 version on 2026/11/11.",
+          "citation": "The data was obtained from National Aeronautics and Space Administration (NASA) Langley Research Center's Prediction Of Worldwide Energy Resources (POWER) project funded through the NASA Earth Science Division. The data was obtained from the POWER Project's Daily 2.10.3 version on 2026/11/15.",
           "notes": "Es un reanálisis (MERRA-2 y GEOS-IT): un modelo con observaciones asimiladas, no una observación directa. Celda de 0,5° de latitud por 0,625° de longitud (unos 55 × 70 km): es un dato de la zona, no del lote. Temperatura mínima y máxima a 2 m (T2M_MIN, T2M_MAX), lluvia corregida (PRECTOTCORR), humedad del suelo de los primeros 5 cm y de la zona de raíces (GWETTOP, GWETROOT, de 0 a 1, de un modelo), radiación solar (ALLSKY_SFC_SW_DWN, desde 1984), viento a 2 m (WS2M) y humedad relativa a 2 m (RH2M). Las temperaturas se corrigen por altitud con la altura de la celda que da POWER, la altitud del municipio y el gradiente térmico de pipeline/region.yaml. La ET0 de climate_month se calcula con estas variables por Penman-Monteith de FAO-56 (fuente fao_56). Los días sin dato (-999) quedan nulos, nunca rellenos."
         },
         {
