@@ -75,7 +75,7 @@ describe("respuestas simuladas (HU-013)", () => {
     const errors = [
       ["404", 404, "not_found"],
       ["422", 422, "invalid_input"],
-      ["501", 501, "not_implemented"],
+      ["500", 500, "internal_error"],
       ["503", 503, "dataset_unavailable"],
     ] as const;
     for (const [estado, status, code] of errors) {
@@ -110,14 +110,18 @@ describe("respuestas simuladas (HU-013)", () => {
         "no_aplica",
         "404",
         "422",
-        "501",
+        "500",
         "503",
         "not_found",
         "invalid_input",
-        "not_implemented",
+        "internal_error",
         "dataset_unavailable",
       ]),
     );
+    // El diagnóstico ya responde con el motor (HU-076): no tiene 501. Las rutas sin motor todavía sí.
+    expect(SIMULATION_STATES["POST /diagnostics"]).not.toContain("501");
+    expect(SIMULATION_STATES["POST /diagnostics"]).not.toContain("not_implemented");
+    expect(SIMULATION_STATES["POST /rotations"]).toEqual(expect.arrayContaining(["501", "not_implemented"]));
     expect(SIMULATION_STATES.todas).toEqual(["cargando", "sin_conexion"]);
   });
 

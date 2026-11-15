@@ -139,12 +139,13 @@ def install(app: FastAPI) -> None:
         # Qué función la atendió, como `auth.login`. Solo existe en la terminal del servidor: la respuesta no lo lleva.
         if endpoint:
             fields["endpoint"] = endpoint
-        # Quién fue, si había sesión: el identificador y el rol; nunca el usuario ni el nombre.
-        if getattr(request.state, "user_id", None):
-            fields |= {"user_id": request.state.user_id, "role": request.state.role}
         # En los endpoints de cálculo, con qué versiones del dataset y de las reglas se respondió (R4). Nunca el cuerpo.
+        # Tampoco quién consultó, aunque haya sesión (R9; decidido por Felipe el 14 nov 2026, PR #102).
         if getattr(request.state, "versions", None):
             fields |= request.state.versions
+        # Fuera del cálculo, quién fue, si había sesión: el identificador y el rol; nunca el usuario ni el nombre.
+        elif getattr(request.state, "user_id", None):
+            fields |= {"user_id": request.state.user_id, "role": request.state.role}
         getattr(log, _level(response.status_code))("request", **fields)
         return response
 

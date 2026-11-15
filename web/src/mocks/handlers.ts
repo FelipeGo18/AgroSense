@@ -28,6 +28,7 @@ const ERROR_CODES: Record<string, string> = {
   unauthorized: "401",
   not_found: "404",
   invalid_input: "422",
+  internal_error: "500",
   not_implemented: "501",
   dataset_unavailable: "503",
 };
