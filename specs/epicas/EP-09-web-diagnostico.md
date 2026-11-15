@@ -147,7 +147,7 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-219 · Pantalla «Qué cambió en su zona»
 
 - **Historia:** Como agricultor, quiero ver qué cambió en las heladas, la lluvia y el calor de mi zona, y cómo se movieron las mejores fechas de siembra de mi cultivo, para adaptar mi finca a condiciones que cambian.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (PR #113, 14 nov 2026; todos sus criterios marcados)
 - **Criterios de aceptación:**
   - [x] Se llega desde el diagnóstico y el ciclo de una estrategia (HU-215) con municipio y cultivo elegidos. Desde el lote se conserva el municipio: si tiene una sola siembra en curso, su cultivo viene preseleccionado; si tiene varias o ninguna, el agricultor lo elige. El selector siempre permite cambiarlo (decisión de Haider, 15 de noviembre de 2026).
   - [x] Por mes, tres comparaciones (heladas, lluvia y temperatura máxima) entre los dos periodos, cada una con su unidad, los años de cada periodo y la fuente
