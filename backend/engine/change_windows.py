@@ -23,7 +23,8 @@ from backend.engine.soil_signal import ZoneSoilPh, soil_signal
 from backend.engine.stages import StageSpan, monthly_sowing_windows
 from backend.engine.suitability import NOT_SUITABLE, ZoneTemperatureUsed, crop_suitability, suitability_reason
 from backend.engine.water_balance import DRY, MonthClimate, root_zone, water_balance
-from backend.engine.water_signal import RainSource, WaterBalanceSummary, missing_data, water_signal
+from backend.engine.water_notes import RainSource, missing_data
+from backend.engine.water_signal import WaterBalanceSummary, water_signal
 from backend.engine.window_order import WindowSignals, best_windows, order_windows
 
 if TYPE_CHECKING:
