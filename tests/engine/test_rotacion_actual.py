@@ -4,7 +4,13 @@ import pytest
 
 import backend.engine.rotations.current as current
 import backend.engine.rotations.ranking as ranking
-from backend.engine.rotations.current import NO_CURRENT_LIMITATION, current_sequence, drop_current, vs_current
+from backend.engine.rotations.current import (
+    NO_CURRENT_LIMITATION,
+    current_sequence,
+    drop_current,
+    truncation_limitation,
+    vs_current,
+)
 from backend.engine.rotations.ranking import CycleScores, score_strategy
 from backend.engine.rotations.soil_health import Criterion
 from backend.engine.signal_score import SignalScore
@@ -27,7 +33,7 @@ CRITERIOS = ("water", "soil", "income", "risk")
     ],
 )
 def test_la_secuencia_actual_tiene_exactamente_los_ciclos_pedidos(cultivos, ciclos, esperado):
-    assert current_sequence(cultivos, ciclos) == esperado
+    assert current_sequence(cultivos, ciclos).crop_ids == esperado
 
 
 @pytest.mark.parametrize("vacia", [None, []])
@@ -46,7 +52,41 @@ def test_la_secuencia_actual_no_muta_la_entrada_y_devuelve_tupla():
     entrada = ["papa", "arveja"]
     resultado = current_sequence(entrada, 3)
     assert entrada == ["papa", "arveja"]
-    assert isinstance(resultado, tuple)
+    assert isinstance(resultado.crop_ids, tuple)
+
+
+def test_truncated_es_true_solo_si_hay_mas_cultivos_que_ciclos():
+    recortada = current_sequence(["papa", "avena_vicia", "arveja"], 2)
+    assert recortada.crop_ids == ("papa", "avena_vicia")
+    assert recortada.truncated is True
+    repetida = current_sequence(["papa", "arveja"], 3)
+    assert repetida.crop_ids == ("papa", "arveja", "papa")
+    assert repetida.truncated is False
+    assert current_sequence(["papa", "avena_vicia", "arveja"], 3).truncated is False
+
+
+NOMBRES = {"papa": "papa", "avena_vicia": "avena con vicia", "arveja": "arveja"}
+
+
+def test_el_aviso_del_recorte_nombra_los_cultivos_comparados():
+    texto = truncation_limitation(["papa", "avena_vicia", "arveja"], 2, NOMBRES)
+    assert texto == "Su rotación tiene 3 cultivos; con 2 ciclos se compararon papa y avena con vicia"
+
+
+# El contrato admite hasta 3 cultivos en `current_crop_ids`: este caso de 4 solo prueba cómo se unen tres nombres.
+def test_el_aviso_del_recorte_con_tres_ciclos_une_con_coma_y_y():
+    texto = truncation_limitation(["papa", "avena_vicia", "arveja", "maiz"], 3, NOMBRES)
+    assert texto == "Su rotación tiene 4 cultivos; con 3 ciclos se compararon papa, avena con vicia y arveja"
+
+
+@pytest.mark.parametrize("entrada", [["papa", "arveja"], ["papa", "avena_vicia", "arveja"], [], None])
+def test_sin_recorte_o_sin_cultivos_no_hay_aviso(entrada):
+    assert truncation_limitation(entrada, 3, NOMBRES) is None
+
+
+def test_un_cultivo_sin_nombre_se_muestra_con_su_crop_id():
+    texto = truncation_limitation(["papa", "cebolla_larga", "arveja"], 2, NOMBRES)
+    assert texto == "Su rotación tiene 3 cultivos; con 2 ciclos se compararon papa y cebolla_larga"
 
 
 # --- drop_current ---
