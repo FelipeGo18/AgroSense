@@ -10,9 +10,11 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { formatHa, haText, parseHa, useLot, type LotDetail } from "@/features/farm/lots";
 import {
+  RESTORE_DAYS,
   cropNames,
   formatDate,
   formatShortDate,
+  restoreDeadline,
   todayIso,
   useCreateSeason,
   useCrops,
@@ -287,7 +289,9 @@ function SeasonForm({
             <h2 id="borrar" className="text-[18px]">
               Borrar esta siembra
             </h2>
-            <p className="text-[14px] text-texto-secundario">Deja de verse en el lote y en su historial.</p>
+            <p className="text-[14px] text-texto-secundario">
+              Deja de verse en el lote y en su historial. Se puede restaurar durante {RESTORE_DAYS} días.
+            </p>
             <Button variant="danger" className="w-full sm:w-[240px]" onClick={() => setConfirming(true)}>
               Borrar esta siembra
             </Button>
@@ -305,13 +309,18 @@ function SeasonForm({
             busyLabel="Borrando…"
             onConfirm={() =>
               remove.mutate(undefined, {
-                onSuccess: () => void navigate(PATHS.lot(lot.lot_id), { replace: true, state: { notice: "Siembra borrada." } }),
+                onSuccess: () =>
+                  void navigate(PATHS.lot(lot.lot_id), {
+                    replace: true,
+                    state: { notice: "Siembra borrada. Puede restaurarla en «Borradas hace poco»." },
+                  }),
               })
             }
           >
             <p>
               {name}, {formatHa(season.area_ha)}, sembrada el {formatDate(season.sowing_date)}. Deja de verse en el lote y en su historial.
             </p>
+            <p>Puede restaurarla hasta el {restoreDeadline()} desde «Borradas hace poco», en el lote. Después se borra para siempre.</p>
             {remove.error && <Alert>{remove.error instanceof ApiError ? remove.error.message : "Algo falló. Intente de nuevo."}</Alert>}
           </ConfirmDialog>
         </>
