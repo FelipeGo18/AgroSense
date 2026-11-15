@@ -9,7 +9,7 @@ Reglas que este módulo hace cumplir:
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import delete, or_, select, text, update
+from sqlalchemy import delete, func, or_, select, text, update
 from sqlalchemy.orm import Session as Db
 
 from backend.accounts.models import User
@@ -123,5 +123,7 @@ def purge_old(db: Db) -> int:
     """Borra lo que pasó de los 180 días y dice cuántos eventos borró. La base solo lo deja si en la misma transacción se
     pide la limpieza (migración 1.4)."""
     db.execute(text("select set_config('agrosense.activity_purge', 'on', true)"))
-    result = db.execute(delete(ActivityEvent).where(ActivityEvent.occurred_at < datetime.now(UTC) - RETENTION))
+    # Con el reloj de la base, el mismo que usa el disparador de la migración 1.4: si se usara el de la API y los dos
+    # relojes no coinciden, la base rechazaría el borrado de lo que está justo en el borde de los 180 días.
+    result = db.execute(delete(ActivityEvent).where(ActivityEvent.occurred_at < func.now() - RETENTION))
     return result.rowcount or 0
