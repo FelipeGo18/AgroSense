@@ -41,6 +41,7 @@ from backend.api.calc_models import (
     WaterSeries,
 )
 from backend.api.monthly_climate import MonthlySeries, monthly_et0, monthly_rain, water_sources
+from backend.config.versions import rules_version
 from backend.dataset import Dataset
 from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA
 from backend.engine.stages import CropWindow, crop_window
@@ -165,5 +166,5 @@ def trends(dataset: Dataset, municipality_id: str, crop_id: str, sowing_date: da
         supply=supply,
         ndvi=ndvi,
         limitations=_limitations(water, supply, ndvi),
-        versions=Versions(dataset=dataset.version, rules=dataset.rules_version),
+        versions=Versions(dataset=dataset.version, rules=rules_version(dataset.rules_version)),
     )
