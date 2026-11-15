@@ -1,7 +1,7 @@
 {
   "dataset_version": "2026.11.21",
   "rules_version": "0.1.0",
-  "created_at": "2026-11-15T03:15:25+00:00",
+  "created_at": "2026-11-15T04:23:11+00:00",
   "region": {
     "id": "co-boyaca-cundinamarca",
     "name": "Boyacá y Cundinamarca, Colombia",
@@ -82,8 +82,8 @@
       "coverage": "reglas de rotación de los cultivos del MVP"
     },
     "climate_day": {
-      "rows": 4002772,
-      "coverage": "239 municipios con altitud, del 1981-01-01 al 2026-11-08"
+      "rows": 4003489,
+      "coverage": "239 municipios con altitud, del 1981-01-01 al 2026-11-11"
     },
     "climate_month": {
       "rows": 131450,
@@ -118,8 +118,8 @@
       "coverage": "238 municipios; arveja, cebolla_bulbo, haba, maiz, papa, zanahoria; siembras de 2019A a 2025B; preliminares 2024, 2025"
     },
     "market_price_day": {
-      "rows": 101706,
-      "coverage": "Corabastos (Bogotá) · Tunja (Complejo de Servicios del Sur); del 2020-02-01 al 2026-11-10"
+      "rows": 101864,
+      "coverage": "Corabastos (Bogotá) · Tunja (Complejo de Servicios del Sur); del 2020-02-01 al 2026-11-13"
     },
     "market_price_latest": {
       "rows": 69,
