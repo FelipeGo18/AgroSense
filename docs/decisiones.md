@@ -145,7 +145,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **Prioridades del agricultor.** Cada señal tiene un peso de 0 a 5. AgroSense propone pesos por defecto (`weights.yaml`, con quién los definió y por qué) y el agricultor los cambia al consultar. Peso 0: la señal se muestra, pero no cambia la luz. Peso 4 o 5: un resultado moderado cuenta como desfavorable.
 - **El riesgo grave no se negocia.** Agua, heladas o calor críticos cuentan siempre, aunque el agricultor les ponga peso 0. Una ventana de alto riesgo nunca sube por un buen promedio.
 - **Dos luces cuando no coinciden.** Si los pesos del agricultor dan otra luz que los de AgroSense, se muestran las dos: «Con el criterio de AgroSense: amarillo · Con sus prioridades: verde».
-- **La oferta y el mercado sí cambian el semáforo.** Son señales como las demás. Si la acción es rotar, la respuesta sugiere cultivos aptos que en esa ventana salen bien en clima y tienen mejor oferta. *(La decisión 17, propuesta, lo cambia: la oferta y el mercado se muestran sin calificar y no cambian el semáforo.)*
+- **La oferta y el mercado sí cambian el semáforo.** Son señales como las demás. Si la acción es rotar, la respuesta sugiere cultivos aptos que en esa ventana salen bien en clima y tienen mejor oferta. *(La decisión 17, aprobada por Felipe el 15 de noviembre de 2026, lo cambia: la oferta y el mercado se muestran sin calificar y no cambian el semáforo.)*
 - **El suelo pesa dos veces, sin repetirse.** El pH es la señal de suelo; la textura entra en el balance de agua, porque cambia cuánta agua retiene el suelo.
 - **Todo es informativo.** La decisión final es del agricultor.
 
@@ -196,7 +196,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 - **«Qué cambió».** Para un municipio y un cultivo, se comparan dos periodos de la misma fuente (por defecto 1981–2000 y 2005–2024 con POWER): heladas, lluvia y temperatura máxima por mes, y cómo se movieron las mejores ventanas de siembra. Es historia comparada, nunca pronóstico.
 - **Siete cultivos con ficha completa.** Papa, arveja, haba, maíz, cebolla de bulbo, zanahoria y avena con vicia (abono verde), cada dato con su fuente. Es trabajo de la fase 0, sin código, y va primero.
 - **P0 es el MVP.** Todo lo que no sirve al flujo principal pasó a P1: la escena 3D y el descenso, el lote vivo, el clima en vivo, el calendario completo, la finca temporal, los cultivos alternativos, el progreso, la trazabilidad y restaurar lo borrado. La web del MVP es 2D.
-- **La oferta es valor agregado, no protagonista.** Sigue siendo una de las seis señales, con su peso; en las estrategias entra solo por el criterio de ingreso; y la demo abre con rotación, suelo, NASA y qué cambió, y deja la oferta para el final. *(La decisión 17, propuesta, la saca del criterio de ingreso, que pasa a salir de la historia del precio.)*
+- **La oferta es valor agregado, no protagonista.** Sigue siendo una de las seis señales, con su peso; en las estrategias entra solo por el criterio de ingreso; y la demo abre con rotación, suelo, NASA y qué cambió, y deja la oferta para el final. *(La decisión 17, aprobada por Felipe el 15 de noviembre de 2026, la saca del criterio de ingreso, que pasa a salir de la historia del precio.)*
 
 **Analogía:** un mecánico con varios instrumentos. No mide todo con el mismo aparato: usa el que sirve para cada cosa, dice cuál usó y, si dos no coinciden, muestra las dos lecturas. Y cuando recomienda un plan de mantenimiento para los próximos tres servicios, explica por qué cuida el motor según el manual del fabricante; no promete cuántos kilómetros más va a durar.
 
@@ -275,7 +275,7 @@ Lo mismo vale para la aptitud del cultivo y para el orden de las ventanas (decis
 
 ## 17. Oferta y mercado sin calificar: la historia del precio sirve para comparar
 
-**Propuesta el 15 de noviembre de 2026 (HU-072, HU-073, HU-239, HU-240 y HU-241), pendiente de aprobar por Haider o Felipe.** Evidencia y fuentes en `docs/investigacion-decisiones.md`, 5f.
+**Propuesta el 15 de noviembre de 2026 (HU-072, HU-073, HU-239, HU-240 y HU-241) y aprobada por Felipe el mismo día (PR #158).** Evidencia y fuentes en `docs/investigacion-decisiones.md`, 5f.
 
 Se buscó otra vez una fuente externa que diga qué es «precio bajo» en el precio mayorista y qué es «sobreoferta», y no hay: el único criterio oficial, el costo de producción (MADR, Finagro), es en finca y contra el mayorista casi nunca dispara; las alertas de la FAO y del PMA solo miran los precios altos; ninguna metodología del DANE ni de la UPRA define cuánto es «mucho». Un corte propio no cabe en la regla del 11 de noviembre (decisión 16), porque oferta y mercado no son lo central. Pero los datos muestran algo útil: la temporada del precio se repite (la papa en Corabastos estuvo por debajo del promedio de su año en septiembre las 12 temporadas de 2013 a 2024) y correr la siembra cambia el mes de la cosecha.
 
