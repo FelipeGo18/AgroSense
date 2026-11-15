@@ -143,7 +143,7 @@ Decidido por Felipe. Explicación en la decisión 12 de `docs/decisiones.md`. Ma
 
 ## 5f. Oferta y mercado: se muestran sin calificar y la historia del precio sirve para comparar (15 de noviembre de 2026)
 
-**Estado: propuesta, pendiente de aprobar por Haider o Felipe (decisión 17 de `docs/decisiones.md`).** Reemplaza el camino de 5e (buscar una curva para `market`): después de buscar otra vez, ninguna fuente externa da el corte, y los datos muestran que el valor del precio está en comparar fechas, no en calificar una sola. Se reflejaría en HU-072, HU-073, HU-239, HU-240 y HU-241.
+**Estado: aprobada por Felipe el 15 de noviembre de 2026 (decisión 17 de `docs/decisiones.md`).** Reemplaza el camino de 5e (buscar una curva para `market`): después de buscar otra vez, ninguna fuente externa da el corte, y los datos muestran que el valor del precio está en comparar fechas, no en calificar una sola. Se reflejaría en HU-072, HU-073, HU-239, HU-240 y HU-241.
 
 ### Qué se buscó y qué se encontró
 
