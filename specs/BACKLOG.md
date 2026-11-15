@@ -138,7 +138,7 @@
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-167 | Progreso del lote | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-168 | Registro, sesión y paso de invitado a cuenta | P0 | M | hecha | Conserva la consulta del invitado en la pestaña al registrarse o entrar y ofrece crear un lote sin dibujar con municipio, área y riego precargados, sin llevar el área a la URL (R9). Muestra los cultivos anteriores como referencia y limpia la consulta al guardar, cancelar o empezar de cero. |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-187 | El lote vivo | P0 | L | en curso | Vuelve a P0 el 14 nov con un alcance para la demo (Felipe): el diorama con la finca y las siembras en curso en el detalle del lote; recorrer, línea de tiempo y clima en vivo siguen en P1 |
-| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-169 | Mi finca con varios lotes y zonas | P0 | M | en curso | Entrega 2: Mi finca con el mapa; faltan la capa de la NASA (HU-211); los cultivos en curso ya se ven (HU-165) |
+| [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-169 | Mi finca con varios lotes y zonas | P0 | M | hecha | Entrega 2: Mi finca con el mapa; la capa de la NASA va en HU-211; los cultivos en curso ya se ven (HU-165); una sola zona con «En otro municipio» (14 nov) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-211 | Capa satelital de la NASA en el mapa del lote | P0 | M | pendiente | Nueva |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-173 | Pantalla de inicio | P0 | M | en curso | Sin 3D; recorrido con la mascota guía y la Tierra girando |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-171 | Diseño de la mascota satélite | P1 | M | en curso | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
