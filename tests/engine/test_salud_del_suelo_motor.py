@@ -89,6 +89,8 @@ TEXTO_ACTUAL = "Se supuso que antes del primer ciclo el terreno siguió su rotac
 
 
 def _sh(sequence, previous=(), rules=REGLAS, crops=CULTIVOS, **kw):
+    """`history_basis` es obligatorio en el motor; el helper lo pasa según el caso si la prueba no lo dice."""
+    kw.setdefault("history_basis", "declared" if previous else "none")
     return soil_health(tuple(sequence), crops, list(previous), rules, **kw)
 
 
@@ -296,16 +298,88 @@ def test_history_basis_declared_no_agrega_texto():
     assert len(c.reasons) == 1 and TEXTO_NONE not in c.reasons and TEXTO_ACTUAL not in c.reasons
 
 
-def test_history_basis_por_defecto_es_declared_con_anteriores_y_none_sin_ellos():
-    con = _sh(("papa", "avena_vicia", "arveja"), ["papa"])["pest_break"]
-    sin = _sh(("papa", "avena_vicia", "arveja"))["pest_break"]
-    assert len(con.reasons) == 1
-    assert sin.reasons[-1] == TEXTO_NONE
+def test_history_basis_sin_valor_da_type_error():
+    with pytest.raises(TypeError):
+        soil_health(("papa", "arveja", "maiz"), CULTIVOS, [], REGLAS)
+
+
+@pytest.mark.parametrize("anteriores", [[], ["arveja"]])
+@pytest.mark.parametrize("valor", ["actual", "", "Declared", None])
+def test_history_basis_fuera_de_los_tres_valores_da_value_error_que_nombra_el_valor_y_los_validos(valor, anteriores):
+    with pytest.raises(ValueError) as e:
+        soil_health(("papa", "arveja", "maiz"), CULTIVOS, anteriores, REGLAS, history_basis=valor)
+    texto = str(e.value)
+    assert repr(valor) in texto and all(v in texto for v in ("declared", "current_rotation", "none"))
+
+
+@pytest.mark.parametrize(
+    ("anteriores", "base"),
+    [(["papa"], "none"), ([], "declared"), ([], "current_rotation")],
+)
+def test_history_basis_que_contradice_la_lista_da_value_error(anteriores, base):
+    with pytest.raises(ValueError):
+        soil_health(("papa", "arveja", "maiz"), CULTIVOS, anteriores, REGLAS, history_basis=base)
+
+
+@pytest.mark.parametrize(
+    ("anteriores", "base", "texto"),
+    [([], "none", TEXTO_NONE), (["arveja"], "current_rotation", TEXTO_ACTUAL), (["arveja"], "declared", None)],
+)
+def test_cada_history_basis_valido_dice_su_texto(anteriores, base, texto):
+    c = soil_health(("papa", "avena_vicia", "arveja"), CULTIVOS, anteriores, REGLAS, history_basis=base)["pest_break"]
+    if texto is None:
+        assert len(c.reasons) == 1 and TEXTO_NONE not in c.reasons and TEXTO_ACTUAL not in c.reasons
+    else:
+        assert c.reasons[-1] == texto
+
+
+# --- R1: la familia que falta en `pest_break` ---
+
+TEXTO_FAMILIA = "Falta la familia de algún cultivo de la estrategia o de los cultivos anteriores del terreno"
+SIN_FAMILIA_CULTIVO = SoilCrop("ejemplo_sin_familia", "crop", None, (), False)  # EJEMPLO (R5); no es del catálogo
+
+
+def test_pest_break_un_cultivo_sin_ficha_entre_dos_papas_es_insufficient_data():
+    c = _sh(("papa", "inventado", "papa"))["pest_break"]
+    assert (c.status, c.level) == ("insufficient_data", None)
+    assert TEXTO_FAMILIA in c.reasons[0] and c.rule_ids == ("papa_espera",)
+    assert (_sh(("papa", "inventado", "papa"))["nitrogen"].status) == "insufficient_data"
+
+
+def test_pest_break_un_cultivo_con_family_nula_en_la_estrategia_es_insufficient_data():
+    crops = {**CULTIVOS, SIN_FAMILIA_CULTIVO.crop_id: SIN_FAMILIA_CULTIVO}
+    c = _sh(("papa", "ejemplo_sin_familia", "papa"), crops=crops)["pest_break"]
+    assert (c.status, c.level) == ("insufficient_data", None)
+
+
+def test_pest_break_un_cultivo_con_family_nula_en_los_anteriores_es_insufficient_data():
+    crops = {**CULTIVOS, SIN_FAMILIA_CULTIVO.crop_id: SIN_FAMILIA_CULTIVO}
+    c = _sh(("papa", "arveja", "maiz"), ["ejemplo_sin_familia"], crops=crops)["pest_break"]
+    assert (c.status, c.level) == ("insufficient_data", None)
+    assert TEXTO_FAMILIA in c.reasons[0]
+
+
+def test_pest_break_un_anterior_sin_ficha_mas_alla_de_los_que_se_miran_no_cuenta():
+    previas = ["arveja", "maiz", "avena_vicia", "arveja", "inventado"]  # min_cycles 3: se miran los 4 más recientes
+    c = _sh(("papa", "arveja", "maiz"), previas)["pest_break"]
+    assert c.status == "available"
+
+
+def test_pest_break_papa_descanso_papa_si_tiene_nivel():
+    c = _sh(("papa", "descanso", "papa"))["pest_break"]
+    assert (c.status, c.level) == ("available", "unfavorable")
+
+
+def test_pest_break_con_dos_reglas_una_sin_familia_de_cultivo_el_nivel_sale_de_las_evaluables():
+    crops = {**CULTIVOS, SIN_FAMILIA_CULTIVO.crop_id: SIN_FAMILIA_CULTIVO}
+    # Leguminosae no puede evaluarse sin la familia del cultivo, pero la secuencia no la tiene en juego: ambas fallan
+    c = _sh(("papa", "ejemplo_sin_familia", "papa"), rules=[PAPA_ESPERA, SIN_FAMILIA], crops=crops)["pest_break"]
+    assert (c.status, c.level) == ("insufficient_data", None)
 
 
 def test_pest_break_rotacion_actual_papa_avena_arveja_repetida_hacia_atras_es_moderate_y_dice_que_se_supuso():
-    previas = ["arveja", "avena", "papa", "arveja", "avena", "papa"]
-    c = _sh(("papa", "avena", "arveja"), previas, history_basis="current_rotation")["pest_break"]
+    previas = ["arveja", "avena_vicia", "papa", "arveja", "avena_vicia", "papa"]
+    c = _sh(("papa", "avena_vicia", "arveja"), previas, history_basis="current_rotation")["pest_break"]
     assert (c.status, c.level) == ("available", "moderate")
     assert PAPA_ESPERA.reason_template.format(family="Solanaceae", cycles=2) in c.reasons[0]
     assert c.reasons[-1] == TEXTO_ACTUAL
@@ -313,7 +387,7 @@ def test_pest_break_rotacion_actual_papa_avena_arveja_repetida_hacia_atras_es_mo
 
 def test_pest_break_dos_reglas_nivel_peor_ids_de_las_dos_y_una_razon_por_regla_en_orden():
     # Solanaceae vuelve con 1 ciclo (unfavorable, segunda regla en orden); Leguminosae no vuelve (favorable).
-    c = _sh(("papa", "maiz", "papa"), rules=[PAPA_ESPERA, LEGUMINOSA_VUELVE], history_basis="declared")["pest_break"]
+    c = _sh(("papa", "maiz", "papa"), ["maiz"], rules=[PAPA_ESPERA, LEGUMINOSA_VUELVE])["pest_break"]
     assert (c.status, c.level) == ("available", "unfavorable")
     assert c.rule_ids == ("ejemplo_leguminosa_vuelve", "papa_espera")
     assert c.source_ids == (TEAM_CRITERION, "ejemplo")
@@ -341,7 +415,7 @@ def test_pest_break_regla_sin_familia_sola_es_insufficient_data():
 
 
 def test_pest_break_regla_sin_familia_junto_a_otra_valida_usa_la_valida_y_dice_la_que_falta():
-    c = _sh(("papa", "maiz", "papa"), rules=[PAPA_ESPERA, SIN_FAMILIA], history_basis="declared")["pest_break"]
+    c = _sh(("papa", "maiz", "papa"), ["maiz"], rules=[PAPA_ESPERA, SIN_FAMILIA])["pest_break"]
     assert (c.status, c.level) == ("available", "unfavorable")
     assert c.rule_ids == ("ejemplo_sin_familia", "papa_espera")
     assert len(c.reasons) == 2

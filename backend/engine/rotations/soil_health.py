@@ -15,6 +15,7 @@ SOIL_CRITERIA = ("nitrogen", "organic_carbon", "soil_cover", "pest_break", "eros
 TEAM_CRITERION = "criterio_equipo_2026"
 TEAM_NOTE = "Criterio del equipo, pendiente de validar por un agrónomo"
 
+HISTORY_BASES = ("declared", "current_rotation", "none")
 _RANK = {"favorable": 2, "moderate": 1, "unfavorable": 0}
 DAYS_PER_MONTH = 30.4
 _POINTS = {"favorable": 100, "moderate": 50, "unfavorable": 0}
@@ -118,10 +119,16 @@ def _nitrogen(sequence: Sequence[str], crops: Mapping[str, SoilCrop], rule: Heal
     return _available(level_from_cuts(count, rule.levels), rule.reason_template.format(count=count), rule)
 
 
-def _families(crop_id: str, crops: Mapping[str, SoilCrop]) -> set[str]:
+def _families(crop_id: str, crops: Mapping[str, SoilCrop]) -> set[str] | None:
+    """Las familias de un ciclo. El descanso (`kind = fallow`) es un ciclo sin familia: conjunto vacío. Un ciclo sin
+    ficha, o un `crop` o `cover` con `family` nula, no se sabe: `None` (R1)."""
     crop = crops.get(crop_id)
     if crop is None:
-        return set()  # el descanso y lo que no está en el catálogo no aportan familia
+        return None
+    if crop.kind == "fallow":
+        return set()
+    if not crop.family:
+        return None
     return {f for f in (crop.family, *crop.secondary_families) if f}
 
 
@@ -136,17 +143,21 @@ def _pest_break_rule(
         return None, _text(f"La regla {rule.rule_id} no dice la familia que debe esperar", rule)
     kept = list(previous[: int(rule.params.get("min_cycles", 0)) + 1])
     timeline = [*reversed(kept), *sequence]
+    fams = [_families(crop_id, crops) for crop_id in timeline]
+    if any(f is None for f in fams):
+        text = "Falta la familia de algún cultivo de la estrategia o de los cultivos anteriores del terreno"
+        return None, _text(text, rule)
     start = len(kept)
     returns = []  # (rango del nivel, ciclos entre apariciones, posición)
     for i in range(start, len(timeline)):
-        if family not in _families(timeline[i], crops):
+        if family not in fams[i]:
             continue
-        back = next((j for j in range(i - 1, -1, -1) if family in _families(timeline[j], crops)), None)
+        back = next((j for j in range(i - 1, -1, -1) if family in fams[j]), None)
         if back is not None:
             cycles = i - back - 1
             returns.append((_RANK[level_from_cuts(cycles, rule.levels)], cycles, i))
     if not returns:
-        if any(family in _families(crop_id, crops) for crop_id in timeline):
+        if any(family in f for f in fams):
             return "favorable", _text(f"La familia {family} no vuelve al terreno en los ciclos revisados", rule)
         text = f"Ni la estrategia ni los cultivos anteriores del terreno tienen la familia {family}"
         return "favorable", _text(text, rule)
@@ -298,14 +309,19 @@ def soil_health(
     cycle_days: Sequence[int | None] | None = None,
     gap_days: Sequence[int | None] | None = None,
     *,
-    history_basis: str | None = None,
+    history_basis: str,
 ) -> dict[str, Criterion]:
     """Los cinco criterios de una estrategia. `sequence` es el `crop_id` de cada ciclo, en orden; `previous_crop_ids`
     va del más reciente al más antiguo. `history_basis` dice de dónde sale: `declared`, `current_rotation` o `none`; sin
-    él, `declared` si hay cultivos anteriores y `none` si no. Parámetro interno del motor, no un campo del contrato.
-    Sin regla con fuente para un criterio, `insufficient_data` con ids vacíos."""
-    if history_basis is None:
-        history_basis = "declared" if previous_crop_ids else "none"
+    él no hay valor por defecto (R5): uno fuera de los tres, o que contradice la lista, es un `ValueError`. Parámetro
+    interno del motor, no un campo del contrato. Sin regla con fuente para un criterio, `insufficient_data` con ids vacíos."""
+    if history_basis not in HISTORY_BASES:
+        raise ValueError(f"history_basis {history_basis!r} no es válido: use uno de 'declared', 'current_rotation' o 'none'")
+    if (history_basis == "none") == bool(previous_crop_ids):
+        raise ValueError(
+            f"history_basis {history_basis!r} contradice previous_crop_ids ({len(previous_crop_ids)} cultivos): "
+            "'none' va sin cultivos anteriores; 'declared' y 'current_rotation' van con ellos"
+        )
     by_criterion: dict[str, HealthRule] = {}
     pest_rules: list[HealthRule] = []
     for rule in sorted(rules, key=lambda r: r.rule_id):
