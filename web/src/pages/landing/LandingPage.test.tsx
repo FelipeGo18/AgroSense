@@ -85,6 +85,16 @@ describe("Inicio (HU-173)", () => {
     expect(tag).toHaveAttribute("data-tone", "insufficient_data");
   });
 
+  it("habla de AgroSense y nombra los datos de la NASA, en la portada y en las fuentes (HU-173)", async () => {
+    open(PATHS.home);
+    expect(await screen.findByText(/estrategias de rotación con datos de la NASA/)).toBeInTheDocument();
+    const sources = within(screen.getByRole("region", { name: "De dónde salen los datos" }));
+    for (const name of ["GPM IMERG · NASA", "NASA POWER", "NASADEM · NASA"]) {
+      expect(sources.getByRole("heading", { name })).toBeInTheDocument();
+    }
+    expect(sources.getByText(/Es un reanálisis/)).toBeInTheDocument();
+  });
+
   it("dice que no es un pronóstico", async () => {
     open(PATHS.home);
     expect((await screen.findAllByText(/No es un pronóstico/)).length).toBeGreaterThan(0);
