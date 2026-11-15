@@ -17,6 +17,10 @@
 # Raíz (HU-144, aprobado por Felipe el 14 de noviembre de 2026): `root_depth_min_m`, `root_depth_max_m` y `depletion_p` son la
 # profundidad máxima efectiva de la raíz y la fracción del agua que se puede gastar sin estrés, de la tabla 22 de
 # FAO-56. Las usa el balance hídrico para saber cuánta agua del suelo alcanza la raíz.
+# Descanso (HU-063, aprobado por Haider el 15 de noviembre de 2026 para `specs/02-contratos.md`): `fallow_days` son los días
+# que dura un descanso (`kind = fallow`), un valor fijo de su ficha (decisión 7 del PR #109). Solo lo lleva el descanso: la
+# duración de un cultivo o de un abono verde sale de sus etapas. `criterio_equipo_2026` está también en
+# `catalog/rotation_rules.yaml`, con los mismos datos (una fuente de los dos catálogos es la misma en los dos).
 # Se descartó redactar la frase sin artículo de género ("el cultivo papa") porque suena forzado y cambiaría los
 # ejemplos ya documentados del OpenAPI. Sin este campo, el código antes adivinaba por la terminación del nombre
 # (heurística frágil, nunca llegó a producción); ahora, si falta, la API lanza un error explícito en vez de adivinar.
@@ -267,6 +271,15 @@ sources:
     coverage: "Michigan (EE. UU.)"
     license: "Sin dato; se cita"
     notes: "«Onion seedlings can tolerate light frosts (28 degrees F) but may be killed by colder temperatures»; «Growth rate declines when temperatures exceed 90 degrees F for several days. High temperature hastens maturity… smaller bulbs»."
+  - source_id: criterio_equipo_2026
+    name: "Cortes de salud del suelo de AgroSense: criterio propio del equipo (HU-062)"
+    institution: "Equipo RealE4Life (AgroSense)"
+    url: "https://github.com/FelipeGo18/AgroSense/blob/24c645f/docs/registro-de-decisiones.md"
+    downloaded_at: "2026-11-10"
+    period_covered: "Decidido el 10 de noviembre de 2026 (propuesta de producto-agro; números aprobados por Juan Cárdenas el mismo día)"
+    coverage: "AgroSense, región piloto del altiplano (Colombia)"
+    license: "Del proyecto"
+    notes: "Criterio del equipo RealE4Life, NO una fuente agronómica externa, decidido el 10 nov 2026 porque ninguna fuente revisada da estos cortes (nota 9 de HU-062). Fija los cortes de las reglas papa_espera (pest_break: favorable desde 3 ciclos de otras familias antes de volver a Solanaceae, como equivalente aproximado de las «rotations of three or more years» de fao_papa_2008 p. 19, que habla de años y no de ciclos; y moderate con 2, que no sale de Agrosavia: se elige porque agrosavia_tibaitata_2022 evaluó en Tibaitatá una rotación con ese intervalo, papa - avena - arveja, y ese estudio mide propiedades químicas y físicas del suelo, no plagas; es una analogía y ninguna fuente da el corte; decidido por Felipe el 11 nov 2026), leguminosa_en_rotacion (nitrogen: favorable desde 1 ciclo con leguminosa, sin franja), materia_organica_ciclos (organic_carbon: con carbono bajo, favorable desde 2 ciclos de abono verde o descanso y moderate con 1; con carbono normal, favorable con 1 y moderate con 0), suelo_cubierto (soil_cover: favorable desde 80 % y moderate desde 60 %) y erosion_pendiente (erosion: favorable hasta 1 mes descubierto y moderate hasta 3). Se apoya en parte en fuentes externas que no dan estos cortes: fao_iyp_2019 (las leguminosas fijan nitrógeno), fao_papa_2008 p. 19 (leguminosas entre los cultivos que alternan con la papa), cevipapa_taller_2005 (tabla 3, p. 35: materia orgánica baja < 5 %, de donde sale soc_low_g_kg = 29 con el factor 1,724; y el diseño abono verde – papa – abono verde de Murcia, p. 51 a 53), fao_glosolan_wb_2019 p. 4 (factor de 1,7 a 2,0) e igac_capacidad_uso_2021 p. 15 (pendiente desde 12 %). Qué se apoya en qué: son datos externos citados el 29 g/kg (CEVIPAPA y FAO GLOSOLAN), el 12 % (IGAC) y «three or more years» (FAO 2008). Los cortes por ciclos, porcentaje y meses son del equipo: nitrógeno 1, carbono 2/1 y 1/0, cobertura 80/60 %, erosión 1/3 meses y papa_espera 3 y 2. Cada uno tiene una referencia externa y se rotula «criterio del equipo». Compara estrategias por reglas; no predice cuánto mejora el suelo. Pendiente de validar por un agrónomo."
 
 crops:
   - crop_id: papa
@@ -569,4 +582,5 @@ crops:
     article: {v: "el", s: agrosense_diseno}
     kind: {v: fallow, s: agrosense_diseno}
     archetype: {v: fallow, s: agrosense_diseno, n: "El diseño lo dibuja como suelo en descanso con cobertura natural."}
-    notes: "El descanso no tiene rangos ni etapas: no se evalúa por ventanas ni tiene diagnóstico (specs/01-reglas.md). Su duración la elige quien arma la estrategia."
+    fallow_days: {v: 180, s: criterio_equipo_2026, n: "Una temporada de siembra sin sembrar: en el altiplano hay dos temporadas al año (lluvias bimodales), las mismas que los semestres A y B de EVA. Criterio del equipo, pendiente de validar por un agrónomo (R8, decisión 16): ninguna fuente revisada da la duración de un descanso corto; Agrosavia recomienda descansos «prolongados» sin número y los agricultores de Boyacá hablan de 1 a 3 años (López Estupiñán 2015). Queda lejos de los cortes de erosion_pendiente (3 meses) y suelo_cubierto, así que el nivel no depende del hueco hasta el lunes. Decidido por Haider el 15 de noviembre de 2026 (PR #109, decisión 7)."}
+    notes: "El descanso no tiene rangos ni etapas: no se evalúa por ventanas ni tiene diagnóstico (specs/01-reglas.md). Su duración es fija, `fallow_days` (decisión 7 del PR #109): no la elige quien arma la estrategia."
