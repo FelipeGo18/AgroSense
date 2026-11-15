@@ -1,7 +1,7 @@
 """Casos de referencia de las cuentas (HU-121, «Casos de las cuentas»): dividir, juntar y área de un lote de 1 ha.
 
 Los casos 5 (`follows_season_ids` inválido) ya los prueba `test_siembras.py` con los mismos números y código 422.
-Lo que depende del progreso (HU-167) y de restaurar el historial (HU-204) es P1: va con `xfail(strict=True)`.
+Lo que depende del progreso (HU-167) es P1: va con `xfail(strict=True)`. Restaurar el historial (HU-204) ya está.
 """
 
 from datetime import timedelta
@@ -97,7 +97,6 @@ def test_juntar_da_dos_relaciones_hacia_la_misma_en_el_progreso(client, lot):
     assert sorted((r["from_season_id"], r["to_season_id"]) for r in response.json()["rotations"]) == sorted([(a, joined), (b, joined)])
 
 
-@pytest.mark.xfail(strict=True, reason="espera HU-204 (P1)")
 def test_una_temporada_borrada_aparece_con_restorable_until_y_vuelve(client, lot):
     season = sow(client, lot, area_ha=0.5).json()["season_id"]
     # Borrar responde exactamente 204 (backend/api/seasons.py).
