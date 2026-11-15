@@ -1,13 +1,15 @@
 """HU-212, PR B: forma de los cinco criterios de `soil_health` y los cálculos de `nitrogen` y `pest_break` (R3, R8).
 
 Compara estrategias según reglas con fuente: no predice cuánto mejora el suelo (decisión 4). Un dato o una regla que
-falta nunca da un nivel (R1, R8). `organic_carbon` y `soil_cover` son del PR C; `erosion` es del PR D y aquí queda
-`insufficient_data`. Función pura y determinista (R4, R6).
+falta nunca da un nivel (R1, R8). Los cinco criterios están calculados; `soil_score` resume los niveles en 0 a 100 para
+el criterio `soil` del ranking. Función pura y determinista (R4, R6).
 """
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
+
+from backend.engine.signal_score import round_half_up
 
 SOIL_CRITERIA = ("nitrogen", "organic_carbon", "soil_cover", "pest_break", "erosion")
 TEAM_CRITERION = "criterio_equipo_2026"
@@ -16,11 +18,11 @@ TEAM_NOTE = "Criterio del equipo, pendiente de validar por un agrónomo"
 HISTORY_BASES = ("declared", "current_rotation", "none")
 _RANK = {"favorable": 2, "moderate": 1, "unfavorable": 0}
 DAYS_PER_MONTH = 30.4
+_POINTS = {"favorable": 100, "moderate": 50, "unfavorable": 0}
 _HISTORY_TEXT = {
     "none": "No hay cultivos anteriores del terreno: solo se revisan los ciclos de la estrategia",
     "current_rotation": "Se supuso que antes del primer ciclo el terreno siguió su rotación actual",
 }
-_PENDING = "Este criterio todavía no se calcula en esta versión del motor"
 
 
 @dataclass(frozen=True)
@@ -55,6 +57,15 @@ class SoilCarbon:
     soc_p05: float | None
     soc_p95: float | None
     source_id: str
+
+
+@dataclass(frozen=True)
+class SlopeInfo:
+    """Pendiente estimada del terreno (NASADEM), del lote o del municipio: un dato de la zona, no medido (R10)."""
+
+    slope_pct: float | None
+    source_id: str
+    basis: str  # `lot` o `municipality`
 
 
 @dataclass(frozen=True)
@@ -209,6 +220,24 @@ def covered_gaps(sequence_length: int, gap_days: Sequence[int | None] | None) ->
     return between  # type: ignore[return-value]
 
 
+def _day_counts(
+    sequence: Sequence[str],
+    crops: Mapping[str, SoilCrop],
+    cycle_days: Sequence[int | None] | None,
+    gap_days: Sequence[int | None] | None,
+) -> tuple[int, int, int] | None:
+    """(días cubiertos, días de descanso, días totales con huecos), o `None` si falta la duración de algún ciclo o un hueco válido (R1)."""
+    if not cycle_days or len(cycle_days) != len(sequence) or None in cycle_days:
+        return None
+    pairs = [(crops.get(c), d) for c, d in zip(sequence, cycle_days, strict=True)]
+    covered = sum(d for crop, d in pairs if crop and crop.kind in ("crop", "cover"))
+    fallow = sum(d for crop, d in pairs if crop and crop.kind == "fallow")
+    gaps = covered_gaps(len(sequence), gap_days)
+    if gaps is None:
+        return None
+    return covered, fallow, sum(cycle_days) + sum(gaps)
+
+
 def _soil_cover(
     sequence: Sequence[str],
     crops: Mapping[str, SoilCrop],
@@ -231,13 +260,52 @@ def _soil_cover(
     return _available(level_from_cuts(pct, rule.levels), rule.reason_template.format(pct=_dec(pct)), rule)
 
 
+def _erosion(
+    sequence: Sequence[str],
+    crops: Mapping[str, SoilCrop],
+    slope: SlopeInfo | None,
+    cycle_days: Sequence[int | None] | None,
+    gap_days: Sequence[int | None] | None,
+    rule: HealthRule,
+) -> Criterion:
+    """Con pendiente desde `slope_pct_from`, los meses de descanso y huecos pasan por los cortes máximos; con menos
+    pendiente el suelo descubierto no cuenta y no hacen falta las duraciones."""
+    if slope is None or slope.slope_pct is None:
+        return _no_data("Falta la pendiente del terreno de la zona", rule)
+    sources = (rule.source_id, slope.source_id)
+    cut = rule.params["slope_pct_from"]
+    if slope.slope_pct < cut:
+        reason = (
+            f"Pendiente estimada del terreno: {_dec(slope.slope_pct)} % (dato de la zona, no medido en su lote), por debajo "
+            f"de {cut} %: con esa pendiente el suelo descubierto no se cuenta para la erosión"
+        )
+        return Criterion("available", "favorable", (_text(reason, rule),), (rule.rule_id,), sources)
+    if not cycle_days or len(cycle_days) != len(sequence) or None in cycle_days:
+        return _no_data("Falta la duración de algún ciclo de la estrategia", rule)
+    counts = _day_counts(sequence, crops, cycle_days, gap_days)
+    if counts is None:
+        return _no_data("Falta el hueco entre algún par de ciclos de la estrategia", rule)
+    months = (counts[1] + counts[2] - sum(cycle_days)) / DAYS_PER_MONTH  # descanso + huecos, sin redondear
+    reason = rule.reason_template.format(slope=_dec(slope.slope_pct), months=_dec(months))
+    return Criterion(
+        "available", level_from_cuts(months, rule.levels, more_is_better=False), (_text(reason, rule),), (rule.rule_id,), sources
+    )
+
+
+def soil_score(criteria: Mapping[str, Criterion]) -> int | None:
+    """Puntaje 0 a 100 del criterio `soil` del ranking: promedio de los criterios con nivel (100, 50 o 0), mitad hacia
+    arriba. Sin ninguno con nivel, `None` (R1)."""
+    points = [_POINTS[c.level] for c in criteria.values() if c.level in _POINTS]
+    return round_half_up(sum(points) / len(points)) if points else None
+
+
 def soil_health(
     sequence: Sequence[str],
     crops: Mapping[str, SoilCrop],
     previous_crop_ids: Sequence[str],
     rules: Sequence[HealthRule],
     soil: SoilCarbon | None = None,
-    slope: object | None = None,
+    slope: SlopeInfo | None = None,
     cycle_days: Sequence[int | None] | None = None,
     gap_days: Sequence[int | None] | None = None,
     *,
@@ -281,5 +349,5 @@ def soil_health(
         elif name == "soil_cover":
             result[name] = _soil_cover(sequence, crops, cycle_days, gap_days, rule)
         else:
-            result[name] = _no_data(_PENDING, rule)
+            result[name] = _erosion(sequence, crops, slope, cycle_days, gap_days, rule)
     return result
