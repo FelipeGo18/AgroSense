@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SoilDetails, type SoilContext } from "@/components/soil/SoilDetails";
 import { Link } from "react-router";
 import { Card } from "@/components/ui/Card";
 import { Plate } from "@/components/ui/Plate";
@@ -24,6 +25,7 @@ import {
 import type { Version } from "@/features/version";
 
 export interface StrategyCardProps {
+  soilContext?: SoilContext;
   strategy: Strategy;
   names: Map<string, string>;
   kinds: Map<string, string>;
@@ -38,7 +40,7 @@ export interface StrategyCardProps {
  * o pierde frente a lo de hoy, sus razones y su salud del suelo. La rotación actual usa la misma tarjeta, rotulada «Lo
  * que siembra hoy», sin puesto y con sus problemas a la vista (decisión 14).
  */
-export function StrategyCard({ strategy, names, kinds, weights, version, cycleLink }: StrategyCardProps) {
+export function StrategyCard({ strategy, names, kinds, weights, version, cycleLink, soilContext }: StrategyCardProps) {
   const current = strategy.kind === "current";
   const title = sequence(strategy.crop_ids, names);
   const total = delta(strategy.vs_current?.total);
@@ -82,7 +84,7 @@ export function StrategyCard({ strategy, names, kinds, weights, version, cycleLi
 
         {current && (strategy.issues ?? []).length > 0 && <Issues issues={strategy.issues ?? []} version={version} />}
 
-        <SoilHealth health={strategy.soil_health} version={version} />
+        <SoilHealth health={strategy.soil_health} version={version} soilContext={soilContext} />
 
         {strategy.limitations.length > 0 && (
           <div className="flex flex-col gap-1 text-[15px] text-texto-secundario">
@@ -320,13 +322,22 @@ function Issues({ issues, version }: { issues: Issue[]; version: Version | undef
  * La salud del suelo: cinco criterios, cada uno con su nivel en forma y texto, su razón y la fuente de su regla (R8).
  * Es una comparación entre estrategias por reglas, no una predicción de cuánto mejora el suelo (decisión 4).
  */
-function SoilHealth({ health, version }: { health: Strategy["soil_health"]; version: Version | undefined }) {
+function SoilHealth({
+  health,
+  version,
+  soilContext,
+}: {
+  health: Strategy["soil_health"];
+  version: Version | undefined;
+  soilContext?: SoilContext;
+}) {
   return (
     <section aria-label="Salud del suelo" className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
         <p className="font-bold">Salud del suelo</p>
         <p className="text-[14px] font-bold text-oscuro-cielo">Comparación, no predicción</p>
       </div>
+      {soilContext && <SoilDetails {...soilContext} />}
       <ul className="flex flex-col">
         {HEALTH_CRITERIA.map(({ key, label }) => {
           const criterion = health[key];

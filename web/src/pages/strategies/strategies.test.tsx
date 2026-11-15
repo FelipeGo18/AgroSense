@@ -671,8 +671,11 @@ describe("Estrategias con ciclos, desglose y salud del suelo (HU-102)", () => {
     await results();
     const health = within(card(/^Estrategia 1/).getByRole("region", { name: "Salud del suelo" }));
     expect(health.getByText("Comparación, no predicción")).toBeInTheDocument();
+    expect(health.getByText("Ver el suelo usado y qué significa")).toBeInTheDocument();
+    expect(await health.findByText("31 g/kg")).toBeInTheDocument();
+    const criteria = within(health.getByRole("list"));
     for (const label of ["Nitrógeno", "Carbono orgánico", "Suelo cubierto", "Corte de plagas", "Erosión"]) {
-      expect(health.getByText(label)).toBeInTheDocument();
+      expect(criteria.getByText(label)).toBeInTheDocument();
     }
     expect(health.getByText("Sin datos suficientes")).toBeInTheDocument();
     expect(health.getByText("Desfavorable")).toBeInTheDocument();

@@ -128,10 +128,11 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 ### HU-185 · Ver el suelo en la web
 
 - **Historia:** Como agricultor, quiero ver mi suelo explicado en palabras sencillas, para entender por qué la app me recomienda algo.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] pH, carbono orgánico y textura con su rango y una frase sencilla de qué significan; la de la textura dice que cambia cuánta agua guarda el suelo y que por eso entra en la señal de agua (`web/src/components/soil/SoilFacts.tsx`, 14 nov 2026)
   - [x] Rótulo: «Estimación de un mapa global de 250 m. Un análisis de suelo de su lote es más preciso» (R10)
-  - [ ] En el detalle del lote (HU-169), en el detalle de la señal de suelo y en la salud del suelo de las estrategias (HU-102). Hecho en el detalle del lote (14 nov 2026); faltan la señal de suelo (con HU-183) y la salud del suelo (con HU-212)
+  - [x] En el detalle del lote (HU-169), en el detalle de la señal de suelo y en la salud del suelo de las estrategias (HU-102), incluida la rotación actual y las señales de cada ciclo. `SoilDetails` reutiliza las explicaciones de `SoilFacts` (15 nov 2026)
 - **Reglas que aplican:** R5, R10
 - **Notas:** El lote vivo («Lote · ahora», HU-187) pasó a P1 el 11 de octubre de 2026; en el MVP el suelo se ve en el detalle 2D del lote.
+  **15 nov 2026:** el panel «Ver el suelo usado y qué significa» consulta el detalle del lote cuando hay `lot_id` y el catálogo municipal sin cuenta. Adapta las propiedades planas del lote a los rangos de presentación, conserva `basis` y hasta dos decimales; un lote sin suelo nunca se reemplaza por el municipio. Incluye carga, ausencia de datos y error con reintento. No cambia el contrato ni calcula niveles del motor en el cliente. Pruebas: `web/src/components/soil/soilDetails.test.tsx`, `soilFacts.test.ts` y las pruebas de finca, diagnóstico y estrategias; suite web completa en Docker: 378 pruebas aprobadas. Tipos, lint, formato y build de producción aprobados. La revisión adaptable de diagnóstico, estrategias y ciclo cubre 66 combinaciones (11 tamaños, con movimiento y modo ligero); el script también despliega el suelo y sus explicaciones para comprobar sus desbordes.

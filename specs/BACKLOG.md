@@ -157,4 +157,4 @@
 | [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | hecha | Motor hecho (exclusión `soil_ph` y razones, 15 nov); la API ya lee el suelo del lote o del municipio y llena `soil_basis` (HU-084, 15 nov) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | hecha | Cinco criterios hechos en el motor (#116, #120 y #121); `history_basis` obligatorio; el descanso dura 180 días (`fallow_days`, #137) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | hecha | Erosión hecha en el motor (#121 y #120) |
-| [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | en curso | El suelo de la zona explicado en el detalle del lote (14 nov); faltan la señal de suelo y la salud del suelo |
+| [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | hecha | Suelo del lote o municipio explicado en lote, señal y salud del suelo de estrategias; rangos, estimación y estados sin sustituciones. 378 pruebas web aprobadas (15 nov) |
