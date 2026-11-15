@@ -11,7 +11,9 @@
 # `pipeline.build` falla si un cultivo no está en el catálogo, si un código está en dos cultivos o si falta el porqué.
 #
 # Verificado el 14 de noviembre de 2026 contra la descarga de EVA de ese día (Boyacá y Cundinamarca, 2019A a 2025B).
-# Es la propuesta de Datos (HU-031): falta la revisión de Producto y agro.
+# Aprobado por Haider el 15 de noviembre de 2026 (PR #117): sumar los cuatro maíces en grano sirve para el área
+# sembrada, que es lo que usa la oferta, y dejar fuera la papa criolla es coherente con la ficha (papa común) y con el
+# precio de SIPSA. Está en docs/registro-de-decisiones.md.
 
 crops:
   papa:
