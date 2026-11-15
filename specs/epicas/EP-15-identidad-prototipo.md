@@ -62,6 +62,7 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - [ ] Cultivos con etapas de crecimiento a partir de assets CC0 o propios
   - [ ] Todos los assets listados en `web/public/assets/CREDITS.md` con licencia
   - [ ] Cumple el presupuesto de la escena de `specs/05-frontend.md`
+  - [ ] Sin WebGL o con fps bajos (menos de 30 en un Android de gama media, `specs/05-frontend.md`), la escena pasa sola a la versión 2D con la misma información, y el botón «Modo ligero» sirve de interruptor manual. Lo mismo en el recorrido 3D de HU-155, que ya pasa a 2D sin WebGL pero no mide los fps. Viene de HU-158 el 15 de noviembre de 2026
 - **Reglas que aplican:** R5
 - **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
 
@@ -101,10 +102,10 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 ### HU-158 · Modo ligero y movimiento reducido
 
 - **Historia:** Como agricultor con un celular sencillo o poca señal, quiero que la app funcione rápido aunque no muestre el paisaje 3D ni se mueva, para usarla en el campo.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso (falta que Felipe apruebe el botón en Figma)
 - **Criterios de aceptación:**
   - [x] **En el MVP la web es 2D por defecto:** todas las pantallas del flujo (inicio, entrada, estrategias, ciclo, qué cambió, lote y cuenta) funcionan completas sin WebGL
-  - [ ] Cuando exista la escena 3D (P1), sin WebGL o con fps bajo pasa sola a la versión 2D con la misma información, y hay un interruptor manual
+  - Pasó a HU-154 (P1) el 15 de noviembre de 2026, para no dejar abierta una HU de P0 por un criterio de P1 (`docs/registro-de-decisiones.md`). Texto original: «Cuando exista la escena 3D (P1), sin WebGL o con fps bajo pasa sola a la versión 2D con la misma información, y hay un interruptor manual». Ya se cumple en parte con el recorrido 3D de HU-155 (`web/src/pages/journey/JourneyPage.tsx`): si la escena falla (sin WebGL, si se pierde el contexto o si no baja el paquete), la página pasa a las ilustraciones 2D, y el botón «Modo ligero» es el interruptor manual. Falta el paso a 2D con fps bajos: no hay nada que los mida
   - [x] **Un solo interruptor de movimiento** (`web/src/lib/lightMode.ts`): «activado», «desactivado» o «automático»; se guarda en el navegador. En automático sigue a «reducir movimiento» y al ahorro de datos del equipo. Marca `<html data-light>`
   - [x] **Botón «Modo ligero» en la barra superior**, visible en todas las pantallas. Al pasar el cursor, enfocarlo con el teclado o tocarlo, un aviso corto (título, una frase y qué pasa al tocar) dice qué hace y cambia según el estado (Escape lo cierra). El estado se dice con forma y texto, no solo con color
   - [x] En el menú del celular, interruptor de «Modo ligero» (y de «Sonido», que no cabe en la barra por debajo de 400 px) con su explicación a la vista
@@ -112,7 +113,8 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - [x] **Regla para lo nuevo:** toda vista o componente animado se escribe compatible con el modo ligero (`useAnimated()`, la variante `animated:`); queda en `web/CLAUDE.md` y en `specs/05-frontend.md`. El CSS apaga cualquier animación o transición que se escriba fuera de ella
   - [x] **Reglas globales de diseño adaptable** (`container-page`, cuadrículas con columnas explícitas, anchos fijos con su versión angosta, alturas mínimas) y verificación automática con `npm run test:responsive`
   - [x] GSAP y Lenis no se descargan en modo ligero (carga diferida)
-  - [x] Un solo «Modo ligero» en el diseño: salió «Reducir movimiento» de Mi cuenta y del menú del celular, y la barra superior lleva el botón (`design/pantallas/ui.py`, lámina `transversal-06-modo-ligero-*`). Falta enviar los SVG a Figma y que Felipe los apruebe
+  - [x] Un solo «Modo ligero» en el diseño: salió «Reducir movimiento» de Mi cuenta y del menú del celular, y la barra superior lleva el botón (`design/pantallas/ui.py`, lámina `transversal-06-modo-ligero-*`)
+  - [ ] El botón y la lámina `transversal-06-modo-ligero-*` están en Figma y Felipe los aprobó (separado el 15 de noviembre de 2026 del criterio anterior, que decía «Falta enviar los SVG a Figma y que Felipe los apruebe» aunque estaba marcado)
   - [x] Respeta «reducir movimiento»: verificado en las pantallas del MVP
   - [x] Cumple el JS inicial y el LCP de `specs/05-frontend.md`
 - **Notas:** Desde el 11 de octubre de 2026 el modo ligero 2D es el modo por defecto de la web del MVP (decisión 12). El botón de la barra superior no estaba en Figma: se resolvió con el kit (placa biselada, pluma llena = activo) y quedó dibujado en los generadores; falta enviarlo a Figma y que Felipe lo apruebe. La lámina `inicio` no se regeneró (necesita la imagen Blue Marble, `design/globo/`) y todavía no muestra el botón. Por defecto el modo es «automático»: con movimiento salvo que el equipo pida lo contrario; para que arranque en ligero en todos los equipos, se cambia el valor por defecto en `lightMode.ts`.
@@ -142,9 +144,7 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - Todas se ven completas y sin errores. El único WebGL es el mapa de los lotes, que avisa «Su navegador no puede mostrar el mapa» y ofrece «Escribir el área a mano».
   - Se arregló que el panel tapara el comienzo de ese aviso en escritorio.
   - Se usó una cuenta de prueba de la base local, borrada al terminar.
-- **Falta:**
-  - enviar el botón a Figma y que Felipe lo apruebe;
-  - el paso automático a 2D cuando exista la escena 3D (P1).
+- **Falta:** enviar el botón a Figma y que Felipe lo apruebe. El paso automático a 2D con fps bajos pasó a HU-154 (P1) el 15 de noviembre de 2026.
 
 ### HU-159 · Prototipo navegable con datos de ejemplo
 
