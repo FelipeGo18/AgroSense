@@ -47,6 +47,7 @@ import { WaterChart } from "./WaterChart";
 import { BestWindows, NotSuitable, SuitabilityScore } from "./Suitability";
 import { formatDate, useCrops } from "@/features/farm/seasons";
 import { irrigationText, placeName } from "@/pages/farm/common";
+import { changesLink } from "@/features/changes/changes";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
@@ -290,6 +291,15 @@ export function DiagnosisPage() {
             onChangeSowingMonth={changeSowingMonth}
           />
         </div>
+        {request && (
+          <ButtonLink
+            to={changesLink(request.municipality_id, request.crop_id, request.irrigated)}
+            variant="secondary"
+            className="mt-6 w-full sm:w-auto"
+          >
+            Ver qué cambió en su zona
+          </ButtonLink>
+        )}
         {request && diagnosis.isSuccess && <Details data={diagnosis.data} />}
       </main>
       <Footer />

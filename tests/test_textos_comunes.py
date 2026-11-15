@@ -4,7 +4,7 @@ la aptitud, la de heladas y los boletines de SIPSA, sin importarse (R6)."""
 import pytest
 
 from common.months import MONTH_NAMES, month_name
-from common.text import format_number, join
+from common.text import format_decimal, format_number, format_precise, join, of
 
 
 @pytest.mark.parametrize(
@@ -21,6 +21,12 @@ from common.text import format_number, join
 )
 def test_format_number_sin_decimales_si_es_entero_y_con_coma_si_no(value, expected):
     assert format_number(value) == expected
+
+
+@pytest.mark.parametrize(("value", "expected"), [(5, "5,0"), (5.0, "5,0"), (5.75, "5,8"), (4.13, "4,1"), (7.88, "7,9")])
+def test_format_decimal_siempre_con_un_decimal_y_coma(value, expected):
+    """El pH de la señal de suelo (HU-183) y del descarte `soil_ph` de las estrategias."""
+    assert format_decimal(value) == expected
 
 
 @pytest.mark.parametrize(
@@ -46,3 +52,15 @@ def test_los_meses_estan_en_orden_y_en_minuscula():
 @pytest.mark.parametrize(("month", "expected"), [(1, "enero"), (9, "septiembre"), (12, "diciembre")])
 def test_month_name_cuenta_desde_uno(month, expected):
     assert month_name(month) == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"), [("la papa", "de la papa"), ("el maíz", "del maíz"), ("la cebolla de bulbo", "de la cebolla de bulbo")]
+)
+def test_of_contrae_de_el_en_del(name, expected):
+    assert of(name) == expected
+
+
+@pytest.mark.parametrize(("value", "expected"), [(5.75, "5,75"), (5.7, "5,7"), (5.0, "5,0"), (4.083, "4,08"), (7.899, "7,9")])
+def test_format_precise_deja_los_decimales_que_tiene_hasta_dos(value, expected):
+    assert format_precise(value) == expected
