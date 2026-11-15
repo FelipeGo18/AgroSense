@@ -243,7 +243,7 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
   - [x] Sin `priorities`, usa los pesos por defecto y `overall` coincide con `overall_default`
   - [x] 200 con `insufficient_data` para entradas válidas sin datos
   - [x] 200 con `suitability.level = not_suitable`, luz `red` y acción `rotate` para un cultivo que no es apto; no es un error
-  - [x] Con `lot_id`, la altitud y `irrigated` se toman del lote; 401 con `lot_id` y sin sesión; 404 con un lote ajeno. El suelo del lote es de HU-182 (su criterio de `lot_id` en `/diagnostics`): sale de aquí para no tener el mismo criterio en dos HU (14 nov 2026, PR #114)
+  - [x] Con `lot_id`, la altitud y `irrigated` se toman del lote; 401 con `lot_id` y sin sesión; 404 con un lote ajeno. El suelo del lote es de HU-182 (su criterio de `lot_id` en `/diagnostics`): sale de aquí para no tener el mismo criterio en dos HU (aprobado por Haider el 14 de noviembre de 2026, PR #114)
   - [x] No guarda los datos de la finca ni quién consultó, tampoco las prioridades (R9)
 - **Reglas que aplican:** R1, R3, R4, R9
 - **Contrato que toca:** `POST /api/v1/diagnostics` y la tabla de errores
