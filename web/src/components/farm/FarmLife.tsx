@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Mascot } from "@/components/mascot/Mascot";
 import type { TimeOfDay } from "./cells";
 
@@ -287,16 +288,45 @@ export function FarmLifeWorld({
           keyTimes="0;0.7;0.95;1"
         />
       </g>
+    </g>
+  );
+}
 
-      {/* 8. Luciérnagas de noche. */}
-      {!day &&
-        Array.from({ length: 10 }, (_, i) => {
-          const x = f0[0] - 260 + ((i * 97) % 520);
-          const y = f0[1] + 20 + ((i * 61) % 260);
-          return (
-            <circle key={i} cx={x} cy={y} r={2.4} fill="#F7F28A" className="farm-firefly" style={{ animationDelay: `${(i * 0.7) % 5}s` }} />
-          );
-        })}
+/**
+ * 8. Las luciérnagas de noche, al azar por toda la finca (en coordenadas del lote): cada una en su sitio, con su propio
+ * vuelo errático y su propio ritmo de encenderse y apagarse. Van encima del tono de la noche, para que brillen.
+ */
+export function FarmFireflies({ anchors }: { anchors: FarmAnchors }) {
+  const [flies] = useState(() => {
+    const xs = anchors.path.map((p) => p[0]);
+    const ys = anchors.path.map((p) => p[1]);
+    const [x0, x1] = [Math.min(...xs) - 140, Math.max(...xs) + 140];
+    const [y0, y1] = [Math.min(...ys) - 80, Math.max(...ys) + 180];
+    const r = (a: number, b: number) => a + Math.random() * (b - a);
+    return Array.from({ length: 24 }, () => {
+      const hops = Array.from({ length: 4 }, () => `${r(-45, 45).toFixed(0)} ${r(-30, 30).toFixed(0)}`);
+      return {
+        x: r(x0, x1),
+        y: r(y0, y1),
+        path: `M0 0 Q${hops[0]} ${hops[1]} T${hops[2]} T${hops[3]} T0 0`,
+        fly: `${r(7, 16).toFixed(1)}s`,
+        blink: `${r(2.5, 6).toFixed(1)}s`,
+        delay: `${r(0, 6).toFixed(1)}s`,
+        size: r(2.5, 4),
+      };
+    });
+  });
+  return (
+    <g aria-hidden="true">
+      {flies.map((f, i) => (
+        <g key={i} transform={`translate(${f.x.toFixed(0)} ${f.y.toFixed(0)})`}>
+          <g className="farm-firefly" style={{ animationDuration: f.blink, animationDelay: f.delay }}>
+            <circle r={f.size * 2.6} fill="#F7F28A" opacity={0.25} />
+            <circle r={f.size} fill="#FBF7B0" />
+            <animateMotion dur={f.fly} begin={`-${f.delay}`} repeatCount="indefinite" path={f.path} />
+          </g>
+        </g>
+      ))}
     </g>
   );
 }
