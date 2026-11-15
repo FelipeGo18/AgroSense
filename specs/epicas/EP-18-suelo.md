@@ -61,15 +61,17 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 ### HU-184 · Suelo en las estrategias de rotación
 
 - **Historia:** Como agricultor, quiero que las estrategias tengan en cuenta mi suelo, para no recibir una que mi suelo no aguanta.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` excluye la estrategia, con la regla y el ciclo citados (R3)
-  - [ ] El carbono orgánico (`soc_g_kg`) del lote o del municipio llega al criterio `organic_carbon` de la salud del suelo (HU-212)
-  - [ ] La respuesta dice qué suelo se usó (`lot` o `municipality`) y lleva el rótulo de estimación (R10)
-  - [ ] Las razones citan la propiedad del suelo y la regla
+  - [x] Un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` excluye la estrategia (R3), con el motivo `soil_ph`: el ciclo (el primero donde aparece el cultivo), el cultivo, el intervalo de pH del suelo, el rango del cultivo y sus fuentes (`source_ids`: la del rango de pH de la ficha y la del suelo). No hay regla de pH en `rotation_rules`: la exclusión sale del rango de pH de la ficha y el contrato define `soil_ph` sin `rule_id`. Pruebas: `tests/engine/test_estrategias_aptitud_ph.py::test_zanahoria_con_suelo_3_6_a_4_0_se_excluye_con_la_razon_del_contrato`, `::test_bordes_del_ph_tocar_el_intervalo_no_excluye_y_pasarse_por_poco_si`, `::test_el_cultivo_en_dos_ciclos_da_un_solo_motivo_de_ph_en_el_primero` y `::test_sin_suelo_no_excluye_y_agrega_una_limitacion`
+  - El carbono orgánico (`soc_g_kg`, con `soc_p05` y `soc_p95`) del lote o del municipio llega al criterio `organic_carbon` de la salud del suelo (HU-212):
+    - [x] Motor: `soil_health` recibe el carbono y lo evalúa. Pruebas: `tests/engine/test_salud_del_suelo_carbono_cobertura.py::test_borde_29_es_normal_y_justo_debajo_es_bajo` y `::test_carbono_sin_suelo_o_sin_soc_es_insufficient_data_con_la_regla`
+    - [ ] La API lo lee de `soil_municipality` (HU-084) o del lote (HU-182) y se lo pasa al motor
+  - [ ] La respuesta dice qué suelo se usó (`lot` o `municipality`, campo `soil_basis`) y lleva el rótulo de estimación (R10). Espera HU-084: el campo ya está en el modelo de respuesta (`backend/api/calc_models.py`), pero lo llena el endpoint
+  - [x] Las razones citan la propiedad del suelo y la regla o el rango que la decide: la de `soil_ph` cita los dos rangos de pH (el del suelo y el del cultivo; no hay regla, es el rango de la ficha) y la de `organic_carbon` cita el nivel, el rango del carbono y la regla (`rule_ids`, `materia_organica_ciclos`). Pruebas: `test_zanahoria_con_suelo_3_6_a_4_0_se_excluye_con_la_razon_del_contrato` y `tests/engine/test_salud_del_suelo_carbono_cobertura.py::test_carbono_la_razon_termina_con_la_nota_y_cita_la_regla_y_las_dos_fuentes`
 - **Reglas que aplican:** R3, R5, R8, R10
 - **Contrato que toca:** `POST /api/v1/rotations`; `grid_cells`, `soil_municipality`
-- **Notas:** Depende de HU-081 y HU-181; con HU-182, usa el suelo del lote. El 11 de octubre de 2026 la bonificación por carbono orgánico pasó al criterio `organic_carbon` de HU-212 (decisión 12).
+- **Notas:** Depende de HU-081, HU-181, HU-212 y HU-084; con HU-182, usa el suelo del lote. El 11 de octubre de 2026 la bonificación por carbono orgánico pasó al criterio `organic_carbon` de HU-212 (decisión 12). **15 nov 2026:** criterios 1 y 4 cumplidos en el motor (HU-081 y HU-212); lo que falta es la lectura del suelo en la API y `soil_basis` en la respuesta (HU-084) y el suelo del lote (HU-182).
 
 ### HU-212 · Salud del suelo de cada estrategia
 
