@@ -56,6 +56,7 @@ PART_SUFFIX = ".part"
 # nueva (por ejemplo, la de una fuente que trae un PR) se agrega aquí, con su licencia en `docs/licencias.md`.
 FOLDERS: dict[str, tuple[str, ...]] = {
     "dane": ("dane_divipola", "dane_mgn_2025"),
+    "eva": ("eva",),
     "imerg": ("imerg",),
     "nasa_power": ("nasa_power",),
     "nasadem": ("nasadem",),
