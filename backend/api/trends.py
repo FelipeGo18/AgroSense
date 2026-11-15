@@ -109,8 +109,10 @@ def water_series(dataset: Dataset, municipality_id: str, crop_id: str, sowing_da
 def supply_series(dataset: Dataset, municipality_id: str, crop_id: str, sowing_date: date) -> SupplySeries:
     """El área sembrada del semestre de la siembra, por año, de la fuente `supply.used` de la región (EVA).
 
-    Solo esa fuente: si el dataset trae otras (FAOSTAT, reportes), no se mezclan (R1, R8). Hoy `supply_semester` no
-    está en el dataset publicado: la llenarán HU-031 y HU-032; mientras tanto, la serie es `insufficient_data`.
+    Solo esa fuente: si el dataset trae otras (FAOSTAT, reportes), no se mezclan (R1, R8). Desde HU-031 el dataset
+    publicado trae `supply_semester` con EVA, así que la serie sale con datos reales; sin la tabla es
+    `insufficient_data`. Un año sin fila no aparece en `points` (no va con el área nula): sin fila es «sin dato» (HU-032),
+    y quien dibuje la serie no debe unir los huecos.
     """
     source_id = signal_sources.get_signal_sources().for_region(dataset.region["id"])["supply"].used
     half = semester(sowing_date)
