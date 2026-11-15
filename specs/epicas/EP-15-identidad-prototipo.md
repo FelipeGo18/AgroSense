@@ -102,7 +102,7 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 ### HU-158 · Modo ligero y movimiento reducido
 
 - **Historia:** Como agricultor con un celular sencillo o poca señal, quiero que la app funcione rápido aunque no muestre el paisaje 3D ni se mueva, para usarla en el campo.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso (falta que Felipe apruebe el botón en Figma)
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (15 nov 2026)
 - **Criterios de aceptación:**
   - [x] **En el MVP la web es 2D por defecto:** todas las pantallas del flujo (inicio, entrada, estrategias, ciclo, qué cambió, lote y cuenta) funcionan completas sin WebGL
   - Pasó a HU-154 (P1) el 15 de noviembre de 2026, para no dejar abierta una HU de P0 por un criterio de P1 (`docs/registro-de-decisiones.md`). Texto original: «Cuando exista la escena 3D (P1), sin WebGL o con fps bajo pasa sola a la versión 2D con la misma información, y hay un interruptor manual». Ya se cumple en parte con el recorrido 3D de HU-155 (`web/src/pages/journey/JourneyPage.tsx`): si la escena falla (sin WebGL, si se pierde el contexto o si no baja el paquete), la página pasa a las ilustraciones 2D, y el botón «Modo ligero» es el interruptor manual. Falta el paso a 2D con fps bajos: no hay nada que los mida
@@ -114,10 +114,10 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - [x] **Reglas globales de diseño adaptable** (`container-page`, cuadrículas con columnas explícitas, anchos fijos con su versión angosta, alturas mínimas) y verificación automática con `npm run test:responsive`
   - [x] GSAP y Lenis no se descargan en modo ligero (carga diferida)
   - [x] Un solo «Modo ligero» en el diseño: salió «Reducir movimiento» de Mi cuenta y del menú del celular, y la barra superior lleva el botón (`design/pantallas/ui.py`, lámina `transversal-06-modo-ligero-*`)
-  - [ ] El botón y la lámina `transversal-06-modo-ligero-*` están en Figma y Felipe los aprobó (separado el 15 de noviembre de 2026 del criterio anterior, que decía «Falta enviar los SVG a Figma y que Felipe los apruebe» aunque estaba marcado)
+  - Ya no aplica (decidido por Haider el 15 de noviembre de 2026, `docs/registro-de-decisiones.md`): el botón está en el código y en las láminas del generador (`design/pantallas/svg/transversal-06-modo-ligero-*`, al día desde el PR #165), que son la referencia del diseño; no se suben a Figma ni esperan aprobación. Texto original: «El botón y la lámina `transversal-06-modo-ligero-*` están en Figma y Felipe los aprobó»
   - [x] Respeta «reducir movimiento»: verificado en las pantallas del MVP
   - [x] Cumple el JS inicial y el LCP de `specs/05-frontend.md`
-- **Notas:** Desde el 11 de octubre de 2026 el modo ligero 2D es el modo por defecto de la web del MVP (decisión 12). El botón de la barra superior no estaba en Figma: se resolvió con el kit (placa biselada, pluma llena = activo) y quedó dibujado en los generadores; falta enviarlo a Figma y que Felipe lo apruebe. La lámina `inicio` no se regeneró (necesita la imagen Blue Marble, `design/globo/`) y todavía no muestra el botón. Por defecto el modo es «automático»: con movimiento salvo que el equipo pida lo contrario; para que arranque en ligero en todos los equipos, se cambia el valor por defecto en `lightMode.ts`.
+- **Notas:** Desde el 11 de octubre de 2026 el modo ligero 2D es el modo por defecto de la web del MVP (decisión 12). El botón de la barra superior no estaba en Figma: se resolvió con el kit (placa biselada, pluma llena = activo) y quedó dibujado en los generadores, que son su referencia: no se sube a Figma (decidido por Haider el 15 de noviembre de 2026). La lámina `inicio` no se regeneró (necesita la imagen Blue Marble, `design/globo/`) y todavía no muestra el botón. Por defecto el modo es «automático»: con movimiento salvo que el equipo pida lo contrario; para que arranque en ligero en todos los equipos, se cambia el valor por defecto en `lightMode.ts`.
 - **Hecho (12 nov): el movimiento se carga aparte.**
   - **Cómo:**
     - GSAP, ScrollTrigger y Lenis viven en `web/src/lib/motionEngine.ts` y se piden con `import()` desde `web/src/lib/motion.ts`, solo con movimiento. Pesan unos 48 kB comprimidos.
@@ -144,7 +144,7 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
   - Todas se ven completas y sin errores. El único WebGL es el mapa de los lotes, que avisa «Su navegador no puede mostrar el mapa» y ofrece «Escribir el área a mano».
   - Se arregló que el panel tapara el comienzo de ese aviso en escritorio.
   - Se usó una cuenta de prueba de la base local, borrada al terminar.
-- **Falta:** enviar el botón a Figma y que Felipe lo apruebe. El paso automático a 2D con fps bajos pasó a HU-154 (P1) el 15 de noviembre de 2026.
+- **Cerrada (15 nov):** sin Figma, por decisión de Haider (el botón vive en el código y en las láminas del generador). El paso automático a 2D con fps bajos pasó a HU-154 (P1) el 15 de noviembre de 2026.
 
 ### HU-159 · Prototipo navegable con datos de ejemplo
 
