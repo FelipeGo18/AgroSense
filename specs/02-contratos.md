@@ -443,10 +443,12 @@ Evalúa **una ventana de siembra**: de `sowing_date` a la cosecha estimada de es
 Tres series separadas, cada una con su unidad, para no mezclar unidades en un eje (W3):
 
 - `water`: por año, la lluvia que cayó en los meses de la ventana (`precip_mm`) y lo que el cultivo habría necesitado (`need_mm`), en mm, con el `source_id` de la lluvia (la fuente que calcula la señal).
+  - `need_mm` es la ETc de FAO-56: Kc × ET0 sumado día por día, con la curva de Kc de FAO-56 (constante en la etapa inicial y en la media, en rampa en el desarrollo y en la final; Allen et al. 1998, cap. 6, ec. 66 y fig. 25). Un mes que la ventana toca en parte aporta la fracción de su total igual a los días de la ventana en ese mes sobre los días del mes en el año histórico; la misma fracción vale para `precip_mm` y para `need_mm`. Aprobado por Felipe el 14 de noviembre de 2026 (PR #104) como precisión del contrato.
 - `supply`: por año, `planted_ha` (ha) y `preliminary` del semestre en que cae la fecha de siembra.
-- `ndvi`: por `period` (1 a 23), `ndvi_normal` del municipio, con `source_id` y `quality` (HU-208). Sirve para ver cuándo suele estar verde el campo junto a la ventana.
+- `ndvi`: por `period` (1 a 23), `ndvi_normal` del municipio, con `source_id` y `quality` (HU-208). Sirve para ver cuándo suele estar verde el campo junto a la ventana. Mientras `sources.yaml` no le asigne una fuente al verdor, viene vacía con `insufficient_data` (R1, R8; 14 nov 2026, PR #104).
+- `limitations`: una frase por cada serie vacía.
 
-Sin datos para una serie, la serie viene vacía con `status = insufficient_data`. No guarda nada (R9).
+Sin datos para una serie, la serie viene vacía con `status = insufficient_data` y `limitations` lo dice. No guarda nada (R9).
 
 ```json
 {
@@ -456,6 +458,7 @@ Sin datos para una serie, la serie viene vacía con `status = insufficient_data`
   "supply": { "status": "insufficient_data", "source_id": "eva", "unit": "ha", "semester": "B", "points": [] },
   "ndvi": { "status": "available", "source_id": "modis_ndvi", "quality": "ok",
             "points": [ { "period": 1, "ndvi_normal": 0.52 } ] },
+  "limitations": ["Sin el área sembrada de eva del semestre B en la zona: la serie de oferta viene vacía"],
   "versions": { "dataset": "2026.11.0", "rules": "1.0.0" }
 }
 ```

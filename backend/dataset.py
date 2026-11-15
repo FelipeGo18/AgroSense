@@ -83,6 +83,14 @@ class Dataset:
     markets: tuple[tuple[str, str], ...] = ()
     # La rejilla de 250 m con altitud (HU-191). Nula si el dataset no la trae (R1).
     grid: Grid | None = None
+    # El clima mensual de NASA POWER (`climate_month`, HU-042: lluvia y ET0) y la lluvia mensual por fuente
+    # (`precip_month`, HU-207: GPM IMERG). Nulos si el dataset no los trae (R1). Los usan las tendencias (HU-078).
+    climate_month: pl.DataFrame | None = None
+    precip_month: pl.DataFrame | None = None
+    # El área sembrada por semestre (`supply_semester`, HU-031 y HU-032) y el verdor normal del municipio
+    # (`ndvi_municipality_normal`, HU-208). Nulos mientras el pipeline no los publique (R1).
+    supply_semester: pl.DataFrame | None = None
+    ndvi_normal: pl.DataFrame | None = None
     # Los días con helada de cada mes de cada año (`climate_frost_month`, HU-045), para la señal de heladas (HU-077), y
     # la máxima p90 de cada mes del año (`climate_risk_month`), para la de calor (HU-190). Nulas si el dataset no las
     # trae: entonces esas señales son `insufficient_data` (R1).
@@ -120,6 +128,10 @@ def load(folder: Path) -> Dataset:
         market_month = pl.read_parquet(month_path) if month_path.exists() else None
         grid_path = folder / "grid_cells.parquet"
         grid = _grid(grid_path) if grid_path.exists() else None
+        climate_month, precip_month, supply_semester, ndvi_normal = (
+            _optional(folder / f"{name}.parquet")
+            for name in ("climate_month", "precip_month", "supply_semester", "ndvi_municipality_normal")
+        )
         frost_path, risk_path = folder / "climate_frost_month.parquet", folder / "climate_risk_month.parquet"
         climate_frost_month = pl.read_parquet(frost_path) if frost_path.exists() else None
         climate_risk_month = pl.read_parquet(risk_path) if risk_path.exists() else None
@@ -161,9 +173,18 @@ def load(folder: Path) -> Dataset:
         climate_change_month=climate_change_month,
         periods=periods,
         grid=grid,
+        climate_month=climate_month,
+        precip_month=precip_month,
+        supply_semester=supply_semester,
+        ndvi_normal=ndvi_normal,
         climate_frost_month=climate_frost_month,
         climate_risk_month=climate_risk_month,
     )
+
+
+def _optional(path: Path) -> pl.DataFrame | None:
+    """Una tabla que el dataset puede no traer todavía: nula si no está (R1)."""
+    return pl.read_parquet(path) if path.exists() else None
 
 
 def _grid(path: Path) -> Grid:

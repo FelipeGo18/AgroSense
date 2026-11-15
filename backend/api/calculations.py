@@ -1,9 +1,9 @@
 """Endpoints de cálculo: diagnóstico, estrategias, plan de agua, «Qué cambió» y tendencias (HU-012).
 
 Tienen su forma del contrato (`backend/api/calc_models.py`) y sus ejemplos de cada estado en el OpenAPI. Validan la
-entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076) ya responde con el motor; los demás, mientras su
-motor no exista, responden `501` `not_implemented` (decisión 15). Cuando llegue cada HU del motor, la ruta deja de
-responder 501 y devuelve su modelo: la forma no cambia.
+entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076) y las tendencias (HU-078, `backend/api/trends.py`)
+ya responden con el motor; los demás, mientras su motor no exista, responden `501` `not_implemented` (decisión 15).
+Cuando llegue cada HU del motor, la ruta deja de responder 501 y devuelve su modelo: la forma no cambia.
 
 No guardan los datos de la finca ni quién consultó (R9): solo leen el dataset y, con `lot_id`, el lote.
 """
@@ -42,6 +42,7 @@ from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
 from backend.api.lot_terrain import ZoneTemperature, zone_temperature
 from backend.api.lots import _own_lot
+from backend.api.trends import trends as build_trends
 from backend.api.window_signals import (
     PENDING_SIGNALS,
     SignalResult,
@@ -656,7 +657,7 @@ def changes(
     response_model=TrendsResponse,
     responses={
         200: {"content": _examples(series=("Agua y verdor con datos; la oferta sin datos", ex.TRENDS))},
-        **ex.responses(422, 501, 503),
+        **ex.responses(422, 500, 503),
     },
 )
 def trends(
@@ -666,7 +667,15 @@ def trends(
     sowing_date: date = Query(),
     dataset: Dataset = Depends(calc_dataset),
 ) -> Any:
-    """Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad."""
+    """Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad. Es historia de la zona,
+    no un pronóstico; solo lee el dataset publicado y no guarda nada (R9)."""
     _check_place(dataset, municipality_id)
     _check_crops(dataset, [crop_id], only_crops=True)
-    _not_implemented(request, "Tendencias")
+    result = build_trends(dataset, municipality_id, crop_id, sowing_date)
+    # Al log, solo qué series tuvieron datos: ni el municipio, ni el cultivo, ni la fecha (R9).
+    explain(
+        request,
+        f"Tendencias calculadas: agua {result.water.status} ({len(result.water.points)} años), "
+        f"oferta {result.supply.status}, verdor {result.ndvi.status}",
+    )
+    return result

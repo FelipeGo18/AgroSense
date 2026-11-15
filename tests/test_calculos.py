@@ -1,5 +1,6 @@
 """HU-012: los endpoints de cálculo ya tienen su forma del contrato, sus ejemplos y sus validaciones; los que todavía no
-tienen motor responden 501 (el diagnóstico ya responde, HU-076: sus pruebas están en test_diagnostico.py)."""
+tienen motor responden 501. El diagnóstico (HU-076) y las tendencias (HU-078) ya responden: sus pruebas están en
+`tests/test_diagnostico.py` y `tests/test_tendencias.py`."""
 
 from datetime import date, timedelta
 from pathlib import Path
@@ -69,7 +70,8 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         ("/api/v1/rotations", "post", {"200", "401", "404", "422", "501", "503"}),
         ("/api/v1/water-plans", "post", {"200", "422", "501", "503"}),
         ("/api/v1/changes", "get", {"200", "422", "501", "503"}),
-        ("/api/v1/trends", "get", {"200", "422", "501", "503"}),
+        # Ya responde (HU-078): no anuncia 501.
+        ("/api/v1/trends", "get", {"200", "422", "500", "503"}),
         ("/api/v1/catalogs/municipalities/{municipality_id}/soil", "get", {"200", "404", "503"}),
     ]:
         responses = paths[path][method]["responses"]
@@ -86,7 +88,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         # El agua del ciclo de un abono verde (HU-215): es una entrada válida.
         ("post", "/api/v1/water-plans", {**WATER, "crops": [{"crop_id": "avena_vicia", "area_pct": 100, "sowing_date": SOON}]}),
         ("get", "/api/v1/changes?municipality_id=15646&crop_id=papa", None),
-        ("get", f"/api/v1/trends?municipality_id=15646&crop_id=papa&sowing_date={SOON}", None),
     ],
 )
 def test_una_entrada_valida_responde_501_con_la_forma_de_los_errores(dataset, method, path, body):
