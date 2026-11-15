@@ -147,19 +147,21 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-219 · Pantalla «Qué cambió en su zona»
 
 - **Historia:** Como agricultor, quiero ver qué cambió en las heladas, la lluvia y el calor de mi zona, y cómo se movieron las mejores fechas de siembra de mi cultivo, para adaptar mi finca a condiciones que cambian.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Se llega desde el resultado del diagnóstico, desde el ciclo de una estrategia (HU-215) y desde el lote, con el municipio y el cultivo ya elegidos. El ciclo ya enlaza a `/que-cambio?municipio=&cultivo=` (`PATHS.changes`), que hoy dice que está pendiente: esta HU pone ahí la pantalla
-  - [ ] Por mes, tres comparaciones (heladas, lluvia y temperatura máxima) entre los dos periodos, cada una con su unidad, los años de cada periodo y la fuente
-  - [ ] Las mejores ventanas de cada periodo, lado a lado («Entre 1981 y 2000: …» · «Entre 2005 y 2024: …»)
-  - [ ] Rótulo fijo y visible: «Así fue en la historia de su zona. No es un pronóstico»
-  - [ ] Un valor `insufficient_data` se ve como «Sin datos suficientes» con forma y texto, nunca como un cambio de cero (R1)
-  - [ ] Si la lluvia sale de IMERG, la pantalla dice que esos datos empiezan en 2000
-  - [ ] Si el cultivo no es apto para la zona, lo dice con su razón y muestra solo el clima
-  - [ ] Usable a 360 px; cada control tiene una función
+  - [x] Se llega desde el resultado del diagnóstico, desde el ciclo de una estrategia (HU-215) y desde el lote, con el municipio y el cultivo ya elegidos. El ciclo ya enlaza a `/que-cambio?municipio=&cultivo=` (`PATHS.changes`), que hoy dice que está pendiente: esta HU pone ahí la pantalla
+  - [x] Por mes, tres comparaciones (heladas, lluvia y temperatura máxima) entre los dos periodos, cada una con su unidad, los años de cada periodo y la fuente
+  - [x] Las mejores ventanas de cada periodo, lado a lado («Entre 1981 y 2000: …» · «Entre 2005 y 2024: …»)
+  - [x] Rótulo fijo y visible: «Así fue en la historia de su zona. No es un pronóstico»
+  - [x] Un valor `insufficient_data` se ve como «Sin datos suficientes» con forma y texto, nunca como un cambio de cero (R1)
+  - [x] Si la lluvia sale de IMERG, la pantalla dice que esos datos empiezan en 2000
+  - [x] Si el cultivo no es apto para la zona, lo dice con su razón y muestra solo el clima
+  - [x] Usable a 360 px; cada control tiene una función
 - **Reglas que aplican:** R1, R4, R5, R8
 - **Contrato que toca:** `GET /api/v1/changes`
 - **Notas:** Decisión 12. Se diseña en Figma antes de programarla (`specs/05-frontend.md`, «Pantallas por diseñar del MVP»). Depende de HU-218 o de su respuesta simulada. Agregada el 11 de octubre de 2026.
+- **Implementación (14 nov):** `/que-cambio`, con contexto editable validado contra los catálogos, comparaciones mensuales con valores y barras rayadas/llenas, ventanas por periodo, razones, limitaciones y versiones. El diagnóstico y el ciclo conservan municipio, cultivo y riego; desde el lote se elige explícitamente el cultivo, sin asumir uno cuando hay varias siembras. Las ausencias no se convierten en ceros ni en riesgo. Las pruebas usan las respuestas simuladas disponibles; no se agregaron datos ni reglas. **Integración real pendiente de HU-217/HU-218:** la API responde 501 para aptitud `suitable`/`insufficient_data`; la web lo declara sin simular una lista de ventanas vacía. No se modifica el contrato ni el motor.
+- **Verificación (14 nov):** TypeScript, build y ESLint de los archivos de HU-219; 107 pruebas de HU-219, diagnóstico, lote y estrategias en Docker. Revisión adaptable con simulación: 66/66 combinaciones válidas (entrada vacía, resultado y 501; 11 tamaños, con movimiento y en modo ligero), sin desbordes, objetivos táctiles pequeños ni errores de página. La ruta y sus estados disponibles quedan incluidos en `web/e2e/responsive-check.mjs`. El cultivo no apto se verifica en pruebas de componente; el ejemplo de `/changes` todavía no incluye ese estado y no se agrega uno ficticio al simulador.
 
 ### HU-095 · Mapa regional por semáforo
 

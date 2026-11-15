@@ -41,6 +41,8 @@ const ROUTES = (
     "/diagnostico",
     `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no`,
     "/que-cambio?municipio=15646&cultivo=papa",
+    "/que-cambio",
+    ...["cargando", "sin_conexion", "422", "501", "503"].map((state) => `/que-cambio?municipio=15646&cultivo=papa&estado=${state}`),
     "/mi-finca",
     "/como-funciona",
     "/politica-de-datos",
@@ -181,7 +183,11 @@ async function check(context, route, width, light) {
     });
 
     if (loadingState) {
-      await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+      if (new URL(route, BASE).pathname === "/que-cambio") {
+        await page.getByText("Cargando la comparación histórica…", { exact: true }).waitFor({ state: "visible" });
+      } else {
+        await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+      }
     }
     await page.waitForTimeout(1200);
     return [...(await page.evaluate(inspect, { light, minTarget: minTargetFor(width) })), ...errors.map((e) => `error de la página: ${e}`)];

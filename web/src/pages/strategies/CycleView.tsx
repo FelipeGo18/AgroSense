@@ -320,7 +320,9 @@ function CycleDetails({
   const water = useWaterPlan(waterRequest(municipalityId, areaHa, cycle));
   const trends = useTrends(municipalityId, cycle.crop_id, cycle.sowing_date);
   const ndvi = trends.data?.ndvi;
-  const changes = `${PATHS.changes}?${new URLSearchParams({ municipio: municipalityId, cultivo: cycle.crop_id })}`;
+  const changeParams = new URLSearchParams({ municipio: municipalityId, cultivo: cycle.crop_id });
+  if (irrigated != null) changeParams.set("riego", irrigated ? "si" : "no");
+  const changes = `${PATHS.changes}?${changeParams}`;
   return (
     <>
       <section

@@ -13,6 +13,7 @@ import { STAGE_NAMES, STAGE_ORDER, cropNames, formatDate, formatShortDate, useCr
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { WithoutDrawing, irrigationText, placeName } from "./common";
+import { LotChangesLink } from "@/pages/changes/LotChangesLink";
 
 /**
  * El lote (HU-164, HU-169): su contorno en el mapa, lo que se sabe de él, sus siembras en curso y su suelo. Editar y
@@ -102,6 +103,7 @@ function LotView() {
         )}
       </Section>
       <Seasons lot={lot.data} />
+      <LotChangesLink municipalityId={lot.data.municipality_id} irrigated={lot.data.irrigated} />
       <Soil town={town} />
     </MapScene>
   );
