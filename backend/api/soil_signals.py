@@ -4,15 +4,16 @@ en `dataset.soil`) y llama al motor con todo ya leído (R6). Sin errores HTTP, s
 El suelo no cambia con la fecha: el diagnóstico calcula la señal una vez por consulta y la misma va en todas las ventanas
 (`window_signals`).
 
-**El suelo es siempre el del municipio.** El suelo de un lote (la mediana de las celdas de `grid_cells` de su polígono)
-es de HU-182: mientras no exista, una consulta con `lot_id` sigue usando el del municipio y lo dice en las limitaciones
-con la frase del contrato (`LOT_SOIL_LIMITATION`; R1, R10). El lote no se lee aquí: solo si la consulta trae uno.
+Con un lote dibujado usa las medianas de su polígono (HU-182). Sin dibujo usa
+el municipio y lo dice en las limitaciones (R10).
 """
 
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
 
+from backend.accounts.farm_models import Lot
+from backend.api.lot_soil import zone_soil
 from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset, Municipality
 from backend.engine.signal_score import AVAILABLE
@@ -34,17 +35,19 @@ def zone_soil_ph(dataset: Dataset, municipality_id: str) -> ZoneSoilPh | None:
 def soil_for(
     dataset: Dataset,
     municipality: Municipality,
-    has_lot: bool,
+    lot: Lot | None,
     crop: Mapping[str, Any],
     thresholds: Thresholds,
     crop_name: str,
 ) -> SoilSignalResult:
     """La señal `soil` del cultivo en el municipio: un `SoilSignalResult` del motor, que cumple `SignalResult`
     (`window_signals`) y va tal cual en cada ventana. `crop` es la ficha (`dataset.crops[crop_id]`) y `crop_name` su
-    nombre con artículo («la papa»). Con `has_lot` y suelo, el suelo sigue siendo el del municipio y
+    nombre con artículo («la papa»). Con lote sin dibujo y suelo, el suelo es el del municipio y
     se suma `LOT_SOIL_LIMITATION`."""
-    result = soil_signal(zone_soil_ph(dataset, municipality.municipality_id), crop, thresholds, crop_name)
+    row = zone_soil(dataset, municipality, lot)
+    ph = None if row is None else ZoneSoilPh(row.get("ph"), row.get("ph_p05"), row.get("ph_p95"))
+    result = soil_signal(ph, crop, thresholds, crop_name)
     # Solo si hay un suelo estimado del municipio que decirlo (PR #129): sin suelo, la señal ya dice que no lo hay.
-    if has_lot and result.status == AVAILABLE:
+    if lot is not None and lot.geometry is None and result.status == AVAILABLE:
         result = replace(result, limitations=(*result.limitations, LOT_SOIL_LIMITATION))
     return result
