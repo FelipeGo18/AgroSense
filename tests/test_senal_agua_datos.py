@@ -25,7 +25,8 @@ from backend.api.window_signals import pending_signal, signal_sources
 from backend.config.settings import get_settings
 from backend.dataset import get_dataset
 from backend.engine.sensitive_signal import ClimateSignalResult
-from backend.engine.water_signal import NO_RETENTION, WaterBalanceSummary
+from backend.engine.water_notes import NO_RETENTION
+from backend.engine.water_signal import WaterBalanceSummary
 from common import region
 from common.signal_sources import get_signal_sources
 from tests.ejemplos_con_fuente import EXAMPLES, examples_with_sources
