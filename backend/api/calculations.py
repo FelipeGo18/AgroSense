@@ -1,14 +1,16 @@
 """Endpoints de cálculo: diagnóstico, estrategias, plan de agua, «Qué cambió» y tendencias (HU-012).
 
 Tienen su forma del contrato (`backend/api/calc_models.py`) y sus ejemplos de cada estado en el OpenAPI. Validan la
-entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076) y las tendencias (HU-078, `backend/api/trends.py`)
-ya responden con el motor; los demás, mientras su motor no exista, responden `501` `not_implemented` (decisión 15).
+entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076), las tendencias (HU-078, `backend/api/trends.py`)
+y el plan de agua (HU-146) ya responden con el motor; los demás, mientras su motor no exista, responden `501`
+`not_implemented` (decisión 15).
 Cuando llegue cada HU del motor, la ruta deja de responder 501 y devuelve su modelo: la forma no cambia.
 
 No guardan los datos de la finca ni quién consultó (R9): solo leen el dataset y, con `lot_id`, el lote.
 """
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import asdict
 from datetime import date
 from typing import Any
@@ -19,6 +21,7 @@ from sqlalchemy.orm import Session as Db
 
 from backend.accounts.farm_models import Lot
 from backend.api import calc_examples as ex
+from backend.api import monthly_climate
 from backend.api.auth import current_session, require_accounts
 from backend.api.calc_models import (
     ChangesResponse,
@@ -26,16 +29,20 @@ from backend.api.calc_models import (
     DiagnosisRequest,
     DiagnosisRequestEcho,
     DiagnosisResponse,
+    FarmWater,
     LightResult,
     MunicipalityId,
     RotationRequest,
     RotationResponse,
     Signal,
+    SoilMoisture,
     SourceValue,
     SuitabilityResult,
     TrendsResponse,
+    WaterPlanCropResult,
     WaterPlanRequest,
     WaterPlanResponse,
+    WaterSources,
     Window,
     WindowSummary,
 )
@@ -43,13 +50,12 @@ from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
 from backend.api.lot_terrain import ZoneTemperature, zone_temperature, zone_texture
 from backend.api.lots import _own_lot
+from backend.api.soil_signals import soil_for
 from backend.api.trends import trends as build_trends
+from backend.api.water_signals import zone_water
 from backend.api.window_signals import (
-    PENDING_SIGNALS,
     SignalResult,
     SignalZone,
-    pending_reason,
-    signal_scores,
     signal_sources,
     signal_zone,
     window_signals,
@@ -64,21 +70,26 @@ from backend.engine.changes import (
     PeriodPair,
     compare_climate_months,
 )
-from backend.engine.signal_score import counts, round_half_up, weight_of
+from backend.engine.diagnosis import diagnose, evaluates_windows, irrigation_used
+from backend.engine.signal_score import counts, round_half_up, signal_scores, weight_of
 from backend.engine.stages import crop_window, monthly_sowing_windows
-from backend.engine.suitability import ABOVE_MAX, INSUFFICIENT_DATA, NOT_SUITABLE, SUITABLE, Suitability, suitability
-from backend.engine.traffic_light import DEFAULT, FARMER, OTHER_WINDOW, TrafficLight, missing_data_limitations, traffic_light
+from backend.engine.suitability import NOT_SUITABLE, Suitability, ZoneTemperatureUsed, crop_suitability, suitability_reason
+from backend.engine.traffic_light import DEFAULT, FARMER, TrafficLight
+from backend.engine.water_balance import root_zone
+from backend.engine.water_plan import PlanCrop, water_plan
 from backend.engine.window_order import WindowSignals, best_windows, order_windows
+from common import signal_sources as source_config
 from common.dates import add_months
 from common.region import region_today
 from common.signal_sources import get_signal_sources
-from common.text import format_number
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
 
 NOT_IMPLEMENTED = "Este cálculo todavía no está disponible."
+# El dataset de ejemplo (`data/examples/`) se publica con esta versión, y la respuesta lo dice (R5).
+EXAMPLE_VERSION = "ejemplo"
+EXAMPLE_DATA = "Datos de ejemplo: no representan observaciones reales."
 # `irrigated` nulo, en la consulta o en el lote: se evalúa como sin riego y se dice (contrato, cuerpo de `/diagnostics`).
-IRRIGATION_UNKNOWN = "Sin dato de riego: se evaluó como sin riego"
 
 
 def _examples(**values: tuple[str, Any]) -> dict[str, Any]:
@@ -156,11 +167,6 @@ def _not_implemented(request: Request, what: str) -> None:
     raise ApiError(501, "not_implemented", NOT_IMPLEMENTED)
 
 
-def _format_temperature(value: float) -> str:
-    """Formatea temperatura con exactamente 1 decimal y coma separadora."""
-    return f"{value:.1f}".replace(".", ",")
-
-
 def _get_article(crop: dict[str, Any]) -> str:
     """El artículo ('el' o 'la') del nombre del cultivo, tal como lo trae el catálogo (`article`).
 
@@ -184,64 +190,18 @@ def _crop_name(crop: dict[str, Any]) -> str:
     return f"{_get_article(crop)} {crop.get('name_es', 'cultivo').lower()}"
 
 
-def _temperature_phrase(zone: ZoneTemperature, municipality: Municipality) -> str:
-    """Dice qué temperatura se usó, con su altitud: la del municipio o la estimada para el lote, y de dónde se corrigió."""
-    municipal = f"{_format_temperature(municipality.tmean_annual_c)} °C"
-    has_altitude = municipality.altitude_m is not None
-    if zone.basis == "municipality":
-        municipal_at = f"{municipal}, a {municipality.altitude_m:.0f} m" if has_altitude else municipal
-        return f"La temperatura media anual del municipio ({municipal_at})"
-    municipal_at = f"{municipal} a {municipality.altitude_m:.0f} m" if has_altitude else municipal
-    # Es un reanálisis corregido por altitud, no una medición del lote: por eso «estimada» (R10).
-    origin = ", la altitud de la celda de 250 m que contiene su centro" if zone.by_center else ""
-    return (
-        f"La temperatura media anual estimada para su lote ({_format_temperature(zone.tmean_annual_c)} °C, "
-        f"a {zone.altitude_m:.0f} m{origin}; corregida desde la del municipio, {municipal_at})"
-    )
-
-
-def _suitability_reason(
-    crop: dict[str, Any], result: Suitability, zone: ZoneTemperature, municipality: Municipality, tmean_min_c: float, tmean_max_c: float
-) -> str:
-    """Arma la frase de un cultivo `suitable` o `not_suitable`: la temperatura de la zona y el rango del cultivo. Solo da
-    formato: si es apto y qué límite se cruzó ya lo decidió el motor (`result.level`, `result.exceeded`), no se repite
-    la comparación aquí (R6: la API es una capa delgada)."""
-    name = _crop_name(crop)
-    temperature = _temperature_phrase(zone, municipality)
-
-    if result.level == SUITABLE:
-        return f"{temperature} está dentro del rango de {name} ({format_number(tmean_min_c)} a {format_number(tmean_max_c)} °C)"
-    if result.exceeded == ABOVE_MAX:
-        return f"{temperature} pasa de la que aguanta {name} (hasta {format_number(tmean_max_c)} °C)"
-    return f"{temperature} no alcanza la que necesita {name} (desde {format_number(tmean_min_c)} °C)"
-
-
-# Lo que la ficha del cultivo debe traer con fuente para decidir la aptitud (`suitability` del motor).
-SUITABILITY_LIMITS = ("tmean_min_c", "tmean_opt_min_c", "tmean_opt_max_c", "tmean_max_c")
-
-
-def _missing_suitability_reason(crop: dict[str, Any], zone: ZoneTemperature) -> str:
-    """Por qué la aptitud es `insufficient_data`: le falta el rango a la ficha, o la temperatura a la zona (R1, R8). Si es
-    la del lote, `zone.limitation` dice además por qué no se pudo estimar."""
-    name = _crop_name(crop)
-    if any(crop.get(field) is None for field in SUITABILITY_LIMITS):
-        return f"La ficha de {name} no tiene con fuente su rango de temperatura media anual: no se sabe si se da en su zona"
-    place = "de su lote" if zone.basis == "lot" else "del municipio"
-    return f"Sin la temperatura media anual {place}: no se sabe si {name} se da en su zona"
-
-
 def _suitability_result(crop: dict[str, Any], result: Suitability, zone: ZoneTemperature, municipality: Municipality) -> SuitabilityResult:
-    if result.level == INSUFFICIENT_DATA:
-        reason = _missing_suitability_reason(crop, zone)
-    else:
-        reason = _suitability_reason(crop, result, zone, municipality, crop["tmean_min_c"], crop["tmean_max_c"])
+    """La aptitud con la forma del contrato; la razón la escribe el motor (`suitability_reason`)."""
+    used = ZoneTemperatureUsed(
+        zone.basis, zone.tmean_annual_c, zone.altitude_m, zone.by_center, municipality.tmean_annual_c, municipality.altitude_m
+    )
     return SuitabilityResult(
         level=result.level,
         score=None if result.score is None else round_half_up(result.score),
         basis=zone.basis,
         tmean_annual_c=zone.tmean_annual_c,
         altitude_m=zone.altitude_m,
-        reasons=[reason],
+        reasons=[suitability_reason(result, crop, _crop_name(crop), used)],
     )
 
 
@@ -281,18 +241,19 @@ def _best_windows(
     crop: dict[str, Any],
     crop_name: str,
     thresholds: Thresholds,
-    weights: dict[str, int],
+    weights: Mapping[str, int],
     irrigated: bool | None,
     texture_class: str | None,
+    soil: SignalResult,
 ) -> list[WindowSummary]:
     """Hasta tres ventanas de los próximos doce meses, desde el mes en curso en la región, sin las de alto riesgo
     (HU-192). Cada una se califica con `window_signals`, el mismo cálculo de la ventana consultada (con el mismo riego
-    y el mismo suelo)."""
+    y el mismo suelo: la textura del agua y la señal de suelo, que no cambia con la fecha)."""
     windows = [
         WindowSignals(
             window.sowing_date,
             window.harvest_estimate,
-            signal_scores(window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class)),
+            signal_scores(window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class, soil)),
         )
         for window in monthly_sowing_windows(dataset.stages.get(crop_id, []), region_today())
     ]
@@ -333,57 +294,33 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     municipality = dataset.municipalities[body.municipality_id]
     zone = zone_temperature(dataset, municipality, lot)
     explain(request, f"Aptitud decidida con la temperatura de su {'lote' if zone.basis == 'lot' else 'municipio'}")
-    fit = suitability(*(crop.get(field) for field in SUITABILITY_LIMITS), zone.tmean_annual_c)
+    fit = crop_suitability(crop, zone.tmean_annual_c)
     fit_result = _suitability_result(crop, fit, zone, municipality)
 
     # Sin `priorities`, los pesos de quien consulta son los de AgroSense (cacheados: `weights.yaml` no se vuelve a leer
     # en cada consulta), y las dos luces salen iguales. Las prioridades no van al log (R9).
     defaults = get_default_weights().weights
     weights, basis = (body.priorities.model_dump(), FARMER) if body.priorities is not None else (defaults, DEFAULT)
-    # Con `lot_id`, el riego es el del lote, también cuando el lote no lo dice (nulo: se evalúa como sin riego; contrato y
-    # EP-16). El eco dice el que se usó, que es el que la web guarda con la temporada (`diagnosis_irrigated`).
-    irrigated = lot.irrigated if lot is not None else body.irrigated
+    # El eco dice el riego que se usó, que es el que la web guarda con la temporada (`diagnosis_irrigated`).
+    irrigated = irrigation_used(lot is not None, lot.irrigated if lot is not None else None, body.irrigated)
 
-    limitations = [zone.limitation] if zone.limitation else []
-    if fit.level == INSUFFICIENT_DATA:
-        limitations.extend(fit_result.reasons)
-    # Nulo se trata como sin riego y se dice (contrato, cuerpo de `/diagnostics`; EP-16), con o sin lote. Con el cultivo
-    # no apto no: no se evalúa ninguna ventana, así que no hay nada que se haya evaluado sin riego (regla 0).
-    if irrigated is None and fit.level != NOT_SUITABLE:
-        limitations.append(IRRIGATION_UNKNOWN)
     thresholds = get_thresholds()
     signal_place = signal_zone(dataset, municipality)
     # La textura del suelo para el agua: la del lote si tiene contorno, si no la del municipio. No va al log ni se guarda
     # (R9).
     texture = zone_texture(dataset, municipality, lot)
-    window = signals = None
-    scores = {}
-    if fit.level != NOT_SUITABLE:
+    window = signals = soil = None
+    if evaluates_windows(fit.level):
         window = crop_window(dataset.stages.get(body.crop_id, []), body.sowing_date)
-        signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds, irrigated, texture)
-        scores = signal_scores(signals)
-        limitations.extend(text for signal in signals.values() for text in signal.limitations)
-        # El agua sin datos ya dice por qué en su razón (la lluvia de su fuente, la ET0 o el balance hídrico), que va a las
-        # limitaciones: no se agrega «Sin datos para la zona» encima (R5).
-        texts = {name: pending_reason(name) for name in PENDING_SIGNALS} | {"water": signals["water"].reasons[0]}
-        limitations.extend(missing_data_limitations(scores, texts))
+        # El suelo no cambia con la fecha: una sola vez por consulta (HU-183).
+        soil = soil_for(dataset, municipality, lot is not None, crop, thresholds, crop_name)
+        signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds, irrigated, texture, soil)
 
-    overall = traffic_light(fit.level, scores, weights, basis)
-    overall_default = traffic_light(fit.level, scores, defaults, DEFAULT)
+    diagnosis = diagnose(fit.level, fit_result.reasons, zone.limitation, irrigated, signals, weights, basis, defaults)
     best = None
-    # Con `other_window` en las dos luces, las ventanas se ordenan con los pesos de quien consulta: es la luz principal
-    # (docs/registro-de-decisiones.md, 14 de noviembre de 2026). La regla 0 nunca da `other_window`.
-    if OTHER_WINDOW in (overall.action, overall_default.action):
+    if diagnosis.best_windows_weights is not None:
         best = _best_windows(
-            dataset,
-            signal_place,
-            body.crop_id,
-            crop,
-            crop_name,
-            thresholds,
-            weights if overall.action == OTHER_WINDOW else defaults,
-            irrigated,
-            texture,
+            dataset, signal_place, body.crop_id, crop, crop_name, thresholds, diagnosis.best_windows_weights, irrigated, texture, soil
         )
 
     return DiagnosisResponse(
@@ -404,13 +341,11 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
             supply_semester=None,
         ),
         signals=None if signals is None else {name: _signal(name, result, weights) for name, result in signals.items()},
-        overall=_light(overall, basis),
-        overall_default=_light(overall_default, DEFAULT),
+        overall=_light(diagnosis.overall, basis),
+        overall_default=_light(diagnosis.overall_default, DEFAULT),
         weights=weights,
         best_windows=best,
-        # Sin repetir y en un orden fijo (R4): la zona, la aptitud, el riego sin dato, lo que dice cada señal y las
-        # señales sin datos.
-        limitations=list(dict.fromkeys(limitations)),
+        limitations=list(diagnosis.limitations),
         versions={"dataset": dataset.version, "rules": rules_version(dataset.rules_version)},
     )
 
@@ -443,16 +378,58 @@ def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depend
     response_model=WaterPlanResponse,
     responses={
         200: {"content": _examples(plan=("Un ciclo de papa, con un mes sin datos de lluvia", ex.WATER_PLAN))},
-        **ex.responses(422, 501, 503),
+        **ex.responses(422, 500, 503),
     },
 )
 def water_plans(body: WaterPlanRequest, request: Request, dataset: Dataset = Depends(calc_dataset)) -> Any:
-    """Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10)."""
+    """Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10).
+
+    Solo lee el dataset y llama al motor (`backend/engine/water_plan.py`): no recibe `lot_id`, así que el suelo es
+    siempre el del municipio, también con cuenta (contrato). La fecha de siembra no se limita a los próximos doce
+    meses: el tercer ciclo de una estrategia puede caer más lejos. No guarda nada ni escribe en la base de datos (R9).
+    """
     _check_place(dataset, body.municipality_id)
     # Un abono verde también crece y necesita agua: el ciclo de una estrategia puede serlo (HU-215). Como en el
-    # contrato, solo el diagnóstico y «Qué cambió» piden `kind = crop`.
+    # contrato, solo el diagnóstico y «Qué cambió» piden `kind = crop`. Un descanso pasa: el motor dice que no tiene agua.
     _check_crops(dataset, [crop.crop_id for crop in body.crops])
-    _not_implemented(request, "Plan de agua")
+
+    municipality = dataset.municipalities[body.municipality_id]
+    zone = zone_water(dataset, body.municipality_id)
+    texture = zone_texture(dataset, municipality, None)
+    crops = []
+    for item in body.crops:
+        crop = dataset.crops[item.crop_id]
+        crops.append(
+            PlanCrop(
+                crop_id=item.crop_id,
+                name=_crop_name(crop),
+                kind=crop.get("kind"),
+                area_pct=item.area_pct,
+                sowing_date=item.sowing_date,
+                window=crop_window(dataset.stages.get(item.crop_id, []), item.sowing_date),
+                root=root_zone(crop),
+            )
+        )
+    plan = water_plan(crops, body.total_area_ha, zone.months(), texture, zone.source, zone.wetness)
+
+    config = monthly_climate.water_sources(dataset)
+    # El suelo se cita solo si su textura entró al cálculo (el agua que guarda); si no, no se usó ninguna fuente de suelo.
+    # Se lee del módulo (`source_config`), no de una función importada: las pruebas la cambian en él (`tests/conftest.py`).
+    soil = source_config.get_signal_sources().for_region(dataset.region["id"])["soil"].used if plan.soil_used else None
+    limitations = [EXAMPLE_DATA] if dataset.version == EXAMPLE_VERSION else []
+    limitations.extend(plan.limitations)
+    # Al log, solo cuántos cultivos tuvieron agua: ni el municipio, ni los cultivos, ni las fechas, ni el área (R9).
+    explain(request, f"Plan de agua calculado: {sum(1 for crop in plan.crops if crop.months)} de {len(plan.crops)} cultivos con agua")
+    return WaterPlanResponse(
+        request=body,
+        crops=[WaterPlanCropResult.model_validate(asdict(crop)) for crop in plan.crops],
+        farm=FarmWater.model_validate(asdict(plan.farm)),
+        soil_moisture=[SoilMoisture.model_validate(asdict(reading)) for reading in plan.soil_moisture],
+        sources=WaterSources(rain=config.used, et0=config.et0, soil=soil),
+        soil_basis="municipality",
+        limitations=list(dict.fromkeys(limitations)),
+        versions={"dataset": dataset.version, "rules": rules_version(dataset.rules_version)},
+    )
 
 
 def _compare_changes(
@@ -598,13 +575,7 @@ def changes(
     # /changes no recibe lot_id: la aptitud usa siempre el municipio.
     zone = zone_temperature(dataset, municipality, None)
 
-    aptitude = suitability(
-        crop.get("tmean_min_c"),
-        crop.get("tmean_opt_min_c"),
-        crop.get("tmean_opt_max_c"),
-        crop.get("tmean_max_c"),
-        zone.tmean_annual_c,
-    )
+    aptitude = crop_suitability(crop, zone.tmean_annual_c)
 
     # Todavía no tenemos la evaluación completa de ventanas.
     # No representamos esa implementación pendiente como una lista vacía.
@@ -620,20 +591,13 @@ def changes(
         precip_periods=precip_periods,
     )
 
-    aptitude_reason = _suitability_reason(
-        crop,
-        aptitude,
-        zone,
-        municipality,
-        crop["tmean_min_c"],
-        crop["tmean_max_c"],
-    )
+    aptitude_reason = _suitability_result(crop, aptitude, zone, municipality).reasons[0]
 
     if irrigated is None:
         limitations.append("No se indicó si hay riego; se asume sin riego.")
 
-    if dataset.version == "ejemplo":
-        limitations.append("Datos de ejemplo: no representan observaciones reales.")
+    if dataset.version == EXAMPLE_VERSION:
+        limitations.append(EXAMPLE_DATA)
 
     if dataset.climate_change_month is None:
         limitations.append("La tabla de comparación histórica no está publicada; los indicadores se muestran sin datos suficientes.")

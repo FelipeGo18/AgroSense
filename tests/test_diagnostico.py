@@ -5,7 +5,8 @@ calor de ejemplo. «Hoy» queda fijo en el 14 de noviembre de 2026 en la región
 en que corre la prueba (R4). En esos datos, la papa sembrada en noviembre tiene helada crítica (7 de 100) y la de abril
 no tiene heladas (100); el calor da 100 en todo el año.
 
-El suelo (HU-183) y la oferta (HU-072) todavía no tienen motor: son `insufficient_data`. El agua (HU-071) sí (sus
+La oferta (HU-072) todavía no tiene motor: es `insufficient_data`. El suelo (HU-183) sí: el del ejemplo (pH 5,5, de 5,1 a
+5,9) le da 100 a la papa (sus pruebas están en `tests/test_senal_suelo_datos.py`). El agua (HU-071) también (sus
 pruebas están en `tests/test_senal_agua_datos.py`), pero las filas de lluvia del ejemplo están rotuladas `ejemplo` y no
 cuentan como de ninguna fuente (`monthly_climate.rain_rows`): aquí el agua es `insufficient_data`. Con los pesos por
 defecto el agua pesa 3, así que la luz de AgroSense es `not_evaluable` (regla 1): es lo honesto (R1). Para ver una luz
@@ -25,9 +26,8 @@ from structlog.testing import capture_logs
 
 from backend.accounts.models import Session as AccountSession
 from backend.api import calc_models as m
-from backend.api import calculations
+from backend.api import calculations, window_signals
 from backend.api.auth import SESSION_COOKIE
-from backend.api.calculations import IRRIGATION_UNKNOWN
 from backend.api.climate_signals import frost_caveat
 from backend.api.main import app
 from backend.api.window_signals import pending_reason
@@ -35,7 +35,10 @@ from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
 from backend.dataset import get_dataset
 from backend.db.models import Base
+from backend.engine.diagnosis import IRRIGATION_UNKNOWN
+from backend.engine.water_signal import WaterBalanceSummary
 from common import region
+from tests.ejemplos_con_fuente import examples_with_sources
 
 EXAMPLES = Path("data/examples")
 SAMACA = "15646"
@@ -45,8 +48,10 @@ TODAY = datetime(2026, 11, 14, 17, 0, tzinfo=UTC)
 NOVEMBER, APRIL = "2026-11-01", "2027-04-01"
 # El agua en 0: con la lluvia del ejemplo sin fuente, con peso la luz sería siempre `not_evaluable`.
 NO_WATER = {"water": 0, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
-# Las señales que todavía no tienen motor (el agua ya lo tiene desde HU-071).
-PENDING = {name: pending_reason(name) for name in ("soil", "supply")}
+# Un balance hídrico DE EJEMPLO (R5): el cultivo pide 400 mm y la lluvia del año seco los cubre.
+NO_DEFICIT = WaterBalanceSummary(need_mm=400.0, dry_deficit_mm=(0.0, 0.0), retention=True)
+# Las señales que todavía no tienen motor (el agua ya lo tiene desde HU-071 y el suelo desde HU-183).
+PENDING = {name: pending_reason(name) for name in ("supply",)}
 
 
 @pytest.fixture(autouse=True)
@@ -215,11 +220,11 @@ def test_caso_de_referencia_calor_critico_da_rojo_y_ninguna_ventana_de_alto_ries
 
 
 def test_con_otra_ventana_solo_en_la_luz_de_agrosense_tambien_trae_las_mejores_ventanas(examples, monkeypatch):
-    """HU-074: `best_windows` viene cuando la acción de `overall` **o** de `overall_default` es `other_window`. Con los
-    pesos reales de `weights.yaml` el agua pesa y, sin su motor (HU-071), la luz de AgroSense es siempre `not_evaluable`;
-    para ver la rama de `overall_default`, la prueba cambia los pesos por defecto por unos con el agua en 0. Quien
-    consulta pone el agua en 3: su luz es `not_evaluable`. Las ventanas se ordenan entonces con los pesos de AgroSense,
-    y salen iguales a las de quien consulta con esos mismos pesos."""
+    """HU-074: `best_windows` viene cuando la acción de `overall` **o** de `overall_default` es `other_window`. Con la
+    lluvia del ejemplo sin fuente el agua es `insufficient_data`, y con los pesos reales de `weights.yaml` el agua pesa:
+    la luz de AgroSense sería `not_evaluable`. Para ver la rama de `overall_default`, la prueba cambia los pesos por
+    defecto por unos con el agua en 0. Quien consulta pone el agua en 3: su luz es `not_evaluable`. Las ventanas se
+    ordenan entonces con los pesos de AgroSense, y salen iguales a las de quien consulta con esos mismos pesos."""
     monkeypatch.setattr(calculations, "get_default_weights", lambda: SimpleNamespace(weights=NO_WATER))
     all_3 = dict.fromkeys(SIGNALS, 3)
     body = diagnose(TestClient(app), NOVEMBER, priorities=all_3)
@@ -228,6 +233,26 @@ def test_con_otra_ventana_solo_en_la_luz_de_agrosense_tambien_trae_las_mejores_v
     same = diagnose(TestClient(app), NOVEMBER, priorities=NO_WATER)
     assert body["best_windows"] == same["best_windows"]
     assert [window["sowing_start"] for window in body["best_windows"]] == ["2027-04-01", "2027-05-01", "2027-03-01"]
+
+
+def test_sin_prioridades_las_mejores_ventanas_se_ordenan_con_los_pesos_por_defecto(tmp_path, monkeypatch):
+    """HU-192: sin `priorities`, el orden de las ventanas usa los pesos de `weights.yaml`, y los pesos sí cambian el
+    orden. Con la lluvia del ejemplo rotulada con su fuente y un balance DE EJEMPLO fijo (R5), el agua es favorable en
+    todas las ventanas: el orden lo deciden las heladas, críticas en noviembre en los datos de ejemplo."""
+    use(monkeypatch, examples_with_sources(tmp_path / "ejemplos"))
+    monkeypatch.setattr(window_signals, "balance_for", lambda *args, **kwargs: NO_DEFICIT)
+    client = TestClient(app)
+    defaults = get_default_weights().weights
+
+    body = diagnose(client, NOVEMBER)
+    assert (body["weights"], body["overall_default"]["weights_basis"]) == (defaults, "default")
+    assert body["overall_default"]["action"] == "other_window"
+    # Lo mismo que si quien consulta mandara esos mismos pesos: el orden es el de los pesos por defecto.
+    assert body["best_windows"] == diagnose(client, NOVEMBER, priorities=defaults)["best_windows"]
+    assert [window["sowing_start"] for window in body["best_windows"]] == ["2027-04-01", "2027-05-01", "2027-03-01"]
+    # Sin peso en la helada (que solo cuenta donde es crítica), las tres ventanas empatan y gana la más temprana (R4).
+    no_frost = diagnose(client, NOVEMBER, priorities={**defaults, "frost": 0})
+    assert [window["sowing_start"] for window in no_frost["best_windows"]] == ["2027-03-01", "2027-04-01", "2027-05-01"]
 
 
 # ---------- riego sin dato ----------
@@ -264,7 +289,7 @@ def test_una_ventana_del_orden_y_el_diagnostico_de_esa_fecha_dan_lo_mismo(exampl
         assert body["window"]["harvest_estimate"] == window["harvest_estimate"]
         assert (overall["limiting_signal"], overall["high_risk"]) == (window["limiting_signal"], window["high_risk"])
         assert body["signals"][window["limiting_signal"]]["score"] == window["limiting_score"]
-        rated = [name for name in ("frost", "heat") if body["signals"][name]["score"] is not None]
+        rated = [name for name in ("frost", "heat", "soil") if body["signals"][name]["score"] is not None]
         assert min(body["signals"][name]["score"] for name in rated) == window["limiting_score"]
 
 
@@ -294,6 +319,9 @@ def test_sin_las_etapas_del_cultivo_no_hay_ventana_y_nada_se_inventa(examples_co
     assert body["window"] is None
     assert all(signal["status"] == "insufficient_data" for signal in body["signals"].values())
     assert body["signals"]["frost"]["reasons"] == ["Sin las etapas de la papa: la señal no se evalúa"]
+    # El suelo no cambia con la fecha, pero sin ventana tampoco se califica (HU-076; HU-183): la misma razón.
+    assert body["signals"]["soil"]["reasons"] == ["Sin las etapas de la papa: la señal no se evalúa"]
+    assert (body["signals"]["soil"]["level"], body["signals"]["soil"]["score"]) == (None, None)
     assert (body["overall"]["light"], body["overall"]["action"]) == ("yellow", "other_window")
     assert body["best_windows"] == []
 

@@ -13,6 +13,7 @@ Apache 2.0 (`LICENSE`, en la raíz del repositorio; aprobado por Felipe el 10 de
 - **Las fuentes sin licencia explícita** («Sin dato; se cita», «por confirmar» o «derechos reservados»): de esas publicaciones AgroSense solo toma cifras y hechos (temperaturas de daño, días por etapa, rangos de cultivo), con su cita. Los hechos no tienen derechos de autor, y no se reproduce el texto ni las figuras de ninguna.
 - **Las fichas de la UPRA** permiten la «reproducción parcial sin fines comerciales con cita»: AgroSense solo toma sus rangos de temperatura media, con la cita, y no es comercial.
 - **Lo que sale de DIVIPOLA del DANE** (CC BY-SA 4.0), como la tabla `municipalities`, se publica con esa misma licencia.
+- **Lo que sale de EVA de la UPRA** (CC BY-SA 4.0, «compartir igual»), la tabla `supply_semester`, se publica con esa misma licencia (HU-031, HU-004).
 
 ## Datos y fuentes (tabla `sources` del dataset publicado)
 
@@ -31,6 +32,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `dane_divipola` · DIVIPOLA- Códigos municipios | Departamento Administrativo Nacional de Estadística (DANE) | Creative Commons Attribution \| Share Alike 4.0 International |
 | `dane_mgn_2025` · Marco Geoestadístico Nacional 2025 · Municipios | Departamento Administrativo Nacional de Estadística (DANE) | Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122) |
 | `dane_sipsa` · SIPSA · Precios mayoristas diarios (servicio web) | Departamento Administrativo Nacional de Estadística (DANE) | Términos y condiciones del DANE (https://www.dane.gov.co/index.php/terminos-y-condiciones): se autoriza el uso, aprovechamiento, transformación y análisis de la información citando «Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co». Se rigen por la ley colombiana y el DANE puede cambiarlos sin aviso. |
+| `eva` · Evaluaciones Agropecuarias Municipales – EVA. 2019 - 2025. Base Agrícola (datos.gov.co, `uejq-wxrr`) | Unidad de Planificación de Tierras Rurales, Adecuación de Tierras y Usos Agropecuarios (UPRA) | Creative Commons Attribution \| Share Alike 4.0 International (CC BY-SA 4.0): `supply_semester` sigue con esa licencia |
 | `fairlie_ortega_1995` · Fairlie y Ortega (1995): Efecto de la presencia de heladas simuladas en diferentes estados fenológicos de la papa cv. Ccompis. Revista Latinoamericana de la Papa 7/8:86-93 | Asociación Latinoamericana de la Papa (ALAP); PISA/INIAA, Puno | Acceso abierto; licencia por confirmar |
 | `fao_56` · FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Tablas 11 y 12 | FAO | Publicación de la FAO, uso con cita |
 | `fao_66` · FAO-66: Crop yield response to water (Steduto, Hsiao, Fereres y Raes, 2012). Sección 3.4, papa, pp. 185-186 | FAO, Irrigation and Drainage Paper 66 | Publicación de la FAO, uso con cita |
@@ -46,6 +48,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `igac_capacidad_uso_2021` · Clasificación de las tierras por su capacidad de uso (instructivo IN-GAG-PC05-02, versión 1) | Instituto Geográfico Agustín Codazzi (IGAC) | Documento público del IGAC, uso con cita (copia no controlada) |
 | `imerg` · GPM IMERG Final Run V07 · Lluvia mensual por satélite (GPM_3IMERGM) | NASA y JAXA, misión GPM (Global Precipitation Measurement); distribuido por GES DISC de la NASA | Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita (https://disc.gsfc.nasa.gov/data-guidelines) |
 | `mapa_zarc_2025` · Zoneamento Agrícola de Risco Climático (ZARC): Portaria SPA/MAPA n.º 388, del 21 de agosto de 2025 | Ministério da Agricultura e Pecuária (MAPA), Brasil | Acto oficial del gobierno de Brasil, publicado en el Diário Oficial |
+| `modis_ndvi` · MODIS Terra · Índice de vegetación NDVI de 250 m cada 16 días (MOD13Q1 V061) | NASA, sensor MODIS del satélite Terra; distribuido por LP DAAC de la NASA y el USGS | Datos abiertos de la NASA (EOSDIS), sin restricciones de uso; se cita con su DOI |
 | `msu_e1307_onion` · Zandstra, Grafius, Lacy y Warncke: Commercial Vegetable Recommendations: Onions, MSU E1307 (revisión de 1996) | Michigan State University Extension | Sin dato; se cita |
 | `msu_e1437_carrot` · Zandstra y Baker: Commercial Vegetable Recommendations: Carrots, MSU Extension Bulletin E-1437 (1980) | Michigan State University Extension | Sin dato; se cita |
 | `nasa_power` · NASA POWER · Datos diarios por punto (comunidad AG) | NASA Langley Research Center, proyecto POWER (Prediction Of Worldwide Energy Resources) | La página de POWER no da una licencia; pide citar la fuente (https://power.larc.nasa.gov/docs/referencing/) |
@@ -55,6 +58,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `purdue_corn07` · Nielsen, R. L.: Drought and Heat Stress Effects on Corn Pollination (Corny News, Purdue, sin fecha) | Purdue University, Agronomy | Sin dato; se cita |
 | `saskpulse_stress_2023` · Saskatchewan Pulse Growers: Environmental Stresses in Pulses (mayo de 2023) | Saskatchewan Pulse Growers | Sin dato; se cita |
 | `senamhi_atlas_heladas_2010` · SENAMHI y FAO: Atlas de heladas del Perú (2010). Tablas 2.2 y 2.3 | Servicio Nacional de Meteorología e Hidrología del Perú (SENAMHI) y FAO | Publicación pública, sin licencia explícita; se cita |
+| `soilgrids` · SoilGrids 2.0: propiedades del suelo de 0 a 30 cm en celdas de 250 m (WCS de ISRIC) | ISRIC – World Soil Information | CC BY 4.0 (https://www.isric.org/explore/soilgrids/faq-soilgrids): uso libre, también la redistribución, con la cita |
 | `ucanr_7226_carrot` · Nuñez, Hartz, Suslow et al.: Carrot Production in California, UC ANR Publication 7226 (2008) | University of California, Agriculture and Natural Resources; doi:10.3733/ucanr.7226 | Sin dato; se cita |
 | `unlu_horticultura` · Universidad Nacional de Luján: Producción Vegetal III (Horticultura), fichas de cebolla, arveja y zanahoria (sin año) | Universidad Nacional de Luján (UNLu), Argentina | Sin dato; se cita |
 | `upra_cebolla_bulbo` · UPRA: Cultivo comercial de cebolla de bulbo, identificación de zonas aptas en Colombia, escala 1:100.000 | Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura | Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita |

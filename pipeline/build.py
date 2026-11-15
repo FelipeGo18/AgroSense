@@ -2,19 +2,21 @@
 
     uv run python -m pipeline.build              # lee la caché de data/raw/ y publica
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
+    uv run python -m pipeline.build --traer-cache  # antes, trae la caché compartida (HU-237)
     uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044, con la altura de su celda de NASA POWER),
 `municipality_boundaries` (MGN del DANE, HU-044), el catálogo (`crops` y `crop_stages`, HU-061), `rotation_rules` (las
 reglas de rotación de `catalog/rotation_rules.yaml`, HU-062), `climate_day` (NASA
 POWER, HU-041), `market_price_day` y `market_price_season` (SIPSA del DANE, HU-221), `market_price_latest` (el último
-precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `sources` y `manifest.json`. Cada tabla
+precio de cada producto, HU-221), `market_month` (SIPSA por cultivo, HU-051), `supply_semester` (EVA de la UPRA,
+HU-031), `sources` y `manifest.json`. Cada tabla
 pasa por las validaciones y por su esquema del contrato (`pipeline/schema.py`, HU-011) antes de escribirse: si una
 falla, no se publica nada (R7, R8).
 También se valida el mapeo de los productos de SIPSA a los cultivos (`sipsa_crops.yaml`, HU-003) contra los precios que
 se publican. Al terminar, lo publicado se revisa contra su manifiesto (HU-123).
 
-Si falta la caché de NASA POWER o la de SIPSA, se publica lo demás sin esas tablas y el log lo dice (`source_missing`):
+Si falta la caché de NASA POWER, la de SIPSA o la de EVA, se publica lo demás sin esas tablas y el log lo dice (`source_missing`):
 no hace falta bajar el clima ni los precios para reconstruir los municipios. `climate_day` solo se publica con los
 municipios que tienen altitud (NASADEM, HU-206): sin ella la temperatura no se puede corregir y no se publica sin
 corregir (R1).
@@ -40,12 +42,13 @@ import yaml
 from common import signal_sources
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import climate_change, climate_normals, climate_risk, rotation_rules, schema
+from pipeline import climate_change, climate_normals, climate_risk, raw_cache, rotation_rules, schema
 from pipeline.settings import get_settings
-from pipeline.sources import dane, dane_mgn, imerg, modis_ndvi, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
+from pipeline.sources import dane, dane_mgn, eva, imerg, modis_ndvi, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
+EVA_CROPS_FILE = Path(__file__).with_name("eva_crops.yaml")
 PUBLISHED = Path("data/published")
 
 log = get_logger("agrosense.pipeline")
@@ -66,6 +69,11 @@ def load_region(path: Path = REGION_FILE) -> dict[str, Any]:
 def load_crops(path: Path = CROPS_FILE) -> dict[str, Any]:
     """Qué producto de SIPSA da el precio de cada cultivo (HU-003): `crop_id` → `product_id`, `notes` y `reason`."""
     return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("crops")
+
+
+def load_eva_crops(path: Path = EVA_CROPS_FILE) -> dict[str, Any]:
+    """Qué códigos de EVA son cada cultivo (HU-031): `crop_id` → `eva_codes`, `notes` y `reason`."""
+    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
 def validate(municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
@@ -343,6 +351,25 @@ def validate_ndvi(ndvi: pl.DataFrame, normal: pl.DataFrame, municipalities: pl.D
         raise ValidationError(f"`ndvi_municipality_normal` con una normal sin años: {bad.head(3).to_dicts()}")
 
 
+def validate_supply(supply: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame, catalog_ids: set[str] | None) -> None:
+    """`supply_semester` (HU-031) solo trae municipios publicados (R7), cultivos del catálogo, semestres A o B, valores no
+    negativos y fuentes que existen (R8)."""
+    extra = set(supply["municipality_id"].to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`supply_semester` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    if catalog_ids is not None and (unknown_crops := set(supply["crop_id"].to_list()) - catalog_ids):
+        raise ValidationError(f"`supply_semester` trae cultivos que no están en el catálogo: {sorted(unknown_crops)}")
+    bad = supply.filter(
+        ~pl.col("semester").is_in(["A", "B"])
+        | pl.any_horizontal(pl.col(col) < 0 for col in ("planted_ha", "harvested_ha", "production_t", "yield_t_ha"))
+    )
+    if not bad.is_empty():
+        raise ValidationError(f"`supply_semester` con un semestre o un valor fuera de lo permitido: {bad.head(3).to_dicts()}")
+    unknown = set(supply["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`supply_semester` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`grid_cells` solo trae celdas de municipios publicados (R7), un suelo posible en las celdas que lo tienen (las
     mismas comprobaciones de `soil_municipality`: el suelo del lote, HU-182, lee las celdas) y fuentes que existen (R8)."""
@@ -402,6 +429,7 @@ def publish(
     change: pl.DataFrame | None = None,
     soil: pl.DataFrame | None = None,
     rules: pl.DataFrame | None = None,
+    supply: pl.DataFrame | None = None,
     ndvi: tuple[pl.DataFrame, pl.DataFrame] | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
@@ -409,9 +437,9 @@ def publish(
     `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
     `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). `climate`
     (`climate_day`), `climate_month` (HU-042), `precip_month` (HU-207), `frost` (`climate_risk_month` y
-    `climate_frost_month`, HU-045), `soil` (`soil_municipality`, HU-181), `ndvi` (`ndvi_municipality` y
-    `ndvi_municipality_normal`, HU-208) y `grid` (`grid_cells`, HU-206) solo se escriben si traen filas: una tabla
-    vacía no es un dato (R1). Todo se valida antes de escribir nada.
+    `climate_frost_month`, HU-045), `soil` (`soil_municipality`, HU-181), `grid` (`grid_cells`, HU-206), `supply`
+    (`supply_semester`, HU-031) y `ndvi` (`ndvi_municipality` y `ndvi_municipality_normal`, HU-208) solo se escriben
+    si traen filas: una tabla vacía no es un dato (R1). Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
     validate_department_markets(region)
@@ -451,6 +479,9 @@ def publish(
     has_soil = soil is not None and not soil.is_empty()
     if has_soil:
         validate_soil(soil, municipalities, sources)
+    has_supply = supply is not None and not supply.is_empty()
+    if has_supply:
+        validate_supply(supply, municipalities, sources, set(crops[1]["crop_id"].to_list()) if crops is not None else None)
     has_ndvi = ndvi is not None and not ndvi[0].is_empty()
     if has_ndvi:
         validate_ndvi(ndvi[0], ndvi[1], municipalities, sources)
@@ -480,6 +511,8 @@ def publish(
         tables["grid_cells"] = grid
     if has_soil:
         tables["soil_municipality"] = soil
+    if has_supply:
+        tables["supply_semester"] = supply
     if has_ndvi:
         tables["ndvi_municipality"], tables["ndvi_municipality_normal"] = ndvi
     if prices is not None:
@@ -556,6 +589,16 @@ def publish(
         partial = soil.filter(pl.col("quality") == "partial").height
         coverage = f"{soil.height} municipios, mediana de sus celdas de 0 a 30 cm; {partial} partial"
         manifest["tables"]["soil_municipality"] = {"rows": soil.height, "coverage": coverage}
+    if has_supply:
+        ordered = supply.sort("year", "semester")
+        first, last = ordered.row(0, named=True), ordered.row(-1, named=True)
+        preliminary = sorted(set(supply.filter(pl.col("preliminary"))["year"].to_list()))
+        coverage = (
+            f"{supply['municipality_id'].n_unique()} municipios; {', '.join(sorted(set(supply['crop_id'].to_list())))}; "
+            f"siembras de {first['year']}{first['semester']} a {last['year']}{last['semester']}; "
+            f"preliminares {', '.join(map(str, preliminary)) or 'ninguno'}"
+        )
+        manifest["tables"]["supply_semester"] = {"rows": supply.height, "coverage": coverage}
     if has_ndvi:
         by_period, normal_ndvi = ndvi
         partial = by_period.filter(pl.col("quality") == "partial").height
@@ -696,6 +739,48 @@ def soil_from_cache(
     return grid, table, soilgrids.sources(meta)
 
 
+def download_supply(departments: list[str], cache: Path) -> None:
+    """Baja EVA. Si datos.gov.co falla, se avisa y se sigue con las demás fuentes: la oferta será `insufficient_data` (R1)."""
+    log.info("source_downloading", source=eva.SOURCE_ID, detail=f"Bajando EVA de la UPRA a {cache}")
+    try:
+        eva.download(departments, cache)
+    except (OSError, eva.EvaError) as error:
+        log.warning("source_skipped", source=eva.SOURCE_ID, detail=f"EVA no bajó: {error}")
+
+
+def supply_from_cache(
+    departments: list[str], municipalities: pl.DataFrame, catalog_ids: set[str], cache: Path, own: list[dict[str, Any]]
+) -> pl.DataFrame | None:
+    """`supply_semester` desde la caché de EVA (HU-031), con una línea en la terminal que dice cuántas filas se leyeron y
+    cuántas se descartaron, por motivo. Sin caché, se publica lo demás sin la oferta (R1). Suma su fuente a `own`."""
+    try:
+        raw, meta = eva.read_cache(cache)
+    except FileNotFoundError as error:
+        log.warning("source_missing", source=eva.SOURCE_ID, detail=f"Se publica sin la oferta de EVA: {error}")
+        return None
+    try:
+        codes = eva.crop_codes(load_eva_crops(), catalog_ids)
+    except eva.EvaError as error:
+        raise ValidationError(str(error)) from error
+    counts: Counter[str] = Counter()
+    supply = eva.normalize(raw, codes, departments, set(municipalities["municipality_id"].to_list()), counts)
+    reasons = {reason: counts[reason] for reason in eva.REASONS if counts[reason]}
+    rejected = sum(reasons.values())
+    reasons_text = ", ".join(f"{n} {reason}" for reason, n in reasons.items()) or "ninguna"
+    log.info(
+        "source_read",
+        source=eva.SOURCE_ID,
+        rows_read=counts["read"],
+        rows_kept=counts["read"] - counts["other_crop"] - rejected,
+        rows_rejected=rejected,
+        reasons=reasons,
+        detail=f"EVA: {counts['read']} filas leídas, {counts['other_crop']} de cultivos que no son del MVP, {rejected} "
+        f"descartadas ({reasons_text}) y {supply.height} filas de municipio, cultivo y semestre",
+    )
+    own.append(eva.source(meta, supply))
+    return supply
+
+
 def climate_from_cache(
     region: dict[str, Any], municipalities: pl.DataFrame, cache: Path
 ) -> tuple[pl.DataFrame, pl.DataFrame | None, pl.DataFrame | None, list[dict[str, Any]]]:
@@ -827,6 +912,7 @@ def build(
     dem_cache: Path | None = None,
     rain_cache: Path | None = None,
     soil_cache: Path | None = None,
+    supply_cache: Path | None = None,
     ndvi_cache: Path | None = None,
 ) -> dict[str, Any]:
     # Las cachés de SIPSA, NASA POWER y NASADEM se buscan al correr, no al importar: así las pruebas las apuntan a una
@@ -836,6 +922,7 @@ def build(
     dem_cache = dem_cache or nasadem.CACHE
     soil_cache = soil_cache or soilgrids.CACHE
     rain_cache = rain_cache or imerg.CACHE
+    supply_cache = supply_cache or eva.CACHE
     ndvi_cache = ndvi_cache or modis_ndvi.CACHE
     region = load_region()
     version, name = region["dataset_version"], region["region"]["name"]
@@ -848,6 +935,7 @@ def build(
         dane_mgn.download(departments, cache)
         log.info("source_downloading", source=sipsa.SOURCE_ID, detail=f"Bajando SIPSA del DANE a {market_cache} (unos 300 MB)")
         sipsa.download(market_cache)
+        download_supply(departments, supply_cache)
     rows, meta = dane.read_cache(cache)
     municipalities = dane.municipalities(rows, departments)
     outside = len(rows) - municipalities.height
@@ -935,6 +1023,7 @@ def build(
         )
         own.append(sipsa.source(prices, downloaded_at))
         crop_products = load_crops()
+    supply = supply_from_cache(departments, municipalities, set(crops_table["crop_id"].to_list()), supply_cache, own)
     sources = pl.concat(
         [
             pl.DataFrame([*own, *terrain_sources, *soil_sources, *climate_sources, *rain_sources, *ndvi_sources]),
@@ -962,6 +1051,7 @@ def build(
         change,
         soil,
         rules_table,
+        supply,
         ndvi=ndvi,
     )
 
@@ -969,7 +1059,7 @@ def build(
 SIGNAL_SOURCES_FILE = signal_sources.SIGNAL_SOURCES_FILE
 # Las fuentes que tienen adaptador en el pipeline: si una no se publica, es porque falta su caché, no un error.
 ADAPTERS = frozenset(
-    module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem, imerg, modis_ndvi, soilgrids)
+    module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem, imerg, modis_ndvi, soilgrids, eva)
 )
 
 
@@ -996,6 +1086,9 @@ def check_signal_sources(region_id: str, published: set[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reconstruye data/published desde la caché.")
     parser.add_argument("--descargar", action="store_true", help="Baja otra vez las fuentes a data/raw/ antes de publicar.")
+    parser.add_argument(
+        "--traer-cache", action="store_true", help="Antes de publicar, trae la caché compartida de pipeline/raw_cache.json (HU-237)."
+    )
     parser.add_argument("--verificar", action="store_true", help="No publica: solo revisa que data/published coincida con su manifiesto.")
     args = parser.parse_args()
     # El pipeline no usa la base de datos: lee su configuración de `pipeline/settings.py`, no la de la API.
@@ -1003,6 +1096,8 @@ def main() -> None:
     configure(settings.log_level, settings.log_format)
     expected = load_region()["dataset_version"]
     try:
+        if args.traer_cache and not args.verificar:
+            raw_cache.pull()
         if not args.verificar:
             build(download=args.descargar)
         manifest = verify(PUBLISHED, expected)
@@ -1013,6 +1108,7 @@ def main() -> None:
         rotation_rules.RotationRulesError,
         nasa_power.DownloadError,
         nasadem.TileError,
+        raw_cache.CacheError,
     ) as error:
         event = "dataset_mismatch" if args.verificar else "dataset_not_published"
         log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")

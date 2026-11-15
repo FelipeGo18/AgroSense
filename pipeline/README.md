@@ -7,7 +7,30 @@ Descarga las fuentes a una caché, las valida y publica el dataset que lee la AP
 uv run python -m pipeline.build --descargar   # baja las fuentes a data/raw/ y publica
 uv run python -m pipeline.build               # publica otra vez desde la caché, sin red
 uv run python -m pipeline.build --verificar   # solo revisa que data/published coincida con su manifiesto
+uv run python -m pipeline.build --traer-cache # antes de publicar, trae la caché compartida (HU-237)
 ```
+
+## Caché compartida de las fuentes (HU-237)
+
+Para que todos construyan el dataset desde la misma caché, cada carpeta de `data/raw/` se guarda como un archivo en la
+*release* `cache-datos` del repositorio, y `pipeline/raw_cache.json` (en git) dice cuál usa cada fuente:
+
+```bash
+uv run python -m pipeline.raw_cache estado            # qué carpetas de data/raw/ están al día con raw_cache.json
+uv run python -m pipeline.raw_cache traer             # baja lo que falte o sea distinto (sin cuenta: el repo es público)
+uv run python -m pipeline.raw_cache subir imerg       # empaqueta data/raw/imerg, la sube y la anota en raw_cache.json
+```
+
+- **Quien descarga datos nuevos** de una fuente (`pipeline.build --descargar`) sube su carpeta con `subir` y lleva el
+  cambio de `pipeline/raw_cache.json` en su PR. Subir pide un token de GitHub con permiso de escritura
+  (`AGROSENSE_CACHE_TOKEN`, o `GH_TOKEN=$(gh auth token)`).
+- **Quien construye el dataset** corre antes `traer` (o `pipeline.build --traer-cache`): así no se publica con una
+  caché vieja ni hay que copiar tablas de `desarrollo` a mano.
+- El paquete es determinista y su nombre lleva la huella del contenido: el mismo contenido da el mismo archivo y uno ya
+  subido no se reemplaza. `traer` verifica el sha256 y la huella antes de reemplazar la carpeta; si algo no coincide,
+  falla y la carpeta queda como estaba (R1).
+- Solo se suben las carpetas de `FOLDERS` (`pipeline/raw_cache.py`), y cada una de sus fuentes debe tener su licencia
+  en `docs/licencias.md`, porque la release es pública. Nunca se sube un `.env` ni un archivo con un token.
 
 - Al terminar de publicar, el comando revisa lo publicado contra su manifiesto (HU-123): cada tabla que nombra existe y
   tiene sus filas, no hay tablas que no nombre y la versión es la de `region.yaml`. Si algo no coincide, termina con
@@ -26,9 +49,13 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
   usan el mismo o si falta el porqué, no se publica nada.
 - Los días de precios que faltan después del dataset los suman los crons del servicio `market` (HU-222,
   `backend/README.md`): lo publicado aquí es el punto de partida.
-- `--descargar` baja también SIPSA (unos 300 MB que tardan un par de minutos, a `data/raw/sipsa/`) y NASA POWER.
+- `pipeline/eva_crops.yaml` dice qué códigos de EVA son cada cultivo del catálogo (HU-031). Un cultivo con varios
+  códigos suma sus áreas y su producción; uno sin códigos lleva su porqué. Si un cultivo no está en el catálogo, si un
+  código está en dos cultivos o si falta el porqué, no se publica nada.
+- `--descargar` baja también SIPSA (unos 300 MB que tardan un par de minutos, a `data/raw/sipsa/`), EVA (unos 5 MB, a
+  `data/raw/eva/`) y NASA POWER.
 - Sin `--descargar` el pipeline no usa la red. Si falta la caché de una fuente que no es imprescindible (hoy, NASA
-  POWER y SIPSA), publica lo demás sin ella y el log lo dice (`source_missing`).
+  POWER, SIPSA y EVA), publica lo demás sin ella y el log lo dice (`source_missing`).
 
 ## Qué publica hoy
 
@@ -48,6 +75,7 @@ uv run python -m pipeline.build --verificar   # solo revisa que data/published c
 | `rotation_rules` | Reglas de rotación de `catalog/rotation_rules.yaml`, cada una con su fuente (`pipeline/rotation_rules.py`) | HU-062 |
 | `market_price_day`, `market_price_latest`, `market_price_season` | SIPSA del DANE, servicio web (`pipeline/sources/sipsa.py`): precios de Corabastos y Tunja desde 2020, el último de cada producto con el de hace una semana y su cambio (lo que lee `/market/prices`, que no calcula nada), y su temporada. Sin la caché de SIPSA se publica lo demás y el log dice `source_missing`. Los días que faltan después del dataset los suman los crons de precios (HU-222, `backend/README.md`), también con el boletín diario (`pipeline/sources/sipsa_boletin.py`) | HU-221, HU-222 |
 | `market_month` | Lo mismo por cultivo, con el producto de `pipeline/sipsa_crops.yaml`: índice estacional y precio de cada mes del último año completo | HU-051 |
+| `supply_semester` | EVA de la UPRA (`pipeline/sources/eva.py`): área sembrada y cosechada, producción y rendimiento por municipio, cultivo (los códigos de `pipeline/eva_crops.yaml`) y semestre de siembra, con los dos últimos años como preliminares. La variación del área sembrada y la participación del departamento llegan con HU-032. Sin la caché de EVA se publica lo demás y el log dice `source_missing` | HU-031 |
 | `sources` | Una fila por fuente, con la cita textual que pide (`citation`, nula si no pide una) | HU-122, HU-221 |
 | `manifest.json` | Versión, región, filas y cobertura por tabla | HU-122 |
 
