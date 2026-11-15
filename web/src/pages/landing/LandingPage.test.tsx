@@ -73,16 +73,27 @@ describe("Inicio (HU-173)", () => {
     open(PATHS.home);
     const example = (await screen.findByRole("heading", { level: 2, name: "Así se revisa un ciclo" })).closest("section")!;
     expect(within(example).getByText("Ejemplo")).toBeInTheDocument();
-    expect(within(example).getByText("Luz amarilla")).toBeInTheDocument();
+    // El caso de Güicán de la Sierra: heladas críticas, luz roja y «Mejor otra fecha».
+    expect(within(example).getByText(/Güicán de la Sierra/)).toBeInTheDocument();
+    expect(within(example).getByText("Luz roja")).toBeInTheDocument();
+    expect(within(example).getByRole("heading", { level: 3, name: "Mejor otra fecha" })).toBeInTheDocument();
     expect(within(example).getAllByRole("listitem")).toHaveLength(6);
+    const frost = within(example).getByText("Heladas").closest("li")!;
+    expect(within(frost).getByText(/31\/100 · heló 53 de cada 100 años, de 1991 a 2020/)).toBeInTheDocument();
+    expect(within(frost).getByText("Desfavorable").closest("[data-tone]")).toHaveAttribute("data-tone", "red");
   });
 
-  it("una señal sin datos dice «Sin datos» y no se pinta como riesgo (R1)", async () => {
+  it("la oferta y el mercado salen «Sin calificar», sin colores del semáforo (R1, decisión 17)", async () => {
     open(PATHS.home);
     const example = (await screen.findByRole("heading", { level: 2, name: "Así se revisa un ciclo" })).closest("section")!;
-    const market = within(example).getByText("Mercado").closest("li")!;
-    const tag = within(market).getByText("Sin datos").closest("[data-tone]");
-    expect(tag).toHaveAttribute("data-tone", "insufficient_data");
+    const supply = within(example).getByText("Oferta").closest("li")!;
+    expect(within(supply).getByText("2025 B (preliminar): 25 ha, 34 % más que los tres semestres B anteriores")).toBeInTheDocument();
+    for (const name of ["Oferta", "Mercado"]) {
+      const row = within(example).getByText(name).closest("li")!;
+      const tag = within(row).getByText("Sin calificar").closest("[data-tone]") as HTMLElement;
+      expect(tag).toHaveAttribute("data-tone", "unrated");
+      expect(tag.innerHTML).not.toMatch(/semaforo/);
+    }
   });
 
   it("habla de AgroSense y nombra los datos de la NASA, en la portada y en las fuentes (HU-173)", async () => {

@@ -11,8 +11,10 @@
 # Propuestos por Producto y agro y aprobados por Felipe el 14 de noviembre de 2026 (docs/registro-de-decisiones.md).
 # Reemplazan a los provisionales del 13 de octubre (agua 3, heladas 3, calor 3, suelo 2, oferta 3, mercado 2).
 # 1.1.0 (HU-073, decisión 17): ningún peso cambia; el porqué del mercado dice que se muestra sin calificar.
+# 1.2.0 (HU-072, decisión 17): ningún peso cambia; el porqué de la oferta dice que se muestra sin calificar.
+# 1.3.0 (HU-240, decisión 17): ningún peso cambia; el porqué del mercado dice que con 4 o 5 ordena las ventanas.
 
-version: "1.1.0"
+version: "1.3.0"
 status: approved
 
 weights:
@@ -38,11 +40,11 @@ weights:
     set_on: "2026-11-14"
   supply:
     weight: 1
-    why: "Pesa poco en el orden de las ventanas: la oferta es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Si a usted le importa más, súbala; si no le importa, póngala en 0."
+    why: "Pesa poco: la oferta es un dato que suma. Se muestra sin calificar, con el área que registra EVA en su municipio, y su peso no cambia nada: ninguna fuente dice desde cuánto hay sobreoferta."
     set_by: "Felipe"
     set_on: "2026-11-14"
   market:
     weight: 1
-    why: "Pesa poco: el precio es un dato que suma. Se muestra sin calificar, con la historia del precio de su mes de cosecha, y no cambia la luz: ninguna fuente dice qué es un precio bajo."
+    why: "Pesa poco: el precio es un dato que suma. Se muestra sin calificar, con la historia del precio de su mes de cosecha, y no cambia la luz: ninguna fuente dice qué es un precio bajo. Con 4 o 5, entre las ventanas igual de seguras en clima va primero la que cosecha en el mes que más años tuvo mejor precio."
     set_by: "Felipe"
     set_on: "2026-11-14"

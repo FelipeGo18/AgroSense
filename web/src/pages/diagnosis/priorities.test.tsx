@@ -104,19 +104,24 @@ describe("Prioridades guardadas (HU-202)", () => {
 });
 
 describe("Ajustar mis prioridades al consultar (HU-202)", () => {
-  it("empiezan en el criterio de AgroSense, con seis controles de 0 a 5 y el texto de qué significan", async () => {
+  it("empiezan en el criterio de AgroSense, con un control de 0 a 5 por señal que se califica y el texto de qué significan", async () => {
     const calls = fakeApi();
     open();
     const user = userEvent.setup();
     await screen.findByText("Puede sembrar en esa fecha");
-    // Antes de tocar nada, se consulta con los pesos de AgroSense.
+    // Antes de tocar nada, se consulta con los pesos de AgroSense: los seis, también los de la oferta y el mercado.
     expect(diagnoses(calls)[0].priorities).toEqual(DEFAULTS);
 
     await openPanel(user);
-    expect(screen.getAllByRole("radiogroup")).toHaveLength(6);
+    // La oferta se muestra sin calificar (decisión 17): su peso no tiene efecto y no se dibuja su control. El mercado sí
+    // (HU-240): con 4 o 5 ordena las ventanas, y su nota dice que no cambia la luz.
+    expect(screen.getAllByRole("radiogroup")).toHaveLength(5);
+    expect(screen.queryByRole("radiogroup", { name: /^Oferta:/ })).not.toBeInTheDocument();
+    expect(checked("Mercado")).toBe("1");
+    expect(screen.getByText("Solo ordena las ventanas con 4 o 5; no cambia la luz")).toBeInTheDocument();
+    expect(screen.getByText("La oferta se muestra sin calificar y no tiene prioridad.")).toBeInTheDocument();
     expect(checked("Agua")).toBe("3");
     expect(checked("Suelo")).toBe("2");
-    expect(checked("Mercado")).toBe("1");
     expect(seeds("Agua").getAllByRole("radio")).toHaveLength(6); // el «0» y cinco semillas
     expect(
       screen.getByText("0: no cambia la luz, salvo un riesgo grave de clima. 4 o 5: un resultado medio cuenta como desfavorable."),
@@ -140,19 +145,31 @@ describe("Ajustar mis prioridades al consultar (HU-202)", () => {
   });
 
   it("«Volver al criterio de AgroSense» las restablece y vuelve a consultar con los pesos por defecto", async () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULTS, supply: 0 }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULTS, water: 5 }));
     const calls = fakeApi();
     open();
     const user = userEvent.setup();
     await screen.findByText("Puede sembrar en esa fecha");
     // Al volver, se usan las que había dejado.
-    expect(diagnoses(calls)[0].priorities).toEqual({ ...DEFAULTS, supply: 0 });
+    expect(diagnoses(calls)[0].priorities).toEqual({ ...DEFAULTS, water: 5 });
 
     await openPanel(user, "Sus prioridades · Ajustar");
     await user.click(screen.getByRole("button", { name: "Volver al criterio de AgroSense" }));
     await waitFor(() => expect(diagnoses(calls).at(-1)?.priorities).toEqual(DEFAULTS));
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(screen.getByText("Criterio de AgroSense · Ajustar")).toBeInTheDocument();
+  });
+
+  it("la oferta, sin control, se envía con el peso de AgroSense aunque haya otro guardado; el mercado, con el suyo", async () => {
+    const stored = { ...DEFAULTS, water: 5, supply: 0, market: 5 };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    const calls = fakeApi();
+    open();
+    await screen.findByText("Puede sembrar en esa fecha");
+    // Los seis pesos: los suyos donde hay control (también el mercado, HU-240) y el de AgroSense en la oferta.
+    expect(diagnoses(calls)[0].priorities).toEqual({ ...DEFAULTS, water: 5, market: 5 });
+    // Lo guardado no cambia.
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null")).toEqual(stored);
   });
 
   it("con todas en 0 no envía la petición y pide subir al menos una", async () => {
@@ -178,7 +195,7 @@ describe("Ajustar mis prioridades al consultar (HU-202)", () => {
     const calls = fakeApi({
       "GET /api/v1/me": { status: 200, body: { ...ROSA, priorities: own } },
       "GET /api/v1/lots": { status: 200, body: [] },
-      "PATCH /api/v1/me": { status: 200, body: { ...ROSA, priorities: { ...own, market: 4 } } },
+      "PATCH /api/v1/me": { status: 200, body: { ...ROSA, priorities: { ...own, soil: 4 } } },
     });
     open();
     const user = userEvent.setup();
@@ -187,9 +204,10 @@ describe("Ajustar mis prioridades al consultar (HU-202)", () => {
 
     await openPanel(user, "Sus prioridades · Ajustar");
     expect(screen.getByText("Se guardan en su perfil, como en «Mi cuenta».")).toBeInTheDocument();
-    await user.click(seeds("Mercado").getByRole("radio", { name: /^4 de 5/ }));
-    await waitFor(() => expect(calls.find((c) => c.key === "PATCH /api/v1/me")?.body).toEqual({ priorities: { ...own, market: 4 } }));
-    await waitFor(() => expect(diagnoses(calls).at(-1)?.priorities).toEqual({ ...own, market: 4 }));
+    await user.click(seeds("Suelo").getByRole("radio", { name: /^4 de 5/ }));
+    // Se guardan y se consultan los seis pesos: la oferta y el mercado con los que tenía, aunque no tengan control.
+    await waitFor(() => expect(calls.find((c) => c.key === "PATCH /api/v1/me")?.body).toEqual({ priorities: { ...own, soil: 4 } }));
+    await waitFor(() => expect(diagnoses(calls).at(-1)?.priorities).toEqual({ ...own, soil: 4 }));
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
