@@ -46,6 +46,7 @@ const ROUTES = (
     "/mi-finca",
     "/mi-finca/agregar?desde=consulta",
     "/como-funciona",
+    "/del-satelite-a-su-finca",
     "/politica-de-datos",
     "/precios",
     "/precios?producto=papa-negra",

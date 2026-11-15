@@ -60,6 +60,7 @@ const pages: RouteObject[] = [
         lazy: async () => ({ Component: (await import("@/pages/farm/HarvestPage")).HarvestPage }),
       },
       { path: PATHS.howItWorks, lazy: async () => ({ Component: (await import("@/pages/how/HowItWorksPage")).HowItWorksPage }) },
+      { path: PATHS.journeyTour, lazy: async () => ({ Component: (await import("@/pages/journey/JourneyPage")).JourneyPage }) },
       { path: PATHS.dataPolicy, lazy: async () => ({ Component: (await import("@/pages/policy/PolicyPage")).PolicyPage }) },
       { path: PATHS.prices, lazy: async () => ({ Component: (await import("@/pages/prices/PricesPage")).PricesPage }) },
       // «Consultar» es la entrada a las estrategias de rotación (HU-214, decisión 12).
