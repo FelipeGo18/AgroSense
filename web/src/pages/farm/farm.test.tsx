@@ -452,9 +452,16 @@ describe("El lote (HU-164)", () => {
     });
     open(PATHS.lot("a1"));
     const section = await screen.findByRole("region", { name: "Suelo de la zona" });
-    expect(await within(section).findByText("5,7 · entre 4,1 y 7,9")).toBeInTheDocument();
-    expect(within(section).getByText("52,4 g/kg · entre 4,7 y 172 g/kg")).toBeInTheDocument();
+    // De un vistazo: el valor y lo que significa; el rango, en letra chica.
+    expect(await within(section).findByText("52,4 g/kg")).toBeInTheDocument();
+    expect(within(section).getByText("Medio")).toBeInTheDocument();
+    expect(within(section).getByText("rango probable de 4,7 a 172 g/kg")).toBeInTheDocument();
     expect(within(section).getByText("franco arcilloso")).toBeInTheDocument();
+    expect(within(section).getByText("Guarda bien el agua")).toBeInTheDocument();
+    expect(within(section).getByText("5,7")).toBeInTheDocument();
+    expect(within(section).getByText("rango probable de 4,1 a 7,9")).toBeInTheDocument();
+    // La explicación va a pedido, en «¿Qué es esto?».
+    expect(within(section).getAllByText("¿Qué es esto?")).toHaveLength(3);
     expect(within(section).getByText(/por eso entra en la señal de agua/)).toBeInTheDocument();
     // R10: siempre dice que es de la zona y que un análisis del lote es más preciso.
     expect(within(section).getByText(/Es el suelo de Samacá, no una medición de su lote/)).toHaveTextContent(
