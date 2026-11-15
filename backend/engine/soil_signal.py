@@ -5,13 +5,18 @@ specs/01-reglas.md, «Señales de una ventana» y «Cómo se califica cada seña
   municipio; contrato, tabla `soil_municipality`, y `variable: ph` de `thresholds.yaml`): 100 entre `ph_opt_min` y
   `ph_opt_max`, 0 fuera de `ph_min`–`ph_max` y una recta entre ambos. La calificación, el nivel y si es crítica salen
   solo de `score_signal`; aquí no se interpola.
-- **El intervalo** `ph_p05`–`ph_p95` solo cambia el **nivel**, nunca la calificación (HU-183, segundo criterio):
-  - si todo el intervalo queda fuera de lo que tolera el cultivo (`outside_tolerated`), el nivel es `unfavorable`;
-  - si una parte queda fuera y otra no (`crosses_tolerated`), el nivel no pasa de `moderate`.
+- **El nivel sale de la calificación**, como en las demás señales: el valor estimado (`ph`) decide. El intervalo
+  `ph_p05`–`ph_p95` es la incertidumbre del mapa (SoilGrids: los percentiles 5 y 95 son los límites de un intervalo de
+  predicción del 90 %, «una medida de la incertidumbre»; la mediana «puede usarse como predicción», ISRIC) y solo cambia
+  el nivel en un caso: si **todo** el intervalo queda fuera de lo que tolera el cultivo (`outside_tolerated`), el nivel
+  es `unfavorable`. Si solo una parte queda fuera (`crosses_tolerated`), la razón lo dice y el nivel no cambia: en la
+  región piloto el intervalo mide de 2,4 a más de 3 unidades de pH en todos los municipios y siempre cruza algún límite,
+  así que limitar el nivel por eso dejaba el suelo en `moderate` en casi toda la región para todos los cultivos y la
+  señal no distinguía nada (decisión del 14 nov 2026, `docs/registro-de-decisiones.md`). La incertidumbre se dice como
+  pide R10: el intervalo en la razón y el análisis de suelo del lote.
   Tocar un borde no es quedar fuera, igual que en las estrategias (`ph_motives`, `backend/engine/rotations/
   exclusions.py`, que usa esta misma `outside_tolerated`): `ph_max < p05` o `ph_min > p95`, estricto. Cruzar es que una
-  parte del intervalo quede fuera (`p05 < ph_min` o `p95 > ph_max`) sin que quede todo: un intervalo que llega justo al
-  borde desde adentro no cruza, y uno que llega desde afuera sí (solo el borde queda adentro).
+  parte del intervalo quede fuera (`p05 < ph_min` o `p95 > ph_max`) sin que quede todo.
   Sin los dos percentiles (nulos o NaN), la curva califica con `ph` y la lectura del intervalo no se hace: se dice en
   las limitaciones (R1). No se inventa un intervalo.
 - **Nunca crítica** (R10): el suelo es una estimación de un mapa de 250 m. `critical` es siempre falso, también si un
@@ -41,14 +46,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from backend.engine.sensitive_signal import no_stages_reason
-from backend.engine.signal_score import (
-    AVAILABLE,
-    FAVORABLE,
-    INSUFFICIENT_DATA,
-    MODERATE,
-    UNFAVORABLE,
-    score_signal,
-)
+from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, UNFAVORABLE, score_signal
 from common.text import format_decimal, of
 
 if TYPE_CHECKING:
@@ -125,10 +123,8 @@ def soil_signal(soil: ZoneSoilPh | None, crop_limits: Mapping[str, Any], thresho
             level = UNFAVORABLE
             interval = f"Todo ese rango queda fuera de lo que tolera {tolerated}"
         elif crosses_tolerated(ph_min, ph_max, p05, p95):
-            interval = f"Parte de ese rango queda fuera de lo que tolera {tolerated}"
-            if level == FAVORABLE:
-                level = MODERATE
-                interval += ": por eso no sale favorable"
+            # El rango es la incertidumbre del mapa: se dice, pero el nivel lo da el pH estimado (ver el módulo).
+            interval = f"Es un rango amplio y parte de él queda fuera de lo que tolera {tolerated}"
         else:
             interval = f"Todo ese rango está dentro de lo que tolera {tolerated}"
     relation = _relation(ph, ph_min, ph_opt_min, ph_opt_max, ph_max, crop_name, tolerated)

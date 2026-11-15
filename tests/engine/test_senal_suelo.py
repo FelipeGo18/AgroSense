@@ -6,8 +6,8 @@ su óptimo va de 5,0 a 6,2, FAO EcoCrop). Los pH del suelo son DE PRUEBA (R5), n
 
 - La calificación es la curva de HU-196 sobre el pH estimado (`ph` de `soil_municipality`, la mediana de las celdas) y
   el nivel sale de ella (70 y 40 de `thresholds.yaml`).
-- Con el intervalo `ph_p05`–`ph_p95`: si todo queda fuera del tolerado, el nivel es `unfavorable`; si cruza un límite
-  del tolerado, el nivel no pasa de `moderate`. La calificación se queda con la de la curva. Tocar un borde no cuenta,
+- Con el intervalo `ph_p05`–`ph_p95`: si todo queda fuera del tolerado, el nivel es `unfavorable`; si solo cruza un
+  límite, la razón lo dice y el nivel sigue siendo el de la curva (decisión del 14 nov 2026). Tocar un borde no cuenta,
   igual que en las estrategias (`backend/engine/rotations/exclusions.py`).
 - Nunca crítica (R10).
 """
@@ -88,24 +88,24 @@ def test_fuera_del_tolerado_da_0_y_desfavorable(thresholds):
 # ---------- el intervalo p05–p95 ----------
 
 
-def test_un_intervalo_que_cruza_un_limite_deja_el_nivel_en_moderate_y_la_calificacion_de_la_curva(thresholds):
-    """La mediana en el óptimo da 100, pero el 5 % más ácido del suelo estimado queda fuera de lo que tolera la papa."""
+def test_un_intervalo_que_cruza_un_limite_se_dice_pero_no_cambia_el_nivel(thresholds):
+    """La mediana en el óptimo da 100 y `favorable`; el intervalo del mapa llega más allá de lo que tolera la papa: la
+    razón lo dice, pero el nivel lo da el pH estimado (decisión del 14 nov 2026)."""
     result = signal(thresholds, 5.7, 4.1, 7.9)
-    assert state(result) == (AVAILABLE, 100, MODERATE, False)
+    assert state(result) == (AVAILABLE, 100, FAVORABLE, False)
     assert result.reasons == (
         "pH estimado de 5,7 (de 4,1 a 7,9), dentro del óptimo de la papa (5,0 a 6,2). "
-        "Parte de ese rango queda fuera de lo que tolera (4,2 a 8,5): por eso no sale favorable. " + ESTIMATE_LABEL,
+        "Es un rango amplio y parte de él queda fuera de lo que tolera (4,2 a 8,5). " + ESTIMATE_LABEL,
     )
     # Del lado alcalino también.
-    assert state(signal(thresholds, 6.0, 5.5, 8.8)) == (AVAILABLE, 100, MODERATE, False)
+    assert state(signal(thresholds, 6.0, 5.5, 8.8)) == (AVAILABLE, 100, FAVORABLE, False)
 
 
-def test_cruzar_un_limite_no_sube_un_nivel_que_ya_era_mas_bajo(thresholds):
-    """Con la mediana en 4,4 (25, desfavorable) el intervalo que cruza no la sube a `moderate`, ni dice «por eso»."""
+def test_cruzar_un_limite_tampoco_cambia_un_nivel_bajo(thresholds):
+    """Con la mediana en 4,4 (25, desfavorable) el intervalo que cruza no la mueve: sigue desfavorable."""
     result = signal(thresholds, 4.4, 3.9, 5.0)
     assert state(result) == (AVAILABLE, 25, UNFAVORABLE, False)
-    assert "Parte de ese rango queda fuera de lo que tolera (4,2 a 8,5). " in result.reasons[0]
-    assert "por eso" not in result.reasons[0]
+    assert "Es un rango amplio y parte de él queda fuera de lo que tolera (4,2 a 8,5). " in result.reasons[0]
 
 
 def test_todo_el_intervalo_fuera_del_tolerado_es_desfavorable_aunque_la_curva_diga_otra_cosa(thresholds):
@@ -123,7 +123,7 @@ def test_tocar_un_borde_del_tolerado_no_es_quedar_fuera(thresholds):
     # p95 justo en ph_min: no está todo fuera, pero cruza; la mediana (4,2) da 0 por la curva.
     assert state(signal(thresholds, 4.2, 3.9, 4.2)) == (AVAILABLE, 0, UNFAVORABLE, False)
     assert "Todo ese rango queda fuera" not in signal(thresholds, 4.2, 3.9, 4.2).reasons[0]
-    assert "Parte de ese rango queda fuera" in signal(thresholds, 4.2, 3.9, 4.2).reasons[0]
+    assert "Es un rango amplio y parte de él queda fuera" in signal(thresholds, 4.2, 3.9, 4.2).reasons[0]
 
 
 @pytest.mark.parametrize(

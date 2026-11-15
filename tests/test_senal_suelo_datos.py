@@ -136,7 +136,7 @@ def test_un_ph_nulo_en_la_fila_del_municipio_es_sin_suelo(examples_copy):
     assert (soil["status"], soil["score"], soil["reasons"]) == ("insufficient_data", None, [NO_SOIL_REASON])
 
 
-def test_un_intervalo_que_cruza_un_limite_lleva_la_senal_a_moderate_con_la_calificacion_de_la_curva(examples_copy):
+def test_un_intervalo_que_cruza_un_limite_se_dice_y_el_nivel_es_el_de_la_curva(examples_copy):
     """Los percentiles DE EJEMPLO de Samacá se abren hasta 4,1 y 7,9 (como en los datos reales del altiplano)."""
     path = examples_copy / "soil_municipality.parquet"
     table = pl.read_parquet(path)
@@ -146,8 +146,8 @@ def test_un_intervalo_que_cruza_un_limite_lleva_la_senal_a_moderate_con_la_calif
         pl.when(samaca).then(7.9).otherwise(pl.col("ph_p95")).alias("ph_p95"),
     ).write_parquet(path)
     soil = diagnose(TestClient(app))["signals"]["soil"]
-    assert (soil["status"], soil["score"], soil["level"], soil["critical"]) == ("available", 100, "moderate", False)
-    assert "Parte de ese rango queda fuera de lo que tolera (4,2 a 8,5): por eso no sale favorable" in soil["reasons"][0]
+    assert (soil["status"], soil["score"], soil["level"], soil["critical"]) == ("available", 100, "favorable", False)
+    assert "Es un rango amplio y parte de él queda fuera de lo que tolera (4,2 a 8,5)" in soil["reasons"][0]
 
 
 def test_suelo_desfavorable_da_amarillo_y_rotar_no_rojo(examples_copy):
