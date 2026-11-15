@@ -5,9 +5,11 @@ calor de ejemplo. «Hoy» queda fijo en el 14 de noviembre de 2026 en la región
 en que corre la prueba (R4). En esos datos, la papa sembrada en noviembre tiene helada crítica (7 de 100) y la de abril
 no tiene heladas (100); el calor da 100 en todo el año.
 
-El agua (HU-071), el suelo (HU-183) y la oferta (HU-072) todavía no tienen motor: son `insufficient_data`. Con los pesos
-por defecto el agua pesa 3, así que la luz de AgroSense es `not_evaluable` (regla 1): es lo honesto (R1). Para ver una
-luz roja o verde, las pruebas ponen el agua en 0 con `priorities`.
+El suelo (HU-183) y la oferta (HU-072) todavía no tienen motor: son `insufficient_data`. El agua (HU-071) sí (sus
+pruebas están en `tests/test_senal_agua_datos.py`), pero las filas de lluvia del ejemplo están rotuladas `ejemplo` y no
+cuentan como de ninguna fuente (`monthly_climate.rain_rows`): aquí el agua es `insufficient_data`. Con los pesos por
+defecto el agua pesa 3, así que la luz de AgroSense es `not_evaluable` (regla 1): es lo honesto (R1). Para ver una luz
+roja o verde, las pruebas ponen el agua en 0 con `priorities`.
 """
 
 import shutil
@@ -41,9 +43,10 @@ SIGNALS = ("water", "frost", "heat", "soil", "supply", "market")
 # 14 de noviembre de 2026 al mediodía en Bogotá.
 TODAY = datetime(2026, 11, 14, 17, 0, tzinfo=UTC)
 NOVEMBER, APRIL = "2026-11-01", "2027-04-01"
-# El agua en 0: sin su motor, con peso la luz sería siempre `not_evaluable`.
+# El agua en 0: con la lluvia del ejemplo sin fuente, con peso la luz sería siempre `not_evaluable`.
 NO_WATER = {"water": 0, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
-PENDING = {name: pending_reason(name) for name in ("water", "soil", "supply")}
+# Las señales que todavía no tienen motor (el agua ya lo tiene desde HU-071).
+PENDING = {name: pending_reason(name) for name in ("soil", "supply")}
 
 
 @pytest.fixture(autouse=True)
@@ -105,6 +108,11 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
         assert (signal["status"], signal["level"], signal["score"], signal["critical"], signal["reasons"]) == (
             "insufficient_data", None, None, False, [reason]
         )  # fmt: skip
+    # El agua tiene motor (HU-071), pero la lluvia del ejemplo está rotulada `ejemplo` y no es de ninguna fuente: no se
+    # califica, y no es la razón de una señal sin motor.
+    water = body["signals"]["water"]
+    assert (water["status"], water["level"], water["score"], water["critical"]) == ("insufficient_data", None, None, False)
+    assert water["reasons"] != [pending_reason("water")]
     assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.0.0+pesos.1.0.0"}
 
 
@@ -134,6 +142,8 @@ def test_las_limitaciones_dicen_cada_senal_sin_datos_y_el_aviso_de_heladas_sin_r
     # Las que no tienen motor dicen lo verdadero: no faltan datos, falta el motor (R5).
     for reason in PENDING.values():
         assert limitations.count(reason) == 1
+    assert pending_reason("water") not in limitations
+    # El agua dice qué le falta (la lluvia rotulada con su fuente o el balance hídrico), no la frase genérica (R5).
     assert "Sin datos para la zona: el agua no se evaluó." not in limitations
     assert not any("la helada no se evaluó" in text or "el calor no se evaluó" in text for text in limitations)
     # El `frost_caveat` de la región va siempre que se evalúa la ventana (HU-077).
@@ -269,8 +279,9 @@ def test_una_entrada_valida_sin_datos_responde_200_con_insufficient_data(dataset
     assert (body["overall"]["light"], body["overall"]["action"]) == ("not_evaluable", "review_data")
     for name in ("la helada", "el calor", "el mercado"):
         assert f"Sin datos para la zona: {name} no se evaluó." in body["limitations"]
-    for name in ("el agua", "el suelo", "la oferta"):
+    for name in ("el suelo", "la oferta"):
         assert f"Sin datos para la zona: {name} no se evaluó." not in body["limitations"]
+    assert pending_reason("water") not in body["limitations"]
     for reason in PENDING.values():
         assert body["limitations"].count(reason) == 1
 

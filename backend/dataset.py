@@ -43,11 +43,17 @@ class Municipality:
 
 @dataclass(frozen=True, eq=False)
 class Grid:
-    """La altitud de la rejilla de 250 m (`grid_cells`), compacta: `keys` es la llave entera de cada celda
-    (`common.grid.cell_key`), ordenada, y `altitude_m` su altitud, con NaN donde la celda no tiene dato (R1)."""
+    """La altitud y la textura del suelo de la rejilla de 250 m (`grid_cells`), compactas: `keys` es la llave entera de
+    cada celda (`common.grid.cell_key`), ordenada, y `altitude_m` su altitud, con NaN donde la celda no tiene dato (R1).
+
+    La textura (`texture_class`, HU-181) va como códigos: `texture_code` es, por celda y en el mismo orden, la posición
+    de su clase en `texture_classes` (en orden alfabético), o -1 sin dato (R1). Sin la columna, `texture_code` es nulo.
+    Así 600.000 celdas no son 600.000 textos en memoria. La usa el agua del lote (HU-071)."""
 
     keys: np.ndarray
     altitude_m: np.ndarray
+    texture_code: np.ndarray | None = None
+    texture_classes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -84,7 +90,8 @@ class Dataset:
     # La rejilla de 250 m con altitud (HU-191). Nula si el dataset no la trae (R1).
     grid: Grid | None = None
     # El clima mensual de NASA POWER (`climate_month`, HU-042: lluvia y ET0) y la lluvia mensual por fuente
-    # (`precip_month`, HU-207: GPM IMERG). Nulos si el dataset no los trae (R1). Los usan las tendencias (HU-078).
+    # (`precip_month`, HU-207: GPM IMERG). Nulos si el dataset no los trae (R1). Los usan las tendencias (HU-078) y la
+    # señal de agua (HU-071), con las mismas lecturas (`backend/api/monthly_climate.py`).
     climate_month: pl.DataFrame | None = None
     precip_month: pl.DataFrame | None = None
     # El área sembrada por semestre (`supply_semester`, HU-031 y HU-032) y el verdor normal del municipio
@@ -188,13 +195,19 @@ def _optional(path: Path) -> pl.DataFrame | None:
 
 
 def _grid(path: Path) -> Grid:
-    """Lee solo `cell_id` y `altitude_m`: el resto de `grid_cells` son unos 86 MB que la altitud del lote no necesita."""
-    table = pl.read_parquet(path, columns=["cell_id", "altitude_m"])
+    """Lee solo `cell_id`, `altitude_m` y `texture_class`: el resto de `grid_cells` son unos 86 MB que la altitud y el
+    agua del lote no necesitan. Una rejilla publicada sin `texture_class` (de antes de HU-181) deja la textura nula."""
+    with_texture = "texture_class" in pl.read_parquet_schema(path)
+    table = pl.read_parquet(path, columns=["cell_id", "altitude_m", *(["texture_class"] if with_texture else [])])
     parts = table["cell_id"].str.split_exact("_", 1)
     keys = (parts.struct.field("field_0").cast(pl.Int64) * GRID_COLUMNS + parts.struct.field("field_1").cast(pl.Int64)).to_numpy()
     order = np.argsort(keys)
     altitudes = table["altitude_m"].cast(pl.Float64).fill_null(float("nan")).to_numpy()
-    return Grid(keys=keys[order], altitude_m=altitudes[order])
+    if not with_texture:
+        return Grid(keys=keys[order], altitude_m=altitudes[order])
+    classes = tuple(sorted(table["texture_class"].drop_nulls().unique().to_list()))
+    codes = table["texture_class"].replace_strict(list(classes), list(range(len(classes))), default=-1, return_dtype=pl.Int16).to_numpy()
+    return Grid(keys=keys[order], altitude_m=altitudes[order], texture_code=codes[order], texture_classes=classes)
 
 
 def _markets(region: dict[str, Any], latest: pl.DataFrame | None) -> tuple[tuple[str, str], ...]:
