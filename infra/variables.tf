@@ -39,3 +39,15 @@ variable "web_origins" {
   type        = string
   default     = ""
 }
+
+variable "billing_account" {
+  description = "Cuenta de facturación del proyecto (la de los créditos)."
+  type        = string
+  default     = "01577A-B4ED3F-2B1F67"
+}
+
+variable "budget_cop" {
+  description = "Presupuesto mensual en pesos (la moneda de la cuenta), unos 10 USD: avisa por correo al 50, 90 y 100 %."
+  type        = number
+  default     = 40000
+}

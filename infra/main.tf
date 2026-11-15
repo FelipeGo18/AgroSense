@@ -7,6 +7,9 @@
 locals {
   services = [
     "artifactregistry.googleapis.com",
+    "billingbudgets.googleapis.com",
+    "cloudbilling.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
     "compute.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
@@ -389,4 +392,40 @@ resource "google_project_iam_member" "deploy_run_viewer" {
   project = var.project_id
   role    = "roles/run.viewer"
   member  = "serviceAccount:${google_service_account.deploy.email}"
+}
+
+# ----------------------------------------------------------------------------------------------------- presupuesto
+
+data "google_project" "this" {}
+
+# Avisa (no corta) por correo a los administradores de la facturación. Mide el gasto ANTES de los créditos, para saber
+# a tiempo si algo se sale de la capa gratuita, mucho antes de que los créditos se acaben.
+resource "google_billing_budget" "monthly" {
+  billing_account = var.billing_account
+  display_name    = "AgroSense producción: ${var.budget_cop} COP al mes"
+
+  budget_filter {
+    projects               = ["projects/${data.google_project.this.number}"]
+    credit_types_treatment = "EXCLUDE_ALL_CREDITS"
+  }
+
+  amount {
+    specified_amount {
+      # La cuenta de facturación es en pesos: el presupuesto va en su moneda.
+      currency_code = "COP"
+      units         = tostring(var.budget_cop)
+    }
+  }
+
+  threshold_rules {
+    threshold_percent = 0.5
+  }
+  threshold_rules {
+    threshold_percent = 0.9
+  }
+  threshold_rules {
+    threshold_percent = 1.0
+  }
+
+  depends_on = [google_project_service.apis]
 }
