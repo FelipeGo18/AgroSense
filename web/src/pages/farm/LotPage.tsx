@@ -26,8 +26,7 @@ import {
 } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
-import { SoilFacts } from "@/components/soil/SoilFacts";
-import { useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { SoilDetails } from "@/components/soil/SoilDetails";
 import { WithoutDrawing, irrigationText, placeName } from "./common";
 import { LotChangesLink } from "@/pages/changes/LotChangesLink";
 
@@ -35,8 +34,8 @@ import { LotChangesLink } from "@/pages/changes/LotChangesLink";
  * El lote (HU-164, HU-169): su contorno en el mapa, lo que se sabe de él, sus siembras en curso y su suelo. Editar y
  * borrar van en «Editar lote» (Figma: «D1 · Editar lote»). Un lote sin dibujar muestra su municipio y se puede
  * dibujar. Las siembras se registran, cosechan y corrigen en sus pantallas (HU-165). «Ver estrategias de rotación» lleva
- * a las estrategias con este lote (HU-214). El suelo es el estimado de su municipio (HU-185); el del polígono del lote es
- * HU-182 (P1). El lote vivo es HU-187 (P1). Las siembras borradas hace menos de 30 días se ven aparte, en «Borradas hace
+ * a las estrategias con este lote (HU-214). El suelo viene del detalle de la API (HU-182), explicado con su origen
+ * y sus rangos (HU-185). El lote vivo es HU-187 (P1). Las siembras borradas hace menos de 30 días se ven aparte, en «Borradas hace
  * poco», con «Restaurar» (HU-204).
  */
 export function LotPage() {
@@ -183,7 +182,9 @@ function LotView() {
         irrigated={lot.data.irrigated}
         currentSeasons={lot.data.current_seasons}
       />
-      <Soil municipalityId={lot.data.municipality_id} town={town} />
+      <Section title="Suelo estimado">
+        <SoilDetails municipalityId={lot.data.municipality_id} lotId={lot.data.lot_id} open />
+      </Section>
     </MapScene>
   );
 }
@@ -371,29 +372,5 @@ function StageBar({ stage, progress }: { stage: string; progress: number }) {
         );
       })}
     </div>
-  );
-}
-
-/**
- * El suelo (HU-185): el estimado del municipio del lote (`GET /catalogs/municipalities/{id}/soil`), con su rango y qué
- * significa cada dato. Sin el suelo publicado no se inventa nada (R1); siempre dice que es de la zona (R10).
- */
-function Soil({ municipalityId, town }: { municipalityId: string; town: string }) {
-  const soil = useMunicipalitySoil(municipalityId);
-  return (
-    <Section title="Suelo de la zona">
-      {soil.isPending ? (
-        <p role="status" className="text-texto-secundario">
-          Cargando el suelo de {town}…
-        </p>
-      ) : soil.data ? (
-        <SoilFacts soil={soil.data} place={town} />
-      ) : (
-        <>
-          <p className="font-bold">Sin datos del suelo de {town}.</p>
-          <p className="text-[14px] text-texto-secundario">Para conocer el suelo de su lote, haga un análisis de suelo.</p>
-        </>
-      )}
-    </Section>
   );
 }

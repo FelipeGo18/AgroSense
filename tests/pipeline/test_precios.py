@@ -3,6 +3,7 @@
 import io
 import json
 from datetime import date
+from pathlib import Path
 
 import polars as pl
 import pytest
@@ -200,6 +201,63 @@ def test_la_region_del_repositorio_cumple_department_markets():
 )
 def test_una_central_o_un_departamento_que_no_existen_hacen_fallar_el_build(tmp_path, department_markets, message):
     region = {**MARKET_REGION, "region": {**MARKET_REGION["region"], "department_markets": department_markets}}
+    prices = read(SAMPLE_SIPSA_ROWS)
+    sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
+    with pytest.raises(build.ValidationError, match=message):
+        build.publish(region, dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"]), sources, tmp_path, prices=prices)
+    assert not (tmp_path / "manifest.json").exists()
+
+
+# ---------- La central de un cultivo cuando la del departamento no lo publica (crop_market_overrides, HU-073) ----------
+
+OVERRIDE = {"market_id": "1", "reason": "Tunja no publica papa negra desde el 27 de julio de 2021"}
+
+
+def test_la_region_del_repositorio_cumple_crop_market_overrides():
+    region = build.load_region()
+    build.validate_crop_market_overrides(region)
+    assert region["region"]["crop_market_overrides"] == {
+        "15": {
+            "papa": {
+                "market_id": "1",
+                "reason": "Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+            }
+        }
+    }
+
+
+def test_un_cultivo_que_no_esta_en_el_catalogo_hace_fallar_el_build():
+    region = {**MARKET_REGION, "region": {**MARKET_REGION["region"], "crop_market_overrides": {"15": {"papa_criolla": OVERRIDE}}}}
+    with pytest.raises(build.ValidationError, match="no está en `catalog/crops.yaml`"):
+        build.validate_crop_market_overrides(region, {"papa", "arveja"})
+    build.validate_crop_market_overrides(region)  # sin el catálogo no hay contra qué revisar
+
+
+def test_la_region_del_repositorio_nombra_cultivos_del_catalogo():
+    import yaml
+
+    catalog = yaml.safe_load(Path("catalog/crops.yaml").read_text(encoding="utf-8"))
+    crop_ids = {crop["crop_id"] for crop in catalog["crops"]}
+    build.validate_crop_market_overrides(build.load_region(), crop_ids)
+
+
+def test_sin_crop_market_overrides_no_hay_que_validar():
+    build.validate_crop_market_overrides(MARKET_REGION)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"52": {"papa": OVERRIDE}}, "departamento que no está en `departments`"),
+        ({"15": {"papa": {**OVERRIDE, "market_id": "99"}}}, "no está en `markets`"),
+        ({"15": {"papa": {**OVERRIDE, "reason": " "}}}, "sin `reason`"),
+        ({"15": {"papa": {"market_id": "1"}}}, "lleva `market_id` y `reason`"),
+        ({"15": {"Papa Negra": OVERRIDE}}, "snake_case"),
+        ({"15": {}}, "sin cultivos"),
+    ],
+)
+def test_una_central_por_cultivo_mal_escrita_hace_fallar_el_build(tmp_path, overrides, message):
+    region = {**MARKET_REGION, "region": {**MARKET_REGION["region"], "crop_market_overrides": overrides}}
     prices = read(SAMPLE_SIPSA_ROWS)
     sources = pl.DataFrame([dane.source(SAMPLE_META), sipsa.source(prices, "2026-10-20T15:34:00+00:00")])
     with pytest.raises(build.ValidationError, match=message):

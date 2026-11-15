@@ -312,11 +312,18 @@ MARKET_PRODUCTS = {
 }
 
 
+def _years_counts(wave: float) -> dict[str, int]:
+    """Los años de ejemplo por encima y por debajo del promedio de su año (inventados, R5), del lado del índice: 3 de 4
+    del lado en que cae el índice y 1 del otro."""
+    return {"years_above": 3, "years_below": 1} if wave > 0 else {"years_above": 1, "years_below": 3}
+
+
 def market_month() -> pl.DataFrame:
     rows = [
         {"crop_id": crop, "market_id": "1", "month": month, "product_id": MARKET_PRODUCTS[crop],
          "price_cop_kg": 1500 + 300 * j + int(400 * math.sin(month + j)), "price_year": 2024, "volume_t": None,
-         "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3), "years": 4, "quality": "ok", "source_id": SOURCE_ID}
+         "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3), "years": 4,
+         **_years_counts(math.sin(month + j)), "first_year": 2021, "last_year": 2024, "quality": "ok", "source_id": SOURCE_ID}
         for j, crop in enumerate(MARKET_CROPS) for month in range(1, 13)
     ]  # fmt: skip
     return _table("market_month", rows)
@@ -338,7 +345,7 @@ def market_price_day() -> pl.DataFrame:
 def market_price_season() -> pl.DataFrame:
     rows = [
         {"product_id": product, "market_id": "1", "month": month, "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3),
-         "years": 4, "first_year": 2021, "last_year": 2024, "source_id": SOURCE_ID}
+         "years": 4, **_years_counts(math.sin(month + j)), "first_year": 2021, "last_year": 2024, "source_id": SOURCE_ID}
         for j, product in enumerate(MARKET_PRODUCTS.values()) for month in range(1, 13)
     ]  # fmt: skip
     return _table("market_price_season", rows)
