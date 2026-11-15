@@ -73,7 +73,7 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-195 | Señales de exceso de lluvia, enfermedad y cosecha | P1 | M | pendiente | |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en revisión | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | hecha | Fechas de los ciclos y diagnóstico por ciclo con la misma función que `/diagnostics` (15 nov); los llama `/rotations` con HU-084 |
-| [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar estrategias por prioridades | P0 | M | pendiente | Estrategias de hasta 3 ciclos |
+| [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar estrategias por prioridades | P0 | M | hecha | Criterios, total y orden en el motor (15 nov); los llama `/rotations` con HU-084 |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden de las estrategias | P0 | S | pendiente | |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-084 | Endpoint de estrategias de rotación | P0 | S | pendiente | Suma `current_crop_ids` (decisión 14) |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-223 | La rotación actual como referencia | P0 | M | pendiente | Nueva (8 nov, decisión 14): el reto pide comparar contra la actual |

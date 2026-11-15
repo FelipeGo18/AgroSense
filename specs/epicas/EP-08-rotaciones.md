@@ -89,16 +89,16 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 ### HU-082 · Ordenar estrategias por prioridades
 
 - **Historia:** Como agricultor, quiero ordenar las estrategias según mis prioridades (agua, suelo, ingreso y riesgo), para elegir la que me conviene.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (la ruta `/rotations` lo llama con HU-084)
 - **Criterios de aceptación:**
-  - [ ] Puntaje de 0 a 100 por criterio (`water`, `soil`, `income`, `risk`) y total ponderado por `priorities` (un entero de 0 a 5 por criterio)
-  - [ ] Cada criterio sale de los ciclos con una regla documentada en `specs/01-reglas.md` («Estrategias de rotación»): `water` de las señales `water` de sus ciclos, `soil` de `soil_health` (HU-212), `income` de las señales `supply` y `market` de sus ciclos, y `risk` del factor que más limita entre sus ciclos
-  - [ ] Un criterio sin datos tiene puntaje nulo, no entra al total y va a las limitaciones (R1); nunca se rellena
-  - [ ] Devuelve hasta 10 estrategias; misma entrada, mismo orden; desempate determinista (R4)
-  - [ ] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
+  - [x] Puntaje de 0 a 100 por criterio (`water`, `soil`, `income`, `risk`) y total ponderado por `priorities` (un entero de 0 a 5 por criterio)
+  - [x] Cada criterio sale de los ciclos con una regla documentada en `specs/01-reglas.md` («Estrategias de rotación»): `water` de las señales `water` de sus ciclos, `soil` de `soil_health` (HU-212), `income` de las señales `supply` y `market` de sus ciclos, y `risk` del factor que más limita entre sus ciclos
+  - [x] Un criterio sin datos tiene puntaje nulo, no entra al total y va a las limitaciones (R1); nunca se rellena
+  - [x] Devuelve hasta 10 estrategias; misma entrada, mismo orden; desempate determinista (R4)
+  - [x] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
 - **Reglas que aplican:** R1, R4, R5
 - **Contrato que toca:** `strategies[].scores`, `total_score` y `rank` de `POST /api/v1/rotations`
-- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213.
+- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213. Hecha el 15 de noviembre de 2026 en `backend/engine/rotations/ranking.py`; `StrategyCycles.cycle_scores` (HU-213) le da a cada ciclo su `kind`, sus calificaciones y el factor limitante de su luz. `risk` lee el factor limitante que muestra cada ciclo: un ciclo `not_evaluable` o no apto no cuenta, y se dice (supuesto en `docs/registro-de-decisiones.md`, pendiente de aprobar por Haider o Felipe). El mismo cálculo sirve para la rotación actual (HU-223), que no entra al orden.
 
 ### HU-083 · Explicar el orden de las estrategias
 
