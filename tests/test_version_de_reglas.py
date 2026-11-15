@@ -23,12 +23,12 @@ def test_sin_la_version_del_catalogo_no_se_inventa_una():
 
 def test_cambiar_los_umbrales_o_los_pesos_cambia_la_version(monkeypatch):
     antes = versions.rules_version("0.1.0")
-    monkeypatch.setattr(versions, "get_thresholds", lambda: replace(get_thresholds(), version="1.1.0"))
+    monkeypatch.setattr(versions, "get_thresholds", lambda: replace(get_thresholds(), version="9.9.0"))
     con_umbrales = versions.rules_version("0.1.0")
     monkeypatch.setattr(versions, "get_default_weights", lambda: replace(get_default_weights(), version="2.0.0"))
     con_pesos = versions.rules_version("0.1.0")
     assert len({antes, con_umbrales, con_pesos}) == 3
-    assert con_pesos == "0.1.0+umbrales.1.1.0+pesos.2.0.0"
+    assert con_pesos == "0.1.0+umbrales.9.9.0+pesos.2.0.0"
 
 
 def test_cabe_en_la_columna_de_las_temporadas():

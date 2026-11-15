@@ -55,6 +55,21 @@ describe("SignalCard", () => {
     expect(container.innerHTML).not.toMatch(/semaforo-rojo/);
   });
 
+  it("con dato y sin nivel es «Sin calificar» en tono neutro, nunca «No aplica» ni riesgo (decisión 17)", () => {
+    const signal: Signal = {
+      status: "available",
+      level: null,
+      indicators: ["seasonal_index", "years_above", "years_below"],
+      reasons: ["Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista"],
+    };
+    expect(signalTone(signal)).toEqual({ tone: "not_applicable", label: "Sin calificar" });
+    const { container } = render(<SignalCard kind="market" signal={signal} />);
+    expect(screen.getByText("Sin calificar")).toBeInTheDocument();
+    expect(screen.queryByText("No aplica")).not.toBeInTheDocument();
+    expect(container.innerHTML).not.toMatch(/semaforo-(rojo|amarillo|verde)/);
+    expect(signalTone({ status: "not_applicable", level: null, indicators: [], reasons: [] }).label).toBe("No aplica");
+  });
+
   it("desfavorable se muestra con su razón", () => {
     render(
       <SignalCard
