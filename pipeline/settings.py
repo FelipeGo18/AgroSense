@@ -45,6 +45,10 @@ class PipelineSettings(BaseSettings):
     earthdata_token: SecretStr | None = Field(None, validation_alias="AGROSENSE_EARTHDATA_TOKEN")
     imerg_timeout_s: float = Field(120, gt=0, validation_alias="AGROSENSE_IMERG_TIMEOUT_S")
     imerg_max_mb: float = Field(1, gt=0, validation_alias="AGROSENSE_IMERG_MAX_MB")
+    # MODIS NDVI (HU-208): el mismo token de Earthdata (con él bajó el LP DAAC el 14 de noviembre de 2026). Tiempo y
+    # tamaño máximos de cada compuesto: hoy el recuadro de la región, en CSV, pesa unos 2 MB y baja en unos 4 s.
+    modis_timeout_s: float = Field(180, gt=0, validation_alias="AGROSENSE_MODIS_TIMEOUT_S")
+    modis_max_mb: float = Field(20, gt=0, validation_alias="AGROSENSE_MODIS_MAX_MB")
 
     # Descargas de precios de SIPSA (HU-221, HU-222): tiempo máximo de cada descarga, contado de punta a punta (no por
     # lectura), y tamaño máximo. La respuesta completa del servicio pesa unos 300 MB y tarda de 2 a 5 minutos; el anexo del
