@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -422,6 +422,10 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     });
     open();
     const user = userEvent.setup();
+    // Esta es la primera navegación del archivo: esperar la carga diferida antes de consultar el DOM.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     await screen.findByRole("button", { name: "Cerrar sesión" });
     expect(sessionStorage.getItem("agrosense.guest-consult")).toBeNull();
 
@@ -440,9 +444,15 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     expect(sessionStorage.getItem("agrosense.guest-consult")).toBeNull();
   });
   it("explica qué es un ciclo, con cuánto dura y un ejemplo", async () => {
+    fakeApi();
     open();
+    // Esperar la primera carga diferida antes de comprobar el texto de la pantalla.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     expect(await screen.findByText(/es una siembra completa: de la siembra a la cosecha de un cultivo/)).toBeInTheDocument();
-    expect(screen.getByText(/cada ciclo dura de 3 a 6 meses/)).toBeInTheDocument();
+    // El formulario aparece después de que cargan los catálogos, no junto con la introducción.
+    expect(await screen.findByText(/cada ciclo dura de 3 a 6 meses/)).toBeInTheDocument();
   });
 
   it("pide los datos del terreno, envía POST /rotations y el área se queda en el navegador", async () => {
@@ -859,7 +869,7 @@ describe("Ciclo de una estrategia (HU-215)", () => {
     expect(screen.getAllByText("Sin dato").length).toBeGreaterThan(0); // el periodo sin dato no se inventa
     expect(screen.getByRole("link", { name: "Ver qué cambió en su zona" })).toHaveAttribute(
       "href",
-      `${PATHS.changes}?municipio=15646&cultivo=arveja`,
+      `${PATHS.changes}?municipio=15646&cultivo=arveja&riego=no`,
     );
   });
 
