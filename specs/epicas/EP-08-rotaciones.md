@@ -24,7 +24,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 ### HU-081 · Filtrar estrategias válidas
 
 - **Historia:** Como agricultor, quiero ver solo estrategias agronómicamente válidas, que se den en mi zona y sin ciclos de alto riesgo, para no recibir recomendaciones dañinas.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en revisión (PR de la historia del terreno; código en `backend/engine/rotations/`)
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (PR #108 y #140, 15 nov 2026; código en `backend/engine/rotations/`)
 - **Criterios de aceptación:**
   - **Candidatas (decisión 15, paso 0)**
   - [x] El motor arma todas las secuencias de `cycles` ciclos (2 o 3) con los cultivos del catálogo, de cualquier `kind` (`crop`, `cover`, `fallow`; HU-063), sin el mismo `crop_id` en dos ciclos seguidos y sin dos descansos seguidos
