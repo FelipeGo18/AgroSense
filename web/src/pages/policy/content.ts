@@ -6,8 +6,8 @@
  * specs/02-contratos.md): aquí no se promete nada que el sistema no haga. Si cambia lo que se guarda, cambia este
  * texto y sube la versión del consentimiento.
  *
- * **Falta la revisión legal** (Ley 1581 de 2012 de Colombia, decisión 11) y el canal de contacto del responsable: la
- * página lo dice mientras `LEGAL_REVIEW_PENDING` sea verdadero.
+ * **Falta la revisión legal** (Ley 1581 de 2012 de Colombia, decisión 11): la página lo dice mientras
+ * `LEGAL_REVIEW_PENDING` sea verdadero. El canal de contacto es «Escribir al responsable» (`/mi-cuenta/escribirnos`, HU-163).
  */
 
 /** Mientras sea verdadero, la página avisa que el texto todavía no pasó por revisión legal. */
@@ -62,9 +62,30 @@ export const SECTIONS: { title: string; items: { mark: Mark; text: string }[] }[
     ],
   },
   {
+    title: "Cómo escribirnos",
+    items: [
+      {
+        mark: "note",
+        text: "Para preguntar qué datos suyos guardamos, pedir que los corrijamos o reportar un problema, escríbanos desde «Mi cuenta», en «Escribir al responsable». Ahí ve cómo va su mensaje.",
+      },
+      {
+        mark: "note",
+        text: "Le respondemos ahí mismo, en máximo 10 días hábiles si es una consulta y 15 si es un reclamo (Ley 1581 de 2012).",
+      },
+      { mark: "note", text: "Si nunca tuvo cuenta, no guardamos nada suyo: no hay datos suyos que pedir." },
+      {
+        mark: "note",
+        text: "El responsable de sus datos es el equipo RealE4Life. Un correo de contacto para quien no puede entrar a su cuenta o ya la borró está por definirse con la revisión legal.",
+      },
+    ],
+  },
+  {
     title: "Cuánto tiempo y cómo borrarlos",
     items: [
-      { mark: "note", text: "Se guardan mientras tenga la cuenta. La actividad se borra sola a los 180 días." },
+      {
+        mark: "note",
+        text: "Se guardan mientras tenga la cuenta, también sus mensajes y nuestras respuestas. La actividad se borra sola a los 180 días.",
+      },
       { mark: "note", text: "En «Mi cuenta» puede ver lo que guardamos, cambiar su nombre y su usuario, y borrar su cuenta." },
       {
         mark: "note",
