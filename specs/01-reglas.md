@@ -64,8 +64,8 @@ Seis señales independientes en el P0 y tres más en el P1. Ninguna se promedia 
 | `frost` (heladas) | Qué tan frecuentes han sido las heladas en los meses en que el cultivo está en una etapa sensible (por semanas con HU-193, P1) | Sí | P0 |
 | `heat` (calor) | Si en las etapas del cultivo suelen darse temperaturas máximas por encima de lo que aguanta (`heat_max_c` de su ficha) | Sí | P0 |
 | `soil` (suelo) | Si el pH del suelo de la zona, o del lote si se envía, está en el rango del cultivo. La textura entra en la señal de agua; el carbono orgánico alimenta la salud del suelo de las estrategias | **No:** es una estimación de 250 m (R10) | P0 |
-| `supply` (oferta) | Si en la zona se está sembrando mucho o poco del cultivo, según el último dato del semestre en que cae la siembra | Sí | P0 |
-| `market` (mercado) | Si el precio suele estar bajo en el mes en que saldría la cosecha | Sí | P0 la señal; los datos de SIPSA son P1 |
+| `supply` (oferta) | Si en la zona se está sembrando mucho o poco del cultivo, según el último dato del semestre en que cae la siembra. **En el MVP se muestra y no se califica** (ver «La oferta y el mercado, con datos oficiales») | No | P0 |
+| `market` (mercado) | Si el precio suele estar bajo en el mes en que saldría la cosecha | No | P0 |
 | `excess_rain` (exceso de lluvia) | Aguaceros frecuentes que encharcan, lavan el abono o impiden las labores | Sí | P1 |
 | `disease` (enfermedades por clima) | Semanas húmedas y templadas que favorecen una enfermedad con regla publicada, como la gota de la papa. No cubre plagas en general: no hay datos abiertos | No | P1 |
 | `harvest_weather` (cosecha) | Si en las semanas de cosecha suele haber días secos seguidos | No | P1 |
@@ -97,8 +97,20 @@ Qué mide cada curva:
 | `frost` | Porcentaje de años con al menos una helada (mínima ≤ 2 °C) en cualquiera de los meses sensibles de la ventana (semanas en P1) | `thresholds.yaml` |
 | `heat` | Temperatura máxima que se supera uno de cada diez días (p90), la más alta entre los meses sensibles con dato (el peor mes, no el promedio) | Ficha (`temp_opt_max_c`, `heat_max_c`: 100 en el óptimo alto, 0 en el máximo; sin límite inferior) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
-| `supply` | Variación del área sembrada | `thresholds.yaml` |
-| `market` | Índice estacional de precio en el mes de cosecha | `thresholds.yaml` |
+| `supply` | No se califica en el MVP: se muestra el área sembrada de EVA y su variación | — |
+| `market` | Anomalía estacional del precio en el mes de cosecha: `z = (índice − 1) / σ` (ver abajo) | Cortes publicados de σ (`thresholds.yaml`) |
+
+### La oferta y el mercado, con datos oficiales
+
+Decidido el 15 de noviembre de 2026 (decidido por David el 15 de noviembre de 2026; como cambia la regla y el contrato, pendiente de aprobar por Haider o Felipe; `docs/registro-de-decisiones.md`). Se buscaron umbrales publicados y se analizaron los datos oficiales antes de decidir:
+
+- **Mercado: se califica con la anomalía estacional del mes de cosecha.** Los precios son los mayoristas mensuales de SIPSA (DANE, proceso estadístico certificado): los microdatos 2013–2024 y el boletín diario desde 2025, una sola serie (HU-238). Para cada producto y central, el índice de cada mes es su precio sobre la **media móvil centrada de 12 meses** (quita la tendencia y la inflación), promediado entre años completos; `σ` es la desviación estándar de ese cociente entre años. `z = (índice − 1) / σ`.
+  - `unfavorable` si `z ≤ −1`: la banda de ±1 desviación del índice queda entera bajo 1, es decir, el mes estuvo bajo lo normal incluso en sus años buenos (banda de confiabilidad del índice estacional, Texas A&M E-314).
+  - `moderate` si `−1 < z ≤ −0,5`: el corte de 0,5 desviaciones del Indicador de Anomalías de Precios de la FAO (IFPA, ODS 2.c.1), que la FAO define para precios altos; usarlo para el lado bajo es una adaptación nuestra y se dice.
+  - `favorable` si `z > −0,5`. La calificación es la recta que lleva esos dos cortes a los de nivel (70 y 40): 100 en `z = 0` y 0 en `z = −5/3`; no agrega números propios.
+  - **Nunca es crítica:** ninguna fuente da un «riesgo grave» de precio. Menos de 5 años completos (el mínimo de la FAO): `insufficient_data` (R1). La central es la de `department_markets`; nunca se cambia por otra en silencio.
+  - Son precios **mayoristas**, no en finca, y es **historia, no pronóstico**: la estacionalidad puede deberse al azar o romperse en un año (en 2026 la papa invirtió su patrón tras la crisis de 2025). La razón dice el mes, la central y en cuántos de N años ese mes estuvo bajo lo normal.
+- **Oferta: se muestra y no se califica.** Ninguna entidad publica un umbral de sobreoferta (UPRA: el ciclo de precios de la papa es «irregular e impredecible», Plan de Ordenamiento Productivo), EVA se recoge por consenso municipal y una cuarta parte de sus valores se repiten del año anterior, y con los datos de 2019–2025 no se encontró relación entre el área sembrada y el precio a la cosecha. La señal es `insufficient_data` (no cuenta para la luz ni para el orden) y muestra el área sembrada de EVA del semestre de la siembra, su variación frente al mismo semestre del año anterior (el indicador de los boletines de la UPRA) y si es preliminar. El criterio de ingreso de las estrategias sale entonces del mercado.
 
 Los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana.
 

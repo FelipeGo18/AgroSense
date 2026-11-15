@@ -74,3 +74,18 @@ SIPSA es de Colombia y cubre las centrales de referencia de la región confirmad
   - [x] Las respuestas de `/market/*` dicen su `version`, su `updated_at`, la fuente del último día y la cita del DANE (R4, R8); la pantalla dice cuándo se actualizaron y muestra la cita tal cual
   - [x] Las pruebas no usan la red
   - [x] Contrato aprobado por Haider o Felipe: aprobado por Felipe el 10 de noviembre de 2026
+
+### HU-238 · Historia de precios de SIPSA desde 2013
+
+- **Historia:** Como motor, quiero la serie de precios mayoristas desde 2013 con su variabilidad entre años, para calificar el mercado con suficientes años y con un método publicado.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] El adaptador baja a la caché (`data/raw/`) los microdatos de SIPSA-P del DANE (catálogo 776, 2013–2024, uso público y gratuito; 8 archivos CSV en ZIP) y normaliza sus cuatro formatos: codificación (Latin-1 o UTF-8 con BOM), fecha (`1/01/2019` o `ene-22`), columna de la central (`Fuente` o `Mercado`) y precio (`1.150` con punto de miles); sin red en las pruebas
+  - [ ] Valida y falla si no cuadra: 12 meses en cada año, precio mayor que 0, ninguna llave repetida en los productos y centrales que se usan, y los nombres de producto y central del mapeo
+  - [ ] En los meses que se cruzan con el boletín diario (2020–2024), el precio mensual del microdato y el promedio mensual de los diarios coinciden (comprobado el 15 nov 2026: r = 1,000 y razón 1,000 en papa, arveja, zanahoria y cebolla, en Corabastos y Tunja); si no coinciden en una publicación, el build falla. Así la serie es una sola: microdatos 2013–2024 y boletín diario desde 2025
+  - [ ] Mapeo con fuente (`pipeline/sipsa_crops.yaml`): la papa es «Papa parda pastusa» en los microdatos (la misma serie que «Papa negra» del boletín diario, comprobado); el haba es «Haba verde», que solo trae el microdato; el maíz sigue sin producto (decisión de HU-051)
+  - [ ] `market_price_season` publica, por producto, central y mes: `seasonal_index` frente a la **media móvil centrada de 12 meses** (Texas A&M E-314) promediado entre años completos, `seasonal_sd` (su desviación entre años), `years`, `first_year` y `last_year`; solo con 5 o más años completos (FAO); `market_month` lleva los dos al cultivo
+  - [ ] La fuente `dane_sipsa_microdatos` en `sources` con URL, licencia, periodo y cobertura (R8); sube `dataset_version` (R4)
+- **Reglas que aplican:** R1, R4, R8
+- **Contrato que toca:** `market_price_season` y `market_month` (`seasonal_sd`, la media móvil y el mínimo de 5 años): pendiente de aprobar por Haider o Felipe
+- **Notas:** Agregada el 15 de noviembre de 2026 para HU-073. Con el boletín diario solo hay 5 años completos (2021–2025); con los microdatos, 12 o 13: papa, arveja, zanahoria y cebolla en Corabastos, Tunja y Chiquinquirá desde 2013; papa en Tunja de 2013 a 2021 (recupera la papa de Boyacá); haba en Corabastos y Tunja, 11 años. Los microdatos solo traen duplicados de enlatados en Medellín y Pereira, que no se usan. Se descartaron el boletín de Corabastos (un PDF del día, sin archivo ni metodología) y mezclarlo con SIPSA (dos métodos para un indicador, R1).

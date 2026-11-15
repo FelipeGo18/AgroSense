@@ -53,32 +53,34 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 
 ### HU-072 · Señal de oferta
 
-- **Historia:** Como agricultor, quiero saber si en mi zona se está sembrando mucho o poco de mi cultivo, y ver qué dice cada fuente, para evitar la sobreoferta.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Historia:** Como agricultor, quiero ver cuánto se está sembrando de mi cultivo en mi zona, con la fuente oficial, para tenerlo en cuenta al decidir.
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
 - **Criterios de aceptación:**
-  - [ ] `score` según la variación del área sembrada (`planted_change_pct`), con la curva de HU-196; el nivel sale de la calificación
-  - [ ] La señal se calcula con la fuente que define `sources.yaml` para la región (en la región piloto, EVA) y la respuesta dice cuál fue
-  - [ ] Con EVA: lee `supply_semester` con el semestre en que cae `sowing_date` (A: enero a junio; B: julio a diciembre) y usa el último año con dato de ese semestre
-  - [ ] La respuesta dice qué dato se usó en `window.supply_semester` (`year`, `semester`, `preliminary`), y la razón lo nombra y dice si es preliminar
-  - [ ] Cuando hay más de una fuente para el indicador, `signals.supply.sources` las trae todas, cada una con su valor, y `used` dice cuál calculó la señal. Nunca se mezclan ni se promedian (R1, R8)
-  - [ ] La oferta cambia el semáforo como cualquier otra señal (reglas 2 a 4) cuando su peso es mayor que 0
-  - [ ] Con poca siembra y sin mercado, la razón dice «posible oportunidad, sin confirmar precio»
-  - [ ] Sin dato de la fuente que calcula la señal para ese cultivo y municipio: `insufficient_data` (R1). Otra fuente de contraste no la reemplaza
+  - [ ] En el MVP la oferta **se muestra y no se califica**: `status = insufficient_data`, nivel y `score` nulos, no crítica; no cuenta para la luz ni para el orden de las ventanas (R1, R8; `specs/01-reglas.md`, «La oferta y el mercado, con datos oficiales»)
+  - [ ] Con la fuente que define `sources.yaml` para la región (en la piloto, EVA): lee `supply_semester` del semestre en que cae `sowing_date` (A: enero a junio; B: julio a diciembre) y usa el último año con dato de ese semestre
+  - [ ] La respuesta dice qué dato se usó en `window.supply_semester` (`year`, `semester`, `preliminary`)
+  - [ ] La razón da el área sembrada del municipio en ese semestre y su variación frente al mismo semestre del año anterior (el indicador de los boletines de la UPRA), dice si es preliminar y que la oferta no se califica porque ninguna fuente publica desde cuánto hay sobreoferta
+  - [ ] `signals.supply.sources` trae el dato de cada fuente con su valor, periodo y `preliminary`, y `used` en la de `sources.yaml`; nunca se mezclan (R1, R8)
+  - [ ] Sin dato de la fuente para ese cultivo y municipio: `insufficient_data` con la razón «Sin datos de oferta para la zona» (R1); otra fuente no la reemplaza
 - **Reglas que aplican:** R1, R2, R5, R7, R8
 - **Contrato que toca:** `signals.supply` (con `sources`) y `window.supply_semester`; tablas `supply_semester` y `sources`
-- **Notas:** Desde el 11 de octubre de 2026 la oferta es valor agregado, no protagonista (decisión 12): sigue siendo una de las seis señales, con su peso y estas reglas; en las estrategias entra solo por el criterio de ingreso y nunca excluye una estrategia (HU-081, HU-082). Es el único punto de la decisión donde se usa el semestre, porque EVA lo publica así. EVA y el semestre A/B son supuestos de la región piloto en Colombia (decisión 11). En el P0 solo hay una fuente (EVA) y `sources` no viene; las fuentes de contraste llegan en P1 (HU-200 y HU-201). La sugerencia de cultivos con mejor oferta es HU-197.
+- **Notas:** Cambiada el 15 de noviembre de 2026 (decidido por David; cambia regla y contrato, pendiente de aprobar por Haider o Felipe, `docs/registro-de-decisiones.md`): ninguna entidad publica un umbral de sobreoferta (UPRA, Plan de Ordenamiento Productivo de la papa: el ciclo es «irregular e impredecible»); EVA se recoge por consenso municipal («mecanismo subjetivo», ficha de datos.gov.co) y una cuarta parte de sus valores repite el del año anterior; y con 2019–2025 no se encontró relación entre el área sembrada y el precio a la cosecha (n = 10 por caso, el signo esperado solo en 5 de 10). Salen del MVP la calificación por `planted_change_pct`, que la oferta cambie el semáforo y «posible oportunidad, sin confirmar precio»: necesitan una fuente que hoy no existe. La variación de tres semestres (`planted_change_pct`) es de HU-032. Desde el 11 de octubre de 2026 la oferta es valor agregado (decisión 12); en las estrategias el criterio de ingreso sale del mercado.
 
-### HU-073 · Señal de mercado sin datos
+### HU-073 · Señal de mercado
 
-- **Historia:** Como agricultor, quiero saber cuándo no hay datos de mercado, para no confiar en una señal que no existe.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Historia:** Como agricultor, quiero saber si el precio de mi cultivo suele estar más bajo de lo normal en el mes en que saldría mi cosecha, para no sembrar sin saberlo.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
   - [x] Sin datos: `insufficient_data`, nivel y `score` nulos y razón explícita
   - [x] La central de cada municipio sale de su departamento (`department_markets`, aprobado por Felipe el 14 de noviembre de 2026) y la API lee `market_month` por `crop_id`, `market_id` y mes
-  - [x] El motor da `insufficient_data` porque la curva de `market` espera una fuente (regla del equipo del 11 de noviembre de 2026)
-  - [ ] Con EP-05: `score` según el índice estacional (`seasonal_index`) del mes en que saldría la cosecha (`harvest_estimate`), con la curva de HU-196; nunca un precio futuro. Espera una fuente externa para los cortes
-- **Reglas que aplican:** R1, R5
-- **Notas:** 14 de noviembre de 2026. `backend/engine/market_signal.py` queda listo para calificar el índice cuando `thresholds.yaml` tenga una curva de `market`; hoy la curva es nula y la señal siempre es `insufficient_data` (con o sin índice). La curva propuesta (cuantiles del índice de SIPSA) se rechazó en la revisión del PR #72: la regla del equipo del 11 de noviembre de 2026 pide que un criterio propio sea central para el producto y que cada número se apoye en un dato externo citado, y el mercado es valor agregado (decisión 12). Queda documentada en `docs/investigacion-decisiones.md` (5e). La API (`backend/api/market_signal.py`) elige la central por departamento y lee `market_month`; sin central, sin producto en SIPSA o sin fila, la señal es `insufficient_data`. La razón distingue los dos casos de la curva nula: sin índice dice «Sin datos de mercado para la zona» (texto del contrato) y con índice dice que hay precios de SIPSA pero ninguna fuente dice qué es un precio bajo, así que no se califica (`NO_CURVE_REASON`). El mes de cosecha lo pone quien llama. **14 de noviembre de 2026:** la lectura de `market_month` ya la usa `/diagnostics` (HU-076), con el mes de la cosecha estimada de cada ventana.
+  - [ ] Califica la anomalía estacional del mes de la cosecha estimada (`harvest_estimate`): `seasonal_z = (seasonal_index − 1) / seasonal_sd`, de `market_price_season` (HU-238), con la recta de `thresholds.yaml` que pasa por los cortes publicados (−0,5 σ → 70 y −1 σ → 40; `specs/01-reglas.md`, «La oferta y el mercado, con datos oficiales»). Nunca un precio futuro
+  - [ ] `unfavorable` si la banda de ±1 desviación del índice queda entera bajo 1 (`z ≤ −1`; Texas A&M E-314); `moderate` entre −1 y −0,5 σ (corte de la FAO, IFPA, adaptado al lado bajo, y se dice); `favorable` desde −0,5 σ
+  - [ ] Nunca es crítica: ninguna fuente da un «riesgo grave» de precio
+  - [ ] Con menos de 5 años completos del producto en la central (el mínimo de la FAO): `insufficient_data` (R1). La central nunca se cambia por otra en silencio
+  - [ ] La razón dice el mes, la central, en cuántos de N años ese mes estuvo bajo lo normal y el periodo, y que son precios mayoristas e historia, no un pronóstico ni el precio en finca (R5)
+  - [ ] Caso de referencia, con los datos publicados: un producto sin estacionalidad estable (la desviación grande, como la cebolla de bulbo) sale `favorable`, nunca una falsa alarma
+- **Reglas que aplican:** R1, R4, R5, R8
+- **Notas:** Cambiada el 15 de noviembre de 2026 (antes «Señal de mercado sin datos»; decidido por David; cambia regla y contrato, pendiente de aprobar por Haider o Felipe, `docs/registro-de-decisiones.md`). Antes de decidir se buscaron umbrales publicados (FAO-GIEWS, WFP, FEWS NET, Texas A&M, UPRA, DANE) y se analizaron los datos: ninguna fuente publica un «precio bajo» para el productor; la FAO publica cortes de anomalía para precios altos, y el índice estacional con su banda de ±1 desviación es el método publicado para productores. Los costos de la UPRA (un solo año, sin la renta de la tierra) y los precios en primer mercado (solo PDF, desde 2024) no alcanzan para una serie. Depende de HU-238 (la serie de precios 2013–hoy y `seasonal_sd`). `backend/engine/market_signal.py` ya tiene la rama con curva. Lo de antes: la curva por cuantiles del índice se rechazó en el PR #72 (`docs/investigacion-decisiones.md`, 5e).
 
 ### HU-196 · Calificación de las señales con curvas por cultivo
 
