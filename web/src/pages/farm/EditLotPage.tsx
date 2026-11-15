@@ -23,6 +23,7 @@ import {
   useUpdateLot,
   type LotDetail,
 } from "@/features/farm/lots";
+import { RESTORE_DAYS, restoreDeadline } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { DRAW_STEPS } from "./AddLotPage";
 import { Eyebrow } from "@/components/ui/Eyebrow";
@@ -201,7 +202,9 @@ function EditLot({ lot }: { lot: LotDetail }) {
         <h2 id="borrar" className="text-[18px]">
           Borrar este lote
         </h2>
-        <p className="text-[14px] text-texto-secundario">Deja de verse con sus siembras y su historial.</p>
+        <p className="text-[14px] text-texto-secundario">
+          Deja de verse con sus siembras y su historial. Se puede restaurar durante {RESTORE_DAYS} días.
+        </p>
         <Button variant="danger" className="w-full sm:w-[220px]" onClick={() => setConfirming(true)}>
           Borrar este lote
         </Button>
@@ -224,6 +227,7 @@ function EditLot({ lot }: { lot: LotDetail }) {
             crops > 0
               ? `Deja de verse en Mi finca con sus ${crops === 1 ? "siembra en curso" : `${crops} siembras en curso`} y su historial.`
               : "Deja de verse en Mi finca con su historial.",
+            `Puede restaurarlo hasta el ${restoreDeadline()} desde «Borrados hace poco», en Mi finca. Después se borra para siempre.`,
           ].map((item) => (
             <li key={item} className="flex gap-3">
               <span aria-hidden="true" className="mt-1.5 block size-3.5 shrink-0 bg-oscuro-rojo" />

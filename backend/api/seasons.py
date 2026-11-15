@@ -2,6 +2,8 @@
 
 - `GET` y `POST /api/v1/lots/{lot_id}/seasons`: el historial del lote y una siembra nueva.
 - `PATCH` y `DELETE /api/v1/seasons/{season_id}`: registrar la cosecha, corregir o borrar (borrar marca `deleted_at`).
+- `POST /api/v1/seasons/{season_id}/restore`: restaurar una borrada hace menos de 30 días (HU-204). El historial trae las
+  borradas en ese plazo, con `deleted_at` y `restorable_until`; lo borrado no cuenta en el área libre.
 
 Reglas de área (una sola): la suma de las temporadas en curso nunca pasa del área del lote. Lo cosechado deja su
 terreno libre, así que una siembra nueva cabe si su área no pasa del área libre. «Qué había antes» (`follows_season_ids`)
@@ -16,7 +18,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session as Db
 
 from backend.accounts import activity
@@ -26,7 +28,7 @@ from backend.api import calc_examples
 from backend.api.auth import current_user, require_accounts
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain, request_id_of
-from backend.api.lots import _area, _own_lot
+from backend.api.lots import _area, _own_lot, restorable_until, restore_cutoff
 from backend.api.season_stage import dataset_or_none, stage_fields, today
 from backend.dataset import Dataset
 from backend.db.session import get_db
@@ -97,11 +99,18 @@ class SeasonOut(BaseModel):
     harvest_estimate: date | None = None
     harvest_basis: str | None = None
     harvest_due: bool | None = None
+    # Nulos si no está borrada. Si está borrada (hace menos de 30 días), cuándo y hasta cuándo se restaura (HU-204).
+    deleted_at: datetime | None = None
+    restorable_until: datetime | None = None
 
 
 def season_out(season: Season, dataset: Dataset | None, on: date | None = None) -> SeasonOut:
     data = {field: getattr(season, field) for field in SeasonOut.model_fields if hasattr(season, field)}
-    data |= {"area_ha": _area(season.area_ha), "follows_season_ids": list(season.follows_season_ids or [])}
+    data |= {
+        "area_ha": _area(season.area_ha),
+        "follows_season_ids": list(season.follows_season_ids or []),
+        "restorable_until": restorable_until(season.deleted_at),
+    }
     return SeasonOut(**data | stage_fields(season, dataset, on or today()))
 
 
@@ -184,12 +193,13 @@ def list_seasons(
     db: Db = Depends(get_db),
     dataset: Dataset | None = Depends(dataset_or_none),
 ) -> list[SeasonOut]:
-    """El historial del lote: las temporadas sin borrar, de la siembra más reciente a la más antigua. Solo lee: sin
-    dataset se ve igual, con la etapa nula (R1), como en el detalle del lote."""
+    """El historial del lote, de la siembra más reciente a la más antigua: las temporadas sin borrar y las borradas hace
+    menos de 30 días, con `deleted_at` y `restorable_until` para poder restaurarlas (HU-204). Solo lee: sin dataset se ve
+    igual, con la etapa nula (R1), como en el detalle del lote."""
     lot = _own_lot(db, user, lot_id)
     seasons = db.scalars(
         select(Season)
-        .where(Season.lot_id == lot.lot_id, Season.deleted_at.is_(None))
+        .where(Season.lot_id == lot.lot_id, or_(Season.deleted_at.is_(None), Season.deleted_at > restore_cutoff()))
         .order_by(Season.sowing_date.desc(), Season.created_at.desc())
     )
     result = [season_out(season, dataset) for season in seasons]
@@ -302,10 +312,53 @@ def update_season(
 
 @router.delete("/seasons/{season_id}", status_code=204, responses=calc_examples.responses(404))
 def delete_season(season_id: uuid.UUID, request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> Response:
-    """Borra la siembra: se marca y deja de verse; restaurarla durante 30 días es HU-204 (P1)."""
+    """Borra la siembra: se marca y deja de contar; se puede restaurar durante 30 días (HU-204)."""
     season, _ = _own_season(db, user, season_id)
     season.deleted_at = datetime.now(UTC)
     activity.record(db, "season.deleted", request_id=request_id_of(request), actor=user, object_type="season", object_id=season.season_id)
     db.commit()
     explain(request, "Siembra borrada (se puede restaurar durante 30 días)")
     return Response(status_code=204)
+
+
+@router.post("/seasons/{season_id}/restore", responses=calc_examples.responses(404))
+def restore_season(
+    season_id: uuid.UUID,
+    request: Request,
+    user: User = Depends(current_user),
+    db: Db = Depends(get_db),
+    dataset: Dataset = Depends(require_dataset),
+) -> SeasonOut:
+    """Restaura una siembra borrada hace menos de 30 días (HU-204). Valida lo mismo que registrarla: el cultivo, lo que
+    había antes y, si sigue en curso, que quepa en el área libre del lote (422 si ya no). Una ajena, de un lote borrado,
+    que no está borrada o borrada hace 30 días o más: 404, como una que no existe."""
+    row = db.execute(
+        select(Season, Lot)
+        .join(Lot, Lot.lot_id == Season.lot_id)
+        .where(
+            Season.season_id == season_id,
+            Season.deleted_at.is_not(None),
+            Season.deleted_at > restore_cutoff(),
+            Lot.user_id == user.user_id,
+            Lot.deleted_at.is_(None),
+        )
+    ).first()
+    if row is None:
+        raise ApiError(
+            404,
+            "not_found",
+            NOT_FOUND,
+            log="Siembra no restaurada: no existe, es de otro usuario, su lote está borrado, no está borrada o ya pasaron 30 días",
+        )
+    season, lot = row[0], row[1]
+    _check_crop(dataset, season.crop_id)
+    _check_follows(db, lot, list(season.follows_season_ids or []), season.sowing_date, itself=season.season_id)
+    if season.harvest_date is None:
+        # Mientras estuvo borrada no contaba: su terreno pudo ocuparse con otra siembra.
+        _check_area(Decimal(season.area_ha), Decimal(lot.area_ha) - _sown(db, lot))
+    season.deleted_at = None
+    activity.record(db, "season.restored", request_id=request_id_of(request), actor=user, object_type="season", object_id=season.season_id)
+    db.commit()
+    db.refresh(season)
+    explain(request, f"Siembra restaurada: {season.crop_id}")
+    return season_out(season, dataset)

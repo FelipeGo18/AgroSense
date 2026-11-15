@@ -237,7 +237,8 @@ export interface paths {
         };
         /**
          * List Lots
-         * @description Los lotes del usuario, del más antiguo al más nuevo. Los borrados no salen (restaurarlos es HU-204, P1).
+         * @description Los lotes del usuario, del más antiguo al más nuevo. Trae también los borrados hace menos de 30 días, con
+         *     `deleted_at` y `restorable_until`, para poder restaurarlos (HU-204); los de antes ya no salen.
          */
         get: operations["list_lots_api_v1_lots_get"];
         put?: never;
@@ -283,6 +284,28 @@ export interface paths {
         patch: operations["update_lot_api_v1_lots__lot_id__patch"];
         trace?: never;
     };
+    "/api/v1/lots/{lot_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Lot
+         * @description Restaura un lote borrado hace menos de 30 días, con las temporadas que se borraron con él (las que tienen su misma
+         *     hora de borrado); una que se había borrado antes, sola, sigue borrada (HU-204). Un lote ajeno, que no está borrado o
+         *     borrado hace 30 días o más: 404, como uno que no existe.
+         */
+        post: operations["restore_lot_api_v1_lots__lot_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/tickets": {
         parameters: {
             query?: never;
@@ -317,8 +340,9 @@ export interface paths {
         };
         /**
          * List Seasons
-         * @description El historial del lote: las temporadas sin borrar, de la siembra más reciente a la más antigua. Solo lee: sin
-         *     dataset se ve igual, con la etapa nula (R1), como en el detalle del lote.
+         * @description El historial del lote, de la siembra más reciente a la más antigua: las temporadas sin borrar y las borradas hace
+         *     menos de 30 días, con `deleted_at` y `restorable_until` para poder restaurarlas (HU-204). Solo lee: sin dataset se ve
+         *     igual, con la etapa nula (R1), como en el detalle del lote.
          */
         get: operations["list_seasons_api_v1_lots__lot_id__seasons_get"];
         put?: never;
@@ -345,7 +369,7 @@ export interface paths {
         post?: never;
         /**
          * Delete Season
-         * @description Borra la siembra: se marca y deja de verse; restaurarla durante 30 días es HU-204 (P1).
+         * @description Borra la siembra: se marca y deja de contar; se puede restaurar durante 30 días (HU-204).
          */
         delete: operations["delete_season_api_v1_seasons__season_id__delete"];
         options?: never;
@@ -356,6 +380,28 @@ export interface paths {
          *     se recalcula: es el que se vio ese día (R4).
          */
         patch: operations["update_season_api_v1_seasons__season_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/seasons/{season_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Season
+         * @description Restaura una siembra borrada hace menos de 30 días (HU-204). Valida lo mismo que registrarla: el cultivo, lo que
+         *     había antes y, si sigue en curso, que quepa en el área libre del lote (422 si ya no). Una ajena, de un lote borrado,
+         *     que no está borrada o borrada hace 30 días o más: 404, como una que no existe.
+         */
+        post: operations["restore_season_api_v1_seasons__season_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/diagnostics": {
@@ -1003,6 +1049,10 @@ export interface components {
             updated_at: string;
             /** Current Crop Ids */
             current_crop_ids: string[];
+            /** Deleted At */
+            deleted_at?: string | null;
+            /** Restorable Until */
+            restorable_until?: string | null;
         };
         /** LotOut */
         LotOut: {
@@ -1535,6 +1585,10 @@ export interface components {
             harvest_basis?: string | null;
             /** Harvest Due */
             harvest_due?: boolean | null;
+            /** Deleted At */
+            deleted_at?: string | null;
+            /** Restorable Until */
+            restorable_until?: string | null;
         };
         /**
          * SeasonPatch
@@ -2715,6 +2769,55 @@ export interface operations {
             };
         };
     };
+    restore_lot_api_v1_lots__lot_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     list_tickets_api_v1_me_tickets_get: {
         parameters: {
             query?: never;
@@ -2976,6 +3079,55 @@ export interface operations {
                 "application/json": components["schemas"]["SeasonPatch"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeasonOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    restore_season_api_v1_seasons__season_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                season_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
