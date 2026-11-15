@@ -11,14 +11,35 @@ export type SignalWeights = Schemas["SignalWeights"];
  * de clima llevan su nota: un riesgo grave cuenta siempre, aunque su peso sea 0 (`specs/01-reglas.md`).
  */
 export const PRIORITY_SIGNALS = [
-  { key: "water", label: "Agua", hint: "que la lluvia alcance", climate: true },
-  { key: "frost", label: "Heladas", hint: "que no hiele en lo sensible", climate: true },
-  { key: "heat", label: "Calor", hint: "que no haga más calor del que aguanta", climate: true },
-  { key: "soil", label: "Suelo", hint: "que el pH le sirva", climate: false },
-  { key: "supply", label: "Oferta", hint: "que no haya demasiado sembrado", climate: false },
-  { key: "market", label: "Mercado", hint: "que el precio suela estar bien", climate: false },
+  { key: "water", label: "Agua", hint: "que la lluvia alcance", climate: true, rated: true },
+  { key: "frost", label: "Heladas", hint: "que no hiele en lo sensible", climate: true, rated: true },
+  { key: "heat", label: "Calor", hint: "que no haga más calor del que aguanta", climate: true, rated: true },
+  { key: "soil", label: "Suelo", hint: "que el pH le sirva", climate: false, rated: true },
+  { key: "supply", label: "Oferta", hint: "que no haya demasiado sembrado", climate: false, rated: false },
+  { key: "market", label: "Mercado", hint: "que el precio suela estar bien", climate: false, rated: false },
 ] as const;
 export type PriorityKey = (typeof PRIORITY_SIGNALS)[number]["key"];
+
+/**
+ * Las señales que tienen control de prioridad. La oferta y el mercado se muestran sin calificar (decisión 17): su peso no
+ * cambia la luz (el del mercado tampoco ordena mientras no exista HU-240), y un control sin función no se dibuja. Sus
+ * pesos se siguen enviando completos a la API (el por defecto o el guardado), para no romper el contrato.
+ */
+export const RATED_PRIORITY_SIGNALS = PRIORITY_SIGNALS.filter((signal) => signal.rated);
+
+/**
+ * Los pesos que se envían a los cálculos (`/diagnostics` y `signal_priorities` de `/rotations`): los de la persona en
+ * las señales con control y, en la oferta y el mercado, siempre el de AgroSense mientras no tengan control (revisión de
+ * Haider del #175). Lo guardado no cambia: un peso viejo de esas dos se conserva en el perfil o el navegador, pero no
+ * llega al cálculo. Sin el criterio de AgroSense no hay con qué reemplazarlos y se envían como están.
+ */
+export function forCalculation(weights: SignalWeights | null, defaults: SignalWeights | null): SignalWeights | null {
+  if (!weights || !defaults) return weights;
+  const hidden = PRIORITY_SIGNALS.filter((signal) => !signal.rated).map(({ key }) => [key, defaults[key]]);
+  return { ...weights, ...Object.fromEntries(hidden) } as SignalWeights;
+}
+
+export const UNRATED_PRIORITIES_NOTE = "La oferta y el mercado se muestran sin calificar y no cambian la luz: por eso no tienen prioridad.";
 
 export const PRIORITIES_HINT = "0: no cambia la luz, salvo un riesgo grave de clima. 4 o 5: un resultado medio cuenta como desfavorable.";
 
@@ -92,8 +113,10 @@ export function useSignalPriorities() {
   };
 
   return {
-    /** Los pesos con que se consulta; nulos si el criterio de AgroSense no cargó (la API usa los suyos). */
+    /** Los pesos de la persona (o los de AgroSense), los que muestran los controles y se guardan. */
     value,
+    /** Los pesos con que se consulta: `value` con la oferta y el mercado del criterio de AgroSense. Nulos si no cargó (la API usa los suyos). */
+    request: forCalculation(value, defaults),
     defaults,
     ready,
     /** Si son las de la persona y no las de AgroSense. */

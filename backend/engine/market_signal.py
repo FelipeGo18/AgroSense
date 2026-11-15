@@ -128,3 +128,13 @@ def _history_reason(history: PriceHistory, crop_name: str, product_name: str | N
 def _short(market: str) -> str:
     """El nombre corto de la central, como en los botones de la web: «Corabastos (Bogotá)» → «Corabastos»."""
     return market.split(" (", 1)[0]
+
+
+def harvest_years_share(history: PriceHistory | None) -> float | None:
+    """El porcentaje de años en que el mes de la cosecha tuvo mejor precio que el resto de su año: 100 × `years_above` /
+    `years` (HU-241, decisión 17), el ingreso de un ciclo en las estrategias. Nulo sin historia, sin los años contados o
+    sin años (R1). Los años se cuentan sin redondear, como en la señal: un año igual al promedio no está en `years_above`.
+    Es una frecuencia, como la de las heladas: no usa ningún corte y no dice cuánto se va a ganar (decisión 4)."""
+    if history is None or history.years_above is None or history.years <= 0:
+        return None
+    return 100 * history.years_above / history.years

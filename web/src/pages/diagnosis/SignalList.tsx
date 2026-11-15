@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SoilDetails, type SoilContext } from "@/components/soil/SoilDetails";
 import { EstimateLabel } from "@/components/ui/Labels";
 import { Plate } from "@/components/ui/Plate";
 import { signalTone } from "@/components/ui/SignalCard";
@@ -7,18 +8,16 @@ import { StatusIcon, TONE_STYLE } from "@/components/ui/StatusMark";
 import { countsAlways, notCounted } from "@/features/diagnosis/lights";
 import {
   SIGNAL_NAME,
-  SOIL_ESTIMATE,
   formatValue,
   indicatorName,
   irrigationNote,
   isGrave,
   isP0,
   orderedSignals,
-  phRange,
   sourceName,
   sourceNote,
   supplyNote,
-  type MunicipalitySoil,
+  type PriceHistory as PriceHistoryData,
   type Signal,
   type SourceValue,
   type SupplySemester,
@@ -33,7 +32,7 @@ export interface SignalListProps {
   /** Los pesos con que se calculó la luz de quien consulta (`weights`), para «Cuenta siempre: riesgo grave» (HU-203). */
   weights?: Partial<Record<string, number>> | null;
   supplySemester: SupplySemester | null | undefined;
-  soil: MunicipalitySoil | undefined;
+  soilContext: SoilContext;
   version: Version | undefined;
   /** La gráfica de la lluvia de la ventana año por año, dentro de la señal de agua (HU-093). */
   waterChart?: ReactNode;
@@ -44,7 +43,7 @@ export interface SignalListProps {
  * forma y texto, su calificación de 0 a 100 (sin barra si no la tiene, R1), sus razones y, cuando trae varias fuentes,
  * todas juntas con la que calculó la señal marcada (R8). Nunca un valor combinado.
  */
-export function SignalList({ signals, limiting, irrigated, weights, supplySemester, soil, version, waterChart }: SignalListProps) {
+export function SignalList({ signals, limiting, irrigated, weights, supplySemester, soilContext, version, waterChart }: SignalListProps) {
   const list = orderedSignals(signals);
   if (list.length === 0) return null;
   return (
@@ -55,7 +54,7 @@ export function SignalList({ signals, limiting, irrigated, weights, supplySemest
           {/* Con riego, la señal dice cuánto riego haría falta: es un resultado de riego y lleva su rótulo (R10). */}
           {key === "water" && irrigated === true && <EstimateLabel />}
           {key === "supply" && <Note>{supplyNote(supplySemester)}</Note>}
-          {key === "soil" && <SoilNote soil={soil} />}
+          {key === "soil" && <SoilDetails {...soilContext} />}
           {signal.reasons.length > 0 && (
             <ul className="relative flex list-disc flex-col gap-1 pl-5">
               {signal.reasons.map((reason) => (
@@ -63,6 +62,7 @@ export function SignalList({ signals, limiting, irrigated, weights, supplySemest
               ))}
             </ul>
           )}
+          {key === "market" && signal.price_history && <PriceHistory history={signal.price_history} version={version} />}
           {key === "water" && waterChart}
           {signal.sources && signal.sources.length > 0 && <Sources sources={signal.sources} version={version} />}
         </SignalItem>
@@ -104,7 +104,8 @@ function SignalItem({
       {notCounted(signal) && <CountTag kind="not_counted" />}
       {always && <CountTag kind="always" />}
       <StatusBadge signal={signal} grave={isGrave(id, signal)} />
-      <Score score={signal.score} />
+      {/* «Sin calificar» (decisión 17) no tiene calificación: ni barra ni número, aunque llegara uno. */}
+      {signal.level != null && <Score score={signal.score} />}
       {children}
     </li>
   );
@@ -146,7 +147,10 @@ function CountTag({ kind }: { kind: "not_counted" | "always" }) {
   );
 }
 
-/** El estado con silueta, ícono y texto (W2): «Desfavorable» es un cuadrado; «Datos insuficientes», una línea punteada con «?»; «No aplica», un guion. */
+/**
+ * El estado con silueta, ícono y texto (W2): «Desfavorable» es un cuadrado; «Datos insuficientes», una línea punteada
+ * con «?»; «No aplica», un guion; «Sin calificar», tres barras sobre un borde liso, sin colores del semáforo.
+ */
 function StatusBadge({ signal, grave }: { signal: Signal; grave: boolean }) {
   const { tone, label } = signalTone({ ...signal, level: signal.level ?? null });
   const style = TONE_STYLE[tone];
@@ -180,19 +184,38 @@ function Score({ score }: { score: number | null | undefined }) {
   );
 }
 
-function Note({ children }: { children: ReactNode }) {
-  return <p className="relative text-[15px] leading-snug text-texto-secundario">{children}</p>;
-}
-
-/** El suelo lleva su rango y el rótulo de estimación (R10). Es el del municipio: el del lote llega con HU-182. */
-function SoilNote({ soil }: { soil: MunicipalitySoil | undefined }) {
-  const range = phRange(soil);
+/**
+ * De dónde sale la historia del precio del mercado (HU-073, decisión 17): la central (y si es la de ese cultivo), el
+ * periodo y la fuente, nombrada como las demás (`GET /version`). Lo que dice la historia (los años por encima y por
+ * debajo, y que no es un pronóstico) ya está en las razones: no se repite. Sin colores del semáforo: no califica.
+ */
+export function PriceHistory({ history, version }: { history: PriceHistoryData; version: Version | undefined }) {
+  const period =
+    history.first_year !== null && history.last_year !== null
+      ? history.first_year === history.last_year
+        ? `${history.first_year}`
+        : `${history.first_year}–${history.last_year}`
+      : null;
+  const note = sourceNote(history.source_id);
   return (
-    <div className="relative flex flex-col gap-1 border-2 border-dashed border-oscuro-cielo/60 bg-[#E6F0F5] px-3 py-2 text-[15px] leading-snug">
-      {range && <p className="font-bold">{range}, en el municipio.</p>}
-      <p>{SOIL_ESTIMATE}</p>
+    <div
+      data-price-history
+      className="relative flex min-w-0 flex-col gap-1 border-l-4 border-superficie-borde py-1 pl-3 text-[15px] leading-snug"
+    >
+      <p className="font-bold">Historia del precio</p>
+      <p>
+        Central: {history.market}
+        {history.market_basis === "crop_override" && " (la de este cultivo: la central de su departamento no lo publica)"}
+      </p>
+      {period && <p>Periodo: {period}.</p>}
+      <p className="text-texto-secundario">Fuente: {sourceName(history.source_id, version)}</p>
+      {note && <p className="text-texto-secundario">{note}</p>}
     </div>
   );
+}
+
+function Note({ children }: { children: ReactNode }) {
+  return <p className="relative text-[15px] leading-snug text-texto-secundario">{children}</p>;
 }
 
 /**

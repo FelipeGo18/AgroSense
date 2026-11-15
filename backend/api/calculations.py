@@ -10,6 +10,7 @@ Cuando llegue cada HU del motor, la ruta deja de responder 501 y devuelve su mod
 No guardan los datos de la finca ni quién consultó (R9): solo leen el dataset y, con `lot_id`, el lote.
 """
 
+import re
 import uuid
 from collections.abc import Mapping
 from dataclasses import asdict
@@ -110,14 +111,36 @@ def _check_sowing_date(sowing_date: date) -> None:
         )
 
 
+# El código oficial de la unidad territorial tiene 5 dígitos (DIVIPOLA en la región piloto).
+_PLACE_CODE = re.compile(r"^\d{5}$")
+# HU-094, aprobado por Felipe el 15 de noviembre de 2026: un código bien escrito que no está en la región del dataset es
+# «sin cobertura», no un error de quien consulta. La región sale del manifiesto, no de este texto (R7).
+OUTSIDE_REGION_MESSAGE = "AgroSense todavía no tiene datos de ese municipio: por ahora cubre {region}."
+
+
 def _check_place(dataset: Dataset, municipality_id: str) -> None:
-    if municipality_id not in dataset.municipalities:
+    if municipality_id in dataset.municipalities:
+        return
+    # En los cuerpos, `MunicipalityId` ya exige 5 dígitos; en los parámetros de consulta (`/changes`, `/trends`) ese
+    # patrón no se aplica, así que un código mal escrito llega aquí y sigue siendo `invalid_input` (revisión del #177).
+    if not _PLACE_CODE.fullmatch(municipality_id):
         raise ApiError(
             422,
             "invalid_input",
-            "Ese municipio no está entre los de la región de AgroSense.",
-            log=f"Cálculo rechazado: municipio fuera del catálogo del dataset {dataset.version}",
+            "Ese código de municipio no es válido.",
+            log="Cálculo rechazado: código de municipio con forma inválida",
         )
+    raise ApiError(
+        422,
+        "outside_region",
+        OUTSIDE_REGION_MESSAGE.format(region=_region_words(dataset)),
+        log=f"Cálculo rechazado: municipio fuera de la región del dataset {dataset.version}",
+    )
+
+
+def _region_words(dataset: Dataset) -> str:
+    """La región del manifiesto sin el país: «Boyacá y Cundinamarca, Colombia» → «Boyacá y Cundinamarca»."""
+    return str(dataset.region.get("name") or "la región piloto").split(",")[0].strip()
 
 
 def _check_crops(dataset: Dataset, crop_ids: list[str], only_crops: bool = False) -> None:
