@@ -103,14 +103,21 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 ### HU-083 · Explicar el orden de las estrategias
 
 - **Historia:** Como agricultor, quiero entender por qué una estrategia quedó arriba, para confiar en ella.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha (la ruta `/rotations` la llama con HU-084)
 - **Criterios de aceptación:**
-  - [ ] De 2 a 4 razones por estrategia, de plantillas fijas
-  - [ ] Cada razón cita una regla o un indicador que el motor evaluó (R5)
-  - [ ] Al menos una razón cita un criterio de salud del suelo (HU-212) cuando está disponible
-  - [ ] Con rotación actual (HU-223), al menos una razón dice en qué gana o pierde la estrategia frente a ella, con el criterio y la regla que lo explican
-  - [ ] Ninguna razón dice cuánto va a mejorar el suelo ni cuánto se va a cosechar: es una comparación entre estrategias según reglas (decisión 4)
+  - [x] De 2 a 4 razones por estrategia, de plantillas fijas
+  - [x] Cada razón cita una regla o un indicador que el motor evaluó (R5)
+  - [x] Al menos una razón cita un criterio de salud del suelo (HU-212) cuando está disponible
+  - [x] Con rotación actual (HU-223), al menos una razón dice en qué gana o pierde la estrategia frente a ella, con el criterio y la regla que lo explican
+  - [x] Ninguna razón dice cuánto va a mejorar el suelo ni cuánto se va a cosechar: es una comparación entre estrategias según reglas (decisión 4)
 - **Reglas que aplican:** R5, R8
+- **Notas:** Hecha el 15 de noviembre de 2026 en `backend/engine/rotations/reasons.py`, con cuatro plantillas fijas en este orden:
+  1. el criterio que más suma al total (calificación por prioridad) o, sin total, por qué no lo tiene; en `risk` se aclara que más alto es menos riesgo;
+  2. frente a la rotación actual, el criterio en que más gana o, si no gana en ninguno, en el que más pierde, dicho como comparación de calificaciones («califica 38 puntos más que el de su rotación actual»), nunca como «sale mejor», y con la regla de la que sale ese criterio;
+  3. el primer criterio de salud del suelo `favorable` o, sin ninguno, el primero con nivel, con la razón que da `soil_health` (y su nota de «criterio del equipo» si la regla es `criterio_equipo_2026`);
+  4. el factor que más limita, con la señal, el ciclo y la calificación de `risk`.
+
+  Una razón cuyo dato falta no se escribe (R1). Si quedan menos de dos, una sugerida agrega «Ninguna regla de rotación del catálogo la descarta», que es cierto de toda estrategia sugerida. **La rotación actual** (`kind = current`, decisión 14) empieza por «Es la rotación que usted viene haciendo: las demás se comparan contra ella», no se compara con ella misma y nunca lleva esa frase, porque en ella puede ser falsa (no se descarta aunque viole una regla: eso va en `issues`). La razón frente a la rotación actual lee `vs_current`, que calcula HU-223 (Juan Cárdenas): hasta que HU-223 lo calcule y HU-084 conecte `/rotations`, solo existe en las pruebas. Plantillas aprobadas por Haider el 15 de noviembre de 2026 (PR #150), en el registro.
 
 ### HU-084 · Endpoint de estrategias de rotación
 
