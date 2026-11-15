@@ -612,7 +612,7 @@
   "pages.policy.content.itIsStoredInACloudDatabase": "Se guardan en una base de datos en la nube y viajan cifrados entre AgroSense y esa base.",
   "pages.policy.content.supportCanViewYourPlotsToHelp": "Soporte puede ver sus lotes para ayudarle. Cada vez que lo hace queda escrito en «Mi actividad», donde usted lo puede ver.",
   "pages.policy.content.howLongItIsKeptAndHow": "Cuánto tiempo y cómo borrarlos",
-  "pages.policy.content.dataIsKeptWhileYouHaveAn": "Se guardan mientras tenga la cuenta. La actividad se borra sola a los 180 días.",
+  "pages.policy.content.dataIsKeptWhileYouHaveAn": "Se guardan mientras tenga la cuenta, también sus mensajes y nuestras respuestas. La actividad se borra sola a los 180 días.",
   "pages.policy.content.inMyAccountYouCanViewWhat": "En «Mi cuenta» puede ver lo que guardamos, cambiar su nombre y su usuario, y borrar su cuenta.",
   "pages.policy.content.deletingTheAccountDeletesEverythingUsernameSessions": "Borrar la cuenta lo borra todo: usuario, sesiones, lotes, siembras, reportes y actividad. No se puede deshacer.",
   "pages.policy.content.inYourBrowser": "En su navegador",
@@ -1166,5 +1166,12 @@
   "activity.field.irrigation": "riego",
   "activity.field.municipality": "municipio",
   "activity.field.crop": "cultivo",
-  "diagnosis.supply.preliminarySuffix": ", preliminar"
+  "diagnosis.supply.preliminarySuffix": ", preliminar",
+  "footer.journeyTour": "Del satélite a su finca",
+  "pages.policy.PolicyPage.writeToController": "Escribir al responsable",
+  "pages.policy.content.howToWriteToUs": "Cómo escribirnos",
+  "pages.policy.content.toAskWriteFromMyAccount": "Para preguntar qué datos suyos guardamos, pedir que los corrijamos o reportar un problema, escríbanos desde «Mi cuenta», en «Escribir al responsable». Ahí ve cómo va su mensaje.",
+  "pages.policy.content.weAnswerWithinDeadlines": "Le respondemos ahí mismo, en máximo 10 días hábiles si es una consulta y 15 si es un reclamo (Ley 1581 de 2012).",
+  "pages.policy.content.noAccountNothingKept": "Si nunca tuvo cuenta, no guardamos nada suyo: no hay datos suyos que pedir.",
+  "pages.policy.content.controllerAndPendingEmail": "El responsable de sus datos es el equipo RealE4Life. Un correo de contacto para quien no puede entrar a su cuenta o ya la borró está por definirse con la revisión legal."
 }

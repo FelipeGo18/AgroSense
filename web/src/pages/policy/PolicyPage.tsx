@@ -97,9 +97,14 @@ export function PolicyPage() {
         <p className="mt-8 max-w-[880px]">{t("pages.policy.PolicyPage.theReale4lifeTeamWhichDevelopsAgrosenseIs")}</p>
         <p className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
           {user ? (
-            <Link to={PATHS.account} className={`${LINK} inline-flex min-h-11 items-center`}>
-              {t("pages.policy.PolicyPage.goToMyAccount")}
-            </Link>
+            <>
+              <Link to={PATHS.account} className={`${LINK} inline-flex min-h-11 items-center`}>
+                {t("pages.policy.PolicyPage.goToMyAccount")}
+              </Link>
+              <Link to={PATHS.messages} className={`${LINK} inline-flex min-h-11 items-center`}>
+                {t("pages.policy.PolicyPage.writeToController")}
+              </Link>
+            </>
           ) : (
             <>
               <Link to={PATHS.signup} className={`${LINK} inline-flex min-h-11 items-center`}>

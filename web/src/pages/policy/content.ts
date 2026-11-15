@@ -7,8 +7,8 @@ import { t, locale } from "@/lib/i18n";
  * specs/02-contratos.md): aquí no se promete nada que el sistema no haga. Si cambia lo que se guarda, cambia este
  * texto y sube la versión del consentimiento.
  *
- * **Falta la revisión legal** (Ley 1581 de 2012 de Colombia, decisión 11) y el canal de contacto del responsable: la
- * página lo dice mientras `LEGAL_REVIEW_PENDING` sea verdadero.
+ * **Falta la revisión legal** (Ley 1581 de 2012 de Colombia, decisión 11): la página lo dice mientras
+ * `LEGAL_REVIEW_PENDING` sea verdadero. El canal de contacto es «Escribir al responsable» (`/mi-cuenta/escribirnos`, HU-163).
  */
 
 /** Mientras sea verdadero, la página avisa que el texto todavía no pasó por revisión legal. */
@@ -61,6 +61,15 @@ export const SECTIONS = (): { title: string; items: { mark: Mark; text: string }
         mark: "note",
         text: t("pages.policy.content.supportCanViewYourPlotsToHelp"),
       },
+    ],
+  },
+  {
+    title: t("pages.policy.content.howToWriteToUs"),
+    items: [
+      { mark: "note", text: t("pages.policy.content.toAskWriteFromMyAccount") },
+      { mark: "note", text: t("pages.policy.content.weAnswerWithinDeadlines") },
+      { mark: "note", text: t("pages.policy.content.noAccountNothingKept") },
+      { mark: "note", text: t("pages.policy.content.controllerAndPendingEmail") },
     ],
   },
   {

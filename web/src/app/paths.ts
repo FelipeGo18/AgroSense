@@ -16,6 +16,8 @@ export const PATHS = {
   harvest: (lotId: string, seasonId: string) => `/mi-finca/lotes/${lotId}/siembras/${seasonId}/cosechar` as const,
   editSeason: (lotId: string, seasonId: string) => `/mi-finca/lotes/${lotId}/siembras/${seasonId}/editar` as const,
   howItWorks: "/como-funciona",
+  /** Del satélite a su finca (HU-155): el recorrido en 3D, con su versión quieta en modo ligero. */
+  journeyTour: "/del-satelite-a-su-finca",
   /** «Qué cambió en su zona» (HU-219), con `?municipio=&cultivo=&riego=`. */
   changes: "/que-cambio",
   login: "/entrar",
@@ -23,6 +25,8 @@ export const PATHS = {
   account: "/mi-cuenta",
   password: "/mi-cuenta/contrasena",
   activity: "/mi-cuenta/actividad",
+  /** Escribir al responsable de los datos (HU-163): el canal de contacto de la política. */
+  messages: "/mi-cuenta/escribirnos",
   dataPolicy: "/politica-de-datos",
   prices: "/precios",
   // Páginas de prueba de la fase 0: no se enlazan desde la app; se entra escribiendo la dirección.

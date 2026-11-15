@@ -67,7 +67,7 @@ def test_los_64_pares_excluyen_exactamente_donde_la_tabla_dice_x():
     assert len(pares) == 64
     for anterior, siguiente in pares:
         esperado = MATRIZ[anterior][ORDEN.index(siguiente)] == "X"
-        motivos = rule_motives((siguiente,), [anterior], CULTIVOS, FILTROS)
+        motivos = rule_motives((siguiente,), [anterior], CULTIVOS, FILTROS, history_basis="declared")
         assert bool(motivos) == esperado, f"par {anterior} -> {siguiente}: la tabla dice {'X' if esperado else '.'}, el motor dio {motivos}"
         assert all(m.kind == "rule" and m.cycle == 1 for m in motivos), f"par {anterior} -> {siguiente}"
 
@@ -75,4 +75,4 @@ def test_los_64_pares_excluyen_exactamente_donde_la_tabla_dice_x():
 def test_la_matriz_tiene_las_x_que_se_esperan():
     """Control: sin esto, una tabla vacía de X haría pasar la prueba de arriba con un motor que nunca excluye."""
     assert sum(fila.count("X") for fila in MATRIZ.values()) == 11
-    assert sum(len(rule_motives((s,), [a], CULTIVOS, FILTROS)) > 0 for a in ORDEN for s in ORDEN) == 11
+    assert sum(len(rule_motives((s,), [a], CULTIVOS, FILTROS, history_basis="declared")) > 0 for a in ORDEN for s in ORDEN) == 11
