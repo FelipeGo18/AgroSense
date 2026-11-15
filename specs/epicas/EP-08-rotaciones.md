@@ -79,13 +79,13 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 - **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
 - **Criterios de aceptación:**
   - [ ] Puntaje de 0 a 100 por criterio (`water`, `soil`, `income`, `risk`) y total ponderado por `priorities` (un entero de 0 a 5 por criterio)
-  - [ ] Cada criterio sale de los ciclos con una regla documentada en `specs/01-reglas.md` («Estrategias de rotación»): `water` de las señales `water` de sus ciclos, `soil` de `soil_health` (HU-212), `income` de las señales `supply` y `market` de sus ciclos, y `risk` del factor que más limita entre sus ciclos
+  - [ ] Cada criterio sale de los ciclos con una regla documentada en `specs/01-reglas.md` («Estrategias de rotación»): `water` de las señales `water` de sus ciclos, `soil` de `soil_health` (HU-212), `income` de la señal `market` de sus ciclos (la oferta no se califica desde la decisión 17, propuesta el 15 de noviembre de 2026), y `risk` del factor que más limita entre sus ciclos
   - [ ] Un criterio sin datos tiene puntaje nulo, no entra al total y va a las limitaciones (R1); nunca se rellena
   - [ ] Devuelve hasta 10 estrategias; misma entrada, mismo orden; desempate determinista (R4)
   - [ ] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
 - **Reglas que aplican:** R1, R4, R5
 - **Contrato que toca:** `strategies[].scores`, `total_score` y `rank` de `POST /api/v1/rotations`
-- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213.
+- **Notas:** La oferta (`supply`) entraba a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista). Desde la decisión 17 (propuesta el 15 de noviembre de 2026, pendiente de aprobar) se muestra sin calificar y no entra: `income` sale solo del mercado. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213.
 
 ### HU-083 · Explicar el orden de las estrategias
 

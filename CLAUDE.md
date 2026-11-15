@@ -7,7 +7,7 @@ Herramienta web de apoyo a la decisión para agricultores (región piloto en Boy
 3. **Agua del plan:** cuánta agua necesitará cada ciclo y en qué meses la lluvia no alcanza (estimación).
 4. **Qué cambió:** cómo se movieron las heladas, la lluvia, el calor y las mejores ventanas entre dos periodos de la historia de la zona. Es historia comparada, nunca pronóstico.
 
-La oferta es valor agregado, no protagonista: es una de las seis señales y entra a las estrategias solo por el criterio de ingreso.
+La oferta es valor agregado, no protagonista: es una de las seis señales. Desde el 15 de noviembre de 2026 (decisión 17, pendiente de aprobar) se muestra sin calificar, y el mercado se califica con la anomalía estacional del precio; en las estrategias, el criterio de ingreso sale del mercado.
 
 Proyecto para el **NASA Space Apps Challenge 2026** (reto «Field Shift: Adapting Farms with NASA Data»; el texto oficial está en `specs/00-vision.md`). Equipo: RealE4Life. Hackatón: 14 y 15 de noviembre de 2026. Fase 0 (preparación): 10 de octubre al 13 de noviembre.
 

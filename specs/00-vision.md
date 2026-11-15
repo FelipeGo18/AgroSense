@@ -60,7 +60,7 @@ Una herramienta web, usable desde el celular, que con datos de la NASA, el suelo
 3. **Agua del plan:** cuánta agua necesitará cada ciclo, mes a mes, y en qué meses es probable regar o la lluvia no alcanza. Es una estimación (R10).
 4. **Qué cambió en su zona:** cómo cambiaron las heladas, la lluvia y el calor de cada mes entre dos periodos de la historia de la zona, y cómo se movieron las mejores fechas de siembra del cultivo. Es historia comparada, no un pronóstico.
 
-La oferta (cuánto se está sembrando en la zona) es un **valor agregado, no el protagonista**: es una de las seis señales, con su peso, y en las estrategias entra solo por el criterio de ingreso.
+La oferta (cuánto se está sembrando en la zona) es un **valor agregado, no el protagonista**: es una de las seis señales. Desde el 15 de noviembre de 2026 (decisión 17, pendiente de aprobar) se muestra sin calificar, porque ninguna fuente publica desde cuánto hay sobreoferta; en las estrategias, el criterio de ingreso sale del mercado.
 
 Casi nunca hay un mes perfecto, y cada cultivo dura distinto. Por eso la decisión se evalúa por ventana de siembra, no por periodos fijos del año. Las ventanas se ordenan primero por lo que más limita a cada una y después por lo que prefiere el agricultor. Es historia de la zona, no un pronóstico: decide el agricultor. El riesgo grave de clima (agua, helada o calor críticos) cuenta siempre, aunque el agricultor diga que no le importa.
 
@@ -91,7 +91,7 @@ Pequeños y medianos productores, y técnicos o asesores agropecuarios que los a
 | Heladas (`frost`) | Qué tan seguido ha helado en los meses en que el cultivo está en una etapa sensible | NASA POWER, corregida por altitud con NASADEM | `frost_freq_pct` |
 | Calor (`heat`) | Si suelen darse temperaturas máximas por encima de lo que el cultivo aguanta | NASA POWER, corregida por altitud; ficha del cultivo | `tmax_p90_c` frente a `heat_max_c` |
 | Suelo (`soil`) | Si el pH está en el rango del cultivo (estimación); la textura entra en la señal de agua y el carbono orgánico alimenta la salud del suelo de las estrategias | SoilGrids (ISRIC) | `ph` |
-| Oferta (`supply`) | Si en la zona se está sembrando mucho o poco de ese cultivo, según el semestre de EVA en que cae la siembra. Es valor agregado: una señal más, con su peso | EVA / UPRA en la región piloto; en P1, fuentes de contraste | `planted_change_pct`, `dept_share_pct` |
+| Oferta (`supply`) | Si en la zona se está sembrando mucho o poco de ese cultivo, según el semestre de EVA en que cae la siembra. Es valor agregado: se muestra y no se califica (decisión 17, propuesta) | EVA / UPRA en la región piloto; en P1, fuentes de contraste | `planted_change_pct`, `dept_share_pct` |
 | Mercado (`market`) | Si el precio suele estar bajo en el mes en que saldría la cosecha | SIPSA / DANE (entra: HU-003) | `seasonal_index` |
 
 En el P1 se suman tres señales: exceso de lluvia (`excess_rain`), enfermedades por clima con regla publicada (`disease`) y clima de cosecha (`harvest_weather`).
@@ -131,7 +131,7 @@ El impacto se presenta como **potencial**: la herramienta apoya decisiones, no g
 | Suelo | pH, carbono orgánico y textura de SoilGrids por municipio y por lote dibujado | Contraste con los estudios de suelos del IGAC |
 | Qué cambió | Dos periodos de la misma fuente, por mes: heladas, lluvia y temperatura máxima, y las mejores ventanas de cada periodo | Lluvia en años de El Niño y La Niña |
 | Agua | El agua del plan de cada ciclo: déficit mensual y volumen, en año normal y año seco | Finca temporal con varios cultivos; calendario de riego de la finca; aviso de riego semanal |
-| Oferta | EVA por municipio, cultivo y semestre, como una señal más y dentro del criterio de ingreso | Fuentes de contraste mostradas junto a EVA: FAOSTAT, reportes de portales y siembras registradas en AgroSense (solo totales, con al menos 5 cuentas) |
+| Oferta | EVA por municipio, cultivo y semestre, como una señal que se muestra sin calificar (decisión 17, propuesta) | Fuentes de contraste mostradas junto a EVA: FAOSTAT, reportes de portales y siembras registradas en AgroSense (solo totales, con al menos 5 cuentas) |
 | Mercado | Señal «datos insuficientes» con razón explícita, o SIPSA si se confirma a tiempo | SIPSA con índice estacional de precio por producto |
 | Selección de zona | Buscador de municipios | Mapa de la región coloreado por semáforo |
 | Calendario | No entra: las mejores ventanas están en el diagnóstico y en las estrategias | Calendario completo por mes y por semana, línea de tiempo y seguimiento de lo ya sembrado; etapa por temperatura acumulada |

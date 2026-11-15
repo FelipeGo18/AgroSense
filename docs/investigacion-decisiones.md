@@ -134,12 +134,49 @@ Decidido por Felipe. Explicación en la decisión 12 de `docs/decisiones.md`. Ma
 
 ## 5e. Los cortes de la señal de mercado: propuesta, no en uso (14 de noviembre de 2026)
 
-**Estado: propuesta, no en uso.** `market` sigue sin curva (`curve: null` en `thresholds.yaml` 1.0.0) y es `insufficient_data`.
+**Estado: propuesta, no en uso. La reemplaza la 5f (15 de noviembre de 2026).** `market` sigue sin curva (`curve: null` en `thresholds.yaml` 1.0.0) y es `insufficient_data`.
 
 - **Estacionalidad de la UPRA, descartada.** Para decidir qué índice estacional de precio es «precio bajo» (HU-073) se investigó la estacionalidad del precio de la papa que publica la UPRA. Se descartó como fuente de los cortes: es propia de la papa y de sus variedades, y no se generaliza a la arveja, la cebolla de bulbo ni la zanahoria, que también tienen precio en SIPSA.
 - **Cuantiles documentados.** El índice estacional de `market_price_season.parquet` (dataset 2026.11.12; 756 meses de 63 series producto-central, de todos los productos de SIPSA publicados y no solo de los cultivos del catálogo) tiene: P10 ≈ 0,82, P25 ≈ 0,91, P50 ≈ 1,00, P75 ≈ 1,08 y P90 ≈ 1,16.
 - **Curva propuesta**, para el día en que una fuente externa diga qué índice estacional es «precio bajo»: `[[0,85, 0], [0,91, 40], [1,0, 70], [1,15, 100]]`, con calificación crítica solo en 0 y `source_id = dane_sipsa`. Cada punto se anclaría a un cuantil: 1,0 → 70 (el precio promedio, ≈ P50), 0,91 → 40 (≈ P25), 0,85 → 0 (≥ P10) y 1,15 → 100 (≤ P90).
 - **Hoy no se usa.** `market` y `supply` no son protagonistas (decisión 12: valor agregado) y no cumplen el criterio de la regla del equipo del 11 de noviembre de 2026, citada por Felipe en la revisión del PR #72: un criterio del equipo se acepta solo si (a) es central para el producto y (b) cada número se apoya en un dato externo citado. Los cuantiles cumplen (b) pero no (a), y por eso Felipe rechazó la curva: decidir que el cuarto más barato es `unfavorable` sigue siendo un criterio propio sin fuente externa, y con la curva el precio podría mandar sobre el semáforo (rojo o `rotate`), justo lo que la decisión 12 quería evitar. Revisión de Felipe del PR #72, 14 de noviembre de 2026.
+
+## 5f. El mercado y la oferta con datos oficiales (15 de noviembre de 2026)
+
+**Estado: propuesta (decisión 17), pendiente de aprobar por Haider o Felipe.** Cada cita se verificó en su documento original el 15 de noviembre de 2026; los números salen de los datos publicados y de los microdatos del DANE.
+
+**El problema.** El mercado y la oferta eran `insufficient_data` siempre. Faltaban dos cosas: un corte con fuente para decir «precio bajo» o «mucho sembrado» (la curva por cuantiles de la 5e se rechazó), y una historia de precios larga. Los precios publicados eran los del servicio web de SIPSA, que empieza en febrero de 2020: daban 5 años completos (2021–2025), justo el mínimo, y la papa de Tunja ninguno, porque SIPSA dejó de publicarla allí en julio de 2021 (Boyacá vende en Tunja, `department_markets`).
+
+### Qué fuentes de cortes se buscaron
+
+- **FAO, Indicador de Anomalías de Precios (IFPA, ODS 2.c.1;** metadatos de la ONU, actualizados el 29 de julio de 2024). Mide cuántas desviaciones se aleja la tasa de crecimiento del precio de un mes de su promedio histórico. Sus cortes: menos de 0,5 desviaciones es normal; de 0,5 a menos de 1, «moderadamente alto»; desde 1, «anormalmente alto». Dice por qué usa 1: «Events that deviate by more than one standard deviation from their historical distribution have a low probability of occurring». Pide una serie mensual de al menos 5 años, sin más de 3 meses seguidos sin dato, y precios reales (sin inflación). **Se usa** para los dos cortes. Es para precios altos y sobre la tasa de crecimiento: aplicarlos en espejo al lado bajo y al índice estacional es una adaptación nuestra, y se dice.
+- **Texas A&M AgriLife Extension, *How to Construct a Seasonal Index* (E-314, RM2-6.0, noviembre de 2011; Welch, Waller, Amosson y Tierney).** El índice estacional es el precio del mes sobre una base del año. El patrón estacional de promedios «is often accompanied by a plotted confidence interval of plus or minus one standard deviation», que muestra qué tan confiable es el promedio como guía para un año dado. Cuando hay tendencia, recomienda la media móvil de 12 meses («the detrended moving average index is flatter»), y advierte que la estacionalidad «may merely reflect random effects» y que los fundamentales pueden romperla. **Se usa** para el método del índice, la media móvil y la desviación. La URL sigue viva y el PDF es idéntico, byte a byte, a la copia guardada.
+- **FAO-GIEWS, WFP-ALPS y FEWS NET:** alertas de precios altos para quien compra comida. Ninguna da un «precio bajo» para quien vende.
+- **UPRA, costos de producción:** levantamientos puntuales por región (la arveja, uno en 2024 en tres regiones; la papa, semestres de 2021 a 2023). Sus costos indirectos son combustibles, aceites y empaques: el arriendo de la tierra no entra, aunque el mismo boletín de la arveja dice que en la Sabana Occidente es alto. **No se usa:** «precio por debajo del costo» pediría una serie de costos de cada cultivo y región, con la tierra.
+- **UPRA, precios en primer mercado:** boletines en PDF desde mayo de 2024. **No se usa:** no hay serie.
+- **Boletín diario de Corabastos:** un PDF por día, sin archivo histórico ni metodología. **No se usa.**
+
+### La historia de precios: los microdatos del DANE
+
+- **Qué son:** SIPSA-P del DANE (catálogo 776, `DANE-DIMPE-SIPSA-P-2013-2024`; producido el 28 de marzo de 2025, modificado el 1 de abril de 2025). Precio mayorista promedio por kilo de cada producto, central y mes, de 2013 a 2024: 8 ZIP con CSV (más copias en Stata y SPSS), 666.873 filas. Son microdatos anonimizados de uso público y gratuito, con la cita textual del DANE. Todavía no hay 2025.
+- **Los formatos** cambian casi cada año (revisados archivo por archivo): Latin-1 hasta 2023 y UTF-8 con BOM en 2024; fecha `1/01/2019` hasta 2021 y `ene-22` desde 2022; la central en `Fuente` hasta 2019 y en `Mercado` desde 2020; el nombre de la columna del precio cambia, y desde 2022 trae espacios y punto de miles.
+- **¿Es la misma serie que los diarios?** En 2020–2024 hay 42 series (producto y central) en los dos. La diferencia mediana de cada serie es menor de 0,04 % y el 87 % de los meses cuadra a ±1 peso. Hay meses sueltos de hasta 7,9 %, todos de 2020 a 2022 (en diciembre de 2020 el servicio web tiene menos días); desde 2023 ninguno pasa de 0,06 %. No es «exactamente el mismo precio», pero sí la misma serie. El build lo comprueba con un tope de 1 % en la mediana de cada serie.
+- **La papa:** en los microdatos, «Papa parda pastusa» es la «Papa negra» del diario (0,02 %). La papa más parecida que no es la misma, la superior, ya da 4,9 %; las demás, de 12 % a 123 %. El tope de 1 % separa una serie equivocada.
+- **Cuántos años quedan** con la media móvil centrada (el primer año se pierde, porque sus primeros 6 meses no tienen media): papa, arveja, cebolla y zanahoria, 12 años (2014–2025) en Corabastos y en Tunja; papa en Tunja, 7 (2014–2020); haba, 10 en Corabastos y 8 en Tunja (2014–2023).
+
+### Qué da el método con esos datos
+
+Índice por mes en Corabastos (12 años): la papa sale baja de agosto a octubre (septiembre, 0,77; `z` ≈ −1,4: `unfavorable`); la arveja, de septiembre a noviembre; el haba, de septiembre a diciembre; la zanahoria, en noviembre. La cebolla casi no tiene estacionalidad: su desviación es grande y ningún mes sale `unfavorable`, en Corabastos ni en Tunja. Sin normalizar, los 12 índices promedian de 0,986 a 0,999, así que se normalizan para que 1 siga siendo un mes como cualquiera. Fuera de muestra, el patrón de 5 años se cumplió en buena parte en la zanahoria y la arveja (r de 0,37 a 0,78), poco en la cebolla, y en 2026 la papa fue contra el suyo (r = −0,81 de enero a octubre): por eso se dice siempre que es historia, no pronóstico.
+
+### La oferta
+
+- **Umbral de sobreoferta:** ninguno publicado. La UPRA escribe: «Los precios de la papa en Colombia son volátiles, presentan ciclicidad y estacionalidad, y están relacionados con los volúmenes que llegan a las centrales mayoristas. [...] después de un ciclo de precios altos, le siguen ciclos de precios bajos, con un comportamiento irregular e impredecible» (*Plan de Ordenamiento Productivo para la Cadena de la Papa en Colombia*, UPRA, 23 de septiembre de 2022, p. 74). Lo que mueve el precio es el volumen que llega a la central, no el área sembrada.
+- **EVA:** la ficha de la UPRA en datos.gov.co (base agrícola 2019–2025, licencia CC BY-SA 4.0) dice que es «una investigación que se realiza mediante un mecanismo subjetivo de recolección de información», que concilia registros administrativos «con el conocimiento de los funcionarios y los profesionales del sector». En los datos publicados, el 26 % de los casos (1.740 de 6.757) repite exacta el área del mismo semestre del año anterior, y el 32,5 % es preliminar: todo 2024 y 2025, es decir, el dato que usaría la señal.
+- **¿El área anticipa el precio?** Con 2019–2025 y el precio de Corabastos y Tunja a la cosecha (rezago de 4 a 6 meses según el cultivo), comparando la variación del área con la del precio frente al mismo semestre del año anterior: en arveja, cebolla y zanahoria no hay relación (r de −0,15 a 0,41, ninguna con p < 0,05). En la papa es negativa (r de −0,20 a −0,71 según el departamento y el rezago; una de 9 pruebas con p < 0,05, lo que se espera por azar), pero son 10 semestres y, en los tres casos más fuertes, área y precio se mueven en sentido contrario solo en 5 de 10; sin el primer semestre de 2025 la relación baja a entre −0,09 y −0,50. No da para un corte.
+
+### Qué se decidió
+
+El mercado se califica con la anomalía estacional y los cortes del IFPA; la historia sale de los microdatos más los diarios (HU-238); la oferta se muestra sin calificar. Detalle en la decisión 17 y en `specs/01-reglas.md` («La oferta y el mercado, con datos oficiales»). Los análisis de soporte (scripts y salidas) no están en el repositorio; los números de esta sección se pueden rehacer con los datos publicados y los microdatos.
 
 ## 6. Fuentes
 
@@ -160,3 +197,9 @@ Decidido por Felipe. Explicación en la decisión 12 de `docs/decisiones.md`. Ma
 - [SMAP L4 (NSIDC)](https://nsidc.org/data/spl4smgp/versions/2) y [SMAP L4 en AppEEARS](https://www.earthdata.nasa.gov/data/alerts-outages/new-versions-smap-level-4-products-now-available-appeears)
 - [Seguro agropecuario: coberturas por heladas y temperatura (Agronegocios)](https://www.agronegocios.co/agricultura/coberturas-del-seguro-agropecuario-en-colombia-para-productores-por-heladas-y-altas-temperaturas-2949966)
 - [Días aptos para labores según lluvia y humedad (Redalyc)](https://www.redalyc.org/pdf/4457/445744116017.pdf)
+- [FAO, IFPA: metadatos del indicador ODS 2.c.1](https://unstats.un.org/sdgs/metadata/files/Metadata-02-0c-01.pdf)
+- [Texas A&M AgriLife Extension, E-314: How to Construct a Seasonal Index](https://agecoext.tamu.edu/wp-content/uploads/2013/10/rm2-6.pdf)
+- [DANE, microdatos de SIPSA-P 2013–2024 (catálogo 776)](https://microdatos.dane.gov.co/index.php/catalog/776)
+- [UPRA, Plan de Ordenamiento Productivo para la Cadena de la Papa en Colombia (2022)](https://upra.gov.co/sites/default/files/2025-07/202201_POP_Cadena_Papa.pdf)
+- [UPRA, EVA 2019–2025, base agrícola (datos.gov.co)](https://www.datos.gov.co/Agricultura-y-Desarrollo-Rural/Evaluaciones-Agropecuarias-Municipales-EVA-2019-20/uejq-wxrr)
+- [UPRA, costos de producción de arveja, 2024](https://upra.gov.co/sites/default/files/2025-03/01_BolCostArv_20240925.pdf)

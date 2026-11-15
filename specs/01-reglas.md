@@ -77,7 +77,7 @@ Seis señales independientes en el P0 y tres más en el P1. Ninguna se promedia 
 - **La lluvia de `water`** sale de la fuente que define `sources.yaml` para la región: GPM IMERG (lluvia por satélite, desde 2000) cuando la región la tiene; si no, NASA POWER (reanálisis, desde 1981). Las dos se muestran juntas para contrastar y nunca se mezclan. «Respaldo» es una elección por región en `sources.yaml`, no un relleno por consulta: si la fuente elegida no tiene dato para un municipio, la señal es `insufficient_data` (R1). En la región piloto la lluvia es la de GPM IMERG, con NASA POWER para contrastar, y la señal lleva siempre el aviso de `rain_caveat`: en los valles del altiplano IMERG la sobrestima, cerca de 1,85 veces la del IDEAM (decidido por Felipe el 11 de noviembre de 2026, PR #44). La ET0 sale de NASA POWER por Penman-Monteith (FAO-56).
 - **La humedad del suelo** de la zona (la que modela NASA POWER y la de SMAP) se muestra junto a `water` para contrastar, cada una en su unidad. En el MVP no cambia la calificación.
 - **El verdor** (MODIS NDVI) no es una señal: muestra en qué épocas suele estar verde el campo de la zona, para contrastar las ventanas con lo que de verdad se siembra. No cambia la luz ni el orden.
-- **La oferta es valor agregado, no protagonista** (decisión 12): sigue siendo una de las seis señales, con su peso y sus reglas; en las estrategias de rotación entra solo por el criterio de ingreso.
+- **La oferta es valor agregado, no protagonista** (decisión 12). Desde el 15 de noviembre de 2026 se muestra y no se califica (decisión 17, pendiente de aprobar): sigue en la respuesta como una de las seis señales, pero nunca cambia la luz ni el orden, y en las estrategias el criterio de ingreso sale solo del mercado.
 
 ## Cómo se califica cada señal
 
@@ -98,19 +98,24 @@ Qué mide cada curva:
 | `heat` | Temperatura máxima que se supera uno de cada diez días (p90), la más alta entre los meses sensibles con dato (el peor mes, no el promedio) | Ficha (`temp_opt_max_c`, `heat_max_c`: 100 en el óptimo alto, 0 en el máximo; sin límite inferior) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
 | `supply` | No se califica en el MVP: se muestra el área sembrada de EVA y su variación | — |
-| `market` | Anomalía estacional del precio en el mes de cosecha: `z = (índice − 1) / σ` (ver abajo) | Cortes publicados de σ (`thresholds.yaml`) |
+| `market` | Anomalía estacional del precio en el mes de cosecha: `z = (índice − 1) / σ` (ver abajo) | Cortes de 0,5 σ y 1 σ del IFPA de la FAO, en espejo (`thresholds.yaml`) |
 
 ### La oferta y el mercado, con datos oficiales
 
-Decidido el 15 de noviembre de 2026 (decidido por David el 15 de noviembre de 2026; como cambia la regla y el contrato, pendiente de aprobar por Haider o Felipe; `docs/registro-de-decisiones.md`). Se buscaron umbrales publicados y se analizaron los datos oficiales antes de decidir:
+Propuesto el 15 de noviembre de 2026 (decidido por David; cambia la regla y el contrato, pendiente de aprobar por Haider o Felipe; decisión 17 de `docs/decisiones.md`). Antes de decidir se buscaron umbrales publicados y se analizaron los datos oficiales; la investigación, con cada cita verificada en su documento, está en `docs/investigacion-decisiones.md` (5f).
 
-- **Mercado: se califica con la anomalía estacional del mes de cosecha.** Los precios son los mayoristas mensuales de SIPSA (DANE, proceso estadístico certificado): los microdatos 2013–2024 y el boletín diario desde 2025, una sola serie (HU-238). Para cada producto y central, el índice de cada mes es su precio sobre la **media móvil centrada de 12 meses** (quita la tendencia y la inflación), promediado entre años completos; `σ` es la desviación estándar de ese cociente entre años. `z = (índice − 1) / σ`.
-  - `unfavorable` si `z ≤ −1`: la banda de ±1 desviación del índice queda entera bajo 1, es decir, el mes estuvo bajo lo normal incluso en sus años buenos (banda de confiabilidad del índice estacional, Texas A&M E-314).
-  - `moderate` si `−1 < z ≤ −0,5`: el corte de 0,5 desviaciones del Indicador de Anomalías de Precios de la FAO (IFPA, ODS 2.c.1), que la FAO define para precios altos; usarlo para el lado bajo es una adaptación nuestra y se dice.
-  - `favorable` si `z > −0,5`. La calificación es la recta que lleva esos dos cortes a los de nivel (70 y 40): 100 en `z = 0` y 0 en `z = −5/3`; no agrega números propios.
-  - **Nunca es crítica:** ninguna fuente da un «riesgo grave» de precio. Menos de 5 años completos (el mínimo de la FAO): `insufficient_data` (R1). La central es la de `department_markets`; nunca se cambia por otra en silencio.
-  - Son precios **mayoristas**, no en finca, y es **historia, no pronóstico**: la estacionalidad puede deberse al azar o romperse en un año (en 2026 la papa invirtió su patrón tras la crisis de 2025). La razón dice el mes, la central y en cuántos de N años ese mes estuvo bajo lo normal.
-- **Oferta: se muestra y no se califica.** Ninguna entidad publica un umbral de sobreoferta (UPRA: el ciclo de precios de la papa es «irregular e impredecible», Plan de Ordenamiento Productivo), EVA se recoge por consenso municipal y una cuarta parte de sus valores se repiten del año anterior, y con los datos de 2019–2025 no se encontró relación entre el área sembrada y el precio a la cosecha. La señal es `insufficient_data` (no cuenta para la luz ni para el orden) y muestra el área sembrada de EVA del semestre de la siembra, su variación frente al mismo semestre del año anterior (el indicador de los boletines de la UPRA) y si es preliminar. El criterio de ingreso de las estrategias sale entonces del mercado.
+- **Mercado: se califica con la anomalía estacional del mes de cosecha.**
+  - **Los precios** son los mayoristas mensuales de SIPSA (DANE): los microdatos de 2013 a 2024 y, desde 2025, el promedio mensual de los precios diarios. Es una sola serie, comprobada en los meses en que las dos se cruzan (HU-238).
+  - **El índice** sigue el método de Texas A&M (E-314, Welch et al., 2011), con la media móvil que recomienda cuando el precio tiene tendencia: para cada producto y central, el precio de cada mes se divide entre la **media móvil centrada de 12 meses**, que quita la tendencia y la inflación. `seasonal_index` es el promedio de ese cociente en los años completos y `seasonal_sd` su desviación estándar entre esos años; la E-314 acompaña el patrón estacional con la banda de ±1 desviación para mostrar qué tan confiable es. `z = (seasonal_index − 1) / seasonal_sd` dice cuántas desviaciones queda el mes por debajo (o por encima) de un mes normal.
+  - **Los cortes** son los del Indicador de Anomalías de Precios de la FAO (IFPA, ODS 2.c.1): menos de 0,5 desviaciones es normal, de 0,5 a 1 es «moderadamente alto» y desde 1 es «anormalmente alto». La FAO los define para precios altos y sobre la tasa de crecimiento del precio; aplicarlos en espejo al lado bajo y al índice estacional es una adaptación nuestra, y se dice.
+  - **La calificación** es la recta que lleva esos cortes a los de nivel: `z = −0,5` da 70 y `z = −1` da 40 (100 desde `z = 0` y 0 desde `z = −5/3`); no agrega números propios. Como en todas las señales, el nivel sale de la calificación (HU-196): `favorable` con `z ≥ −0,5`, `moderate` con `−1 ≤ z < −0,5` y `unfavorable` con `z < −1`, es decir, cuando hasta el borde alto de la banda de ±1 desviación queda bajo un mes normal.
+  - **Nunca es crítica:** ninguna fuente da un «riesgo grave» de precio. Con menos de 5 años completos (el mínimo del IFPA) es `insufficient_data` (R1). La central es la de `department_markets`; nunca se cambia por otra en silencio.
+  - **Lo que se dice siempre:** son precios mayoristas, no en finca, y es historia, no pronóstico. La misma E-314 lo advierte: la estacionalidad puede ser azar, y los fundamentales del mercado pueden romperla en un año (de enero a octubre de 2026 la papa en Corabastos fue contra su patrón). La razón dice el mes, la central, en cuántos de los años ese mes estuvo por debajo de lo normal (`years_below`) y el periodo.
+- **Oferta: se muestra y no se califica.**
+  - **Ninguna entidad publica un umbral de sobreoferta.** La UPRA escribe que a los precios altos de la papa «le siguen ciclos de precios bajos, con un comportamiento irregular e impredecible», y que los precios «están relacionados con los volúmenes que llegan a las centrales mayoristas», no con el área sembrada (Plan de Ordenamiento Productivo para la Cadena de la Papa, 2022, p. 74).
+  - **EVA no da para un corte:** es «un mecanismo subjetivo de recolección» que concilia registros administrativos con el conocimiento de los funcionarios (ficha de la UPRA en datos.gov.co); en el 26 % de los casos el área repite exacta la del mismo semestre del año anterior, y el último dato (2024 y 2025) es siempre preliminar.
+  - **El área no anticipa el precio de forma medible.** Con 2019–2025, en arveja, cebolla y zanahoria no hay relación entre la variación del área y la del precio a la cosecha (r de −0,15 a 0,41, ninguna con p < 0,05). En la papa la relación es negativa (r de −0,20 a −0,71 según el departamento y el rezago; una de las 9 pruebas con p < 0,05), pero son 10 semestres y, en los tres casos más fuertes, área y precio se mueven en sentido contrario solo en 5 de 10, y sin el primer semestre de 2025 la relación baja a entre −0,09 y −0,50.
+  - La señal es `insufficient_data` (no cuenta para la luz ni para el orden) y muestra el área sembrada de EVA del semestre de la siembra, su variación frente al mismo semestre del año anterior (el indicador de los boletines de la UPRA) y si es preliminar. El criterio de ingreso de las estrategias sale solo del mercado.
 
 Los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana.
 
@@ -138,7 +143,7 @@ Cada señal tiene un **peso de 0 a 5**. AgroSense propone un peso por defecto pa
 Los umbrales viven en configuración versionada (`backend/config/`). Las reglas se aplican en orden sobre **una** ventana, con los pesos de quien consulta (y otra vez con los pesos por defecto):
 
 0. Si el cultivo no es apto para la zona, la luz es `red` y la acción es `rotate`. No se evalúa nada más.
-1. Si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción es `review_data`. Si `supply` no está disponible, se calcula sin ella, como si su peso fuera 0: no cuenta para la luz ni para el orden de las ventanas, se muestra «sin datos» y se agrega a las limitaciones.
+1. Si `water` cuenta y no está disponible, la luz es `not_evaluable` y la acción es `review_data`. Si `supply` no está disponible, se calcula sin ella, como si su peso fuera 0: no cuenta para la luz ni para el orden de las ventanas, se muestra «sin datos» y se agrega a las limitaciones. Desde el 15 de noviembre de 2026 (decisión 17, pendiente de aprobar) la oferta se muestra y no se califica, así que siempre se calcula así.
 2. Si alguna señal que cuenta es `unfavorable` y crítica, o dos señales que cuentan son `unfavorable`, la luz es `red`.
 3. Si al menos una señal que cuenta califica, ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
    - Sin ninguna señal que cuente y califique (por ejemplo, con peso solo en la oferta y el mercado, sin datos), la luz es `yellow` y la acción `other_window`, con una razón que lo explica: no hay evidencia de riesgo ni de que la ventana sea buena (R5; HU-074, aprobado por Felipe el 14 de noviembre de 2026, `docs/registro-de-decisiones.md`).
@@ -156,6 +161,7 @@ Acción según la luz:
 | `red` | `other_window` si todas las señales desfavorables son de clima (`water`, `frost`, `heat`, `excess_rain`); `rotate` si alguna es `soil`, `supply` o `market`, o si el cultivo no es apto |
 | `not_evaluable` | `review_data` |
 
+- Mientras la oferta no se califique (decisión 17), `supply` nunca es `unfavorable`: el `rotate` por una señal que no es de clima sale del suelo o del mercado.
 - Con `other_window`, la respuesta trae las mejores ventanas de los próximos doce meses, para que el agricultor vea cuándo sí.
 - Con `rotate`, en el MVP la web lleva a las estrategias de rotación. En P1 (HU-197), la respuesta trae además `alternatives`: hasta tres cultivos aptos para la zona que en esa ventana salen bien en clima y tienen mejor oferta, con su razón. Nunca se sugiere un cultivo que no es apto o que sale mal en clima.
 - La tabla de acciones mira solo las señales que cuentan con los pesos de esa luz. Con peso 4 o 5, un `moderate` cuenta como `unfavorable` también para la tabla de acciones: las «desfavorables» de la tabla son las que cuentan como desfavorables para esa luz. Nunca para el factor limitante ni para el alto riesgo (HU-074; aprobado por Felipe el 14 de noviembre de 2026, `docs/registro-de-decisiones.md`).
@@ -189,7 +195,7 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 2. Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores del terreno y el primer ciclo. Los cultivos anteriores son los `previous_crop_ids` si llegan; si llegan vacíos y hay rotación actual (`current_crop_ids`), esa rotación repetida hacia atrás, para todas las estrategias; sin ninguna, no hay cultivos anteriores. Una regla violada **excluye** la estrategia, con su motivo (R3).
 3. Un ciclo con un cultivo que no es apto para la zona excluye la estrategia. Un ciclo cuya ventana es de alto riesgo por clima (`water`, `frost` o `heat` desfavorable y crítica) también: ningún otro criterio lo compensa (R2).
 4. Un cultivo cuyo pH tolerado queda fuera de todo el intervalo estimado del suelo excluye la estrategia.
-5. La oferta y el mercado nunca excluyen: bajan el criterio de ingreso.
+5. La oferta y el mercado nunca excluyen. El mercado baja el criterio de ingreso; la oferta, que no se califica (decisión 17), no entra.
 6. Cada ciclo se revisa con el **mismo cálculo del diagnóstico de ventana**: sus seis señales, sus dos luces y su factor limitante. El descanso no tiene diagnóstico.
 
 **La rotación actual (decisión 14).** La rotación que el agricultor viene haciendo (`current_crop_ids`) entra como **estrategia de referencia** (`kind = current`). El reto pide comparar al menos tres estrategias, incluida la actual.
@@ -206,13 +212,13 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 |---|---|
 | `water` (agua) | El promedio de la calificación de la señal `water` de sus ciclos con diagnóstico |
 | `soil` (suelo) | Los cinco criterios de salud del suelo: `favorable` vale 100, `moderate` 50 y `unfavorable` 0; el criterio es su promedio entre los disponibles |
-| `income` (ingreso) | El promedio, ciclo por ciclo, de la calificación de `supply` y de `market` que tengan dato; un abono verde o un descanso no deja cosecha y vale 0. Es el único lugar donde la oferta entra a las estrategias |
+| `income` (ingreso) | El promedio, ciclo por ciclo, de la calificación de `market` cuando tenga dato; un abono verde o un descanso no deja cosecha y vale 0. La oferta no entra: no se califica (decisión 17, 15 de noviembre de 2026, pendiente de aprobar; antes era el promedio de `supply` y `market`) |
 | `risk` (riesgo) | El factor que más limita entre todos sus ciclos: el menor `limiting_score` (ley del mínimo) |
 
 Decisión 15 (antes era un supuesto de HU-082):
 
 - `total_score` es el promedio de los criterios que califican, ponderado por las prioridades de la rotación. Con todas las prioridades de los criterios que califican en 0, la estrategia no tiene total y va al final.
-- Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). En `water` y `risk`, un ciclo sin dato no cuenta y se dice; si ninguno tiene, el criterio no califica. En `income`, un ciclo de cultivo sin oferta ni mercado no cuenta; si ningún ciclo de cultivo tiene, no califica.
+- Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). En `water` y `risk`, un ciclo sin dato no cuenta y se dice; si ninguno tiene, el criterio no califica. En `income`, un ciclo de cultivo sin mercado no cuenta; si ningún ciclo de cultivo tiene, no califica.
 - Hasta 10 estrategias. Empate de `total_score`: gana la de `risk` más alto y, si sigue el empate, la de `crop_ids` primero en orden alfabético (R4).
 - El ranking ordena estrategias ya filtradas: nunca rescata una excluida.
 

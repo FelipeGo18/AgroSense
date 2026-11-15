@@ -1,12 +1,12 @@
 # Flujo de decisión: un ejemplo paso a paso
 
-Caso ilustrativo (papa, siembra el 3 de agosto, Tunja, sin riego). El agricultor vende a un comprador fijo y le pone peso 0 a la oferta; le importa mucho el agua (peso 5). **Los números son de ejemplo, no son datos reales.** Tunja es de la región piloto, que es un supuesto hasta que el reto confirme la región (decisión 11). Las reglas completas están en `specs/01-reglas.md`.
+Caso ilustrativo (papa, siembra el 3 de agosto, Tunja, sin riego). El agricultor vende a un comprador fijo y le pone peso 0 al mercado y a la oferta; le importa mucho el agua (peso 5). **Los números son de ejemplo, no son datos reales.** Desde el 15 de noviembre de 2026 (decisión 17, propuesta) la oferta se muestra y no se califica, y el mercado se califica con la anomalía estacional del precio. Tunja es de la región piloto, que es un supuesto hasta que el reto confirme la región (decisión 11). Las reglas completas están en `specs/01-reglas.md`.
 
 Todo se evalúa sobre una **ventana de siembra**: de la fecha de siembra a la cosecha estimada de ese cultivo. Es historia de la zona, no un pronóstico.
 
 ```mermaid
 flowchart TD
-    A["Agricultor elige<br/>papa · siembra el 3 de agosto · Tunja · sin riego<br/>prioridades: agua 5 · oferta 0 · las demás 3"] --> B["API valida la petición<br/>(municipio, cultivo, fecha y pesos de 0 a 5)"]
+    A["Agricultor elige<br/>papa · siembra el 3 de agosto · Tunja · sin riego<br/>prioridades: agua 5 · oferta 0 · mercado 0 · las demás 3"] --> B["API valida la petición<br/>(municipio, cultivo, fecha y pesos de 0 a 5)"]
     B --> R0{"Regla 0 · Aptitud<br/>¿la altitud del municipio cae<br/>en el rango de la ficha?"}
     R0 -- "No es apto" --> N["Luz roja · rotar<br/>«este cultivo no se da en su zona»<br/>sin ventanas ni señales"]
     R0 -- "Sin rango con fuente" --> L0["Aptitud: datos insuficientes<br/>no bloquea, va a las limitaciones"]
@@ -16,17 +16,17 @@ flowchart TD
     W --> S2["Heladas · 58<br/>12 de cada 100 años<br/>en el llenado (diciembre)"]
     W --> S3["Calor · 94<br/>la máxima rara vez pasa<br/>de lo que aguanta la papa"]
     W --> S4["Suelo · 80<br/>pH dentro del rango"]
-    W --> S5["Oferta · 30<br/>área sembrada +35 %<br/>(EVA 2025 B, preliminar)"]
-    W --> S6["Mercado<br/>datos insuficientes"]
+    W --> S5["Oferta · se muestra, sin calificar<br/>área sembrada +4 %<br/>(EVA 2025 B, preliminar)"]
+    W --> S6["Mercado · 30<br/>precio bajo lo normal<br/>en el mes de cosecha"]
     S1 --> F["Reglas 1 a 5 del semáforo,<br/>dos veces: con los pesos del agricultor<br/>y con los de AgroSense"]
     S2 --> F
     S3 --> F
     S4 --> F
     S5 --> F
     S6 --> F
-    F --> G1["Con sus prioridades<br/>luz verde · sembrar<br/>(la oferta no cuenta)"]
-    F --> G2["Con el criterio de AgroSense<br/>luz amarilla · rotar<br/>(la oferta es desfavorable)"]
-    G2 --> ALT["Cultivos alternativos<br/>aptos, bien en clima y con mejor oferta<br/>(por ejemplo, haba)"]
+    F --> G1["Con sus prioridades<br/>luz verde · sembrar<br/>(el mercado no cuenta)"]
+    F --> G2["Con el criterio de AgroSense<br/>luz roja · rotar<br/>(helada moderada y mercado desfavorable)"]
+    G2 --> ALT["Estrategias de rotación<br/>(en P1, cultivos alternativos, HU-197)"]
     G1 --> I["La web muestra las dos luces,<br/>lo que más limita (heladas),<br/>las alternativas y las limitaciones.<br/>Decide el agricultor"]
     ALT --> I
     N --> I
@@ -83,15 +83,15 @@ Con `other_window` la respuesta trae las mejores ventanas; con `rotate`, hasta t
 
 ## Por qué salen dos luces
 
-0. La papa es apta para Tunja: la altitud del municipio cae dentro del rango de su ficha.
-1. Hay datos de agua y de oferta, así que el caso es evaluable.
+0. La papa es apta para Tunja: la temperatura media anual del municipio cae dentro del rango de su ficha (decisión 13).
+1. Hay datos de agua, así que el caso es evaluable.
 2. El agua califica 86 (favorable), el calor 94 y el suelo 80 (favorables). Las heladas califican 58: moderadas, no desfavorables, y no críticas.
-3. La oferta califica 30: desfavorable, pero no crítica. En el último dato del semestre B de EVA se sembró mucho más que antes.
-4. El mercado no tiene datos: no cambia la luz, pero va a las limitaciones.
-5. **Con el criterio de AgroSense** (todos los pesos mayores que 0): hay una señal desfavorable que no es crítica, así que aplica la regla 4: amarillo. Como la desfavorable es la oferta, cambiar de fecha no la arregla: la acción es `rotate`, y la respuesta sugiere cultivos aptos que en esa ventana salen bien en clima y tienen mejor oferta.
-6. **Con sus prioridades** (oferta en 0): la oferta no cuenta. El agua es favorable y ninguna señal que cuenta es desfavorable: regla 3, verde y `sow`.
+3. El mercado califica 30: desfavorable, pero nunca crítico. En los años de la historia, el precio mayorista del mes de cosecha suele estar por debajo de lo normal.
+4. La oferta se muestra (el área sembrada de EVA del semestre B, preliminar) y no se califica: no cambia la luz.
+5. **Con el criterio de AgroSense** (los pesos de `weights.yaml`; la helada pesa 4): la helada moderada cuenta como desfavorable y el mercado es desfavorable: dos desfavorables, regla 2, rojo. Como una de ellas es el mercado, cambiar de fecha no lo arregla: la acción es `rotate`, y la web lleva a las estrategias de rotación.
+6. **Con sus prioridades** (mercado en 0): el mercado no cuenta. El agua es favorable y ninguna señal que cuenta es desfavorable: regla 3, verde y `sow`.
 7. Lo que más limita la ventana entre las señales que cuentan son las heladas (58). La web lo marca.
-8. La web muestra las dos luces, la oferta con el rótulo «No cuenta para la luz con sus prioridades» y las alternativas. La decisión es del agricultor.
+8. La web muestra las dos luces, el mercado con el rótulo «No cuenta para la luz con sus prioridades» y la oferta como dato. La decisión es del agricultor.
 
 ## Qué cambia en otros casos
 
@@ -104,10 +104,10 @@ Con `other_window` la respuesta trae las mejores ventanas; con `rotate`, hasta t
 | Falta de lluvia, sin riego | `water` desfavorable; si es crítica, luz `red` |
 | La misma falta de lluvia, con riego | `water` no es desfavorable por eso: la razón dice cuánto riego haría falta, como estimación |
 | El mismo cultivo y la misma lluvia, en un suelo arenoso | El suelo retiene menos agua: el déficit puede ser mayor y la calificación del agua, más baja |
-| Oferta con dos fuentes que no coinciden | Se ven juntas; la de `sources.yaml` calcula la señal y la otra va «para contrastar» |
+| Oferta con dos fuentes que no coinciden (P1) | Se ven juntas; la de `sources.yaml` es la que se usa y la otra va «para contrastar» |
 | Una ventana con el mejor promedio y una señal crítica | Se marca `high_risk`: va después de todas las que tienen calificación y no son de alto riesgo, y no entra en `best_windows` |
 | Sin datos de agua, cuando el agua cuenta | Luz `not_evaluable`, acción `review_data`. Con peso 0 en el agua, la luz no queda en `not_evaluable` |
-| Sin datos de oferta | Se calcula sin la oferta, como si su peso fuera 0; queda en las limitaciones |
+| Sin datos de oferta | La oferta no se califica: no cambia nada, y «sin datos de oferta» queda en las limitaciones |
 
 ## Cómo se ordenan las ventanas
 
