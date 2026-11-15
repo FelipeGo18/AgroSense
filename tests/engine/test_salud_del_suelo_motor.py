@@ -277,3 +277,13 @@ def test_pest_break_la_peor_vuelta_gana_aunque_sea_la_primera():
     c = _sh(("arveja", "maiz", "haba"), ["arveja"], rules=[LEGUMINOSA_VUELVE])["pest_break"]
     assert (c.status, c.level) == ("available", "unfavorable")
     assert LEGUMINOSA_VUELVE.reason_template.format(family="Leguminosae", cycles=0) in c.reasons[0]
+
+
+def test_nitrogen_el_descanso_no_es_un_dato_que_falta():
+    # El descanso trae `fixes_nitrogen` nulo en el catálogo porque no siembra nada: no fija nitrógeno y no es un dato que
+    # falte. papa -> descanso -> maiz, sin leguminosa, da `unfavorable` (no `insufficient_data`); con arveja, `favorable`.
+    assert CULTIVOS["descanso"].fixes_nitrogen is None
+    sin = _sh(("papa", "descanso", "maiz"))["nitrogen"]
+    assert (sin.status, sin.level) == ("available", "unfavorable")
+    con = _sh(("papa", "descanso", "arveja"))["nitrogen"]
+    assert (con.status, con.level) == ("available", "favorable")
