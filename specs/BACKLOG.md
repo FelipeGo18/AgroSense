@@ -74,7 +74,7 @@
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en revisión | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | hecha | Fechas de los ciclos y diagnóstico por ciclo con la misma función que `/diagnostics` (15 nov); los llama `/rotations` con HU-084 |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar estrategias por prioridades | P0 | M | hecha | Criterios, total y orden en el motor (15 nov); los llama `/rotations` con HU-084 |
-| [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden de las estrategias | P0 | S | pendiente | |
+| [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden de las estrategias | P0 | S | hecha | Razones de plantillas fijas en el motor (15 nov); la de la rotación actual lee `vs_current` de HU-223 |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-084 | Endpoint de estrategias de rotación | P0 | S | pendiente | Suma `current_crop_ids` (decisión 14) |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-223 | La rotación actual como referencia | P0 | M | pendiente | Nueva (8 nov, decisión 14): el reto pide comparar contra la actual |
 | [EP-09](epicas/EP-09-web-diagnostico.md) | HU-091 | Elegir municipio, cultivo y cuándo sembrar | P0 | M | hecha | En `/diagnostico`; la consulta va en la dirección; con lote, municipio y riego del lote (10 nov) |

@@ -79,6 +79,13 @@ def _score(signal: SignalScore | None) -> int | None:
     return signal.score
 
 
+def limiting_score(cycle: CycleScores) -> int | None:
+    """La calificación del factor que más limita que muestra el ciclo; nula sin diagnóstico o sin factor limitante."""
+    if cycle.signals is None or cycle.limiting_signal is None:
+        return None
+    return _score(cycle.signals.get(cycle.limiting_signal))
+
+
 def _mean(values: Sequence[float]) -> int | None:
     return round_half_up(sum(values) / len(values)) if values else None
 
@@ -106,7 +113,7 @@ def criteria(
                 limitations.append(_missing_cycle(number, "calificación de agua"))
             else:
                 water.append(score)
-            lowest = None if cycle.limiting_signal is None else _score(cycle.signals.get(cycle.limiting_signal))
+            lowest = limiting_score(cycle)
             if lowest is None:
                 limitations.append(_missing_cycle(number, "un factor limitante calificado"))
             else:
