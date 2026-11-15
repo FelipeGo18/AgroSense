@@ -69,6 +69,17 @@ class WindowMonth:
     stages: tuple[str, ...]
     periods: tuple[StagePeriod, ...]
 
+    @property
+    def main_stage(self) -> str | None:
+        """La etapa que ocupa la mayor parte del mes (contrato: `stage` de `/water-plans` y de «Mi cultivo» en
+        `/calendar`). Si dos empatan, la primera. Nula si el mes no tiene etapas."""
+        best, most = None, 0
+        for period in self.periods:
+            days = (period.end - period.start).days + 1
+            if days > most:
+                best, most = period.span.stage, days
+        return best
+
     def sensitive(self, risk: str) -> bool | None:
         """Si alguna de sus etapas es sensible a `risk`. Nulo si ninguna lo es y alguna no lo dice (R1)."""
         values = [period.span.sensitive(risk) for period in self.periods]
