@@ -174,6 +174,9 @@ def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
         (lambda d: crop(d, "papa").update(forage={"v": None}), "nulo y no dice por qué"),
         (lambda d: crop(d, "papa").update(forage={"v": "sí", "s": "feedipedia_pea_forage"}), "true, false o nulo"),
         (lambda d: crop(d, "descanso").update(forage={"v": True, "s": "feedipedia_oat_forage"}), "no lleva `forage`"),
+        # Una ficha de cultivo o de abono verde sin la clave `forage` no pasa en silencio.
+        (lambda d: crop(d, "papa").pop("forage"), "falta la clave `forage`"),
+        (lambda d: crop(d, "avena_vicia").pop("forage"), "falta la clave `forage`"),
     ],
 )
 def test_un_catalogo_que_no_cumple_no_se_publica(change, message):

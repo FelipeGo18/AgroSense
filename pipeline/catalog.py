@@ -133,9 +133,13 @@ def _check_fallow(crop_id: str, row: dict[str, Any], has_stages: bool) -> None:
         raise CatalogError(f"{crop_id}: `fallow_days` {days!r} debe ser un entero de días mayor que cero.")
 
 
-def _check_forage(crop_id: str, row: dict[str, Any]) -> None:
+def _check_forage(crop_id: str, row: dict[str, Any], crop: dict[str, Any]) -> None:
     """`forage` (HU-227, aprobado por Felipe el 15 de noviembre de 2026): `true` o `false` con su fuente (`_value` ya exige que
-    exista, R8), o nulo si no hay fuente (R1). Un descanso (`kind = fallow`) no lleva valor: no es un cultivo ni un abono verde."""
+    exista, R8), o nulo si no hay fuente (R1). Un descanso (`kind = fallow`) no lleva valor: no es un cultivo ni un abono verde.
+    Un cultivo o un abono verde lleva siempre la clave `forage` (con `v: null` y su porqué si no hay fuente): una ficha que
+    la omite no se publica en silencio (revisión de Haider del #161)."""
+    if row["kind"] != "fallow" and "forage" not in crop:
+        raise CatalogError(f"{crop_id}: falta la clave `forage` (use `v: null` con `n` si no hay fuente, R1).")
     value = row.get("forage")
     if value is None:
         return
@@ -185,7 +189,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             raise CatalogError(f"{crop_id}: `archetype` {row['archetype']!r} no es uno de los del contrato.")
         if row["article"] not in ARTICLES:
             raise CatalogError(f"{crop_id}: `article` {row['article']!r} debe ser uno de {sorted(ARTICLES)}.")
-        _check_forage(crop_id, row)
+        _check_forage(crop_id, row, crop)
         _check_ranges(crop_id, row)
         _check_root(crop_id, row)
         _check_fallow(crop_id, row, bool((crop.get("stages") or {}).get("list")))
