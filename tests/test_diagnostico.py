@@ -127,7 +127,7 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
     water = body["signals"]["water"]
     assert (water["status"], water["level"], water["score"], water["critical"]) == ("insufficient_data", None, None, False)
     assert water["reasons"] != [pending_reason("water")]
-    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.1.0"}
+    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.3.0"}
 
 
 def test_sin_prioridades_las_dos_luces_coinciden_con_los_pesos_por_defecto(examples):
@@ -564,3 +564,25 @@ def test_con_cookie_inventada_o_sesion_vencida_responde_401_sin_nada_del_lote(ex
     assert expired.status_code == 401
     assert lot_id not in expired.text and "El Alto" not in expired.text
     assert without_request_id(expired)["error"]["code"] == without_request_id(forged)["error"]["code"]
+
+
+def test_las_mejores_ventanas_reciben_el_precio_del_mes_de_cosecha(examples, monkeypatch):
+    """HU-240: cada ventana candidata lleva la historia del precio de su mes de cosecha (la de `signals.market`), para que
+    con peso 4 o 5 en `market` ordene dentro de la decena. La luz no cambia con ese peso (R2)."""
+    seen = []
+    real = calculations.order_windows
+
+    def spy(windows, weights):
+        windows = list(windows)
+        seen.append((windows, dict(weights)))
+        return real(windows, weights)
+
+    monkeypatch.setattr(calculations, "order_windows", spy)
+    client = TestClient(app)
+    body = diagnose(client, NOVEMBER, priorities={**NO_WATER, "market": 5})
+    windows, weights = seen[-1]
+    assert weights["market"] == 5
+    priced = [window for window in windows if window.harvest_price is not None]
+    assert priced, "los datos de ejemplo traen la historia del precio de la papa"
+    assert all(window.harvest_price.month == window.harvest_estimate.month for window in priced)
+    assert body["overall"]["light"] == diagnose(client, NOVEMBER, priorities=NO_WATER)["overall"]["light"]

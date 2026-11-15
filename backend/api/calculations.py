@@ -66,6 +66,7 @@ from backend.engine.changes import (
     Period,
     PeriodPair,
 )
+from backend.engine.market_signal import MarketSignalResult
 from backend.engine.signal_score import signal_scores
 from backend.engine.stages import crop_window, monthly_sowing_windows
 from backend.engine.suitability import NOT_SUITABLE
@@ -177,14 +178,13 @@ def _best_windows(
     """Hasta tres ventanas de los próximos doce meses, desde el mes en curso en la región, sin las de alto riesgo
     (HU-192). Cada una se califica con `window_signals`, el mismo cálculo de la ventana consultada (con el mismo riego
     y el mismo suelo: la textura del agua y la señal de suelo, que no cambia con la fecha)."""
-    windows = [
-        WindowSignals(
-            window.sowing_date,
-            window.harvest_estimate,
-            signal_scores(window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class, soil)),
-        )
-        for window in monthly_sowing_windows(dataset.stages.get(crop_id, []), region_today())
-    ]
+    windows = []
+    for window in monthly_sowing_windows(dataset.stages.get(crop_id, []), region_today()):
+        signals = window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class, soil)
+        # La historia del precio del mes de cosecha ordena dentro de la decena con peso 4 o 5 en `market` (HU-240).
+        market = signals.get("market")
+        harvest_price = market.price_history if isinstance(market, MarketSignalResult) else None
+        windows.append(WindowSignals(window.sowing_date, window.harvest_estimate, signal_scores(signals), harvest_price))
     return [WindowSummary.model_validate(ranked, from_attributes=True) for ranked in best_windows(order_windows(windows, weights))]
 
 
