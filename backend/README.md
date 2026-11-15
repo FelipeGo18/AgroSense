@@ -359,8 +359,11 @@ a ningún lado; borre las que ya no sirvan.
 Para recuperar una copia: descargue el archivo del workflow y descífrelo con la clave.
 
 ```bash
-gpg --decrypt agrosense_<fecha>_de-1.3_a-1.4.dump.gpg > copia.dump
+gpg --decrypt <base>_<fecha>_de-1.4_a-1.5.dump.gpg > copia.dump
 ```
+
+El nombre empieza por el de la base de datos de la cadena de conexión (hoy `postgres`), por ejemplo
+`postgres_20261115-135854_de-1.4_a-1.5.dump.gpg`.
 
 También se puede correr a mano desde *Actions* → *Migraciones* → *Run workflow*, sobre `desarrollo`.
 
