@@ -63,6 +63,15 @@ def test_los_ejemplos_cubren_cada_estado():
     assert any(month["tmax_p90_c"]["status"] == "insufficient_data" for month in ex.CHANGES["months"])
 
 
+def test_el_ejemplo_de_cambios_cubre_los_doce_meses_sin_ocultar_datos_insuficientes():
+    example = m.ChangesResponse.model_validate(ex.CHANGES)
+    assert [month.month for month in example.months] == list(range(1, 13))
+    assert example.months[0].tmax_p90_c.before is None
+    assert example.months[0].tmax_p90_c.after == 21.4
+    assert example.months[0].tmax_p90_c.change is None
+    assert "ejemplo" in example.versions.dataset
+
+
 def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     paths = app.openapi()["paths"]
     for path, method, codes in [
