@@ -19,22 +19,54 @@ se arma y se evalúa como cualquier estrategia. Armar `current_strategy` en la r
 """
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 
 from backend.engine.rotations.ranking import CRITERIA
 
 NO_CURRENT_LIMITATION = "Sin rotación actual: no hay una referencia para comparar las estrategias"
 
+TRUNCATED_LIMITATION = "Su rotación tiene {count} cultivos; con {cycles} ciclos se compararon {crops}"
+
 _VALID_CYCLES = (2, 3)
 
 
-def current_sequence(current_crop_ids: Sequence[str] | None, cycles: int) -> tuple[str, ...] | None:
+@dataclass(frozen=True)
+class CurrentSequence:
+    """Los cultivos comparados y si la rotación tenía más que `cycles` (se recortó)."""
+
+    crop_ids: tuple[str, ...]
+    truncated: bool
+
+
+def current_sequence(current_crop_ids: Sequence[str] | None, cycles: int) -> CurrentSequence | None:
     """La rotación actual con exactamente `cycles` cultivos, o `None` si no hay."""
     if cycles not in _VALID_CYCLES:
         raise ValueError(f"cycles debe ser 2 o 3, no {cycles!r}")
     if not current_crop_ids:
         return None
     crops = tuple(current_crop_ids)
-    return tuple(crops[i % len(crops)] for i in range(cycles))
+    return CurrentSequence(
+        crop_ids=tuple(crops[i % len(crops)] for i in range(cycles)),
+        truncated=len(crops) > cycles,
+    )
+
+
+def _join_spanish(names: Sequence[str]) -> str:
+    if len(names) <= 1:
+        return "".join(names)
+    return ", ".join(names[:-1]) + " y " + names[-1]
+
+
+def truncation_limitation(current_crop_ids: Sequence[str] | None, cycles: int, names: Mapping[str, str]) -> str | None:
+    """El aviso de que se recortó la rotación actual, o `None` si no se recortó (R5)."""
+    sequence = current_sequence(current_crop_ids, cycles)
+    if sequence is None or not sequence.truncated:
+        return None
+    return TRUNCATED_LIMITATION.format(
+        count=len(current_crop_ids or ()),
+        cycles=cycles,
+        crops=_join_spanish([names.get(crop_id, crop_id) for crop_id in sequence.crop_ids]),
+    )
 
 
 def drop_current(candidates: Sequence[Sequence[str]], current: Sequence[str] | None) -> tuple[tuple[str, ...], ...]:
