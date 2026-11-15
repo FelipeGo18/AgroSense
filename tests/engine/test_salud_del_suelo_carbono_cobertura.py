@@ -306,6 +306,48 @@ def test_carbono_sin_p05_o_sin_p95_dice_sin_su_rango_de_incertidumbre(suelo):
     assert CARBONO.reason_template.format(count=0, soc_level="bajo", soc_range="sin su rango de incertidumbre") in c.reasons[0]
 
 
+_CARBONO_LITERAL = (
+    "Ciclos de abono verde o descanso: 0. El carbono orgánico del suelo es bajo según una estimación de un mapa de 250 m "
+    "({rango}); un análisis de suelo de su lote es más preciso. No predice cuánto cambia el carbono del suelo. " + TEAM_NOTE
+)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="espera la plantilla de materia_organica_ciclos con {soc_range} sin la unidad (PR del catálogo con HU-063)",
+)
+def test_carbono_sin_rango_el_texto_literal_no_deja_g_kg_suelto():
+    c = _carbono(SEC3, SoilCarbon(20.0, None, None, "soilgrids"))
+    assert c.reasons == (_CARBONO_LITERAL.format(rango="sin su rango de incertidumbre"),)  # EJEMPLO (R5)
+
+
+def test_carbono_con_rango_el_texto_literal_es_el_que_lee_el_agricultor():
+    c = _carbono(SEC3, BAJO)  # EJEMPLO (R5): 20 g/kg, p05 3,84 y p95 141,2
+    assert c.reasons == (_CARBONO_LITERAL.format(rango="3,8 a 141,2 g/kg"),)
+
+
+# --- R1: un ciclo sin ficha o con una duración inválida no se adivina ---
+
+SIN_FICHA = ("papa", "inventado", "maiz")  # EJEMPLO (R5): `inventado` no está en el catálogo
+
+
+def test_un_ciclo_sin_ficha_deja_carbono_y_cobertura_en_insufficient_data():
+    r = _sh(SIN_FICHA, soil=BAJO, days=[165, 100, 180], gaps=[0, 0, None])
+    for nombre, regla in (("organic_carbon", "materia_organica_ciclos"), ("soil_cover", "suelo_cubierto")):
+        c = r[nombre]
+        assert (c.status, c.level) == ("insufficient_data", None)
+        assert c.reasons == (f"Falta la ficha de algún cultivo de la estrategia. {TEAM_NOTE}",)
+        assert c.rule_ids == (regla,) and c.source_ids == (TEAM_CRITERION,)
+    assert r["nitrogen"].status == "insufficient_data"
+
+
+@pytest.mark.parametrize("malo", [-100, 0, True, 1.5, None])
+def test_una_duracion_invalida_deja_soil_cover_en_insufficient_data(malo):
+    c = _cobertura(SEC3, [165, malo, 175])
+    assert (c.status, c.level) == ("insufficient_data", None)
+    assert c.reasons == (f"Falta la duración de algún ciclo de la estrategia. {TEAM_NOTE}",)
+
+
 # --- Que no se rompa el PR B, y determinismo (R4) ---
 
 

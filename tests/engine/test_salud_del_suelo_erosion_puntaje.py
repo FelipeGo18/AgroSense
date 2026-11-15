@@ -325,3 +325,42 @@ def test_hu212_las_razones_de_los_cinco_criterios_usan_coma_decimal_y_terminan_c
     for nombre, c in cr.items():
         assert all(r.endswith(f". {TEAM_NOTE}") for r in c.reasons), nombre
         assert not any(re.search(r"\d\.\d", r) for r in c.reasons), nombre  # coma decimal, nunca punto
+
+
+# --- R1: un ciclo sin ficha o con una duración inválida no se adivina ---
+
+SIN_FICHA = ("papa", "inventado", "maiz")  # EJEMPLO (R5): `inventado` no está en el catálogo
+
+
+def test_un_ciclo_sin_ficha_con_pendiente_de_20_es_insufficient_data():
+    c = _con([165, 100, 180], [0, 0, None], secuencia=SIN_FICHA)
+    assert (c.status, c.level) == ("insufficient_data", None)
+    assert c.reasons == (f"Falta la ficha de algún cultivo de la estrategia. {TEAM_NOTE}",)
+    assert c.rule_ids == ("erosion_pendiente",) and c.source_ids == (TEAM_CRITERION,)
+
+
+def test_un_ciclo_sin_ficha_con_pendiente_de_5_sigue_favorable():
+    c = _con([165, 100, 180], [0, 0, None], secuencia=SIN_FICHA, slope=SlopeInfo(5.0, "nasadem", "lot"))
+    assert (c.status, c.level) == ("available", "favorable")
+
+
+def test_un_ciclo_sin_ficha_deja_los_tres_criterios_en_insufficient_data():
+    r = soil_health(
+        SIN_FICHA, CULTIVOS, [], REGLAS, soil=BAJO, slope=EMPINADO, cycle_days=[165, 100, 180], gap_days=[0, 0, None], history_basis="none"
+    )
+    for nombre in ("organic_carbon", "soil_cover", "erosion"):
+        assert (r[nombre].status, r[nombre].level) == ("insufficient_data", None)
+
+
+@pytest.mark.parametrize("malo", [-100, 0, True, 1.5, None])
+def test_una_duracion_invalida_con_pendiente_es_insufficient_data_en_erosion(malo):
+    c = _con([165, malo, 180], [0, 0, None])
+    assert (c.status, c.level) == ("insufficient_data", None)
+    assert c.reasons == (f"{TEXTO_DURACION}. {TEAM_NOTE}",)
+
+
+def test_duraciones_negativas_que_sumarian_mucho_no_dan_favorable_en_cobertura():
+    r = soil_health(
+        ("papa", "maiz", "haba"), CULTIVOS, [], REGLAS, cycle_days=[165, -100, 175], gap_days=[0, 0, None], history_basis="none"
+    )
+    assert (r["soil_cover"].status, r["soil_cover"].level) == ("insufficient_data", None)

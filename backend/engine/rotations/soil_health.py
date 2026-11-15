@@ -198,6 +198,8 @@ def _organic_carbon(sequence: Sequence[str], crops: Mapping[str, SoilCrop], soil
     """Ciclos de abono verde o descanso (los residuos no cuentan) contra los cortes del carbono bajo o normal."""
     if soil is None or soil.soc_g_kg is None:
         return _no_data("Falta el carbono orgánico del suelo de la zona", rule)
+    if _missing_crop(sequence, crops):
+        return _no_data(NO_CROP_SHEET, rule)
     count = sum(1 for c in sequence if (crop := crops.get(c)) and crop.kind in ("cover", "fallow"))
     low = soil.soc_g_kg < rule.params["soc_low_g_kg"]
     level = level_from_cuts(count, rule.levels["low" if low else "normal"])
@@ -205,6 +207,26 @@ def _organic_carbon(sequence: Sequence[str], crops: Mapping[str, SoilCrop], soil
     soc_range = f"{_dec(soil.soc_p05)} a {_dec(soil.soc_p95)}" if has_range else "sin su rango de incertidumbre"
     reason = rule.reason_template.format(count=count, soc_level="bajo" if low else "normal", soc_range=soc_range)
     return Criterion("available", level, (_text(reason, rule),), (rule.rule_id,), (rule.source_id, soil.source_id))
+
+
+NO_CROP_SHEET = "Falta la ficha de algún cultivo de la estrategia"
+NO_CYCLE_DAYS = "Falta la duración de algún ciclo de la estrategia"
+
+
+def _missing_crop(sequence: Sequence[str], crops: Mapping[str, SoilCrop]) -> bool:
+    """Si algún `crop_id` de la estrategia no tiene ficha: no se sabe qué es el ciclo y no se cuenta como descubierto ni
+    como otra cosa (R1). `pest_break` y `nitrogen` ya lo tratan igual."""
+    return any(crops.get(crop_id) is None for crop_id in sequence)
+
+
+def valid_cycle_days(sequence_length: int, cycle_days: Sequence[int | None] | None) -> tuple[int, ...] | None:
+    """La duración de cada ciclo: un entero mayor que 0 por ciclo, sin `bool`. Si falta la lista, tiene otro largo o algún
+    valor es nulo, no entero o no positivo, devuelve `None` (R1). Una sola validación para `soil_cover` y la erosión."""
+    if not cycle_days or len(cycle_days) != sequence_length:
+        return None
+    if any(isinstance(d, bool) or not isinstance(d, int) or d <= 0 for d in cycle_days):
+        return None
+    return tuple(cycle_days)  # type: ignore[arg-type]
 
 
 def covered_gaps(sequence_length: int, gap_days: Sequence[int | None] | None) -> tuple[int, ...] | None:
@@ -227,7 +249,8 @@ def _day_counts(
     gap_days: Sequence[int | None] | None,
 ) -> tuple[int, int, int] | None:
     """(días cubiertos, días de descanso, días totales con huecos), o `None` si falta la duración de algún ciclo o un hueco válido (R1)."""
-    if not cycle_days or len(cycle_days) != len(sequence) or None in cycle_days:
+    cycle_days = valid_cycle_days(len(sequence), cycle_days)
+    if cycle_days is None:
         return None
     pairs = [(crops.get(c), d) for c, d in zip(sequence, cycle_days, strict=True)]
     covered = sum(d for crop, d in pairs if crop and crop.kind in ("crop", "cover"))
@@ -245,15 +268,19 @@ def _soil_cover(
     gap_days: Sequence[int | None] | None,
     rule: HealthRule,
 ) -> Criterion:
-    """Porcentaje del tiempo con cultivo o abono verde; el descanso (su ficha trae su duración, 180 días: HU-063) y los
-    huecos entre ciclos son suelo descubierto. Sin la duración de un ciclo o sin un hueco válido, `insufficient_data` (R1)."""
-    if not cycle_days or len(cycle_days) != len(sequence) or None in cycle_days:
-        return _no_data("Falta la duración de algún ciclo de la estrategia", rule)
+    """Porcentaje del tiempo con cultivo o abono verde; el descanso (180 días cuando su ficha los traiga, HU-063;
+    mientras tanto su duración es nula y el criterio queda `insufficient_data`) y los huecos entre ciclos son suelo
+    descubierto. Sin la ficha o la duración de un ciclo, o sin un hueco válido, `insufficient_data` (R1)."""
+    if _missing_crop(sequence, crops):
+        return _no_data(NO_CROP_SHEET, rule)
+    days = valid_cycle_days(len(sequence), cycle_days)
+    if days is None:
+        return _no_data(NO_CYCLE_DAYS, rule)
     gaps = covered_gaps(len(sequence), gap_days)
     if gaps is None:
         return _no_data("Falta el hueco entre algún par de ciclos de la estrategia", rule)
-    covered = sum(d for c, d in zip(sequence, cycle_days, strict=True) if (crop := crops.get(c)) and crop.kind in ("crop", "cover"))
-    total = sum(cycle_days) + sum(gaps)
+    covered = sum(d for c, d in zip(sequence, days, strict=True) if (crop := crops.get(c)) and crop.kind in ("crop", "cover"))
+    total = sum(days) + sum(gaps)
     if total <= 0:
         return _no_data("La estrategia no tiene días que medir", rule)
     pct = covered / total * 100  # sin redondear: el nivel no depende de cómo se muestra
@@ -280,12 +307,15 @@ def _erosion(
             f"de {cut} %: con esa pendiente el suelo descubierto no se cuenta para la erosión"
         )
         return Criterion("available", "favorable", (_text(reason, rule),), (rule.rule_id,), sources)
-    if not cycle_days or len(cycle_days) != len(sequence) or None in cycle_days:
-        return _no_data("Falta la duración de algún ciclo de la estrategia", rule)
+    if _missing_crop(sequence, crops):
+        return _no_data(NO_CROP_SHEET, rule)
+    days = valid_cycle_days(len(sequence), cycle_days)
+    if days is None:
+        return _no_data(NO_CYCLE_DAYS, rule)
     counts = _day_counts(sequence, crops, cycle_days, gap_days)
     if counts is None:
         return _no_data("Falta el hueco entre algún par de ciclos de la estrategia", rule)
-    months = (counts[1] + counts[2] - sum(cycle_days)) / DAYS_PER_MONTH  # descanso + huecos, sin redondear
+    months = (counts[1] + counts[2] - sum(days)) / DAYS_PER_MONTH  # descanso + huecos, sin redondear
     reason = rule.reason_template.format(slope=_dec(slope.slope_pct), months=_dec(months))
     return Criterion(
         "available", level_from_cuts(months, rule.levels, more_is_better=False), (_text(reason, rule),), (rule.rule_id,), sources
