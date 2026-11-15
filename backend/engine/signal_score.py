@@ -50,7 +50,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from backend.engine.curve import CurvePoint, crop_curve, score_from_curve
 from common.signals import P0_SIGNALS
@@ -241,3 +241,17 @@ def no_stages_reason(crop_name: str) -> str:
     """La razón de una señal que no se evalúa porque el cultivo no tiene etapas publicadas (sin ventana). La comparten
     las heladas, el calor y el suelo."""
     return f"Sin las etapas {of(crop_name)}: la señal no se evalúa"
+
+
+class Scored(Protocol):
+    """Lo que el semáforo y el orden leen de una señal ya calculada (`SignalScore` y los resultados de cada señal)."""
+
+    status: str
+    score: int | None
+    level: str | None
+    critical: bool
+
+
+def signal_scores(signals: Mapping[str, Scored]) -> dict[str, SignalScore]:
+    """Las calificaciones que leen el semáforo y el orden de las ventanas, de las señales ya calculadas."""
+    return {name: SignalScore(signal.status, signal.score, signal.level, signal.critical) for name, signal in signals.items()}

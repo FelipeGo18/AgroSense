@@ -32,7 +32,7 @@ from backend.api.water_signals import SourceReading, WaterMonth, ZoneWater, wate
 from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset, Municipality
 from backend.engine.market_signal import market_signal
-from backend.engine.signal_score import INSUFFICIENT_DATA, SignalScore
+from backend.engine.signal_score import INSUFFICIENT_DATA
 from backend.engine.soil_signal import soil_without_stages
 from backend.engine.stages import CropWindow
 from backend.engine.traffic_light import SIGNAL_NAMES_ES
@@ -168,8 +168,3 @@ def window_signals(
         "supply": pending_signal("supply"),
         "market": market_signal(index, years, thresholds),
     }
-
-
-def signal_scores(signals: Mapping[str, SignalResult]) -> dict[str, SignalScore]:
-    """Las calificaciones que leen el semáforo y el orden de las ventanas (`backend/engine/signal_score.py`)."""
-    return {name: SignalScore(signal.status, signal.score, signal.level, signal.critical) for name, signal in signals.items()}

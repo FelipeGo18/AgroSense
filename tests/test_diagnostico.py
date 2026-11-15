@@ -28,7 +28,6 @@ from backend.accounts.models import Session as AccountSession
 from backend.api import calc_models as m
 from backend.api import calculations
 from backend.api.auth import SESSION_COOKIE
-from backend.api.calculations import IRRIGATION_UNKNOWN
 from backend.api.climate_signals import frost_caveat
 from backend.api.main import app
 from backend.api.window_signals import pending_reason
@@ -36,6 +35,7 @@ from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
 from backend.dataset import get_dataset
 from backend.db.models import Base
+from backend.engine.diagnosis import IRRIGATION_UNKNOWN
 from common import region
 
 EXAMPLES = Path("data/examples")
