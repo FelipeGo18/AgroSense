@@ -9,20 +9,16 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from backend.engine.rotations.history import HISTORY_TEXT, check_history
 from backend.engine.signal_score import round_half_up
 
 SOIL_CRITERIA = ("nitrogen", "organic_carbon", "soil_cover", "pest_break", "erosion")
 TEAM_CRITERION = "criterio_equipo_2026"
 TEAM_NOTE = "Criterio del equipo, pendiente de validar por un agrónomo"
 
-HISTORY_BASES = ("declared", "current_rotation", "none")
 _RANK = {"favorable": 2, "moderate": 1, "unfavorable": 0}
 DAYS_PER_MONTH = 30.4
 _POINTS = {"favorable": 100, "moderate": 50, "unfavorable": 0}
-_HISTORY_TEXT = {
-    "none": "No hay cultivos anteriores del terreno: solo se revisan los ciclos de la estrategia",
-    "current_rotation": "Se supuso que antes del primer ciclo el terreno siguió su rotación actual",
-}
 
 
 @dataclass(frozen=True)
@@ -183,8 +179,8 @@ def _pest_break(
     ranks = [_RANK[level] for _, level, _ in results if level is not None]
     if not ranks:
         return Criterion("insufficient_data", None, tuple(reasons), rule_ids, source_ids)
-    if history_basis in _HISTORY_TEXT:
-        reasons.append(_HISTORY_TEXT[history_basis])
+    if history_basis in HISTORY_TEXT:
+        reasons.append(HISTORY_TEXT[history_basis])
     level = next(name for name, value in _RANK.items() if value == min(ranks))
     return Criterion("available", level, tuple(reasons), rule_ids, source_ids)
 
@@ -345,13 +341,7 @@ def soil_health(
     va del más reciente al más antiguo. `history_basis` dice de dónde sale: `declared`, `current_rotation` o `none`; sin
     él no hay valor por defecto (R5): uno fuera de los tres, o que contradice la lista, es un `ValueError`. Parámetro
     interno del motor, no un campo del contrato. Sin regla con fuente para un criterio, `insufficient_data` con ids vacíos."""
-    if history_basis not in HISTORY_BASES:
-        raise ValueError(f"history_basis {history_basis!r} no es válido: use uno de 'declared', 'current_rotation' o 'none'")
-    if (history_basis == "none") == bool(previous_crop_ids):
-        raise ValueError(
-            f"history_basis {history_basis!r} contradice previous_crop_ids ({len(previous_crop_ids)} cultivos): "
-            "'none' va sin cultivos anteriores; 'declared' y 'current_rotation' van con ellos"
-        )
+    check_history(previous_crop_ids, history_basis)
     by_criterion: dict[str, HealthRule] = {}
     pest_rules: list[HealthRule] = []
     for rule in sorted(rules, key=lambda r: r.rule_id):
