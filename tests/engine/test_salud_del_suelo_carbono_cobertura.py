@@ -67,7 +67,7 @@ NORMAL = SoilCarbon(45.0, 30.0, 60.0, "soilgrids")
 
 
 def _sh(sequence, soil=None, days=None, gaps=None, rules=REGLAS, crops=CULTIVOS):
-    return soil_health(tuple(sequence), crops, [], rules, soil=soil, cycle_days=days, gap_days=gaps)
+    return soil_health(tuple(sequence), crops, [], rules, soil=soil, cycle_days=days, gap_days=gaps, history_basis="none")
 
 
 def _carbono(sequence, soil):
@@ -102,7 +102,7 @@ def test_el_catalogo_trae_las_reglas_y_los_cortes_que_usa_la_prueba():
 def test_carbono_bajo_cuenta_abono_verde_y_descanso_contra_los_cortes_2_y_1(secuencia, ciclos, nivel):
     c = _carbono(secuencia, BAJO)
     assert (c.status, c.level) == ("available", nivel)
-    assert CARBONO.reason_template.format(count=ciclos, soc_level="bajo", soc_range="3,8 a 141,2") in c.reasons[0]
+    assert CARBONO.reason_template.format(count=ciclos, soc_level="bajo", soc_range="3,8 a 141,2 g/kg") in c.reasons[0]
 
 
 @pytest.mark.parametrize(("secuencia", "nivel"), [(("papa", "maiz", "haba"), "moderate"), (("papa", "avena_vicia", "maiz"), "favorable")])
@@ -306,13 +306,51 @@ def test_carbono_sin_p05_o_sin_p95_dice_sin_su_rango_de_incertidumbre(suelo):
     assert CARBONO.reason_template.format(count=0, soc_level="bajo", soc_range="sin su rango de incertidumbre") in c.reasons[0]
 
 
+_CARBONO_LITERAL = (
+    "Ciclos de abono verde o descanso: 0. El carbono orgánico del suelo es bajo según una estimación de un mapa de 250 m "
+    "({rango}); un análisis de suelo de su lote es más preciso. No predice cuánto cambia el carbono del suelo. " + TEAM_NOTE
+)
+
+
+def test_carbono_sin_rango_el_texto_literal_no_deja_g_kg_suelto():
+    c = _carbono(SEC3, SoilCarbon(20.0, None, None, "soilgrids"))
+    assert c.reasons == (_CARBONO_LITERAL.format(rango="sin su rango de incertidumbre"),)  # EJEMPLO (R5)
+
+
+def test_carbono_con_rango_el_texto_literal_es_el_que_lee_el_agricultor():
+    c = _carbono(SEC3, BAJO)  # EJEMPLO (R5): 20 g/kg, p05 3,84 y p95 141,2
+    assert c.reasons == (_CARBONO_LITERAL.format(rango="3,8 a 141,2 g/kg"),)
+
+
+# --- R1: un ciclo sin ficha o con una duración inválida no se adivina ---
+
+SIN_FICHA = ("papa", "inventado", "maiz")  # EJEMPLO (R5): `inventado` no está en el catálogo
+
+
+def test_un_ciclo_sin_ficha_deja_carbono_y_cobertura_en_insufficient_data():
+    r = _sh(SIN_FICHA, soil=BAJO, days=[165, 100, 180], gaps=[0, 0, None])
+    for nombre, regla in (("organic_carbon", "materia_organica_ciclos"), ("soil_cover", "suelo_cubierto")):
+        c = r[nombre]
+        assert (c.status, c.level) == ("insufficient_data", None)
+        assert c.reasons == (f"Falta la ficha de algún cultivo de la estrategia. {TEAM_NOTE}",)
+        assert c.rule_ids == (regla,) and c.source_ids == (TEAM_CRITERION,)
+    assert r["nitrogen"].status == "insufficient_data"
+
+
+@pytest.mark.parametrize("malo", [-100, 0, True, 1.5, None])
+def test_una_duracion_invalida_deja_soil_cover_en_insufficient_data(malo):
+    c = _cobertura(SEC3, [165, malo, 175])
+    assert (c.status, c.level) == ("insufficient_data", None)
+    assert c.reasons == (f"Falta la duración de algún ciclo de la estrategia. {TEAM_NOTE}",)
+
+
 # --- Que no se rompa el PR B, y determinismo (R4) ---
 
 
 def test_nitrogen_y_pest_break_no_cambian_con_el_suelo_y_las_duraciones_y_erosion_sigue_pendiente():
     secuencia, dias = PAPA_MAIZ_HABA
-    base = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS)
-    con = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS, soil=BAJO, cycle_days=dias, gap_days=[3, 4, None])
+    base = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS, history_basis="declared")
+    con = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS, soil=BAJO, cycle_days=dias, gap_days=[3, 4, None], history_basis="declared")
     assert con["nitrogen"] == base["nitrogen"] and con["pest_break"] == base["pest_break"]
     assert con["nitrogen"].level == "favorable"  # la haba fija nitrógeno
     assert (con["erosion"].status, con["erosion"].level) == ("insufficient_data", None)  # es del PR D

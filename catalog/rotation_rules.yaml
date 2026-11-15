@@ -205,14 +205,15 @@ rules:
     levels:
       low: {favorable: 2, moderate: 1}
       normal: {favorable: 1, moderate: 0}
-    reason_template: "Ciclos de abono verde o descanso: {count}. El carbono orgánico del suelo es {soc_level} según una estimación de un mapa de 250 m ({soc_range} g/kg); un análisis de suelo de su lote es más preciso. No predice cuánto cambia el carbono del suelo"
+    reason_template: "Ciclos de abono verde o descanso: {count}. El carbono orgánico del suelo es {soc_level} según una estimación de un mapa de 250 m ({soc_range}); un análisis de suelo de su lote es más preciso. No predice cuánto cambia el carbono del suelo"
     source_id: criterio_equipo_2026
 
   # Suelo cubierto (kind health). CRITERIO DEL EQUIPO (criterio_equipo_2026, aprobado por Juan Cárdenas el 10 nov 2026):
   # ninguna fuente da un corte de meses cubiertos. Las que se revisaron miden otra cosa: la FAO da un 30 % de cobertura
   # de la superficie al sembrar, y AAFC cuenta días al año con rastrojo y nieve. Por eso no se usan.
-  # El descanso cuenta como suelo descubierto (decisión 16). Los cortes dejan un descanso corto (alrededor de una quinta
-  # parte de la estrategia) en favorable, para no anular siempre lo que el descanso suma en organic_carbon.
+  # El descanso cuenta como suelo descubierto (decisión 16). Con su duración de 180 días (`fallow_days`, HU-063), una
+  # estrategia con descanso no llega a favorable: con las duraciones del catálogo, el mejor caso es 66,4 % (maíz, descanso
+  # y haba, sin huecos), moderate. Es lo esperado: el descanso deja el suelo sin cubrir y suma en organic_carbon.
   - rule_id: suelo_cubierto
     kind: health
     criterion: soil_cover

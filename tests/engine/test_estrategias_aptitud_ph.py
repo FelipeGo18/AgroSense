@@ -190,7 +190,16 @@ def test_sin_rango_de_ph_con_fuente_no_excluye_y_nombra_el_cultivo():
 
 
 def _fase1(secuencia, previos, temp, suelo, reglas=None, cultivos=None):
-    return phase1(secuencia, previos, cultivos or CULTIVOS, FILTROS if reglas is None else reglas, temp, suelo, _explica)
+    return phase1(
+        secuencia,
+        previos,
+        cultivos or CULTIVOS,
+        FILTROS if reglas is None else reglas,
+        temp,
+        suelo,
+        _explica,
+        history_basis="declared" if previos else "none",
+    )
 
 
 def test_phase1_junta_y_ordena_por_kind_luego_ciclo_y_luego_rule_id():

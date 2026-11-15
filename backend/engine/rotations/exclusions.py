@@ -108,13 +108,15 @@ def phase1(
     tmean_annual_c: float | None,
     soil: SoilPh | None,
     explain: SuitabilityExplainer,
+    *,
+    history_basis: str,
 ) -> Phase1Result:
     """Une los motivos de la fase 1, ordenados por `kind` (`rule`, `not_suitable`, `soil_ph`), luego por ciclo y luego
     por `rule_id` o `crop_id` (R4): así el primero es el que muestra `excluded` (contrato, «Varios motivos», aprobado por
     Felipe el 14 de noviembre de 2026). Las limitaciones van sin repetir, por primera aparición: aptitud y luego pH."""
     suit, suit_lim = suitability_motives(sequence, crops, tmean_annual_c, explain)
     ph, ph_lim = ph_motives(sequence, crops, soil)
-    motives = [*rule_motives(sequence, previous_crop_ids, crops, rules), *suit, *ph]
+    motives = [*rule_motives(sequence, previous_crop_ids, crops, rules, history_basis=history_basis), *suit, *ph]
     motives.sort(key=lambda m: (_KIND_ORDER[m.kind], m.cycle, m.rule_id or "", m.crop_id or ""))
     return Phase1Result(tuple(motives), tuple(dict.fromkeys([*suit_lim, *ph_lim])))
 
@@ -228,6 +230,8 @@ def filter_strategies(
     explain: SuitabilityExplainer,
     diagnose: Diagnoser,
     limit: int = 10,
+    *,
+    history_basis: str,
 ) -> FilterResult:
     """Orquesta las fases (R3): la fase 1 corre sobre cada candidata y `diagnose` solo se pide a las que no tienen
     motivos; a esas se les revisa `high_risk_motives`. Una descartada cuenta por los motivos de la fase en que quedó
@@ -237,7 +241,7 @@ def filter_strategies(
     dropped: list[tuple[Sequence[str], Sequence[Motive]]] = []
     limitations: list[str] = []
     for sequence in candidates:
-        first = phase1(sequence, previous_crop_ids, crops, rules, tmean_annual_c, soil, explain)
+        first = phase1(sequence, previous_crop_ids, crops, rules, tmean_annual_c, soil, explain, history_basis=history_basis)
         limitations.extend(first.limitations)
         if first.motives:
             dropped.append((sequence, first.motives))

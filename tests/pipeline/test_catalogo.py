@@ -65,6 +65,29 @@ def test_solo_la_avena_con_vicia_tiene_segunda_familia():
     assert "fao_ecocrop" in row
 
 
+def test_el_descanso_dura_180_dias_y_solo_el_lleva_fallow_days():
+    """HU-063 (decisión 7 del PR #109; contrato aprobado por Haider el 15 de noviembre de 2026): el descanso dura un valor
+    fijo de su ficha, 180 días con `criterio_equipo_2026`, y su `cycle_months` sale de ahí (180 / 30,44 = 5,9)."""
+    crops, stages, sources = build()
+    assert crops.schema["fallow_days"] == pl.Int32
+    by_id = {row["crop_id"]: row for row in crops.to_dicts()}
+    descanso = by_id.pop("descanso")
+    assert (descanso["fallow_days"], descanso["cycle_months"]) == (180, 5.9)
+    assert "criterio_equipo_2026" in descanso["source_ids"]
+    assert all(row["fallow_days"] is None for row in by_id.values())
+    assert "descanso" not in set(stages["crop_id"].to_list())
+    # La fuente es la misma de `catalog/rotation_rules.yaml` (R8).
+    assert "criterio_equipo_2026" in set(sources["source_id"].to_list())
+
+
+def test_un_descanso_sin_duracion_con_nota_queda_sin_cycle_months():
+    """Sin el dato (nulo y con su nota), el descanso no tiene duración: quien lo usa lo trata como dato que falta (R1)."""
+    crops, _, _ = build(lambda d: crop(d, "descanso").update(fallow_days={"v": None, "n": "Sin decidir"}))
+    descanso = crops.filter(crops["crop_id"] == "descanso").to_dicts()[0]
+    assert (descanso["fallow_days"], descanso["cycle_months"]) == (None, None)
+    assert "criterio_equipo_2026" not in descanso["source_ids"]
+
+
 def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
     crops, stages, _ = build()
     # Sin una fuente que dé la temperatura de daño en la fase vegetativa, la helada del haba en esas etapas queda sin dato
@@ -108,6 +131,15 @@ def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
         (lambda d: crop(d, "papa").pop("depletion_p"), "completa"),
         (lambda d: crop(d, "papa").update(root_depth_min_m={"v": 0.9, "s": "fao_56_tabla_22"}), "la mínima primero"),
         (lambda d: crop(d, "papa").update(depletion_p={"v": 1.5, "s": "fao_56_tabla_22"}), "entre 0 y 1"),
+        # HU-063: `fallow_days` es solo del descanso, en días enteros mayores que cero, y el descanso no lleva etapas.
+        (lambda d: crop(d, "papa").update(fallow_days={"v": 90, "s": "criterio_equipo_2026"}), "solo del descanso"),
+        (lambda d: crop(d, "avena_vicia").update(fallow_days={"v": 90, "s": "criterio_equipo_2026"}), "solo del descanso"),
+        (lambda d: crop(d, "descanso").update(fallow_days={"v": 0, "s": "criterio_equipo_2026"}), "mayor que cero"),
+        (lambda d: crop(d, "descanso").update(fallow_days={"v": 90.5, "s": "criterio_equipo_2026"}), "entero de días"),
+        (lambda d: crop(d, "descanso").update(fallow_days={"v": True, "s": "criterio_equipo_2026"}), "entero de días"),
+        (lambda d: crop(d, "descanso").update(fallow_days={"v": 180, "s": "inventada"}), "no cita una fuente"),
+        (lambda d: crop(d, "descanso").update(fallow_days={"v": None}), "nulo y no dice por qué"),
+        (lambda d: crop(d, "descanso").update(stages=crop(d, "papa")["stages"]), "no lleva etapas"),
     ],
 )
 def test_un_catalogo_que_no_cumple_no_se_publica(change, message):
