@@ -345,6 +345,10 @@ export interface paths {
         /**
          * Diagnostics
          * @description Diagnóstico de una ventana de siembra (HU-076). Es historia de la zona, no un pronóstico.
+         *
+         *     Un solo camino para todos los casos: la aptitud (HU-191), las seis señales de la ventana si el cultivo es apto o no
+         *     se sabe, y el semáforo dos veces (HU-074), con los pesos de quien consulta y con los de AgroSense. La regla 0 (cultivo
+         *     no apto: `red` y `rotate`, sin ventana ni señales) la decide el motor, no esta ruta.
          */
         post: operations["diagnostics_api_v1_diagnostics_post"];
         delete?: never;
@@ -422,7 +426,8 @@ export interface paths {
         };
         /**
          * Trends
-         * @description Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad.
+         * @description Series para las gráficas: agua, área sembrada y verdor (HU-078). Cada una en su unidad. Es historia de la zona,
+         *     no un pronóstico; solo lee el dataset publicado y no guarda nada (R9).
          */
         get: operations["trends_api_v1_trends_get"];
         put?: never;
@@ -1662,6 +1667,8 @@ export interface components {
             water: components["schemas"]["WaterSeries"];
             supply: components["schemas"]["SupplySeries"];
             ndvi: components["schemas"]["NdviSeries"];
+            /** Limitations */
+            limitations: string[];
             versions: components["schemas"]["Versions"];
         };
         /** ValidationError */
@@ -2860,15 +2867,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not Implemented */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
             /** @description Service Unavailable */
             503: {
                 headers: {
@@ -3082,8 +3080,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not Implemented */
-            501: {
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

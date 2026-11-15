@@ -149,6 +149,13 @@ def no_dataset(tmp_path_factory, monkeypatch):
     sources_file = tmp_path_factory.mktemp("fuentes-por-senal") / "sources.yaml"
     sources_file.write_text(yaml.safe_dump(config, allow_unicode=True), encoding="utf-8")
     monkeypatch.setattr(build, "SIGNAL_SOURCES_FILE", sources_file)
+    # La API también la conoce: las señales de un dataset de las pruebas leen el aviso de heladas de su región (HU-076), y
+    # las tendencias, la fuente de la lluvia (HU-078). `main.py` sigue validando el archivo real al arrancar.
+    from backend.api import climate_signals
+
+    test_sources = signal_sources.load_signal_sources(sources_file)
+    monkeypatch.setattr(climate_signals, "get_signal_sources", lambda: test_sources)
+    monkeypatch.setattr(signal_sources, "get_signal_sources", lambda: test_sources)
     get_settings.cache_clear()
     from backend.market import store
 

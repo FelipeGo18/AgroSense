@@ -123,8 +123,10 @@ describe("rutas", () => {
   it("una pantalla que aún no está programada lo dice y deja volver al inicio", async () => {
     // «Consultar» ya es la entrada a las estrategias (HU-214) y «¿Cómo funciona?» ya existe (HU-122, #103); «Qué cambió en
     // su zona» sigue pendiente (HU-219).
+    // Cuando HU-219 la saque de PENDING (app/routes.tsx), esta prueba y la del pie (pending.test.tsx) se reescriben.
     open(PATHS.changes);
     expect(await screen.findByRole("heading", { level: 1, name: "Qué cambió en su zona" })).toBeInTheDocument();
+    expect(screen.getByText(/todavía no está programada/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", PATHS.home);
   });
 
