@@ -58,6 +58,7 @@ FOLDERS: dict[str, tuple[str, ...]] = {
     "dane": ("dane_divipola", "dane_mgn_2025"),
     "eva": ("eva",),
     "imerg": ("imerg",),
+    "modis_ndvi": ("modis_ndvi",),
     "nasa_power": ("nasa_power",),
     "nasadem": ("nasadem",),
     "sipsa": ("dane_sipsa",),
