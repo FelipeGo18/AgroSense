@@ -107,6 +107,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Usa la capa de calidad del producto para descartar los píxeles con nubes; el porcentaje de píxeles válidos queda en `valid_pixels_pct`
   - [ ] `ndvi_municipality` por `municipality_id`, `year` y `period` (1 a 23, el compuesto de 16 días del año), con `ndvi_median`, `valid_pixels_pct`, `quality` y `source_id`
   - [ ] `ndvi_municipality_normal` por `municipality_id` y `period`, con `ndvi_normal`, `years`, `quality` y `source_id`
+  - [ ] Entrada de MODIS NDVI en `sources` con misión, resolución, periodo, acceso y licencia (HU-122)
   - [ ] Si se usa una máscara de áreas de cultivo, lleva su fuente (por elegir). Sin máscara, el valor es de todo el municipio y la respuesta lo dice
   - [ ] Con menos píxeles válidos que el mínimo de la configuración del pipeline, el periodo queda `partial` o no se publica; nunca se interpola en silencio (R1)
   - [ ] `/trends` suma la serie `ndvi` con la normal del municipio (HU-078)
@@ -137,6 +138,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Adaptador `smap` con caché: humedad superficial y de la zona de raíces de SMAP nivel 4 (celdas de 9 km, desde marzo de 2015). Producto, versión y profundidades se verifican antes de usarlo
   - [ ] `soil_moisture_month` por `municipality_id`, `year`, `month` y `source_id`, con `sm_surface_m3_m3`, `sm_rootzone_m3_m3` y `quality`
   - [ ] Sus unidades (m³/m³) son distintas de las de POWER (fracción de 0 a 1): nunca se convierten una en otra ni se promedian; se muestran lado a lado (decisión 11)
+  - [ ] Entrada de SMAP en `sources` con misión, resolución, periodo, acceso y licencia (HU-122)
   - [ ] Aparece en `signals.water.sources` y en el plan de agua como contraste (`used = false`); no cambia la calificación (R1, R2)
   - [ ] Sin datos para un municipio o un mes, no aparece; nunca se rellena (R1)
   - [ ] Comprobación manual en un municipio
@@ -147,17 +149,17 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-216 · Clima de dos periodos para «Qué cambió»
 
 - **Historia:** Como motor, quiero los indicadores de clima de dos periodos de la misma fuente, para comparar cómo cambió la zona.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Los periodos viven en la configuración versionada del pipeline, cada uno con `period_id`, año inicial y año final. Por defecto, con POWER, `p1981_2000` (1981–2000) y `p2005_2024` (2005–2024); con IMERG, dos periodos desde 2001 (por defecto 2001–2012 y 2013–2024), y la respuesta lo dice. `manifest.json` los lista (R4)
-  - [ ] `climate_change_month` por `municipality_id`, `period_id`, `month` y `source_id`, con `frost_freq_pct` y `tmax_p90_c` (de POWER), `precip_normal_mm` (de cada fuente de lluvia), `years` y `quality`
-  - [ ] Mismo umbral de helada y misma corrección por altitud que HU-045
-  - [ ] Los dos periodos de una comparación son de la misma fuente; nunca se mezclan fuentes entre periodos (decisión 11)
-  - [ ] Un mes de un periodo con menos años válidos que el mínimo de la configuración no se publica; la comparación de ese mes queda `insufficient_data` (R1)
-  - [ ] Comprobación manual en 2 municipios
+  - [x] Los periodos viven en la configuración versionada del pipeline, cada uno con `period_id`, año inicial y año final. Por defecto, con POWER, `p1981_2000` (1981–2000) y `p2005_2024` (2005–2024); con IMERG, dos periodos desde 2001 (por defecto 2001–2012 y 2013–2024), y la respuesta lo dice. `manifest.json` los lista (R4)
+  - [x] `climate_change_month` por `municipality_id`, `period_id`, `month` y `source_id`, con `frost_freq_pct` y `tmax_p90_c` (de POWER), `precip_normal_mm` (de cada fuente de lluvia), `years` y `quality`
+  - [x] Mismo umbral de helada y misma corrección por altitud que HU-045
+  - [x] Los dos periodos de una comparación son de la misma fuente; nunca se mezclan fuentes entre periodos (decisión 11)
+  - [x] Un mes de un periodo con menos años válidos que el mínimo de la configuración no se publica; la comparación de ese mes queda `insufficient_data` (R1)
+  - [x] Comprobación manual en 2 municipios
 - **Reglas que aplican:** R1, R4, R7, R8
 - **Contrato que toca:** `climate_change_month`, `manifest.json`
-- **Notas:** Decisión 12. Es historia comparada, nunca pronóstico. La lluvia por año de cada periodo ya está en `climate_month` y `precip_month`: el motor filtra los años del periodo para recalcular el agua de las ventanas (HU-217). Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. Es historia comparada, nunca pronóstico. La lluvia por año de cada periodo ya está en `climate_month` y `precip_month`: el motor filtra los años del periodo para recalcular el agua de las ventanas (HU-217). Agregada el 11 de octubre de 2026. **14 de noviembre de 2026 (hecho):** `pipeline/climate_change.py` publica `climate_change_month`. Los periodos están en `pipeline/region.yaml` (`change_periods`): con NASA POWER, `p1981_2000` y `p2005_2024`; con GPM IMERG, `p2001_2012` y `p2013_2024`; el manifiesto los lista en `periods`. Las filas de POWER traen la frecuencia de heladas y la máxima p90 con el mismo cálculo de `climate_risk_month` (HU-045: mínima ≤ 2 °C, temperatura corregida por altitud) y la lluvia normal de `climate_month`; las de IMERG, solo la lluvia normal de `precip_month`, con las heladas y el calor nulos. Un indicador cuenta con al menos el 80 % de los años del periodo (16 de 20 con POWER, 10 de 12 con IMERG), la misma proporción que la normal; con menos queda nulo, y una fila sin ningún indicador no se publica (R1). Dataset `2026.11.20`: 11 472 filas (239 municipios × 12 meses × 4 periodos), todas `ok`. **Comprobación en 2 municipios:** en Tunja y en Güicán de la Sierra la máxima p90 sube de 0,6 a 1,6 °C de 1981–2000 a 2005–2024; en Güicán las heladas bajan (enero, del 50 % al 30 % de los años; diciembre, del 45 % al 15 %), y en Tunja casi no hay en ningún periodo (POWER cuenta menos heladas de las que hay, HU-045). **La lluvia no coincide entre fuentes:** en Tunja, en julio, POWER da más en el segundo periodo (111 a 176 mm) e IMERG menos (147 a 88 mm), con periodos distintos; por eso se muestran por separado y nunca se mezclan (decisión 11). **Revisión del PR #79 (Haider, 14 de noviembre de 2026):** la lluvia de NASA POWER de mayo a agosto de 2021 está rota en la fuente (casi 0 mm en toda la región, con IMERG normal esos meses) y queda sin dato (`RAIN_GAPS` en `pipeline/sources/nasa_power.py`, R1): la lluvia de 2005–2024 cuenta 19 de 20 años. `validate_change` revisa además que la máxima p90 vaya de -10 a 50 °C y que `years` quepa en su periodo. El mínimo del 80 % de los años quedó aprobado por Haider. Para HU-217 quedan en `docs/riesgos.md` la lluvia mes a mes que no coincide entre fuentes y el calor inverosímil de tierra caliente.
 
 ### HU-044 · Municipios, límites, altitud y corrección de la temperatura
 

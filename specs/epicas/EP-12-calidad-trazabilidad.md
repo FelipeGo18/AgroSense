@@ -79,13 +79,13 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
 ### HU-122 · Procedencia de cada dato
 
 - **Historia:** Como jurado, quiero saber de dónde sale cada dato, para confiar en el resultado.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Manifiesto con versión, fuentes y cobertura
+  - [x] Manifiesto con versión, fuentes y cobertura. **Hecho:** `manifest.json` trae `dataset_version`, `rules_version`, `created_at`, `region` y filas y cobertura de cada tabla, con `sources` como tabla (prueba en `tests/test_procedencia.py`)
   - [x] Cada entrada de `sources` dice qué cubre (`coverage`: país o región) (hecho para DIVIPOLA)
   - [x] `sources.yaml` dice, por región, qué fuente calcula cada señal (también qué producto NASA da la lluvia de `water`); la validación falla si una señal de la región no tiene fuente asignada o la fuente no existe en `sources` (R8)
-  - [ ] Cada producto NASA del MVP (POWER, NASADEM, IMERG, MODIS NDVI, SMAP y GIBS) tiene su entrada en `sources` con misión, resolución, periodo, acceso y licencia, y el panel lo muestra
-  - [ ] `GET /api/v1/version` responde `dataset_version`, `rules_version`, `created_at`, `region`, `default_weights` (los pesos por defecto de `weights.yaml`, para mostrarlos antes de consultar) y `sources` (lista con `source_id`, `name`, `institution`, `url`, `coverage` y `license`), según el contrato. **Parcial (13 de octubre de 2026):** el endpoint ya existe y publica `default_weights`, `weights_version` y `weights_reasons`; lo demás viene nulo o vacío hasta que haya dataset, reglas y fuentes publicados
+  - [x] Cada producto NASA del MVP (POWER, NASADEM, IMERG, MODIS NDVI, SMAP y GIBS) tiene su entrada en `sources` con misión, resolución, periodo, acceso y licencia, y el panel lo muestra. **Hecho (14 nov 2026) para los que ya tienen datos publicados:** NASA POWER, NASADEM y GPM IMERG, comprobado sobre `data/published/` en `tests/test_procedencia.py`. MODIS NDVI, SMAP y GIBS entran con su HU (HU-208, HU-210 y HU-211), que publica su entrada con lo mismo: nunca se publica una fuente sin datos (R5)
+  - [x] `GET /api/v1/version` responde `dataset_version`, `rules_version`, `created_at`, `region`, `default_weights` (los pesos por defecto de `weights.yaml`, para mostrarlos antes de consultar) y `sources` (lista con `source_id`, `name`, `institution`, `url`, `coverage` y `license`), según el contrato. **Parcial (13 de octubre de 2026):** el endpoint ya existe y publica `default_weights`, `weights_version` y `weights_reasons`; lo demás viene nulo o vacío hasta que haya dataset, reglas y fuentes publicados. **Hecho (14 nov 2026):** con el dataset publicado responde todo, con cada fuente con los campos del contrato (`tests/test_procedencia.py`)
   - [x] La web muestra fuentes, versión y los pesos por defecto con su porqué (HU-198): «¿Cómo funciona?» (`/como-funciona`, `web/src/pages/how/`) lee `GET /version`; los productos de la NASA van primero y las demás fuentes se abren a pedido; sin dataset no inventa fuentes (R5) (14 nov 2026)
 - **Reglas que aplican:** R4, R7, R8
 - **Contrato que toca:** `GET /api/v1/version`, `manifest.json`, `sources`
@@ -99,3 +99,27 @@ Empieza en la hora 0 con los casos de referencia y se cierra al final del evento
   - [x] Un comando regenera `data/published` desde la caché: `uv run python -m pipeline.build` (con `--descargar`, antes baja las fuentes)
   - [x] El resultado coincide con el manifiesto: al terminar de publicar, `pipeline.build` revisa que cada tabla que nombra el manifiesto exista y tenga sus filas, que no haya tablas que no nombre y que la versión sea la de `region.yaml`. `uv run python -m pipeline.build --verificar` hace solo esa revisión, sin publicar, y termina con error si no coincide
 - **Notas:** Hecha el 8 de noviembre de 2026 (`verify` en `pipeline/build.py`; pruebas en `tests/pipeline/test_reconstruir.py`). Reconstruir dos veces desde la misma caché da los mismos archivos byte a byte (R4); solo cambia la fecha de `created_at` del manifiesto.
+
+### HU-237 · Caché de las fuentes compartida y dataset publicado por el merge
+
+- **Historia:** Como equipo, quiero que todos construyamos el dataset desde la misma caché de las fuentes, y que la versión publicada la ponga el merge, para que ningún PR de datos publique tablas viejas, armadas a mano o con una versión que choca con la de otro PR.
+- **Prioridad:** P0 (la parte 1; las partes 2 y 3, después de la demo) · **Tamaño:** L · **Estado:** en curso
+- **Criterios de aceptación:**
+  - **Parte 1: caché compartida, con huella**
+  - [x] Cada carpeta de `data/raw/` de una fuente que se puede redistribuir se empaqueta en un `.tar.gz` determinista: los archivos en orden, con fecha, dueño y permisos fijos, así que el mismo contenido da el mismo archivo byte a byte (R4). El nombre lleva la huella del contenido (`cache-<carpeta>-<huella>.tar.gz`)
+  - [x] `pipeline/raw_cache.json`, en git, dice por carpeta el archivo, su sha256, la huella del contenido, el tamaño, la cantidad de archivos, las fuentes (`source_id`) y su licencia
+  - [x] `uv run python -m pipeline.raw_cache subir <carpeta>` empaqueta la carpeta, la sube a la *release* `cache-datos` del repositorio (la crea si no existe) y actualiza `raw_cache.json`. Pide un token de GitHub con permiso de escritura (`AGROSENSE_CACHE_TOKEN`, o el `GH_TOKEN` de `gh`), que nunca va al log. Un archivo con el mismo nombre ya subido no se vuelve a subir
+  - [x] `uv run python -m pipeline.raw_cache traer [carpetas]` baja de la *release* lo que no esté al día, con los límites de tiempo y tamaño de `pipeline/sources/fetch.py`; verifica el sha256 y la huella antes de reemplazar la carpeta. Si algo no coincide, falla y la carpeta queda como estaba (R1). El repositorio es público: bajar no pide token
+  - [x] `uv run python -m pipeline.raw_cache estado` dice, por carpeta, si la caché local está al día, es distinta, falta o no tiene entrada
+  - [x] `uv run python -m pipeline.build --traer-cache` trae la caché antes de publicar
+  - [x] **Licencias:** solo se suben las carpetas de una lista cerrada en `pipeline/raw_cache.py`, cada una con sus fuentes, y cada fuente debe tener su fila en `docs/licencias.md`. Una carpeta fuera de la lista, o una fuente sin licencia documentada, no se sube y se dice por qué
+  - [x] **Secretos:** no se sube un archivo `.env` ni uno que contenga el token de Earthdata o el de GitHub de quien sube. Al extraer, un archivo que sale de la carpeta (`..`, rutas absolutas, enlaces) hace fallar la extracción (filtro `data` de `tarfile`)
+  - [x] Pruebas sin red: el paquete determinista, la huella, traer y no tocar la carpeta si el sha256 no coincide, la extracción que rechaza rutas fuera de la carpeta, lo que no se sube (fuera de la lista, sin licencia, con un secreto) y que un archivo ya subido no se vuelve a subir
+  - **Parte 2: publicar una sola fuente (después de la demo)**
+  - [ ] `uv run python -m pipeline.build --solo <fuente>` vuelve a construir solo las tablas de esa fuente sobre el dataset publicado y actualiza el manifiesto y `sources`; `--verificar` comprueba que no cambió ninguna otra tabla
+  - [ ] El manifiesto dice de qué entrada de `raw_cache.json` salió cada tabla (R4, R8)
+  - **Parte 3: la versión la pone el merge (después de la demo)**
+  - [ ] Los PR de datos traen el adaptador y su línea de `raw_cache.json`, no `data/published/` ni `dataset_version`. Al fusionar en `desarrollo`, una GitHub Action trae la caché, corre `pipeline.build`, sube la versión y hace el commit de `data/published/`, como las migraciones (HU-229)
+- **Reglas que aplican:** R1, R4, R8
+- **Contrato que toca:** ninguno (`manifest.json` suma, en la parte 2, de qué caché salió cada tabla: cambio de contrato a aprobar entonces)
+- **Notas:** Propuesta por Haider el 15 de noviembre de 2026, al revisar el #117 y el #126: con cachés viejas en una máquina, `pipeline.build` perdía datos recientes, y los PR de datos copiaban tablas de `desarrollo` a mano y reservaban versiones (`2026.11.21`, `2026.11.22`) que chocaban en cada merge. **Por qué una *release* de GitHub y no Git LFS:** el repositorio es público, bajar no pide cuenta, y el límite es de 2 GB por archivo (SIPSA, la caché más grande, son unos 300 MB); el cupo gratis de Git LFS es de 1 GB. Mientras no exista la parte 3, una sola persona fusiona los PR de datos en orden y publica (propuesta: Luisa, de Datos). Pendiente del visto bueno de Felipe (PR #126). **Parte 1 hecha (15 nov 2026):** `pipeline/raw_cache.py` (`estado`, `traer` y `subir`), `pipeline.build --traer-cache` y `pipeline/raw_cache.json`; pruebas sin red en `tests/pipeline/test_cache_compartida.py` (GitHub y la descarga con dobles). Se agregó la licencia de SoilGrids (CC BY 4.0) a `docs/licencias.md`, que faltaba. `raw_cache.json` todavía no existe: lo crea la primera subida real, que hace quien tenga la caché de cada fuente (Luisa o Felipe), porque la caché no está en el repositorio.

@@ -104,6 +104,8 @@ Los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de refe
 
 Sin la textura del suelo, el agua se calcula sin retención y se agrega a las limitaciones.
 
+**El balance hídrico (M7, HU-144; `backend/engine/water_balance.py`).** Por mes de la ventana: lo que necesita el cultivo es la ET0 normal por el Kc de cada día (FAO-56, con el Kc en línea recta en el desarrollo y en la etapa final); la lluvia efectiva es 0,8 P - 25 con más de 75 mm al mes y 0,6 P - 10 con menos, nunca negativa (FAO, manual de riego n.º 3, 1986, sección 4.2); lo que sobra un mes queda en el suelo hasta RAW = p × 1000 × agua disponible × raíz (FAO-56, ecuaciones 82 y 83 y tabla 22; el agua disponible de cada textura es la de la tabla 2-1 del NRCS, NEH parte 652, cap. 2) y se gasta en los meses siguientes; el déficit es lo que falta. Es un rango (R10): el más bajo con el agua disponible y la raíz más altas, el más alto con las más bajas. Supuestos (aprobado por Felipe el 14 de noviembre de 2026): el suelo empieza la ventana sin agua guardada; la raíz tiene su profundidad máxima desde la siembra; `p` sin el ajuste por la ET del día. Un mes sin ET0 o sin la lluvia de la fuente no tiene déficit, y el total tampoco (R1).
+
 Una señal es **crítica** cuando su calificación baja del umbral crítico de `thresholds.yaml`. Los cortes de la tabla también viven ahí y se pueden ajustar con evidencia.
 
 ## Las prioridades del agricultor
@@ -172,7 +174,7 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 
 0. **Candidatas:** todas las secuencias de `cycles` ciclos con los cultivos del catálogo (cultivos, abonos verdes y descanso), sin el mismo `crop_id` en dos ciclos seguidos y sin dos descansos seguidos (decisión 15).
 1. El primer ciclo se siembra en `sowing_date`. Cada ciclo siguiente se siembra el lunes siguiente a la cosecha estimada del anterior (decisión 15). Un descanso dura lo que dice su ficha.
-2. Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores del terreno y el primer ciclo. Una regla violada **excluye** la estrategia, con su motivo (R3).
+2. Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores del terreno y el primer ciclo. Los cultivos anteriores son los `previous_crop_ids` si llegan; si llegan vacíos y hay rotación actual (`current_crop_ids`), esa rotación repetida hacia atrás, para todas las estrategias; sin ninguna, no hay cultivos anteriores. Una regla violada **excluye** la estrategia, con su motivo (R3).
 3. Un ciclo con un cultivo que no es apto para la zona excluye la estrategia. Un ciclo cuya ventana es de alto riesgo por clima (`water`, `frost` o `heat` desfavorable y crítica) también: ningún otro criterio lo compensa (R2).
 4. Un cultivo cuyo pH tolerado queda fuera de todo el intervalo estimado del suelo excluye la estrategia.
 5. La oferta y el mercado nunca excluyen: bajan el criterio de ingreso.
@@ -207,7 +209,7 @@ Decisión 15 (antes era un supuesto de HU-082):
 | Criterio | Qué mira | Con qué datos |
 |---|---|---|
 | `nitrogen` (nitrógeno) | Si la estrategia incluye leguminosas, que fijan nitrógeno | `fixes_nitrogen` de la ficha |
-| `organic_carbon` (carbono orgánico) | Si incluye abono verde, descanso o cultivos que dejan residuos, según qué tan bajo está el carbono orgánico del suelo | Carbono orgánico de SoilGrids, del lote o del municipio |
+| `organic_carbon` (carbono orgánico) | Si incluye abono verde o descanso, según qué tan bajo está el carbono orgánico del suelo (los residuos de cultivo no cuentan: HU-062, nota 3; aprobado por Felipe el 14 de noviembre de 2026, PR #109) | Carbono orgánico de SoilGrids, del lote o del municipio |
 | `soil_cover` (suelo cubierto) | Cuántos meses queda el suelo cubierto mientras dura la estrategia | La duración de cada ciclo y, cuando existe, el NDVI para contrastar |
 | `pest_break` (corte de plagas) | Si una familia vuelve al mismo terreno demasiado pronto, contando los cultivos anteriores | `family` de la ficha y el historial del terreno |
 | `erosion` (erosión, decisión 14) | Si la estrategia deja el suelo descubierto en un terreno con pendiente | La pendiente del lote o del municipio (NASADEM, HU-206) y los meses descubiertos de `soil_cover` |
@@ -216,6 +218,8 @@ Decisión 15 (antes era un supuesto de HU-082):
 - Un criterio sin regla con fuente, o sin su dato (por ejemplo, sin carbono orgánico), es `insufficient_data`: no se inventa un corte ni se pinta como malo (R1, R8).
 - El suelo es una estimación de 250 m y el NDVI es de la zona: se dice siempre (R10).
 - Rotación de referencia con fuente: papa, avena y arveja, evaluada por Agrosavia en Tibaitatá (`docs/investigacion-decisiones.md`).
+
+> Los cultivos anteriores del terreno (paso 2 de «Cómo se arman» y `pest_break`) tienen una sola historia desde el 14 de noviembre de 2026 (decisión 6 de Felipe, PR #109; `docs/registro-de-decisiones.md`). La razón de `pest_break` dice cuándo se supuso la rotación actual o cuando no hay cultivos anteriores. La duración del descanso es un valor fijo de su ficha, decidido por Haider el 15 de noviembre de 2026 (PR #109): 180 días.
 
 ## Qué cambió en la zona
 
