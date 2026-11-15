@@ -27,47 +27,40 @@ from backend.api.calc_models import (
     DiagnosisRequest,
     DiagnosisRequestEcho,
     DiagnosisResponse,
-    LightResult,
     MunicipalityId,
     RotationRequest,
     RotationResponse,
-    Signal,
-    SourceValue,
     SuitabilityResult,
     TrendsResponse,
     WaterPlanRequest,
     WaterPlanResponse,
-    Window,
     WindowSummary,
 )
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
-from backend.api.lot_terrain import ZoneTemperature, zone_temperature, zone_texture
+from backend.api.lot_terrain import zone_temperature
 from backend.api.lots import _own_lot
-from backend.api.soil_signals import soil_for
 from backend.api.trends import trends as build_trends
+from backend.api.window_diagnosis import crop_name, diagnose_window, suitability_result, window_query
 from backend.api.window_signals import (
     SignalResult,
     SignalZone,
-    signal_sources,
-    signal_zone,
     window_signals,
 )
-from backend.config.thresholds import Thresholds, get_thresholds
+from backend.config.thresholds import Thresholds
 from backend.config.versions import rules_version
 from backend.config.weights import get_default_weights
-from backend.dataset import Dataset, Municipality
+from backend.dataset import Dataset
 from backend.db.session import get_db
 from backend.engine.changes import (
     Period,
     PeriodPair,
     compare_climate_months,
 )
-from backend.engine.diagnosis import diagnose, evaluates_windows, irrigation_used
-from backend.engine.signal_score import counts, round_half_up, signal_scores, weight_of
-from backend.engine.stages import crop_window, monthly_sowing_windows
-from backend.engine.suitability import NOT_SUITABLE, Suitability, ZoneTemperatureUsed, crop_suitability, suitability_reason
-from backend.engine.traffic_light import DEFAULT, FARMER, TrafficLight
+from backend.engine.signal_score import signal_scores
+from backend.engine.stages import monthly_sowing_windows
+from backend.engine.suitability import NOT_SUITABLE, crop_suitability
+from backend.engine.traffic_light import DEFAULT, FARMER
 from backend.engine.window_order import WindowSignals, best_windows, order_windows
 from common.dates import add_months
 from common.region import region_today
@@ -154,73 +147,6 @@ def _not_implemented(request: Request, what: str) -> None:
     raise ApiError(501, "not_implemented", NOT_IMPLEMENTED)
 
 
-def _get_article(crop: dict[str, Any]) -> str:
-    """El artículo ('el' o 'la') del nombre del cultivo, tal como lo trae el catálogo (`article`).
-
-    Es un dato de diseño del catálogo (`catalog/crops.yaml`, fuente `agrosense_diseno`), no una heurística: un
-    cultivo que no lo trae es un dataset sin reconstruir o una ficha incompleta, no algo para adivinar en silencio.
-    """
-    article = crop.get("article")
-    if not article:
-        crop_id = crop.get("crop_id", "?")
-        raise ApiError(
-            500,
-            "internal_error",
-            "Algo falló de nuestro lado. Intente de nuevo en un momento.",
-            log=f"Al cultivo {crop_id!r} le falta `article` en el catálogo: reconstruya el dataset.",
-        )
-    return article
-
-
-def _crop_name(crop: dict[str, Any]) -> str:
-    """El nombre del cultivo con su artículo, como lo dicen las razones: «la papa», «el haba»."""
-    return f"{_get_article(crop)} {crop.get('name_es', 'cultivo').lower()}"
-
-
-def _suitability_result(crop: dict[str, Any], result: Suitability, zone: ZoneTemperature, municipality: Municipality) -> SuitabilityResult:
-    """La aptitud con la forma del contrato; la razón la escribe el motor (`suitability_reason`)."""
-    used = ZoneTemperatureUsed(
-        zone.basis, zone.tmean_annual_c, zone.altitude_m, zone.by_center, municipality.tmean_annual_c, municipality.altitude_m
-    )
-    return SuitabilityResult(
-        level=result.level,
-        score=None if result.score is None else round_half_up(result.score),
-        basis=zone.basis,
-        tmean_annual_c=zone.tmean_annual_c,
-        altitude_m=zone.altitude_m,
-        reasons=[suitability_reason(result, crop, _crop_name(crop), used)],
-    )
-
-
-def _light(result: TrafficLight, weights_basis: str) -> LightResult:
-    """La luz del motor con la forma del contrato. `weights_basis` lo pone la API: el motor solo lo usa en las razones."""
-    return LightResult(
-        light=result.light,
-        action=result.action,
-        high_risk=result.high_risk,
-        weights_basis=weights_basis,
-        limiting_signal=result.limiting_signal,
-        reasons=list(result.reasons),
-    )
-
-
-def _signal(name: str, result: SignalResult, weights: dict[str, int]) -> Signal:
-    """Una señal con la forma del contrato. `counts` es si cuenta para la luz con los pesos de `overall` (contrato,
-    «Respuesta de diagnóstico»), con la misma definición que el semáforo y el orden (`counts` del motor). `sources` solo
-    viene en la señal que trae varias fuentes para contrastar (en el MVP, el agua); en las demás es nulo."""
-    sources = signal_sources(result)
-    return Signal(
-        status=result.status,
-        level=result.level,
-        critical=result.critical,
-        score=result.score,
-        counts=counts(name, weight_of(weights, name), result.critical),
-        indicators=list(result.indicators),
-        reasons=list(result.reasons),
-        sources=None if sources is None else [SourceValue.model_validate(source, from_attributes=True) for source in sources],
-    )
-
-
 def _best_windows(
     dataset: Dataset,
     zone: SignalZone,
@@ -274,66 +200,44 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     _check_sowing_date(body.sowing_date)
     lot = _check_lot(request, db, body.lot_id, body.municipality_id)
 
-    # La temperatura es la del municipio o, con un lote dibujado, la corregida a su altitud (primer criterio de
-    # HU-191). Al log solo va de dónde salió, no el lote (R9).
-    crop = dataset.crops[body.crop_id]
-    crop_name = _crop_name(crop)
-    municipality = dataset.municipalities[body.municipality_id]
-    zone = zone_temperature(dataset, municipality, lot)
-    explain(request, f"Aptitud decidida con la temperatura de su {'lote' if zone.basis == 'lot' else 'municipio'}")
-    fit = crop_suitability(crop, zone.tmean_annual_c)
-    fit_result = _suitability_result(crop, fit, zone, municipality)
-
     # Sin `priorities`, los pesos de quien consulta son los de AgroSense (cacheados: `weights.yaml` no se vuelve a leer
     # en cada consulta), y las dos luces salen iguales. Las prioridades no van al log (R9).
     defaults = get_default_weights().weights
     weights, basis = (body.priorities.model_dump(), FARMER) if body.priorities is not None else (defaults, DEFAULT)
-    # El eco dice el riego que se usó, que es el que la web guarda con la temporada (`diagnosis_irrigated`).
-    irrigated = irrigation_used(lot is not None, lot.irrigated if lot is not None else None, body.irrigated)
+    municipality = dataset.municipalities[body.municipality_id]
+    query = window_query(dataset, municipality, lot, weights, basis, defaults, body.irrigated)
+    # La temperatura es la del municipio o, con un lote dibujado, la corregida a su altitud (primer criterio de
+    # HU-191). Al log solo va de dónde salió, no el lote (R9).
+    explain(request, f"Aptitud decidida con la temperatura de su {'lote' if query.zone.basis == 'lot' else 'municipio'}")
+    result = diagnose_window(query, body.crop_id, body.sowing_date)
 
-    thresholds = get_thresholds()
-    signal_place = signal_zone(dataset, municipality)
-    # La textura del suelo para el agua: la del lote si tiene contorno, si no la del municipio. No va al log ni se guarda
-    # (R9).
-    texture = zone_texture(dataset, municipality, lot)
-    window = signals = soil = None
-    if evaluates_windows(fit.level):
-        window = crop_window(dataset.stages.get(body.crop_id, []), body.sowing_date)
-        # El suelo no cambia con la fecha: una sola vez por consulta (HU-183).
-        soil = soil_for(dataset, municipality, lot is not None, crop, thresholds, crop_name)
-        signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds, irrigated, texture, soil)
-
-    diagnosis = diagnose(fit.level, fit_result.reasons, zone.limitation, irrigated, signals, weights, basis, defaults)
     best = None
-    if diagnosis.best_windows_weights is not None:
+    if result.diagnosis.best_windows_weights is not None:
+        crop = dataset.crops[body.crop_id]
         best = _best_windows(
-            dataset, signal_place, body.crop_id, crop, crop_name, thresholds, diagnosis.best_windows_weights, irrigated, texture, soil
+            dataset,
+            query.place,
+            body.crop_id,
+            crop,
+            crop_name(crop),
+            query.thresholds,
+            result.diagnosis.best_windows_weights,
+            query.irrigated,
+            query.texture,
+            result.soil,
         )
 
     return DiagnosisResponse(
+        # El eco dice el riego que se usó, que es el que la web guarda con la temporada (`diagnosis_irrigated`).
         request=DiagnosisRequestEcho(
             municipality_id=body.municipality_id,
             crop_id=body.crop_id,
             sowing_date=body.sowing_date,
-            irrigated=irrigated,
+            irrigated=query.irrigated,
             lot_id=body.lot_id,
         ),
-        suitability=fit_result,
-        window=None
-        if window is None
-        else Window(
-            sowing_start=window.sowing_date,
-            harvest_estimate=window.harvest_estimate,
-            harvest_basis=window.harvest_basis,
-            supply_semester=None,
-        ),
-        signals=None if signals is None else {name: _signal(name, result, weights) for name, result in signals.items()},
-        overall=_light(diagnosis.overall, basis),
-        overall_default=_light(diagnosis.overall_default, DEFAULT),
-        weights=weights,
+        **dict(result.core),
         best_windows=best,
-        limitations=list(diagnosis.limitations),
-        versions={"dataset": dataset.version, "rules": rules_version(dataset.rules_version)},
     )
 
 
@@ -536,7 +440,7 @@ def changes(
         precip_periods=precip_periods,
     )
 
-    aptitude_reason = _suitability_result(crop, aptitude, zone, municipality).reasons[0]
+    aptitude_reason = suitability_result(crop, aptitude, zone, municipality).reasons[0]
 
     if irrigated is None:
         limitations.append("No se indicó si hay riego; se asume sin riego.")

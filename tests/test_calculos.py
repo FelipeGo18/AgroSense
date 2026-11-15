@@ -10,10 +10,10 @@ from fastapi.testclient import TestClient
 
 from backend.api import calc_examples as ex
 from backend.api import calc_models as m
-from backend.api.calculations import _get_article, _suitability_result
 from backend.api.errors import ApiError
 from backend.api.lot_terrain import ZoneTemperature
 from backend.api.main import app
+from backend.api.window_diagnosis import get_article, suitability_result
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
 from backend.dataset import Municipality
@@ -159,22 +159,22 @@ def test_el_suelo_del_municipio_con_los_datos_de_ejemplo(monkeypatch):
     assert body["slope_pct"] == 9.0
 
 
-# ---------- `_get_article`: el artículo sale del catálogo, nunca de una heurística ----------
+# ---------- `get_article`: el artículo sale del catálogo, nunca de una heurística ----------
 
 
 def test_get_article_lee_el_campo_del_catalogo():
     """Lee `article` del catálogo tal cual, sin adivinar por la terminación del nombre."""
-    assert _get_article({"crop_id": "papa", "name_es": "Papa", "article": "la"}) == "la"
+    assert get_article({"crop_id": "papa", "name_es": "Papa", "article": "la"}) == "la"
     # Caso que la heurística vieja («termina en 'a' → la») habría fallado: «Haba» termina en «a» pero lleva «el»
     # (excepción fonética, como «el agua»).
-    assert _get_article({"crop_id": "haba", "name_es": "Haba", "article": "el"}) == "el"
+    assert get_article({"crop_id": "haba", "name_es": "Haba", "article": "el"}) == "el"
 
 
 def test_get_article_sin_el_campo_lanza_error_claro():
     """Sin `article` no se adivina en silencio: se lanza un error que nombra el `crop_id` (en vez de una frase mal
     escrita), con el código del proyecto para errores de la API, no una excepción cruda."""
     with pytest.raises(ApiError) as excinfo:
-        _get_article({"crop_id": "cultivo_ficticio", "name_es": "Cultivo ficticio"})
+        get_article({"crop_id": "cultivo_ficticio", "name_es": "Cultivo ficticio"})
     assert excinfo.value.status_code == 500 and excinfo.value.code == "internal_error"
     assert "cultivo_ficticio" in excinfo.value.log
 
@@ -196,7 +196,7 @@ def test_la_aptitud_sin_article_propaga_el_error():
     result = Suitability("not_suitable", 0.0, ABOVE_MAX)
     place, zone = municipality(30.0)
     with pytest.raises(ApiError) as excinfo:
-        _suitability_result(crop, result, zone, place)
+        suitability_result(crop, result, zone, place)
     assert "cultivo_ficticio" in excinfo.value.log
 
 
@@ -205,7 +205,7 @@ def test_la_razon_de_la_aptitud_usa_el_articulo_del_catalogo():
     bien escrita porque el nombre con su artículo se lee del catálogo, no de la terminación del nombre."""
     crop = {"crop_id": "haba", "name_es": "Haba", "article": "el", "tmean_min_c": 5.0, "tmean_max_c": 32.0}
     place, zone = municipality(35.0)
-    reason = _suitability_result(crop, Suitability("not_suitable", 0.0, ABOVE_MAX), zone, place).reasons[0]
+    reason = suitability_result(crop, Suitability("not_suitable", 0.0, ABOVE_MAX), zone, place).reasons[0]
     assert "aguanta el haba" in reason
 
 
