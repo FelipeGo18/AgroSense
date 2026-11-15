@@ -4,9 +4,11 @@ uv run uvicorn backend.api.main:app --reload
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, tickets, version
@@ -86,8 +88,9 @@ def create_app() -> FastAPI:
         headers.setdefault("X-Content-Type-Options", "nosniff")
         headers.setdefault("X-Frame-Options", "DENY")
         headers.setdefault("Referrer-Policy", "no-referrer")
-        # La página de la documentación (solo en desarrollo) carga su JavaScript y su estilo: no lleva esta política.
-        if request.url.path != DOCS_URL:
+        # La página de la documentación (solo en desarrollo) y la web (HU-023) cargan su JavaScript y su estilo: no
+        # llevan esta política, que es la de las respuestas JSON de la API.
+        if request.url.path.startswith("/api/") and request.url.path != DOCS_URL:
             headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
         if request.url.scheme == "https":
             headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
@@ -121,7 +124,33 @@ def create_app() -> FastAPI:
             },
         }
 
+    web_dir = get_settings().web_dir
+    if web_dir is not None:
+        install_web(app, web_dir)
+
     return app
+
+
+def install_web(app: FastAPI, web_dir: Path) -> None:
+    """Sirve el build de la web en el mismo origen que la API (HU-023): la cookie de sesión viaja sin CORS, como en
+    desarrollo con el puente de Vite. Un archivo que existe se sirve tal cual; una página con HTML generado en el build
+    (`/entrar` → `entrar/index.html`) también; cualquier otra ruta de la web recibe `index.html` y la resuelve React
+    Router. Lo que empieza por `/api/` nunca cae aquí: una ruta de la API que no existe sigue siendo un 404 en JSON."""
+    root = web_dir.resolve()
+    index = root / "index.html"
+    if not index.is_file():
+        raise RuntimeError(f"AGROSENSE_WEB_DIR no tiene el build de la web (falta {index}).")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def web(path: str) -> FileResponse:
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(status_code=404)
+        for candidate in (root / path, root / path / "index.html"):
+            resolved = candidate.resolve()
+            # Nada fuera de la carpeta del build (`..` en la ruta).
+            if resolved.is_file() and resolved.is_relative_to(root):
+                return FileResponse(resolved)
+        return FileResponse(index)
 
 
 app = create_app()

@@ -414,6 +414,31 @@ Solo el dueño puede hacerlo (*Settings* del repositorio):
 3. Opcional: exigir la revisión de los dueños del código (`.github/CODEOWNERS`): los cambios de migraciones son cambios
    de contrato y los revisan Haider o Felipe.
 
+## Producción en Google Cloud (HU-023, HU-234, HU-235)
+
+La infraestructura está en `infra/` (Terraform), en el proyecto `agrosense-prod-2026`, región `us-east1`, en la capa
+gratuita:
+
+- **Cloud Run** `agrosense`: la imagen `produccion` del `Dockerfile` (la API y el build de la web en el mismo origen,
+  `AGROSENSE_WEB_DIR`). Escala a 0; `min_instances = 1` solo durante el juzgamiento (sale del crédito).
+- **La base:** PostgreSQL 17 en una VM e2-micro (`agrosense-db`), sin puerto público: solo Cloud Run llega al 5432, por la
+  red privada y con SSL. Copia diaria con `pg_dump`, 7 días, en el disco de la VM. Cloud SQL no tiene capa gratuita.
+- **Secretos:** la cadena de conexión está en Secret Manager (`agrosense-database-url`); la clave la genera Terraform y
+  queda en su estado local (`infra/terraform.tfstate`, fuera de git).
+- **Migraciones:** el job `agrosense-migrate` (`python -m backend.db.migrate`, con copia antes) corre antes de cada
+  despliegue; el servicio no migra al arrancar (`AGROSENSE_AUTO_MIGRATE=false`).
+
+**Desplegar.** Al fusionar en `produccion`, `.github/workflows/deploy-produccion.yml` construye la imagen, la sube a
+Artifact Registry, migra, despliega y comprueba `/api/v1/version` y `/`; si no responden, vuelve a la revisión anterior.
+Se identifica con Workload Identity Federation (sin llaves), solo desde `produccion`. El dueño del repositorio crea el
+entorno `produccion` (con aprobación de Felipe o Haider) y sus variables `GCP_WIF_PROVIDER` y `GCP_DEPLOY_SA` (las salidas
+de `terraform output`).
+
+**Cambiar la infraestructura:** `cd infra && terraform plan && terraform apply`, con `gcloud auth application-default
+login` en el proyecto. **Volver atrás a mano:** `gcloud run services update-traffic agrosense --region us-east1
+--to-revisions <revisión>=100`. **Entrar a la VM:** `gcloud compute ssh agrosense-db --zone us-east1-b
+--tunnel-through-iap`.
+
 ## Carpetas
 
 ```

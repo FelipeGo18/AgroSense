@@ -1,0 +1,82 @@
+# Despliegue a producción (HU-235): al fusionar en `produccion` (o a mano), construye la imagen con la web, la sube a
+# Artifact Registry, aplica las migraciones con el job `agrosense-migrate` y despliega en Cloud Run. Si la dirección
+# pública no responde, vuelve a la revisión anterior y termina en rojo. La infraestructura está en `infra/` (Terraform).
+#
+# Lo que configura el dueño del repositorio, en el entorno `produccion` de GitHub (con aprobación de Felipe o Haider):
+#   - variable GCP_WIF_PROVIDER: salida `github_wif_provider` de Terraform
+#   - variable GCP_DEPLOY_SA: salida `github_deploy_service_account`
+# No hay llaves JSON: GitHub se identifica con Workload Identity Federation, y solo desde `produccion`.
+name: Desplegar a producción
+
+on:
+  push:
+    branches: [produccion]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-produccion
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: agrosense-prod-2026
+  REGION: us-east1
+  SERVICE: agrosense
+  JOB: agrosense-migrate
+  IMAGE: us-east1-docker.pkg.dev/agrosense-prod-2026/agrosense/app:${{ github.sha }}
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Construir y subir la imagen (API + web)
+        run: |
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build --target produccion -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Aplicar las migraciones (con copia antes)
+        run: |
+          gcloud run jobs update "$JOB" --image "$IMAGE" --region "$REGION" --quiet
+          gcloud run jobs execute "$JOB" --region "$REGION" --wait
+
+      - name: Desplegar en Cloud Run
+        id: deploy
+        run: |
+          previous="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.latestReadyRevisionName)')"
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+          gcloud run deploy "$SERVICE" --image "$IMAGE" --region "$REGION" --quiet
+          echo "url=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"
+
+      - name: Comprobar la dirección pública
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS --max-time 30 "$URL/api/v1/version" > /dev/null && curl -fsS --max-time 30 "$URL/" > /dev/null; then
+              echo "La API y la web responden en $URL"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$URL no responde"
+          exit 1
+
+      - name: Volver a la revisión anterior
+        if: failure() && steps.deploy.outputs.previous != ''
+        env:
+          PREVIOUS: ${{ steps.deploy.outputs.previous }}
+        run: gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-revisions "$PREVIOUS=100" --quiet

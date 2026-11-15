@@ -76,6 +76,10 @@ class Settings(BaseSettings):
     # Dónde está el dataset publicado por el pipeline (Parquet y manifest.json). Solo se lee.
     data_dir: Path = Field(Path("data/published"), validation_alias="AGROSENSE_DATA_DIR")
 
+    # El build de la web (`web/dist`) que sirve la API en producción, en el mismo origen (HU-023). Sin la variable, la API
+    # solo sirve la API: en desarrollo la web corre aparte con `npm run dev`.
+    web_dir: Path | None = Field(None, validation_alias="AGROSENSE_WEB_DIR")
+
     # Precios de SIPSA al día (HU-222): las versiones que dejan las actualizaciones del servicio `market` (los crons de
     # `backend/market/updates.py`). La API solo las lee: nunca baja nada.
     market_dir: Path = Field(Path("data/market"), validation_alias="AGROSENSE_MARKET_DIR")

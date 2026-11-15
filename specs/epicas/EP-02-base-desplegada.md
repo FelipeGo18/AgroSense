@@ -78,7 +78,7 @@ estado: pendiente
   - [ ] Borrar una cuenta en producción borra todo lo suyo (R9), como en las pruebas
 - **Reglas que aplican:** R9
 - **Contrato que toca:** ninguno
-- **Notas:** Decidido por Felipe el 14 de noviembre de 2026: la demo y el enlace de la entrega van contra la base de producción. Asignada a Haider y David Carreño.
+- **Notas:** Decidido por Felipe el 14 de noviembre de 2026: la demo y el enlace de la entrega van contra la base de producción. Asignada a Haider y David Carreño. **15 de noviembre de 2026 (propuesta de David, pendiente de aprobar por Felipe):** la base de producción es PostgreSQL 17 en una VM e2-micro de Compute Engine (`infra/`, Terraform) y no Cloud SQL, porque Cloud SQL no tiene capa gratuita y la VM sí (us-east1). Sin puerto público: solo Cloud Run llega por la red privada, con SSL y clave. Copia diaria con `pg_dump`, 7 días. Un solo usuario (`agrosense`) para la app y las migraciones: separar el de migraciones queda pendiente.
 
 ### HU-235 · Desplegar al fusionar en `produccion`
 
