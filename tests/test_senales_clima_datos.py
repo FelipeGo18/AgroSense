@@ -146,3 +146,37 @@ def test_la_api_pasa_las_filas_de_calor_como_estan(examples):
     rows = heat_months(replace(examples, climate_risk_month=risk), TUNJA)
     assert set(rows) == set(range(1, 13))
     assert rows[1].quality == "partial" and rows[2] == HeatMonth(None, "ok") and math.isnan(rows[3].tmax_p90_c)
+
+
+# ---------- un dataset sin el periodo normal no arranca la API (Haider, PR #115) ----------
+
+
+def start_api_with(folder: Path, monkeypatch):
+    from backend.api import main
+    from backend.config.settings import get_settings
+    from backend.dataset import _cached
+
+    monkeypatch.setenv("AGROSENSE_DATA_DIR", str(folder))
+    get_settings.cache_clear()
+    _cached.cache_clear()
+    return main.create_app()
+
+
+def test_sin_climate_normal_en_el_manifiesto_la_api_no_arranca(tmp_path, monkeypatch):
+    import json
+    import shutil
+
+    from backend.api.climate_signals import DatasetIncomplete
+
+    folder = tmp_path / "published"
+    shutil.copytree(EXAMPLES, folder)
+    manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    del manifest["region"]["climate_normal"]
+    (folder / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(DatasetIncomplete, match="climate_normal"):
+        start_api_with(folder, monkeypatch)
+
+
+def test_con_climate_normal_o_sin_dataset_la_api_arranca(tmp_path, monkeypatch):
+    assert start_api_with(EXAMPLES, monkeypatch)
+    assert start_api_with(tmp_path / "sin-dataset", monkeypatch)
