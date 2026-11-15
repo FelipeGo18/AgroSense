@@ -95,6 +95,8 @@ describe("Dos luces: reglas (HU-203)", () => {
     // La oferta y el mercado no cambian la luz (decisión 17): un peso suyo distinto no explica por qué difieren.
     expect(whyDifferent(MINE, DEFAULTS)).toBe("Usted puso las heladas en 0 (AgroSense: 3).");
     expect(whyDifferent({ ...DEFAULTS, supply: 0 }, DEFAULTS)).toBe("Las luces difieren porque usted usa sus propias prioridades.");
+    // El mercado tiene control (HU-240), pero solo ordena las ventanas: tampoco explica por qué difieren las luces.
+    expect(whyDifferent({ ...DEFAULTS, frost: 0, market: 5 }, DEFAULTS)).toBe("Usted puso las heladas en 0 (AgroSense: 3).");
     expect(whyDifferent(MINE, null)).toBe("Las luces difieren porque usted usa sus propias prioridades.");
   });
 

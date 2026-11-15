@@ -303,12 +303,14 @@ describe("Sus prioridades (HU-160, HU-202)", () => {
     expect(prio.getByText("Está usando el criterio de AgroSense.")).toBeInTheDocument();
     expect(level("Agua", 3)).toHaveAttribute("aria-checked", "true");
     expect(level("Suelo", 2)).toHaveAttribute("aria-checked", "true");
-    expect(prio.getByText(/Criterio de AgroSense: agua 3 · heladas 3 · calor 3 · suelo 2\./)).toBeInTheDocument();
-    // La oferta y el mercado se muestran sin calificar (decisión 17): sin control, con la línea que lo dice.
-    expect(prio.getAllByRole("radiogroup")).toHaveLength(4);
+    expect(prio.getByText(/Criterio de AgroSense: agua 3 · heladas 3 · calor 3 · suelo 2 · mercado 2\./)).toBeInTheDocument();
+    // La oferta se muestra sin calificar (decisión 17): sin control, con la línea que lo dice. El mercado tiene control
+    // (HU-240) con su nota: solo ordena las ventanas con 4 o 5.
+    expect(prio.getAllByRole("radiogroup")).toHaveLength(5);
     expect(prio.queryByRole("radiogroup", { name: /^Oferta:/ })).toBeNull();
-    expect(prio.queryByRole("radiogroup", { name: /^Mercado:/ })).toBeNull();
-    expect(prio.getByText(/La oferta y el mercado se muestran sin calificar y no cambian la luz/)).toBeInTheDocument();
+    expect(level("Mercado", 2)).toHaveAttribute("aria-checked", "true");
+    expect(prio.getByText("Solo ordena las ventanas con 4 o 5; no cambia la luz")).toBeInTheDocument();
+    expect(prio.getByText("La oferta se muestra sin calificar y no tiene prioridad.")).toBeInTheDocument();
     // Agua, heladas y calor dicen que un riesgo grave cuenta siempre.
     expect(prio.getAllByText("Un riesgo grave cuenta siempre")).toHaveLength(3);
     expect(prio.queryByRole("button", { name: "Volver al criterio de AgroSense" })).toBeNull();
