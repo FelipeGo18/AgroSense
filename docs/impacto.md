@@ -35,7 +35,7 @@ La tabla dice lo que hace el diseño del MVP. Qué está funcionando el día de 
 
 - **Menos pérdidas por clima:** el diagnóstico muestra en qué épocas han helado o hecho calor en las etapas sensibles del cultivo, y cuáles ventanas de siembra salen mejor en la historia de la zona.
 - **Menos insumos:** las leguminosas fijan su propio nitrógeno del aire, una ventaja económica para la finca (ver la tabla de impacto ambiental). AgroSense no calcula cuánto fertilizante se ahorra.
-- **La oferta y el precio, como valor agregado:** la oferta (EVA) y el mercado (precios mayoristas de SIPSA) entran al diagnóstico y al criterio de ingreso de las estrategias. Hoy salen «datos insuficientes»: ninguna fuente dice qué es «mucho sembrado» o «precio bajo», y AgroSense no usa un criterio propio para eso (decisión 12). En las estrategias nunca excluyen una opción: solo bajan su criterio de ingreso.
+- **La oferta y el precio, como valor agregado:** la oferta (EVA) y el mercado (precios mayoristas de SIPSA) entran al diagnóstico **sin calificar** (decisión 17, propuesta): ninguna fuente dice qué es «mucho sembrado» o «precio bajo», y AgroSense no usa un criterio propio para eso. Lo que sí dicen los datos se muestra como historia: en cuántos años el mes de la cosecha tuvo mejor o peor precio que el resto de su año (en la papa de Corabastos, septiembre estuvo por debajo las 12 temporadas de 2013 a 2024), y cuánto se sembró en el municipio. El precio ordena las ventanas solo si al agricultor le importa mucho, y da el criterio de ingreso de las estrategias. Nunca cambia la luz ni excluye una opción.
 - **No promete ingresos.** No predice cuánto se va a cosechar ni a qué precio se va a vender.
 
 ## Cómo se mediría (propuesta, después del reto)
