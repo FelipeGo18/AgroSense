@@ -43,14 +43,14 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-178 · Trazabilidad de lo que hacen agricultores y administradores
 
 - **Historia:** Como agricultor, quiero ver qué se hizo con mi cuenta y mis lotes, y como equipo queremos saber quién hizo qué y cuándo, para confiar en la app y resolver tickets.
-- **Prioridad:** P1 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Tabla `activity_log` con migración, según «Trazabilidad» del contrato
   - [x] Cada endpoint de cuenta escribe su evento en la misma transacción que el cambio; los intentos `denied` y `failed` también quedan
-  - [ ] Prueba: ningún endpoint de cálculo escribe en `activity_log` (R9)
+  - [x] Prueba: ningún endpoint de cálculo escribe en `activity_log` (R9). **Hecho (14 nov 2026):** `tests/accounts/test_actividad_protegida.py` llama, con sesión abierta, a `/diagnostics`, `/rotations`, `/water-plans`, `/changes` y `/trends`
   - [x] Prueba: ningún evento guarda contraseñas, tokens, el polígono ni valores de campos
-  - [ ] El usuario de la API no puede modificar ni borrar eventos; la limpieza de 180 días corre con otro rol
-  - [ ] Borrar la cuenta borra los eventos del agricultor y anonimiza las acciones de administradores sobre sus datos
+  - [x] Un `UPDATE` o `DELETE` por error en `activity_log` lo rechaza la base: solo se agrega, salvo anonimizar (dejar en nulo de quién eran los datos), olvidar a quien borra su cuenta (`agrosense.forget_user`) y la limpieza de lo de más de 180 días (`agrosense.activity_purge`), cada uno pedido en su misma transacción (migración 1.4, 14 nov 2026). **Cambiado el 14 nov 2026 (decidido por Felipe; revisión de Haider del PR #134):** el criterio original pedía que el usuario de la API no pudiera borrar eventos y que la limpieza corriera con otro rol; la base de la nube no tiene rol aparte, y con el disparador el mismo usuario de la API puede pedirse el permiso: protege de un cambio por error, no de alguien con la contraseña de la base. El rol aparte, con solo `INSERT` y `SELECT` para la API, queda para la base de producción (HU-234)
+  - [x] Borrar la cuenta borra los eventos del agricultor y anonimiza las acciones de administradores sobre sus datos (`activity.forget_user`, con la prueba `test_borrar_la_cuenta_se_lleva_todo_lo_suyo`; sigue pasando con el disparador)
   - [x] `GET /me/activity` y la pantalla «Mi actividad» en Mi cuenta, con el estado de cada evento (`ok`, `denied`, `failed`)
   - [x] El `request_id` de cada evento coincide con el de la terminal (HU-177)
   - [x] (Web, 12 de octubre de 2026) «Mi actividad» en `/mi-cuenta/actividad`: cada evento en palabras, con quién lo hizo (usted o soporte), cuándo y su resultado con forma y texto; solo los nombres de los campos que cambiaron; de a 50 con «Ver más antiguos». «¿Ve algo que no hizo?» lleva a cambiar la contraseña mientras no exista «Reportar un problema» (HU-170)

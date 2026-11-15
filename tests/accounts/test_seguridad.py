@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import sessionmaker
 from structlog.testing import capture_logs
 
@@ -246,9 +246,12 @@ def test_las_contrasenas_malas_al_borrar_cuentan_para_el_tope(client):
 
 def test_al_arrancar_se_borra_la_actividad_de_mas_de_180_dias(client, db, engine, database_url):
     client.post("/api/v1/auth/register", json=ROSA)
+    # La actividad solo se agrega (migración 1.4): para envejecer un evento en la prueba se apaga el disparador un momento.
+    db.execute(text("alter table activity_log disable trigger activity_log_guard"))
     db.execute(
         update(ActivityEvent).where(ActivityEvent.action == "auth.registered").values(occurred_at=datetime.now(UTC) - timedelta(days=181))
     )
+    db.execute(text("alter table activity_log enable trigger activity_log_guard"))
     db.commit()
     with capture_logs() as logs:
         migrate.on_startup(database_url, alembic_config(database_url))
@@ -280,9 +283,12 @@ def test_entrar_solo_inicia_sesion_y_no_limpia(client, db):
     """Cada endpoint hace solo lo suyo: lo vencido lo borra el mantenimiento, no el inicio de sesión."""
     client.post("/api/v1/auth/register", json=ROSA)
     db.execute(update(Session).values(expires_at=datetime.now(UTC) - timedelta(seconds=1)))
+    # La actividad solo se agrega (migración 1.4): para envejecer un evento en la prueba se apaga el disparador un momento.
+    db.execute(text("alter table activity_log disable trigger activity_log_guard"))
     db.execute(
         update(ActivityEvent).where(ActivityEvent.action == "auth.registered").values(occurred_at=datetime.now(UTC) - timedelta(days=181))
     )
+    db.execute(text("alter table activity_log enable trigger activity_log_guard"))
     db.commit()
     assert client.post("/api/v1/auth/login", json=LOGIN).status_code == 200
     db.expire_all()
@@ -293,9 +299,12 @@ def test_entrar_solo_inicia_sesion_y_no_limpia(client, db):
 def test_el_mantenimiento_dice_cuanto_borro(client, db):
     client.post("/api/v1/auth/register", json=ROSA)
     db.execute(update(Session).values(expires_at=datetime.now(UTC) - timedelta(seconds=1)))
+    # La actividad solo se agrega (migración 1.4): para envejecer un evento en la prueba se apaga el disparador un momento.
+    db.execute(text("alter table activity_log disable trigger activity_log_guard"))
     db.execute(
         update(ActivityEvent).where(ActivityEvent.action == "auth.registered").values(occurred_at=datetime.now(UTC) - timedelta(days=181))
     )
+    db.execute(text("alter table activity_log enable trigger activity_log_guard"))
     db.commit()
     assert maintenance.run(db) == maintenance.Cleaned(sessions=1, events=1)
     db.commit()

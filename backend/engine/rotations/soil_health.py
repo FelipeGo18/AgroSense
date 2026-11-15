@@ -204,7 +204,8 @@ def _organic_carbon(sequence: Sequence[str], crops: Mapping[str, SoilCrop], soil
     low = soil.soc_g_kg < rule.params["soc_low_g_kg"]
     level = level_from_cuts(count, rule.levels["low" if low else "normal"])
     has_range = soil.soc_p05 is not None and soil.soc_p95 is not None
-    soc_range = f"{_dec(soil.soc_p05)} a {_dec(soil.soc_p95)}" if has_range else "sin su rango de incertidumbre"
+    # La unidad va con el rango: sin rango, la razón no deja un «g/kg» suelto (R5).
+    soc_range = f"{_dec(soil.soc_p05)} a {_dec(soil.soc_p95)} g/kg" if has_range else "sin su rango de incertidumbre"
     reason = rule.reason_template.format(count=count, soc_level="bajo" if low else "normal", soc_range=soc_range)
     return Criterion("available", level, (_text(reason, rule),), (rule.rule_id,), (rule.source_id, soil.source_id))
 
