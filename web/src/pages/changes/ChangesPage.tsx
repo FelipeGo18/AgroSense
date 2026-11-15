@@ -4,8 +4,11 @@ import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { StateCard } from "@/components/ui/StateCard";
+import { ExampleLabel } from "@/components/ui/Labels";
+import { useVersion } from "@/features/version";
 import { useChanges, type ChangesResponse } from "@/features/changes/changes";
-import { SIGNAL_NAME } from "@/features/diagnosis/signals";
+import { SIGNAL_NAME, sourceName } from "@/features/diagnosis/signals";
 import { ChangesContext, useChangesContext } from "./ChangesContext";
 
 type Period = Schemas["Period"];
@@ -54,7 +57,7 @@ const INDICATORS: {
   },
   {
     key: "tmax_p90_c",
-    title: "Temperatura máxima · percentil 90",
+    title: "Temperatura máxima habitual",
     unit: "°C",
     differenceUnit: "°C",
   },
@@ -62,12 +65,6 @@ const INDICATORS: {
 
 function periodLabel(period: Period) {
   return `Entre ${period.start_year} y ${period.end_year}`;
-}
-
-function sourceLabel(sourceId: string) {
-  if (sourceId === "nasa_power") return "NASA POWER";
-  if (/imerg/i.test(sourceId)) return "GPM IMERG";
-  return sourceId;
 }
 
 function Missing() {
@@ -138,6 +135,7 @@ function Comparison({
   unit: string;
   differenceUnit: string;
 }) {
+  const version = useVersion();
   const periods = indicator === "precip_normal_mm" ? (data.precip_periods ?? data.periods) : data.periods;
 
   const sameSource = periods.before.source_id === periods.after.source_id;
@@ -167,8 +165,10 @@ function Comparison({
       ) : (
         <>
           <p className="text-sm text-texto-secundario">
-            Fuente: {sourceLabel(periods.before.source_id)}. Unidades: {unit}.
+            Fuente: {sourceName(periods.before.source_id, version.data)}. Unidades: {unit}.
           </p>
+          {indicator === "frost_freq_pct" && <p className="text-sm">Porcentaje de años con heladas en cada mes.</p>}
+          {indicator === "tmax_p90_c" && <p className="text-sm">En 9 de cada 10 días, la temperatura máxima no superó este valor.</p>}
 
           {power && <p className="text-sm">NASA POWER es un reanálisis, un modelo con observaciones; no es una observación directa.</p>}
 
@@ -185,39 +185,46 @@ function Comparison({
               return (
                 <li key={monthName} className="border-t border-superficie-borde pt-3">
                   <h3 className="font-bold">{monthName}</h3>
+                  {!metric ? (
+                    <p>La respuesta no trae este mes.</p>
+                  ) : (
+                    <>
+                      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <PeriodValue
+                          label={periodLabel(periods.before)}
+                          value={metric?.before}
+                          unit={unit}
+                          minimum={minimum}
+                          maximum={maximum}
+                          before
+                        />
+                        <PeriodValue
+                          label={periodLabel(periods.after)}
+                          value={metric?.after}
+                          unit={unit}
+                          minimum={minimum}
+                          maximum={maximum}
+                          before={false}
+                        />
+                      </div>
+                    </>
+                  )}
 
-                  <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <PeriodValue
-                      label={periodLabel(periods.before)}
-                      value={metric?.before}
-                      unit={unit}
-                      minimum={minimum}
-                      maximum={maximum}
-                      before
-                    />
-                    <PeriodValue
-                      label={periodLabel(periods.after)}
-                      value={metric?.after}
-                      unit={unit}
-                      minimum={minimum}
-                      maximum={maximum}
-                      before={false}
-                    />
-                  </div>
-
-                  <div className="mt-2 text-sm">
-                    {comparable ? (
-                      <p>
-                        Cambio, después menos antes: {metric.change! > 0 ? "+" : ""}
-                        {NUMBER.format(metric.change!)} {differenceUnit}.
-                      </p>
-                    ) : (
-                      <>
-                        <p>Cambio entre periodos:</p>
-                        <Missing />
-                      </>
-                    )}
-                  </div>
+                  {metric && (
+                    <div className="mt-2 text-sm">
+                      {comparable ? (
+                        <p>
+                          Cambio, después menos antes: {metric.change! > 0 ? "+" : ""}
+                          {NUMBER.format(metric.change!)} {differenceUnit}.
+                        </p>
+                      ) : (
+                        <>
+                          <p>Cambio entre periodos:</p>
+                          <Missing />
+                        </>
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -250,8 +257,8 @@ function Windows({ periods, windows }: { periods: Periods; windows: ChangesRespo
 
                     {window.limiting_score != null ? (
                       <p>
-                        Factor limitante: {NUMBER.format(window.limiting_score)}/100
-                        {window.limiting_signal ? ` · ${SIGNAL_NAME[window.limiting_signal]}` : ""}
+                        Lo que más limita: {window.limiting_signal ? SIGNAL_NAME[window.limiting_signal] : "sin identificar"}. Calificación:{" "}
+                        {NUMBER.format(window.limiting_score)}/100.
                       </p>
                     ) : (
                       <Missing />
@@ -314,25 +321,11 @@ export function ChangesPage() {
 
         {complete && query.isPending && <p role="status">Cargando la comparación histórica…</p>}
 
-        {complete && query.isError && (
-          <Card>
-            <p role="alert">
-              {query.error instanceof ApiError && query.error.status === 501
-                ? "La comparación histórica todavía no está disponible para este cultivo y municipio."
-                : query.error.message}
-            </p>
-
-            <Button onClick={() => void query.refetch()} className="self-start">
-              Volver a intentar
-            </Button>
-          </Card>
-        )}
+        {complete && query.isError && <ChangesError error={query.error} onRetry={() => void query.refetch()} />}
 
         {complete && data && (
           <>
-            {data.versions.dataset === "ejemplo" && (
-              <p className="border-2 border-dashed p-3 font-bold">Datos de ejemplo. No representan observaciones reales.</p>
-            )}
+            {data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>}
 
             {data.suitability.level === "not_suitable" ? (
               <Card>
@@ -399,5 +392,38 @@ export function ChangesPage() {
 
       <Footer />
     </>
+  );
+}
+
+function ChangesError({ error, onRetry }: { error: Error; onRetry: () => void }) {
+  const status = error instanceof ApiError ? error.status : null;
+  if (status === 501)
+    return (
+      <StateCard
+        title="Este cálculo todavía no está disponible"
+        description="Esta versión de AgroSense todavía no calcula esta comparación."
+      />
+    );
+  const actions = [{ label: "Reintentar", onClick: onRetry }];
+  if (status === 0)
+    return <StateCard title="Sin conexión" description="Revise la señal e intente de nuevo. Lo que eligió sigue aquí." actions={actions} />;
+  if (status === 422)
+    return (
+      <StateCard
+        title="Revise lo que eligió"
+        description="No pudimos comparar con esas opciones. Revise el municipio, el cultivo y el riego en el formulario."
+      />
+    );
+  if (status === 503)
+    return (
+      <StateCard title="Los datos no están disponibles en este momento" description="Intente más tarde." mood="no_data" actions={actions} />
+    );
+  return (
+    <StateCard
+      title="Algo falló de nuestro lado"
+      description="No pudimos comparar la historia de su zona. Lo que eligió sigue aquí. Intente de nuevo en un momento."
+      code={error instanceof ApiError ? error.requestId : null}
+      actions={actions}
+    />
   );
 }

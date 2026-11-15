@@ -19,6 +19,7 @@ function answer(response = fixture(), failure?: ApiError) {
   mockedApi.mockImplementation(async (path) => {
     if (path === "/catalogs/municipalities") return examples.catalogs.municipalities;
     if (path === "/catalogs/crops") return examples.catalogs.crops;
+    if (path === "/version") return examples.catalogs.version;
     if (path.startsWith("/changes?")) {
       if (failure) throw failure;
       return response;
@@ -57,7 +58,7 @@ it("conserva el valor conocido y no inventa el cambio si falta un periodo", asyn
   answer(response);
   open();
   await screen.findByRole("heading", { name: "Heladas" });
-  const heading = screen.getByRole("heading", { name: "Temperatura máxima · percentil 90" });
+  const heading = screen.getByRole("heading", { name: "Temperatura máxima habitual" });
   const january = heading.parentElement!.querySelector("li")!;
   expect(within(january).getByText("21,4 °C")).toBeInTheDocument();
   expect(within(january).getAllByText("Sin datos suficientes")).toHaveLength(2);
@@ -88,16 +89,33 @@ it("usa los años de IMERG solo para lluvia y explica que empieza en 2000", asyn
   answer(response);
   open();
   expect(await screen.findByText(/Los datos de IMERG empiezan en 2000/)).toBeInTheDocument();
-  expect(screen.getAllByText(/Entre 2001 y 2012/).length).toBeGreaterThan(0);
-  expect(screen.getAllByText(/Entre 1981 y 2000/).length).toBeGreaterThan(0);
+  const rain = within(screen.getByRole("heading", { name: "Lluvia normal" }).parentElement!);
+  expect(rain.getAllByText(/Entre 2001 y 2012/).length).toBeGreaterThan(0);
+  expect(rain.getAllByText(/Entre 2013 y 2024/).length).toBeGreaterThan(0);
+  expect(rain.queryByText(/Entre 1981 y 2000/)).not.toBeInTheDocument();
+  for (const name of ["Heladas", "Temperatura máxima habitual"]) {
+    const climate = within(screen.getByRole("heading", { name }).parentElement!);
+    expect(climate.getAllByText(/Entre 1981 y 2000/).length).toBeGreaterThan(0);
+    expect(climate.getAllByText(/Entre 2005 y 2024/).length).toBeGreaterThan(0);
+    expect(climate.queryByText(/Entre 2001 y 2012/)).not.toBeInTheDocument();
+  }
 });
 
-it.each([501, 503, 0])("explica el error %i sin mostrar un resultado vacío", async (status) => {
-  answer(fixture(), new ApiError(status, "error", "No hay conexión o datos disponibles.", ""));
+it.each([501, 503, 0, 422, 500])("explica el error %i con el estado compartido y las acciones adecuadas", async (status) => {
+  answer(fixture(), new ApiError(status, "error", "Mensaje interno crudo", "soporte-219"));
   open();
   expect(await screen.findByRole("alert")).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Heladas" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Volver a intentar" })).toBeInTheDocument();
+  expect(screen.queryByText("Mensaje interno crudo")).not.toBeInTheDocument();
+  if (status === 501 || status === 422) {
+    expect(screen.queryByRole("button", { name: "Reintentar" })).not.toBeInTheDocument();
+    if (status === 501) expect(screen.getByText("Esta versión de AgroSense todavía no calcula esta comparación.")).toBeInTheDocument();
+  } else {
+    const before = mockedApi.mock.calls.filter(([path]) => path.startsWith("/changes?")).length;
+    await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    expect(mockedApi.mock.calls.filter(([path]) => path.startsWith("/changes?")).length).toBeGreaterThan(before);
+  }
+  if (status === 500) expect(screen.getByText("soporte-219")).toBeInTheDocument();
 });
 
 it("no consulta un municipio que no pertenece al catálogo", async () => {
@@ -120,4 +138,37 @@ it("desde el lote deja escoger el cultivo y conserva municipio y riego", async (
 
 it("el enlace no inventa riego cuando no se conoce", () => {
   expect(changesLink("15646", "papa", null)).toBe("/que-cambio?municipio=15646&cultivo=papa");
+});
+
+it.each([
+  { name: "una siembra", seasons: [{ crop_id: "papa" }], expected: "papa" },
+  { name: "varias siembras", seasons: [{ crop_id: "papa" }, { crop_id: "papa" }], expected: "" },
+  { name: "ninguna siembra", seasons: [], expected: "" },
+])("desde el lote con $name preselecciona solo cuando corresponde", async ({ seasons, expected }) => {
+  answer();
+  open("/", <LotChangesLink municipalityId="15646" irrigated={true} currentSeasons={seasons} />);
+  await screen.findByRole("option", { name: "Papa" });
+  const select = screen.getByLabelText("Cultivo para comparar la historia de la zona");
+  expect(select).toHaveValue(expected);
+  if (expected) {
+    expect(screen.getByRole("link", { name: "Ver qué cambió en su zona" })).toHaveAttribute("href", changesLink("15646", "papa", true));
+    await userEvent.selectOptions(select, "");
+    expect(screen.queryByRole("link", { name: "Ver qué cambió en su zona" })).not.toBeInTheDocument();
+  } else {
+    expect(screen.queryByRole("link", { name: "Ver qué cambió en su zona" })).not.toBeInTheDocument();
+  }
+  await userEvent.selectOptions(select, "papa");
+  expect(screen.getByRole("link", { name: "Ver qué cambió en su zona" })).toHaveAttribute("href", changesLink("15646", "papa", true));
+});
+
+it("distingue un mes ausente de un indicador sin datos", async () => {
+  const response = fixture();
+  response.months = [response.months[0]];
+  answer(response);
+  open();
+  await screen.findByRole("heading", { name: "Heladas" });
+  const section = screen.getByRole("heading", { name: "Heladas" }).parentElement!;
+  const february = within(section).getByRole("heading", { name: "Febrero" }).parentElement!;
+  expect(within(february).getByText("La respuesta no trae este mes.")).toBeInTheDocument();
+  expect(within(february).queryByText("Sin datos suficientes")).not.toBeInTheDocument();
 });

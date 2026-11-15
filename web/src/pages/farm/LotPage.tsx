@@ -106,7 +106,12 @@ function LotView() {
         )}
       </Section>
       <Seasons lot={lot.data} />
-      <LotChangesLink municipalityId={lot.data.municipality_id} irrigated={lot.data.irrigated} />
+      <LotChangesLink
+        key={lot.data.lot_id}
+        municipalityId={lot.data.municipality_id}
+        irrigated={lot.data.irrigated}
+        currentSeasons={lot.data.current_seasons}
+      />
       <Soil municipalityId={lot.data.municipality_id} town={town} />
     </MapScene>
   );

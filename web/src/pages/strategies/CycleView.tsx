@@ -4,6 +4,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ExampleLabel } from "@/components/ui/Labels";
+import { changesLink } from "@/features/changes/changes";
 import { harvestNote, useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { useTrends } from "@/features/diagnosis/trends";
 import { formatDate, todayIso, type SowPlan } from "@/features/farm/seasons";
@@ -320,9 +321,7 @@ function CycleDetails({
   const water = useWaterPlan(waterRequest(municipalityId, areaHa, cycle));
   const trends = useTrends(municipalityId, cycle.crop_id, cycle.sowing_date);
   const ndvi = trends.data?.ndvi;
-  const changeParams = new URLSearchParams({ municipio: municipalityId, cultivo: cycle.crop_id });
-  if (irrigated != null) changeParams.set("riego", irrigated ? "si" : "no");
-  const changes = `${PATHS.changes}?${changeParams}`;
+  const changes = changesLink(municipalityId, cycle.crop_id, irrigated);
   return (
     <>
       <section

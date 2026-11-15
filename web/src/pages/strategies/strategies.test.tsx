@@ -422,6 +422,10 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     });
     open();
     const user = userEvent.setup();
+    // Esta es la primera navegación del archivo: esperar la carga diferida antes de consultar el DOM.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     await screen.findByRole("button", { name: "Cerrar sesión" });
     expect(sessionStorage.getItem("agrosense.guest-consult")).toBeNull();
 
