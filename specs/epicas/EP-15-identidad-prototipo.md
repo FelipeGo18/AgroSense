@@ -68,12 +68,13 @@ Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `
 ### HU-155 · Descenso de cámara del satélite al lote
 
 - **Historia:** Como jurado, quiero recorrer del satélite a la finca, para entender en segundos cómo los datos de NASA llegan a una decisión.
-- **Prioridad:** P1 · **Tamaño:** L · **Estado:** en curso
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Cuatro niveles (satélite, región, municipio, finca) navegables con scroll y con toques
-  - [ ] Storyboard escrito antes de animar
-  - [ ] La mascota satélite guía el recorrido (HU-172)
-  - [ ] Con `prefers-reduced-motion`, los niveles cambian sin recorrido de cámara
+  - [x] Cuatro niveles (satélite, región, municipio, finca) navegables con scroll y con toques. **Hecho (14 nov 2026):** página propia `/del-satelite-a-su-finca` (`web/src/pages/journey/`), con los botones «1. Satélite» a «4. Finca» y «Bajar a…» en cada nivel; al llegar, el foco queda en el título
+  - [x] Storyboard escrito antes de animar: el guion del recorrido A en Figma («HU-155 · Recorrido A») y, para la versión 3D, los cuatro niveles con su encuadre de cámara en `KEYS` de `JourneyCanvas.tsx` (órbita, región desde lo alto, municipio con su contorno, finca de cerca) y el paso por las nubes entre la órbita y la región
+  - [x] La mascota satélite guía el recorrido (HU-172): con movimiento, la mascota 3D (HU-171) vuela al lado de la cámara; en modo ligero, la 2D quieta; lo que dice va escrito al lado
+  - [x] Con `prefers-reduced-motion`, los niveles cambian sin recorrido de cámara. **Hecho:** en modo ligero (que incluye reducir movimiento) no se descarga three.js ni hay cámara: cada nivel muestra su ilustración 2D quieta del guion (`design/paisaje/`), con los mismos textos (prueba en `journey.test.tsx`)
+- **Cierre (14 nov 2026, decidido por Felipe):** se elige el recorrido A, en una página propia, enlazada desde el pie de página, y **con 3D**: una escena low-poly con three.js y React Three Fiber (la Tierra, el relieve de la región, el contorno del municipio y la finca) que sigue el scroll con la cámara. Se descarga aparte (unos 245 kB comprimidos) y solo con movimiento. Para celulares de gama media: resolución hasta 1,5×, `powerPreference: low-power`, pocas caras y sin dibujar con la pestaña oculta; revisado a 390 px con capturas, falta probarlo en un teléfono real. El relieve y la finca son ilustración, y la página lo dice (R5). Los prototipos B y C siguen en el laboratorio (`/recorrido/2` y `/recorrido/3`).
 - **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP, la NASA se ve en pantalla con la capa satelital GIBS del mapa del lote (HU-211) y con las fuentes nombradas en cada resultado. Guion en Figma («HU-155 · Recorrido A» y «Recorridos B y C»), generado desde `design/paisaje/`. Recorrido A aprobado: del satélite al lote en siete paradas, cuatro con interfaz y tres de tránsito. Dos alternativas en evaluación: B, el año del cultivo (el scroll avanza en el tiempo), y C, la travesía por la cordillera (el scroll avanza de lado). Los fondos son capas SVG generadas por código (`build_paisaje.py`), no imágenes ni video. Prototipos para probarlos: `npm --prefix web run dev` y abrir `/recorrido/1`, `/recorrido/2` y `/recorrido/3` (GSAP ScrollTrigger con scroll suave de Lenis; con «reducir movimiento» las paradas aparecen colocadas, sin viaje). El índice está en `/` y el kit en `/kit`. El recorrido 1 tiene diez escenas: entre versiones del mismo lugar la cámara se acerca y se funden; donde cambia el lugar se atraviesa una capa de nubes o niebla que tapa el corte. Falta elegir recorrido, la versión 3D y la prueba en móvil de gama media.
 
 ### HU-156 · Sistema de motion
