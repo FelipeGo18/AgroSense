@@ -309,8 +309,9 @@ def test_ejemplo_con_prioridad_de_suelo_en_5_el_abono_verde_queda_mejor(api):
 
 def test_ejemplo_el_peso_del_suelo_cambia_el_orden_de_las_estrategias(api, datos_con_heladas_moderadas, hoy_fijo):
     # Samacá con heladas moderadas en el 30 % de los años (`datos_con_heladas_moderadas`, EJEMPLO): ningún ciclo es de alto
-    # riesgo, `frost` califica 55 o 59 en los cultivos sensibles y 100 en el descanso. Con 2 ciclos, sin agua ni ingreso que
-    # califiquen, `total_score` es el promedio de `soil` y `risk` ponderado (decisión 15):
+    # riesgo, `frost` califica 55 o 59 en los cultivos sensibles y 100 en el descanso. Con 2 ciclos, sin agua que califique y
+    # con el ingreso en prioridad 0 (el descanso vale 0 en el ingreso desde HU-241, así que se aparta para que solo cambie el
+    # peso del suelo), `total_score` es el promedio de `soil` y `risk` ponderado (decisión 15):
     #   A = arveja y zanahoria: soil 100 (leguminosa), risk 59.   B = descanso y zanahoria: soil 33, risk 100.
     # Los números exactos son del 16 de noviembre de 2026 (`hoy_fijo`), no de otra fecha: con la siembra a mediados de
     # noviembre la etapa media y la final de la arveja (110 días) caen de enero a marzo del año siguiente, así que la serie por
@@ -320,10 +321,10 @@ def test_ejemplo_el_peso_del_suelo_cambia_el_orden_de_las_estrategias(api, datos
     # Con `soil` en 5 (y las demás en 3): A = (100*5 + 59*3) / 8 = 85 y B = (33*5 + 100*3) / 8 = 58. Con `soil` en 0, B = 100 y A = 59.
     assert hoy_fijo.isoformat() == "2026-11-16"
     a, b = ["arveja", "zanahoria"], ["descanso", "zanahoria"]
-    con_peso = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5})
-    sin_peso = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 0})
-    assert con_peso["weights"] == {**EJEMPLO_PRIORIDADES, "soil": 5}
-    assert sin_peso["weights"] == {**EJEMPLO_PRIORIDADES, "soil": 0}
+    con_peso = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5, "income": 0})
+    sin_peso = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 0, "income": 0})
+    assert con_peso["weights"] == {**EJEMPLO_PRIORIDADES, "soil": 5, "income": 0}
+    assert sin_peso["weights"] == {**EJEMPLO_PRIORIDADES, "soil": 0, "income": 0}
     assert con_peso["excluded_counts"] == sin_peso["excluded_counts"]  # lo único que cambia es el peso
     # Relaciones, que valen en cualquier fecha (comprobadas con el «hoy» simulado en 2026-11-16, 2027-01-01, 2027-03-15,
     # 2027-05-10 y 2027-12-31). Con el suelo en 5 la de suelo flojo no entra entre las 10 y la de mejor suelo sí, y sube
