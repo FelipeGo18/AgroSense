@@ -17,6 +17,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { SoilFacts } from "@/components/soil/SoilFacts";
 import { useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { WithoutDrawing, irrigationText, placeName } from "./common";
+import { LotChangesLink } from "@/pages/changes/LotChangesLink";
 
 /**
  * El lote (HU-164, HU-169): su contorno en el mapa, lo que se sabe de él, sus siembras en curso y su suelo. Editar y
@@ -163,6 +164,12 @@ function LotView() {
         )}
       </Section>
       <Seasons lot={lot.data} />
+      <LotChangesLink
+        key={lot.data.lot_id}
+        municipalityId={lot.data.municipality_id}
+        irrigated={lot.data.irrigated}
+        currentSeasons={lot.data.current_seasons}
+      />
       <Soil municipalityId={lot.data.municipality_id} town={town} />
     </MapScene>
   );
