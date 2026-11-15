@@ -27,11 +27,6 @@ EJEMPLO_CALIDO = "25307"
 EJEMPLO_CON_IMERG = "15407"
 
 
-def pendiente(*hus: str, extra: str = ""):
-    """`xfail` estricto: cuando la HU entre y el caso pase, la prueba falla hasta quitar la marca (nunca `skip`)."""
-    return pytest.mark.xfail(strict=True, reason=f"espera {', '.join(hus)}" if not extra else f"espera {', '.join(hus)} ({extra})")
-
-
 @pytest.fixture
 def datos_reales(monkeypatch) -> Path:
     """`data/published` del repositorio, solo para leer. Gana al aislamiento autouse `no_dataset` de `tests/conftest.py`."""
@@ -79,13 +74,14 @@ def publicar_ejemplo(
     carpeta: Path,
     *,
     imerg_en: tuple[str, ...] = (),
-    lluvia_mm: float = 60.0,
+    lluvia_mm: float | dict[int, float] = 60.0,
     helada_anios: int | dict[int, int] | None = None,
     ph: float | None = None,
 ) -> None:
     """Publica con `publish()` un dataset de EJEMPLO (R5) para el diagnóstico de papa en Samacá y Villa de Leyva.
-
-    - Lluvia (EJEMPLO, igual en todos los meses de 2015 a 2024): NASA POWER (`climate_month`) en los dos municipios, y GPM
+    - Lluvia (EJEMPLO, de 2015 a 2024; igual en todos los meses, o con un `dict` `{mes: mm}` donde los meses que faltan valen 60):
+      NASA POWER (`climate_month`) en los dos municipios, y GPM IMERG (`precip_month`) solo en `imerg_en`. Las filas de
+      `sources` de IMERG son las reales del dataset publicado.
       IMERG (`precip_month`) solo en `imerg_en`. Las filas de `sources` de IMERG son las reales del dataset publicado.
     - `helada_anios`: de los 30 años de 1991 a 2020, en cuántos hay tres noches de 1 C (helada: mínima <= 2 C) los primeros
       días de cada mes; en Samacá. Con un `dict` es `{mes: años}` y los meses que no están no tienen heladas. Sin él no hay
@@ -159,15 +155,19 @@ def publicar_ejemplo(
     )
 
     meses = [(a, m) for a in range(2015, 2025) for m in range(1, 13)]
+
+    def lluvia_en(mes: int) -> float:
+        return lluvia_mm.get(mes, 60.0) if isinstance(lluvia_mm, dict) else lluvia_mm
+
     power = pl.DataFrame(
         [
             {
                 "municipality_id": mpio,
                 "year": a,
                 "month": m,
-                "precip_mm": lluvia_mm,
-                "precip_normal_mm": lluvia_mm,
-                "precip_dry_mm": lluvia_mm,
+                "precip_mm": lluvia_en(m),
+                "precip_normal_mm": lluvia_en(m),
+                "precip_dry_mm": lluvia_en(m),
                 "et0_mm": 80.0,
                 "et0_normal_mm": 80.0,
                 "soil_wetness_top": None,
@@ -200,9 +200,9 @@ def publicar_ejemplo(
                 "year": a,
                 "month": m,
                 "source_id": "imerg",
-                "precip_mm": lluvia_mm,
-                "precip_normal_mm": lluvia_mm,
-                "precip_dry_mm": lluvia_mm,
+                "precip_mm": lluvia_en(m),
+                "precip_normal_mm": lluvia_en(m),
+                "precip_dry_mm": lluvia_en(m),
                 "normal_period": "2001-2024",
                 "quality": "ok",
             }
