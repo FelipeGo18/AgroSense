@@ -45,7 +45,11 @@ function Farm() {
   const all = lots.data ?? [];
   const drawn = all.filter((lot) => lot.geometry);
   const undrawn = all.filter((lot) => !lot.geometry);
+  // Una sola zona (HU-169): el municipio del primer lote dibujado. Los dibujados de otro municipio van aparte, con su
+  // municipio; al abrirlos, el mapa del lote se centra en ellos.
   const zone = (drawn[0] ?? all[0])?.municipality_id;
+  const here = drawn.filter((lot) => lot.municipality_id === zone);
+  const elsewhere = drawn.filter((lot) => lot.municipality_id !== zone);
   const boundary = useBoundary(zone);
   const towns = [...new Set(undrawn.map((lot) => places.get(lot.municipality_id)?.name ?? null))];
   const town = towns.length === 1 && towns[0] ? towns[0] : t("pages.farm.FarmPage.yourMunicipality");
@@ -88,12 +92,8 @@ function Farm() {
       map={
         <LotMap
           boundary={boundary.data?.geometry ?? null}
-          focus={
-            drawn.length
-              ? envelope(drawn.filter((lot) => lot.municipality_id === zone).map((lot) => lot.geometry as unknown as LotPolygon))
-              : null
-          }
-          lots={drawn.map((lot) => ({ id: lot.lot_id, name: lot.name, geometry: lot.geometry as unknown as LotPolygon }))}
+          focus={here.length ? envelope(here.map((lot) => lot.geometry as unknown as LotPolygon)) : null}
+          lots={here.map((lot) => ({ id: lot.lot_id, name: lot.name, geometry: lot.geometry as unknown as LotPolygon }))}
           onLotClick={(id) => void navigate(PATHS.lot(id))}
           panelWidth={PANEL_WIDTH}
         />
@@ -101,18 +101,33 @@ function Farm() {
     >
       <title>{t("pages.farm.FarmPage.myFarmAgrosense")}</title>
       {header}
-      {drawn.length > 0 && (
+      {here.length > 0 && (
         <section aria-labelledby="en-el-mapa" className="flex flex-col gap-2">
           <h2 id="en-el-mapa" className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
             {t("pages.farm.FarmPage.onTheMap")}
           </h2>
           <ul className="flex flex-col gap-2">
-            {drawn.map((lot) => (
+            {here.map((lot) => (
               <li key={lot.lot_id}>
                 <DrawnRow lot={lot} place={places.get(lot.municipality_id)?.name} />
               </li>
             ))}
           </ul>
+        </section>
+      )}
+      {elsewhere.length > 0 && (
+        <section aria-labelledby="otro-municipio" className="flex flex-col gap-2">
+          <h2 id="otro-municipio" className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
+            En otro municipio
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {elsewhere.map((lot) => (
+              <li key={lot.lot_id}>
+                <DrawnRow lot={lot} place={places.get(lot.municipality_id)?.name} />
+              </li>
+            ))}
+          </ul>
+          <p className="text-[14px] text-texto-secundario">Ábralo para verlo en su mapa.</p>
         </section>
       )}
       {undrawn.length > 0 && (

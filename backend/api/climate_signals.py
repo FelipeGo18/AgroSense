@@ -19,7 +19,7 @@ from typing import Any
 import polars as pl
 
 from backend.config.thresholds import Thresholds
-from backend.dataset import Dataset
+from backend.dataset import Dataset, DatasetUnavailable, get_dataset
 from backend.engine.frost_signal import FrostMonth, frost_signal
 from backend.engine.heat_signal import HeatMonth, heat_signal
 from backend.engine.sensitive_signal import ClimateNormal, ClimateSignalResult
@@ -27,6 +27,27 @@ from backend.engine.stages import FROST, CropWindow
 from common.signal_sources import get_signal_sources
 
 NORMAL_FIELDS = ("first_year", "last_year", "min_years")
+
+
+class DatasetIncomplete(RuntimeError):
+    """El dataset publicado no trae lo que piden las señales: la API no arranca."""
+
+
+def require_climate_normal() -> None:
+    """Al arrancar: si hay un dataset publicado y su manifiesto no trae un `region.climate_normal` que sirva, la API no
+    arranca y dice por qué, como con `weights.yaml` y `thresholds.yaml`. Sin él, las heladas, el calor y la humedad del
+    suelo salen sin datos en toda la región y la luz se decidiría sin mirarlos (lo que pasó con el dataset 2026.11.18;
+    Haider, PR #115). Sin dataset, la API arranca igual y los cálculos responden 503, como siempre."""
+    try:
+        dataset = get_dataset()
+    except DatasetUnavailable:
+        return
+    if climate_normal(dataset) is None:
+        raise DatasetIncomplete(
+            f"El dataset publicado {dataset.version} no trae un `region.climate_normal` que sirva en su manifiesto: sin "
+            "él, las heladas, el calor y la humedad del suelo no se evalúan. Vuelva a publicarlo con "
+            "`uv run python -m pipeline.build`."
+        )
 
 
 def climate_normal(dataset: Dataset) -> ClimateNormal | None:

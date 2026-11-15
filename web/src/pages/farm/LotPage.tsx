@@ -1,3 +1,5 @@
+import { useId, useState, type ReactNode } from "react";
+import { Link, useLocation, useParams } from "react-router";
 import { t } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { useId, type ReactNode } from "react";
@@ -8,6 +10,8 @@ import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
 import { MapScene, PANEL_WIDTH } from "@/components/layout/MapScene";
 import { LotMap } from "@/components/map/LotMap";
+import { LiveLot } from "@/components/farm/LiveLot";
+import { useAnimated } from "@/hooks/useLightMode";
 import { Alert } from "@/components/ui/Alert";
 import { ButtonLink } from "@/components/ui/Button";
 import type { LotPolygon } from "@/features/farm/geo";
@@ -37,6 +41,12 @@ function LotView() {
   const { lotId = "" } = useParams();
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
   const lot = useLot(lotId);
+  const animated = useAnimated();
+  const crops = useCrops();
+  // El lote vivo (HU-187) es la vista de entrada; el mapa sigue a un toque.
+  const [view, setView] = useState<"finca" | "mapa">("finca");
+  // En escritorio, el panel se oculta para recorrer la finca o el mapa a pantalla completa.
+  const [panelOpen, setPanelOpen] = useState(true);
   const municipalities = useMunicipalities();
   const boundary = useBoundary(lot.data?.municipality_id);
   const municipality = lot.data ? byId(municipalities.data).get(lot.data.municipality_id) : undefined;
@@ -67,13 +77,63 @@ function LotView() {
   const town = municipality?.name ?? t("pages.farm.FarmPage.yourMunicipality");
   return (
     <MapScene
+      panelOpen={panelOpen}
+      onTogglePanel={() => setPanelOpen((open) => !open)}
       map={
-        <LotMap
-          boundary={boundary.data?.geometry ?? null}
-          focus={geometry}
-          lots={geometry ? [{ id: lot.data.lot_id, name: lot.data.name, geometry, selected: true }] : []}
-          panelWidth={PANEL_WIDTH}
-        />
+        <>
+          {view === "finca" ? (
+            <div className={`size-full ${panelOpen ? "md:pl-[440px]" : ""}`}>
+              <LiveLot
+                seasons={lot.data.current_seasons.map((season) => ({
+                  seasonId: season.season_id,
+                  cropId: season.crop_id,
+                  areaHa: season.area_ha,
+                  stage: season.stage ?? null,
+                }))}
+                lotAreaHa={lot.data.area_ha}
+                cropName={(id: string) => cropNames(crops.data).get(id) ?? id}
+                animated={animated}
+              />
+            </div>
+          ) : (
+            <LotMap
+              boundary={boundary.data?.geometry ?? null}
+              focus={geometry}
+              lots={geometry ? [{ id: lot.data.lot_id, name: lot.data.name, geometry, selected: true }] : []}
+              panelWidth={panelOpen ? PANEL_WIDTH : 0}
+            />
+          )}
+          <div
+            role="group"
+            aria-label="Cómo ver el lote"
+            className="absolute right-3 bottom-6 z-10 flex gap-1 rounded-md bg-superficie-panel p-1 shadow-md md:top-[104px] md:right-8 md:bottom-auto"
+          >
+            {(["finca", "mapa"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={view === option}
+                onClick={() => setView(option)}
+                className={`min-h-11 min-w-11 rounded-sm px-4 font-bold ${
+                  view === option ? "bg-accion-primaria text-texto-sobre-oscuro" : "text-texto-principal"
+                }`}
+              >
+                {option === "finca" ? "Su finca" : "Mapa"}
+              </button>
+            ))}
+          </div>
+          {view === "finca" && (
+            <p
+              className={`absolute top-[88px] left-3 z-10 max-w-[calc(100%-1.5rem)] rounded-md bg-superficie-panel/95 px-3 py-2 text-[13px] md:top-auto md:bottom-6 md:max-w-[26rem] ${panelOpen ? "md:left-[488px]" : "md:left-8"}`}
+            >
+              <span className="md:hidden">Ilustración de su lote, no una imagen de él.</span>
+              <span className="hidden md:inline">
+                Ilustración de su lote: cada siembra ocupa su parte del área y se dibuja en su etapa por calendario. No es una imagen del
+                lote.
+              </span>
+            </p>
+          )}
+        </>
       }
     >
       <title>{t("pages.farm.LotPage.myFarmAgrosense", { v0: lot.data.name })}</title>
