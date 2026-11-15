@@ -6,7 +6,8 @@ las duraciones de los casos de borde no son datos de ninguna zona. Supuestos por
 llevan coma decimal y un decimal: `pct` «98,7» y `{soc_range}` «3,8 a 141,2» (el contrato dice coma decimal para el
 rango; `pct` se asume igual); (S2) `cycle_days` y `gap_days` van en el orden de los ciclos; (S3) la razón de
 `soil_cover` solo llena `{pct}`: los meses (días / 30,4) no se prueban porque el `reason_template` no los usa;
-(S4) no se prueba `gap_days = None` con `cycle_days` dado: la spec no lo dice.
+(S4) `gap_days` tiene un valor por ciclo y el último es `None`; un hueco que falta, una lista de otro largo o un hueco
+fuera de 0 a 6 dejan `soil_cover` en `insufficient_data` (R1): nunca se cuenta como 0.
 """
 
 from pathlib import Path
@@ -74,7 +75,7 @@ def _carbono(sequence, soil):
 
 
 def _cobertura(sequence, days, gaps=(0, 0)):
-    return _sh(sequence, days=list(days), gaps=list(gaps))["soil_cover"]
+    return _sh(sequence, days=list(days), gaps=[*gaps, None])["soil_cover"]
 
 
 def test_el_catalogo_trae_las_reglas_y_los_cortes_que_usa_la_prueba():
@@ -205,7 +206,7 @@ def test_el_nivel_sale_del_valor_sin_redondear_79_96_se_muestra_80_0_y_es_modera
 
 
 def test_el_descanso_es_suelo_descubierto_y_se_ve_en_el_porcentaje():
-    # EJEMPLO (R5): el descanso no tiene etapas hoy; aquí 120 días. 165 + 180 = 345 cubiertos de 465: 74,19 %.
+    # EJEMPLO (R5): aquí el descanso dura 120 días. 165 + 180 = 345 cubiertos de 465: 74,19 %.
     con_descanso = _cobertura(("papa", "descanso", "maiz"), [165, 120, 180])
     con_abono = _cobertura(("papa", "avena_vicia", "maiz"), [165, 120, 180])  # mismos días, pero cubre: 100 %
     assert (con_descanso.level, con_abono.level) == ("moderate", "favorable")
@@ -224,9 +225,18 @@ def test_el_hueco_cuenta_como_descubierto_0_da_mas_porcentaje_que_6():
 
 
 def test_un_ciclo_sin_duracion_da_insufficient_data_con_la_regla():
-    c = _cobertura(("papa", "descanso", "maiz"), [165, None, 180])  # el descanso sin etapas, como hoy (HU-063)
+    c = _cobertura(("papa", "descanso", "maiz"), [165, None, 180])  # EJEMPLO (R5): un ciclo sin duración
     assert (c.status, c.level) == ("insufficient_data", None)  # R1
     assert c.rule_ids == ("suelo_cubierto",) and c.source_ids == (TEAM_CRITERION,) and c.reasons
+
+
+def test_papa_descanso_de_180_dias_maiz_con_huecos_3_y_4_cubre_64_8_por_ciento_y_es_moderate():
+    # EJEMPLO (R5): el descanso dura 180 días (decisión de Haider, `criterio_equipo_2026`; aún no está en el catálogo,
+    # lo trae HU-063). Papa 165 y maíz 180 son de crop_stages. Cubiertos 165 + 180 = 345 de 165 + 180 + 180 + 3 + 4 = 532:
+    # 64,8496 %, que llega a 60 y no a 80.
+    c = _cobertura(("papa", "descanso", "maiz"), [165, 180, 180], gaps=(3, 4))
+    assert (c.status, c.level) == ("available", "moderate")
+    assert COBERTURA.reason_template.format(pct="64,8") in c.reasons[0]
 
 
 def test_sin_cycle_days_soil_cover_es_insufficient_data():
@@ -241,13 +251,68 @@ def test_soil_cover_la_razon_termina_con_la_nota_y_cita_solo_la_regla_del_equipo
     assert c.rule_ids == ("suelo_cubierto",) and TEAM_CRITERION in c.source_ids
 
 
+# --- Hueco entre ciclos (R1): nunca se cuenta como 0 ---
+
+SEC3 = ("papa", "maiz", "haba")
+DIAS3 = [165, 180, 175]
+FALTA_HUECO = "Falta el hueco entre algún par de ciclos de la estrategia"
+
+
+@pytest.mark.parametrize(
+    "huecos",
+    [
+        None,  # falta la lista
+        [None, 6, None],  # falta el hueco de un ciclo que no es el último
+        [3, None, None],
+        [3, 4],  # largo menor que la secuencia
+        [3, 4, None, None],  # largo mayor
+        [3, None],  # un hueco menos, con el último nulo
+        [3, 4, 0, None],  # un hueco de más, todos válidos
+        [3, 7, None],  # un hueco de 7
+        [3, -1, None],  # un hueco negativo
+        [3, 4, 5],  # el último debe ser None
+        [3.5, 4, None],  # no entero
+        [True, 4, None],  # un booleano no es un hueco
+    ],
+)
+def test_un_hueco_que_falta_o_invalido_deja_soil_cover_en_insufficient_data(huecos):
+    c = _sh(SEC3, days=DIAS3, gaps=huecos)["soil_cover"]
+    assert (c.status, c.level) == ("insufficient_data", None)  # R1
+    assert c.reasons == (f"{FALTA_HUECO}. {TEAM_NOTE}",)
+    assert c.rule_ids == ("suelo_cubierto",) and c.source_ids == (TEAM_CRITERION,)
+
+
+def test_una_estrategia_de_un_ciclo_con_none_da_su_nivel():
+    c = _sh(("papa",), days=[165], gaps=[None])["soil_cover"]
+    assert (c.status, c.level) == ("available", "favorable")  # 165 / 165 = 100 %
+    assert COBERTURA.reason_template.format(pct="100,0") in c.reasons[0]
+    assert _sh(("papa",), days=[165], gaps=None)["soil_cover"].status == "insufficient_data"
+
+
+def test_huecos_de_0_y_de_6_son_validos_en_los_bordes():
+    assert _sh(SEC3, days=DIAS3, gaps=[0, 6, None])["soil_cover"].status == "available"
+
+
+# --- Sin el rango del carbono ---
+
+
+@pytest.mark.parametrize(
+    "suelo",
+    [SoilCarbon(20.0, None, 141.2, "soilgrids"), SoilCarbon(20.0, 3.84, None, "soilgrids"), SoilCarbon(20.0, None, None, "soilgrids")],
+)
+def test_carbono_sin_p05_o_sin_p95_dice_sin_su_rango_de_incertidumbre(suelo):
+    c = _carbono(SEC3, suelo)
+    assert (c.status, c.level) == ("available", "unfavorable")  # el nivel sale del valor central
+    assert CARBONO.reason_template.format(count=0, soc_level="bajo", soc_range="sin su rango de incertidumbre") in c.reasons[0]
+
+
 # --- Que no se rompa el PR B, y determinismo (R4) ---
 
 
 def test_nitrogen_y_pest_break_no_cambian_con_el_suelo_y_las_duraciones_y_erosion_sigue_pendiente():
     secuencia, dias = PAPA_MAIZ_HABA
     base = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS)
-    con = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS, soil=BAJO, cycle_days=dias, gap_days=[3, 4])
+    con = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS, soil=BAJO, cycle_days=dias, gap_days=[3, 4, None])
     assert con["nitrogen"] == base["nitrogen"] and con["pest_break"] == base["pest_break"]
     assert con["nitrogen"].level == "favorable"  # la haba fija nitrógeno
     assert (con["erosion"].status, con["erosion"].level) == ("insufficient_data", None)  # es del PR D
@@ -255,7 +320,7 @@ def test_nitrogen_y_pest_break_no_cambian_con_el_suelo_y_las_duraciones_y_erosio
 
 def test_misma_entrada_misma_salida_aunque_reglas_y_cultivos_lleguen_en_otro_orden():
     secuencia, dias = PAPA_MAIZ_HABA
-    kw = {"soil": BAJO, "days": dias, "gaps": [3, 4]}
+    kw = {"soil": BAJO, "days": dias, "gaps": [3, 4, None]}
     base = _sh(secuencia, **kw)
     assert base == _sh(secuencia, **kw)
     otro = _sh(secuencia, rules=list(reversed(REGLAS)), crops=dict(reversed(list(CULTIVOS.items()))), **kw)

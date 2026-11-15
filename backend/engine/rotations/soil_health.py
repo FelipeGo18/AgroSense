@@ -179,9 +179,23 @@ def _organic_carbon(sequence: Sequence[str], crops: Mapping[str, SoilCrop], soil
     count = sum(1 for c in sequence if (crop := crops.get(c)) and crop.kind in ("cover", "fallow"))
     low = soil.soc_g_kg < rule.params["soc_low_g_kg"]
     level = level_from_cuts(count, rule.levels["low" if low else "normal"])
-    soc_range = f"{_dec(soil.soc_p05)} a {_dec(soil.soc_p95)}" if soil.soc_p05 is not None and soil.soc_p95 is not None else "sin rango"
+    has_range = soil.soc_p05 is not None and soil.soc_p95 is not None
+    soc_range = f"{_dec(soil.soc_p05)} a {_dec(soil.soc_p95)}" if has_range else "sin su rango de incertidumbre"
     reason = rule.reason_template.format(count=count, soc_level="bajo" if low else "normal", soc_range=soc_range)
     return Criterion("available", level, (_text(reason, rule),), (rule.rule_id,), (rule.source_id, soil.source_id))
+
+
+def covered_gaps(sequence_length: int, gap_days: Sequence[int | None] | None) -> tuple[int, ...] | None:
+    """Los días de suelo descubierto entre ciclos, un hueco por cada par de ciclos seguidos (R1: nunca se cuenta como 0).
+    `gap_days` tiene un valor por ciclo: enteros de 0 a 6 y `None` solo en el último (una estrategia de un ciclo: `[None]`).
+    Si falta la lista, tiene otro largo, un hueco que no es el último es nulo, no es entero o cae fuera de 0 a 6, devuelve
+    `None`. `soil_cover` y la erosión (HU-224) la usan para no leer cada una por su lado."""
+    if gap_days is None or len(gap_days) != sequence_length or sequence_length == 0 or gap_days[-1] is not None:
+        return None
+    between = tuple(gap_days[:-1])
+    if any(isinstance(g, bool) or not isinstance(g, int) or not 0 <= g <= 6 for g in between):
+        return None
+    return between  # type: ignore[return-value]
 
 
 def _soil_cover(
@@ -191,11 +205,15 @@ def _soil_cover(
     gap_days: Sequence[int | None] | None,
     rule: HealthRule,
 ) -> Criterion:
-    """Porcentaje del tiempo con cultivo o abono verde; el descanso y los huecos son suelo descubierto."""
+    """Porcentaje del tiempo con cultivo o abono verde; el descanso (su ficha trae su duración, 180 días: HU-063) y los
+    huecos entre ciclos son suelo descubierto. Sin la duración de un ciclo o sin un hueco válido, `insufficient_data` (R1)."""
     if not cycle_days or len(cycle_days) != len(sequence) or None in cycle_days:
         return _no_data("Falta la duración de algún ciclo de la estrategia", rule)
+    gaps = covered_gaps(len(sequence), gap_days)
+    if gaps is None:
+        return _no_data("Falta el hueco entre algún par de ciclos de la estrategia", rule)
     covered = sum(d for c, d in zip(sequence, cycle_days, strict=True) if (crop := crops.get(c)) and crop.kind in ("crop", "cover"))
-    total = sum(cycle_days) + sum(g or 0 for g in gap_days or ())
+    total = sum(cycle_days) + sum(gaps)
     if total <= 0:
         return _no_data("La estrategia no tiene días que medir", rule)
     pct = covered / total * 100  # sin redondear: el nivel no depende de cómo se muestra
