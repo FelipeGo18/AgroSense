@@ -11,7 +11,7 @@ import pytest
 
 from tests.engine.casos.conftest import SOIL_CRITERIA, rotacion
 
-ESPERA_SUELO = pytest.mark.xfail(strict=True, reason="espera HU-213, HU-212 y HU-084")
+ESPERA_SUELO = pytest.mark.xfail(strict=True, reason="espera HU-213 y HU-084 (el endpoint responde 501)")
 
 
 def niveles_de(datos, rule_id: str) -> dict:

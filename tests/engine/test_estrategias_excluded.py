@@ -240,7 +240,7 @@ def test_integracion_cycles_2_solo_diagnostica_las_que_pasaron_la_fase_1():
     explica = lambda crop, apt: (f"RAZON DE EJEMPLO {crop.crop_id}", ("fuente_ejemplo_a",))  # noqa: E731
     suelo = SoilPh(4.5, 6.5, "ejemplo")  # DE EJEMPLO (R5)
     todas = candidates(list(cultivos.values()), 2)
-    fase1 = {c: phase1(c, [], cultivos, filtros, 14.4, suelo, explica) for c in todas}
+    fase1 = {c: phase1(c, [], cultivos, filtros, 14.4, suelo, explica, history_basis="none") for c in todas}
     fuera1 = {c for c, r in fase1.items() if r.motives}
     assert len(todas) == 56 and fuera1 and len(fuera1) < 56  # hay de las dos clases: si no, la prueba no prueba nada
 
@@ -249,11 +249,11 @@ def test_integracion_cycles_2_solo_diagnostica_las_que_pasaron_la_fase_1():
         helada = {"frost": _r(CRITICA, "frost")}
         return [None if cultivos[c].kind == "fallow" else {**_bueno(), **(helada if c == "arveja" else {})} for c in secuencia]
 
-    r = filter_strategies(todas, [], cultivos, filtros, 14.4, suelo, explica, diagnostica, limit=1000)
+    r = filter_strategies(todas, [], cultivos, filtros, 14.4, suelo, explica, diagnostica, limit=1000, history_basis="none")
     vivas = [c for c in todas if c not in fuera1]
     assert r.survivors == tuple(c for c in vivas if "arveja" not in c) and r.survivors  # en el orden recibido
     n_hr = len([c for c in vivas if "arveja" in c])
     assert n_hr and r.summary.counts["high_risk"] == n_hr  # precisión de Felipe en el #90: solo las vivas
     assert sum(r.summary.counts.values()) == len(fuera1) + n_hr == len(todas) - len(r.survivors)
     assert len(r.limitations) == len(set(r.limitations))
-    assert filter_strategies(todas, [], cultivos, filtros, 14.4, suelo, explica, diagnostica, limit=1000) == r  # R4
+    assert filter_strategies(todas, [], cultivos, filtros, 14.4, suelo, explica, diagnostica, limit=1000, history_basis="none") == r  # R4

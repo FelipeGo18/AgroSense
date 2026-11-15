@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from backend.engine.rotations.candidates import CropInfo
+from backend.engine.rotations.history import HISTORY_TEXT, check_history
 
 
 @dataclass(frozen=True)
@@ -66,13 +67,18 @@ def rule_motives(
     previous_crop_ids: Sequence[str],
     crops: Mapping[str, CropInfo],
     rules: Sequence[FilterRule],
+    *,
+    history_basis: str,
 ) -> list[Motive]:
     """Motivos `rule` de una secuencia, por ciclo y luego por `rule_id` (R4).
 
     Revisa los pares (cultivo anterior más reciente = `previous_crop_ids[0]`, ciclo 1) y (ciclo i, ciclo i+1) para
     `same_family_consecutive`, y para `family_return_min_cycles` cuenta hacia atrás los ciclos intermedios; el
     descanso es un ciclo sin la familia y los cultivos anteriores son ciclos previos, el más reciente primero.
-    Un `condition_type` desconocido lanza `ValueError` con el `rule_id`."""
+    Un `condition_type` desconocido lanza `ValueError` con el `rule_id`. `history_basis` es obligatorio y se valida como
+    en `soil_health`; con `current_rotation`, un motivo que nace de un cultivo anterior lo dice en su razón (R5)."""
+    check_history(previous_crop_ids, history_basis)
+    assumed = history_basis == "current_rotation"
     for rule in rules:
         if rule.condition_type not in ("same_family_consecutive", "family_return_min_cycles"):
             raise ValueError(f"Regla {rule.rule_id}: condition_type desconocido {rule.condition_type!r}")
@@ -85,9 +91,18 @@ def rule_motives(
                 prev = chain[i - 1] if i > 0 else (before[0] if before else None)
                 family = _same_family(rule, prev, chain[i])
                 reason = rule.reason_template.format(family=family) if family else None
+                touches_before = i == 0 and bool(before)
             else:
                 gap = _return_gap(rule, [*chain[i::-1], *before])
-                reason = rule.reason_template.format(family=rule.params["family"], cycles=gap) if gap is not None else None
+                reason = None
+                touches_before = False
+                if gap is not None:
+                    reason = rule.reason_template.format(family=rule.params["family"], cycles=gap)
+                    # La aparición anterior está en la posición gap + 1; `gap + 1 > i` significa que cae en los
+                    # cultivos anteriores del terreno.
+                    touches_before = gap + 1 > i
             if reason:
+                if assumed and touches_before:
+                    reason = f"{reason}. {HISTORY_TEXT['current_rotation']}"
                 motives.append(Motive("rule", i + 1, reason, (rule.source_id,), rule_id=rule.rule_id))
     return motives

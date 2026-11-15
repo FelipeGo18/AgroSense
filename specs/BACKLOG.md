@@ -71,7 +71,7 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-217 | Comparar dos periodos de la historia de la zona | P0 | M | en curso | Se implementa `frost_freq_pct`, `precip_normal_mm` y `tmax_p90_c` de cada periodo y su diferencia (después menos antes), cada uno con `status` en backend/engine/changes.py  y las reazones con periodos y sin pronósticos. Para completar los requisitos se necesitan datos históricos de HU-216, balance hídrico de HU-144, orden de ventanas de HU-192 y calificación de HU-196 |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-218 | Endpoint de «Qué cambió» | P0 | S | en curso | 14 nov: cargador y comparación mensual conectados para `not_suitable`; 200 con clima, razones, periodos por fuente, versiones y sin ventanas; 422 de entrada y pruebas sin sustitución POWER/IMERG. Aptitud `suitable`/`insufficient_data` sigue en 501 hasta integrar ventanas de HU-217 (HU-144, HU-192 y señales de HU-196). Falta verificar datos publicados de HU-216; no cierra la HU |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-195 | Señales de exceso de lluvia, enfermedad y cosecha | P1 | M | pendiente | |
-| [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en curso | Estrategias de hasta 3 ciclos |
+| [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en revisión | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | pendiente | Nueva |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar estrategias por prioridades | P0 | M | pendiente | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden de las estrategias | P0 | S | pendiente | |
@@ -151,6 +151,6 @@
 | [EP-18](epicas/EP-18-suelo.md) | HU-182 | Suelo de un lote | P0 | M | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-183 | Señal de suelo en el diagnóstico | P0 | S | hecha | Curva de HU-196 sobre la mediana `ph` del municipio; el nivel sale siempre de la calificación y el intervalo p05–p95 solo se dice en la razón; un pH fuera de su propio intervalo es `insufficient_data`; nunca crítica. Con `lot_id`, el suelo del municipio y se dice (el del lote es de HU-182) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | pendiente | |
-| [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | en curso | Cinco criterios con la erosión (decisión 14); spec precisada el 14 nov |
-| [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | en curso | Nueva (8 nov, decisión 14) |
+| [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | en revisión (PR #120) | Cinco criterios hechos en el motor; `history_basis` obligatorio; el descanso sin duración hasta HU-063 |
+| [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | en revisión (PR #120) | Erosión hecha en el motor (PR #121 y #120) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | en curso | El suelo de la zona explicado en el detalle del lote (14 nov); faltan la señal de suelo y la salud del suelo |
