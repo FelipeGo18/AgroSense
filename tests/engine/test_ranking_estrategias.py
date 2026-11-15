@@ -17,8 +17,6 @@ from backend.engine.rotations.ranking import (
 )
 from backend.engine.rotations.soil_health import Criterion
 from backend.engine.signal_score import SignalScore
-from backend.engine.suitability import SUITABLE
-from backend.engine.traffic_light import FARMER, traffic_light
 
 EQUAL = {"water": 3, "soil": 3, "income": 3, "risk": 3}
 SIGNAL_WEIGHTS = {"water": 3, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
@@ -30,14 +28,9 @@ def score(value: int, critical: bool = False) -> SignalScore:
     return SignalScore("available", value, level, critical)
 
 
-def cycle(signals: dict[str, SignalScore], kind: str = "crop", weights=SIGNAL_WEIGHTS) -> CycleScores:
-    """Un ciclo con el factor limitante de su luz, como lo da el diagnóstico (HU-213): el mismo `traffic_light`."""
-    return CycleScores(kind, signals, traffic_light(SUITABLE, signals, weights, FARMER).limiting_signal)
-
-
-def crop(water=80, frost=90, heat=95, soil=70, supply=60, market=None, kind="crop", weights=SIGNAL_WEIGHTS) -> CycleScores:
+def crop(water=80, frost=90, heat=95, soil=70, supply=60, market=None, kind="crop") -> CycleScores:
     values = {"water": water, "frost": frost, "heat": heat, "soil": soil, "supply": supply, "market": market}
-    return cycle({name: NO_DATA if v is None else score(v) for name, v in values.items()}, kind, weights)
+    return CycleScores(kind, {name: NO_DATA if v is None else score(v) for name, v in values.items()})
 
 
 FALLOW = CycleScores("fallow", None)
@@ -58,31 +51,39 @@ def test_los_cuatro_criterios_de_una_estrategia():
     """Papa, arveja y descanso. Agua: (80 + 71) / 2 = 75,5 → 76. Riesgo: el menor factor limitante, 55 (la oferta de la
     arveja). Ingreso: papa 60 (sin mercado), arveja (55 + 64) / 2 = 59,5, descanso 0 → 119,5 / 3 = 39,83 → 40."""
     cycles = (crop(water=80, supply=60), crop(water=71, supply=55, market=64), FALLOW)
-    found, limitations = criteria(("papa", "arveja", "descanso"), cycles, GOOD_SOIL)
+    found, limitations = criteria(("papa", "arveja", "descanso"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
     assert found == {"water": 76, "soil": 88, "income": 40, "risk": 55}
     assert limitations == ()
 
 
 def test_el_abono_verde_vale_cero_en_el_ingreso_y_cuenta_en_agua_y_riesgo():
     cycles = (crop(water=90, supply=80), crop(water=60, supply=None, kind="cover"))
-    found, _ = criteria(("papa", "avena_vicia"), cycles, GOOD_SOIL)
+    found, _ = criteria(("papa", "avena_vicia"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
     assert found == {"water": 75, "soil": 88, "income": 40, "risk": 60}
 
 
-def test_el_riesgo_es_el_factor_limitante_que_muestra_cada_ciclo():
-    """Con los pesos de quien consulta: con peso 0 en la oferta, la oferta de 50 no cuenta y el factor limitante es el
-    suelo (70). Una helada crítica cuenta aunque su peso sea 0 (R2)."""
-    assert criteria(("papa",), (crop(supply=50, weights={**SIGNAL_WEIGHTS, "supply": 0}),), GOOD_SOIL)[0]["risk"] == 70
-    frost = cycle({"water": score(80), "frost": score(20, critical=True), "supply": score(90)}, weights={**SIGNAL_WEIGHTS, "frost": 0})
-    assert criteria(("papa",), (frost,), GOOD_SOIL)[0]["risk"] == 20
+def test_el_riesgo_usa_los_pesos_de_quien_consulta():
+    """Con peso 0 en la oferta, la oferta de 50 no cuenta: el factor limitante es el suelo (70). Una helada crítica
+    cuenta aunque su peso sea 0 (R2)."""
+    assert criteria(("papa",), (crop(supply=50),), GOOD_SOIL, {**SIGNAL_WEIGHTS, "supply": 0})[0]["risk"] == 70
+    frost = CycleScores("crop", {"water": score(80), "frost": score(20, critical=True), "supply": score(90)})
+    assert criteria(("papa",), (frost,), GOOD_SOIL, {**SIGNAL_WEIGHTS, "frost": 0})[0]["risk"] == 20
 
 
-def test_un_ciclo_sin_agua_no_es_evaluable_y_no_cuenta_en_el_riesgo():
-    """Sin dato de agua, la luz es `not_evaluable` y el ciclo no muestra factor limitante (HU-074): no cuenta en el
-    riesgo, aunque tenga una helada de 30, y se dice. Lo que se muestra es lo que decide."""
-    cycles = (crop(water=None, frost=30), crop(water=60, supply=70))
-    found, limitations = criteria(("papa", "arveja"), cycles, GOOD_SOIL)
-    assert cycles[0].limiting_signal is None
+def test_un_ciclo_sin_agua_cuenta_en_el_riesgo_con_sus_otras_senales():
+    """Aprobado por Haider (15 nov 2026, PR #146): sin dato de agua la luz del ciclo es `not_evaluable`, pero su riesgo
+    es el mínimo de sus otras señales que cuentan y califican. Con el calor en 10, `risk` baja a 10: que falte el agua
+    nunca mejora el riesgo (R1). La limitación dice que a ese ciclo le falta el agua."""
+    cycles = (crop(water=None, heat=10), crop(water=60, supply=70))
+    found, limitations = criteria(("papa", "arveja"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
+    assert found["risk"] == 10
+    assert "El ciclo 1 no tiene calificación de agua: no cuenta en ese criterio" in limitations
+    assert not any("factor limitante" in text for text in limitations)
+
+
+def test_un_ciclo_sin_ninguna_senal_que_cuente_y_califique_no_cuenta_en_el_riesgo_y_se_dice():
+    cycles = (crop(water=None, frost=None, heat=None, soil=None, supply=None), crop(water=60, supply=70))
+    found, limitations = criteria(("papa", "arveja"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
     assert found["risk"] == 60
     assert "El ciclo 1 no tiene un factor limitante calificado: no cuenta en ese criterio" in limitations
 
@@ -91,7 +92,7 @@ def test_un_criterio_sin_datos_es_nulo_no_entra_al_total_y_va_a_las_limitaciones
     """Sin oferta ni mercado en ningún cultivo, el ingreso es nulo, aunque el descanso valga 0: nunca se rellena (R1).
     El total es el promedio de los otros tres: (80 + 88 + 80) / 3 = 82,67 → 83."""
     cycles = (crop(water=80, frost=90, heat=95, soil=80, supply=None), FALLOW)
-    result = score_strategy(("papa", "descanso"), cycles, GOOD_SOIL, EQUAL)
+    result = score_strategy(("papa", "descanso"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS, EQUAL)
     assert result.scores == {"water": 80, "soil": 88, "income": None, "risk": 80}
     assert result.total_score == 83
     assert NO_CRITERION["income"] in result.limitations
@@ -99,14 +100,14 @@ def test_un_criterio_sin_datos_es_nulo_no_entra_al_total_y_va_a_las_limitaciones
 
 
 def test_sin_salud_del_suelo_el_suelo_no_califica():
-    result = score_strategy(("papa",), (crop(),), health(None, None, None, None, None), EQUAL)
+    result = score_strategy(("papa",), (crop(),), health(None, None, None, None, None), SIGNAL_WEIGHTS, EQUAL)
     assert result.scores["soil"] is None
     assert NO_CRITERION["soil"] in result.limitations
 
 
 def test_un_ciclo_sin_agua_no_cuenta_y_se_dice():
     cycles = (crop(water=None), crop(water=60))
-    found, limitations = criteria(("papa", "arveja"), cycles, GOOD_SOIL)
+    found, limitations = criteria(("papa", "arveja"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
     assert found["water"] == 60
     assert "El ciclo 1 no tiene calificación de agua: no cuenta en ese criterio" in limitations
 
@@ -114,13 +115,13 @@ def test_un_ciclo_sin_agua_no_cuenta_y_se_dice():
 def test_un_ciclo_no_apto_no_tiene_diagnostico_y_se_dice():
     """La rotación actual puede traer un cultivo no apto (decisión 14): sin señales, no cuenta en agua ni en riesgo."""
     cycles = (CycleScores("crop", None), crop(water=60, supply=70))
-    found, limitations = criteria(("papa", "arveja"), cycles, GOOD_SOIL)
+    found, limitations = criteria(("papa", "arveja"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
     assert (found["water"], found["risk"]) == (60, 60)
     assert "El ciclo 1 no tiene diagnóstico: no cuenta en ese criterio" in limitations
 
 
 def test_sin_ningun_ciclo_con_diagnostico_agua_y_riesgo_no_califican():
-    result = score_strategy(("descanso",), (FALLOW,), GOOD_SOIL, EQUAL)
+    result = score_strategy(("descanso",), (FALLOW,), GOOD_SOIL, SIGNAL_WEIGHTS, EQUAL)
     assert result.scores == {"water": None, "soil": 88, "income": None, "risk": None}
     assert result.total_score == 88
     assert [NO_CRITERION[name] for name in ("water", "income", "risk")] == list(result.limitations)
@@ -135,7 +136,7 @@ def test_el_total_se_pondera_por_las_prioridades():
 
 def test_con_todas_las_prioridades_en_cero_no_hay_total():
     zero = {"water": 0, "soil": 0, "income": 0, "risk": 0}
-    result = score_strategy(("papa",), (crop(),), GOOD_SOIL, zero)
+    result = score_strategy(("papa",), (crop(),), GOOD_SOIL, SIGNAL_WEIGHTS, zero)
     assert result.total_score is None
     assert NO_TOTAL in result.limitations
     # Solo cuentan las prioridades de los criterios que califican: el agua con 5 no da total si el agua es nula.
@@ -161,7 +162,7 @@ def test_subir_el_peso_del_suelo_sube_al_abono_verde():
     )
 
     def order(priorities):
-        found = [score_strategy(ids, cycles, soil, priorities) for ids, cycles, soil in options]
+        found = [score_strategy(ids, cycles, soil, SIGNAL_WEIGHTS, priorities) for ids, cycles, soil in options]
         assert [(s.scores["water"], s.scores["income"], s.scores["risk"]) for s in found] == [(80, 60, 60), (80, 40, 60)]
         return [(s.crop_ids[-1], s.total_score) for s in rank_strategies(found)]
 
@@ -215,4 +216,4 @@ def test_misma_entrada_mismo_orden_sin_importar_el_orden_de_llegada():
 
 def test_ciclos_y_calificaciones_deben_coincidir():
     with pytest.raises(ValueError, match="2 ciclos y 1 calificaciones"):
-        criteria(("papa", "arveja"), (crop(),), GOOD_SOIL)
+        criteria(("papa", "arveja"), (crop(),), GOOD_SOIL, SIGNAL_WEIGHTS)

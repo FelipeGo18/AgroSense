@@ -195,7 +195,7 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 | `water` (agua) | El promedio de la calificación de la señal `water` de sus ciclos con diagnóstico |
 | `soil` (suelo) | Los cinco criterios de salud del suelo: `favorable` vale 100, `moderate` 50 y `unfavorable` 0; el criterio es su promedio entre los disponibles |
 | `income` (ingreso) | El promedio, ciclo por ciclo, de la calificación de `supply` y de `market` que tengan dato; un abono verde o un descanso no deja cosecha y vale 0. Es el único lugar donde la oferta entra a las estrategias |
-| `risk` (riesgo) | El factor que más limita entre todos sus ciclos: el menor `limiting_score` (ley del mínimo) |
+| `risk` (riesgo) | El factor que más limita entre todos sus ciclos: el menor `limiting_score` (ley del mínimo). El de cada ciclo es la calificación más baja entre sus señales que cuentan y califican con los pesos de quien consulta, como en el orden de las ventanas, también si su luz es `not_evaluable` por falta del agua: que falte un dato nunca mejora el riesgo (R1). Un ciclo sin ninguna señal que cuente y califique no cuenta, y se dice (aprobado por Haider el 15 de noviembre de 2026, PR #146) |
 
 Decisión 15 (antes era un supuesto de HU-082):
 
