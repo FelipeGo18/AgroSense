@@ -118,7 +118,7 @@ function Farm() {
       {elsewhere.length > 0 && (
         <section aria-labelledby="otro-municipio" className="flex flex-col gap-2">
           <h2 id="otro-municipio" className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
-            En otro municipio
+            {t("farm.otherMunicipality")}
           </h2>
           <ul className="flex flex-col gap-2">
             {elsewhere.map((lot) => (
@@ -127,7 +127,7 @@ function Farm() {
               </li>
             ))}
           </ul>
-          <p className="text-[14px] text-texto-secundario">Ábralo para verlo en su mapa.</p>
+          <p className="text-[14px] text-texto-secundario">{t("farm.openMap")}</p>
         </section>
       )}
       {undrawn.length > 0 && (

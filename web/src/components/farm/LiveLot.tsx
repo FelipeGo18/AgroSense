@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { locale } from "@/lib/i18n";
 import { useEffect, useId, useRef, useState } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMotionEffect } from "@/hooks/useMotionEffect";
@@ -61,6 +63,7 @@ export function LiveLot({
   animated: boolean;
   now?: Date;
 }) {
+  const { t } = useTranslation();
   const clip = useId();
   const root = useRef<SVGSVGElement>(null);
   // En el celular (menos de 768 px, el corte `md`), menos partículas: luciérnagas, mariposas, hojas y abejas (HU-187).
@@ -121,7 +124,7 @@ export function LiveLot({
   if (!base) {
     return (
       <div role="status" className="flex size-full items-center justify-center bg-paleta-niebla text-texto-secundario">
-        Dibujando su lote…
+        {t("lot.live.loading")}
       </div>
     );
   }
@@ -153,8 +156,8 @@ export function LiveLot({
     labels.push({
       x: base.lot.x + cell.x * base.lot.scale,
       y: base.lot.y + (cell.y + shape.top) * base.lot.scale,
-      title: season ? cropName(season.cropId) : "Libre",
-      sub: `${(season ? season.areaHa : free).toLocaleString("es-CO", { maximumFractionDigits: 2 })} ha`,
+      title: season ? cropName(season.cropId) : t("lot.live.free"),
+      sub: `${(season ? season.areaHa : free).toLocaleString(locale(), { maximumFractionDigits: 2 })} ha`,
     });
   });
 
@@ -166,7 +169,7 @@ export function LiveLot({
         preserveAspectRatio="xMidYMid slice"
         className="size-full"
         role="img"
-        aria-label={`Ilustración de su lote: ${labels.map((l) => `${l.title}, ${l.sub}`).join("; ")}`}
+        aria-label={t("lot.live.description", { labels: labels.map((l) => `${l.title}, ${l.sub}`).join("; ") })}
       >
         <Svg markup={base.sky[time]} />
         <defs>

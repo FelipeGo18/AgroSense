@@ -185,7 +185,7 @@ function Comparison({
                 <li key={monthName} className="border-t border-superficie-borde pt-3">
                   <h3 className="font-bold">{monthName}</h3>
                   {!metric ? (
-                    <p>La respuesta no trae este mes.</p>
+                    <p>{t("changes.month.missing")}</p>
                   ) : (
                     <>
                       <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">

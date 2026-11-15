@@ -62,11 +62,13 @@ const allCases = [
   [false, "/que-cambio?municipio=15646&cultivo=papa"],
   [false, "/precios"],
   [false, "/como-funciona"],
+  [false, "/del-satelite-a-su-finca"],
   [false, "/politica-de-datos"],
   [false, "/ruta-que-no-existe"],
   [true, "/mi-cuenta"],
   [true, "/mi-cuenta/contrasena"],
   [true, "/mi-cuenta/actividad"],
+  [true, "/mi-cuenta/escribirnos"],
   [true, "/mi-finca"],
   [true, "/mi-finca/agregar"],
   [true, "/mi-finca/lotes/a1"],
@@ -97,6 +99,19 @@ try {
                 return Response.json({ error: { code: "unauthorized", message: "Inicie sesión para continuar." } }, { status: 401 });
               data = profile;
             } else if (path === "/me/activity") data = { items: [], next_before: null };
+            else if (path === "/me/tickets")
+              data = [
+                {
+                  ticket_id: "example-ticket",
+                  lot_id: "a1",
+                  message: "Example user message",
+                  status: "closed",
+                  created_at: "2026-11-14T10:00:00Z",
+                  closed_at: "2026-11-15T10:00:00Z",
+                  reply: "Example reply",
+                  replied_at: "2026-11-15T10:00:00Z",
+                },
+              ];
             else if (path === "/lots") data = [{ ...lot, current_crop_ids: ["papa"] }];
             else if (path === "/lots/a1") data = { ...lot, soil: null, current_seasons: [season] };
             else if (path === "/lots/a1/seasons") data = [season];
@@ -140,7 +155,10 @@ try {
           const url = new URL(path, base);
           url.searchParams.set("lang", language);
           await page.goto(url.href);
-          await page.getByRole("heading", { level: 1 }).first().waitFor();
+          await page
+            .getByRole("heading", path === "/del-satelite-a-su-finca" ? { level: 2 } : { level: 1 })
+            .first()
+            .waitFor();
           await page.evaluate(() => document.fonts.ready);
           await page.waitForTimeout(500);
           const text = await page.locator("body").innerText();
@@ -176,6 +194,14 @@ try {
           assert.equal(overflow, false, `${path}, ${language}, ${width}px: desborde horizontal`);
           assert.equal(await page.locator("html").getAttribute("lang"), language);
           assert.deepEqual(errors, [], `${path}: errores de página`);
+          if (path === "/mi-cuenta/escribirnos") {
+            await page.getByLabel(language === "en" ? "Your message" : "Su mensaje", { exact: true }).waitFor();
+            assert.match(text, language === "en" ? /Answered/ : /Respondido/);
+          }
+          if (path === "/del-satelite-a-su-finca") {
+            await page.getByRole("navigation", { name: language === "en" ? "Journey levels" : "Niveles del recorrido" }).waitFor();
+            assert.match(text, language === "en" ? /not a forecast/ : /no un pronóstico/);
+          }
           if (path === "/consultar" && language === "en" && reducedMotion === "reduce" && width === 1024) {
             const area = page.getByLabel("Land area, in hectares", { exact: true });
             await area.fill("2.5");

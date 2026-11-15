@@ -241,12 +241,13 @@ function ActivityCard() {
 
 /** Escribir al responsable de los datos (HU-163): preguntar, pedir una corrección o reportar un problema. */
 function MessagesCard() {
+  const { t } = useTranslation();
   return (
     <Card>
-      <Title>Escribir al responsable</Title>
-      <p>Pregunte qué datos suyos guardamos, pida que los corrijamos o cuéntenos un problema.</p>
+      <Title>{t("account.messages.title")}</Title>
+      <p>{t("account.messages.cardBody")}</p>
       <ButtonLink to={PATHS.messages} variant="secondary" className="self-start">
-        Escribir un mensaje
+        {t("account.messages.cardAction")}
       </ButtonLink>
     </Card>
   );

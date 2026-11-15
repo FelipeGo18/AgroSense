@@ -103,7 +103,7 @@ function LotView() {
           )}
           <div
             role="group"
-            aria-label="Cómo ver el lote"
+            aria-label={t("lot.view.label")}
             className="absolute right-3 bottom-6 z-10 flex gap-1 rounded-md bg-superficie-panel p-1 shadow-md md:top-[104px] md:right-8 md:bottom-auto"
           >
             {(["finca", "mapa"] as const).map((option) => (
@@ -116,7 +116,7 @@ function LotView() {
                   view === option ? "bg-accion-primaria text-texto-sobre-oscuro" : "text-texto-principal"
                 }`}
               >
-                {option === "finca" ? "Su finca" : "Mapa"}
+                {option === "finca" ? t("lot.view.farm") : t("lot.view.map")}
               </button>
             ))}
           </div>
@@ -124,11 +124,8 @@ function LotView() {
             <p
               className={`absolute top-[88px] left-3 z-10 max-w-[calc(100%-1.5rem)] rounded-md bg-superficie-panel/95 px-3 py-2 text-[13px] md:top-auto md:bottom-6 md:max-w-[26rem] ${panelOpen ? "md:left-[488px]" : "md:left-8"}`}
             >
-              <span className="md:hidden">Ilustración de su lote, no una imagen de él.</span>
-              <span className="hidden md:inline">
-                Ilustración de su lote: cada siembra ocupa su parte del área y se dibuja en su etapa por calendario. No es una imagen del
-                lote.
-              </span>
+              <span className="md:hidden">{t("lot.illustration.short")}</span>
+              <span className="hidden md:inline">{t("lot.illustration.detail")}</span>
             </p>
           )}
         </>

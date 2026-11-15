@@ -4,6 +4,7 @@ import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATHS } from "@/app/paths";
 import { routes } from "@/app/routes";
+import { i18n } from "@/lib/i18n";
 import type { ActivityItem } from "@/features/auth/session";
 import { describe as describeEvent, keptSince, when, who } from "./activity";
 
@@ -460,6 +461,27 @@ describe("Escribir al responsable (HU-163)", () => {
     fakeApi(ME);
     open(PATHS.account);
     expect(await screen.findByRole("link", { name: "Escribir un mensaje" })).toHaveAttribute("href", PATHS.messages);
+  });
+
+  it("traduce el formulario y el historial sin cambiar el mensaje escrito ni la respuesta (HU-233)", async () => {
+    fakeApi({
+      ...ME,
+      "GET /api/v1/lots": { status: 200, body: LOTS },
+      "GET /api/v1/me/tickets": {
+        status: 200,
+        body: [{ ...TICKET, status: "closed", reply: "Conservamos sus lotes.", replied_at: TICKET.created_at }],
+      },
+    });
+    open(PATHS.messages);
+    await userEvent.type(await screen.findByLabelText("Su mensaje"), "Mi consulta sin traducir");
+    await act(() => i18n.changeLanguage("en"));
+    expect(screen.getByRole("heading", { level: 1, name: "Contact the data controller" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Your message")).toHaveValue("Mi consulta sin traducir");
+    expect(screen.getByText(/Answered · El Alto/)).toBeInTheDocument();
+    expect(screen.getAllByText(/November 14, 2026/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Conservamos sus lotes.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to My account" })).toHaveAttribute("href", `${PATHS.account}?lang=en`);
   });
 
   it("envía el mensaje, opcionalmente sobre un lote, y muestra los enviados con su estado", async () => {

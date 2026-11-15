@@ -45,6 +45,11 @@ cuatro tamaños y los dos modos de movimiento. No crea cuentas ni usa la base de
 `TEST_LANGUAGE`, `WIDTHS` y `ROUTES`. Para la revisión adaptable completa en inglés, use
 `TEST_LANGUAGE=en npm run test:responsive` (en PowerShell, `$env:TEST_LANGUAGE='en'`).
 
+Cada página o texto que entre después debe incluir sus traducciones en el mismo PR. Agregue las rutas nuevas
+a `e2e/language-pages.mjs`, con respuestas locales si requieren sesión, y compruebe los dos idiomas.
+Esta revisión incluye Mensajes y el recorrido «Del satélite a su finca». Los mensajes escritos por usuarios y las
+respuestas del responsable conservan su texto original; solo se traducen los rótulos, estados y fechas de la interfaz.
+
 ## Rendimiento
 
 **Se mide con `npm run perf`, nunca sobre `npm run dev`.** El servidor de desarrollo entrega el código sin empaquetar y da notas muy bajas que no dicen nada del producto. `npm run perf` hace el build, lo sirve comprimido y corre Lighthouse tres veces por caso (Inicio y Entrar, en escritorio y en móvil, con y sin movimiento); cuenta la mediana y termina con error si un caso baja de su presupuesto (`e2e/perf.mjs`). El «móvil» es un teléfono de gama media con 4G lento, simulado: antes del evento hay que probar también en un teléfono de verdad.

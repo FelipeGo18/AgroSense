@@ -1,5 +1,6 @@
 import { EMPTY_STRATEGY, readGuestConsult, writeGuestConsult } from "@/features/strategies/entry";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
+import { i18n } from "@/lib/i18n";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
 import { RouterProvider, createMemoryRouter } from "react-router";
@@ -221,6 +222,10 @@ describe("Mi finca (HU-169)", () => {
     const elsewhere = within(screen.getByRole("region", { name: "En otro municipio" }));
     expect(elsewhere.getByRole("link", { name: /La Loma/ })).toHaveAttribute("href", PATHS.lot("d2"));
     expect(await elsewhere.findByText("Arveja en curso · Zipaquirá")).toBeInTheDocument();
+    await act(() => i18n.changeLanguage("en"));
+    const translated = within(screen.getByRole("region", { name: "In another municipality" }));
+    expect(translated.getByText("Open it to see it on its map.")).toBeInTheDocument();
+    expect(translated.getByRole("link", { name: /La Loma/ })).toHaveAttribute("href", `${PATHS.lot("d2")}?lang=en`);
   });
 
   it("al sembrar, «¿Qué había antes en este terreno?» deja elegir una o varias siembras cosechadas (HU-165)", async () => {
@@ -483,6 +488,19 @@ describe("El lote (HU-164)", () => {
     expect(await screen.findByRole("button", { name: "Su finca", pressed: true })).toBeInTheDocument();
     expect(await screen.findByRole("img", { name: /Ilustración de su lote: Libre/ })).toBeInTheDocument();
     expect(screen.getByText("Ilustración de su lote, no una imagen de él.")).toBeInTheDocument();
+  });
+
+  it("traduce la vista del lote, sus rótulos y el panel al cambiar a inglés (HU-233)", async () => {
+    fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: DETAIL } });
+    open(PATHS.lot("a1"));
+    await screen.findByRole("img", { name: /Ilustración de su lote/ });
+    await act(() => i18n.changeLanguage("en"));
+    expect(screen.getByRole("group", { name: "How to view the plot" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Your farm", pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Illustration of your plot: Unplanted/ })).toBeInTheDocument();
+    expect(screen.getByText("Illustration of your plot, not an image of it.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Hide the panel/ }));
+    expect(screen.getByRole("button", { name: /Show the plot/ })).toBeInTheDocument();
   });
 
   it("el panel se oculta para ver la finca y se vuelve a mostrar (HU-187)", async () => {

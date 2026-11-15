@@ -579,9 +579,7 @@ function summaryRows(
   const previous = lot ? (lotPrevious ?? []) : sent.previousMode === "none" ? [] : sent.previous.filter(Boolean);
   // `previous` va de la más reciente a la más antigua; en palabras se dice en el orden en que se sembró (papa → arveja).
   const before = previous.length
-   
     ? t("pages.strategies.StrategiesPage.previously", { v0: sequence([...previous].reverse(), names).toLowerCase() })
-   
     : t("pages.strategies.StrategiesPage.previouslyNothingThisIsTheFirstPlanting");
   const area = parseArea(sent.areaText);
   const land = lot
