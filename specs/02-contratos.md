@@ -93,6 +93,7 @@ Ninguno cambia la forma de las tablas:
 
 - Si EVA trae el código DIVIPOLA y cómo son sus semestres (HU-001). Se toma A = enero a junio y B = julio a diciembre. El semestre solo existe en `supply_semester`: la decisión se toma sobre ventanas de siembra (ver `specs/01-reglas.md`) y la oferta se lee del semestre en que cae la fecha de siembra. **Si EVA no sirve, la señal `supply` queda en `insufficient_data` (R1) y el diagnóstico sigue: no se calcula sin ella** (regla 1 de la agregación).
 - `planted_change_pct` compara contra el promedio de los tres mismos semestres anteriores; con menos de tres, `quality = partial` y, sin ninguno, la fila no trae el cambio (nulo).
+  **Propuesto en HU-032, pendiente de aprobar por Haider o Felipe** (las columnas no cambian): los tres semestres son los del mismo semestre de los tres años anteriores (una ventana fija) y solo cuentan los que tienen área sembrada; con un promedio de 0 ha el cambio también es nulo. `dept_share_pct` es el área sembrada del municipio entre la suma de los municipios de su departamento con fila en ese cultivo y semestre (los que reportan), en %; nula si alguno no trae el área o el total es 0. Definición completa en EP-03, HU-032.
 
 ## Configuración versionada
 

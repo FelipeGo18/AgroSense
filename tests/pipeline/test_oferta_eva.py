@@ -1,4 +1,5 @@
-"""Oferta de EVA de la UPRA normalizada por DIVIPOLA, cultivo y semestre (HU-031; tabla `supply_semester`)."""
+"""Oferta de EVA de la UPRA normalizada por DIVIPOLA, cultivo y semestre (HU-031; tabla `supply_semester`), con la
+variación del área sembrada y la participación del departamento (HU-032)."""
 
 import csv
 import io
@@ -45,6 +46,24 @@ def normalize(rows, counts=None):
     return eva.normalize(raw(rows), CODES, ["15", "25"], TOWNS, counts if counts is not None else Counter())
 
 
+def history(*rows, period="2024A"):
+    """Las filas en `period` y las mismas en el mismo semestre de los tres años anteriores: así la variación tiene sus
+    tres semestres (HU-032) y `quality` solo depende de los valores de EVA."""
+    year, semester = int(period[:4]), period[4]
+    return [{**r, "periodo": f"{y}{semester}"} for y in range(year - eva.CHANGE_YEARS, year + 1) for r in rows]
+
+
+def planted(town="15646", code="1080701", **by_period):
+    """Una fila por periodo con su área sembrada, por ejemplo `planted(p2021A="10", p2024A="40")`."""
+    return [row(town=town, code=code, period=key[1:], planted=value) for key, value in by_period.items()]
+
+
+def change(table, town="15646", crop="papa", period="2024A"):
+    key = (pl.col("municipality_id") == town) & (pl.col("crop_id") == crop)
+    key &= (pl.col("year") == int(period[:4])) & (pl.col("semester") == period[4])
+    return table.filter(key).select("planted_change_pct", "quality").row(0)
+
+
 def test_una_fila_por_municipio_cultivo_y_semestre_con_la_fuente():
     table = normalize([row(period="2024A"), row(period="2024B", planted="12")])
     assert table.columns == list(schema.TABLES["supply_semester"].columns)
@@ -55,9 +74,10 @@ def test_una_fila_por_municipio_cultivo_y_semestre_con_la_fuente():
     schema.check("supply_semester", table)
 
 
-def test_la_variacion_y_la_participacion_quedan_para_hu_032():
+def test_sin_semestres_anteriores_no_hay_variacion_y_la_fila_es_partial():
+    """Contrato: sin ningún semestre anterior, la fila no trae el cambio (nulo); con menos de tres, `partial`."""
     table = normalize([row()])
-    assert table["planted_change_pct"].to_list() == [None] and table["dept_share_pct"].to_list() == [None]
+    assert table.select("planted_change_pct", "dept_share_pct", "quality").row(0) == (None, 100.0, "partial")
 
 
 def test_los_dos_ultimos_anos_de_la_descarga_son_preliminares():
@@ -68,12 +88,12 @@ def test_los_dos_ultimos_anos_de_la_descarga_son_preliminares():
 
 def test_los_codigos_de_un_mismo_cultivo_se_suman_y_el_rendimiento_sale_de_los_totales():
     table = normalize(
-        [
+        history(
             row(code="1010402", planted="30", harvested="20", production="60", yield_="3"),
             row(code="1010404", planted="10", harvested="10", production="40", yield_="4"),
-        ]
+        )
     )
-    maize = table.row(0, named=True)
+    maize = table.row(-1, named=True)
     assert (maize["crop_id"], maize["planted_ha"], maize["harvested_ha"], maize["production_t"]) == ("maiz", 40.0, 30.0, 100.0)
     assert maize["yield_t_ha"] == 3.33 and maize["quality"] == "ok"
 
@@ -245,12 +265,12 @@ def test_maiz_sumado_sin_cosecha_tiene_rendimiento_0_y_sale_ok():
     """Dos códigos de maíz con cosecha 0: el rendimiento es 0, como el que publica EVA con un solo código, y la fila es
     `ok` porque EVA trae los cuatro valores (revisión de Haider del PR #117; antes salía nulo y `partial`)."""
     table = normalize(
-        [
+        history(
             row(code="1010402", planted="5", harvested="0", production="0", yield_="0"),
             row(code="1010404", planted="3", harvested="0", production="0", yield_="0"),
-        ]
+        )
     )
-    maize = table.row(0, named=True)
+    maize = table.row(-1, named=True)
     assert (maize["planted_ha"], maize["harvested_ha"], maize["yield_t_ha"], maize["quality"]) == (8.0, 0.0, 0.0, "ok")
 
 
@@ -342,3 +362,116 @@ def test_si_datos_gov_co_falla_se_avisa_y_se_sigue(tmp_path, monkeypatch, caplog
     with caplog.at_level("WARNING"):
         build.download_supply(["15"], tmp_path)
     assert any("source_skipped" in str(record.msg) for record in caplog.records)
+
+
+# HU-032: variación del área sembrada y participación del departamento.
+
+
+def test_la_variacion_compara_con_el_promedio_del_mismo_semestre_de_los_tres_anos_anteriores():
+    """2024A: 40 ha contra el promedio de 2021A, 2022A y 2023A (20 ha) es +100 %. Los semestres B no cuentan."""
+    table = normalize(planted(p2021A="10", p2022A="20", p2023A="30", p2024A="40", p2023B="500", p2024B="5"))
+    assert change(table) == (100.0, "ok")
+    assert change(table, period="2024B") == (-99.0, "partial")
+
+
+def test_un_ano_sin_fila_no_cuenta_como_cero_y_la_fila_es_partial():
+    """Sin la fila de 2022A el promedio es de 2021A y 2023A (20 ha), no de tres con un 0 (R1)."""
+    table = normalize(planted(p2021A="10", p2023A="30", p2024A="40"))
+    assert change(table) == (100.0, "partial")
+
+
+def test_la_ventana_son_los_tres_anos_anteriores_no_los_ultimos_con_dato():
+    """2020A queda fuera de la ventana de 2024A (2021 a 2023): sin ningún semestre dentro, no hay variación."""
+    assert change(normalize(planted(p2020A="10", p2024A="40"))) == (None, "partial")
+    assert change(normalize(planted(p2020A="10", p2023A="20")), period="2023A") == (100.0, "partial")
+
+
+def test_con_promedio_anterior_de_cero_no_hay_variacion():
+    """No se puede dividir por 0 ha: la variación es nula y no se inventa un número (R1)."""
+    table = normalize(planted(p2021A="0", p2022A="0", p2023A="0", p2024A="5"))
+    assert change(table) == (None, "ok")
+
+
+def test_sin_siembra_ahora_la_variacion_es_menos_100():
+    table = normalize(planted(p2021A="10", p2022A="10", p2023A="10", p2024A="0"))
+    assert change(table) == (-100.0, "ok")
+
+
+def test_un_semestre_anterior_sin_area_sembrada_no_cuenta():
+    """El maíz de 2023A no trae el área de uno de sus códigos: su total es nulo y no entra al promedio."""
+    rows = planted(code="1010402", p2021A="10", p2022A="20", p2024A="30")
+    rows += [row(code="1010402", period="2023A", planted=""), row(code="1010404", period="2023A", planted="5")]
+    assert change(normalize(rows), crop="maiz") == (100.0, "partial")
+
+
+def test_la_variacion_redondea_a_un_decimal():
+    table = normalize(planted(p2021A="12", p2022A="25", p2023A="15", p2024A="10"))
+    assert change(table) == (-42.3, "ok")
+
+
+def share(table, crop="papa", period="2024A"):
+    key = (pl.col("crop_id") == crop) & (pl.col("year") == int(period[:4])) & (pl.col("semester") == period[4])
+    return dict(table.filter(key).select("municipality_id", "dept_share_pct").rows())
+
+
+def test_la_participacion_es_la_del_municipio_en_su_departamento():
+    """Los dos municipios de Boyacá (15) se reparten su total; el de Cundinamarca (25) es todo el suyo."""
+    rows = planted(town="15646", p2024A="30") + planted(town="15407", p2024A="10") + planted(town="25899", p2024A="7")
+    assert share(normalize(rows)) == {"15407": 25.0, "15646": 75.0, "25899": 100.0}
+
+
+def test_la_participacion_redondea_a_dos_decimales():
+    table = normalize(planted(town="15646", p2024A="1") + planted(town="15407", p2024A="2"))
+    assert share(table) == {"15407": 66.67, "15646": 33.33}
+
+
+def test_si_un_municipio_no_trae_el_area_su_departamento_no_tiene_participacion():
+    """El maíz de 15646 no trae el área de un código: el total de Boyacá no se conoce (R1). Cundinamarca sí."""
+    rows = [row(town="15646", code="1010402", planted=""), row(town="15646", code="1010404", planted="4")]
+    rows += [row(town="15407", code="1010402", planted="6"), row(town="25899", code="1010402", planted="3")]
+    assert share(normalize(rows), crop="maiz") == {"15407": None, "15646": None, "25899": 100.0}
+
+
+def test_con_total_de_cero_no_hay_participacion():
+    table = normalize(planted(town="15646", p2024A="0") + planted(town="15407", p2024A="0"))
+    assert share(table) == {"15407": None, "15646": None}
+
+
+def test_cada_cultivo_y_semestre_tiene_su_total():
+    table = normalize(planted(town="15646", p2024A="10", p2024B="10") + planted(town="15407", p2024A="30"))
+    assert share(table) == {"15407": 75.0, "15646": 25.0}
+    assert share(table, period="2024B") == {"15646": 100.0}
+
+
+@pytest.mark.parametrize(("column", "value"), [("dept_share_pct", 120.0), ("dept_share_pct", -1.0), ("planted_change_pct", -150.0)])
+def test_una_variacion_o_una_participacion_imposible_no_pasa(column, value):
+    municipalities, sources = supply_inputs()
+    supply = normalize([row()]).with_columns(pl.lit(value).alias(column))
+    with pytest.raises(build.ValidationError, match="imposible"):
+        build.validate_supply(supply, municipalities, sources, None)
+
+
+def test_una_participacion_que_no_suma_100_no_pasa():
+    municipalities, sources = supply_inputs()
+    supply = normalize(planted(town="15646", p2024A="30") + planted(town="15407", p2024A="10"))
+    build.validate_supply(supply, municipalities, sources, None)
+    wrong = supply.with_columns(dept_share_pct=pl.when(pl.col("municipality_id") == "15407").then(30.0).otherwise(pl.col("dept_share_pct")))
+    with pytest.raises(build.ValidationError, match="no suma 100"):
+        build.validate_supply(wrong, municipalities, sources, None)
+
+
+def test_comprobacion_a_mano_en_dos_municipios_del_dataset_publicado():
+    """Los dos municipios de HU-032, calculados a mano desde `data/raw/eva/eva.csv` (código 1080701, papa) y escritos
+    en EP-03.
+
+    - Villapinzón (25873), 2025A: 12 000 ha; 2022A, 2023A y 2024A: 8000, 9000 y 10 000 (promedio 9000):
+      (12 000 − 9000) / 9000 = +33,3 %. Cundinamarca sembró 39 128,65 ha: 12 000 / 39 128,65 = 30,67 %.
+    - Duitama (15238), 2024B: 10 ha; 2021B, 2022B y 2023B: 12, 25 y 15 (promedio 17,33): (10 − 17,33) / 17,33 = −42,3 %.
+      Boyacá sembró 23 480,4 ha: 10 / 23 480,4 = 0,04 %.
+    """
+    table = pl.read_parquet("data/published/supply_semester.parquet").filter(pl.col("crop_id") == "papa")
+    cases = {("25873", 2025, "A"): (12000.0, 33.3, 30.67, "ok"), ("15238", 2024, "B"): (10.0, -42.3, 0.04, "ok")}
+    for (town, year, semester), expected in cases.items():
+        key = (pl.col("municipality_id") == town) & (pl.col("year") == year) & (pl.col("semester") == semester)
+        found = table.filter(key).select("planted_ha", "planted_change_pct", "dept_share_pct", "quality")
+        assert found.row(0) == expected
