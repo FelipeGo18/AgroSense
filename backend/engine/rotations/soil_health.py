@@ -11,7 +11,7 @@ from typing import Any
 
 SOIL_CRITERIA = ("nitrogen", "organic_carbon", "soil_cover", "pest_break", "erosion")
 TEAM_CRITERION = "criterio_equipo_2026"
-TEAM_NOTE = "criterio del equipo, pendiente de validar por un agrónomo"
+TEAM_NOTE = "Criterio del equipo, pendiente de validar por un agrónomo"
 
 _RANK = {"favorable": 2, "moderate": 1, "unfavorable": 0}
 _HISTORY_TEXT = {
@@ -66,7 +66,9 @@ def level_from_cuts(value: float, levels: Mapping[str, Any], more_is_better: boo
 
 def _text(reason: str, rule: HealthRule) -> str:
     """La razón de una regla del equipo termina con la nota de «criterio del equipo» (R8, decisión 16)."""
-    return f"{reason}. {TEAM_NOTE}" if rule.source_id == TEAM_CRITERION else reason
+    if rule.source_id != TEAM_CRITERION:
+        return reason
+    return f"{reason} {TEAM_NOTE}" if reason.endswith(".") else f"{reason}. {TEAM_NOTE}"
 
 
 def _no_data(reason: str, rule: HealthRule | None) -> Criterion:
@@ -122,7 +124,10 @@ def _pest_break_rule(
             cycles = i - back - 1
             returns.append((_RANK[level_from_cuts(cycles, rule.levels)], cycles, i))
     if not returns:
-        return "favorable", _text(f"La familia {family} no vuelve al terreno en los ciclos revisados", rule)
+        if any(family in _families(crop_id, crops) for crop_id in timeline):
+            return "favorable", _text(f"La familia {family} no vuelve al terreno en los ciclos revisados", rule)
+        text = f"Ni la estrategia ni los cultivos anteriores del terreno tienen la familia {family}"
+        return "favorable", _text(text, rule)
     rank, cycles, _ = min(returns)
     level = next(name for name, value in _RANK.items() if value == rank)
     return level, _text(rule.reason_template.format(family=family, cycles=cycles), rule)
@@ -175,8 +180,13 @@ def soil_health(
         if rule.source_id:
             if rule.criterion == "pest_break":
                 pest_rules.append(rule)
+            elif rule.criterion in by_criterion:
+                raise ValueError(
+                    f"Solo pest_break admite varias reglas: el criterio {rule.criterion} recibió dos reglas health con "
+                    f"fuente ({by_criterion[rule.criterion].rule_id} y {rule.rule_id})"
+                )
             else:
-                by_criterion.setdefault(rule.criterion, rule)
+                by_criterion[rule.criterion] = rule
     result: dict[str, Criterion] = {}
     for name in SOIL_CRITERIA:
         rule = by_criterion.get(name)

@@ -318,7 +318,7 @@ def test_pest_break_dos_reglas_nivel_peor_ids_de_las_dos_y_una_razon_por_regla_e
     assert c.rule_ids == ("ejemplo_leguminosa_vuelve", "papa_espera")
     assert c.source_ids == (TEAM_CRITERION, "ejemplo")
     assert len(c.reasons) == 2
-    assert c.reasons[0] == "La familia Leguminosae no vuelve al terreno en los ciclos revisados"
+    assert c.reasons[0] == "Ni la estrategia ni los cultivos anteriores del terreno tienen la familia Leguminosae"
     assert PAPA_ESPERA.reason_template.format(family="Solanaceae", cycles=1) in c.reasons[1]
     assert c.reasons[1].endswith(TEAM_NOTE)
 
@@ -348,10 +348,44 @@ def test_pest_break_regla_sin_familia_junto_a_otra_valida_usa_la_valida_y_dice_l
     assert "ejemplo_sin_familia" in c.reasons[0] and "familia" in c.reasons[0]
 
 
-def test_los_demas_criterios_siguen_con_una_sola_regla():
-    dos_nitrogeno = [*REGLAS, HealthRule("zz_otra_nitrogeno", "nitrogen", "legume_cycles", {}, {"favorable": 9}, "{count}", "ejemplo")]
-    c = _sh(("papa", "descanso", "arveja"), rules=dos_nitrogeno)["nitrogen"]
+def test_solo_pest_break_admite_varias_reglas_dos_de_nitrogeno_con_fuente_fallan_nombrando_criterio_y_reglas():
+    # EJEMPLO (R5): segunda regla de nitrógeno armada para la prueba; no es del catálogo.
+    otra = HealthRule("zz_otra_nitrogeno", "nitrogen", "legume_cycles", {}, {"favorable": 9}, "{count}", "ejemplo")
+    with pytest.raises(ValueError) as e:
+        _sh(("papa", "descanso", "arveja"), rules=[*REGLAS, otra])
+    assert "nitrogen" in str(e.value)
+    assert "leguminosa_en_rotacion" in str(e.value) and "zz_otra_nitrogeno" in str(e.value)
+
+
+def test_una_regla_duplicada_sin_fuente_se_ignora_como_antes():
+    sin_fuente = HealthRule("zz_sin_fuente", "nitrogen", "legume_cycles", {}, {"favorable": 9}, "{count}", "")
+    c = _sh(("papa", "descanso", "arveja"), rules=[*REGLAS, sin_fuente])["nitrogen"]
     assert c.rule_ids == ("leguminosa_en_rotacion",)
+
+
+def test_dos_reglas_pest_break_siguen_funcionando():
+    c = _sh(("papa", "maiz", "papa"), rules=[*REGLAS, LEGUMINOSA_VUELVE])["pest_break"]
+    assert c.rule_ids == ("ejemplo_leguminosa_vuelve", "papa_espera")
+
+
+def test_el_sufijo_lleva_mayuscula_exacta_y_no_duplica_el_punto():
+    assert TEAM_NOTE == "Criterio del equipo, pendiente de validar por un agrónomo"
+    c = _sh(("papa", "arveja", "maiz"))["nitrogen"]
+    assert c.reasons[0].endswith(". Criterio del equipo, pendiente de validar por un agrónomo")
+    assert "criterio del equipo" not in c.reasons[0]
+    punto = HealthRule("ejemplo_con_punto", "nitrogen", "legume_cycles", {}, {"favorable": 1}, "{count} ciclos.", TEAM_CRITERION)
+    assert _sh(("papa", "arveja", "maiz"), rules=[punto])["nitrogen"].reasons[0] == f"1 ciclos. {TEAM_NOTE}"
+
+
+def test_pest_break_texto_cuando_la_familia_aparece_y_no_vuelve():
+    c = _sh(("papa", "maiz", "haba"))["pest_break"]  # una sola papa y sin anteriores
+    assert c.reasons[0] == f"La familia Solanaceae no vuelve al terreno en los ciclos revisados. {TEAM_NOTE}"
+
+
+def test_pest_break_texto_cuando_la_familia_no_aparece_en_ningun_lado():
+    c = _sh(("haba", "maiz", "zanahoria"))["pest_break"]  # ni papa en la estrategia ni anteriores
+    assert (c.status, c.level) == ("available", "favorable")
+    assert c.reasons[0] == f"Ni la estrategia ni los cultivos anteriores del terreno tienen la familia Solanaceae. {TEAM_NOTE}"
 
 
 # --- Determinismo (R4) ---
