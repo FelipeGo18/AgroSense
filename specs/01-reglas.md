@@ -174,7 +174,7 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 
 0. **Candidatas:** todas las secuencias de `cycles` ciclos con los cultivos del catálogo (cultivos, abonos verdes y descanso), sin el mismo `crop_id` en dos ciclos seguidos y sin dos descansos seguidos (decisión 15).
 1. El primer ciclo se siembra en `sowing_date`. Cada ciclo siguiente se siembra el lunes siguiente a la cosecha estimada del anterior (decisión 15). Un descanso dura lo que dice su ficha.
-2. Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores del terreno y el primer ciclo. Una regla violada **excluye** la estrategia, con su motivo (R3).
+2. Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores del terreno y el primer ciclo. Los cultivos anteriores son los `previous_crop_ids` si llegan; si llegan vacíos y hay rotación actual (`current_crop_ids`), esa rotación repetida hacia atrás, para todas las estrategias; sin ninguna, no hay cultivos anteriores. Una regla violada **excluye** la estrategia, con su motivo (R3).
 3. Un ciclo con un cultivo que no es apto para la zona excluye la estrategia. Un ciclo cuya ventana es de alto riesgo por clima (`water`, `frost` o `heat` desfavorable y crítica) también: ningún otro criterio lo compensa (R2).
 4. Un cultivo cuyo pH tolerado queda fuera de todo el intervalo estimado del suelo excluye la estrategia.
 5. La oferta y el mercado nunca excluyen: bajan el criterio de ingreso.
@@ -218,6 +218,8 @@ Decisión 15 (antes era un supuesto de HU-082):
 - Un criterio sin regla con fuente, o sin su dato (por ejemplo, sin carbono orgánico), es `insufficient_data`: no se inventa un corte ni se pinta como malo (R1, R8).
 - El suelo es una estimación de 250 m y el NDVI es de la zona: se dice siempre (R10).
 - Rotación de referencia con fuente: papa, avena y arveja, evaluada por Agrosavia en Tibaitatá (`docs/investigacion-decisiones.md`).
+
+> Los cultivos anteriores del terreno (paso 2 de «Cómo se arman» y `pest_break`) tienen una sola historia desde el 14 de noviembre de 2026 (decisión 6 de Felipe, PR #109; `docs/registro-de-decisiones.md`). La razón de `pest_break` dice cuándo se supuso la rotación actual o cuando no hay cultivos anteriores. La duración del descanso es un valor fijo de su ficha, decidido por Haider el 15 de noviembre de 2026 (PR #109): 180 días.
 
 ## Qué cambió en la zona
 
