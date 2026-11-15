@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from datetime import date
 from itertools import pairwise
 
-from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, SignalScore
+from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, SignalScore, no_stages_reason
 from backend.engine.stages import FROST, HEAT, NOT_APPLICABLE, CropWindow, WindowMonth
 from common.months import month_name
 from common.text import join, of
@@ -129,12 +129,6 @@ def sensitive_window(
         )
     whole_crop = all(period.span.sensitive(risk) for period in window.periods)
     return SensitiveWindow(window.sowing_date, risk, sensitive.months, whole_crop, unknown + notices, normal)
-
-
-def no_stages_reason(crop_name: str) -> str:
-    """La razón de una señal que no se evalúa porque el cultivo no tiene etapas publicadas (sin ventana). La comparten
-    las heladas, el calor y el suelo (HU-183), que sin ventana tampoco se califica."""
-    return f"Sin las etapas {of(crop_name)}: la señal no se evalúa"
 
 
 def insufficient(reason: str, limitations: tuple[str, ...] = ()) -> ClimateSignalResult:

@@ -17,8 +17,7 @@ import math
 import pytest
 
 from backend.config.thresholds import load_thresholds
-from backend.engine.sensitive_signal import no_stages_reason
-from backend.engine.signal_score import AVAILABLE, FAVORABLE, INSUFFICIENT_DATA, MODERATE, UNFAVORABLE, SignalScore
+from backend.engine.signal_score import AVAILABLE, FAVORABLE, INSUFFICIENT_DATA, MODERATE, UNFAVORABLE, SignalScore, no_stages_reason
 from backend.engine.soil_signal import (
     ESTIMATE_LABEL,
     NO_SOIL_REASON,

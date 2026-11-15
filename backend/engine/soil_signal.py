@@ -40,13 +40,11 @@ sus columnas y los umbrales ya validados. No abre archivos ni importa la API.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from backend.engine.sensitive_signal import no_stages_reason
-from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, UNFAVORABLE, score_signal
+from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, UNFAVORABLE, missing, no_stages_reason, score_signal
 from common.text import format_decimal, of
 
 if TYPE_CHECKING:
@@ -97,7 +95,7 @@ def crosses_tolerated(ph_min: float, ph_max: float, p05: float, p95: float) -> b
 def soil_signal(soil: ZoneSoilPh | None, crop_limits: Mapping[str, Any], thresholds: Thresholds, crop_name: str) -> SoilSignalResult:
     """La señal `soil` del cultivo en la zona. `soil` nulo: el municipio no tiene suelo publicado. `crop_limits` es la
     ficha (al menos `ph_min`, `ph_opt_min`, `ph_opt_max` y `ph_max`); `crop_name` lleva su artículo («la papa»)."""
-    if soil is None or _missing(soil.ph):
+    if soil is None or missing(soil.ph):
         return _insufficient(NO_SOIL_REASON)
     score = score_signal(SOIL, soil.ph, thresholds, crop_limits)
     if score.status != AVAILABLE or score.score is None:
@@ -108,7 +106,7 @@ def soil_signal(soil: ZoneSoilPh | None, crop_limits: Mapping[str, Any], thresho
     ph_min, ph_opt_min, ph_opt_max, ph_max = (float(crop_limits[k]) for k in ("ph_min", "ph_opt_min", "ph_opt_max", "ph_max"))
     tolerated = f"({format_decimal(ph_min)} a {format_decimal(ph_max)})"
     level = score.level
-    if _missing(soil.ph_p05) or _missing(soil.ph_p95):
+    if missing(soil.ph_p05) or missing(soil.ph_p95):
         head = f"pH estimado de {format_decimal(ph)}"
         interval = f"{crop_name[:1].upper()}{crop_name[1:]} tolera de {format_decimal(ph_min)} a {format_decimal(ph_max)}"
         limitations: tuple[str, ...] = (
@@ -153,10 +151,6 @@ def _relation(ph: float, ph_min: float, ph_opt_min: float, ph_opt_max: float, ph
     if ph > ph_opt_max:
         return f"más alcalino que el óptimo {of(crop_name)} {optimum}"
     return f"dentro del óptimo {of(crop_name)} {optimum}"
-
-
-def _missing(value: float | None) -> bool:
-    return value is None or math.isnan(float(value))
 
 
 def _insufficient(reason: str) -> SoilSignalResult:
