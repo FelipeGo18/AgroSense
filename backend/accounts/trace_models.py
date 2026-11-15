@@ -47,6 +47,8 @@ class ActivityEvent(Base):
     """
 
     __tablename__ = "activity_log"
+    # Una columna nueva aquí tiene que sumarse al disparador que solo deja agregar (migración 1.4) en una migración
+    # nueva: lo revisa `test_el_disparador_revisa_todas_las_columnas_de_la_tabla`.
     __table_args__ = (
         CheckConstraint(f"outcome in {_in(OUTCOMES)}", name="outcome_valid"),
         CheckConstraint(f"object_type is null or object_type in {_in(OBJECT_TYPES)}", name="object_type_valid"),

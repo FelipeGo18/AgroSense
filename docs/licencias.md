@@ -13,6 +13,7 @@ Apache 2.0 (`LICENSE`, en la raíz del repositorio; aprobado por Felipe el 10 de
 - **Las fuentes sin licencia explícita** («Sin dato; se cita», «por confirmar» o «derechos reservados»): de esas publicaciones AgroSense solo toma cifras y hechos (temperaturas de daño, días por etapa, rangos de cultivo), con su cita. Los hechos no tienen derechos de autor, y no se reproduce el texto ni las figuras de ninguna.
 - **Las fichas de la UPRA** permiten la «reproducción parcial sin fines comerciales con cita»: AgroSense solo toma sus rangos de temperatura media, con la cita, y no es comercial.
 - **Lo que sale de DIVIPOLA del DANE** (CC BY-SA 4.0), como la tabla `municipalities`, se publica con esa misma licencia.
+- **Lo que sale de EVA de la UPRA** (CC BY-SA 4.0, «compartir igual»), la tabla `supply_semester`, se publica con esa misma licencia (HU-031, HU-004).
 
 ## Datos y fuentes (tabla `sources` del dataset publicado)
 
@@ -31,6 +32,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `dane_divipola` · DIVIPOLA- Códigos municipios | Departamento Administrativo Nacional de Estadística (DANE) | Creative Commons Attribution \| Share Alike 4.0 International |
 | `dane_mgn_2025` · Marco Geoestadístico Nacional 2025 · Municipios | Departamento Administrativo Nacional de Estadística (DANE) | Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122) |
 | `dane_sipsa` · SIPSA · Precios mayoristas diarios (servicio web) | Departamento Administrativo Nacional de Estadística (DANE) | Términos y condiciones del DANE (https://www.dane.gov.co/index.php/terminos-y-condiciones): se autoriza el uso, aprovechamiento, transformación y análisis de la información citando «Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co». Se rigen por la ley colombiana y el DANE puede cambiarlos sin aviso. |
+| `eva` · Evaluaciones Agropecuarias Municipales – EVA. 2019 - 2025. Base Agrícola (datos.gov.co, `uejq-wxrr`) | Unidad de Planificación de Tierras Rurales, Adecuación de Tierras y Usos Agropecuarios (UPRA) | Creative Commons Attribution \| Share Alike 4.0 International (CC BY-SA 4.0): `supply_semester` sigue con esa licencia |
 | `fairlie_ortega_1995` · Fairlie y Ortega (1995): Efecto de la presencia de heladas simuladas en diferentes estados fenológicos de la papa cv. Ccompis. Revista Latinoamericana de la Papa 7/8:86-93 | Asociación Latinoamericana de la Papa (ALAP); PISA/INIAA, Puno | Acceso abierto; licencia por confirmar |
 | `fao_56` · FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Tablas 11 y 12 | FAO | Publicación de la FAO, uso con cita |
 | `fao_56_tabla_22` · FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Capítulo 8, tabla 22 y ecuaciones 82 y 83 | FAO | Publicación de la FAO, uso con cita |
