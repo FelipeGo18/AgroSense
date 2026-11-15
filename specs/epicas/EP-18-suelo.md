@@ -76,7 +76,7 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 ### HU-212 · Salud del suelo de cada estrategia
 
 - **Historia:** Como agricultor, quiero ver cómo cuida mi suelo cada estrategia (nitrógeno, carbono orgánico, suelo cubierto, corte de plagas y erosión), para elegir una rotación que lo proteja.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha (PR #116, #120 y #121)
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha (PR #116, #120 y #121, 15 nov 2026)
 - **Criterios de aceptación:**
   - [x] **Interfaz.** Función pura `backend/engine/rotations/soil_health.py` (R6: sin FastAPI, sin SQLAlchemy, sin Polars, sin abrir archivos). Recibe valores ya leídos:
     - `sequence`: el `crop_id` de cada ciclo, en orden;
@@ -110,7 +110,7 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 ### HU-224 · Erosión en la salud del suelo
 
 - **Historia:** Como agricultor, quiero saber si una estrategia deja mi suelo descubierto en un terreno con pendiente, para no perder suelo con la lluvia.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha (PR #121 y #120)
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha (PR #121 y #120, 15 nov 2026)
 - **Criterios de aceptación:**
   - [x] Criterio `erosion` de `soil_health`, con `status`, `level`, `reasons`, `rule_ids` y `source_ids`, como los otros cuatro (HU-212)
   - [x] Sale de la pendiente (`slope_pct`) del lote o del municipio (HU-206) y de los meses descubiertos, los mismos de `soil_cover` (descanso y hueco entre ciclos, en días / 30,4), con los cortes de `erosion_pendiente` (`bare_months_on_slope`, HU-062)
