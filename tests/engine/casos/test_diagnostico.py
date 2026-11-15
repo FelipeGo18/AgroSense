@@ -1,9 +1,8 @@
-# ruff: noqa: F401, F811  (los fixtures se importan de datos_reales.py y se piden por nombre)
 """Casos de referencia del diagnóstico de una ventana (HU-121, PR 2). Todos son de EJEMPLO (R5), salvo la curva, que usa la
 ficha real de la papa. Cada resultado esperado sale de `specs/01-reglas.md` («Agregación del semáforo», «Las prioridades del
 agricultor», «Orden de las ventanas») y del contrato de `/diagnostics`.
 
-Cada caso arma su entrada con `publicar_ejemplo` (`datos_reales.py`): la lluvia de GPM IMERG, las heladas por mes y el pH
+Cada caso arma su entrada con `publicar_ejemplo` (`conftest.py`): la lluvia de GPM IMERG, las heladas por mes y el pH
 del suelo son tablas de ejemplo publicadas con `publish()`; el cultivo es la papa real. Los casos de luz, pesos, ventanas, riego y
 fuentes de agua corren hoy, también los del suelo (HU-183: con pH 5,5 la señal de suelo sale `favorable`). La oferta (HU-072) no
 tiene tabla ni curva: nunca califica y no cambia la luz.
@@ -11,24 +10,12 @@ tiene tabla ni curva: nunca califica y no cambia la luz.
 
 from datetime import date
 
-import pytest
 from fastapi.testclient import TestClient
 
 from backend.engine.curve import crop_curve, score_from_curve
-from backend.engine.signal_score import signal_order
-from backend.engine.window_order import limiting_decade
 from common.dates import add_months
 from common.region import region_today
-from tests.engine.casos.datos_reales import (
-    EJEMPLO_CON_IMERG,
-    EJEMPLO_FRIO,
-    armar_ejemplo,
-    cliente,
-    datos_reales,
-    diagnostico,
-    ejemplo_dos_lluvias,
-    valor,
-)
+from tests.engine.casos.conftest import EJEMPLO_CON_IMERG, EJEMPLO_FRIO, diagnostico, valor
 
 # Pesos para una señal con la que se juega y las demás en importancia normal (3); `supply` y `market` no tienen curva
 # (thresholds.yaml): siempre `insufficient_data`, así que su peso no importa para la luz.
@@ -72,24 +59,18 @@ def fecha_en_mes(mes: int) -> str:
 
 
 def test_ejemplo_luz_verde(armar_ejemplo):
-    # Agua, heladas y calor `favorable`; `soil` es favorable (pH 5,5, dentro del óptimo de la papa) y `supply` y `market` sin curva son
-    # `insufficient_data`. Regla 3: ninguna señal que cuenta es desfavorable y `water` es favorable: verde y `sow`. Regla 5: lo que
-    # no tiene datos no cambia la luz y va a `limitations`.
+    # Agua, heladas y calor `favorable`; `soil` es favorable (pH 5,5, dentro del óptimo de la papa, 5,0 a 6,2: 100, y cuenta con su
+    # peso por defecto) y `supply` y `market` sin curva son `insufficient_data`. El contrapunto es el caso del suelo con pH 9,0.
+    # Regla 3: ninguna señal que cuenta es desfavorable y `water` es favorable: verde y `sow`. Regla 5: lo que no tiene datos no
+    # cambia la luz y va a `limitations`.
     cuerpo = diagnostico(armado(armar_ejemplo))
     assert luz(cuerpo) == ("green", "sow") and luz(cuerpo, "overall_default") == ("green", "sow")
     assert {n: cuerpo["signals"][n]["level"] for n in ("water", "frost", "heat")} == dict.fromkeys(("water", "frost", "heat"), "favorable")
+    suelo = cuerpo["signals"]["soil"]
+    assert (suelo["status"], suelo["level"], suelo["score"], suelo["counts"]) == ("available", "favorable", 100, True)
     for nombre in ("supply", "market"):
         assert cuerpo["signals"][nombre]["status"] == "insufficient_data" and cuerpo["signals"][nombre]["level"] is None
     assert cuerpo["limitations"]
-
-
-def test_ejemplo_luz_verde_con_suelo_favorable(armar_ejemplo):
-    # El mismo verde, con el pH de Samacá (5,5) dentro del óptimo de la papa (5,0 a 6,2): `soil` favorable (100) y cuenta con su peso
-    # por defecto; la luz sigue verde. El caso siguiente es el contrapunto: con el pH 9,0 la misma entrada deja de ser verde.
-    cuerpo = diagnostico(armado(armar_ejemplo))
-    suelo = cuerpo["signals"]["soil"]
-    assert (suelo["status"], suelo["level"], suelo["score"], suelo["counts"]) == ("available", "favorable", 100, True)
-    assert luz(cuerpo) == ("green", "sow") and luz(cuerpo, "overall_default") == ("green", "sow")
 
 
 def test_ejemplo_luz_roja_por_helada_critica_con_agua_favorable(armar_ejemplo):
@@ -159,26 +140,33 @@ def test_ejemplo_suelo_desfavorable_no_basta_para_rojo_y_con_peso_cero_cambia_la
 # ---------- Ventanas: factor limitante, alto riesgo, mejores ventanas ----------
 
 
+# El orden de las señales de la spec («Orden de las ventanas»), escrito a mano: el desempate del factor limitante.
+ORDEN_DE_SEÑALES = ("water", "frost", "heat", "soil", "supply", "market")
+
+
+def decena(calificacion: int) -> int:
+    """La decena del factor limitante escrita a mano desde la spec: de 0 a 9, y la alta (90 a 100) es una sola. No se importa
+    del motor (`limiting_decade`) para que un error ahí no se repita aquí."""
+    return min(calificacion // 10, 9)
+
+
 def _ordenadas(ventanas: list[dict]) -> bool:
-    """Orden de la spec: por decena del factor limitante (mayor primero, `limiting_decade`), luego por promedio ponderado (mayor
+    """Orden de la spec: por decena del factor limitante (mayor primero, `decena`), luego por promedio ponderado (mayor
     primero, el nulo al final de su decena) y, en empate, la más temprana."""
-    llave = [
-        (-limiting_decade(v["limiting_score"]), v["weighted_score"] is None, -(v["weighted_score"] or 0), v["sowing_start"])
-        for v in ventanas
-    ]
+    llave = [(-decena(v["limiting_score"]), v["weighted_score"] is None, -(v["weighted_score"] or 0), v["sowing_start"]) for v in ventanas]
     return llave == sorted(llave)
 
 
 def test_ejemplo_el_factor_limitante_manda_sobre_el_promedio(armar_ejemplo):
     # Con las heladas por mes de `HELADAS_POR_MES` hay ventanas con `frost` favorable (84) y otras moderadas (53 a 59). Ley del
     # mínimo: la mejor es una de las favorables y ninguna de factor más bajo queda antes de una de factor más alto (decena a decena);
-    # una señal en 15 no puede estar entre las mejores ventanas (las que tienen una señal crítica son de alto riesgo y no entran).
+    # ninguna de las mejores ventanas tiene una señal crítica (las que la tienen son de alto riesgo y no entran).
     cuerpo = diagnostico(armado(armar_ejemplo, helada_anios=HELADAS_POR_MES), sowing_date=fecha_en_mes(7))
     ventanas = cuerpo["best_windows"]
     assert len(ventanas) == 3 and _ordenadas(ventanas)
-    assert limiting_decade(ventanas[0]["limiting_score"]) > limiting_decade(ventanas[-1]["limiting_score"])  # hay de dos decenas
+    assert decena(ventanas[0]["limiting_score"]) > decena(ventanas[-1]["limiting_score"])  # hay de dos decenas
     assert ventanas[0]["limiting_score"] >= 70
-    assert all(v["limiting_score"] >= 40 for v in ventanas)  # ninguna con una señal en 15 (crítica) ni cerca
+    assert all(v["limiting_score"] >= 40 for v in ventanas)  # ninguna con una señal crítica (bajo 40)
 
 
 # Lluvia y heladas por mes para separar la ley del mínimo del promedio (EJEMPLO, R5). Cada ventana de papa dura unos cinco meses y
@@ -207,9 +195,28 @@ def test_ejemplo_la_ley_del_minimo_pone_antes_la_ventana_de_mejor_factor_aunque_
     assert (a["limiting_signal"], a["limiting_score"], a["weighted_score"]) == ("water", 66, 82)
     assert (b["limiting_signal"], b["limiting_score"], b["weighted_score"]) == ("frost", 55, 84)
     assert b["weighted_score"] > a["weighted_score"]  # el caso solo tiene sentido si el promedio favorece a B
-    assert limiting_decade(a["limiting_score"]) > limiting_decade(b["limiting_score"])
+    assert decena(a["limiting_score"]) > decena(b["limiting_score"])
     assert ventanas.index(a) < ventanas.index(b) and ventanas[0] == a
     assert not a["high_risk"] and not b["high_risk"] and _ordenadas(ventanas)
+
+
+def test_ejemplo_la_decena_alta_es_una_sola_y_un_factor_de_95_va_antes_que_uno_de_100_si_gana_en_fecha(armar_ejemplo, hoy_fijo):
+    # La decena alta es de 90 a 100 (un factor limitante de 100 no forma una decena propia). Hoy es el 16 nov 2026 (`hoy_fijo`:
+    # las mejores ventanas parten del mes en curso). Heladas de ejemplo: críticas en noviembre (la ventana pedida, del 20 nov,
+    # es roja y trae `best_windows`) y 1 año de 30 en enero (3,3 %: la curva [[0,100],[20,70]] da 95).
+    # Pesos: agua 5, calor 5, suelo 5 y heladas 1 (oferta y mercado, sin curva, no entran). Todo lo demás da 100.
+    #   Sembrar el 1 dic y el 1 feb: heladas 100, factor limitante 100 (agua, la primera del empate), promedio 100.
+    #   Sembrar el 1 ene: heladas 95, factor limitante 95 (heladas), promedio (5x100 + 1x95 + 5x100 + 5x100) / 16 = 1595 / 16 =
+    #   99,7, es decir 100. Mismo promedio y la misma decena (90 a 100): gana la más temprana, así que el 1 ene (95) va antes que el
+    #   1 feb (100). Con `limiting_score // 10` sin tope, el 100 es la decena 10 y el 1 feb pasaría antes.
+    api = armado(armar_ejemplo, helada_anios={11: HELADA_CRITICA, 1: 1})
+    prioridades = {"water": 5, "frost": 1, "heat": 5, "soil": 5, "supply": 3, "market": 3}
+    cuerpo = diagnostico(api, sowing_date="2026-11-20", priorities=prioridades)
+    assert hoy_fijo.isoformat() == "2026-11-16" and cuerpo["overall"]["light"] == "red"
+    ventanas = [(v["sowing_start"], v["limiting_score"], v["weighted_score"]) for v in cuerpo["best_windows"]]
+    assert ventanas == [("2026-12-01", 100, 100), ("2027-01-01", 95, 100), ("2027-02-01", 100, 100)]
+    assert [decena(v["limiting_score"]) for v in cuerpo["best_windows"]] == [9, 9, 9]
+    assert _ordenadas(cuerpo["best_windows"])
 
 
 def test_ejemplo_ventana_de_alto_riesgo_nunca_entra_en_las_mejores(armar_ejemplo):
@@ -245,7 +252,7 @@ def test_ejemplo_other_window_con_todas_las_ventanas_de_alto_riesgo_trae_best_wi
 def test_ejemplo_empate_del_factor_limitante_lo_gana_el_agua_luego_heladas_y_calor(armar_ejemplo):
     # Sin heladas, con lluvia de sobra y calor bajo, `water`, `frost` y `heat` califican 100: un empate de la señal más baja. R4: gana
     # la primera en el orden `water`, `frost`, `heat`, `soil`, `supply`, `market`. El valor esperado va escrito aquí y no sale de
-    # `signal_order`, para que un orden distinto (por ejemplo el alfabético, que daría `frost`) falle la prueba.
+    # el motor, para que un orden distinto (por ejemplo el alfabético, que daría `frost`) falle la prueba.
     cuerpo = diagnostico(armado(armar_ejemplo, helada_anios=0))
     assert [cuerpo["signals"][n]["score"] for n in ("water", "frost", "heat")] == [100, 100, 100]
     assert cuerpo["overall"]["limiting_signal"] == "water"
@@ -262,13 +269,24 @@ def test_ejemplo_una_de_las_mejores_ventanas_coincide_con_el_diagnostico_de_esa_
     mejor = diagnostico(api, sowing_date=fecha_en_mes(7))["best_windows"][0]
     otra = diagnostico(api, sowing_date=mejor["sowing_start"])
     cuentan = {n: s for n, s in otra["signals"].items() if s["counts"] and s["score"] is not None}
-    limitante = min(cuentan, key=lambda n: (cuentan[n]["score"], signal_order(n)))
+    limitante = min(cuentan, key=lambda n: (cuentan[n]["score"], ORDEN_DE_SEÑALES.index(n)))
     assert mejor["limiting_score"] == cuentan[limitante]["score"]
     assert mejor["limiting_signal"] == otra["overall"]["limiting_signal"] == limitante
     pesos = otra["weights"]
     ponderado = sum(cuentan[n]["score"] * pesos[n] for n in cuentan) / sum(pesos[n] for n in cuentan)
     assert abs(mejor["weighted_score"] - ponderado) <= 1
     assert mejor["high_risk"] is otra["overall"]["high_risk"] is False
+
+
+def test_ejemplo_la_frecuencia_de_heladas_cuenta_los_anios_con_helada_en_cualquier_mes_sensible_no_el_peor_mes(armar_ejemplo):
+    # Siembra en marzo: los meses sensibles de la papa van de marzo a agosto. Heladas de ejemplo en años distintos: abril en 1991 a
+    # 1995 (5 años) y mayo en 1996 a 2000 (5 años); ningún otro mes. Spec («Cómo se califica cada señal»): el porcentaje de años
+    # con al menos una helada en CUALQUIERA de los meses sensibles. Hay helada en 10 de 30 años: 33,3 %, y la curva
+    # [[20,70],[40,40]] da 70 - 30 x (33,3 - 20) / 20 = 50 (moderada). El peor mes (5 de 30, 16,7 %) daría 75 (favorable).
+    api = armado(armar_ejemplo, helada_anios={4: range(1991, 1996), 5: range(1996, 2001)})
+    frost = diagnostico(api, sowing_date=fecha_en_mes(3))["signals"]["frost"]
+    assert (frost["score"], frost["level"]) == (50, "moderate")
+    assert any("en 10 de los 30 años" in razon for razon in frost["reasons"])
 
 
 # ---------- Riego ----------
@@ -298,12 +316,15 @@ def test_ejemplo_sin_dato_de_la_fuente_de_agua_es_insufficient_data_aunque_la_ot
     assert agua["status"] == "insufficient_data" and agua["level"] is None
     seca = {fuente["source_id"]: fuente for fuente in agua["sources"] if fuente["indicator"] == "precip_dry_mm"}
     assert (seca["imerg"]["used"], seca["imerg"]["value"]) == (True, None)  # la fuente elegida, sin dato
-    assert (seca["nasa_power"]["used"], seca["nasa_power"]["value"]) == (False, 328.0)  # solo para contrastar
-    # Control: Villa de Leyva sí tiene IMERG y su agua se calcula con ella.
+    assert seca["nasa_power"]["used"] is False and seca["nasa_power"]["value"] > 0  # solo para contrastar
+    power_samaca = seca["nasa_power"]["value"]
+    # Control: Villa de Leyva sí tiene IMERG y su agua se calcula con ella. Los dos municipios tienen la misma lluvia de ejemplo
+    # (60 mm al mes en las dos fuentes), así que la IMERG de Villa de Leyva da lo mismo que la POWER de Samacá. Se comparan entre
+    # sí y no con un número: la lluvia de la ventana se reparte por los días de cada mes y cambia con la fecha de siembra (R4).
     control = diagnostico(ejemplo_dos_lluvias, municipality_id=EJEMPLO_CON_IMERG)["signals"]["water"]
     assert control["status"] == "available" and control["level"] is not None
     seca = {fuente["source_id"]: fuente for fuente in control["sources"] if fuente["indicator"] == "precip_dry_mm"}
-    assert (seca["imerg"]["used"], seca["imerg"]["value"]) == (True, 328.0)
+    assert seca["imerg"]["used"] is True and seca["imerg"]["value"] == power_samaca
     assert seca["nasa_power"]["used"] is False
 
 

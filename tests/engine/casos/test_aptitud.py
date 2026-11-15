@@ -1,4 +1,3 @@
-# ruff: noqa: F401, F811  (los fixtures se importan de datos_reales.py y se piden por nombre)
 """Casos de referencia de la aptitud del cultivo en la zona (HU-121, PR 2; regla 0 de la agregación del semáforo).
 
 REALES: papa en Puerto Salgar y en Duitama, sobre `data/published`. `versions.dataset` se compara con la `dataset_version` de
@@ -10,13 +9,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.api.main import app
-from tests.engine.casos.datos_reales import (
+from tests.engine.casos.conftest import (
     EJEMPLO_CALIDO,
     EJEMPLO_FRIO,
     PUBLICADO,
-    cliente,
     consulta,
-    datos_reales,
     diagnostico,
     tabla,
     valor,
@@ -73,10 +70,9 @@ def test_ejemplo_la_aptitud_es_determinista(cliente):
     # R4: misma entrada, misma salida (con la versión del dataset y de las reglas en la respuesta).
     primera, segunda = diagnostico(cliente, municipality_id=EJEMPLO_CALIDO), diagnostico(cliente, municipality_id=EJEMPLO_CALIDO)
     assert primera == segunda
-    assert primera["versions"]["dataset"] and "rules" in primera["versions"]
+    assert primera["versions"]["dataset"] and primera["versions"]["rules"]
 
 
-# Pasa desde el endpoint de diagnóstico (HU-076, PR #102): se quitó la marca de pendiente.
 def test_real_papa_en_duitama_es_apta_con_nota_100(datos_reales):
     # Valor esperado: `municipalities.tmean_annual_c` de 15238 (14,4 °C) dentro del óptimo de papa (`crops.tmean_opt_min_c` 12
     # a `tmean_opt_max_c` 15): la curva da 100 (specs/01-reglas.md, «Aptitud del cultivo en la zona»).
@@ -96,7 +92,6 @@ def test_real_papa_en_duitama_es_apta_con_nota_100(datos_reales):
     assert cuerpo["versions"]["dataset"] == version_publicada()  # R4
 
 
-# Pasa desde el endpoint de diagnóstico (HU-076, PR #102): se quitó la marca de pendiente.
 def test_ejemplo_ficha_sin_rango_de_temperatura_da_aptitud_insufficient_data_y_no_bloquea(cliente):
     # La ficha real de `cebolla_bulbo` no trae `tmean_max_c` con fuente (catalog/crops.yaml): sin el rango completo, la aptitud
     # es `insufficient_data` (R1, R8). Se evalúa en Samacá (EJEMPLO). Se comprueba el supuesto de la ficha antes de seguir.
