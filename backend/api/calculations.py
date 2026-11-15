@@ -1,7 +1,8 @@
 """Endpoints de cálculo: diagnóstico, estrategias, plan de agua, «Qué cambió» y tendencias (HU-012).
 
 Tienen su forma del contrato (`backend/api/calc_models.py`) y sus ejemplos de cada estado en el OpenAPI. Validan la
-entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076) y las tendencias (HU-078, `backend/api/trends.py`)
+entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076), «Qué cambió» (HU-218)
+y las tendencias (HU-078, `backend/api/trends.py`)
 ya responden con el motor; los demás, mientras su motor no exista, responden `501` `not_implemented` (decisión 15).
 Cuando llegue cada HU del motor, la ruta deja de responder 501 y devuelve su modelo: la forma no cambia.
 
@@ -42,6 +43,7 @@ from backend.api.calc_models import (
 )
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
+from backend.api.historical_changes import historical_changes
 from backend.api.lot_terrain import ZoneTemperature, zone_temperature, zone_texture
 from backend.api.lots import _own_lot
 from backend.api.soil_signals import soil_for
@@ -501,7 +503,7 @@ def _change_configuration(
     response_model=ChangesResponse,
     responses={
         200: {"content": _examples(cambios=("Dos periodos de NASA POWER; un mes sin datos de calor en el primero", ex.CHANGES))},
-        **ex.responses(422, 501, 503),
+        **ex.responses(422, 500, 503),
     },
 )
 def changes(
@@ -520,26 +522,20 @@ def changes(
     # /changes no recibe lot_id: la aptitud usa siempre el municipio.
     zone = zone_temperature(dataset, municipality, None)
 
-    aptitude = crop_suitability(crop, zone.tmean_annual_c)
-
-    # Todavía no tenemos la evaluación completa de ventanas.
-    # No representamos esa implementación pendiente como una lista vacía.
-    if aptitude.level != NOT_SUITABLE:
-        _not_implemented(request, "Qué cambió")
-
     periods, precip_periods, limitations = _change_configuration(dataset)
-
-    comparison = _compare_changes(
-        dataset=dataset,
-        municipality_id=municipality_id,
-        periods=periods,
-        precip_periods=precip_periods,
-    )
-
-    aptitude_reason = _suitability_result(crop, aptitude, zone, municipality).reasons[0]
-
-    if irrigated is None:
-        limitations.append("No se indicó si hay riego; se asume sin riego.")
+    try:
+        comparison = historical_changes(
+            dataset, municipality_id, crop_id, irrigated, periods, precip_periods, get_signal_sources().for_region(dataset.region["id"])
+        )
+    except ValueError as error:
+        raise ApiError(
+            503,
+            "dataset_unavailable",
+            "La comparación histórica no está disponible en este momento.",
+            log="Qué cambió: datos históricos o configuración de cálculo inválidos",
+        ) from error
+    aptitude = comparison["suitability"]
+    limitations.extend(comparison["limitations"])
 
     if dataset.version == "ejemplo":
         limitations.append("Datos de ejemplo: no representan observaciones reales.")
@@ -547,7 +543,12 @@ def changes(
     if dataset.climate_change_month is None:
         limitations.append("La tabla de comparación histórica no está publicada; los indicadores se muestran sin datos suficientes.")
 
-    explain(request, "Qué cambió: el cultivo no es apto en su municipio; clima de dos periodos comparado")
+    detail = (
+        "Qué cambió: el cultivo no es apto en su municipio; clima de dos periodos comparado"
+        if aptitude.level == NOT_SUITABLE
+        else "Qué cambió: clima y ventanas de dos periodos históricos comparados"
+    )
+    explain(request, detail)
     return ChangesResponse(
         request={
             "municipality_id": municipality_id,
@@ -566,23 +567,12 @@ def changes(
             if precip_periods is not None
             else None
         ),
-        suitability=SuitabilityResult(
-            level="not_suitable",
-            score=int(round(aptitude.score)),
-            basis=zone.basis,
-            tmean_annual_c=zone.tmean_annual_c,
-            altitude_m=zone.altitude_m,
-            reasons=[aptitude_reason],
-        ),
+        suitability=_suitability_result(crop, aptitude, zone, municipality),
         months=comparison["months"],
-        best_windows={"before": [], "after": []},
+        best_windows=comparison["best_windows"],
         weights_basis="default",
-        reasons=[
-            "No se calculan ventanas porque el cultivo no es apto para la zona.",
-            aptitude_reason,
-            *comparison["reasons"],
-        ],
-        limitations=limitations,
+        reasons=comparison["reasons"],
+        limitations=list(dict.fromkeys(limitations)),
         versions={
             "dataset": dataset.version,
             "rules": rules_version(dataset.rules_version),

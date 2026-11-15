@@ -69,7 +69,7 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         ("/api/v1/diagnostics", "post", {"200", "401", "404", "422", "503"}),
         ("/api/v1/rotations", "post", {"200", "401", "404", "422", "501", "503"}),
         ("/api/v1/water-plans", "post", {"200", "422", "501", "503"}),
-        ("/api/v1/changes", "get", {"200", "422", "501", "503"}),
+        ("/api/v1/changes", "get", {"200", "422", "500", "503"}),
         # Ya responde (HU-078): no anuncia 501.
         ("/api/v1/trends", "get", {"200", "422", "500", "503"}),
         ("/api/v1/catalogs/municipalities/{municipality_id}/soil", "get", {"200", "404", "503"}),
@@ -87,7 +87,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         ("post", "/api/v1/water-plans", WATER),
         # El agua del ciclo de un abono verde (HU-215): es una entrada válida.
         ("post", "/api/v1/water-plans", {**WATER, "crops": [{"crop_id": "avena_vicia", "area_pct": 100, "sowing_date": SOON}]}),
-        ("get", "/api/v1/changes?municipality_id=15646&crop_id=papa", None),
     ],
 )
 def test_una_entrada_valida_responde_501_con_la_forma_de_los_errores(dataset, method, path, body):
