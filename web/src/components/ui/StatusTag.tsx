@@ -1,13 +1,14 @@
 import { Plate } from "./Plate";
 import { StatusIcon, TONE_STYLE, type Tone } from "./StatusMark";
 
-/** Nombre de cada estado de una señal. «Sin datos» nunca se dice ni se pinta como riesgo (R1). */
+/** Nombre de cada estado de una señal. «Sin datos» y «Sin calificar» nunca se dicen ni se pintan como riesgo (R1). */
 export const TONE_LABEL: Record<Exclude<Tone, "not_evaluable">, string> = {
   green: "Favorable",
   yellow: "Moderado",
   red: "Desfavorable",
   insufficient_data: "Sin datos",
   not_applicable: "No aplica",
+  unrated: "Sin calificar",
 };
 
 /** Banderín compacto con el estado de una señal: silueta, ícono y texto, nunca solo color (W2). */

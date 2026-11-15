@@ -29,8 +29,15 @@ const SIGNALS: Record<string, Signal> = {
   unfavorable: {
     status: "available",
     level: "unfavorable",
+    indicators: ["frost_freq_pct"],
+    reasons: ["Heló en 6 de los últimos 10 años en los meses sensibles de la ventana"],
+  },
+  // La oferta y el mercado con dato se muestran sin calificar (decisión 17): `available` sin nivel.
+  unrated: {
+    status: "available",
+    level: null,
     indicators: ["planted_change_pct"],
-    reasons: ["Área sembrada mayor que el promedio de los tres semestres B anteriores"],
+    reasons: ["Área sembrada 35 % mayor que el promedio de los tres semestres B anteriores"],
   },
   insufficient: {
     status: "insufficient_data",
@@ -197,9 +204,10 @@ export function KitPage() {
       </div>
 
       <h2 className="text-xl">Tarjetas de señal</h2>
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <SignalCard kind="climate" signal={SIGNALS.favorable} />
-        <SignalCard kind="supply" signal={SIGNALS.unfavorable} />
+        <SignalCard kind="climate" signal={SIGNALS.unfavorable} />
+        <SignalCard kind="supply" signal={SIGNALS.unrated} />
         <SignalCard kind="market" signal={SIGNALS.insufficient} />
         <SignalCard kind="climate" loading />
       </div>

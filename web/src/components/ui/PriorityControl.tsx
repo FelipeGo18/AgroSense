@@ -12,7 +12,7 @@ export interface Priorities {
 const CRITERIA: { key: keyof Priorities; label: string; hint: string }[] = [
   { key: "water", label: "Agua", hint: "que necesite poca agua" },
   { key: "soil", label: "Suelo", hint: "que cuide el suelo" },
-  { key: "income", label: "Ingreso", hint: "que deje buen ingreso" },
+  { key: "income", label: "Ingreso", hint: "que la cosecha salga cuando el precio suele estar mejor" },
   { key: "risk", label: "Riesgo", hint: "que tenga poco riesgo" },
 ];
 

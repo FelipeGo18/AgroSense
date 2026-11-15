@@ -218,6 +218,46 @@ describe("Resultado del diagnóstico (HU-092)", () => {
     expect(within(card("Calor")).queryByText(/Calificación/)).not.toBeInTheDocument();
   });
 
+  it("el mercado con dato sale «Sin calificar», sin barra, con la central, el periodo y la fuente de su historia del precio (decisión 17)", async () => {
+    const market = signal({
+      status: "available",
+      indicators: ["seasonal_index", "years_above", "years_below"],
+      reasons: ["Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista"],
+      price_history: {
+        market_id: "1",
+        market: "Corabastos (Bogotá)",
+        market_basis: "crop_override",
+        product_id: "papa-negra",
+        month: 12,
+        seasonal_index: 1.07,
+        years: 5,
+        years_above: 3,
+        years_below: 2,
+        first_year: 2021,
+        last_year: 2025,
+        source_id: "dane_sipsa",
+      },
+    });
+    fakeApi(replies({ ...RESPONSE, signals: { ...SIGNALS, market } }));
+    open();
+    await screen.findByRole("heading", { level: 2, name: "Las señales de esta ventana" });
+    const item = card("Mercado");
+    const badge = item.querySelector("[data-tone]");
+    expect(badge).toHaveAttribute("data-tone", "unrated");
+    expect(badge).toHaveTextContent("Sin calificar");
+    expect(within(item).queryByText(/Calificación/)).not.toBeInTheDocument();
+    expect(within(item).getByText(/Precio sin calificar/)).toBeInTheDocument();
+
+    const history = item.querySelector("[data-price-history]") as HTMLElement;
+    expect(history).not.toBeNull();
+    expect(history).toHaveTextContent("Central: Corabastos (Bogotá) (la de este cultivo: la central de su departamento no lo publica)");
+    expect(history).toHaveTextContent("Periodo: 2021–2025.");
+    // La fuente sale de `source_id`, nombrada como las demás; lo que dice la razón no se repite.
+    expect(history).toHaveTextContent("Fuente: SIPSA (DANE)");
+    expect(history).not.toHaveTextContent(/por encima del promedio/);
+    expect(history.innerHTML).not.toMatch(/semaforo/);
+  });
+
   it("marca «Lo que más limita» solo en la señal que más limita", async () => {
     fakeApi(replies());
     open();
