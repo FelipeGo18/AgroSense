@@ -4,7 +4,7 @@ Todo cambio en este archivo necesita su migración: `uv run python -m backend.db
 """
 
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -16,6 +16,9 @@ from backend.db.base import Base
 
 LIGHTS = "('green', 'yellow', 'red', 'not_evaluable')"
 ACTIONS = "('sow', 'other_window', 'rotate', 'review_data')"
+# Un lote o una temporada borrados (`deleted_at`) se pueden restaurar durante 30 días; después el mantenimiento los
+# borra para siempre (HU-204, R9; contrato, «Base de datos de cuentas»). No es una columna: no necesita migración.
+RESTORE_WINDOW = timedelta(days=30)
 
 
 class Lot(Base):

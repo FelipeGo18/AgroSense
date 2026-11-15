@@ -4,6 +4,10 @@ Un lote se dibuja en el mapa (`geometry`, un polígono que cae dentro de su muni
 guarda sin dibujar, con el área escrita a mano (`geometry` nulo). Un lote sin dibujar se puede dibujar después.
 
 Un usuario solo ve y modifica sus propios lotes: uno ajeno, o borrado, responde 404 (igual que uno que no existe).
+
+Borrar es reversible durante 30 días (HU-204): la lista trae también los lotes borrados en ese plazo, con `deleted_at`
+y `restorable_until`, y `POST /lots/{lot_id}/restore` los devuelve con las temporadas que se borraron con ellos.
+Pasado el plazo los borra para siempre el mantenimiento (`backend/accounts/maintenance.py`, R9).
 """
 
 import uuid
@@ -13,11 +17,11 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session as Db
 
 from backend.accounts import activity
-from backend.accounts.farm_models import Lot, Season
+from backend.accounts.farm_models import RESTORE_WINDOW, Lot, Season
 from backend.accounts.models import User
 from backend.api import calc_examples
 from backend.api.auth import current_user, require_accounts
@@ -77,6 +81,9 @@ class LotOut(BaseModel):
 class LotListItem(LotOut):
     # Los cultivos en curso, de mayor a menor área, para la fila de Mi finca. Vacía si no hay siembra en curso.
     current_crop_ids: list[str]
+    # Nulos si el lote no está borrado. Si está borrado (hace menos de 30 días), cuándo y hasta cuándo se restaura (HU-204).
+    deleted_at: datetime | None = None
+    restorable_until: datetime | None = None
 
 
 class CurrentSeason(BaseModel):
@@ -111,6 +118,16 @@ def _area(value: Decimal | float) -> float:
 
 def _out(lot: Lot) -> dict[str, Any]:
     return {field: getattr(lot, field) for field in LotOut.model_fields} | {"area_ha": _area(lot.area_ha)}
+
+
+def restorable_until(deleted_at: datetime | None) -> datetime | None:
+    """Hasta cuándo se puede restaurar algo borrado: 30 días después de borrarlo. Nulo si no está borrado."""
+    return deleted_at + RESTORE_WINDOW if deleted_at is not None else None
+
+
+def restore_cutoff() -> datetime:
+    """Lo borrado antes de este momento ya no se puede restaurar ni se muestra."""
+    return datetime.now(UTC) - RESTORE_WINDOW
 
 
 def _current(db: Db, lot: Lot) -> list[Season]:
@@ -151,11 +168,14 @@ def _drawn(dataset: Dataset, municipality_id: str, geometry: dict[str, Any]):
 
 @router.get("/lots")
 def list_lots(request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> list[LotListItem]:
-    """Los lotes del usuario, del más antiguo al más nuevo. Los borrados no salen (restaurarlos es HU-204, P1)."""
-    lots = list(db.scalars(select(Lot).where(Lot.user_id == user.user_id, Lot.deleted_at.is_(None)).order_by(Lot.created_at, Lot.name)))
+    """Los lotes del usuario, del más antiguo al más nuevo. Trae también los borrados hace menos de 30 días, con
+    `deleted_at` y `restorable_until`, para poder restaurarlos (HU-204); los de antes ya no salen."""
+    visible = or_(Lot.deleted_at.is_(None), Lot.deleted_at > restore_cutoff())
+    lots = list(db.scalars(select(Lot).where(Lot.user_id == user.user_id, visible).order_by(Lot.created_at, Lot.name)))
     # Los cultivos en curso de todos los lotes en una sola consulta (antes era una por lote), en el mismo orden que el detalle.
-    crops: dict[uuid.UUID, list[str]] = {lot.lot_id: [] for lot in lots}
-    if lots:
+    # Un lote borrado no tiene cultivos en curso: sus temporadas se borraron con él.
+    crops: dict[uuid.UUID, list[str]] = {lot.lot_id: [] for lot in lots if lot.deleted_at is None}
+    if crops:
         rows = db.execute(
             select(Season.lot_id, Season.crop_id)
             .where(Season.lot_id.in_(crops), Season.harvest_date.is_(None), Season.deleted_at.is_(None))
@@ -163,8 +183,17 @@ def list_lots(request: Request, user: User = Depends(current_user), db: Db = Dep
         )
         for lot_id, crop_id in rows:
             crops[lot_id].append(crop_id)
-    explain(request, f"Lotes consultados: {len(lots)}")
-    return [LotListItem(**_out(lot), current_crop_ids=crops[lot.lot_id]) for lot in lots]
+    deleted = sum(lot.deleted_at is not None for lot in lots)
+    explain(request, f"Lotes consultados: {len(lots) - deleted}, más {deleted} borrados que se pueden restaurar")
+    return [
+        LotListItem(
+            **_out(lot),
+            current_crop_ids=crops.get(lot.lot_id, []),
+            deleted_at=lot.deleted_at,
+            restorable_until=restorable_until(lot.deleted_at),
+        )
+        for lot in lots
+    ]
 
 
 @router.post("/lots", status_code=201)
@@ -306,3 +335,26 @@ def delete_lot(lot_id: uuid.UUID, request: Request, user: User = Depends(current
     db.commit()
     explain(request, "Lote borrado con sus temporadas (se puede restaurar durante 30 días)")
     return Response(status_code=204)
+
+
+@router.post("/lots/{lot_id}/restore", responses=calc_examples.responses(404))
+def restore_lot(lot_id: uuid.UUID, request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> LotOut:
+    """Restaura un lote borrado hace menos de 30 días, con las temporadas que se borraron con él (las que tienen su misma
+    hora de borrado); una que se había borrado antes, sola, sigue borrada (HU-204). Un lote ajeno, que no está borrado o
+    borrado hace 30 días o más: 404, como uno que no existe."""
+    lot = db.scalar(
+        select(Lot).where(Lot.lot_id == lot_id, Lot.user_id == user.user_id, Lot.deleted_at.is_not(None), Lot.deleted_at > restore_cutoff())
+    )
+    if lot is None:
+        raise ApiError(
+            404, "not_found", NOT_FOUND, log="Lote no restaurado: no existe, es de otro usuario, no está borrado o ya pasaron 30 días"
+        )
+    seasons = list(db.scalars(select(Season).where(Season.lot_id == lot.lot_id, Season.deleted_at == lot.deleted_at)))
+    for season in seasons:
+        season.deleted_at = None
+    lot.deleted_at = None
+    activity.record(db, "lot.restored", request_id=request_id_of(request), actor=user, object_type="lot", object_id=lot.lot_id)
+    db.commit()
+    db.refresh(lot)
+    explain(request, f"Lote restaurado con {len(seasons)} temporadas")
+    return LotOut(**_out(lot))

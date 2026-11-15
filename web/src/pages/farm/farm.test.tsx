@@ -661,6 +661,8 @@ describe("Editar lote (HU-164)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Borrar este lote" }));
     const dialog = await screen.findByRole("dialog", { name: "¿Borrar El Alto?" });
     expect(within(dialog).getByText("Deja de verse en Mi finca con su historial.")).toBeInTheDocument();
+    // Dice hasta cuándo se puede restaurar (HU-204).
+    expect(within(dialog).getByText(/^Puede restaurarlo hasta el .+ desde «Borrados hace poco», en Mi finca\./)).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole("button", { name: "No, volver" }));
     expect(calls.some((call) => call.key.startsWith("DELETE"))).toBe(false);
     await userEvent.click(screen.getByRole("button", { name: "Borrar este lote" }));
@@ -796,8 +798,85 @@ describe("Siembras y cosechas (HU-165, HU-220)", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Borrar esta siembra" }));
     const dialog = await screen.findByRole("dialog", { name: "¿Borrar la papa?" });
     await userEvent.click(within(dialog).getByRole("button", { name: "Sí, borrar la siembra" }));
-    expect(await screen.findByText("Siembra borrada.")).toBeInTheDocument();
+    expect(within(dialog).getByText(/^Puede restaurarla hasta el .+ desde «Borradas hace poco», en el lote\./)).toBeInTheDocument();
+    expect(await screen.findByText("Siembra borrada. Puede restaurarla en «Borradas hace poco».")).toBeInTheDocument();
     expect(calls.some((call) => call.key === "DELETE /api/v1/seasons/s1")).toBe(true);
+  });
+});
+
+describe("Restaurar lo borrado (HU-204)", () => {
+  // Borrado hace unos días: la API dice hasta cuándo se puede restaurar. A mediodía en UTC, para que la fecha sea la
+  // misma en cualquier zona horaria de las pruebas.
+  const GONE = { deleted_at: "2026-11-14T15:00:00Z", restorable_until: "2026-12-14T15:00:00Z" };
+  const DELETED_LOT = { ...LOT, lot_id: "b2", name: "El Bajo", area_ha: 1, current_crop_ids: [], ...GONE };
+
+  it("Mi finca muestra aparte los lotes borrados, con hasta cuándo y «Restaurar»", async () => {
+    const calls = fakeApi({
+      ...BASE,
+      "GET /api/v1/lots": { status: 200, body: [{ ...DRAWN_LOT, current_crop_ids: [] }, DELETED_LOT] },
+      "POST /api/v1/lots/b2/restore": { status: 200, body: { ...LOT, lot_id: "b2", name: "El Bajo", area_ha: 1 } },
+    });
+    open(PATHS.farm);
+    const deleted = within(await screen.findByRole("region", { name: "Borrados hace poco" }));
+    expect(deleted.getByText("Borrado · se puede restaurar hasta el 14 de diciembre de 2026")).toBeInTheDocument();
+    // No sale en el mapa ni entre los lotes activos.
+    expect(within(screen.getByTestId("mapa")).queryByText(/El Bajo/)).toBeNull();
+    expect(screen.queryByRole("region", { name: "Sin dibujar · No están en el mapa" })).toBeNull();
+    await userEvent.click(deleted.getByRole("button", { name: "Restaurar El Bajo" }));
+    expect(await deleted.findByText("El Bajo volvió a Mi finca.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key === "POST /api/v1/lots/b2/restore")).toBe(true);
+  });
+
+  it("con todos los lotes borrados invita a agregar uno y deja restaurarlos", async () => {
+    fakeApi({ ...BASE, "GET /api/v1/lots": { status: 200, body: [DELETED_LOT] } });
+    open(PATHS.farm);
+    expect(await screen.findByRole("heading", { level: 2, name: "Todavía no tiene lotes" })).toBeInTheDocument();
+    const deleted = within(await screen.findByRole("region", { name: "Borrados hace poco" }));
+    expect(deleted.getByRole("button", { name: "Restaurar El Bajo" })).toBeInTheDocument();
+  });
+
+  it("si ya pasaron los 30 días, lo dice", async () => {
+    fakeApi({
+      ...BASE,
+      "GET /api/v1/lots": { status: 200, body: [DELETED_LOT] },
+      "POST /api/v1/lots/b2/restore": { status: 404, body: { error: { code: "not_found", message: "Ese lote no existe o no es suyo." } } },
+    });
+    open(PATHS.farm);
+    await userEvent.click(await screen.findByRole("button", { name: "Restaurar El Bajo" }));
+    expect(await screen.findByText("Ese lote no existe o no es suyo.")).toBeInTheDocument();
+  });
+
+  it("el lote muestra aparte las siembras borradas, no entre lo cosechado, y las restaura", async () => {
+    const harvested = { ...SEASON, season_id: "s0", crop_id: "arveja", harvest_date: ago(70), sowing_date: ago(180), ...GONE };
+    const calls = fakeApi({
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: DETAIL },
+      "GET /api/v1/lots/a1/seasons": { status: 200, body: [harvested] },
+      "POST /api/v1/seasons/s0/restore": { status: 200, body: { ...harvested, deleted_at: null, restorable_until: null } },
+    });
+    open(PATHS.lot("a1"));
+    const deleted = within(await screen.findByRole("region", { name: "Borradas hace poco" }));
+    expect(deleted.getByText("Arveja")).toBeInTheDocument();
+    expect(deleted.getByText("Borrada · se puede restaurar hasta el 14 de diciembre de 2026")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Ya cosechado" })).toBeNull();
+    await userEvent.click(deleted.getByRole("button", { name: /^Restaurar arveja, sembrada el / }));
+    expect(await deleted.findByText("Arveja: siembra restaurada.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key === "POST /api/v1/seasons/s0/restore")).toBe(true);
+  });
+
+  it("si la siembra ya no cabe en el lote, dice por qué", async () => {
+    fakeApi({
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: { ...DETAIL, current_seasons: [{ ...CURRENT, area_ha: 2.5 }] } },
+      "GET /api/v1/lots/a1/seasons": { status: 200, body: [{ ...SEASON, season_id: "s3", ...GONE }] },
+      "POST /api/v1/seasons/s3/restore": {
+        status: 422,
+        body: { error: { code: "area_exceeds_free", message: "No cabe: en el lote quedan 0,00 ha libres." } },
+      },
+    });
+    open(PATHS.lot("a1"));
+    await userEvent.click(await screen.findByRole("button", { name: /^Restaurar papa, sembrada el / }));
+    expect(await screen.findByText("No cabe: en el lote quedan 0,00 ha libres.")).toBeInTheDocument();
   });
 });
 

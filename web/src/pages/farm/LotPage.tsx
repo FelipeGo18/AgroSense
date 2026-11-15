@@ -8,10 +8,22 @@ import { LotMap } from "@/components/map/LotMap";
 import { LiveLot } from "@/components/farm/LiveLot";
 import { useAnimated } from "@/hooks/useLightMode";
 import { Alert } from "@/components/ui/Alert";
-import { ButtonLink } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import type { LotPolygon } from "@/features/farm/geo";
 import { byId, formatHa, useBoundary, useLot, useMunicipalities, type LotDetail } from "@/features/farm/lots";
-import { STAGE_NAMES, STAGE_ORDER, cropNames, formatDate, formatShortDate, useCrops, useSeasons } from "@/features/farm/seasons";
+import {
+  STAGE_NAMES,
+  STAGE_ORDER,
+  cropNames,
+  formatDate,
+  formatLocalDate,
+  formatShortDate,
+  useCrops,
+  useDeletedSeasons,
+  useRestoreSeason,
+  useSeasons,
+  type Season,
+} from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { SoilFacts } from "@/components/soil/SoilFacts";
@@ -24,7 +36,8 @@ import { LotChangesLink } from "@/pages/changes/LotChangesLink";
  * borrar van en «Editar lote» (Figma: «D1 · Editar lote»). Un lote sin dibujar muestra su municipio y se puede
  * dibujar. Las siembras se registran, cosechan y corrigen en sus pantallas (HU-165). «Ver estrategias de rotación» lleva
  * a las estrategias con este lote (HU-214). El suelo es el estimado de su municipio (HU-185); el del polígono del lote es
- * HU-182 (P1). El lote vivo es HU-187 (P1).
+ * HU-182 (P1). El lote vivo es HU-187 (P1). Las siembras borradas hace menos de 30 días se ven aparte, en «Borradas hace
+ * poco», con «Restaurar» (HU-204).
  */
 export function LotPage() {
   return <RequireSession>{() => <LotView />}</RequireSession>;
@@ -269,7 +282,71 @@ function Seasons({ lot }: { lot: LotDetail }) {
           </ul>
         </Section>
       )}
+      <DeletedSeasons lotId={lot.lot_id} name={name} />
     </>
+  );
+}
+
+/** Las siembras borradas hace menos de 30 días (HU-204): cada una dice hasta cuándo se puede restaurar. */
+function DeletedSeasons({ lotId, name }: { lotId: string; name: (id: string) => string }) {
+  const deleted = useDeletedSeasons(lotId);
+  const [restored, setRestored] = useState<string | null>(null);
+  if (!deleted.data?.length && !restored) return null;
+  return (
+    <Section title="Borradas hace poco">
+      {restored && (
+        <p role="status" className="border-l-8 border-oscuro-oliva bg-paleta-niebla px-4 py-2 font-bold">
+          {restored}: siembra restaurada.
+        </p>
+      )}
+      {deleted.data && deleted.data.length > 0 && (
+        <ul className="flex flex-col gap-3">
+          {deleted.data.map((season) => (
+            <li key={season.season_id}>
+              <DeletedSeasonRow season={season} name={name(season.crop_id)} onRestored={() => setRestored(name(season.crop_id))} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  );
+}
+
+function DeletedSeasonRow({ season, name, onRestored }: { season: Season; name: string; onRestored: () => void }) {
+  const restore = useRestoreSeason(season.lot_id, season.season_id);
+  const dates = season.harvest_date
+    ? `${formatShortDate(season.sowing_date)} a ${formatShortDate(season.harvest_date)}`
+    : `sembrada el ${formatShortDate(season.sowing_date)}`;
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <span className="flex min-w-0 flex-col">
+          <span>
+            <span className="font-bold">{name}</span>
+            <span className="text-[14px] text-texto-secundario">
+              {" "}
+              · {formatHa(season.area_ha)} · {dates}
+            </span>
+          </span>
+          {season.restorable_until && (
+            <span className="text-[14px] text-texto-secundario">
+              Borrada · se puede restaurar hasta el {formatLocalDate(season.restorable_until)}
+            </span>
+          )}
+        </span>
+        <Button
+          variant="secondary"
+          className="w-full sm:w-auto"
+          loading={restore.isPending}
+          loadingText="Restaurando…"
+          aria-label={`Restaurar ${name.toLowerCase()}, sembrada el ${formatShortDate(season.sowing_date)}`}
+          onClick={() => restore.mutate(undefined, { onSuccess: onRestored })}
+        >
+          Restaurar
+        </Button>
+      </div>
+      {restore.error && <Alert>{restore.error instanceof ApiError ? restore.error.message : "Algo falló. Intente de nuevo."}</Alert>}
+    </div>
   );
 }
 
