@@ -42,7 +42,7 @@ const ROUTES = (
     `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no`,
     "/que-cambio?municipio=15646&cultivo=papa",
     "/que-cambio",
-    ...["cargando", "sin_conexion", "422", "501", "503"].map((state) => `/que-cambio?municipio=15646&cultivo=papa&estado=${state}`),
+    ...["cargando", "sin_conexion", "422", "500", "503"].map((state) => `/que-cambio?municipio=15646&cultivo=papa&estado=${state}`),
     "/mi-finca",
     "/mi-finca/agregar?desde=consulta",
     "/como-funciona",

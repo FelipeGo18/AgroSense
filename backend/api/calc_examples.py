@@ -482,7 +482,40 @@ CHANGES = {
             "frost_freq_pct": {"status": "available", "before": 30, "after": 18, "change": -12},
             "precip_normal_mm": {"status": "available", "before": 28, "after": 35, "change": 7},
             "tmax_p90_c": {"status": "insufficient_data", "before": None, "after": 21.4, "change": None},
-        }
+        },
+        # Cifras ficticias explícitas para la simulación (R5), no meses
+        # rellenados con los valores de enero ni observaciones del municipio.
+        *[
+            {
+                "month": month,
+                "frost_freq_pct": {
+                    "status": "available",
+                    "before": frost_before,
+                    "after": frost_after,
+                    "change": frost_after - frost_before,
+                },
+                "precip_normal_mm": {"status": "available", "before": rain_before, "after": rain_after, "change": rain_after - rain_before},
+                "tmax_p90_c": {
+                    "status": "available",
+                    "before": heat_before,
+                    "after": heat_after,
+                    "change": round(heat_after - heat_before, 1),
+                },
+            }
+            for month, frost_before, frost_after, rain_before, rain_after, heat_before, heat_after in (
+                (2, 25, 15, 40, 45, 20.0, 21.0),
+                (3, 15, 10, 70, 80, 20.5, 21.2),
+                (4, 10, 8, 110, 105, 20.0, 20.8),
+                (5, 5, 4, 130, 120, 19.5, 20.2),
+                (6, 8, 6, 90, 85, 19.0, 19.7),
+                (7, 12, 10, 70, 65, 18.5, 19.4),
+                (8, 10, 8, 75, 70, 19.0, 19.8),
+                (9, 8, 6, 100, 110, 19.5, 20.3),
+                (10, 5, 4, 140, 150, 20.0, 20.9),
+                (11, 10, 8, 110, 100, 20.5, 21.3),
+                (12, 20, 12, 50, 45, 20.0, 21.1),
+            )
+        ],
     ],
     "best_windows": {
         "before": [{"month": 3, "limiting_signal": "frost", "limiting_score": 64, "high_risk": False}],

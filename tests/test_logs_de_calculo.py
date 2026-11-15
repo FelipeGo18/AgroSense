@@ -84,11 +84,12 @@ def test_una_ruta_que_no_es_de_calculo_no_lleva_versiones(dataset):
     assert "dataset" not in request_line(logs)
 
 
-def test_cambios_no_apto_registra_versiones_y_detalle_sin_la_consulta(monkeypatch):
+@pytest.mark.parametrize("temperature", [100.0, 12.0, None])
+def test_cambios_registra_versiones_y_detalle_sin_la_consulta(monkeypatch, temperature):
     """El 200 real recorre calc_dataset; las cifras de esta prueba son de ejemplo."""
     dataset = load(Path(__file__).resolve().parents[1] / "data" / "examples")
     municipalities = dict(dataset.municipalities)
-    municipalities["15001"] = replace(municipalities["15001"], tmean_annual_c=100.0)
+    municipalities["15001"] = replace(municipalities["15001"], tmean_annual_c=temperature)
     dataset = replace(dataset, municipalities=municipalities)
     configuration = SignalSources(
         version="ejemplo",
@@ -96,7 +97,7 @@ def test_cambios_no_apto_registra_versiones_y_detalle_sin_la_consulta(monkeypatc
             dataset.region["id"]: {
                 "frost": SignalSource(used="ejemplo"),
                 "heat": SignalSource(used="ejemplo"),
-                "water": SignalSource(used="ejemplo"),
+                "water": SignalSource(used="ejemplo", et0="ejemplo"),
             }
         },
     )
@@ -112,7 +113,11 @@ def test_cambios_no_apto_registra_versiones_y_detalle_sin_la_consulta(monkeypatc
     assert line["status"] == 200
     assert line["dataset"] == response.json()["versions"]["dataset"]
     assert line["rules"] == response.json()["versions"]["rules"]
-    assert line["detail"] == "Qué cambió: el cultivo no es apto en su municipio; clima de dos periodos comparado"
+    assert line["detail"] == (
+        "Qué cambió: el cultivo no es apto en su municipio; clima de dos periodos comparado"
+        if temperature == 100.0
+        else "Qué cambió: clima y ventanas de dos periodos históricos comparados"
+    )
     text = written(logs)
     assert "15001" not in text and "papa" not in text
     assert "municipality_id" not in text and "crop_id" not in text
