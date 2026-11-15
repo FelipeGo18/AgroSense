@@ -306,7 +306,8 @@ export function FarmFireflies({ anchors, few = false }: { anchors: FarmAnchors; 
     const [x0, x1] = [Math.min(...xs) - 140, Math.max(...xs) + 140];
     const [y0, y1] = [Math.min(...ys) - 80, Math.max(...ys) + 180];
     const r = (a: number, b: number) => a + Math.random() * (b - a);
-    return Array.from({ length: few ? 10 : 24 }, () => {
+    // Se arman siempre 24 y se muestran 10 en el celular: si cambia el ancho (girar el celular), la cantidad se ajusta.
+    return Array.from({ length: 24 }, () => {
       const hops = Array.from({ length: 4 }, () => `${r(-45, 45).toFixed(0)} ${r(-30, 30).toFixed(0)}`);
       return {
         x: r(x0, x1),
@@ -321,7 +322,7 @@ export function FarmFireflies({ anchors, few = false }: { anchors: FarmAnchors; 
   });
   return (
     <g aria-hidden="true">
-      {flies.map((f, i) => (
+      {flies.slice(0, few ? 10 : 24).map((f, i) => (
         <g key={i} transform={`translate(${f.x.toFixed(0)} ${f.y.toFixed(0)})`}>
           <g className="farm-firefly" style={{ animationDuration: f.blink, animationDelay: f.delay }}>
             <circle r={f.size * 2.6} fill="#F7F28A" opacity={0.25} />
