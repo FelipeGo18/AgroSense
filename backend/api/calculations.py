@@ -120,6 +120,8 @@ OUTSIDE_REGION_MESSAGE = "AgroSense todavía no tiene datos de ese municipio: po
 def _check_place(dataset: Dataset, municipality_id: str) -> None:
     if municipality_id in dataset.municipalities:
         return
+    # En los cuerpos, `MunicipalityId` ya exige 5 dígitos; en los parámetros de consulta (`/changes`, `/trends`) ese
+    # patrón no se aplica, así que un código mal escrito llega aquí y sigue siendo `invalid_input` (revisión del #177).
     if not _PLACE_CODE.fullmatch(municipality_id):
         raise ApiError(
             422,

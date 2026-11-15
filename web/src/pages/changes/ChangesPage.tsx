@@ -395,6 +395,11 @@ export function ChangesPage() {
   );
 }
 
+/** Devuelve el foco al campo del municipio del contexto de la comparación (HU-094, «sin cobertura»). */
+function focusMunicipality() {
+  document.querySelector<HTMLElement>('[aria-label="Contexto de la comparación histórica"] [role="combobox"]')?.focus();
+}
+
 function ChangesError({ error, onRetry }: { error: Error; onRetry: () => void }) {
   const status = error instanceof ApiError ? error.status : null;
   if (status === 501)
@@ -409,7 +414,14 @@ function ChangesError({ error, onRetry }: { error: Error; onRetry: () => void })
     return <StateCard title="Sin conexión" description="Revise la señal e intente de nuevo. Lo que eligió sigue aquí." actions={actions} />;
   // HU-094: un municipio fuera de la región es «sin cobertura», no un error de quien consulta.
   if (status === 422 && error instanceof ApiError && error.code === "outside_region")
-    return <StateCard title="Sin datos de este municipio" description={error.message} mood="no_data" />;
+    return (
+      <StateCard
+        title="Sin datos de este municipio"
+        description={error.message}
+        mood="no_data"
+        actions={[{ label: "Elegir otro municipio", variant: "secondary", onClick: focusMunicipality }]}
+      />
+    );
   if (status === 422)
     return (
       <StateCard

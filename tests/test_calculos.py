@@ -153,7 +153,19 @@ def test_un_municipio_fuera_de_la_region_es_sin_cobertura(dataset, path, body):
     assert "Colombia" not in error["message"]
 
 
+@pytest.mark.parametrize("path", ["/api/v1/changes", "/api/v1/trends"])
+def test_un_municipio_fuera_de_la_region_es_sin_cobertura_tambien_en_las_consultas_get(dataset, path):
+    params = {"municipality_id": "05001", "crop_id": "papa"}
+    if path.endswith("/trends"):
+        params["sowing_date"] = SOON  # `/trends` pide la fecha de siembra
+    response = TestClient(app).get(path, params=params)
+    assert response.status_code == 422, response.json()
+    assert response.json()["error"]["code"] == "outside_region"
+
+
 def test_un_codigo_de_municipio_mal_escrito_sigue_siendo_entrada_invalida(dataset):
+    """En los parámetros de consulta el patrón de `MunicipalityId` no se aplica: `_check_place` responde
+    `invalid_input` a un código que no tiene 5 dígitos, y `outside_region` solo a uno bien escrito."""
     response = TestClient(app).get("/api/v1/changes", params={"municipality_id": "abc", "crop_id": "papa"})
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "invalid_input"
