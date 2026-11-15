@@ -111,3 +111,27 @@ def window_etc_mm(
             return None
         total += value / month_days_of * sum(kc[first : first + days])
     return total
+
+
+def window_deficit_mm(
+    window: CropWindow,
+    rain_mm: Mapping[MonthKey, float | None],
+    et0_mm: Mapping[MonthKey, float | None],
+    month_days: Mapping[MonthKey, int] | None = None,
+) -> float | None:
+    """Lo que la lluvia no alcanza a cubrir en la ventana, mes a mes y sin el agua que guarda el suelo: Σ por mes de
+    max(0, ETc del mes − lluvia del mes), con el mismo prorrateo por días que `window_rain_mm` y `window_etc_mm`. Lo que
+    sobra un mes no pasa al siguiente: eso es el agua guardada, que pone el balance de HU-144.
+
+    `None` si falta la lluvia o la ET0 de algún mes, o si la curva de Kc no se puede armar (R1).
+    """
+    kc = daily_kc([period.span for period in window.periods])
+    if kc is None or len(kc) != window.length_days:
+        return None
+    total = 0.0
+    for key, first, days, month_days_of in _month_days(window, month_days):
+        rain, et0 = rain_mm.get(key), et0_mm.get(key)
+        if rain is None or et0 is None:
+            return None
+        total += max(0.0, et0 / month_days_of * sum(kc[first : first + days]) - rain * days / month_days_of)
+    return total
