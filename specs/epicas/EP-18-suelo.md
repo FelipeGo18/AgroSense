@@ -110,10 +110,10 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 ### HU-185 · Ver el suelo en la web
 
 - **Historia:** Como agricultor, quiero ver mi suelo explicado en palabras sencillas, para entender por qué la app me recomienda algo.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] pH, carbono orgánico y textura con su rango y una frase sencilla de qué significan; la de la textura dice que cambia cuánta agua guarda el suelo y que por eso entra en la señal de agua
-  - [ ] Rótulo: «Estimación de un mapa global de 250 m. Un análisis de suelo de su lote es más preciso» (R10)
-  - [ ] En el detalle del lote (HU-169), en el detalle de la señal de suelo y en la salud del suelo de las estrategias (HU-102)
+  - [x] pH, carbono orgánico y textura con su rango y una frase sencilla de qué significan; la de la textura dice que cambia cuánta agua guarda el suelo y que por eso entra en la señal de agua (`web/src/components/soil/SoilFacts.tsx`, 14 nov 2026)
+  - [x] Rótulo: «Estimación de un mapa global de 250 m. Un análisis de suelo de su lote es más preciso» (R10)
+  - [ ] En el detalle del lote (HU-169), en el detalle de la señal de suelo y en la salud del suelo de las estrategias (HU-102). Hecho en el detalle del lote (14 nov 2026); faltan la señal de suelo (con HU-183) y la salud del suelo (con HU-212)
 - **Reglas que aplican:** R5, R10
 - **Notas:** El lote vivo («Lote · ahora», HU-187) pasó a P1 el 11 de octubre de 2026; en el MVP el suelo se ve en el detalle 2D del lote.
