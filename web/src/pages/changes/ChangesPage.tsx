@@ -412,6 +412,13 @@ export function ChangesPage() {
   );
 }
 
+/** Devuelve el foco al campo del municipio del contexto de la comparación (HU-094, «sin cobertura»). */
+function focusMunicipality() {
+  document
+    .querySelector<HTMLElement>(`[aria-label="${t("pages.changes.ChangesContext.historicalComparisonInputs")}"] [role="combobox"]`)
+    ?.focus();
+}
+
 function ChangesError({ error, onRetry }: { error: Error; onRetry: () => void }) {
   const { t } = useTranslation();
   const status = error instanceof ApiError ? error.status : null;
@@ -419,6 +426,15 @@ function ChangesError({ error, onRetry }: { error: Error; onRetry: () => void })
   if (status === 501)
     return (
       <StateCard title={t("pages.diagnosis.DiagnosisPage.thisCalculationIsNotAvailableYet")} description={t("changes.error.unavailable")} />
+    );
+  if (status === 422 && error instanceof ApiError && error.code === "outside_region")
+    return (
+      <StateCard
+        title={t("changes.error.coverage.title")}
+        description={error.message}
+        mood="no_data"
+        actions={[{ label: t("changes.error.coverage.action"), variant: "secondary", onClick: focusMunicipality }]}
+      />
     );
   if (status === 422)
     return <StateCard title={t("pages.diagnosis.DiagnosisPage.reviewYourChoices")} description={t("changes.error.invalid")} />;

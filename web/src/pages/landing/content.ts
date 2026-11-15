@@ -65,19 +65,26 @@ export const QUESTIONS: { title: string; text: string; icon: "priority" | "light
   },
 ];
 
-/** El mismo caso del resultado amarillo del diseño. Son cifras de muestra y se rotulan como ejemplo (R5). */
+/**
+ * El caso de Güicán de la Sierra (15332): papa sembrada el 7 de diciembre de 2026, en un municipio alto. Es un ejemplo y
+ * se rotula así (R5). Las cifras son las que respondió el motor con el dataset 2026.11.25 para esa consulta, sin riego y
+ * con el criterio de AgroSense; no se inventa ninguna. La oferta (HU-072) y el mercado salen sin calificar (decisión 17).
+ */
+type PreviewSignal = { key: SignalKey; name: string; tone: keyof ReturnType<typeof TONE_LABEL>; detail: string };
+
 export const PREVIEW = {
   summary: "landing.preview.summary",
+  light: "red" as const,
   action: "landing.preview.action",
   reason: "landing.preview.reason",
   signals: [
-    { key: "water", name: "landing.signal.water", tone: "green", detail: "landing.detail.water" },
-    { key: "frost", name: "landing.signal.frost", tone: "yellow", detail: "landing.detail.frost" },
+    { key: "water", name: "landing.signal.water", tone: "red", detail: "landing.detail.water" },
+    { key: "frost", name: "landing.signal.frost", tone: "red", detail: "landing.detail.frost" },
     { key: "heat", name: "landing.signal.heat", tone: "green", detail: "landing.detail.heat" },
     { key: "soil", name: "landing.signal.soil", tone: "green", detail: "landing.detail.soil" },
-    { key: "supply", name: "landing.signal.supply", tone: "red", detail: "landing.detail.supply" },
-    { key: "market", name: "landing.signal.market", tone: "insufficient_data", detail: "landing.detail.market" },
-  ] satisfies { key: SignalKey; name: string; tone: keyof ReturnType<typeof TONE_LABEL>; detail: string }[],
+    { key: "supply", name: "landing.signal.supply", tone: "unrated", detail: "landing.detail.supply" },
+    { key: "market", name: "landing.signal.market", tone: "unrated", detail: "landing.detail.market" },
+  ] as PreviewSignal[],
 };
 
 /**

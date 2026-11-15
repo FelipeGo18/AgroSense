@@ -26,6 +26,7 @@ import {
   useUpdateLot,
   type LotDetail,
 } from "@/features/farm/lots";
+import { RESTORE_DAYS, restoreDeadline } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { DRAW_STEPS } from "./AddLotPage";
 import { Eyebrow } from "@/components/ui/Eyebrow";
@@ -208,7 +209,7 @@ function EditLot({ lot }: { lot: LotDetail }) {
         <h2 id="borrar" className="text-[18px]">
           {t("pages.farm.EditLotPage.deleteThisPlot")}
         </h2>
-        <p className="text-[14px] text-texto-secundario">{t("pages.farm.EditLotPage.thePlotItsPlantingsAndHistoryWill")}</p>
+        <p className="text-[14px] text-texto-secundario">{t("farm.delete.note", { days: RESTORE_DAYS })}</p>
         <Button variant="danger" className="w-full sm:w-[220px]" onClick={() => setConfirming(true)}>
           {t("pages.farm.EditLotPage.deleteThisPlot")}
         </Button>
@@ -233,6 +234,7 @@ function EditLot({ lot }: { lot: LotDetail }) {
                   v0: crops === 1 ? t("farm.activePlanting") : t("pages.farm.EditLotPage.plantingsInProgress", { v0: crops }),
                 })
               : t("pages.farm.EditLotPage.hiddenFromMyFarmAlongWithIts2"),
+            t("farm.delete.deadline", { date: restoreDeadline() }),
           ].map((item) => (
             <li key={item} className="flex gap-3">
               <span aria-hidden="true" className="mt-1.5 block size-3.5 shrink-0 bg-oscuro-rojo" />

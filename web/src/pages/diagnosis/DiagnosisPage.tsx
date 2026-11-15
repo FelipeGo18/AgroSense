@@ -37,7 +37,7 @@ import {
   type DiagnosisResponse,
   type Irrigation,
 } from "@/features/diagnosis/consult";
-import { harvestNote, orderedSignals, useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { harvestNote, orderedSignals } from "@/features/diagnosis/signals";
 import { strategiesLink } from "@/features/diagnosis/lights";
 import { asksOtherWindow } from "@/features/diagnosis/windows";
 import { byId, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
@@ -127,7 +127,7 @@ export function DiagnosisPage() {
     priorities.ready &&
     !priorities.allZero &&
     Object.keys(validate(sent, { ...catalogs, lot: sentLot })).length === 0
-      ? toRequest(sent, sentLot, priorities.value)
+      ? toRequest(sent, sentLot, priorities.request)
       : null;
   const diagnosis = useDiagnosis(request);
   const cropName = cropLabel(crops.data?.find((c) => c.crop_id === sent.cropId));
@@ -504,6 +504,17 @@ function DiagnosisError({
       />
     );
   }
+  // HU-094: un municipio fuera de la región no es un error de quien consulta: es «sin cobertura».
+  if (error instanceof ApiError && error.status === 422 && error.code === "outside_region") {
+    return (
+      <StateCard
+        title={t("changes.error.coverage.title")}
+        description={error.message}
+        mood="no_data"
+        actions={[{ label: t("changes.error.coverage.action"), variant: "secondary", onClick: onReturnToForm }]}
+      />
+    );
+  }
   if (error instanceof ApiError && error.status === 422) {
     return (
       <StateCard
@@ -595,7 +606,6 @@ function Details({ data }: { data: DiagnosisResponse }) {
   useTranslation();
   const version = useVersion();
   const crops = useCrops();
-  const soil = useMunicipalitySoil(data.signals?.soil ? data.request.municipality_id : null);
   // La lluvia de la ventana año por año, para la gráfica de la señal de agua (HU-093).
   const trends = useTrends(data.signals?.water ? data.request.municipality_id : null, data.request.crop_id, data.request.sowing_date);
   const cropName = cropLabel(crops.data?.find((c) => c.crop_id === data.request.crop_id)) ?? data.request.crop_id;
@@ -614,7 +624,7 @@ function Details({ data }: { data: DiagnosisResponse }) {
             irrigated={data.request.irrigated}
             weights={data.weights}
             supplySemester={data.window?.supply_semester}
-            soil={soil.data}
+            soilContext={{ municipalityId: data.request.municipality_id, lotId: data.request.lot_id }}
             version={version.data}
             waterChart={
               <WaterChart

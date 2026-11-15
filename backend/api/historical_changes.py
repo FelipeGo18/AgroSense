@@ -6,17 +6,16 @@ from typing import Any
 
 import polars as pl
 
-from backend.api.market_signal import market_for, seasonal_index
+from backend.api.market_signal import market_in
 from backend.api.soil_signals import zone_soil_ph
+from backend.api.supply_signal import supply_in
 from backend.api.window_diagnosis import crop_name
-from backend.api.window_signals import pending_signal
 from backend.config.changes import get_change_parameters
 from backend.config.thresholds import get_thresholds
 from backend.config.weights import get_default_weights
 from backend.dataset import Dataset
 from backend.engine.change_windows import ChangeConfig, compare_historical_changes
 from backend.engine.changes import PeriodPair
-from backend.engine.market_signal import market_signal
 from backend.engine.stages import monthly_sowing_windows
 from backend.engine.suitability import NOT_SUITABLE, ZoneTemperatureUsed, crop_suitability
 from common.signal_sources import SignalSource
@@ -50,10 +49,11 @@ def historical_changes(
     stages = dataset.stages.get(crop_id, [])
     # No preparar ventanas/mercado para un cultivo no apto.
     if crop_suitability(crop, municipality.tmean_annual_c).level != NOT_SUITABLE:
-        market_id = market_for(dataset, municipality)
+        name = crop_name(crop)
         for window in monthly_sowing_windows(stages, date(periods.before.start_year, 1, 1)):
-            index, years = seasonal_index(dataset, crop_id, market_id, window.harvest_estimate.month)
-            fixed[window.sowing_date.month] = {"supply": pending_signal("supply"), "market": market_signal(index, years, thresholds)}
+            market = market_in(dataset, municipality, crop_id, name, window.harvest_estimate.month)
+            supply = supply_in(dataset, municipality_id, crop_id, crop, window.sowing_date)
+            fixed[window.sowing_date.month] = {"supply": supply, "market": market}
 
     def rows(table: pl.DataFrame | None) -> list[dict[str, Any]]:
         return [] if table is None else table.filter(pl.col("municipality_id") == municipality_id).to_dicts()

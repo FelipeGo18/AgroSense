@@ -20,6 +20,7 @@ import {
   type StrategyForm,
 } from "@/features/strategies/entry";
 import { formatRange, ndviPeriod, noShortfall, windowSpans } from "@/features/strategies/cycle";
+import { totalBasisNote } from "@/features/strategies/strategies";
 import { setLightMode } from "@/lib/lightMode";
 
 // Datos de ejemplo de las pruebas (R5): catálogo, lote, siembras y respuesta de muestra.
@@ -395,6 +396,15 @@ describe("La entrada (HU-214): reglas", () => {
       season("v", "arveja", "2025-02-01", "2025-06-30", ["f", "a"]),
     ];
     expect(previousFromSeasons([joined[3]], joined)).toEqual(["arveja", "ajo", "fresa"]);
+    // Cosechadas el mismo día: primero la de mayor área, aunque se haya sembrado antes (Felipe, PR #140). Con la misma
+    // área, la sembrada después; y el orden no depende de cómo llegan (R4).
+    const sameDay = [
+      season("h", "haba", "2025-03-01", "2025-08-10", [], 0.4),
+      season("m", "maiz", "2025-02-01", "2025-08-10", [], 0.6),
+      season("z", "zanahoria", "2025-04-01", "2025-08-10", [], 0.4),
+    ];
+    expect(previousFromSeasons(sameDay)).toEqual(["maiz", "zanahoria", "haba"]);
+    expect(previousFromSeasons([...sameDay].reverse())).toEqual(["maiz", "zanahoria", "haba"]);
     expect(currentFromHistory([SEASONS[1]], SEASONS)).toEqual(["papa", "arveja"]);
     expect(currentFromHistory([SEASONS[0]], SEASONS)).toEqual([]); // con un solo cultivo no hay rotación
   });
@@ -666,8 +676,11 @@ describe("Estrategias con ciclos, desglose y salud del suelo (HU-102)", () => {
     await results();
     const health = within(card(/^Estrategia 1/).getByRole("region", { name: "Salud del suelo" }));
     expect(health.getByText("Comparación, no predicción")).toBeInTheDocument();
+    expect(health.getByText("Ver el suelo usado y qué significa")).toBeInTheDocument();
+    expect(await health.findByText("31 g/kg")).toBeInTheDocument();
+    const criteria = within(health.getByRole("list"));
     for (const label of ["Nitrógeno", "Carbono orgánico", "Suelo cubierto", "Corte de plagas", "Erosión"]) {
-      expect(health.getByText(label)).toBeInTheDocument();
+      expect(criteria.getByText(label)).toBeInTheDocument();
     }
     expect(health.getByText("Sin datos suficientes")).toBeInTheDocument();
     expect(health.getByText("Desfavorable")).toBeInTheDocument();
@@ -990,5 +1003,14 @@ describe("Registrar el primer ciclo desde el lote (HU-215, HU-165)", () => {
     expect(await screen.findByText(/Cuando la siembre, desde el 5 de enero de 2099, regístrela en su lote/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Registrar esta siembra/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ir a mi lote" })).toHaveAttribute("href", PATHS.lot("a1"));
+  });
+});
+
+describe("El aviso junto al total (revisión del #179)", () => {
+  it("dice qué criterio no calificó y con cuáles se comparó", () => {
+    const scores = { water: 74, soil: 90, income: null, risk: 65 };
+    expect(totalBasisNote({ scores, total_score: 76 })).toBe("Sin ingreso: comparada solo por agua, suelo y riesgo.");
+    expect(totalBasisNote({ scores: { ...scores, income: 60 }, total_score: 66 })).toBeNull();
+    expect(totalBasisNote({ scores, total_score: null })).toBeNull();
   });
 });

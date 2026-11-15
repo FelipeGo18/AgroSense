@@ -6,6 +6,50 @@ import { supplyNote } from "@/features/diagnosis/signals";
 import { suitabilityFacts } from "@/features/diagnosis/windows";
 import { Alert } from "@/components/ui/Alert";
 import { i18n } from "./i18n";
+import { signalTone } from "@/components/ui/SignalCard";
+import { PRIORITY_CONTROLS, forCalculation, priorityNote } from "@/features/diagnosis/priorities";
+import { totalBasisNote } from "@/features/strategies/strategies";
+import { PriceHistory } from "@/pages/diagnosis/SignalList";
+
+it("conserva sin calificar la oferta y el mercado, y explica en inglés los criterios sin nota", async () => {
+  await act(() => i18n.changeLanguage("en"));
+  expect(signalTone({ status: "available", level: null })).toEqual({ tone: "unrated", label: "Unrated" });
+  expect(PRIORITY_CONTROLS().map(({ key }) => key)).not.toContain("supply");
+  expect(priorityNote(PRIORITY_CONTROLS().find(({ key }) => key === "market")!)).toContain("does not change the light");
+  const weights = { water: 3, frost: 3, heat: 3, soil: 2, supply: 5, market: 1 };
+  expect(forCalculation(weights, { ...weights, supply: 2 })?.supply).toBe(2);
+  expect(weights.supply).toBe(5);
+  expect(totalBasisNote({ total_score: 70, scores: { water: 60, soil: 80, risk: 70, income: null } })).toBe(
+    "No income rating: compared only on water, soil and risk.",
+  );
+});
+
+it("traduce los rótulos del historial de precios, manteniendo la central y el periodo", async () => {
+  await act(() => i18n.changeLanguage("en"));
+  render(
+    <PriceHistory
+      history={{
+        market_id: "1",
+        market: "Tunja",
+        market_basis: "crop_override",
+        product_id: "papa",
+        month: 12,
+        seasonal_index: 1.1,
+        years: 10,
+        years_above: 6,
+        years_below: 4,
+        first_year: 2016,
+        last_year: 2025,
+        source_id: "dane_sipsa",
+      }}
+      version={undefined}
+    />,
+  );
+  expect(screen.getByText("Price history")).toBeInTheDocument();
+  expect(screen.getByText(/Wholesale market: Tunja/)).toBeInTheDocument();
+  expect(screen.getByText("Period: 2016–2025.")).toBeInTheDocument();
+  expect(screen.getByText("Source: SIPSA (DANE)")).toBeInTheDocument();
+});
 
 it("actualiza los meses del eje, la tabla y el resumen sin desmontar la gráfica", async () => {
   await act(() => i18n.changeLanguage("es"));

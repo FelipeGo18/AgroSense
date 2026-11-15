@@ -1,6 +1,7 @@
 import { t } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { ApiError } from "@/api/client";
 import { Link, useNavigate } from "@/components/layout/LanguageLink";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
@@ -10,8 +11,17 @@ import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Plate } from "@/components/ui/Plate";
 import { bbox, type LotPolygon } from "@/features/farm/geo";
-import { byId, formatHa, useBoundary, useLots, useMunicipalities, type LotListItem } from "@/features/farm/lots";
-import { cropNames, useCrops } from "@/features/farm/seasons";
+import {
+  byId,
+  formatHa,
+  useBoundary,
+  useDeletedLots,
+  useLots,
+  useMunicipalities,
+  useRestoreLot,
+  type LotListItem,
+} from "@/features/farm/lots";
+import { cropNames, formatLocalDate, useCrops } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
@@ -19,6 +29,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
  * Mi finca (HU-169, HU-164). Figma: «D0 · Mis lotes» y «Lote sin dibujar / En Mi finca». Los lotes dibujados van en
  * el mapa y en la lista «En el mapa»; los que no, en «Sin dibujar», con «Dibujar en el mapa». Una sola zona: el mapa
  * muestra el municipio donde está el primer lote; un lote de otro municipio se ve en la lista y al abrirlo se centra allá.
+ * Los borrados hace menos de 30 días se ven aparte, en «Borrados hace poco», con «Restaurar» (HU-204).
  */
 export function FarmPage() {
   useTranslation();
@@ -81,6 +92,7 @@ function Farm() {
             <h2 className="text-[20px]">{t("pages.farm.FarmPage.youDoNotHaveAnyPlotsYet")}</h2>
             <p>{t("pages.farm.FarmPage.addYourFirstPlotAgrosenseWillShow")}</p>
             <ButtonLink to={PATHS.addLot}>{t("pages.farm.FarmPage.addPlot")}</ButtonLink>
+            {lots.isSuccess && <DeletedLots />}
           </>
         )}
       </FormScene>
@@ -151,7 +163,72 @@ function Farm() {
       <ButtonLink to={PATHS.addLot} className="mt-1">
         {t("pages.farm.FarmPage.addPlot")}
       </ButtonLink>
+      <DeletedLots />
     </MapScene>
+  );
+}
+
+/** Los lotes borrados hace menos de 30 días (HU-204): cada uno dice hasta cuándo se puede restaurar. */
+function DeletedLots() {
+  useTranslation();
+  const deleted = useDeletedLots();
+  const [restored, setRestored] = useState<string | null>(null);
+  if (!deleted.data?.length && !restored) return null;
+  return (
+    <section aria-labelledby="borrados" className="flex flex-col gap-2 border-t-2 border-superficie-borde pt-4">
+      <h2 id="borrados" className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
+        {t("farm.deleted.title")}
+      </h2>
+      {restored && (
+        <p role="status" className="border-l-8 border-oscuro-oliva bg-paleta-niebla px-4 py-2 font-bold">
+          {t("farm.restore.success", { name: restored })}
+        </p>
+      )}
+      {deleted.data && deleted.data.length > 0 && (
+        <ul className="flex flex-col gap-3">
+          {deleted.data.map((lot) => (
+            <li key={lot.lot_id}>
+              <DeletedLotRow lot={lot} onRestored={() => setRestored(lot.name)} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function DeletedLotRow({ lot, onRestored }: { lot: LotListItem; onRestored: () => void }) {
+  useTranslation();
+  const restore = useRestoreLot(lot.lot_id);
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <span className="flex min-w-0 flex-col">
+          <span className="text-[17px] font-bold break-words">
+            {lot.name}
+            <span className="text-[14px] font-normal text-texto-secundario"> · {formatHa(lot.area_ha)}</span>
+          </span>
+          {lot.restorable_until && (
+            <span className="text-[14px] text-texto-secundario">
+              {t("farm.restore.until", { date: formatLocalDate(lot.restorable_until) })}
+            </span>
+          )}
+        </span>
+        <Button
+          variant="secondary"
+          className="w-full sm:w-auto"
+          loading={restore.isPending}
+          loadingText={t("farm.restore.loading")}
+          aria-label={t("farm.restore.label", { name: lot.name })}
+          onClick={() => restore.mutate(undefined, { onSuccess: onRestored })}
+        >
+          {t("farm.restore.action")}
+        </Button>
+      </div>
+      {restore.error && (
+        <Alert>{restore.error instanceof ApiError ? restore.error.message : t("pages.auth.LoginPage.somethingWentWrongTryAgain")}</Alert>
+      )}
+    </div>
   );
 }
 

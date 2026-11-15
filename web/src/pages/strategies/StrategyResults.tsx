@@ -1,3 +1,4 @@
+import type { SoilContext } from "@/components/soil/SoilDetails";
 import { ApiLanguageNotice } from "@/components/ui/ApiLanguageNotice";
 import { t } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
@@ -25,6 +26,7 @@ const NOT_FORECAST = () => t("pages.strategies.StrategyResults.comparesStrategie
 const YOUR_CALL = () => t("pages.strategies.CycleView.informationToHelpYouDecideTheDecision");
 
 export interface StrategyResultsProps {
+  soilContext?: SoilContext;
   rotations: ReturnType<typeof useRotations>;
   weights: RotationWeights;
   cycles: 2 | 3;
@@ -48,6 +50,7 @@ export interface StrategyResultsProps {
  */
 export function StrategyResults({
   rotations,
+  soilContext,
   weights,
   cycles,
   names,
@@ -78,7 +81,7 @@ export function StrategyResults({
   }
   const data = rotations.data;
   const empty = data.strategies.length === 0;
-  const cardProps = { names, kinds, weights: data.weights ?? weights, version };
+  const cardProps = { names, kinds, weights: data.weights ?? weights, version, soilContext };
   return (
     <div aria-busy={rotations.isPlaceholderData || undefined} className="mt-8 flex min-w-0 flex-col gap-10">
       <div className="flex flex-col gap-3">

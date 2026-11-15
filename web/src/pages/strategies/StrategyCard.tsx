@@ -1,6 +1,7 @@
 import { t } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
+import { SoilDetails, type SoilContext } from "@/components/soil/SoilDetails";
 import { Link } from "@/components/layout/LanguageLink";
 import { Card } from "@/components/ui/Card";
 import { Plate } from "@/components/ui/Plate";
@@ -18,6 +19,7 @@ import {
   healthTone,
   sequence,
   sourcesText,
+  totalBasisNote,
   type Cycle,
   type Delta,
   type Issue,
@@ -26,6 +28,7 @@ import {
 import type { Version } from "@/features/version";
 
 export interface StrategyCardProps {
+  soilContext?: SoilContext;
   strategy: Strategy;
   names: Map<string, string>;
   kinds: Map<string, string>;
@@ -40,7 +43,7 @@ export interface StrategyCardProps {
  * o pierde frente a lo de hoy, sus razones y su salud del suelo. La rotación actual usa la misma tarjeta, rotulada «Lo
  * que siembra hoy», sin puesto y con sus problemas a la vista (decisión 14).
  */
-export function StrategyCard({ strategy, names, kinds, weights, version, cycleLink }: StrategyCardProps) {
+export function StrategyCard({ strategy, names, kinds, weights, version, cycleLink, soilContext }: StrategyCardProps) {
   useTranslation();
   const current = strategy.kind === "current";
   const title = sequence(strategy.crop_ids, names);
@@ -77,6 +80,9 @@ export function StrategyCard({ strategy, names, kinds, weights, version, cycleLi
               </p>
             )}
             {total && <DeltaText delta={total} suffix={t("strategies.total")} />}
+            {totalBasisNote(strategy) && (
+              <p className="max-w-[16rem] text-right text-[14px] text-texto-secundario">{totalBasisNote(strategy)}</p>
+            )}
           </div>
         </header>
 
@@ -96,7 +102,7 @@ export function StrategyCard({ strategy, names, kinds, weights, version, cycleLi
 
         {current && (strategy.issues ?? []).length > 0 && <Issues issues={strategy.issues ?? []} version={version} />}
 
-        <SoilHealth health={strategy.soil_health} version={version} />
+        <SoilHealth health={strategy.soil_health} version={version} soilContext={soilContext} />
 
         {strategy.limitations.length > 0 && (
           <div className="flex flex-col gap-1 text-[15px] text-texto-secundario">
@@ -368,7 +374,15 @@ function Issues({ issues, version }: { issues: Issue[]; version: Version | undef
  * La salud del suelo: cinco criterios, cada uno con su nivel en forma y texto, su razón y la fuente de su regla (R8).
  * Es una comparación entre estrategias por reglas, no una predicción de cuánto mejora el suelo (decisión 4).
  */
-function SoilHealth({ health, version }: { health: Strategy["soil_health"]; version: Version | undefined }) {
+function SoilHealth({
+  health,
+  version,
+  soilContext,
+}: {
+  health: Strategy["soil_health"];
+  version: Version | undefined;
+  soilContext?: SoilContext;
+}) {
   useTranslation();
   return (
     <section aria-label={t("pages.strategies.StrategyCard.soilHealth")} className="flex flex-col gap-2">
@@ -376,6 +390,7 @@ function SoilHealth({ health, version }: { health: Strategy["soil_health"]; vers
         <p className="font-bold">{t("pages.strategies.StrategyCard.soilHealth")}</p>
         <p className="text-[14px] font-bold text-oscuro-cielo">{t("pages.strategies.StrategyCard.comparisonNotPrediction")}</p>
       </div>
+      {soilContext && <SoilDetails {...soilContext} />}
       <ul className="flex flex-col">
         {HEALTH_CRITERIA().map(({ key, label }) => {
           const criterion = health[key];

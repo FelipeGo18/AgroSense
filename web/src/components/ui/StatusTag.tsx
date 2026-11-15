@@ -5,6 +5,7 @@ import { StatusIcon, TONE_STYLE, type Tone } from "./StatusMark";
 
 /** Nombre de cada estado de una señal. «Sin datos» nunca se dice ni se pinta como riesgo (R1). */
 export const TONE_LABEL = (): Record<Exclude<Tone, "not_evaluable">, string> => ({
+  unrated: t("status.unrated"),
   green: t("status.green"),
   yellow: t("status.yellow"),
   red: t("status.red"),

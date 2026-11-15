@@ -13,36 +13,93 @@ export type SignalWeights = Schemas["SignalWeights"];
  */
 export const PRIORITY_SIGNALS = () =>
   [
-    { key: "water", label: t("landing.signal.water"), hint: t("features.diagnosis.priorities.enoughRainfall"), climate: true },
+    {
+      key: "water",
+      label: t("landing.signal.water"),
+      hint: t("features.diagnosis.priorities.enoughRainfall"),
+      climate: true,
+      control: true,
+      light: true,
+    },
     {
       key: "frost",
       label: t("landing.signal.frost"),
       hint: t("features.diagnosis.priorities.noFrostDuringSensitiveStages"),
       climate: true,
+      control: true,
+      light: true,
     },
     {
       key: "heat",
       label: t("landing.signal.heat"),
       hint: t("features.diagnosis.priorities.temperaturesWithinTheCropsTolerance"),
       climate: true,
+      control: true,
+      light: true,
     },
-    { key: "soil", label: t("landing.signal.soil"), hint: t("features.diagnosis.priorities.suitablePh"), climate: false },
+    {
+      key: "soil",
+      label: t("landing.signal.soil"),
+      hint: t("features.diagnosis.priorities.suitablePh"),
+      climate: false,
+      control: true,
+      light: true,
+    },
     {
       key: "supply",
       label: t("landing.signal.supply"),
       hint: t("features.diagnosis.priorities.avoidingExcessivePlantedArea"),
       climate: false,
+      control: false,
+      light: false,
     },
     {
       key: "market",
       label: t("landing.signal.market"),
-      hint: t("features.diagnosis.priorities.seasonallyFavorablePrices"),
+      hint: t("priorities.market.hint"),
       climate: false,
+      control: true,
+      light: false,
     },
   ] as const;
 export type PriorityKey = ReturnType<typeof PRIORITY_SIGNALS>[number]["key"];
 
-export const PRIORITIES_HINT = () => t("features.diagnosis.priorities.0DoesNotAffectTheLightExcept");
+/**
+ * Las señales que tienen control de prioridad. La oferta se muestra sin calificar (decisión 17, HU-072): su peso no tiene
+ * ningún efecto y un control sin función no se dibuja. El mercado tampoco cambia la luz, pero con 4 o 5 ordena las
+ * ventanas dentro de su decena (HU-240): por eso tiene control, con su nota.
+ */
+export const PRIORITY_CONTROLS = () => PRIORITY_SIGNALS().filter((signal) => signal.control);
+
+/** Las señales cuyo peso puede cambiar la luz. La oferta y el mercado no (decisión 17). */
+export const LIGHT_PRIORITY_SIGNALS = () => PRIORITY_SIGNALS().filter((signal) => signal.light);
+
+/** La nota bajo el nombre de cada control: lo que su peso no puede cambiar. */
+export function priorityNote(signal: ReturnType<typeof PRIORITY_SIGNALS>[number]): string | undefined {
+  if (signal.climate) return t("priorities.climate.note");
+  if (signal.key === "market") return MARKET_PRIORITY_NOTE();
+  return undefined;
+}
+
+export const MARKET_PRIORITY_NOTE = () => t("priorities.market.note");
+
+/**
+ * Los pesos que se envían a los cálculos (`/diagnostics` y `signal_priorities` de `/rotations`): los de la persona en
+ * las señales con control y, en la oferta, siempre el de AgroSense mientras no tenga control (revisión de Haider del
+ * #175). Lo guardado no cambia: un peso viejo de la oferta se conserva en el perfil o el navegador, pero no llega al
+ * cálculo. Sin el criterio de AgroSense no hay con qué reemplazarlo y se envía como está.
+ */
+export function forCalculation(weights: SignalWeights | null, defaults: SignalWeights | null): SignalWeights | null {
+  if (!weights || !defaults) return weights;
+  const hidden = PRIORITY_SIGNALS()
+    .filter((signal) => !signal.control)
+    .map(({ key }) => [key, defaults[key]]);
+  return { ...weights, ...Object.fromEntries(hidden) } as SignalWeights;
+}
+
+export const UNRATED_PRIORITIES_NOTE = () => t("priorities.supply.note");
+
+export const PRIORITIES_HINT = () => t("priorities.hint");
 
 /** Dónde se recuerdan sin cuenta: solo en este navegador (R9). Con cuenta, en el perfil (`PATCH /me`, HU-160). */
 export const STORAGE_KEY = "agrosense.prioridades";
@@ -114,8 +171,10 @@ export function useSignalPriorities() {
   };
 
   return {
-    /** Los pesos con que se consulta; nulos si el criterio de AgroSense no cargó (la API usa los suyos). */
+    /** Los pesos de la persona (o los de AgroSense), los que muestran los controles y se guardan. */
     value,
+    /** Los pesos con que se consulta: `value` con la oferta del criterio de AgroSense. Nulos si no cargó (la API usa los suyos). */
+    request: forCalculation(value, defaults),
     defaults,
     ready,
     /** Si son las de la persona y no las de AgroSense. */

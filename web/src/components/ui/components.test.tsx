@@ -55,6 +55,25 @@ describe("SignalCard", () => {
     expect(container.innerHTML).not.toMatch(/semaforo-rojo/);
   });
 
+  it("con dato y sin nivel es «Sin calificar»: ni riesgo, ni favorable, ni «No aplica» (R1, decisión 17)", () => {
+    const signal: Signal = {
+      status: "available",
+      level: null,
+      indicators: ["seasonal_index", "years_above", "years_below"],
+      reasons: ["Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista"],
+    };
+    expect(signalTone(signal)).toEqual({ tone: "unrated", label: "Sin calificar" });
+    // Los ejemplos de la API omiten los campos nulos: sin `level` también es «Sin calificar».
+    expect(signalTone({ status: "available" }).tone).toBe("unrated");
+    expect(signalTone({ status: "not_applicable", level: null })).toEqual({ tone: "not_applicable", label: "No aplica" });
+    const { container } = render(<SignalCard kind="market" signal={signal} />);
+    const badge = container.querySelector("[data-tone]");
+    expect(badge).toHaveAttribute("data-tone", "unrated");
+    expect(badge).toHaveTextContent("Sin calificar");
+    expect(screen.queryByText("No aplica")).not.toBeInTheDocument();
+    expect(container.innerHTML).not.toMatch(/semaforo-(rojo|verde|amarillo)/);
+  });
+
   it("desfavorable se muestra con su razón", () => {
     render(
       <SignalCard

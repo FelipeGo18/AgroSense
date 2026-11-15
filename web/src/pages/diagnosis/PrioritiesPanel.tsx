@@ -4,14 +4,20 @@ import { useState } from "react";
 import { ApiError } from "@/api/client";
 import { Alert } from "@/components/ui/Alert";
 import { SeedRow } from "@/components/ui/PriorityControl";
-import { PRIORITIES_HINT, PRIORITY_SIGNALS, type useSignalPriorities } from "@/features/diagnosis/priorities";
+import {
+  PRIORITIES_HINT,
+  PRIORITY_CONTROLS,
+  priorityNote,
+  UNRATED_PRIORITIES_NOTE,
+  type useSignalPriorities,
+} from "@/features/diagnosis/priorities";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
 /**
  * «Criterio de AgroSense · Ajustar» (HU-202; `specs/05-frontend.md`, «Dónde se ajustan»): un resumen plegado que abre
- * los seis controles de cinco semillas. Al cambiar uno, la consulta se vuelve a pedir con esos pesos. Es un `details`
- * nativo: se abre y se cierra sin animación, igual en modo ligero. Los controles se dibujan solo abierto: son 36 botones
+ * los controles de cinco semillas (la oferta no: decisión 17; el mercado solo ordena, HU-240). Al cambiar uno, la consulta
+ * se vuelve a pedir con esos pesos. Es un `details` nativo: se abre y se cierra sin animación, igual en modo ligero. Los controles se dibujan solo abierto: son 36 botones
  * con su dibujo que la página no necesita mientras nadie los mira.
  */
 export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof useSignalPriorities> }) {
@@ -49,18 +55,19 @@ export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof 
           {/* Las seis casillas miden 44 px (el mínimo táctil): 264 px. A 320 px solo caben si el panel ocupa todo el ancho
               de la tarjeta, por eso en el celular el panel no tiene el margen de la tarjeta (-mx-6). */}
           <div className="flex flex-col gap-4">
-            {PRIORITY_SIGNALS().map((signal) => (
+            {PRIORITY_CONTROLS().map((signal) => (
               <SeedRow
                 key={signal.key}
                 label={signal.label}
                 hint={signal.hint}
-                note={signal.climate ? t("pages.account.PrioritiesCard.severeRiskAlwaysCounts") : undefined}
+                note={priorityNote(signal)}
                 value={value[signal.key]}
                 disabled={false}
                 onChange={(weight) => priorities.set({ ...value, [signal.key]: weight })}
               />
             ))}
           </div>
+          <p className="text-[15px] leading-snug text-texto-secundario">{UNRATED_PRIORITIES_NOTE()}</p>
           {priorities.allZero && (
             <p role="alert" className="font-bold text-oscuro-rojo">
               <span aria-hidden="true">▲ </span>
@@ -81,7 +88,7 @@ export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof 
           </p>
           <p className="border-t-2 border-superficie-borde pt-3 text-[15px] text-texto-secundario">
             {t("pages.account.PrioritiesCard.agrosensePriorities")}{" "}
-            {PRIORITY_SIGNALS()
+            {PRIORITY_CONTROLS()
               .map((signal) => `${signal.label.toLowerCase()} ${defaults[signal.key]}`)
               .join(" · ")}
             .

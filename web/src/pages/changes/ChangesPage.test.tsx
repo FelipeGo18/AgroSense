@@ -118,6 +118,17 @@ it.each([501, 503, 0, 422, 500])("explica el error %i con el estado compartido y
   if (status === 500) expect(screen.getByText("soporte-219")).toBeInTheDocument();
 });
 
+it("un municipio fuera de la región es «sin cobertura» y deja elegir otro (HU-094)", async () => {
+  const message = "AgroSense todavía no tiene datos de ese municipio: por ahora cubre Boyacá y Cundinamarca.";
+  answer(fixture(), new ApiError(422, "outside_region", message, "soporte-094"));
+  open();
+  expect(await screen.findByRole("heading", { name: "Sin datos de este municipio" })).toBeInTheDocument();
+  expect(screen.getByText(message)).toBeInTheDocument();
+  expect(screen.queryByText("Revise lo que eligió")).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Elegir otro municipio" }));
+  expect(screen.getByRole("combobox", { name: "Municipio" })).toHaveFocus();
+});
+
 it("no consulta un municipio que no pertenece al catálogo", async () => {
   answer();
   open("/que-cambio?municipio=99999&cultivo=papa");

@@ -90,10 +90,11 @@ describe("HU-233 · idiomas", () => {
     );
     expect(screen.getByRole("heading", { name: "How a crop cycle is assessed" })).toBeInTheDocument();
     expect(screen.getByText("Example")).toBeInTheDocument();
-    expect(screen.getByText(/August 2, 2027/)).toBeInTheDocument();
+    expect(screen.getByText(/December 7, 2026/)).toBeInTheDocument();
+    expect(screen.getAllByText("Unrated")).toHaveLength(2);
     const market = screen.getByText("Market").closest("li")!;
-    expect(within(market).getByText("No data").closest("[data-tone]")).toHaveAttribute("data-tone", "insufficient_data");
-    expect(screen.getByText("Yellow light")).toBeInTheDocument();
+    expect(within(market).getByText("Unrated").closest("[data-tone]")).toHaveAttribute("data-tone", "unrated");
+    expect(screen.getByText("Red light")).toBeInTheDocument();
   });
 
   it("conserva el fragmento y los parámetros al construir enlaces", () => {

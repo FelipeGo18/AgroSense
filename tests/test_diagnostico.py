@@ -36,6 +36,7 @@ from backend.config.weights import get_default_weights
 from backend.dataset import get_dataset
 from backend.db.models import Base
 from backend.engine.diagnosis import IRRIGATION_UNKNOWN
+from backend.engine.market_signal import UNRATED_LIMITATION, UNRATED_REASON
 from backend.engine.water_signal import WaterBalanceSummary
 from common import region
 from tests.ejemplos_con_fuente import examples_with_sources
@@ -50,8 +51,8 @@ NOVEMBER, APRIL = "2026-11-01", "2027-04-01"
 NO_WATER = {"water": 0, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
 # Un balance hídrico DE EJEMPLO (R5): el cultivo pide 400 mm y la lluvia del año seco los cubre.
 NO_DEFICIT = WaterBalanceSummary(need_mm=400.0, dry_deficit_mm=(0.0, 0.0), retention=True)
-# Las señales que todavía no tienen motor (el agua ya lo tiene desde HU-071 y el suelo desde HU-183).
-PENDING = {name: pending_reason(name) for name in ("supply",)}
+# Las señales que todavía no tienen motor: ninguna desde HU-072 (la oferta sale sin calificar, decisión 17).
+PENDING: dict[str, str] = {}
 
 
 @pytest.fixture(autouse=True)
@@ -106,8 +107,16 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
         "available", 100, "favorable", False, ["frost_freq_pct"]
     )  # fmt: skip
     assert (heat["status"], heat["score"], heat["level"], heat["indicators"]) == ("available", 100, "favorable", ["tmax_p90_c"])
-    # Sin central de precios para el departamento en los ejemplos: el texto del contrato (HU-073).
-    assert body["signals"]["market"]["reasons"] == ["Sin datos de mercado para la zona"]
+    # Samacá es de Boyacá: su central (Tunja) no tiene papa en los ejemplos y se usa la de `crop_market_overrides`
+    # (Corabastos). La señal viene sin calificar, con la historia del precio de septiembre (HU-073, decisión 17).
+    market = body["signals"]["market"]
+    assert (market["status"], market["level"], market["score"], market["critical"]) == ("available", None, None, False)
+    assert market["reasons"][0] == UNRATED_REASON
+    assert (market["price_history"]["market_id"], market["price_history"]["market_basis"], market["price_history"]["month"]) == (
+        "1",
+        "crop_override",
+        9,
+    )
     for name, reason in PENDING.items():
         signal = body["signals"][name]
         assert (signal["status"], signal["level"], signal["score"], signal["critical"], signal["reasons"]) == (
@@ -118,7 +127,7 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
     water = body["signals"]["water"]
     assert (water["status"], water["level"], water["score"], water["critical"]) == ("insufficient_data", None, None, False)
     assert water["reasons"] != [pending_reason("water")]
-    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.0.0+pesos.1.0.0"}
+    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.3.0"}
 
 
 def test_sin_prioridades_las_dos_luces_coinciden_con_los_pesos_por_defecto(examples):
@@ -143,7 +152,9 @@ def test_las_limitaciones_dicen_cada_senal_sin_datos_y_el_aviso_de_heladas_sin_r
     body = diagnose(TestClient(app))
     limitations = body["limitations"]
     assert len(limitations) == len(set(limitations))
-    assert "Sin datos para la zona: el mercado no se evaluó." in limitations
+    # El mercado de los ejemplos tiene historia: se dice que va sin calificar, no que falten datos (HU-073).
+    assert "Sin datos para la zona: el mercado no se evaluó." not in limitations
+    assert UNRATED_LIMITATION in limitations
     # Las que no tienen motor dicen lo verdadero: no faltan datos, falta el motor (R5).
     for reason in PENDING.values():
         assert limitations.count(reason) == 1
@@ -199,15 +210,15 @@ def with_favorable_water_and_supply(monkeypatch, folder: Path) -> None:
     """El agua y la oferta favorables, para los casos de referencia de HU-077 y HU-190. El agua pasa por el motor real
     (el balance hídrico de HU-144 y la señal de HU-071): en Samacá la lluvia del ejemplo se cambia a 200 mm al mes, en
     el año normal y en el seco (cifras DE EJEMPLO, R5), y la lluvia efectiva cubre lo que pide el cultivo. La oferta sale
-    de una señal DE EJEMPLO, porque todavía no tiene curva ni motor (HU-072). Las heladas y el calor son los del dataset."""
+    de una señal DE EJEMPLO calificada a mano: desde la decisión 17 la oferta real sale sin calificar (HU-072), y este caso
+    prueba que ni una oferta favorable compensa un riesgo grave (R2). Las heladas y el calor son los del dataset."""
     table = folder / "precip_month.parquet"
     rows = pl.read_parquet(table)
     rainy = pl.when(pl.col("municipality_id") == SAMACA).then(pl.lit(200.0))
     rows.with_columns(rainy.otherwise(pl.col(name)).alias(name) for name in ("precip_normal_mm", "precip_dry_mm")).write_parquet(table)
     use(monkeypatch, folder)
     favorable_supply = window_signals.PendingSignal("available", "favorable", False, 90, (), ("Oferta DE EJEMPLO, favorable",))
-    real = window_signals.pending_signal
-    monkeypatch.setattr(window_signals, "pending_signal", lambda name: favorable_supply if name == "supply" else real(name))
+    monkeypatch.setattr(window_signals, "supply_in", lambda *args, **kwargs: favorable_supply)
 
 
 def test_caso_de_referencia_helada_critica_con_agua_y_oferta_favorables_da_rojo_y_otra_ventana(tmp_path, monkeypatch):
@@ -553,3 +564,30 @@ def test_con_cookie_inventada_o_sesion_vencida_responde_401_sin_nada_del_lote(ex
     assert expired.status_code == 401
     assert lot_id not in expired.text and "El Alto" not in expired.text
     assert without_request_id(expired)["error"]["code"] == without_request_id(forged)["error"]["code"]
+
+
+def test_las_mejores_ventanas_reciben_el_precio_del_mes_de_cosecha(examples, monkeypatch):
+    """HU-240: cada ventana candidata lleva la historia del precio de su mes de cosecha (la de `signals.market`), para que
+    con peso 4 o 5 en `market` ordene dentro de la decena. La luz no cambia con ese peso (R2)."""
+    seen = []
+    real = calculations.order_windows
+
+    def spy(windows, weights):
+        windows = list(windows)
+        seen.append((windows, dict(weights)))
+        return real(windows, weights)
+
+    monkeypatch.setattr(calculations, "order_windows", spy)
+    client = TestClient(app)
+    body = diagnose(client, NOVEMBER, priorities={**NO_WATER, "market": 5})
+    windows, weights = seen[-1]
+    assert weights["market"] == 5
+    priced = [window for window in windows if window.harvest_price is not None]
+    assert priced, "los datos de ejemplo traen la historia del precio de la papa"
+    assert all(window.harvest_price.month == window.harvest_estimate.month for window in priced)
+    without_price = diagnose(client, NOVEMBER, priorities=NO_WATER)
+    assert body["overall"]["light"] == without_price["overall"]["light"]
+    # Con 4 o 5 la respuesta dice por qué cambia el orden (R5; revisión del PR #176); con 3, no.
+    assert body["best_windows"] is not None
+    assert [text for text in body["limitations"] if text.startswith("Con el mercado en 5, ")]
+    assert not [text for text in without_price["limitations"] if text.startswith("Con el mercado en")]

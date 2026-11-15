@@ -198,13 +198,16 @@ function terrainHistory(chosen: Season[], seasons: Season[]): Season[] {
 /**
  * Lo de antes con cuenta (`previous_crop_ids`, HU-165): los cultivos de las siembras elegidas **y de todas las de las
  * que viene el terreno**, la más reciente primero, hasta 3. Así el corte de plagas ve también la papa de hace dos
- * ciclos (decidido por Felipe el 15 nov 2026). En un empate de cosecha, la sembrada después y luego su id (R4).
+ * ciclos (decidido por Felipe el 15 nov 2026). «La más reciente» es la que se cosechó más tarde; si dos se cosecharon el
+ * mismo día, la de mayor área, que es lo que de verdad estuvo último en el terreno (decidido por Felipe en el PR #140).
+ * Si también empatan en área, la sembrada después y luego su id, para que el orden no dependa de cómo llegan (R4).
  */
 export function previousFromSeasons(chosen: Season[], seasons: Season[] = chosen): string[] {
   return terrainHistory(chosen, seasons)
     .sort(
       (a, b) =>
         (b.harvest_date ?? "").localeCompare(a.harvest_date ?? "") ||
+        b.area_ha - a.area_ha ||
         b.sowing_date.localeCompare(a.sowing_date) ||
         a.season_id.localeCompare(b.season_id),
     )

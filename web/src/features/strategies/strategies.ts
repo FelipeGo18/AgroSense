@@ -25,6 +25,24 @@ export const CRITERIA = (): { key: keyof RotationWeights; label: string }[] => [
   { key: "risk", label: t("components.ui.PriorityControl.risk") },
 ];
 
+const joinWords = (words: string[]) =>
+  words.length > 1 ? t("features.strategies.entry.and", { v0: words.slice(0, -1).join(", "), v1: words.at(-1) }) : (words[0] ?? "");
+
+/**
+ * Junto al total, qué criterios no calificaron y con cuáles se comparó (decidido por Felipe el 15 nov 2026, revisión del
+ * #179): una estrategia sin ingreso se compara solo por los demás, y el primer puesto no debe engañar. Nulo si califican
+ * todos o si no hay total.
+ */
+export function totalBasisNote(strategy: Pick<Strategy, "scores" | "total_score">): string | null {
+  if (strategy.total_score === null || strategy.total_score === undefined) return null;
+  const criteria = CRITERIA();
+  const missing = criteria.filter(({ key }) => strategy.scores[key] === null || strategy.scores[key] === undefined);
+  if (!missing.length) return null;
+  const used = criteria.filter((criterion) => !missing.includes(criterion));
+  const lower = (items: ReturnType<typeof CRITERIA>) => items.map(({ label }) => label.toLowerCase());
+  return t("strategies.total.basis", { missing: joinWords(lower(missing)), used: joinWords(lower(used)) });
+}
+
 /** Los cinco criterios de la salud del suelo (decisión 14 suma la erosión). */
 export const HEALTH_CRITERIA = (): { key: string; label: string }[] => [
   { key: "nitrogen", label: t("features.strategies.strategies.nitrogen") },

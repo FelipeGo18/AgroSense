@@ -81,19 +81,16 @@ def datos(dataset_con_clima):
     return dataset_con_clima
 
 
-@pytest.fixture
-def datos_con_heladas(datos):
-    """`datos` con clima diario y heladas de ejemplo (R5) para Samacá (`EJEMPLO_FRIO`), publicadas con `publish()`:
-    `climate_day`, `climate_risk_month` y `climate_frost_month`, calculadas con el código de `pipeline.climate_risk` como
-    en `frost_tables`. Los demás municipios quedan sin heladas (R1). `tmean_annual_c` sigue siendo la de ejemplo (12,8 °C):
-    no se rederiva de este clima. Falta: la oferta (`supply_semester`), que `publish()` todavía no escribe."""
+def _publicar_heladas(datos, *, con_helada, frecuencia: float):
+    """Publica en `datos` el clima diario de Samacá con tres noches de 1 °C los primeros días de cada mes de los años para los
+    que `con_helada(año)` es verdadero, y comprueba que la frecuencia de heladas sea `frecuencia` (%). Ejemplo (R5)."""
     from datetime import date, timedelta
 
     from pipeline import climate_normals, climate_risk
     from pipeline.sources import nasa_power
 
     dias = [date(1991, 1, 1) + timedelta(days=i) for i in range((date(2020, 12, 31) - date(1991, 1, 1)).days + 1)]
-    helada = [d.day <= 3 and d.year % AÑOS_SIN_HELADA != 0 for d in dias]
+    helada = [d.day <= 3 and con_helada(d.year) for d in dias]
     clima = pl.DataFrame(
         {
             "municipality_id": EJEMPLO_FRIO,
@@ -119,9 +116,80 @@ def datos_con_heladas(datos):
     normal = climate_normals.Normal.from_region(region)
     riesgo = climate_risk.climate_risk_month(clima, 2.0, normal)
     por_año = climate_risk.climate_frost_month(clima, 2.0)
-    assert riesgo["frost_freq_pct"].min() == riesgo["frost_freq_pct"].max() == 80.0  # el cálculo de arriba
+    assert riesgo["frost_freq_pct"].min() == riesgo["frost_freq_pct"].max() == frecuencia  # el cálculo de arriba
     fuente = pl.DataFrame([nasa_power.source(clima, {"downloaded_at": "2026-11-14T00:00:00+00:00", "elevations": {}})])
     _republicar(datos, extra_sources=fuente, region=region, climate=clima, frost=(riesgo, por_año))
+    return datos
+
+
+@pytest.fixture
+def datos_con_heladas_moderadas(datos):
+    """`datos` con heladas de ejemplo (R5) en 9 de los 30 años en cada mes (30 %): `frost` es moderada, no crítica
+    (curva de `thresholds.yaml`: 70 en 20 % y 40 en 40 %). Ningún ciclo es de alto riesgo, pero los cultivos sensibles bajan el
+    `risk` de su estrategia frente al descanso. El número depende de la siembra: dentro de un año (desde enero) son 9 de 30 años,
+    30 %, y `frost` 55. Con la arveja sembrada el 16 de nov de 2026 su etapa media y la final caen de enero a marzo del año
+    siguiente, la serie por año de siembra pierde el último año y quedan 8 de 29 (28 %): `frost` 59, y ese es su `risk`."""
+    return _publicar_heladas(datos, con_helada=lambda año: año % 10 in (1, 2, 3), frecuencia=30.0)
+
+
+@pytest.fixture
+def datos_con_heladas(datos):
+    """`datos` con clima diario y heladas de ejemplo (R5) para Samacá (`EJEMPLO_FRIO`), publicadas con `publish()`:
+    `climate_day`, `climate_risk_month` y `climate_frost_month`, calculadas con el código de `pipeline.climate_risk` como
+    en `frost_tables`. Los demás municipios quedan sin heladas (R1). `tmean_annual_c` sigue siendo la de ejemplo (12,8 °C):
+    no se rederiva de este clima. Falta: la oferta (`supply_semester`), que `publish()` todavía no escribe."""
+    return _publicar_heladas(datos, con_helada=lambda año: año % AÑOS_SIN_HELADA != 0, frecuencia=80.0)
+
+
+# Contorno del lote de ejemplo (dos celdas de la rejilla de `datos_con_suelo`).
+CONTORNO_LOTE = {
+    "type": "Polygon",
+    "coordinates": [[[-73.487, 5.4905], [-73.483, 5.4905], [-73.483, 5.492], [-73.487, 5.492], [-73.487, 5.4905]]],
+}
+
+
+@pytest.fixture
+def datos_con_suelo(datos):
+    """`datos` con suelo de EJEMPLO (R5): el del municipio de Samacá (pH 6,0, carbono orgánico bajo: 20 g/kg, bajo los 29 de
+    `materia_organica_ciclos`) y el de las dos celdas de la rejilla bajo `CONTORNO_LOTE`, con otro pH (6,3 de mediana) para que se
+    note de cuál de los dos sale. La pendiente es de 2 % (sin erosión). Cifras inventadas, como en `tests/test_endpoint_rotaciones.py`."""
+    from backend.dataset import SOIL_COLUMNS
+    from common.grid import cell_id
+
+    filas = [
+        {
+            "cell_id": cell_id(5.49125, lon),
+            "altitude_m": 2700.0,
+            "slope_pct": 2.0,
+            **dict.fromkeys(SOIL_COLUMNS, 10.0),
+            "ph": ph,
+            "ph_p05": ph - 0.2,
+            "ph_p95": ph + 0.2,
+            "soc_g_kg": 20.0,
+            "soc_p05": 15.0,
+            "soc_p95": 25.0,
+            "texture_class": "franco",
+            "quality": "ok",
+            "source_ids": ["soilgrids"],
+        }
+        for lon, ph in [(-73.48375, 6.2), (-73.48625, 6.4)]
+    ]
+    pl.DataFrame(filas).write_parquet(datos / "grid_cells.parquet")
+    municipio = {
+        "municipality_id": EJEMPLO_FRIO,
+        **dict.fromkeys(SOIL_COLUMNS, 10.0),
+        "ph": 6.0,
+        "ph_p05": 5.7,
+        "ph_p95": 6.3,
+        "soc_g_kg": 20.0,
+        "soc_p05": 15.0,
+        "soc_p95": 25.0,
+        "texture_class": "franco",
+        "cells": 30,
+        "quality": "ok",
+        "source_id": "soilgrids",
+    }
+    pl.DataFrame([municipio]).write_parquet(datos / "soil_municipality.parquet")
     return datos
 
 

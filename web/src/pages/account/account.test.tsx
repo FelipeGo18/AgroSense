@@ -304,23 +304,31 @@ describe("Sus prioridades (HU-160, HU-202)", () => {
     expect(prio.getByText("Está usando el criterio de AgroSense.")).toBeInTheDocument();
     expect(level("Agua", 3)).toHaveAttribute("aria-checked", "true");
     expect(level("Suelo", 2)).toHaveAttribute("aria-checked", "true");
-    expect(prio.getByText(/Criterio de AgroSense: agua 3 · heladas 3 · calor 3 · suelo 2 · oferta 3 · mercado 2/)).toBeInTheDocument();
+    expect(prio.getByText(/Criterio de AgroSense: agua 3 · heladas 3 · calor 3 · suelo 2 · mercado 2\./)).toBeInTheDocument();
+    // La oferta se muestra sin calificar (decisión 17): sin control, con la línea que lo dice. El mercado tiene control
+    // (HU-240) con su nota: solo ordena las ventanas con 4 o 5.
+    expect(prio.getAllByRole("radiogroup")).toHaveLength(5);
+    expect(prio.queryByRole("radiogroup", { name: /^Oferta:/ })).toBeNull();
+    expect(level("Mercado", 2)).toHaveAttribute("aria-checked", "true");
+    expect(prio.getByText("Solo ordena las ventanas con 4 o 5; no cambia la luz")).toBeInTheDocument();
+    expect(prio.getByText("La oferta se muestra sin calificar y no tiene prioridad.")).toBeInTheDocument();
     // Agua, heladas y calor dicen que un riesgo grave cuenta siempre.
     expect(prio.getAllByText("Un riesgo grave cuenta siempre")).toHaveLength(3);
     expect(prio.queryByRole("button", { name: "Volver al criterio de AgroSense" })).toBeNull();
   });
 
   it("al tocar una semilla guarda las seis prioridades en el perfil", async () => {
-    const mine = { ...DEFAULT_WEIGHTS, supply: 0 };
+    // Las seis: la oferta y el mercado van con su peso por defecto, aunque no tengan control (decisión 17).
+    const mine = { ...DEFAULT_WEIGHTS, frost: 0 };
     const calls = fakeApi({ ...ME, "PATCH /api/v1/me": { status: 200, body: { ...ROSA, priorities: mine } } });
     open(PATHS.account);
     await ready();
-    await userEvent.click(level("Oferta", 0));
+    await userEvent.click(level("Heladas", 0));
     expect(calls.find((call) => call.key.startsWith("PATCH"))?.body).toEqual({ priorities: mine });
     const prio = within(card("Sus prioridades"));
     expect(await prio.findByText("Está usando sus prioridades.")).toBeInTheDocument();
     expect(prio.getByRole("status")).toHaveTextContent("Guardado.");
-    expect(level("Oferta", 0)).toHaveAttribute("aria-checked", "true");
+    expect(level("Heladas", 0)).toHaveAttribute("aria-checked", "true");
   });
 
   it("«Volver al criterio de AgroSense» borra las propias", async () => {

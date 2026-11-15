@@ -97,9 +97,16 @@ class SuitabilityResult(BaseModel):
 
 
 class SupplySemester(BaseModel):
+    """El semestre de EVA en que cae la siembra (HU-072, decisión 17): el último año con dato de ese semestre, el área
+    sembrada, su variación frente al promedio del mismo semestre de los tres años anteriores (HU-032; nula sin ellos) y
+    si repite el área del mismo semestre del año anterior (nulo sin ese año)."""
+
     year: int
     semester: Literal["A", "B"]
     preliminary: bool
+    planted_ha: float | None = None
+    planted_change_pct: float | None = None
+    same_as_previous: bool | None = None
 
 
 class Window(BaseModel):
@@ -130,6 +137,26 @@ class SourceValue(BaseModel):
     used: bool
 
 
+class PriceHistory(BaseModel):
+    """De dónde sale la historia del precio de la señal `market` (HU-073, decisión 17): la central (`market_basis`:
+    `department` si es la del departamento, `crop_override` si es la de `region.crop_market_overrides`), el producto de
+    SIPSA, el mes de la cosecha estimada y, de `market_month`, el índice y los años por encima y por debajo del promedio
+    de su año. Es historia, no un pronóstico del precio."""
+
+    market_id: str
+    market: str
+    market_basis: Literal["department", "crop_override"]
+    product_id: str
+    month: int = Field(ge=1, le=12)
+    seasonal_index: float
+    years: int
+    years_above: int
+    years_below: int
+    first_year: int | None
+    last_year: int | None
+    source_id: str
+
+
 class Signal(BaseModel):
     status: Status
     level: Level | None
@@ -139,6 +166,8 @@ class Signal(BaseModel):
     indicators: list[str]
     reasons: list[str]
     sources: list[SourceValue] | None = None
+    # Solo en `market` con historia (HU-073); nulo en las demás señales y en `market` sin fila.
+    price_history: PriceHistory | None = None
 
 
 class WindowSummary(BaseModel):

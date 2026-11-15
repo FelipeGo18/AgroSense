@@ -14,9 +14,11 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { formatHa, haText, parseHa, useLot, type LotDetail } from "@/features/farm/lots";
 import {
+  RESTORE_DAYS,
   cropNames,
   formatDate,
   formatShortDate,
+  restoreDeadline,
   todayIso,
   useCreateSeason,
   useCrops,
@@ -327,7 +329,7 @@ function SeasonForm({
             <h2 id="borrar" className="text-[18px]">
               {t("pages.farm.SeasonFormPage.deleteThisPlanting")}
             </h2>
-            <p className="text-[14px] text-texto-secundario">{t("pages.farm.SeasonFormPage.hiddenFromThePlotAndItsHistory")}</p>
+            <p className="text-[14px] text-texto-secundario">{t("farm.seasons.delete.note", { days: RESTORE_DAYS })}</p>
             <Button variant="danger" className="w-full sm:w-[240px]" onClick={() => setConfirming(true)}>
               {t("pages.farm.SeasonFormPage.deleteThisPlanting")}
             </Button>
@@ -348,7 +350,7 @@ function SeasonForm({
                 onSuccess: () =>
                   void navigate(PATHS.lot(lot.lot_id), {
                     replace: true,
-                    state: { notice: t("pages.farm.SeasonFormPage.plantingDeleted") },
+                    state: { notice: t("farm.seasons.delete.success") },
                   }),
               })
             }
@@ -358,6 +360,7 @@ function SeasonForm({
               {t("pages.farm.SeasonFormPage.plantedOn")} {formatDate(season.sowing_date)}
               {t("pages.farm.SeasonFormPage.hiddenFromThePlotAndItsHistory2")}
             </p>
+            <p>{t("farm.seasons.delete.deadline", { date: restoreDeadline() })}</p>
             {remove.error && (
               <Alert>
                 {remove.error instanceof ApiError ? remove.error.message : t("pages.auth.LoginPage.somethingWentWrongTryAgain")}

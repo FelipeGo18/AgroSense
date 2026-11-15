@@ -14,7 +14,7 @@ export interface Priorities {
 const CRITERIA = (): { key: keyof Priorities; label: string; hint: string }[] => [
   { key: "water", label: t("landing.signal.water"), hint: t("components.ui.PriorityControl.lowWaterNeeds") },
   { key: "soil", label: t("landing.signal.soil"), hint: t("components.ui.PriorityControl.protectingTheSoil") },
-  { key: "income", label: t("components.ui.PriorityControl.income"), hint: t("components.ui.PriorityControl.goodIncome") },
+  { key: "income", label: t("components.ui.PriorityControl.income"), hint: t("priorities.market.hint") },
   { key: "risk", label: t("components.ui.PriorityControl.risk"), hint: t("components.ui.PriorityControl.lowRisk") },
 ];
 

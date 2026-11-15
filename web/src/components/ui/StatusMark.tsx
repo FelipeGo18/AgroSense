@@ -4,11 +4,13 @@ import type { PlateProps } from "./Plate";
 /**
  * Silueta + ícono + texto para los estados del semáforo y de las señales (W2: nunca solo color).
  * «No evaluable» y «datos insuficientes» nunca usan rojo ni se parecen a un riesgo (R1).
+ * «Sin calificar» (`unrated`, decisión 17) es una señal con dato pero sin nivel (`available` con `level` nulo: la oferta y
+ * el mercado): borde liso oscuro y tres barras, sin colores del semáforo; no es riesgo, ni favorable, ni falta de datos.
  */
 
-export type Tone = "green" | "yellow" | "red" | "not_evaluable" | "insufficient_data" | "not_applicable";
+export type Tone = "green" | "yellow" | "red" | "not_evaluable" | "insufficient_data" | "not_applicable" | "unrated";
 
-type Icon = "octagon" | "triangle" | "square" | "ring" | "question" | "dash";
+type Icon = "octagon" | "triangle" | "square" | "ring" | "question" | "dash" | "bars";
 
 export const TONE_STYLE: Record<Tone, { plate: PlateProps; ink: string; icon: Icon }> = {
   green: {
@@ -46,6 +48,11 @@ export const TONE_STYLE: Record<Tone, { plate: PlateProps; ink: string; icon: Ic
     ink: "text-texto-secundario",
     icon: "dash",
   },
+  unrated: {
+    plate: { c: 4, fill: "var(--color-superficie-panel)", stroke: "var(--color-paleta-noche)" },
+    ink: "text-texto-principal",
+    icon: "bars",
+  },
 };
 
 const OCTAGON = "14.14,0 20,5.86 20,14.14 14.14,20 5.86,20 0,14.14 0,5.86 5.86,0";
@@ -64,6 +71,13 @@ export function StatusIcon({ icon }: { icon: Icon }) {
       {icon === "octagon" && <polygon points={OCTAGON} fill="currentColor" />}
       {icon === "triangle" && <polygon points="10,0 20,18 0,18" fill="currentColor" />}
       {icon === "square" && <polygon points="2,2 18,2 18,18 2,18" fill="currentColor" />}
+      {icon === "bars" && (
+        <g fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="2" y="9" width="4" height="9" />
+          <rect x="8" y="3" width="4" height="15" />
+          <rect x="14" y="12" width="4" height="6" />
+        </g>
+      )}
       {icon === "ring" && (
         <polygon
           points="13.2,2.2 17.8,6.8 17.8,13.2 13.2,17.8 6.8,17.8 2.2,13.2 2.2,6.8 6.8,2.2"

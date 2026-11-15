@@ -1,7 +1,7 @@
 import { t } from "@/lib/i18n";
 import type { Schemas } from "@/api/client";
 import { PATHS } from "@/app/paths";
-import { PRIORITY_SIGNALS, type SignalWeights } from "@/features/diagnosis/priorities";
+import { LIGHT_PRIORITY_SIGNALS, type SignalWeights } from "@/features/diagnosis/priorities";
 import { SIGNAL_NAME, type Signal } from "@/features/diagnosis/signals";
 
 type DiagnosisRequestEcho = Schemas["DiagnosisRequestEcho"];
@@ -43,7 +43,7 @@ const WITH_ARTICLE = (): Record<string, string> => ({
  */
 export function whyDifferent(weights: Partial<SignalWeights> | null | undefined, defaults: SignalWeights | null | undefined): string {
   if (!weights || !defaults) return t("features.diagnosis.lights.theLightsDifferBecauseYouAreUsing");
-  const changes = PRIORITY_SIGNALS()
+  const changes = LIGHT_PRIORITY_SIGNALS()
     .filter(({ key }) => weights[key] !== undefined && weights[key] !== defaults[key])
     .map(({ key }) =>
       t("features.diagnosis.lights.atAgrosense", { v0: WITH_ARTICLE()[key] ?? SIGNAL_NAME()[key], v1: weights[key], v2: defaults[key] }),

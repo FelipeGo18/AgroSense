@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { ExampleLabel } from "@/components/ui/Labels";
 import { changesLink } from "@/features/changes/changes";
-import { harvestNote, useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { harvestNote } from "@/features/diagnosis/signals";
 import { useTrends } from "@/features/diagnosis/trends";
 import { formatDate, todayIso, type SowPlan } from "@/features/farm/seasons";
 import {
@@ -173,6 +173,7 @@ export function CycleView({
               cycle={cycle}
               cropName={name(cycle)}
               diagnosis={diagnosis}
+              lotId={lot?.lotId}
               municipalityId={municipalityId}
               irrigated={irrigated}
               areaHa={areaHa}
@@ -321,6 +322,7 @@ function CycleDetails({
   cycle,
   cropName,
   diagnosis,
+  lotId,
   municipalityId,
   irrigated,
   areaHa,
@@ -328,6 +330,7 @@ function CycleDetails({
 }: {
   cycle: Cycle;
   cropName: string;
+  lotId?: string;
   diagnosis: NonNullable<Cycle["diagnosis"]>;
   municipalityId: string;
   irrigated: boolean | null | undefined;
@@ -335,7 +338,6 @@ function CycleDetails({
   version: Version | undefined;
 }) {
   useTranslation();
-  const soil = useMunicipalitySoil(diagnosis.signals?.soil ? municipalityId : null);
   const water = useWaterPlan(waterRequest(municipalityId, areaHa, cycle));
   const trends = useTrends(municipalityId, cycle.crop_id, cycle.sowing_date);
   const ndvi = trends.data?.ndvi;
@@ -378,7 +380,7 @@ function CycleDetails({
             irrigated={irrigated}
             weights={diagnosis.weights}
             supplySemester={diagnosis.window?.supply_semester}
-            soil={soil.data}
+            soilContext={{ municipalityId, lotId }}
             version={version}
             waterChart={
               <WaterChart

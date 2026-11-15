@@ -46,14 +46,26 @@ export function cropNames(crops: Crop[] | undefined) {
   return new Map((crops ?? []).map((crop) => [crop.crop_id, cropName(crop)]));
 }
 
-/** El historial del lote (GET /lots/{id}/seasons): de la siembra más reciente a la más antigua. */
-export function useSeasons(lotId: string) {
-  return useQuery({
+function historyQuery(lotId: string) {
+  return {
     queryKey: ["lots", lotId, "seasons"],
     queryFn: () => api<Season[]>(`/lots/${lotId}/seasons`),
     retry: false,
     enabled: Boolean(lotId),
-  });
+  } as const;
+}
+
+/**
+ * El historial del lote (GET /lots/{id}/seasons), de la siembra más reciente a la más antigua, sin lo borrado. La API
+ * trae también las siembras borradas hace menos de 30 días (HU-204): esas son `useDeletedSeasons`.
+ */
+export function useSeasons(lotId: string) {
+  return useQuery({ ...historyQuery(lotId), select: (seasons: Season[]) => seasons.filter((season) => !season.deleted_at) });
+}
+
+/** Las siembras del lote borradas hace menos de 30 días, que se pueden restaurar (HU-204). Comparte la petición. */
+export function useDeletedSeasons(lotId: string) {
+  return useQuery({ ...historyQuery(lotId), select: (seasons: Season[]) => seasons.filter((season) => season.deleted_at) });
 }
 
 /** Tras registrar, cosechar, corregir o borrar cambian el lote, su historial y la lista de Mi finca. */
@@ -83,6 +95,12 @@ export function useDeleteSeason(lotId: string, seasonId: string) {
   return useMutation({ mutationFn: () => api<void>(`/seasons/${seasonId}`, { method: "DELETE" }), onSuccess: refresh });
 }
 
+/** Restaura una siembra borrada hace menos de 30 días (HU-204). Si ya no cabe en el lote, la API responde 422. */
+export function useRestoreSeason(lotId: string, seasonId: string) {
+  const refresh = useRefresh(lotId);
+  return useMutation({ mutationFn: () => api<Season>(`/seasons/${seasonId}/restore`, { method: "POST" }), onSuccess: refresh });
+}
+
 /** Las etapas son las de FAO-56 (catalog/crops.yaml): se nombran como las dice el manual, sin inventar otras. */
 export const STAGE_NAMES = (): Record<string, string> => ({
   initial: t("features.farm.seasons.initialStage"),
@@ -98,6 +116,17 @@ const SHORT = () => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "
 /** «2 de agosto de 2026», a partir de una fecha ISO (sin hora). */
 export const formatDate = (iso: string) => DATE().format(new Date(`${iso}T00:00:00Z`));
 export const formatShortDate = (iso: string) => SHORT().format(new Date(`${iso}T00:00:00Z`));
+
+const LOCAL_DATE = () => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "long", year: "numeric" });
+
+/** «14 de diciembre de 2026», a partir de una fecha con hora (`restorable_until`), en la hora del navegador. */
+export const formatLocalDate = (iso: string) => LOCAL_DATE().format(new Date(iso));
+
+/** Lo borrado se puede restaurar durante 30 días (HU-204; contrato, «Base de datos de cuentas»). */
+export const RESTORE_DAYS = 30;
+
+/** Hasta cuándo se podrá restaurar lo que se borre ahora: la API lo dice exacto en `restorable_until` después de borrar. */
+export const restoreDeadline = () => LOCAL_DATE().format(new Date(Date.now() + RESTORE_DAYS * 86_400_000));
 
 /** Hoy en el formato de los campos de fecha (aaaa-mm-dd), en la hora del navegador. */
 export function todayIso() {

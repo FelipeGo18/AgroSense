@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SeedRow } from "@/components/ui/PriorityControl";
 import { useUpdateProfile, type Profile } from "@/features/auth/session";
-import { PRIORITY_SIGNALS as SIGNALS } from "@/features/diagnosis/priorities";
+import { PRIORITY_SIGNALS as SIGNALS, PRIORITY_CONTROLS, UNRATED_PRIORITIES_NOTE, priorityNote } from "@/features/diagnosis/priorities";
 import { useVersion } from "@/features/version";
 import { LINK } from "./AccountShell";
 
@@ -18,7 +18,8 @@ type Weights = Record<string, number>;
  * tocar las semillas (PATCH /me) y cambian el semáforo y el orden de las fechas de sus consultas.
  *
  * Al lado va siempre el criterio de AgroSense (los pesos por defecto, GET /version), para comparar y poder volver a
- * él. Un riesgo grave de agua, heladas o calor cuenta siempre, aunque su peso sea 0: se dice en cada una.
+ * él. La oferta no tiene control (decisión 17, HU-072: se muestra sin calificar), pero su peso se sigue enviando
+ * completo al guardar. El mercado sí, con su nota: con 4 o 5 ordena las ventanas y nunca cambia la luz (HU-240). Un riesgo grave de agua, heladas o calor cuenta siempre, aunque su peso sea 0: se dice en cada una.
  */
 export function PrioritiesCard({ user }: { user: Profile }) {
   useTranslation();
@@ -72,18 +73,19 @@ export function PrioritiesCard({ user }: { user: Profile }) {
       </p>
       {/* En pantallas muy angostas las seis casillas necesitan todo el ancho de la tarjeta. */}
       <div className="-mx-2 flex flex-col gap-4 sm:mx-0">
-        {SIGNALS().map((signal) => (
+        {PRIORITY_CONTROLS().map((signal) => (
           <SeedRow
             key={signal.key}
             label={signal.label}
             hint={signal.hint}
-            note={signal.climate ? t("pages.account.PrioritiesCard.severeRiskAlwaysCounts") : undefined}
+            note={priorityNote(signal)}
             value={value[signal.key]}
             disabled={false}
             onChange={(weight) => change(signal.key, weight)}
           />
         ))}
       </div>
+      <p className="text-[15px] leading-snug text-texto-secundario">{UNRATED_PRIORITIES_NOTE()}</p>
       {allZero && (
         <p role="alert" className="font-bold text-oscuro-rojo">
           <span aria-hidden="true">▲ </span>
@@ -100,7 +102,7 @@ export function PrioritiesCard({ user }: { user: Profile }) {
       )}
       <p className="border-t-2 border-superficie-borde pt-3 text-[15px] text-texto-secundario">
         {t("pages.account.PrioritiesCard.agrosensePriorities")}{" "}
-        {SIGNALS()
+        {PRIORITY_CONTROLS()
           .map((signal) => `${signal.label.toLowerCase()} ${defaults[signal.key]}`)
           .join(" · ")}
         .

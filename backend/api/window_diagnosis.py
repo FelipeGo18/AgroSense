@@ -15,7 +15,7 @@ from datetime import date
 from typing import Any
 
 from backend.accounts.farm_models import Lot
-from backend.api.calc_models import DiagnosisCore, LightResult, Signal, SourceValue, SuitabilityResult, Window
+from backend.api.calc_models import DiagnosisCore, LightResult, PriceHistory, Signal, SourceValue, SuitabilityResult, SupplySemester, Window
 from backend.api.errors import ApiError
 from backend.api.lot_terrain import ZoneTemperature, zone_temperature, zone_texture
 from backend.api.soil_signals import soil_for
@@ -24,9 +24,11 @@ from backend.config.thresholds import Thresholds, get_thresholds
 from backend.config.versions import rules_version
 from backend.dataset import Dataset, Municipality
 from backend.engine.diagnosis import Diagnosis, diagnose, evaluates_windows, irrigation_used
+from backend.engine.market_signal import MarketSignalResult
 from backend.engine.signal_score import counts, round_half_up, weight_of
 from backend.engine.stages import CropWindow, crop_window
 from backend.engine.suitability import Suitability, ZoneTemperatureUsed, crop_suitability, suitability_reason
+from backend.engine.supply_signal import SupplySignalResult
 from backend.engine.traffic_light import DEFAULT, TrafficLight
 
 
@@ -85,7 +87,7 @@ def light_result(result: TrafficLight, weights_basis: str) -> LightResult:
 def signal_result(name: str, result: SignalResult, weights: Mapping[str, int]) -> Signal:
     """Una señal con la forma del contrato. `counts` es si cuenta para la luz con los pesos de `overall` (contrato,
     «Respuesta de diagnóstico»), con la misma definición que el semáforo y el orden (`counts` del motor). `sources` solo
-    viene en la señal que trae varias fuentes para contrastar (en el MVP, el agua); en las demás es nulo."""
+    viene en la señal que trae sus fuentes para contrastar (el agua y la oferta con dato); en las demás es nulo."""
     sources = signal_sources(result)
     return Signal(
         status=result.status,
@@ -96,7 +98,23 @@ def signal_result(name: str, result: SignalResult, weights: Mapping[str, int]) -
         indicators=list(result.indicators),
         reasons=list(result.reasons),
         sources=None if sources is None else [SourceValue.model_validate(source, from_attributes=True) for source in sources],
+        price_history=_price_history(result),
     )
+
+
+def _supply_semester(signals: Mapping[str, SignalResult] | None) -> SupplySemester | None:
+    """El semestre de EVA que respalda la señal de oferta (HU-072), para `window.supply_semester`; nulo sin dato."""
+    supply = None if signals is None else signals.get("supply")
+    if not isinstance(supply, SupplySignalResult) or supply.semester is None:
+        return None
+    return SupplySemester.model_validate(supply.semester, from_attributes=True)
+
+
+def _price_history(result: SignalResult) -> PriceHistory | None:
+    """La historia del precio de la señal `market` (HU-073); las demás señales no la traen."""
+    if not isinstance(result, MarketSignalResult) or result.price_history is None:
+        return None
+    return PriceHistory.model_validate(result.price_history, from_attributes=True)
 
 
 @dataclass(frozen=True)
@@ -195,7 +213,7 @@ def diagnose_window(query: WindowQuery, crop_id: str, sowing_date: date) -> Wind
             sowing_start=window.sowing_date,
             harvest_estimate=window.harvest_estimate,
             harvest_basis=window.harvest_basis,
-            supply_semester=None,
+            supply_semester=_supply_semester(signals),
         ),
         signals=None if signals is None else {n: signal_result(n, result, query.weights) for n, result in signals.items()},
         overall=light_result(diagnosis.overall, query.weights_basis),
