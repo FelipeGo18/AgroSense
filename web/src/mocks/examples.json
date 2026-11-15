@@ -199,6 +199,17 @@
               "reasons": [
                 "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                 "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+              ],
+              "sources": [
+                {
+                  "source_id": "eva",
+                  "indicator": "planted_ha",
+                  "value": 420,
+                  "unit": "ha",
+                  "period": "2025 B",
+                  "preliminary": true,
+                  "used": true
+                }
               ]
             },
             "market": {
@@ -415,6 +426,17 @@
               "reasons": [
                 "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                 "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+              ],
+              "sources": [
+                {
+                  "source_id": "eva",
+                  "indicator": "planted_ha",
+                  "value": 420,
+                  "unit": "ha",
+                  "period": "2025 B",
+                  "preliminary": true,
+                  "used": true
+                }
               ]
             },
             "market": {
@@ -610,6 +632,17 @@
               "reasons": [
                 "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                 "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+              ],
+              "sources": [
+                {
+                  "source_id": "eva",
+                  "indicator": "planted_ha",
+                  "value": 420,
+                  "unit": "ha",
+                  "period": "2025 B",
+                  "preliminary": true,
+                  "used": true
+                }
               ]
             },
             "market": {
@@ -868,6 +901,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -1063,6 +1107,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -1258,6 +1313,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -1557,6 +1623,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -1751,6 +1828,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -2035,6 +2123,17 @@
                       "reasons": [
                         "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                         "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "eva",
+                          "indicator": "planted_ha",
+                          "value": 420,
+                          "unit": "ha",
+                          "period": "2025 B",
+                          "preliminary": true,
+                          "used": true
+                        }
                       ]
                     },
                     "market": {
@@ -2230,6 +2329,17 @@
                       "reasons": [
                         "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                         "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "eva",
+                          "indicator": "planted_ha",
+                          "value": 420,
+                          "unit": "ha",
+                          "period": "2025 B",
+                          "preliminary": true,
+                          "used": true
+                        }
                       ]
                     },
                     "market": {
@@ -2425,6 +2535,17 @@
                       "reasons": [
                         "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                         "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                      ],
+                      "sources": [
+                        {
+                          "source_id": "eva",
+                          "indicator": "planted_ha",
+                          "value": 420,
+                          "unit": "ha",
+                          "period": "2025 B",
+                          "preliminary": true,
+                          "used": true
+                        }
                       ]
                     },
                     "market": {
@@ -2772,6 +2893,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -2967,6 +3099,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -3162,6 +3305,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -3454,6 +3608,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -3648,6 +3813,17 @@
                         "reasons": [
                           "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
                           "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
+                        ],
+                        "sources": [
+                          {
+                            "source_id": "eva",
+                            "indicator": "planted_ha",
+                            "value": 420,
+                            "unit": "ha",
+                            "period": "2025 B",
+                            "preliminary": true,
+                            "used": true
+                          }
                         ]
                       },
                       "market": {
@@ -6523,14 +6699,14 @@
         "supply": 1,
         "market": 1
       },
-      "weights_version": "1.2.0",
+      "weights_version": "1.3.0",
       "weights_reasons": {
         "water": "Importancia normal. La señal ya es prudente: se califica con la lluvia del año seco, la que se supera en 4 de cada 5 años. Un riesgo grave de agua cuenta siempre.",
         "frost": "Importa mucho, por prudencia: la helada es el riesgo principal del altiplano. Una helada moderada ya cuenta como desfavorable para la luz.",
         "heat": "Pesa menos: en el altiplano la temperatura máxima rara vez pasa de lo que aguantan estos cultivos. Un calor crítico cuenta siempre.",
         "soil": "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición de su lote.",
         "supply": "Pesa poco: la oferta es un dato que suma. Se muestra sin calificar, con el área que registra EVA en su municipio, y su peso no cambia nada: ninguna fuente dice desde cuánto hay sobreoferta.",
-        "market": "Pesa poco: el precio es un dato que suma. Se muestra sin calificar, con la historia del precio de su mes de cosecha, y no cambia la luz: ninguna fuente dice qué es un precio bajo."
+        "market": "Pesa poco: el precio es un dato que suma. Se muestra sin calificar, con la historia del precio de su mes de cosecha, y no cambia la luz: ninguna fuente dice qué es un precio bajo. Con 4 o 5, entre las ventanas igual de seguras en clima va primero la que cosecha en el mes que más años tuvo mejor precio."
       },
       "sources": [
         {

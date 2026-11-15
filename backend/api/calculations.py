@@ -73,7 +73,7 @@ from backend.engine.suitability import NOT_SUITABLE
 from backend.engine.traffic_light import DEFAULT, FARMER
 from backend.engine.water_balance import root_zone
 from backend.engine.water_plan import PlanCrop, water_plan
-from backend.engine.window_order import WindowSignals, best_windows, order_windows
+from backend.engine.window_order import WindowSignals, best_windows, order_windows, price_order_limitation
 from common import signal_sources as source_config
 from common.dates import add_months
 from common.region import region_today
@@ -242,6 +242,12 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
             result.soil,
         )
 
+    core = dict(result.core)
+    # Con peso 4 o 5 en `market` el precio ordena las mejores ventanas (HU-240): la respuesta dice por qué (R5).
+    limitation = None if best is None else price_order_limitation(result.diagnosis.best_windows_weights or {})
+    if limitation is not None:
+        core["limitations"] = [*core["limitations"], limitation]
+
     return DiagnosisResponse(
         # El eco dice el riego que se usó, que es el que la web guarda con la temporada (`diagnosis_irrigated`).
         request=DiagnosisRequestEcho(
@@ -251,7 +257,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
             irrigated=query.irrigated,
             lot_id=body.lot_id,
         ),
-        **dict(result.core),
+        **core,
         best_windows=best,
     )
 

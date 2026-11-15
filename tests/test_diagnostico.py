@@ -585,4 +585,9 @@ def test_las_mejores_ventanas_reciben_el_precio_del_mes_de_cosecha(examples, mon
     priced = [window for window in windows if window.harvest_price is not None]
     assert priced, "los datos de ejemplo traen la historia del precio de la papa"
     assert all(window.harvest_price.month == window.harvest_estimate.month for window in priced)
-    assert body["overall"]["light"] == diagnose(client, NOVEMBER, priorities=NO_WATER)["overall"]["light"]
+    without_price = diagnose(client, NOVEMBER, priorities=NO_WATER)
+    assert body["overall"]["light"] == without_price["overall"]["light"]
+    # Con 4 o 5 la respuesta dice por qué cambia el orden (R5; revisión del PR #176); con 3, no.
+    assert body["best_windows"] is not None
+    assert [text for text in body["limitations"] if text.startswith("Con el mercado en 5, ")]
+    assert not [text for text in without_price["limitations"] if text.startswith("Con el mercado en")]

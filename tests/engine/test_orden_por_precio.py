@@ -15,7 +15,7 @@ import pytest
 from backend.engine.market_signal import CROP_OVERRIDE, PriceHistory
 from backend.engine.signal_score import SignalScore
 from backend.engine.traffic_light import traffic_light
-from backend.engine.window_order import WindowSignals, best_windows, order_windows
+from backend.engine.window_order import WindowSignals, best_windows, order_windows, price_order_limitation
 from tests.engine.test_orden_ventanas import SIGNALS, sig
 
 # El mercado sin calificar (decisión 17): disponible, sin calificación. No cuenta para el factor limitante.
@@ -149,3 +149,16 @@ def test_mismo_dato_mismo_orden_sin_importar_la_entrada():
     """R4."""
     windows = [window(1, 72, SEPTEMBER, weighted_bonus=20), window(2, 72, DECEMBER), window(3, 72, None), window(4, 85, None)]
     assert order_windows(windows, WEIGHTS_4) == order_windows(list(reversed(windows)), WEIGHTS_4)
+
+
+@pytest.mark.parametrize("weight", [0, 1, 2, 3])
+def test_sin_peso_alto_no_hay_limitacion_del_precio(weight):
+    assert price_order_limitation({**WEIGHTS_3, "market": weight}) is None
+
+
+@pytest.mark.parametrize("weight", [4, 5])
+def test_con_peso_alto_la_limitacion_dice_por_que_cambia_el_orden(weight):
+    """Una ventana con menos calificación puede ir primero: la respuesta lo dice (R5; revisión del PR #176)."""
+    text = price_order_limitation({**WEIGHTS_3, "market": weight})
+    assert text.startswith(f"Con el mercado en {weight}, ")
+    assert "menos calificación puede ir antes" in text and "alto riesgo" in text

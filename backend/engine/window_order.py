@@ -47,6 +47,20 @@ from backend.engine.market_signal import PriceHistory
 from backend.engine.signal_score import SignalScore, high_risk, limiting, rated_signals, round_half_up, weight_of
 from backend.engine.traffic_light import HIGH_WEIGHT
 
+
+def price_order_limitation(weights: Mapping[str, float]) -> str | None:
+    """La limitación que explica el orden cuando el precio ordena (peso 4 o 5 en `market`), o None: sin ella, el
+    agricultor vería primero una ventana con menos calificación sin saber por qué (R5; revisión del PR #176)."""
+    weight = weight_of(weights, "market")
+    if weight < HIGH_WEIGHT:
+        return None
+    return (
+        f"Con el mercado en {int(weight)}, entre las ventanas con el factor que más limita en la misma decena va primero "
+        "la que cosecha en el mes que más años tuvo mejor precio que el resto de su año: una ventana con menos "
+        "calificación puede ir antes. El clima sigue mandando: el precio no sube una ventana de alto riesgo"
+    )
+
+
 # Grupos del orden: primero las calificadas sin alto riesgo, después las de alto riesgo, al final las sin calificar.
 _RANKED, _HIGH_RISK, _UNRATED = 0, 1, 2
 
