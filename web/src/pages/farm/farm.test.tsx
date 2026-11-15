@@ -423,9 +423,41 @@ describe("El lote (HU-164)", () => {
   it("un lote dibujado sale en el mapa con el área de su dibujo", async () => {
     fakeApi({ ...BASE, "GET /api/v1/lots/d1": { status: 200, body: { ...DRAWN_LOT, soil: null, current_seasons: [] } } });
     open(PATHS.lot("d1"));
+    // La vista de entrada es su finca (HU-187); el mapa sigue a un toque.
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Mapa" }));
     expect(await screen.findByRole("button", { name: "En el mapa: La Vega" })).toBeInTheDocument();
     expect(screen.getByText("0,99 ha · calculada con su dibujo")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Dibujar en el mapa" })).toBeNull();
+  });
+
+  it("el lote vivo dibuja la finca con sus siembras, rotulado como ilustración (HU-187)", async () => {
+    fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: DETAIL } });
+    open(PATHS.lot("a1"));
+    expect(await screen.findByRole("button", { name: "Su finca", pressed: true })).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: /Ilustración de su lote: Libre/ })).toBeInTheDocument();
+    expect(screen.getByText("Ilustración de su lote, no una imagen de él.")).toBeInTheDocument();
+  });
+
+  it("la finca se recorre: acercar, alejar, volver a encuadrar, y el panel se oculta y se vuelve a mostrar (HU-187)", async () => {
+    fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: DETAIL } });
+    open(PATHS.lot("a1"));
+    const user = userEvent.setup();
+    await screen.findByRole("img", { name: /Ilustración de su lote/ });
+    await user.click(screen.getByRole("button", { name: "Acercar" }));
+    await user.click(screen.getByRole("button", { name: "Alejar" }));
+    await user.click(screen.getByRole("button", { name: "Volver a encuadrar" }));
+    await user.click(screen.getByRole("button", { name: /Ocultar el panel/ }));
+    await user.click(screen.getByRole("button", { name: /Mostrar el lote/ }));
+    expect(screen.getByRole("button", { name: /Ocultar el panel/ })).toBeInTheDocument();
+  });
+
+  it("en modo ligero el lote vivo se ve quieto: sin la vida de la finca, con el perro dormido (HU-158, HU-187)", async () => {
+    setLightMode(true);
+    fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: DETAIL } });
+    const { container } = open(PATHS.lot("a1"));
+    expect(await screen.findByRole("img", { name: /Ilustración de su lote/ })).toBeInTheDocument();
+    expect(container.querySelectorAll("animateMotion, animate, animateTransform")).toHaveLength(0);
+    expect(container.querySelector(".live-sway")).toBeNull();
   });
 
   it("muestra el suelo de su municipio explicado, con su rango y que no es una medición del lote (HU-185)", async () => {
