@@ -67,7 +67,7 @@ NORMAL = SoilCarbon(45.0, 30.0, 60.0, "soilgrids")
 
 
 def _sh(sequence, soil=None, days=None, gaps=None, rules=REGLAS, crops=CULTIVOS):
-    return soil_health(tuple(sequence), crops, [], rules, soil=soil, cycle_days=days, gap_days=gaps)
+    return soil_health(tuple(sequence), crops, [], rules, soil=soil, cycle_days=days, gap_days=gaps, history_basis="none")
 
 
 def _carbono(sequence, soil):
@@ -311,8 +311,8 @@ def test_carbono_sin_p05_o_sin_p95_dice_sin_su_rango_de_incertidumbre(suelo):
 
 def test_nitrogen_y_pest_break_no_cambian_con_el_suelo_y_las_duraciones_y_erosion_sigue_pendiente():
     secuencia, dias = PAPA_MAIZ_HABA
-    base = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS)
-    con = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS, soil=BAJO, cycle_days=dias, gap_days=[3, 4, None])
+    base = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS, history_basis="declared")
+    con = soil_health(secuencia, CULTIVOS, ["papa"], REGLAS, soil=BAJO, cycle_days=dias, gap_days=[3, 4, None], history_basis="declared")
     assert con["nitrogen"] == base["nitrogen"] and con["pest_break"] == base["pest_break"]
     assert con["nitrogen"].level == "favorable"  # la haba fija nitrógeno
     assert (con["erosion"].status, con["erosion"].level) == ("insufficient_data", None)  # es del PR D
