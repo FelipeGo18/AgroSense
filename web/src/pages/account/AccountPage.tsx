@@ -220,6 +220,19 @@ function ActivityCard() {
   );
 }
 
+/** Escribir al responsable de los datos (HU-163): preguntar, pedir una corrección o reportar un problema. */
+function MessagesCard() {
+  return (
+    <Card>
+      <Title>Escribir al responsable</Title>
+      <p>Pregunte qué datos suyos guardamos, pida que los corrijamos o cuéntenos un problema.</p>
+      <ButtonLink to={PATHS.messages} variant="secondary" className="self-start">
+        Escribir un mensaje
+      </ButtonLink>
+    </Card>
+  );
+}
+
 /** Borrar la cuenta: dice qué se pierde y pide confirmar con la contraseña. No se puede deshacer (R9). */
 function DangerCard({ user }: { user: Profile }) {
   const remove = useDeleteAccount();
@@ -356,6 +369,7 @@ function Account({ user, notice }: { user: Profile; notice?: string }) {
         <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-2">
           <div data-enter>
             <ActivityCard />
+            <MessagesCard />
           </div>
           <div data-enter>
             <DangerCard user={user} />
