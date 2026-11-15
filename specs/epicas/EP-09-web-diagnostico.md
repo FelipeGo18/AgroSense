@@ -135,14 +135,14 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-094 · Estados de carga, vacío y error
 
 - **Historia:** Como usuario, quiero mensajes claros cuando algo carga, falla o no tiene datos, para saber qué hacer.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Estados de carga, vacío, y error
-  - [ ] Estado sin cobertura
+  - [x] Estado sin cobertura. **Hecho (15 nov 2026):** la API responde `422` `outside_region` a un municipio bien escrito fuera de la región (aprobado por Felipe el 15 de noviembre de 2026) y la web muestra «Sin datos de este municipio» con el mensaje de la API, en el diagnóstico y en «Qué cambió»; en las estrategias, el mensaje. Pruebas en `tests/test_calculos.py` y `web/src/pages/diagnosis/diagnosis.test.tsx`
   - [x] Los datos de ejemplo se rotulan
 - **Implementación:** esqueleto de carga sin cifras ficticias y compatible con modo ligero; tarjetas de sin conexión, fecha inválida, lote inexistente y errores de la API, con acciones de recuperación. El 500 muestra el código de soporte y su ejemplo se genera desde OpenAPI. El 503 permite reintentar sin borde punteado.
 - **Pruebas:** prueba de la tarjeta de fecha y del foco en el selector del mes; rutas de los estados incluidas en test:responsive. Revisión responsive da como resultado 483 de 483 combinaciones sin problemas.
-- **Pendiente — sin cobertura:** Un municipio fuera de la región cae en "Revise lo que eligió"; la tarjeta "Sin datos de este municipio" necesita un código propio en el contrato (decidido por Felipe el 13 de noviembre de 2026: no por ahora).
+- **Sin cobertura (cerrado el 15 de noviembre de 2026):** el 13 de noviembre Felipe dejó para después el código propio; el 15 lo aprobó (`outside_region`).
 
 ### HU-219 · Pantalla «Qué cambió en su zona»
 
