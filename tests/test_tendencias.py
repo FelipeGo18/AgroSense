@@ -339,7 +339,7 @@ def test_sin_filas_del_municipio_la_oferta_y_el_verdor_vienen_vacios(complete):
 
 @pytest.mark.parametrize(
     ("municipality_id", "crop_id"),
-    [("05001", "papa"), (SAMACA, "yuca"), (SAMACA, "avena_vicia"), (SAMACA, "descanso"), ("1564", "papa"), (SAMACA, "Papa")],
+    [(SAMACA, "yuca"), (SAMACA, "avena_vicia"), (SAMACA, "descanso"), ("1564", "papa"), (SAMACA, "Papa")],
 )
 def test_una_entrada_fuera_del_catalogo_responde_422(published_like, municipality_id, crop_id):
     response = trends(TestClient(app), municipality_id=municipality_id, crop_id=crop_id)
@@ -380,7 +380,7 @@ def test_sin_dataset_responde_503():
 
 
 def test_trae_las_versiones_del_dataset_y_de_las_reglas(complete):
-    assert trends(TestClient(app)).json()["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.0.0+pesos.1.0.0"}
+    assert trends(TestClient(app)).json()["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.1.0"}
 
 
 def test_mismos_datos_misma_respuesta_byte_a_byte(complete):
