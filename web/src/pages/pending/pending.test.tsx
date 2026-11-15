@@ -17,7 +17,7 @@ afterEach(() => {
 const open = (path: string) => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />);
 
 // El pie de página va en todas las pantallas (specs/05-frontend.md): también en la de una dirección que no existe y en la
-// de una pantalla que todavía no está programada.
+// de «Qué cambió», aunque todavía no se haya elegido el contexto o falle la carga de catálogos.
 describe("Pie de página en las pantallas de aviso", () => {
   it("la dirección que no existe lleva el pie", async () => {
     open("/ruta-que-no-existe");
@@ -25,10 +25,10 @@ describe("Pie de página en las pantallas de aviso", () => {
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
   });
 
-  it("una pantalla pendiente lleva el pie", async () => {
+  it("la pantalla de qué cambió lleva el pie aunque no carguen los catálogos (HU-219)", async () => {
     open(PATHS.changes);
-    expect(await screen.findByRole("heading", { name: "Qué cambió en su zona" })).toBeInTheDocument();
-    expect(screen.getByText(/todavía no está programada/)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "¿Qué cambió en su zona?" })).toBeInTheDocument();
+    expect(screen.queryByText(/todavía no está programada/)).not.toBeInTheDocument();
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
   });
 });

@@ -7,7 +7,30 @@ Descarga las fuentes a una caché, las valida y publica el dataset que lee la AP
 uv run python -m pipeline.build --descargar   # baja las fuentes a data/raw/ y publica
 uv run python -m pipeline.build               # publica otra vez desde la caché, sin red
 uv run python -m pipeline.build --verificar   # solo revisa que data/published coincida con su manifiesto
+uv run python -m pipeline.build --traer-cache # antes de publicar, trae la caché compartida (HU-237)
 ```
+
+## Caché compartida de las fuentes (HU-237)
+
+Para que todos construyan el dataset desde la misma caché, cada carpeta de `data/raw/` se guarda como un archivo en la
+*release* `cache-datos` del repositorio, y `pipeline/raw_cache.json` (en git) dice cuál usa cada fuente:
+
+```bash
+uv run python -m pipeline.raw_cache estado            # qué carpetas de data/raw/ están al día con raw_cache.json
+uv run python -m pipeline.raw_cache traer             # baja lo que falte o sea distinto (sin cuenta: el repo es público)
+uv run python -m pipeline.raw_cache subir imerg       # empaqueta data/raw/imerg, la sube y la anota en raw_cache.json
+```
+
+- **Quien descarga datos nuevos** de una fuente (`pipeline.build --descargar`) sube su carpeta con `subir` y lleva el
+  cambio de `pipeline/raw_cache.json` en su PR. Subir pide un token de GitHub con permiso de escritura
+  (`AGROSENSE_CACHE_TOKEN`, o `GH_TOKEN=$(gh auth token)`).
+- **Quien construye el dataset** corre antes `traer` (o `pipeline.build --traer-cache`): así no se publica con una
+  caché vieja ni hay que copiar tablas de `desarrollo` a mano.
+- El paquete es determinista y su nombre lleva la huella del contenido: el mismo contenido da el mismo archivo y uno ya
+  subido no se reemplaza. `traer` verifica el sha256 y la huella antes de reemplazar la carpeta; si algo no coincide,
+  falla y la carpeta queda como estaba (R1).
+- Solo se suben las carpetas de `FOLDERS` (`pipeline/raw_cache.py`), y cada una de sus fuentes debe tener su licencia
+  en `docs/licencias.md`, porque la release es pública. Nunca se sube un `.env` ni un archivo con un token.
 
 - Al terminar de publicar, el comando revisa lo publicado contra su manifiesto (HU-123): cada tabla que nombra existe y
   tiene sus filas, no hay tablas que no nombre y la versión es la de `region.yaml`. Si algo no coincide, termina con

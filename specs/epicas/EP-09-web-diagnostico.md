@@ -147,19 +147,22 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
 ### HU-219 · Pantalla «Qué cambió en su zona»
 
 - **Historia:** Como agricultor, quiero ver qué cambió en las heladas, la lluvia y el calor de mi zona, y cómo se movieron las mejores fechas de siembra de mi cultivo, para adaptar mi finca a condiciones que cambian.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Se llega desde el resultado del diagnóstico, desde el ciclo de una estrategia (HU-215) y desde el lote, con el municipio y el cultivo ya elegidos. El ciclo ya enlaza a `/que-cambio?municipio=&cultivo=` (`PATHS.changes`), que hoy dice que está pendiente: esta HU pone ahí la pantalla
-  - [ ] Por mes, tres comparaciones (heladas, lluvia y temperatura máxima) entre los dos periodos, cada una con su unidad, los años de cada periodo y la fuente
-  - [ ] Las mejores ventanas de cada periodo, lado a lado («Entre 1981 y 2000: …» · «Entre 2005 y 2024: …»)
-  - [ ] Rótulo fijo y visible: «Así fue en la historia de su zona. No es un pronóstico»
-  - [ ] Un valor `insufficient_data` se ve como «Sin datos suficientes» con forma y texto, nunca como un cambio de cero (R1)
-  - [ ] Si la lluvia sale de IMERG, la pantalla dice que esos datos empiezan en 2000
-  - [ ] Si el cultivo no es apto para la zona, lo dice con su razón y muestra solo el clima
-  - [ ] Usable a 360 px; cada control tiene una función
+  - [x] Se llega desde el diagnóstico y el ciclo de una estrategia (HU-215) con municipio y cultivo elegidos. Desde el lote se conserva el municipio: si tiene una sola siembra en curso, su cultivo viene preseleccionado; si tiene varias o ninguna, el agricultor lo elige. El selector siempre permite cambiarlo (decisión de Haider, 15 de noviembre de 2026).
+  - [x] Por mes, tres comparaciones (heladas, lluvia y temperatura máxima) entre los dos periodos, cada una con su unidad, los años de cada periodo y la fuente
+  - [x] Las mejores ventanas de cada periodo, lado a lado («Entre 1981 y 2000: …» · «Entre 2005 y 2024: …»)
+  - [x] Rótulo fijo y visible: «Así fue en la historia de su zona. No es un pronóstico»
+  - [x] Un valor `insufficient_data` se ve como «Sin datos suficientes» con forma y texto, nunca como un cambio de cero (R1)
+  - [x] Si la lluvia sale de IMERG, la pantalla dice que esos datos empiezan en 2000
+  - [x] Si el cultivo no es apto para la zona, lo dice con su razón y muestra solo el clima
+  - [x] Usable a 360 px; cada control tiene una función
 - **Reglas que aplican:** R1, R4, R5, R8
 - **Contrato que toca:** `GET /api/v1/changes`
 - **Notas:** Decisión 12. Se diseña en Figma antes de programarla (`specs/05-frontend.md`, «Pantallas por diseñar del MVP»). Depende de HU-218 o de su respuesta simulada. Agregada el 11 de octubre de 2026.
+- **Implementación:** `/que-cambio`, con contexto editable validado contra los catálogos, comparaciones mensuales con barras rayadas/llenas, ventanas, razones, limitaciones y versiones. El diagnóstico y el ciclo conservan municipio, cultivo y riego. El lote preselecciona el cultivo solo con una siembra en curso; con varias o ninguna pide elegirlo y siempre permite cambiarlo. Los errores usan `StateCard`, el 500 conserva el código de soporte y el 501 explica que esta versión aún no calcula la comparación, sin reintento. Las fuentes usan `/version` y los ejemplos `ExampleLabel`. Un mes ausente se distingue de `insufficient_data`. **Integración real pendiente de HU-217/HU-218:** la API responde 501 para aptitud `suitable`/`insufficient_data`; no se modifica el contrato ni el motor.
+- **Verificación tras la revisión:** pruebas agregadas para una, varias y ninguna siembra, acciones de error y código de soporte, periodos de IMERG dentro de lluvia y de POWER dentro de heladas/calor, meses ausentes y ruta única de `/como-funciona`. **Revisión adaptable ejecutada por Juan: 154 de 154 combinaciones sin problemas**, con simulación y alcance limitado a las siete rutas de `/que-cambio` agregadas en esta rama: entrada vacía, resultado, carga, sin conexión, 422, 501 y 503; 11 tamaños, con movimiento y en modo ligero. Este resultado reemplaza el anterior de 66/66 y cubre todos los estados agregados a la revisión adaptable de esta pantalla; no corresponde a una ejecución global de todas las rutas de la aplicación. Pendiente confirmar la ejecución final de la suite web y del build a cargo de Juan.
+- **Pendientes de coordinación:** el ejemplo de `/changes` trae solo enero; completar los doce meses corresponde a la fuente de ejemplos de la API y regenerar `web/src/mocks/examples.json`, sin rellenar datos desde la web. Referencia de diseño disponible: `design/pantallas/cambio.py` y sus SVG. La implementación usa comparaciones por mes y formulario editable; queda pendiente la validación visual de Felipe contra Figma, sin afirmar una aprobación que no está registrada.
 
 ### HU-095 · Mapa regional por semáforo
 

@@ -41,7 +41,7 @@ from backend.engine.sensitive_signal import (
 from backend.engine.signal_score import AVAILABLE, score_signal
 from backend.engine.stages import HEAT, CropWindow, WindowMonth
 from common.months import month_name
-from common.text import format_number
+from common.text import format_number, of
 
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
@@ -86,7 +86,7 @@ def heat_signal(
     score = score_signal(HEAT, value, thresholds, crop_limits)
     if score.status != AVAILABLE:
         reason = (
-            f"Los límites de temperatura de la ficha de {crop_name} (temp_opt_max_c y heat_max_c) no están completos "
+            f"Los límites de temperatura de la ficha {of(crop_name)} (temp_opt_max_c y heat_max_c) no están completos "
             "con fuente: el calor no se califica"
         )
         return insufficient(reason, limitations)
