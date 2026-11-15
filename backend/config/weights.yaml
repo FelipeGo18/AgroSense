@@ -10,8 +10,9 @@
 #
 # Propuestos por Producto y agro y aprobados por Felipe el 14 de noviembre de 2026 (docs/registro-de-decisiones.md).
 # Reemplazan a los provisionales del 13 de octubre (agua 3, heladas 3, calor 3, suelo 2, oferta 3, mercado 2).
+# 1.1.0 (HU-073, decisión 17): ningún peso cambia; el porqué del mercado dice que se muestra sin calificar.
 
-version: "1.0.0"
+version: "1.1.0"
 status: approved
 
 weights:
@@ -42,6 +43,6 @@ weights:
     set_on: "2026-11-14"
   market:
     weight: 1
-    why: "Pesa poco en el orden de las ventanas: el precio es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Todavía no tiene cortes con fuente."
+    why: "Pesa poco: el precio es un dato que suma. Se muestra sin calificar, con la historia del precio de su mes de cosecha, y no cambia la luz: ninguna fuente dice qué es un precio bajo."
     set_by: "Felipe"
     set_on: "2026-11-14"

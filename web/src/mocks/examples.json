@@ -200,19 +200,40 @@
               ]
             },
             "market": {
-              "status": "insufficient_data",
+              "status": "available",
               "critical": false,
               "counts": true,
-              "indicators": [],
+              "indicators": [
+                "seasonal_index",
+                "years_above",
+                "years_below"
+              ],
               "reasons": [
-                "Sin datos de mercado para la zona"
-              ]
+                "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+              ],
+              "price_history": {
+                "market_id": "1",
+                "market": "Corabastos (Bogotá)",
+                "market_basis": "crop_override",
+                "product_id": "papa-negra",
+                "month": 12,
+                "seasonal_index": 1.07,
+                "years": 5,
+                "years_above": 3,
+                "years_below": 2,
+                "first_year": 2021,
+                "last_year": 2025,
+                "source_id": "dane_sipsa"
+              }
             }
           },
           "limitations": [
             "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
             "Datos EVA del último año son preliminares",
-            "Suelo estimado para el municipio, no para su lote"
+            "Suelo estimado para el municipio, no para su lote",
+            "La oferta y el mercado se muestran sin calificar: no cambian la luz"
           ],
           "versions": {
             "dataset": "ejemplo",
@@ -393,13 +414,33 @@
               ]
             },
             "market": {
-              "status": "insufficient_data",
+              "status": "available",
               "critical": false,
               "counts": true,
-              "indicators": [],
+              "indicators": [
+                "seasonal_index",
+                "years_above",
+                "years_below"
+              ],
               "reasons": [
-                "Sin datos de mercado para la zona"
-              ]
+                "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+              ],
+              "price_history": {
+                "market_id": "1",
+                "market": "Corabastos (Bogotá)",
+                "market_basis": "crop_override",
+                "product_id": "papa-negra",
+                "month": 12,
+                "seasonal_index": 1.07,
+                "years": 5,
+                "years_above": 3,
+                "years_below": 2,
+                "first_year": 2021,
+                "last_year": 2025,
+                "source_id": "dane_sipsa"
+              }
             }
           },
           "limitations": [
@@ -566,13 +607,33 @@
               ]
             },
             "market": {
-              "status": "insufficient_data",
+              "status": "available",
               "critical": false,
               "counts": true,
-              "indicators": [],
+              "indicators": [
+                "seasonal_index",
+                "years_above",
+                "years_below"
+              ],
               "reasons": [
-                "Sin datos de mercado para la zona"
-              ]
+                "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+              ],
+              "price_history": {
+                "market_id": "1",
+                "market": "Corabastos (Bogotá)",
+                "market_basis": "crop_override",
+                "product_id": "papa-negra",
+                "month": 12,
+                "seasonal_index": 1.07,
+                "years": 5,
+                "years_above": 3,
+                "years_below": 2,
+                "first_year": 2021,
+                "last_year": 2025,
+                "source_id": "dane_sipsa"
+              }
             }
           },
           "limitations": [
@@ -812,19 +873,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -994,19 +1076,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -1176,19 +1279,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -1462,19 +1586,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -1643,19 +1788,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -1914,19 +2080,40 @@
                       ]
                     },
                     "market": {
-                      "status": "insufficient_data",
+                      "status": "available",
                       "critical": false,
                       "counts": true,
-                      "indicators": [],
+                      "indicators": [
+                        "seasonal_index",
+                        "years_above",
+                        "years_below"
+                      ],
                       "reasons": [
-                        "Sin datos de mercado para la zona"
-                      ]
+                        "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                        "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                        "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                      ],
+                      "price_history": {
+                        "market_id": "1",
+                        "market": "Corabastos (Bogotá)",
+                        "market_basis": "crop_override",
+                        "product_id": "papa-negra",
+                        "month": 12,
+                        "seasonal_index": 1.07,
+                        "years": 5,
+                        "years_above": 3,
+                        "years_below": 2,
+                        "first_year": 2021,
+                        "last_year": 2025,
+                        "source_id": "dane_sipsa"
+                      }
                     }
                   },
                   "limitations": [
                     "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                     "Datos EVA del último año son preliminares",
-                    "Suelo estimado para el municipio, no para su lote"
+                    "Suelo estimado para el municipio, no para su lote",
+                    "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                   ],
                   "versions": {
                     "dataset": "ejemplo",
@@ -2096,19 +2283,40 @@
                       ]
                     },
                     "market": {
-                      "status": "insufficient_data",
+                      "status": "available",
                       "critical": false,
                       "counts": true,
-                      "indicators": [],
+                      "indicators": [
+                        "seasonal_index",
+                        "years_above",
+                        "years_below"
+                      ],
                       "reasons": [
-                        "Sin datos de mercado para la zona"
-                      ]
+                        "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                        "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                        "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                      ],
+                      "price_history": {
+                        "market_id": "1",
+                        "market": "Corabastos (Bogotá)",
+                        "market_basis": "crop_override",
+                        "product_id": "papa-negra",
+                        "month": 12,
+                        "seasonal_index": 1.07,
+                        "years": 5,
+                        "years_above": 3,
+                        "years_below": 2,
+                        "first_year": 2021,
+                        "last_year": 2025,
+                        "source_id": "dane_sipsa"
+                      }
                     }
                   },
                   "limitations": [
                     "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                     "Datos EVA del último año son preliminares",
-                    "Suelo estimado para el municipio, no para su lote"
+                    "Suelo estimado para el municipio, no para su lote",
+                    "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                   ],
                   "versions": {
                     "dataset": "ejemplo",
@@ -2278,19 +2486,40 @@
                       ]
                     },
                     "market": {
-                      "status": "insufficient_data",
+                      "status": "available",
                       "critical": false,
                       "counts": true,
-                      "indicators": [],
+                      "indicators": [
+                        "seasonal_index",
+                        "years_above",
+                        "years_below"
+                      ],
                       "reasons": [
-                        "Sin datos de mercado para la zona"
-                      ]
+                        "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                        "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                        "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                      ],
+                      "price_history": {
+                        "market_id": "1",
+                        "market": "Corabastos (Bogotá)",
+                        "market_basis": "crop_override",
+                        "product_id": "papa-negra",
+                        "month": 12,
+                        "seasonal_index": 1.07,
+                        "years": 5,
+                        "years_above": 3,
+                        "years_below": 2,
+                        "first_year": 2021,
+                        "last_year": 2025,
+                        "source_id": "dane_sipsa"
+                      }
                     }
                   },
                   "limitations": [
                     "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                     "Datos EVA del último año son preliminares",
-                    "Suelo estimado para el municipio, no para su lote"
+                    "Suelo estimado para el municipio, no para su lote",
+                    "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                   ],
                   "versions": {
                     "dataset": "ejemplo",
@@ -2612,19 +2841,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -2794,19 +3044,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -2976,19 +3247,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -3255,19 +3547,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -3436,19 +3749,40 @@
                         ]
                       },
                       "market": {
-                        "status": "insufficient_data",
+                        "status": "available",
                         "critical": false,
                         "counts": true,
-                        "indicators": [],
+                        "indicators": [
+                          "seasonal_index",
+                          "years_above",
+                          "years_below"
+                        ],
                         "reasons": [
-                          "Sin datos de mercado para la zona"
-                        ]
+                          "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+                          "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
+                          "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+                        ],
+                        "price_history": {
+                          "market_id": "1",
+                          "market": "Corabastos (Bogotá)",
+                          "market_basis": "crop_override",
+                          "product_id": "papa-negra",
+                          "month": 12,
+                          "seasonal_index": 1.07,
+                          "years": 5,
+                          "years_above": 3,
+                          "years_below": 2,
+                          "first_year": 2021,
+                          "last_year": 2025,
+                          "source_id": "dane_sipsa"
+                        }
                       }
                     },
                     "limitations": [
                       "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
                       "Datos EVA del último año son preliminares",
-                      "Suelo estimado para el municipio, no para su lote"
+                      "Suelo estimado para el municipio, no para su lote",
+                      "La oferta y el mercado se muestran sin calificar: no cambian la luz"
                     ],
                     "versions": {
                       "dataset": "ejemplo",
@@ -3662,10 +3996,10 @@
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
-        "501": {
+        "500": {
           "error": {
-            "code": "not_implemented",
-            "message": "Este cálculo todavía no está disponible.",
+            "code": "internal_error",
+            "message": "Algo falló de nuestro lado. Intente de nuevo en un momento.",
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
@@ -6239,7 +6573,7 @@
         "kind": "fallow",
         "archetype": "fallow",
         "family": null,
-        "cycle_months": null
+        "cycle_months": 5.9
       },
       {
         "crop_id": "haba",
@@ -6275,9 +6609,9 @@
       }
     ],
     "version": {
-      "dataset_version": "2026.11.21",
+      "dataset_version": "2026.11.26",
       "rules_version": "0.1.0",
-      "created_at": "2026-11-15T04:23:11Z",
+      "created_at": "2026-11-15T15:57:50Z",
       "region": "Boyacá y Cundinamarca, Colombia",
       "default_weights": {
         "water": 3,
@@ -6287,14 +6621,14 @@
         "supply": 1,
         "market": 1
       },
-      "weights_version": "1.0.0",
+      "weights_version": "1.1.0",
       "weights_reasons": {
         "water": "Importancia normal. La señal ya es prudente: se califica con la lluvia del año seco, la que se supera en 4 de cada 5 años. Un riesgo grave de agua cuenta siempre.",
         "frost": "Importa mucho, por prudencia: la helada es el riesgo principal del altiplano. Una helada moderada ya cuenta como desfavorable para la luz.",
         "heat": "Pesa menos: en el altiplano la temperatura máxima rara vez pasa de lo que aguantan estos cultivos. Un calor crítico cuenta siempre.",
         "soil": "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición de su lote.",
         "supply": "Pesa poco en el orden de las ventanas: la oferta es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Si a usted le importa más, súbala; si no le importa, póngala en 0.",
-        "market": "Pesa poco en el orden de las ventanas: el precio es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Todavía no tiene cortes con fuente."
+        "market": "Pesa poco: el precio es un dato que suma. Se muestra sin calificar, con la historia del precio de su mes de cosecha, y no cambia la luz: ninguna fuente dice qué es un precio bajo."
       },
       "sources": [
         {
@@ -6439,7 +6773,7 @@
           "coverage": "Colombia: 1.103 municipios según la UPRA. En la región, 238 municipios con algún cultivo del MVP (arveja, cebolla_bulbo, haba, maiz, papa, zanahoria); un municipio sin fila de un cultivo en un semestre es sin dato: EVA no dice si no se sembró o no se reportó",
           "license": "CC BY-SA 4.0",
           "citation": null,
-          "notes": "Área sembrada y cosechada, producción y rendimiento por municipio (DIVIPOLA), cultivo y semestre de siembra (A = enero a junio, B = julio a diciembre; supuesto por confirmar en HU-001). Desde 2022 el área cosechada, la producción y el rendimiento son las cosechas efectivas de cada semestre; antes, las de sus siembras. Las cifras de los dos últimos años son preliminares. Los cultivos salen de pipeline/eva_crops.yaml (HU-031)."
+          "notes": "Área sembrada y cosechada, producción y rendimiento por municipio (DIVIPOLA), cultivo y semestre de siembra (A = enero a junio, B = julio a diciembre; supuesto por confirmar en HU-001). Desde 2022 el área cosechada, la producción y el rendimiento son las cosechas efectivas de cada semestre; antes, las de sus siembras. Las cifras de los dos últimos años son preliminares. Los cultivos salen de pipeline/eva_crops.yaml (HU-031). La variación del área sembrada es contra el promedio del mismo semestre de los tres años anteriores con dato (nula sin ninguno o con promedio 0; partial con menos de tres) y la participación es la del municipio entre los que reportan en su departamento (HU-032). En muchas filas EVA repite el área del mismo semestre del año anterior."
         },
         {
           "source_id": "fairlie_ortega_1995",
@@ -6644,6 +6978,18 @@
           "license": "Acto oficial del gobierno de Brasil, publicado en el Diário Oficial",
           "citation": null,
           "notes": "Para los cortes de la señal de heladas en backend/config/thresholds.yaml (HU-075). Punto 1.6: tres niveles de riesgo, «20%, 30%, 40%». Punto 1.9.a.1: la helada es la probabilidad de «temperaturas mínimas menores ou igual a 2°C». El ZARC acepta pérdidas en hasta 2 de cada 10 años (Santos y Martins, 2016, Revista de Política Agrícola XXV(3), https://rpa.sede.embrapa.br/RPA/article/download/1157/pdf/2423). Es una fuente derivada y de otro país: el 20/30/40 es el riesgo de todas las amenazas juntas, no solo de la helada. Respaldo cercano: Le Tacon (IRD), «Los riesgos de helada en el altiplano boliviano», planea la papa con un riesgo de helada del 25 % (https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers09-11/38556.pdf)."
+        },
+        {
+          "source_id": "modis_ndvi",
+          "name": "MODIS Terra · Índice de vegetación NDVI de 250 m cada 16 días (MOD13Q1 V061)",
+          "institution": "NASA, sensor MODIS del satélite Terra; distribuido por LP DAAC de la NASA y el USGS",
+          "url": "https://doi.org/10.5067/MODIS/MOD13Q1.061",
+          "downloaded_at": "2026-11-15T01:33:27+00:00",
+          "period_covered": "De 2023 a 2026, cada 16 días",
+          "coverage": "88 compuestos de la tesela h10v08; 53194 píxeles de 250 m dentro de la región, uno de cada 4 en filas y columnas",
+          "license": "Datos abiertos de la NASA (EOSDIS), sin restricciones de uso; se cita con su DOI",
+          "citation": "Didan, K. (2021). MODIS/Terra Vegetation Indices 16-Day L3 Global 250m SIN Grid V061. NASA EOSDIS Land Processes Distributed Active Archive Center. https://doi.org/10.5067/MODIS/MOD13Q1.061. Consultado el 2026-11-15. ",
+          "notes": "Verdor de la zona, no del lote (R10): la mediana de los píxeles sin nubes de todo el municipio, sin máscara de cultivos (incluye bosques, páramos y ciudades). Un píxel es válido con confiabilidad 0 (bueno) o 1 (marginal). Con menos del 30 % de píxeles válidos el periodo es partial; sin ninguno, no se publica. ndvi_municipality_normal es el promedio 2023-2025, no una normal climática: se publica con al menos 2 años y es partial con menos de 3. Es contraste: no cambia la luz ni el orden de las ventanas. La NASA deja de tomar datos de Terra MODIS hacia enero de 2027."
         },
         {
           "source_id": "msu_e1307_onion",
