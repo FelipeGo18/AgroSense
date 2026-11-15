@@ -16,6 +16,8 @@ export const PATHS = {
   harvest: (lotId: string, seasonId: string) => `/mi-finca/lotes/${lotId}/siembras/${seasonId}/cosechar` as const,
   editSeason: (lotId: string, seasonId: string) => `/mi-finca/lotes/${lotId}/siembras/${seasonId}/editar` as const,
   howItWorks: "/como-funciona",
+  /** Del satélite a su finca (HU-155): el recorrido en 3D, con su versión quieta en modo ligero. */
+  journeyTour: "/del-satelite-a-su-finca",
   /** «Qué cambió en su zona» (HU-219), con `?municipio=&cultivo=`. Pendiente: hasta que exista, lleva a una página que lo dice. */
   changes: "/que-cambio",
   login: "/entrar",
