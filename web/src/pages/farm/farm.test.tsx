@@ -200,6 +200,53 @@ describe("Mi finca (HU-169)", () => {
     expect(screen.getByRole("link", { name: "Agregar lote" })).toHaveAttribute("href", PATHS.addLot);
   });
 
+  it("una sola zona: los lotes dibujados de otro municipio van aparte, con su municipio, y no en el mapa", async () => {
+    const other = { ...DRAWN_LOT, lot_id: "d2", name: "La Loma", municipality_id: "25899", geometry: square(-74.0, 5.02, 0.0009) };
+    fakeApi({
+      ...BASE,
+      "GET /api/v1/lots": {
+        status: 200,
+        body: [
+          { ...DRAWN_LOT, current_crop_ids: [] },
+          { ...other, current_crop_ids: ["arveja"] },
+        ],
+      },
+    });
+    open(PATHS.farm);
+    const map = await screen.findByTestId("mapa");
+    expect(within(map).getByRole("button", { name: "En el mapa: La Vega" })).toBeInTheDocument();
+    expect(within(map).queryByRole("button", { name: "En el mapa: La Loma" })).toBeNull();
+    const onMap = within(screen.getByRole("region", { name: "En el mapa" }));
+    expect(onMap.queryByText(/La Loma/)).toBeNull();
+    const elsewhere = within(screen.getByRole("region", { name: "En otro municipio" }));
+    expect(elsewhere.getByRole("link", { name: /La Loma/ })).toHaveAttribute("href", PATHS.lot("d2"));
+    expect(await elsewhere.findByText("Arveja en curso · Zipaquirá")).toBeInTheDocument();
+  });
+
+  it("al sembrar, «¿Qué había antes en este terreno?» deja elegir una o varias siembras cosechadas (HU-165)", async () => {
+    const harvested = [
+      { ...SEASON, season_id: "h1", crop_id: "papa", area_ha: 1, sowing_date: ago(200), harvest_date: ago(30) },
+      { ...SEASON, season_id: "h2", crop_id: "haba", area_ha: 1, sowing_date: ago(180), harvest_date: ago(20) },
+    ];
+    const calls = fakeApi({
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: DETAIL },
+      "GET /api/v1/lots/a1/seasons": { status: 200, body: harvested },
+      "POST /api/v1/lots/a1/seasons": { status: 201, body: { ...SEASON, season_id: "s2", crop_id: "arveja" } },
+    });
+    open(PATHS.sow("a1"));
+    const previous = within(await screen.findByRole("group", { name: "¿Qué había antes en este terreno?" }));
+    expect(previous.getByRole("checkbox", { name: /Nada: es la primera siembra aquí/ })).toBeChecked();
+    await userEvent.click(previous.getByRole("checkbox", { name: /Papa/ }));
+    await userEvent.click(previous.getByRole("checkbox", { name: /Haba/ }));
+    expect(previous.getByRole("checkbox", { name: /Nada: es la primera siembra aquí/ })).not.toBeChecked();
+    await userEvent.selectOptions(screen.getByLabelText("Cultivo"), "arveja");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar siembra" }));
+    expect(await screen.findByText("Siembra de arveja registrada.")).toBeInTheDocument();
+    const post = calls.find((call) => call.key === "POST /api/v1/lots/a1/seasons");
+    expect((post?.body as { follows_season_ids: string[] }).follows_season_ids.sort()).toEqual(["h1", "h2"]);
+  });
+
   it("tocar un lote en el mapa lo abre", async () => {
     fakeApi({
       ...BASE,
