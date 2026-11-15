@@ -98,7 +98,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     [
         ("/api/v1/diagnostics", {**DIAGNOSIS, "crop_id": "yuca"}),
         ("/api/v1/diagnostics", {**DIAGNOSIS, "crop_id": "avena_vicia"}),
-        ("/api/v1/diagnostics", {**DIAGNOSIS, "municipality_id": "05001"}),
         ("/api/v1/diagnostics", {**DIAGNOSIS, "sowing_date": (date.today() - timedelta(days=40)).isoformat()}),
         ("/api/v1/diagnostics", {**DIAGNOSIS, "sowing_date": (date.today() + timedelta(days=420)).isoformat()}),
         ("/api/v1/diagnostics", {**DIAGNOSIS, "priorities": {s: 0 for s in ("water", "frost", "heat", "soil", "supply", "market")}}),
@@ -117,7 +116,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         ("/api/v1/rotations", {**ROTATION, "sowing_date": "2027-13-01"}),
         ("/api/v1/rotations", {**ROTATION, "sowing_date": (date.today() - timedelta(days=40)).isoformat()}),
         ("/api/v1/rotations", {**ROTATION, "sowing_date": (date.today() + timedelta(days=420)).isoformat()}),
-        ("/api/v1/rotations", {**ROTATION, "municipality_id": "05001"}),
         (
             "/api/v1/water-plans",
             {
@@ -133,6 +131,31 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
 def test_una_entrada_invalida_responde_422(dataset, path, body):
     response = TestClient(app).post(path, json=body)
     assert response.status_code == 422, response.json()
+    assert response.json()["error"]["code"] == "invalid_input"
+
+
+@pytest.mark.parametrize(
+    ("path", "body"),
+    [
+        ("/api/v1/diagnostics", {**DIAGNOSIS, "municipality_id": "05001"}),
+        ("/api/v1/rotations", {**ROTATION, "municipality_id": "05001"}),
+        ("/api/v1/water-plans", {**WATER, "municipality_id": "05001"}),
+    ],
+)
+def test_un_municipio_fuera_de_la_region_es_sin_cobertura(dataset, path, body):
+    """HU-094, aprobado por Felipe el 15 nov 2026: un código bien escrito (Medellín, 05001) que no está en la región del
+    dataset no es un error de quien consulta: `outside_region`, con la región del manifiesto en el mensaje (R7)."""
+    response = TestClient(app).post(path, json=body)
+    assert response.status_code == 422, response.json()
+    error = response.json()["error"]
+    assert error["code"] == "outside_region"
+    assert error["message"].startswith("AgroSense todavía no tiene datos de ese municipio: por ahora cubre ")
+    assert "Colombia" not in error["message"]
+
+
+def test_un_codigo_de_municipio_mal_escrito_sigue_siendo_entrada_invalida(dataset):
+    response = TestClient(app).get("/api/v1/changes", params={"municipality_id": "abc", "crop_id": "papa"})
+    assert response.status_code == 422
     assert response.json()["error"]["code"] == "invalid_input"
 
 

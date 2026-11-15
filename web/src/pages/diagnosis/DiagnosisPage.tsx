@@ -489,6 +489,17 @@ function DiagnosisError({
       />
     );
   }
+  // HU-094: un municipio fuera de la región no es un error de quien consulta: es «sin cobertura».
+  if (error instanceof ApiError && error.status === 422 && error.code === "outside_region") {
+    return (
+      <StateCard
+        title="Sin datos de este municipio"
+        description={error.message}
+        mood="no_data"
+        actions={[{ label: "Elegir otro municipio", variant: "secondary", onClick: onReturnToForm }]}
+      />
+    );
+  }
   if (error instanceof ApiError && error.status === 422) {
     return (
       <StateCard

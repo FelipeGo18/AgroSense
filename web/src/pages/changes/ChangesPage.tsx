@@ -407,6 +407,9 @@ function ChangesError({ error, onRetry }: { error: Error; onRetry: () => void })
   const actions = [{ label: "Reintentar", onClick: onRetry }];
   if (status === 0)
     return <StateCard title="Sin conexión" description="Revise la señal e intente de nuevo. Lo que eligió sigue aquí." actions={actions} />;
+  // HU-094: un municipio fuera de la región es «sin cobertura», no un error de quien consulta.
+  if (status === 422 && error instanceof ApiError && error.code === "outside_region")
+    return <StateCard title="Sin datos de este municipio" description={error.message} mood="no_data" />;
   if (status === 422)
     return (
       <StateCard

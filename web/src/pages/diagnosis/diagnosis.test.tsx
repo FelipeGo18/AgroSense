@@ -489,6 +489,20 @@ describe("Pantalla del diagnóstico (HU-091)", () => {
       await user.click(screen.getByRole("button", { name: "Volver al formulario" }));
       expect(screen.getByRole("combobox", { name: "Municipio" })).toHaveFocus();
     });
+    it("un municipio fuera de la región es «sin cobertura», no un error de quien consulta (HU-094)", async () => {
+      const message = "AgroSense todavía no tiene datos de ese municipio: por ahora cubre Boyacá y Cundinamarca.";
+      fakeApi({
+        ...CATALOGS,
+        "POST /api/v1/diagnostics": { status: 422, body: { error: { code: "outside_region", message } } },
+      });
+      const user = userEvent.setup();
+      open(`${PATHS.diagnosis}?municipio=15646&cultivo=papa&siembra=${MONTHS[2].value}&riego=si`);
+      expect(await screen.findByRole("heading", { name: "Sin datos de este municipio" })).toBeInTheDocument();
+      expect(screen.getByText(message)).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: "Revise lo que eligió" })).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Elegir otro municipio" }));
+      expect(screen.getByRole("combobox", { name: "Municipio" })).toHaveFocus();
+    });
     it("un 501 dice que el cálculo aún no está disponible y no permite reintentar", async () => {
       fakeApi({
         ...CATALOGS,
