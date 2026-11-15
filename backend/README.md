@@ -42,6 +42,32 @@ entrada como dice el contrato (422, y 401 o 404 con `lot_id`) y, mientras el mot
 
 Los tipos de la web salen de este OpenAPI: con la API arriba y `AGROSENSE_API_DOCS=true`, `npm --prefix web run api:types`.
 
+### Qué cambió (HU-217 y HU-218, avance parcial)
+
+`GET /api/v1/changes?municipality_id=15001&crop_id=papa&irrigated=false` devuelve 200 para un cultivo no apto:
+compara los doce meses y devuelve la aptitud, ventanas vacías, periodos por fuente, versiones y limitaciones.
+Con valores ausentes conserva `insufficient_data`; sin periodos configurados responde 503. Los casos apto y de
+aptitud desconocida siguen en 501 hasta integrar las ventanas. No recibe lote ni accede a la base de datos.
+
+Las diferencias se redondean a un decimal. Las razones resumen la mayor diferencia absoluta de cada indicador,
+con desempate por el primer mes, los valores, periodos y número de meses comparables; no son pruebas de
+significación estadística ni explicaciones de las causas. Todo el detalle permanece en `months`.
+
+Las limitaciones advierten las discrepancias de lluvia entre POWER e IMERG y el posible artefacto de temperatura
+de POWER en tierra caliente, a partir de la comprobación de HU-216 en el [PR #79](https://github.com/FelipeGo18/AgroSense/pull/79).
+La revisión inicial midió 68 % de direcciones opuestas de lluvia; la comprobación posterior, con los mismos años y
+sin el 2021 defectuoso, midió 69 % donde alguna fuente cambia más de 10 %. El texto usa «cerca de 7 de cada 10»;
+no es una probabilidad por municipio. El aumento de máxima de hasta 7,3 °C se advierte como posible artefacto,
+sin modificar silenciosamente los datos. Las fuentes de los indicadores siguen siendo `nasa_power` e `imerg`.
+
+El 200 registra un detalle genérico y las versiones mediante `calc_dataset`, nunca el municipio ni el cultivo
+consultados. Los casos de referencia de cultivos aptos conservan `xfail(strict=True)` hasta implementar las ventanas.
+El antiguo script de simulación se reemplazó por la prueba de enero sin periodo anterior en `tests/engine/test_changes.py`.
+
+```bash
+docker compose run --build --rm app uv run pytest tests/engine/test_changes.py tests/test_changes_endpoint.py tests/test_dataset_changes.py tests/test_logs_de_calculo.py
+```
+
 ## Precios de SIPSA al día (HU-222)
 
 La API **no baja nada ni calcula precios**: las rutas `GET /market/*` solo filtran por central o por producto y

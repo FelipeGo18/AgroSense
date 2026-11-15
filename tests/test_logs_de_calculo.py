@@ -2,14 +2,18 @@
 de las reglas, y nunca el cuerpo ni los parámetros de la consulta (R4, R9; contrato, «Logs de la terminal»)."""
 
 import json
+from dataclasses import replace
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from structlog.testing import capture_logs
 
+from backend.api import calculations
 from backend.api.main import app
-from backend.dataset import get_dataset
+from backend.dataset import get_dataset, load
+from common.signal_sources import SignalSource, SignalSources
 
 SOON = (date.today() + timedelta(days=40)).isoformat()
 WATER_CROP = {"crop_id": "arveja", "area_pct": 100, "sowing_date": SOON}
@@ -77,3 +81,37 @@ def test_una_ruta_que_no_es_de_calculo_no_lleva_versiones(dataset):
     with capture_logs() as logs:
         TestClient(app).get("/api/v1/catalogs/crops")
     assert "dataset" not in request_line(logs)
+
+
+def test_cambios_no_apto_registra_versiones_y_detalle_sin_la_consulta(monkeypatch):
+    """El 200 real recorre calc_dataset; las cifras de esta prueba son de ejemplo."""
+    dataset = load(Path(__file__).resolve().parents[1] / "data" / "examples")
+    municipalities = dict(dataset.municipalities)
+    municipalities["15001"] = replace(municipalities["15001"], tmean_annual_c=100.0)
+    dataset = replace(dataset, municipalities=municipalities)
+    configuration = SignalSources(
+        version="ejemplo",
+        regions={
+            dataset.region["id"]: {
+                "frost": SignalSource(used="ejemplo"),
+                "heat": SignalSource(used="ejemplo"),
+                "water": SignalSource(used="ejemplo"),
+            }
+        },
+    )
+    monkeypatch.setattr(calculations, "require_dataset", lambda: dataset)
+    monkeypatch.setattr(calculations, "get_signal_sources", lambda: configuration)
+
+    with capture_logs() as logs:
+        response = TestClient(app).get("/api/v1/changes", params={"municipality_id": "15001", "crop_id": "papa"})
+
+    assert response.status_code == 200, response.text
+    line = request_line(logs)
+    assert line["route"] == "/api/v1/changes"
+    assert line["status"] == 200
+    assert line["dataset"] == response.json()["versions"]["dataset"]
+    assert line["rules"] == response.json()["versions"]["rules"]
+    assert line["detail"] == "Qué cambió: el cultivo no es apto en su municipio; clima de dos periodos comparado"
+    text = written(logs)
+    assert "15001" not in text and "papa" not in text
+    assert "municipality_id" not in text and "crop_id" not in text

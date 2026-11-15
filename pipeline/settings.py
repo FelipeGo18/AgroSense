@@ -34,6 +34,11 @@ class PipelineSettings(BaseSettings):
     nasadem_timeout_s: float = Field(300, gt=0, validation_alias="AGROSENSE_NASADEM_TIMEOUT_S")
     nasadem_max_mb: float = Field(60, gt=0, validation_alias="AGROSENSE_NASADEM_MAX_MB")
 
+    # SoilGrids (HU-181): tiempo y tamaño máximos de cada mapa de un mosaico de 1° (400 × 400 celdas). Hoy uno pesa
+    # unos 300 KB y baja en unos 2 s.
+    soilgrids_timeout_s: float = Field(120, gt=0, validation_alias="AGROSENSE_SOILGRIDS_TIMEOUT_S")
+    soilgrids_max_mb: float = Field(5, gt=0, validation_alias="AGROSENSE_SOILGRIDS_MAX_MB")
+
     # GPM IMERG (HU-207): pide una cuenta de NASA Earthdata. El token se genera en https://urs.earthdata.nasa.gov
     # («Generate Token») y la cuenta debe aprobar la app «NASA GESDISC DATA ARCHIVE». Va solo en el .env, nunca en git.
     # Tiempo y tamaño máximos de cada mes: hoy el recuadro de la región pesa unos 10 KB y baja en unos 2 s.
