@@ -268,6 +268,6 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Si GIBS no responde, el mapa sigue con OpenStreetMap y lo dice; dibujar el lote no depende de la capa
   - [ ] La capa es solo para ver: no entra al motor ni cambia un resultado
   - [ ] Funciona en el mapa de dibujo (HU-164) y en Mi finca (HU-169)
-  - [ ] Entrada de GIBS en `sources` con sus condiciones de uso verificadas
+  - [ ] Entrada de GIBS en `sources` con sus condiciones de uso verificadas, y su misión, resolución, periodo y acceso (HU-122)
 - **Reglas que aplican:** R5, R8, R10
 - **Notas:** Decisión 12. Resuelve la «capa satelital por definir» de `specs/05-frontend.md`. Los nombres exactos de las capas, su resolución y las condiciones de uso se verifican antes de usarlas (`docs/fuentes.md`). Es lo primero de la NASA que se recorta si falta tiempo, antes de SMAP (decisiones 14 y 15). Agregada el 11 de octubre de 2026.
