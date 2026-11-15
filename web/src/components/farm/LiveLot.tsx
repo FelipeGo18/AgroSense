@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { useMotionEffect } from "@/hooks/useMotionEffect";
 import { gsap } from "@/lib/motion";
 import { allocateCells, drawStage, timeOfDay, DRAWN_CROPS, type LiveSeason } from "./cells";
+import { FarmAnimals } from "./Animals";
 import { FarmLifeSky, FarmLifeWorld, type FarmAnchors } from "./FarmLife";
 
 /** Las piezas que exporta el diseño (`design/finca/exportar_web.py`): se descargan solo al abrir el lote vivo. */
@@ -279,14 +280,16 @@ export function LiveLot({
               );
             })}
           </g>
-          <Svg markup={shape.front} transform={place} />
+          {/* Los animales van delante de las camas y detrás de las cercas del frente y del potrero. */}
           <g transform={place}>
-            {animated ? (
-              <FarmLifeWorld anchors={shape.anchors} time={time} dogMarkup={shape.dog} flowering={flowering} />
-            ) : (
-              <Svg markup={shape.dog} transform={`translate(${shape.anchors.dog[0]} ${shape.anchors.dog[1]})`} />
-            )}
+            <FarmAnimals anchors={shape.anchors} dogMarkup={shape.dog} animated={animated} />
           </g>
+          <Svg markup={shape.front} transform={place} />
+          {animated && (
+            <g transform={place}>
+              <FarmLifeWorld anchors={shape.anchors} time={time} flowering={flowering} />
+            </g>
+          )}
         </g>
         {base.tint[time] && <Svg markup={base.tint[time]} />}
         {labels.map((label) => (

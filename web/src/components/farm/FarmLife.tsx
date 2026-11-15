@@ -5,12 +5,13 @@ import type { TimeOfDay } from "./cells";
  * La vida de la finca en el lote vivo (HU-187): todo lo que se mueve y no es un dato. Solo se dibuja con movimiento
  * (`LiveLot` no la monta en modo ligero, HU-158), así que nada de lo que dice el lote depende de ella.
  *
- * Las animaciones largas (el perro detrás de la gallina, el pájaro, la vaca, las mariposas, la mascota) van con SMIL
+ * Los animales de la finca (vacas, gallinas y el perro) están en `Animals.tsx`, con sus reglas. Las animaciones largas
+ * (el pájaro, las mariposas, la mascota) van con SMIL
  * (`animateMotion`), que `LiveLot` pausa cuando la pestaña no se ve; los bucles cortos (humo, picoteo, cola, alas), con
  * CSS (`farm-*` en `styles/index.css`). Las coordenadas son las del lote (`anchors` de `design/finca/exportar_web.py`).
  */
 
-type Pt = [number, number];
+export type Pt = [number, number];
 export interface FarmAnchors {
   chimney: Pt;
   window: Pt;
@@ -23,13 +24,26 @@ export interface FarmAnchors {
   hens: Pt[];
   meadow: Pt[];
   field: Pt[];
+  pasture: Pt[];
+  yard: Pt[];
 }
 
 const INK = "#2A1E16";
-const CHASE = "28s"; // el ciclo del perro: duerme, sale detrás de la gallina, da la vuelta al lote y vuelve a dormir
 
 /** Una gallina low-poly mirando a la derecha; `pecking` baja la cabeza a picotear. */
-function Hen({ x, y, scale = 1, pecking = true, delay = 0 }: { x: number; y: number; scale?: number; pecking?: boolean; delay?: number }) {
+export function Hen({
+  x,
+  y,
+  scale = 1,
+  pecking = true,
+  delay = 0,
+}: {
+  x: number;
+  y: number;
+  scale?: number;
+  pecking?: boolean;
+  delay?: number;
+}) {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <ellipse cx={0} cy={2} rx={11} ry={3} fill="#000" fillOpacity={0.15} />
@@ -49,7 +63,7 @@ function Hen({ x, y, scale = 1, pecking = true, delay = 0 }: { x: number; y: num
 }
 
 /** El perro corriendo, de perfil. Las patas se alternan con CSS. */
-function RunningDog() {
+export function RunningDog() {
   return (
     <g transform="scale(1.1)">
       <ellipse cx={0} cy={4} rx={22} ry={4} fill="#000" fillOpacity={0.15} />
@@ -71,7 +85,7 @@ function RunningDog() {
   );
 }
 
-function Cow() {
+export function Cow() {
   return (
     <g>
       <ellipse cx={0} cy={4} rx={30} ry={5} fill="#000" fillOpacity={0.14} />
@@ -143,25 +157,18 @@ function Motion({
   );
 }
 
-const line = (points: Pt[]) => `M${points.map(([x, y]) => `${x} ${y}`).join(" L")}`;
-
 /** Lo que vive dentro del lote y su finca (en coordenadas del lote). */
 export function FarmLifeWorld({
   anchors,
   time,
-  dogMarkup,
   flowering,
 }: {
   anchors: FarmAnchors;
   time: TimeOfDay;
-  dogMarkup: string;
   /** Los centros de los cubos con cultivos en flor (etapa media o final), para las abejas. */
   flowering: Pt[];
 }) {
   const day = time !== "noche";
-  const [dx, dy] = anchors.dog;
-  // El perro sale de su sitio, da la vuelta al lote por fuera de la cerca y vuelve: 0–55 % duerme, 55–95 % corre.
-  const chase = line([anchors.dog, ...anchors.path, anchors.path[0], anchors.dog]);
   const [f0, f1] = anchors.field;
   const fieldW = Math.abs(anchors.path[2][0] - anchors.path[0][0]);
   return (
@@ -207,9 +214,6 @@ export function FarmLifeWorld({
         </>
       )}
 
-      {/* 2. Gallinas que picotean cerca de la casa. */}
-      {day && anchors.hens.slice(1).map(([x, y], i) => <Hen key={`${x}-${y}`} x={x} y={y} delay={i * 0.8} />)}
-
       {/* 15. El gato en el porche, moviendo la cola. */}
       <g transform={`translate(${anchors.porch[0]} ${anchors.porch[1]})`}>
         <polygon points="-8,0 -6,-10 6,-10 8,0" fill="#5A4A3A" />
@@ -219,44 +223,6 @@ export function FarmLifeWorld({
         <circle cx={7} cy={-12} r={0.9} fill="#F2C232" />
         <path d="M-8 -2 q-10 -2 -8 -14" stroke="#5A4A3A" strokeWidth={3} fill="none" strokeLinecap="round" className="farm-cat-tail" />
       </g>
-
-      {/* 1. El perro: duerme junto al porche y de día sale detrás de la gallina, da la vuelta al lote y vuelve. */}
-      <g transform={`translate(${dx} ${dy})`}>
-        <g dangerouslySetInnerHTML={{ __html: dogMarkup }}>{/* el perro dormido del diseño */}</g>
-        {day && <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.54;0.55;0.95;1" dur={CHASE} repeatCount="indefinite" />}
-      </g>
-      {day && (
-        <>
-          <g opacity={0}>
-            <Hen x={0} y={0} scale={1.1} pecking={false} />
-            <Motion
-              path={line([anchors.hens[0], ...anchors.path, anchors.path[0], anchors.hens[0]])}
-              dur={CHASE}
-              keyPoints="0;0;1;1"
-              keyTimes="0;0.53;0.93;1"
-            />
-            <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.52;0.53;0.93;0.94;1" dur={CHASE} repeatCount="indefinite" />
-          </g>
-          <g opacity={0}>
-            <RunningDog />
-            <Motion path={chase} dur={CHASE} keyPoints="0;0;1;1" keyTimes="0;0.55;0.95;1" />
-            <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.54;0.55;0.95;0.96;1" dur={CHASE} repeatCount="indefinite" />
-          </g>
-        </>
-      )}
-
-      {/* 14. La vaca pasta en el potrero y camina despacio. */}
-      {day && (
-        <g>
-          <Cow />
-          <Motion
-            path={line([anchors.meadow[0], anchors.meadow[1], anchors.meadow[0]])}
-            dur="60s"
-            keyPoints="0;0;0.5;0.5;1"
-            keyTimes="0;0.3;0.5;0.8;1"
-          />
-        </g>
-      )}
 
       {/* 12. Abejas sobre los cultivos en flor. */}
       {day &&

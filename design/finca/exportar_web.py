@@ -69,6 +69,7 @@ def farm_anchors(farm):
     la chimenea, los faroles y la ventana se encienden de noche, el gato está en el porche, el colibrí en la huerta, el
     pájaro en la cerca y el perro corre alrededor del lote. Mismas cuentas que granja.py."""
     pt = lambda a, b, z=0.0: [round(v, 1) for v in farm.pt(a, b, z)]  # noqa: E731
+    corners = lambda zone: [pt(zone[0], zone[2]), pt(zone[1], zone[2]), pt(zone[1], zone[3]), pt(zone[0], zone[3])]  # noqa: E731
     a0h, a1h = farm.a0 - 2.35, farm.a0 - 1.25  # la casa
     b0h, b1h = farm.GATE[0] - 0.5, farm.GATE[1] + 0.2
     bm, height, steps, dz = (b0h + b1h) / 2, 50, 4, 11
@@ -87,7 +88,19 @@ def farm_anchors(farm):
         "hens": [pt(a0 - 0.55, farm.GATE[1] + 0.6), pt(a0 - 0.35, farm.GATE[1] + 0.95), pt(a0 - 0.8, farm.GATE[1] + 1.15)],
         "meadow": [pt(a0 - 0.6, b0 - 1.7), pt(a0 - 1.5, b0 - 0.9)],  # detrás del lote, entre la casa y el árbol
         "field": [pt(a0, b0), pt(a1, b1)],
+        "pasture": corners(pasture(farm)),
+        "yard": corners(yard(farm)),
     }
+
+
+def pasture(farm):
+    """El potrero de las vacas, en (a, b): al frente del lote, donde no hay casa, árboles ni estanque."""
+    return farm.a0 + 0.15, farm.a1 - 0.35, farm.b1 + 0.95, farm.b1 + 2.35
+
+
+def yard(farm):
+    """El patio de las gallinas, en (a, b): frente a la casa, entre la huerta y el portón."""
+    return farm.a0 - 1.3, farm.a0 - 0.3, farm.GATE[1] + 0.35, farm.b1 + 0.9
 
 
 def scenery(farm, layout):
@@ -104,13 +117,13 @@ def scenery(farm, layout):
         back.append(farm.quad([(a, b), (a + 0.5, b), (a + 0.5, b + 0.6), (a, b + 0.6)], shade(granja.PATH, rnd.choice((-0.04, 0.0, 0.05)))))
 
     # Árboles de bloques alrededor (los de atrás antes, para que no tapen la casa).
-    for a, b in ((a0 - 3.4, b0 - 1.2), (a1 + 0.9, b0 - 2.4), (a1 + 2.2, b0 - 0.6), (a0 + 1.2, b0 - 2.9)):
+    for a, b in ((a0 - 3.4, b0 - 1.2), (a1 + 0.9, b0 - 2.4), (a1 + 2.2, b0 - 1.6), (a0 + 1.2, b0 - 2.9)):
         back += farm.tree(a, b)
-    for a, b in ((a1 + 1.6, b1 + 1.2), (a0 - 1.9, b1 + 2.4)):
+    for a, b in ((a1 + 1.0, b1 + 3.3), (a0 - 1.9, b1 + 2.4)):  # lejos del estanque y del potrero
         front += farm.tree(a, b)
 
     # Arbustos y flores sueltas en el pasto.
-    for a, b in ((a1 + 1.0, b1 - 0.4), (a0 - 2.9, b1 + 0.6), (a1 + 0.4, b1 + 2.3), (a0 + 0.4, b1 + 2.0), (a1 + 2.6, b0 + 0.6)):
+    for a, b in ((a1 + 1.0, b1 - 0.4), (a0 - 2.9, b1 + 0.6), (a1 + 0.5, b1 + 2.6), (a0 - 0.5, b1 + 2.7), (a1 + 2.6, b0 + 0.6)):
         x, y = farm.pt(a, b)
         front += cv.blob(x, y - 8, 14, "#5E9A3E", seed=int(abs(a * 10 + b))) + cv.blob(x + 12, y - 4, 10, "#6FAE4A", seed=int(abs(a * 7 + b * 3)))
         for _ in range(3):
@@ -138,6 +151,13 @@ def scenery(farm, layout):
     for a, b in ((a1 + 0.5, b1 + 1.0), (a0 - 0.6, b1 + 1.4), (a1 + 1.9, b0 - 1.4)):
         front += farm.box(a, b, a + 0.18, b + 0.14, 0, 6, "#A9A69C")
         front += farm.box(a + 0.1, b + 0.1, a + 0.22, b + 0.2, 0, 4, "#8F8C83")
+    # La cerca del potrero: los lados de atrás van detrás de las vacas; los del frente, delante.
+    pa0, pa1, pb0, pb1 = pasture(farm)
+    m = 0.12
+    back += farm.fence((pa0 - m, pb0 - m), (pa1 + m, pb0 - m), lantern_ends=False)
+    back += farm.fence((pa0 - m, pb0 - m), (pa0 - m, pb1 + m), lantern_ends=False)
+    front += farm.fence((pa1 + m, pb0 - m), (pa1 + m, pb1 + m), lantern_ends=False)
+    front += farm.fence((pa0 - m, pb1 + m), (pa1 + m, pb1 + m), lantern_ends=False)
     return back, front
 
 
