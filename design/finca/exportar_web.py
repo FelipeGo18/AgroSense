@@ -105,6 +105,63 @@ def farm_anchors(farm):
     }
 
 
+def scenery(farm, layout):
+    """Lo que rodea la finca para que no quede vacía: cultivos de los vecinos detrás del lote, árboles y arbustos, un
+    estanque con juncos, pacas de heno, leña, un bebedero, un camino de tierra desde el portón, piedras y flores. Es
+    ambiente: no muestra ningún dato. Devuelve (lo de atrás del lote, lo de adelante)."""
+    rnd = random.Random(31)
+    a0, a1, b0, b1 = farm.a0, farm.a1, farm.b0, farm.b1
+    crops = {c[0]: c for c in cv.CROPS}
+    back, front = [], []
+
+    # Cultivos de los vecinos: camas sueltas detrás del lote y a la derecha, más allá del pasto.
+    for (i, j), key, stage in (((-2, -3), "maiz", 3), ((-1, -3), "maiz", 4), ((1, -3), "papa", 3), ((3, -2), "papa", 2), ((4, -1), "arveja", 3)):
+        x, y = escena.cube_pos(layout, i, j)
+        back.append(f'<g transform="translate({x:.1f} {y:.1f})">{join(escena.cell(crops[key], stage))}</g>')
+
+    # Camino de tierra del portón hacia el frente de la vista.
+    for n in range(9):
+        a, b = a0 - 0.2 - n * 0.42, farm.GATE[0] + 0.3 + n * 0.55
+        back.append(farm.quad([(a, b), (a + 0.5, b), (a + 0.5, b + 0.6), (a, b + 0.6)], shade(granja.PATH, rnd.choice((-0.04, 0.0, 0.05)))))
+
+    # Árboles de bloques alrededor (los de atrás antes, para que no tapen la casa).
+    for a, b in ((a0 - 3.4, b0 - 1.2), (a1 + 0.9, b0 - 2.4), (a1 + 2.2, b0 - 0.6), (a0 + 1.2, b0 - 2.9)):
+        back += farm.tree(a, b)
+    for a, b in ((a1 + 1.6, b1 + 1.2), (a0 - 1.9, b1 + 2.4)):
+        front += farm.tree(a, b)
+
+    # Arbustos y flores sueltas en el pasto.
+    for a, b in ((a1 + 1.0, b1 - 0.4), (a0 - 2.9, b1 + 0.6), (a1 + 0.4, b1 + 2.3), (a0 + 0.4, b1 + 2.0), (a1 + 2.6, b0 + 0.6)):
+        x, y = farm.pt(a, b)
+        front += cv.blob(x, y - 8, 14, "#5E9A3E", seed=int(abs(a * 10 + b))) + cv.blob(x + 12, y - 4, 10, "#6FAE4A", seed=int(abs(a * 7 + b * 3)))
+        for _ in range(3):
+            front += cv.flower(x + rnd.uniform(-16, 16), y + rnd.uniform(-2, 6), 2.6, rnd.choice(("#FFFFFF", "#F2D23A", "#E8607A")))
+
+    # Estanque con juncos, al frente a la derecha.
+    pa, pb = a1 + 1.4, b1 + 0.1
+    front.append(farm.quad([(pa, pb), (pa + 1.3, pb), (pa + 1.3, pb + 1.0), (pa, pb + 1.0)], "#6E9A3A"))
+    front.append(farm.quad([(pa + 0.1, pb + 0.1), (pa + 1.2, pb + 0.1), (pa + 1.2, pb + 0.9), (pa + 0.1, pb + 0.9)], "#5B8FB8"))
+    front.append(farm.quad([(pa + 0.25, pb + 0.25), (pa + 0.7, pb + 0.25), (pa + 0.7, pb + 0.45), (pa + 0.25, pb + 0.45)], "#8EB4D0"))
+    for t in (0.15, 0.3, 0.85):
+        x, y = farm.pt(pa + t * 1.3, pb + 0.95)
+        for d in (-3, 0, 3):
+            front += cv.blade(x + d, y, 90 + d * 5, rnd.uniform(12, 18), 1.6, "#4E7F35")
+
+    # Pacas de heno y leña cerca de la casa; bebedero junto al potrero de la vaca.
+    for a, b, z in ((a0 - 1.1, b0 - 0.6, 0), (a0 - 0.75, b0 - 0.6, 0), (a0 - 0.93, b0 - 0.6, 12)):
+        back += farm.box(a, b, a + 0.32, b + 0.3, z, z + 12, "#E2C068", tone=(0.06, -0.08, -0.2))
+    back += farm.box(a0 - 2.5, b1 - 0.1, a0 - 2.0, b1 + 0.15, 0, 9, "#8A6238")
+    back += farm.box(a0 - 2.45, b1 - 0.05, a0 - 2.05, b1 + 0.1, 9, 15, "#A07444")
+    back += farm.box(a0 - 1.3, b0 - 1.95, a0 - 0.7, b0 - 1.7, 0, 9, "#8A8A86")
+    back.append(farm.quad([(a0 - 1.27, b0 - 1.92, 9), (a0 - 0.73, b0 - 1.92, 9), (a0 - 0.73, b0 - 1.73, 9), (a0 - 1.27, b0 - 1.73, 9)], "#6F98B9"))
+
+    # Piedras.
+    for a, b in ((a1 + 0.5, b1 + 1.0), (a0 - 0.6, b1 + 1.4), (a1 + 1.9, b0 - 1.4)):
+        front += farm.box(a, b, a + 0.18, b + 0.14, 0, 6, "#A9A69C")
+        front += farm.box(a + 0.1, b + 0.1, a + 0.22, b + 0.2, 0, 4, "#8F8C83")
+    return back, front
+
+
 def tint(time):
     if time == "noche":
         return f'<rect width="{W}" height="{H}" fill="#0B1A3A" fill-opacity="0.28"/>'
@@ -125,11 +182,12 @@ def main():
             layout = [(i, j, "x", None, 0) for i, j in cells]
             farm = granja.Farm(layout)
             anchors = farm_anchors(farm)
+            around_back, around_front = scenery(farm, layout)
             data["layouts"][name] = {
                 "cells": [{"i": i, "j": j, "x": round(x, 2), "y": round(y, 2)} for (i, j) in cells for x, y in [escena.cube_pos(layout, i, j)]],
                 "ground": join(farm.ground()),
-                "back": join(farm.back()),
-                "front": join(farm.front()),
+                "back": join(around_back + farm.back()),
+                "front": join(farm.front() + around_front),
                 # El perro va aparte, centrado en su sitio: la web lo esconde cuando sale a correr detrás de la gallina.
                 "dog": join(escena.dog(0, 0, 1.25)),
                 "top": round(-cv.B * 1.2, 2),  # dónde va el rótulo sobre el centro del cubo
