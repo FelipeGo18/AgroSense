@@ -1,7 +1,5 @@
-import { t } from "@/lib/i18n";
-import { useTranslation } from "react-i18next";
 import { useState, useSyncExternalStore, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "@/components/layout/LanguageLink";
+import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
@@ -12,19 +10,19 @@ import { TextField } from "@/components/ui/TextField";
 import { useLogin, useSession } from "@/features/auth/session";
 import { typedBefore } from "@/lib/firstLoad";
 import { afterLoginPath } from "@/features/strategies/entry";
+import { useTranslation } from "react-i18next";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
 /** Lo que se le dice a la persona según lo que respondió la API. Nunca dice si el usuario existe. */
 function message(error: Error) {
-  if (!(error instanceof ApiError)) return t("pages.auth.LoginPage.somethingWentWrongTryAgain");
-  if (error.status === 401) return t("pages.auth.LoginPage.incorrectUsernameOrPasswordCheckThemAnd");
+  if (!(error instanceof ApiError)) return "Algo falló. Intente de nuevo.";
+  if (error.status === 401) return "Usuario o contraseña incorrectos. Revíselos y vuelva a intentar.";
   return error.message;
 }
 
 /** Entrar (HU-162). Diseño: design/pantallas/cuenta.py, `login`. */
 export function LoginPage() {
-  useTranslation();
   const navigate = useNavigate();
   const { user } = useSession();
   const login = useLogin();
@@ -59,28 +57,26 @@ export function LoginPage() {
   const failed = login.error;
 
   return (
-    <FormScene mood="guide" signs={[t("pages.auth.LoginPage.yourFarmIsWaiting")]} rejected={failed}>
-      <title>{t("pages.auth.LoginPage.signInAgrosense")}</title>
+    <FormScene mood="guide" signs={["Su finca lo espera"]} rejected={failed}>
+      <title>Entrar · AgroSense</title>
       <header>
-        <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">{t("login.submit")}</p>
-        <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">{t("pages.auth.LoginPage.returnToYourFarm")}</h1>
-        {!failed && <p>{t("pages.auth.LoginPage.enterYourUsernameAndPassword")}</p>}
+        <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">Entrar</p>
+        <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Vuelva a su finca</h1>
+        {!failed && <p>Entre con su usuario y contraseña.</p>}
       </header>
       {failed && (
         <Alert>
           <p>{message(failed)}</p>
           {failed instanceof ApiError && failed.status >= 500 && failed.requestId && (
-            <p className="font-normal">
-              {t("pages.auth.LoginPage.supportCode")} {failed.requestId}
-            </p>
+            <p className="font-normal">Código para soporte: {failed.requestId}</p>
           )}
         </Alert>
       )}
       <form onSubmit={submit} noValidate className="flex flex-col gap-3">
         <TextField
-          label={t("login.username")}
+          label="Usuario"
           name="username"
-          placeholder={t("pages.auth.LoginPage.yourUsername")}
+          placeholder="Su usuario"
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
@@ -89,39 +85,34 @@ export function LoginPage() {
           onChange={(event) => setUsername(event.target.value)}
         />
         <TextField
-          label={t("login.password")}
+          label="Contraseña"
           name="password"
           type="password"
-          placeholder={t("pages.auth.LoginPage.yourPassword")}
+          placeholder="Su contraseña"
           autoComplete="current-password"
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
-        <Button
-          type="submit"
-          className="mt-1"
-          loading={login.isPending}
-          loadingText={t("pages.auth.LoginPage.signingIn")}
-          disabled={!username.trim() || !password}
-        >
-          {t("login.submit")}
+        <Button type="submit" className="mt-1" loading={login.isPending} loadingText="Entrando…" disabled={!username.trim() || !password}>
+          Entrar
         </Button>
       </form>
       <p className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <span>
-          {t("pages.auth.LoginPage.dontHaveAnAccount")}{" "}
+          ¿No tiene cuenta?{" "}
           <Link to={PATHS.signup} className={LINK}>
-            {t("nav.signup")}
+            Crear cuenta
           </Link>
         </span>
         <Link to={PATHS.consult} className={`${LINK} inline-flex min-h-11 items-center`}>
-          {t("pages.auth.LoginPage.continueWithoutAnAccount")}
+          Seguir sin cuenta
         </Link>
       </p>
       <p className="border-t-2 border-superficie-borde pt-2 text-[15px] leading-snug text-texto-secundario">
-        {t("pages.auth.LoginPage.passwordRecoveryIsNotAvailableYetWe")}
+        Si olvida su contraseña, por ahora no se puede recuperar. No guardamos su correo ni su celular.
       </p>
     </FormScene>
   );
 }
+
