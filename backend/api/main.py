@@ -10,6 +10,7 @@ from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 
 from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, version
+from backend.api.climate_signals import require_climate_normal
 from backend.config.settings import get_settings
 from backend.config.thresholds import get_thresholds
 from backend.config.weights import get_default_weights
@@ -36,6 +37,8 @@ def create_app() -> FastAPI:
     get_default_weights()
     get_thresholds()
     get_signal_sources()
+    # Un dataset publicado sin el periodo normal tampoco: las señales de clima no se evaluarían (Haider, PR #115).
+    require_climate_normal()
     # «Hoy» es el día en la región: sin su zona horaria, la API no arranca (`common/region.py`).
     region_timezone()
 

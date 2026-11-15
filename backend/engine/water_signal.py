@@ -147,7 +147,7 @@ def water_signal(
     when = in_months(window.months())
     # El año seco de cada mes, sumado: un poco más seco que el año seco de la ventana (va del lado prudente, PR #115).
     dry_year = (
-        "En un año seco (si cada mes llueve como en sus años secos, menos que en 4 de cada 5), "
+        "En un año seco, si cada mes llueve como en sus años secos (menos que en 4 de cada 5), "
         f"con la lluvia de {rain.name} de {rain.first_year} a {rain.last_year}"
     )
     covers = "la lluvia y el agua que guarda el suelo cubren" if balance.retention else "la lluvia cubre"
