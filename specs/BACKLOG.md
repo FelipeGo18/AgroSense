@@ -97,8 +97,8 @@
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-121 | Casos de referencia del motor | P0 | L | en curso | Suma estrategias y «Qué cambió». Tres PR: estrategias y suelo, diagnóstico y aptitud, «Qué cambió» y cuentas. Casos de ejemplo y casos reales con dataset fijado |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-122 | Procedencia de cada dato | P0 | S | en curso | Manifiesto, `sources`, `/version` y `catalog/sources.yaml` (11 nov, lluvia de POWER temporal con aviso); «¿Cómo funciona?» en la web con fuentes, versión y pesos (14 nov); faltan las fuentes NASA sin adaptador |
 | [EP-12](epicas/EP-12-calidad-trazabilidad.md) | HU-123 | Reconstruir el dataset con un comando | P0 | S | hecha | `pipeline.build` publica y revisa contra el manifiesto; `--verificar` solo revisa (8 nov) |
-| [EP-13](epicas/EP-13-demo-entrega.md) | HU-131 | Dos casos reales para la demo | P0 | S | pendiente | |
-| [EP-13](epicas/EP-13-demo-entrega.md) | HU-132 | Video y descripción de la entrega | P0 | M | pendiente | |
+| [EP-13](epicas/EP-13-demo-entrega.md) | HU-131 | Dos casos reales para la demo | P0 | S | en curso | Guion en `docs/guion-demo.md` y casos elegidos con datos publicados: Duitama y Güicán de la Sierra (14 nov). Faltan los resultados del motor, el usuario de demo y el ensayo |
+| [EP-13](epicas/EP-13-demo-entrega.md) | HU-132 | Video y descripción de la entrega | P0 | M | en curso | Borrador en `docs/entrega.md` según la guía de entrega: campos en inglés y guion del video de 30 s (14 nov). Faltan ajustarlo a lo que funcione, el video y el envío |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-133 | Impacto económico, social y ambiental | P0 | S | hecha | `docs/impacto.md`: impacto potencial con dos cifras de contexto citadas, atado a lo que hace el producto, y sus límites (14 nov) |
 | [EP-13](epicas/EP-13-demo-entrega.md) | HU-230 | Licencias del proyecto y de lo que usa | P0 | S | hecha | `LICENSE` Apache 2.0 (10 nov); `docs/licencias.md` con las 31 fuentes, las 51 librerías de Python y las de la web; GSAP con su permiso documentado (14 nov) |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-142 | Etapas de cada cultivo con Kc | P0 | S | hecha | Los 7 cultivos del MVP. Helada y calor por etapa, cada valor con su fuente, y el calor del maíz en 35 °C (14 nov, dataset 2026.11.14); revisión cruzada de Luisa (PR #69) |
@@ -152,4 +152,4 @@
 | [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | pendiente | Cinco criterios con la erosión (decisión 14) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | pendiente | Nueva (8 nov, decisión 14) |
-| [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | pendiente | |
+| [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | en curso | El suelo de la zona explicado en el detalle del lote (14 nov); faltan la señal de suelo y la salud del suelo |
