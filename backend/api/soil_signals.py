@@ -15,6 +15,7 @@ from typing import Any
 
 from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset, Municipality
+from backend.engine.signal_score import AVAILABLE
 from backend.engine.soil_signal import SoilSignalResult, ZoneSoilPh, soil_signal
 
 # La frase del contrato («Respuesta de diagnóstico», `limitations`).
@@ -40,9 +41,10 @@ def soil_for(
 ) -> SoilSignalResult:
     """La señal `soil` del cultivo en el municipio: un `SoilSignalResult` del motor, que cumple `SignalResult`
     (`window_signals`) y va tal cual en cada ventana. `crop` es la ficha (`dataset.crops[crop_id]`) y `crop_name` su
-    nombre con artículo («la papa»). Con `has_lot`, el suelo sigue siendo el del municipio y se suma
-    `LOT_SOIL_LIMITATION`."""
+    nombre con artículo («la papa»). Con `has_lot` y suelo, el suelo sigue siendo el del municipio y
+    se suma `LOT_SOIL_LIMITATION`."""
     result = soil_signal(zone_soil_ph(dataset, municipality.municipality_id), crop, thresholds, crop_name)
-    if has_lot:
+    # Solo si hay un suelo estimado del municipio que decirlo (PR #129): sin suelo, la señal ya dice que no lo hay.
+    if has_lot and result.status == AVAILABLE:
         result = replace(result, limitations=(*result.limitations, LOT_SOIL_LIMITATION))
     return result

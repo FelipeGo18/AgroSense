@@ -4,7 +4,7 @@ la aptitud, la de heladas y los boletines de SIPSA, sin importarse (R6)."""
 import pytest
 
 from common.months import MONTH_NAMES, month_name
-from common.text import format_decimal, format_number, join, of
+from common.text import format_decimal, format_number, format_precise, join, of
 
 
 @pytest.mark.parametrize(
@@ -59,3 +59,8 @@ def test_month_name_cuenta_desde_uno(month, expected):
 )
 def test_of_contrae_de_el_en_del(name, expected):
     assert of(name) == expected
+
+
+@pytest.mark.parametrize(("value", "expected"), [(5.75, "5,75"), (5.7, "5,7"), (5.0, "5,0"), (4.083, "4,08"), (7.899, "7,9")])
+def test_format_precise_deja_los_decimales_que_tiene_hasta_dos(value, expected):
+    assert format_precise(value) == expected

@@ -16,7 +16,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
-from backend.engine.signal_score import INSUFFICIENT_DATA, signal_scores
+from backend.engine.signal_score import INSUFFICIENT_DATA, Scored, signal_scores
 from backend.engine.suitability import NOT_SUITABLE
 from backend.engine.traffic_light import DEFAULT, OTHER_WINDOW, TrafficLight, missing_data_limitations, traffic_light
 
@@ -38,13 +38,10 @@ def evaluates_windows(suitability_level: str) -> bool:
     return suitability_level != NOT_SUITABLE
 
 
-class SignalOutcome(Protocol):
-    """Lo que el diagnóstico lee de cada señal de la ventana (las cumplen todas las señales del motor)."""
+class SignalOutcome(Scored, Protocol):
+    """Lo que el diagnóstico lee de cada señal de la ventana: su calificación (`Scored`), sus razones y sus limitaciones
+    (las cumplen todas las señales del motor)."""
 
-    status: str
-    score: int | None
-    level: str | None
-    critical: bool
     reasons: tuple[str, ...]
     limitations: tuple[str, ...]
 

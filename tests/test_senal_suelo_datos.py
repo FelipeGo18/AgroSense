@@ -7,6 +7,7 @@ ejemplo el suelo es de pH 5,5 (de 5,1 a 5,9). La ficha de la papa es la real (to
 """
 
 import shutil
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -90,6 +91,10 @@ def test_soil_for_califica_con_la_ficha_y_con_lote_dice_que_el_suelo_es_del_muni
     with_lot = soil_for(dataset, municipality, True, dataset.crops["papa"], thresholds, "la papa")
     assert (with_lot.score, with_lot.level, with_lot.reasons) == (100, "favorable", (SAMACA_REASON,))
     assert with_lot.limitations == (LOT_SOIL_LIMITATION,)
+    # Sin suelo para el municipio no hay suelo estimado que decir que es del municipio (PR #129).
+    no_soil = soil_for(replace(dataset, soil={}), municipality, True, dataset.crops["papa"], thresholds, "la papa")
+    assert no_soil.status == "insufficient_data"
+    assert LOT_SOIL_LIMITATION not in no_soil.limitations
 
 
 # ---------- en el diagnóstico ----------

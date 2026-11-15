@@ -25,6 +25,13 @@ def format_decimal(value: float) -> str:
     return f"{value:.1f}".replace(".", ",")
 
 
+def format_precise(value: float) -> str:
+    """Con los decimales que tenga, hasta dos, y coma: «5,75», «5,7», «5,0». Para un valor que se compara con un límite
+    de un decimal (el pH frente a la ficha): con uno solo, 5,75 se vería igual que un óptimo de 5,8 (PR #129)."""
+    rounded = round(value, 2)
+    return format_decimal(rounded) if rounded == round(value, 1) else f"{rounded:.2f}".replace(".", ",")
+
+
 def join(items: Iterable[str]) -> str:
     """«a», «a y b», «a, b y c»."""
     words = list(items)

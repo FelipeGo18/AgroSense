@@ -31,6 +31,7 @@ from backend.api.market_signal import market_for, seasonal_index
 from backend.api.water_signals import SourceReading, WaterMonth, ZoneWater, water_in, zone_water
 from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset, Municipality
+from backend.engine.diagnosis import SignalOutcome
 from backend.engine.market_signal import market_signal
 from backend.engine.signal_score import INSUFFICIENT_DATA
 from backend.engine.soil_signal import soil_without_stages
@@ -40,7 +41,7 @@ from backend.engine.water_balance import DRY, MonthClimate, root_zone, water_bal
 from backend.engine.water_signal import WaterBalanceSummary
 
 
-class SignalResult(Protocol):
+class SignalResult(SignalOutcome, Protocol):
     """Lo que trae cada señal de una ventana, con los nombres de campo del contrato (sin `counts`, que dependen de los
     pesos y los pone el diagnóstico). Lo cumplen `ClimateSignalResult`, `MarketSignalResult`, `WaterSignal`,
     `SoilSignalResult` y `PendingSignal`.
@@ -48,15 +49,10 @@ class SignalResult(Protocol):
     `sources` (las fuentes para contrastar, opcional en el contrato) no está aquí: un miembro de un `Protocol` no puede
     ser opcional, y declararlo obligaría a `ClimateSignalResult` y `MarketSignalResult`, que son del motor, a llevar un
     campo de la API que nunca llenan. La señal que trae fuentes cumple además `ContrastedSignal`, y `signal_sources`
-    las lee con el tipo (sin `getattr`)."""
+    las lee con el tipo (sin `getattr`). Extiende `SignalOutcome` del motor (calificación, razones y limitaciones) con
+    `indicators`."""
 
-    status: str
-    level: str | None
-    critical: bool
-    score: int | None
     indicators: tuple[str, ...]
-    reasons: tuple[str, ...]
-    limitations: tuple[str, ...]
 
 
 @runtime_checkable

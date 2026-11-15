@@ -68,7 +68,7 @@ def test_entre_el_optimo_y_el_tolerado_va_en_linea_recta(thresholds):
     assert acid.reasons[0].startswith("pH estimado de 4,6 (de 4,4 a 4,8), más ácido que el óptimo de la papa (5,0 a 6,2). ")
     alkaline = signal(thresholds, 7.35, 7.0, 7.7)
     assert state(alkaline) == (AVAILABLE, 50, MODERATE, False)
-    assert alkaline.reasons[0].startswith("pH estimado de 7,3 (de 7,0 a 7,7), más alcalino que el óptimo de la papa (5,0 a 6,2). ")
+    assert alkaline.reasons[0].startswith("pH estimado de 7,35 (de 7,0 a 7,7), más alcalino que el óptimo de la papa (5,0 a 6,2). ")
     # 100 · (4,8 − 4,2) / 0,8 = 75: favorable aunque no esté en el óptimo.
     assert state(signal(thresholds, 4.8, 4.6, 5.0)) == (AVAILABLE, 75, FAVORABLE, False)
 
@@ -107,11 +107,38 @@ def test_cruzar_un_limite_tampoco_cambia_un_nivel_bajo(thresholds):
     assert "Es un rango amplio y parte de él queda fuera de lo que tolera (4,2 a 8,5). " in result.reasons[0]
 
 
-def test_todo_el_intervalo_fuera_del_tolerado_es_desfavorable_aunque_la_curva_diga_otra_cosa(thresholds):
-    """Un dato incoherente (la mediana fuera de su propio intervalo) no rescata el nivel: manda el intervalo."""
-    result = signal(thresholds, 5.7, 3.5, 4.1)
-    assert state(result) == (AVAILABLE, 100, UNFAVORABLE, False)
+def test_todo_el_intervalo_fuera_del_tolerado_lo_dice_la_razon_y_el_nivel_es_el_de_la_curva(thresholds):
+    """Con datos coherentes, si todo el intervalo queda fuera, el pH también: la curva ya da 0 y `unfavorable`."""
+    result = signal(thresholds, 3.9, 3.5, 4.1)
+    assert state(result) == (AVAILABLE, 0, UNFAVORABLE, False)
     assert "Todo ese rango queda fuera de lo que tolera (4,2 a 8,5)" in result.reasons[0]
+
+
+def test_un_ph_fuera_de_su_propio_intervalo_es_un_error_del_dato(thresholds):
+    """La mediana fuera de su propio intervalo no es un suelo: `insufficient_data`, no un nivel (R1; PR #129)."""
+    result = signal(thresholds, 5.7, 3.5, 4.1)
+    assert state(result) == (INSUFFICIENT_DATA, None, None, False)
+    assert result.reasons == (
+        "El pH estimado del suelo de la zona (5,7) queda fuera de su propio rango (3,5 a 4,1): el dato no es coherente y "
+        "el suelo no se evaluó",
+    )
+    assert result.limitations == result.reasons
+
+
+def test_el_ph_con_dos_decimales_no_se_confunde_con_el_limite(thresholds):
+    """Zanahoria con pH 5,75 (como 17 municipios publicados): con un solo decimal diría «5,8, más ácido que el óptimo
+    (5,8 a 6,8)». Con sus dos decimales se lee bien (PR #129)."""
+    zanahoria = {"ph_min": 4.2, "ph_opt_min": 5.8, "ph_opt_max": 6.8, "ph_max": 8.7}
+    result = soil_signal(ZoneSoilPh(5.75, 4.08, 7.9), zanahoria, thresholds, "la zanahoria")
+    assert result.reasons[0].startswith("pH estimado de 5,75 (de 4,08 a 7,9), más ácido que el óptimo de la zanahoria (5,8 a 6,8)")
+
+
+def test_el_ph_justo_en_un_limite_de_lo_que_tolera_lo_dice(thresholds):
+    """La curva da 0 en el límite; la razón no dice «más ácido que el óptimo» como si estuviera bien (PR #129)."""
+    result = signal(thresholds, 4.2)
+    assert state(result) == (AVAILABLE, 0, UNFAVORABLE, False)
+    assert "en el límite de lo que tolera la papa (4,2 a 8,5)" in result.reasons[0]
+    assert "en el límite de lo que tolera la papa" in signal(thresholds, 8.5).reasons[0]
 
 
 def test_tocar_un_borde_del_tolerado_no_es_quedar_fuera(thresholds):
