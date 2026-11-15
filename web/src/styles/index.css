@@ -390,3 +390,161 @@
     min-height: 44px;
   }
 }
+
+/* Lote vivo (LiveLot.tsx y FarmLife.tsx). Todo va con movimiento: en modo ligero la vida de la finca no se dibuja y la
+   regla global de arriba apaga cualquier animación. `farm-paused` la detiene con la pestaña oculta. */
+@keyframes live-sway {
+  0%,
+  50%,
+  100% {
+    transform: skewX(0deg);
+  }
+  25% {
+    transform: skewX(-1.5deg);
+  }
+  /* la ráfaga, entre el 55 % y el 75 % del ciclo: las hojas de FarmLifeSky cruzan a la vez */
+  62% {
+    transform: skewX(-7deg);
+  }
+  68% {
+    transform: skewX(2deg);
+  }
+  74% {
+    transform: skewX(-1deg);
+  }
+}
+@keyframes farm-smoke {
+  from {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate(18px, -70px) scale(1.6);
+    opacity: 0;
+  }
+}
+@keyframes farm-peck {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0deg);
+  }
+  70%,
+  85% {
+    transform: rotate(38deg);
+  }
+}
+@keyframes farm-flap {
+  50% {
+    transform: scaleY(0.25);
+  }
+}
+@keyframes farm-swing {
+  50% {
+    transform: rotate(-24deg);
+  }
+}
+@keyframes farm-glow {
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes farm-twinkle {
+  50% {
+    opacity: 0.2;
+  }
+}
+@keyframes farm-firefly {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  40%,
+  60% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(10px, -14px);
+  }
+}
+@keyframes farm-legs {
+  50% {
+    transform: translateY(-2px) skewX(20deg);
+  }
+}
+@keyframes farm-graze {
+  0%,
+  40%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50%,
+  85% {
+    transform: rotate(22deg);
+  }
+}
+@keyframes farm-hover {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+:root:not([data-light]) .live-sway {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: live-sway 9s ease-in-out infinite;
+}
+:root:not([data-light]) .farm-smoke {
+  animation: farm-smoke 4.2s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+:root:not([data-light]) .farm-peck {
+  animation: farm-peck 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+}
+:root:not([data-light]) .farm-flap {
+  animation: farm-flap 0.3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+:root:not([data-light]) .farm-buzz {
+  animation: farm-flap 0.08s linear infinite;
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+:root:not([data-light]) :is(.farm-tail, .farm-cat-tail) {
+  animation: farm-swing 1.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+}
+:root:not([data-light]) .farm-glow {
+  animation: farm-glow 3.6s ease-in-out infinite;
+  opacity: 0.55;
+}
+:root:not([data-light]) .farm-twinkle {
+  animation: farm-twinkle 2.8s ease-in-out infinite;
+}
+:root:not([data-light]) .farm-firefly {
+  animation: farm-firefly 5s ease-in-out infinite;
+}
+:root:not([data-light]) .farm-legs {
+  animation: farm-legs 0.28s linear infinite;
+  transform-box: fill-box;
+  transform-origin: top;
+}
+:root:not([data-light]) .farm-legs-alt {
+  animation-delay: -0.14s;
+}
+:root:not([data-light]) .farm-graze {
+  animation: farm-graze 7s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 0% 0%;
+}
+:root:not([data-light]) .farm-hover {
+  animation: farm-hover 0.9s ease-in-out infinite;
+}
+.farm-paused * {
+  animation-play-state: paused !important;
+}

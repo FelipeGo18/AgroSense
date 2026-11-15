@@ -1,0 +1,334 @@
+import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import { useMotionEffect } from "@/hooks/useMotionEffect";
+import { gsap } from "@/lib/motion";
+import { allocateCells, drawStage, timeOfDay, DRAWN_CROPS, type LiveSeason } from "./cells";
+import { FarmAnimals } from "./Animals";
+import { FarmLifeSky, FarmLifeWorld, type FarmAnchors } from "./FarmLife";
+
+/** Las piezas que exporta el diseño (`design/finca/exportar_web.py`): se descargan solo al abrir el lote vivo. */
+interface DioramaBase {
+  width: number;
+  height: number;
+  horizon: number;
+  lot: { x: number; y: number; scale: number };
+  sky: Record<string, string>;
+  tint: Record<string, string>;
+  free: string;
+  layouts: Record<
+    string,
+    {
+      cells: { i: number; j: number; x: number; y: number }[];
+      ground: string;
+      back: string;
+      front: string;
+      dog: string;
+      top: number;
+      anchors: FarmAnchors;
+    }
+  >;
+}
+type CropStages = Record<string, string>;
+
+const cropFiles = import.meta.glob<CropStages>("./diorama/crops/*.json", { import: "default" });
+const loadBase = () => import("./diorama/base.json").then((m) => m.default as unknown as DioramaBase);
+/** Ancho del rótulo según su texto, como `tag` de escena.py. */
+const labelWidth = (label: { title: string; sub: string }) => Math.max(label.title.length * 8.6, label.sub.length * 7) + 22;
+const isDrawn = (cropId: string) => (DRAWN_CROPS as readonly string[]).includes(cropId);
+
+/** Un fragmento de SVG del diseño. Viene del propio repositorio (el exportador del diseño), nunca de quien usa la web. */
+function Svg({ markup, ...props }: { markup: string } & React.SVGProps<SVGGElement>) {
+  return <g {...props} dangerouslySetInnerHTML={{ __html: markup }} />;
+}
+
+/**
+ * El lote vivo (HU-187): el diorama del lote con la finca alrededor (casa, cerca, huerta, árbol y el perro) y cada
+ * siembra en curso ocupando tantos cubos como su parte del área, dibujada en su etapa (por calendario, HU-220). El cielo
+ * sigue la hora local. Es una ilustración: no mide nada del lote (R5, R10).
+ *
+ * Con movimiento, las plantas se mecen con el viento; en modo ligero el dibujo es el mismo, quieto (HU-158).
+ */
+/** Cómo se ve el diorama: corrido `x`, `y` (en unidades de la vista) y acercado `z`. */
+interface View {
+  x: number;
+  y: number;
+  z: number;
+}
+const HOME: View = { x: 0, y: 0, z: 1 };
+const MIN_ZOOM = 0.7;
+const MAX_ZOOM = 2.6;
+const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+
+/** Unidades de la vista por píxel de pantalla, con `preserveAspectRatio="xMidYMid slice"`. */
+function unitsPerPixel(svg: SVGSVGElement, width: number, height: number) {
+  const box = svg.getBoundingClientRect();
+  const scale = Math.max(box.width / width, box.height / height) || 1;
+  return { scale, box };
+}
+
+export function LiveLot({
+  seasons,
+  lotAreaHa,
+  cropName,
+  animated,
+  now = new Date(),
+}: {
+  seasons: LiveSeason[];
+  lotAreaHa: number;
+  cropName: (cropId: string) => string;
+  animated: boolean;
+  now?: Date;
+}) {
+  const clip = useId();
+  const root = useRef<SVGSVGElement>(null);
+  // Recorrer el diorama (HU-187): arrastrar para moverse, la rueda o pellizcar para acercarse, y los botones.
+  const [view, setView] = useState<View>(HOME);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<number | null>(null);
+  // La rueda acerca o aleja sin mover la página: va con un escuchador no pasivo para poder cancelar el scroll.
+  const wheel = useRef<(event: WheelEvent) => void>(() => {});
+  const [base, setBase] = useState<DioramaBase | null>(null);
+  const [crops, setCrops] = useState<Record<string, CropStages>>({});
+  const drawn = [...new Set(seasons.map((s) => s.cropId).filter(isDrawn))].sort();
+
+  useEffect(() => {
+    let alive = true;
+    void loadBase().then((data) => alive && setBase(data));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const key = drawn.join(",");
+  useEffect(() => {
+    let alive = true;
+    void Promise.all(drawn.map(async (id) => [id, await cropFiles[`./diorama/crops/${id}.json`]()] as const)).then(
+      (pairs) => alive && setCrops(Object.fromEntries(pairs)),
+    );
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` resume la lista de cultivos del lote
+  }, [key]);
+
+  useEffect(() => {
+    const svg = root.current;
+    if (!svg) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      wheel.current(event);
+    };
+    svg.addEventListener("wheel", onWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", onWheel);
+  }, [base]);
+
+  // Con la pestaña oculta, todo se queda quieto: SMIL se pausa y el CSS también (`farm-paused`).
+  useEffect(() => {
+    const svg = root.current;
+    if (!svg || !animated) return;
+    const sync = () => {
+      const hidden = document.visibilityState === "hidden";
+      if (hidden) svg.pauseAnimations?.();
+      else svg.unpauseAnimations?.();
+      svg.classList.toggle("farm-paused", hidden);
+    };
+    document.addEventListener("visibilitychange", sync);
+    return () => document.removeEventListener("visibilitychange", sync);
+  }, [animated, base]);
+
+  // 10. Al llegar a su finca, las camas suben desde el suelo una tras otra (solo con movimiento).
+  useMotionEffect(
+    () => {
+      if (!animated || !base) return;
+      gsap.from("[data-bed]", { y: 36, opacity: 0, duration: 0.6, ease: "back.out(1.6)", stagger: 0.12, clearProps: "opacity,transform" });
+    },
+    { scope: root, dependencies: [animated, Boolean(base)] },
+  );
+
+  if (!base) {
+    return (
+      <div role="status" className="flex size-full items-center justify-center bg-paleta-niebla text-texto-secundario">
+        Dibujando su lote…
+      </div>
+    );
+  }
+  const time = timeOfDay(now);
+  const { layout, cells } = allocateCells(seasons, lotAreaHa);
+  const shape = base.layouts[layout];
+  const place = `translate(${base.lot.x} ${base.lot.y}) scale(${base.lot.scale})`;
+  // Los cubos se dibujan de atrás hacia adelante, como en el diseño.
+  const order = shape.cells.map((cell, index) => ({ ...cell, index })).sort((a, b) => a.i + a.j - (b.i + b.j) || a.i - b.i);
+  const xs = shape.cells.map((cell) => cell.x);
+  const minX = Math.min(...xs);
+  const spanX = Math.max(Math.max(...xs) - minX, 1);
+  // Los cubos con cultivos en flor (etapa media o final), donde zumban las abejas.
+  const flowering = shape.cells
+    .filter((_, index) => {
+      const stage = cells[index].season?.stage;
+      return stage === "mid" || stage === "late";
+    })
+    .map((cell) => [cell.x, cell.y] as [number, number]);
+  // Un rótulo por siembra, sobre su primer cubo.
+  const labelled = new Set<string>();
+  const labels: { x: number; y: number; title: string; sub: string }[] = [];
+  shape.cells.forEach((cell, index) => {
+    const season = cells[index].season;
+    const id = season?.seasonId ?? "libre";
+    if (labelled.has(id)) return;
+    labelled.add(id);
+    const free = Math.max(lotAreaHa - seasons.reduce((sum, s) => sum + s.areaHa, 0), 0);
+    labels.push({
+      x: base.lot.x + cell.x * base.lot.scale,
+      y: base.lot.y + (cell.y + shape.top) * base.lot.scale,
+      title: season ? cropName(season.cropId) : "Libre",
+      sub: `${(season ? season.areaHa : free).toLocaleString("es-CO", { maximumFractionDigits: 2 })} ha`,
+    });
+  });
+
+  const cx = base.width / 2;
+  const cy = base.height / 2;
+  const world = `translate(${cx + view.x} ${cy + view.y}) scale(${view.z}) translate(${-cx} ${-cy})`;
+  const onScreen = (x: number, y: number): [number, number] => [cx + view.x + (x - cx) * view.z, cy + view.y + (y - cy) * view.z];
+  /** Acerca o aleja manteniendo quieto el punto (px, py) de la vista. */
+  const zoomAt = (factor: number, px = cx, py = cy) =>
+    setView((v) => {
+      const z = clampZoom(v.z * factor);
+      const k = z / v.z;
+      return { z, x: px - cx - (px - cx - v.x) * k, y: py - cy - (py - cy - v.y) * k };
+    });
+  const toView = (event: { clientX: number; clientY: number }) => {
+    const svg = root.current!;
+    const { scale, box } = unitsPerPixel(svg, base.width, base.height);
+    return [cx + (event.clientX - box.left - box.width / 2) / scale, cy + (event.clientY - box.top - box.height / 2) / scale] as const;
+  };
+  wheel.current = (event) => {
+    const [px, py] = toView(event);
+    zoomAt(Math.exp(-event.deltaY * 0.0015), px, py);
+  };
+  const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    pinch.current = null;
+  };
+  const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    const last = pointers.current.get(event.pointerId);
+    if (!last || !root.current) return;
+    const { scale } = unitsPerPixel(root.current, base.width, base.height);
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const all = [...pointers.current.values()];
+    if (all.length === 2) {
+      // Pellizcar: la distancia entre los dos dedos acerca o aleja.
+      const distance = Math.hypot(all[0].x - all[1].x, all[0].y - all[1].y);
+      if (pinch.current) {
+        const [px, py] = toView({ clientX: (all[0].x + all[1].x) / 2, clientY: (all[0].y + all[1].y) / 2 });
+        zoomAt(distance / pinch.current, px, py);
+      }
+      pinch.current = distance;
+      return;
+    }
+    const dx = (event.clientX - last.x) / scale;
+    const dy = (event.clientY - last.y) / scale;
+    setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
+  };
+  const onPointerUp = (event: PointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(event.pointerId);
+    pinch.current = null;
+  };
+  const control = "flex size-11 items-center justify-center rounded-sm bg-superficie-panel font-bold text-[22px] shadow-md";
+
+  return (
+    <div className="relative size-full">
+      <svg
+        ref={root}
+        viewBox={`0 0 ${base.width} ${base.height}`}
+        preserveAspectRatio="xMidYMid slice"
+        className="size-full cursor-grab touch-none select-none active:cursor-grabbing"
+        role="img"
+        aria-label={`Ilustración de su lote: ${labels.map((l) => `${l.title}, ${l.sub}`).join("; ")}`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <Svg markup={base.sky[time]} />
+        {animated && <FarmLifeSky width={base.width} height={base.height} time={time} />}
+        <defs>
+          <clipPath id={clip}>
+            <rect y={base.horizon} width={base.width} height={base.height} />
+          </clipPath>
+        </defs>
+        <g clipPath={`url(#${clip})`}>
+          <g transform={world}>
+            <Svg markup={shape.ground} transform={place} />
+          </g>
+        </g>
+        <g transform={world}>
+          <Svg markup={shape.back} transform={place} />
+          <g transform={place}>
+            {order.map(({ x, y, index }) => {
+              const season = cells[index].season;
+              const markup = season && isDrawn(season.cropId) ? crops[season.cropId]?.[String(drawStage(season.stage))] : base.free;
+              return (
+                <g key={index} transform={`translate(${x} ${y})`}>
+                  <g data-bed>
+                    {/* 5. La ola de viento cruza las camas de izquierda a derecha: cada cama se inclina un poco después. */}
+                    <Svg
+                      markup={markup ?? base.free}
+                      className={animated && season ? "live-sway" : undefined}
+                      style={{ animationDelay: `${((x - minX) / spanX) * 1.2}s` }}
+                    />
+                  </g>
+                </g>
+              );
+            })}
+          </g>
+          {/* Los animales van delante de las camas y detrás de las cercas del frente y del potrero. */}
+          <g transform={place}>
+            <FarmAnimals anchors={shape.anchors} dogMarkup={shape.dog} animated={animated} />
+          </g>
+          <Svg markup={shape.front} transform={place} />
+          {animated && (
+            <g transform={place}>
+              <FarmLifeWorld anchors={shape.anchors} time={time} flowering={flowering} />
+            </g>
+          )}
+        </g>
+        {base.tint[time] && <Svg markup={base.tint[time]} />}
+        {labels.map((label) => (
+          <g key={`${label.title}-${label.x}`} transform={`translate(${onScreen(label.x, label.y).join(" ")})`} aria-hidden="true">
+            <rect
+              x={-labelWidth(label) / 2}
+              y={-46}
+              width={labelWidth(label)}
+              height={40}
+              rx={6}
+              fill="#FFFFFF"
+              stroke="#1E2A3A"
+              strokeWidth={1.5}
+            />
+            <polygon points="-6,-6 6,-6 0,2" fill="#1E2A3A" />
+            <text y={-29} textAnchor="middle" fontSize={14} fontWeight={700} fill="#1E2A3A">
+              {label.title}
+            </text>
+            <text y={-13} textAnchor="middle" fontSize={12} fill="#4A5868">
+              {label.sub}
+            </text>
+          </g>
+        ))}
+      </svg>
+      <div
+        role="group"
+        aria-label="Recorrer la finca"
+        className="absolute top-[88px] right-3 z-10 flex flex-col gap-1 md:top-[176px] md:right-8"
+      >
+        <button type="button" className={control} onClick={() => zoomAt(1.25)} aria-label="Acercar" disabled={view.z >= MAX_ZOOM}>
+          +
+        </button>
+        <button type="button" className={control} onClick={() => zoomAt(0.8)} aria-label="Alejar" disabled={view.z <= MIN_ZOOM}>
+          −
+        </button>
+        <button type="button" className={`${control} text-[14px]`} onClick={() => setView(HOME)} aria-label="Volver a encuadrar">
+          ⤢
+        </button>
+      </div>
+    </div>
+  );
+}
