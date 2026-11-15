@@ -37,6 +37,7 @@ from pipeline.sources.fetch import DownloadError, fetch
 log = get_logger("agrosense.pipeline.nasa_power")
 
 SOURCE_ID = "nasa_power"
+SOURCE_IDS = (SOURCE_ID,)  # todas las fuentes que este adaptador escribe en `sources`
 API_URL = "https://power.larc.nasa.gov/api/temporal/daily/point"
 PAGE_URL = "https://power.larc.nasa.gov/"
 COMMUNITY = "AG"

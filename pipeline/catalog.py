@@ -67,7 +67,7 @@ def _value(crop_id: str, field: str, entry: Any, known: set[str]) -> Any:
         raise CatalogError(f"{crop_id}.{field}: debe ser {{v: valor, s: fuente}}.")
     value, source = entry["v"], entry.get("s")
     if value is not None and source not in known:
-        raise CatalogError(f"{crop_id}.{field}: el valor {value!r} no cita una fuente de `sources` (R8).")
+        raise CatalogError(f"{crop_id}.{field}: el valor {value!r} no cita una fuente de `sources` (R8): {source!r}.")
     if value is None and not (entry.get("n") or source):
         raise CatalogError(f"{crop_id}.{field}: está nulo y no dice por qué.")
     return value
@@ -101,7 +101,7 @@ def _sensitivity(crop_id: str, stage: str, entry: dict[str, Any], field: str, kn
     if not isinstance(value["v"], bool):
         raise CatalogError(f"{crop_id}.{stage}: `{field}` debe ser true o false, no {value['v']!r}.")
     if value.get("s") not in known:
-        raise CatalogError(f"{crop_id}.{stage}: `{field}` no cita una fuente de `sources` (R8).")
+        raise CatalogError(f"{crop_id}.{stage}: `{field}` no cita una fuente de `sources` (R8): {value.get('s')!r}.")
     return value["v"], value["s"]
 
 
@@ -183,7 +183,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             if not isinstance(stage.get("days"), int) or stage["days"] <= 0:
                 raise CatalogError(f"{crop_id}.{name}: `days` debe ser un entero mayor que cero.")
             if stage.get("s") not in known:
-                raise CatalogError(f"{crop_id}.{name}: la etapa no cita una fuente de `sources` (R8).")
+                raise CatalogError(f"{crop_id}.{name}: la etapa no cita una fuente de `sources` (R8): {stage.get('s')!r}.")
             kc = stage.get("kc")
             if kc is not None and not 0 < kc <= 2:
                 raise CatalogError(f"{crop_id}.{name}: `kc` {kc} fuera de 0 a 2.")
