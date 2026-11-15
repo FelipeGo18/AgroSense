@@ -57,6 +57,9 @@ META_FILE = "eva.meta.json"
 PAGE_ROWS = 20_000
 PAGE_TIMEOUT_S = 300
 PAGE_MAX_BYTES = 200 * 2**20
+# Los metadatos del conjunto (nombre, licencia, fecha de actualización): hoy pesan unos 30 KB.
+META_TIMEOUT_S = 60
+META_MAX_BYTES = 2 * 2**20
 
 # Las columnas de la descarga que se leen (el nombre de campo de datos.gov.co).
 COLUMNS = {
@@ -129,8 +132,11 @@ def download(departments: list[str], cache: Path = CACHE) -> Path:
         offset += PAGE_ROWS
     if header is None or not rows:
         raise EvaError(f"datos.gov.co no devolvió filas de EVA para los departamentos {departments}.")
-    with urllib.request.urlopen(META_URL, timeout=60) as response:  # noqa: S310 - dirección fija de datos.gov.co
-        meta = json.load(response)
+    # Los metadatos pasan por `fetch`, con su tope de tiempo y tamaño, como las páginas (revisión de Haider del PR #117).
+    meta_request = urllib.request.Request(META_URL)  # noqa: S310 - dirección fija de datos.gov.co
+    meta_file = fetch(meta_request, cache / "eva.meta.download.json", META_TIMEOUT_S, META_MAX_BYTES)
+    meta = json.loads(meta_file.read_text(encoding="utf-8"))
+    meta_file.unlink()
     out = io.StringIO()
     writer = csv.writer(out, lineterminator="\n")
     writer.writerow(header)
@@ -247,9 +253,13 @@ def normalize(
         **{col: pl.when(pl.col(col).null_count() == 0).then(pl.col(col).sum()) for col in ("planted_ha", "harvested_ha", "production_t")},
     )
     summed = summed.with_columns(
-        # Un solo código: el rendimiento que publica EVA. Varios: producción / área cosechada, como lo define EVA.
+        # Un solo código: el rendimiento que publica EVA. Varios: producción / área cosechada, como lo define EVA; sin
+        # área cosechada, 0, como publica EVA con un solo código (revisión de Haider del PR #117: antes quedaba nulo y la
+        # fila salía partial aunque EVA trae los cuatro valores).
         yield_t_ha=pl.when(pl.col("parts") == 1)
         .then(pl.col("yield_single"))
+        .when(pl.col("harvested_ha") == 0)
+        .then(0.0)
         .when(pl.col("harvested_ha") > 0)
         .then((pl.col("production_t") / pl.col("harvested_ha")).round(2)),
         **{col: pl.col(col).round(2) for col in ("planted_ha", "harvested_ha", "production_t")},
@@ -292,7 +302,7 @@ def source(meta: dict[str, Any], table: pl.DataFrame) -> dict[str, Any]:
         "period_covered": period,
         "coverage": (
             f"Colombia: 1.103 municipios según la UPRA. En la región, {towns} municipios con algún cultivo del MVP ({crops}); "
-            "un municipio que no siembra un cultivo no tiene fila de ese cultivo"
+            "un municipio sin fila de un cultivo en un semestre es sin dato: EVA no dice si no se sembró o no se reportó"
         ),
         "license": LICENSE,
         "citation": None,

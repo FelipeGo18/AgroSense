@@ -239,3 +239,106 @@ def test_un_supply_semester_con_un_municipio_que_no_se_publica_no_pasa():
     supply = normalize([row(town="25899")])
     with pytest.raises(build.ValidationError, match="no están en `municipalities`"):
         build.validate_supply(supply, municipalities, sources, None)
+
+
+def test_maiz_sumado_sin_cosecha_tiene_rendimiento_0_y_sale_ok():
+    """Dos códigos de maíz con cosecha 0: el rendimiento es 0, como el que publica EVA con un solo código, y la fila es
+    `ok` porque EVA trae los cuatro valores (revisión de Haider del PR #117; antes salía nulo y `partial`)."""
+    table = normalize(
+        [
+            row(code="1010402", planted="5", harvested="0", production="0", yield_="0"),
+            row(code="1010404", planted="3", harvested="0", production="0", yield_="0"),
+        ]
+    )
+    maize = table.row(0, named=True)
+    assert (maize["planted_ha"], maize["harvested_ha"], maize["yield_t_ha"], maize["quality"]) == (8.0, 0.0, 0.0, "ok")
+
+
+def test_la_cobertura_dice_que_sin_fila_es_sin_dato():
+    """Lo aprobado para HU-032: un municipio sin fila de un cultivo en un semestre es «sin dato», no «no se sembró»."""
+    coverage = eva.source(EVA_META, normalize([row()]))["coverage"]
+    assert "sin dato" in coverage and "no siembra" not in coverage
+
+
+def supply_inputs():
+    municipalities = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
+    sources = pl.DataFrame([dane.source(SAMPLE_META), eva.source(EVA_META, pl.DataFrame())])
+    return municipalities, sources
+
+
+@pytest.mark.parametrize(
+    ("change", "catalog_ids", "message"),
+    [
+        ({"crop_id": "yuca"}, {"papa"}, "no están en el catálogo"),
+        ({"semester": "C"}, None, "un semestre o un valor"),
+        ({"planted_ha": -1.0}, None, "un semestre o un valor"),
+        ({"source_id": "otra"}, None, "no está en `sources`"),
+    ],
+)
+def test_un_supply_semester_imposible_no_pasa(change, catalog_ids, message):
+    municipalities, sources = supply_inputs()
+    supply = normalize([row()]).with_columns(pl.lit(value).alias(column) for column, value in change.items())
+    with pytest.raises(build.ValidationError, match=message):
+        build.validate_supply(supply, municipalities, sources, catalog_ids)
+
+
+def fake_fetch(pages, calls):
+    """Un `fetch` de ejemplo: cada página de datos.gov.co es un CSV (R5); los metadatos, un JSON."""
+
+    def fetch(request, dest, timeout_s, max_bytes):
+        calls.append((request.full_url, timeout_s, max_bytes))
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if request.full_url == eva.META_URL:
+            dest.write_text(json.dumps({"name": "EVA (ejemplo)", "license": {"name": "CC BY-SA 4.0"}}), encoding="utf-8")
+        else:
+            dest.write_text(pages.pop(0), encoding="utf-8")
+        return dest
+
+    return fetch
+
+
+def csv_page(header, rows):
+    return "\n".join([",".join(header), *(",".join(r) for r in rows)]) + "\n"
+
+
+def test_la_descarga_sigue_las_paginas_y_guarda_todo_con_los_metadatos(tmp_path, monkeypatch):
+    header = list(eva.COLUMNS.values())
+    full = [[f"{i}"] * len(header) for i in range(3)]
+    calls = []
+    monkeypatch.setattr(eva, "PAGE_ROWS", 3)
+    monkeypatch.setattr(eva, "fetch", fake_fetch([csv_page(header, full), csv_page(header, full[:1])], calls))
+    eva.download(["15", "25"], tmp_path)
+    saved = (tmp_path / eva.ROWS_FILE).read_text(encoding="utf-8").splitlines()
+    # Dos páginas (3 filas y 1, la última corta) y los metadatos, todo por `fetch` con su tope de tiempo y tamaño.
+    assert len(saved) == 1 + 4 and "%24offset=3" in calls[1][0]
+    assert calls[-1] == (eva.META_URL, eva.META_TIMEOUT_S, eva.META_MAX_BYTES)
+    assert json.loads((tmp_path / eva.META_FILE).read_text(encoding="utf-8"))["license"] == "CC BY-SA 4.0"
+
+
+def test_paginas_con_columnas_distintas_no_se_guardan(tmp_path, monkeypatch):
+    header = list(eva.COLUMNS.values())
+    calls = []
+    monkeypatch.setattr(eva, "PAGE_ROWS", 1)
+    pages = [csv_page(header, [["1"] * len(header)]), csv_page([*header, "otra"], [["2"] * (len(header) + 1)])]
+    monkeypatch.setattr(eva, "fetch", fake_fetch(pages, calls))
+    with pytest.raises(eva.EvaError, match="columnas distintas"):
+        eva.download(["15"], tmp_path)
+    assert not (tmp_path / eva.ROWS_FILE).exists()
+
+
+def test_una_respuesta_sin_filas_no_se_guarda(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(eva, "fetch", fake_fetch([""], calls))
+    with pytest.raises(eva.EvaError, match="no devolvió filas"):
+        eva.download(["15"], tmp_path)
+    assert not (tmp_path / eva.ROWS_FILE).exists()
+
+
+def test_si_datos_gov_co_falla_se_avisa_y_se_sigue(tmp_path, monkeypatch, caplog):
+    def broken(*args, **kwargs):
+        raise OSError("sin red (ejemplo)")
+
+    monkeypatch.setattr(eva, "fetch", broken)
+    with caplog.at_level("WARNING"):
+        build.download_supply(["15"], tmp_path)
+    assert any("source_skipped" in str(record.msg) for record in caplog.records)
