@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.26"
+dataset_version: "2026.11.27"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"
@@ -92,6 +92,23 @@ ndvi:
 frost:
   threshold_c: 2.0
   source_id: mapa_zarc_2025
+
+# Aguaceros (HU-046): un día de aguacero es uno con lluvia de NASA POWER (PRECTOTCORR, la de la celda del municipio)
+# mayor o igual a 20 mm: el índice R20mm de ETCCDI («días de lluvia muy fuerte»). Los años y el 90 % de los días por
+# mes son los de `climate_normal`. Sin este bloque, `heavy_rain_days_mean` queda nula (R1, R8).
+heavy_rain:
+  threshold_mm: 20.0
+  source:
+    source_id: etccdi_indices
+    name: "ETCCDI · Definitions of the 27 core indices (R20mm: very heavy precipitation days)"
+    institution: "Expert Team on Climate Change Detection and Indices (ETCCDI), CCl/CLIVAR/JCOMM de la OMM"
+    url: "https://etccdi.pacificclimate.org/list_27_indices.shtml"
+    downloaded_at: "2026-11-15"
+    period_covered: null
+    coverage: "Mundial: definición de índices de extremos a partir de la lluvia diaria"
+    license: "Definiciones públicas de un grupo de expertos de la OMM: se usa el método con su cita"
+    citation: "Zhang, X., Alexander, L., Hegerl, G. C., Jones, P., Klein Tank, A., Peterson, T. C., Trewin, B. y Zwiers, F. W. (2011). Indices for monitoring changes in extremes based on daily temperature and precipitation data. WIREs Climate Change, 2(6), 851-870."
+    notes: "R20mm: «Annual count of days when PRCP ≥ 20mm». AgroSense cuenta esos días por mes y los promedia entre los años del periodo normal (heavy_rain_days_mean, HU-046). Es un índice climático, no un umbral agronómico: no dice cuánta lluvia lava el abono. Con NASA POWER (un reanálisis de celdas de unos 50 km) la lluvia de los valles del altiplano sale casi el doble que la de las estaciones del IDEAM (PR #44): el conteo es una orientación de la zona."
 
 # «Qué cambió» (HU-216; specs/01-reglas.md): dos periodos de la misma fuente, nunca uno de cada una (decisión 11).
 # Con NASA POWER (desde 1981), 1981-2000 y 2005-2024; con GPM IMERG (desde 2001 en su normal), 2001-2012 y 2013-2024.
