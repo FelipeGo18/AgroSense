@@ -6,6 +6,7 @@ Lo de la NASA se comprueba sobre el dataset publicado de verdad (`data/published
 import json
 from pathlib import Path
 
+import polars as pl
 import pytest
 from fastapi.testclient import TestClient
 
@@ -17,7 +18,7 @@ PUBLISHED = Path(__file__).resolve().parents[1] / "data" / "published"
 CONTRACT_SOURCE_FIELDS = {"source_id", "name", "institution", "url", "coverage", "license"}
 # Los productos de la NASA que ya tienen adaptador y entran al núcleo (decisión 12). MODIS NDVI, SMAP y GIBS se suman
 # con su HU (HU-208, HU-210 y HU-211), que publica su entrada en `sources`.
-NASA_IN_USE = ("nasa_power", "nasadem", "imerg")
+NASA_IN_USE = ("nasa_power", "nasadem", "imerg", "nasa_gibs")
 
 
 def test_version_con_dataset_responde_lo_que_pide_el_contrato(dataset):
@@ -70,3 +71,25 @@ def test_version_publica_las_fuentes_de_la_nasa_del_dataset_de_la_demo(published
     ids = {s["source_id"] for s in body["sources"]}
     assert set(NASA_IN_USE) <= ids
     assert body["dataset_version"] == published.version
+
+
+def test_hu211_publicar_procedencia_es_idempotente_y_conserva_las_otras_fuentes(tmp_path):
+    from scripts.publish_gibs_source import publish
+
+    original = pl.read_parquet(PUBLISHED / "sources.parquet").filter(pl.col("source_id") != "nasa_gibs")
+    original.write_parquet(tmp_path / "sources.parquet")
+    manifest = {
+        "dataset_version": "prueba",
+        "created_at": "antes",
+        "tables": {"sources": {"rows": original.height}, "indicador": {"rows": 42}},
+    }
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    publish(tmp_path)
+    first = (tmp_path / "manifest.json").read_text(encoding="utf-8")
+    publish(tmp_path)
+    assert (tmp_path / "manifest.json").read_text(encoding="utf-8") == first
+    updated = pl.read_parquet(tmp_path / "sources.parquet")
+    assert updated.filter(pl.col("source_id") != "nasa_gibs").sort("source_id").equals(original.sort("source_id"))
+    assert json.loads(first)["tables"]["indicador"] == {"rows": 42}
+    source = updated.filter(pl.col("source_id") == "nasa_gibs").row(0, named=True)
+    assert source["citation"] and "WMTS" in source["notes"] and "250 m" in source["notes"]

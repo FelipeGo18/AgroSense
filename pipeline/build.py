@@ -916,7 +916,9 @@ def build(
         known_families=set(crops_table["family"].drop_nulls().to_list()),
         expected_version=catalog["version"],
     )
-    own = [dane.source(meta), dane_mgn.source(mgn_meta)]
+    # HU-211: fuente de las capas públicas que consume la web; no calcula ninguna señal.
+    gibs = json.loads(Path("catalog/gibs.json").read_text(encoding="utf-8"))
+    own = [dane.source(meta), dane_mgn.source(mgn_meta), gibs]
     prices = crop_products = None
     counts: Counter[str] = Counter()
     try:

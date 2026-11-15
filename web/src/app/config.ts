@@ -23,6 +23,10 @@ const SOCIAL_ENV: { brand: Brand; label: string; key: string }[] = [
  */
 export const REGION_TIME_ZONE = "America/Bogota";
 
+/** WMTS público de NASA GIBS, sin clave. HU-211. */
+export const GIBS_URL = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
+export const GIBS_LEGEND_URL = "https://gibs.earthdata.nasa.gov/legends/MODIS_NDVI_H.svg";
+
 /** Respuestas simuladas activas (HU-013): solo en `npm run dev` con `VITE_SIMULATION=true`. */
 export const SIMULATION = import.meta.env.VITE_SIMULATION === "true" && import.meta.env.DEV;
 
