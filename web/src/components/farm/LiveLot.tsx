@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { useMotionEffect } from "@/hooks/useMotionEffect";
 import { gsap } from "@/lib/motion";
 import { allocateCells, drawStage, timeOfDay, DRAWN_CROPS, type LiveSeason } from "./cells";
@@ -46,6 +46,24 @@ function Svg({ markup, ...props }: { markup: string } & React.SVGProps<SVGGEleme
  *
  * Con movimiento, las plantas se mecen con el viento; en modo ligero el dibujo es el mismo, quieto (HU-158).
  */
+/** Cómo se ve el diorama: corrido `x`, `y` (en unidades de la vista) y acercado `z`. */
+interface View {
+  x: number;
+  y: number;
+  z: number;
+}
+const HOME: View = { x: 0, y: 0, z: 1 };
+const MIN_ZOOM = 0.7;
+const MAX_ZOOM = 2.6;
+const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+
+/** Unidades de la vista por píxel de pantalla, con `preserveAspectRatio="xMidYMid slice"`. */
+function unitsPerPixel(svg: SVGSVGElement, width: number, height: number) {
+  const box = svg.getBoundingClientRect();
+  const scale = Math.max(box.width / width, box.height / height) || 1;
+  return { scale, box };
+}
+
 export function LiveLot({
   seasons,
   lotAreaHa,
@@ -61,6 +79,12 @@ export function LiveLot({
 }) {
   const clip = useId();
   const root = useRef<SVGSVGElement>(null);
+  // Recorrer el diorama (HU-187): arrastrar para moverse, la rueda o pellizcar para acercarse, y los botones.
+  const [view, setView] = useState<View>(HOME);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<number | null>(null);
+  // La rueda acerca o aleja sin mover la página: va con un escuchador no pasivo para poder cancelar el scroll.
+  const wheel = useRef<(event: WheelEvent) => void>(() => {});
   const [base, setBase] = useState<DioramaBase | null>(null);
   const [crops, setCrops] = useState<Record<string, CropStages>>({});
   const drawn = [...new Set(seasons.map((s) => s.cropId).filter(isDrawn))].sort();
@@ -83,6 +107,17 @@ export function LiveLot({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` resume la lista de cultivos del lote
   }, [key]);
+
+  useEffect(() => {
+    const svg = root.current;
+    if (!svg) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      wheel.current(event);
+    };
+    svg.addEventListener("wheel", onWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", onWheel);
+  }, [base]);
 
   // Con la pestaña oculta, todo se queda quieto: SMIL se pausa y el CSS también (`farm-paused`).
   useEffect(() => {
@@ -147,74 +182,150 @@ export function LiveLot({
     });
   });
 
+  const cx = base.width / 2;
+  const cy = base.height / 2;
+  const world = `translate(${cx + view.x} ${cy + view.y}) scale(${view.z}) translate(${-cx} ${-cy})`;
+  const onScreen = (x: number, y: number): [number, number] => [cx + view.x + (x - cx) * view.z, cy + view.y + (y - cy) * view.z];
+  /** Acerca o aleja manteniendo quieto el punto (px, py) de la vista. */
+  const zoomAt = (factor: number, px = cx, py = cy) =>
+    setView((v) => {
+      const z = clampZoom(v.z * factor);
+      const k = z / v.z;
+      return { z, x: px - cx - (px - cx - v.x) * k, y: py - cy - (py - cy - v.y) * k };
+    });
+  const toView = (event: { clientX: number; clientY: number }) => {
+    const svg = root.current!;
+    const { scale, box } = unitsPerPixel(svg, base.width, base.height);
+    return [cx + (event.clientX - box.left - box.width / 2) / scale, cy + (event.clientY - box.top - box.height / 2) / scale] as const;
+  };
+  wheel.current = (event) => {
+    const [px, py] = toView(event);
+    zoomAt(Math.exp(-event.deltaY * 0.0015), px, py);
+  };
+  const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    pinch.current = null;
+  };
+  const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    const last = pointers.current.get(event.pointerId);
+    if (!last || !root.current) return;
+    const { scale } = unitsPerPixel(root.current, base.width, base.height);
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const all = [...pointers.current.values()];
+    if (all.length === 2) {
+      // Pellizcar: la distancia entre los dos dedos acerca o aleja.
+      const distance = Math.hypot(all[0].x - all[1].x, all[0].y - all[1].y);
+      if (pinch.current) {
+        const [px, py] = toView({ clientX: (all[0].x + all[1].x) / 2, clientY: (all[0].y + all[1].y) / 2 });
+        zoomAt(distance / pinch.current, px, py);
+      }
+      pinch.current = distance;
+      return;
+    }
+    const dx = (event.clientX - last.x) / scale;
+    const dy = (event.clientY - last.y) / scale;
+    setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
+  };
+  const onPointerUp = (event: PointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(event.pointerId);
+    pinch.current = null;
+  };
+  const control = "flex size-11 items-center justify-center rounded-sm bg-superficie-panel font-bold text-[22px] shadow-md";
+
   return (
-    <svg
-      ref={root}
-      viewBox={`0 0 ${base.width} ${base.height}`}
-      preserveAspectRatio="xMidYMid slice"
-      className="size-full"
-      role="img"
-      aria-label={`Ilustración de su lote: ${labels.map((l) => `${l.title}, ${l.sub}`).join("; ")}`}
-    >
-      <Svg markup={base.sky[time]} />
-      {animated && <FarmLifeSky width={base.width} height={base.height} time={time} />}
-      <defs>
-        <clipPath id={clip}>
-          <rect y={base.horizon} width={base.width} height={base.height} />
-        </clipPath>
-      </defs>
-      <g clipPath={`url(#${clip})`}>
-        <Svg markup={shape.ground} transform={place} />
-      </g>
-      <Svg markup={shape.back} transform={place} />
-      <g transform={place}>
-        {order.map(({ x, y, index }) => {
-          const season = cells[index].season;
-          const markup = season && isDrawn(season.cropId) ? crops[season.cropId]?.[String(drawStage(season.stage))] : base.free;
-          return (
-            <g key={index} transform={`translate(${x} ${y})`}>
-              <g data-bed>
-                {/* 5. La ola de viento cruza las camas de izquierda a derecha: cada cama se inclina un poco después. */}
-                <Svg
-                  markup={markup ?? base.free}
-                  className={animated && season ? "live-sway" : undefined}
-                  style={{ animationDelay: `${((x - minX) / spanX) * 1.2}s` }}
-                />
-              </g>
-            </g>
-          );
-        })}
-      </g>
-      <Svg markup={shape.front} transform={place} />
-      <g transform={place}>
-        {animated ? (
-          <FarmLifeWorld anchors={shape.anchors} time={time} dogMarkup={shape.dog} flowering={flowering} />
-        ) : (
-          <Svg markup={shape.dog} transform={`translate(${shape.anchors.dog[0]} ${shape.anchors.dog[1]})`} />
-        )}
-      </g>
-      {base.tint[time] && <Svg markup={base.tint[time]} />}
-      {labels.map((label) => (
-        <g key={`${label.title}-${label.x}`} transform={`translate(${label.x} ${label.y})`} aria-hidden="true">
-          <rect
-            x={-labelWidth(label) / 2}
-            y={-46}
-            width={labelWidth(label)}
-            height={40}
-            rx={6}
-            fill="#FFFFFF"
-            stroke="#1E2A3A"
-            strokeWidth={1.5}
-          />
-          <polygon points="-6,-6 6,-6 0,2" fill="#1E2A3A" />
-          <text y={-29} textAnchor="middle" fontSize={14} fontWeight={700} fill="#1E2A3A">
-            {label.title}
-          </text>
-          <text y={-13} textAnchor="middle" fontSize={12} fill="#4A5868">
-            {label.sub}
-          </text>
+    <div className="relative size-full">
+      <svg
+        ref={root}
+        viewBox={`0 0 ${base.width} ${base.height}`}
+        preserveAspectRatio="xMidYMid slice"
+        className="size-full cursor-grab touch-none select-none active:cursor-grabbing"
+        role="img"
+        aria-label={`Ilustración de su lote: ${labels.map((l) => `${l.title}, ${l.sub}`).join("; ")}`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <Svg markup={base.sky[time]} />
+        {animated && <FarmLifeSky width={base.width} height={base.height} time={time} />}
+        <defs>
+          <clipPath id={clip}>
+            <rect y={base.horizon} width={base.width} height={base.height} />
+          </clipPath>
+        </defs>
+        <g clipPath={`url(#${clip})`}>
+          <g transform={world}>
+            <Svg markup={shape.ground} transform={place} />
+          </g>
         </g>
-      ))}
-    </svg>
+        <g transform={world}>
+          <Svg markup={shape.back} transform={place} />
+          <g transform={place}>
+            {order.map(({ x, y, index }) => {
+              const season = cells[index].season;
+              const markup = season && isDrawn(season.cropId) ? crops[season.cropId]?.[String(drawStage(season.stage))] : base.free;
+              return (
+                <g key={index} transform={`translate(${x} ${y})`}>
+                  <g data-bed>
+                    {/* 5. La ola de viento cruza las camas de izquierda a derecha: cada cama se inclina un poco después. */}
+                    <Svg
+                      markup={markup ?? base.free}
+                      className={animated && season ? "live-sway" : undefined}
+                      style={{ animationDelay: `${((x - minX) / spanX) * 1.2}s` }}
+                    />
+                  </g>
+                </g>
+              );
+            })}
+          </g>
+          <Svg markup={shape.front} transform={place} />
+          <g transform={place}>
+            {animated ? (
+              <FarmLifeWorld anchors={shape.anchors} time={time} dogMarkup={shape.dog} flowering={flowering} />
+            ) : (
+              <Svg markup={shape.dog} transform={`translate(${shape.anchors.dog[0]} ${shape.anchors.dog[1]})`} />
+            )}
+          </g>
+        </g>
+        {base.tint[time] && <Svg markup={base.tint[time]} />}
+        {labels.map((label) => (
+          <g key={`${label.title}-${label.x}`} transform={`translate(${onScreen(label.x, label.y).join(" ")})`} aria-hidden="true">
+            <rect
+              x={-labelWidth(label) / 2}
+              y={-46}
+              width={labelWidth(label)}
+              height={40}
+              rx={6}
+              fill="#FFFFFF"
+              stroke="#1E2A3A"
+              strokeWidth={1.5}
+            />
+            <polygon points="-6,-6 6,-6 0,2" fill="#1E2A3A" />
+            <text y={-29} textAnchor="middle" fontSize={14} fontWeight={700} fill="#1E2A3A">
+              {label.title}
+            </text>
+            <text y={-13} textAnchor="middle" fontSize={12} fill="#4A5868">
+              {label.sub}
+            </text>
+          </g>
+        ))}
+      </svg>
+      <div
+        role="group"
+        aria-label="Recorrer la finca"
+        className="absolute top-[88px] right-3 z-10 flex flex-col gap-1 md:top-[176px] md:right-8"
+      >
+        <button type="button" className={control} onClick={() => zoomAt(1.25)} aria-label="Acercar" disabled={view.z >= MAX_ZOOM}>
+          +
+        </button>
+        <button type="button" className={control} onClick={() => zoomAt(0.8)} aria-label="Alejar" disabled={view.z <= MIN_ZOOM}>
+          −
+        </button>
+        <button type="button" className={`${control} text-[14px]`} onClick={() => setView(HOME)} aria-label="Volver a encuadrar">
+          ⤢
+        </button>
+      </div>
+    </div>
   );
 }

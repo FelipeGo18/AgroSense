@@ -58,25 +58,10 @@ def join(items):
 
 
 def sky(time):
-    """Cielo, sol o luna, nubes, cerros y pasto: todo lo que no se mueve al recorrer la finca."""
-    top, bottom = escena.sky_colors(time, set())
-    rnd = random.Random(1)
-    out = [f'<defs><linearGradient id="cielo-{time}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{top}"/>'
-           f'<stop offset="1" stop-color="{bottom}"/></linearGradient></defs>',
-           f'<rect width="{W}" height="{H}" fill="url(#cielo-{time})"/>']
-    if time == "noche":
-        out += am.stars(rnd, int(70 * K)) + am.moon(int(W * 0.8), int(64 * K))
-    elif time == "atardecer":
-        out += am.sun(int(W * 0.78), int(H * 0.2), 22 * K, "#F28C4A", "#F7C08A")
-    else:
-        out += am.sun(int(W * 0.82), int(62 * K), 18 * K)
-    if time != "noche":
-        for x, y, r, sd in ((0.18, 70, 18, 5), (0.48, 110, 14, 6)):
-            out += am.cloud(W * x, y * K, r * K, "#FFFFFF" if time == "dia" else "#F2C9A8", sd)
-    hy, rh = H * 0.1, 40 * K
-    out.append(f'<g transform="translate(0 {hy:.0f})" opacity="{0.55 if time == "noche" else 0.9}">{join(ridges(W, 0, rh))}</g>')
-    out.append(f'<rect y="{hy + rh:.0f}" width="{W}" height="{H}" fill="{shade(cv.GRASS, -0.15)}"/>')
-    return join(out), hy + rh
+    """El fondo: el pasto llena toda la vista, sin franja de cielo ni cerros (bajo la barra de la web quedaban como un
+    parche). El momento del día lo da el tono de `tint` y, de noche, los faroles y las luciérnagas de la web."""
+    del time
+    return f'<rect width="{W}" height="{H}" fill="{shade(cv.GRASS, -0.15)}"/>', 0
 
 
 def farm_anchors(farm):
@@ -106,18 +91,12 @@ def farm_anchors(farm):
 
 
 def scenery(farm, layout):
-    """Lo que rodea la finca para que no quede vacía: cultivos de los vecinos detrás del lote, árboles y arbustos, un
+    """Lo que rodea la finca para que no quede vacía: árboles y arbustos, un
     estanque con juncos, pacas de heno, leña, un bebedero, un camino de tierra desde el portón, piedras y flores. Es
     ambiente: no muestra ningún dato. Devuelve (lo de atrás del lote, lo de adelante)."""
     rnd = random.Random(31)
     a0, a1, b0, b1 = farm.a0, farm.a1, farm.b0, farm.b1
-    crops = {c[0]: c for c in cv.CROPS}
     back, front = [], []
-
-    # Cultivos de los vecinos: camas sueltas detrás del lote y a la derecha, más allá del pasto.
-    for (i, j), key, stage in (((-2, -3), "maiz", 3), ((-1, -3), "maiz", 4), ((1, -3), "papa", 3), ((3, -2), "papa", 2), ((4, -1), "arveja", 3)):
-        x, y = escena.cube_pos(layout, i, j)
-        back.append(f'<g transform="translate({x:.1f} {y:.1f})">{join(escena.cell(crops[key], stage))}</g>')
 
     # Camino de tierra del portón hacia el frente de la vista.
     for n in range(9):

@@ -309,6 +309,19 @@ export function FarmLifeWorld({
         </g>
       )}
 
+      {/* 4. La mascota pasa volando sobre la finca de vez en cuando y saluda. */}
+      <g>
+        <svg x={-42} y={-60} width={84} height={70} viewBox="0 0 300 250" overflow="visible">
+          <Mascot mood="flying" decorative />
+        </svg>
+        <Motion
+          path={`M${anchors.path[0][0] - 260} ${anchors.path[0][1] - 230} Q${anchors.path[3][0]} ${anchors.path[3][1] - 120} ${anchors.path[2][0] + 260} ${anchors.path[2][1] - 260}`}
+          dur="40s"
+          keyPoints="0;0;1;1"
+          keyTimes="0;0.7;0.95;1"
+        />
+      </g>
+
       {/* 8. Luciérnagas de noche. */}
       {!day &&
         Array.from({ length: 10 }, (_, i) => {
@@ -322,46 +335,11 @@ export function FarmLifeWorld({
   );
 }
 
-/** Lo que vive en el cielo (en coordenadas de la vista: `width` × `height`). */
+/** Lo que cruza la vista por encima de la finca (en coordenadas de la vista: `width` × `height`). */
 export function FarmLifeSky({ width, height, time }: { width: number; height: number; time: TimeOfDay }) {
   const day = time !== "noche";
   return (
     <g aria-hidden="true">
-      {/* 6. Nubes que pasan despacio de día y estrellas que titilan de noche. */}
-      {day
-        ? [
-            { y: 64, r: 1, dur: "70s", begin: "0s" },
-            { y: 116, r: 0.7, dur: "95s", begin: "-40s" },
-          ].map(({ y, r, dur, begin }) => (
-            <g key={y} opacity={0.9}>
-              <g transform={`scale(${r})`}>
-                <ellipse cx={0} cy={0} rx={46} ry={16} fill="#FFFFFF" />
-                <ellipse cx={-22} cy={-8} rx={22} ry={16} fill="#FFFFFF" />
-                <ellipse cx={18} cy={-12} rx={26} ry={20} fill="#FFFFFF" />
-              </g>
-              <animateTransform
-                attributeName="transform"
-                type="translate"
-                from={`-120 ${y}`}
-                to={`${width + 120} ${y}`}
-                dur={dur}
-                begin={begin}
-                repeatCount="indefinite"
-              />
-            </g>
-          ))
-        : Array.from({ length: 14 }, (_, i) => (
-            <circle
-              key={i}
-              cx={(i * 137) % width}
-              cy={14 + ((i * 53) % Math.round(height * 0.12))}
-              r={1.6}
-              fill="#FFFFFF"
-              className="farm-twinkle"
-              style={{ animationDelay: `${(i * 0.45) % 4}s` }}
-            />
-          ))}
-
       {/* 7. Mariposas que cruzan de día. */}
       {day &&
         [
@@ -394,21 +372,6 @@ export function FarmLifeSky({ width, height, time }: { width: number; height: nu
             />
           </polygon>
         ))}
-
-      {/* 4. La mascota cruza el cielo de vez en cuando y saluda. */}
-      <g>
-        <svg x={-90} y={height * 0.14} width={84} height={70} viewBox="0 0 300 250" overflow="visible">
-          <Mascot mood="flying" decorative />
-        </svg>
-        <animateTransform
-          attributeName="transform"
-          type="translate"
-          values={`-60 0;-60 0;${width + 120} -30;${width + 120} -30`}
-          keyTimes="0;0.7;0.95;1"
-          dur="40s"
-          repeatCount="indefinite"
-        />
-      </g>
     </g>
   );
 }

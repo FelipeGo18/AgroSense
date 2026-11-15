@@ -34,6 +34,8 @@ function LotView() {
   const crops = useCrops();
   // El lote vivo (HU-187) es la vista de entrada; el mapa sigue a un toque.
   const [view, setView] = useState<"finca" | "mapa">("finca");
+  // En escritorio, el panel se oculta para recorrer la finca o el mapa a pantalla completa.
+  const [panelOpen, setPanelOpen] = useState(true);
   const municipalities = useMunicipalities();
   const boundary = useBoundary(lot.data?.municipality_id);
   const municipality = lot.data ? byId(municipalities.data).get(lot.data.municipality_id) : undefined;
@@ -64,10 +66,12 @@ function LotView() {
   const town = municipality?.name ?? "su municipio";
   return (
     <MapScene
+      panelOpen={panelOpen}
+      onTogglePanel={() => setPanelOpen((open) => !open)}
       map={
         <>
           {view === "finca" ? (
-            <div className="size-full md:pl-[440px]">
+            <div className={`size-full ${panelOpen ? "md:pl-[440px]" : ""}`}>
               <LiveLot
                 seasons={lot.data.current_seasons.map((season) => ({
                   seasonId: season.season_id,
@@ -85,7 +89,7 @@ function LotView() {
               boundary={boundary.data?.geometry ?? null}
               focus={geometry}
               lots={geometry ? [{ id: lot.data.lot_id, name: lot.data.name, geometry, selected: true }] : []}
-              panelWidth={PANEL_WIDTH}
+              panelWidth={panelOpen ? PANEL_WIDTH : 0}
             />
           )}
           <div
@@ -108,7 +112,9 @@ function LotView() {
             ))}
           </div>
           {view === "finca" && (
-            <p className="absolute top-[88px] left-3 z-10 max-w-[calc(100%-1.5rem)] rounded-md bg-superficie-panel/95 px-3 py-2 text-[13px] md:top-auto md:bottom-6 md:left-[488px] md:max-w-[26rem]">
+            <p
+              className={`absolute top-[88px] left-3 z-10 max-w-[calc(100%-1.5rem)] rounded-md bg-superficie-panel/95 px-3 py-2 text-[13px] md:top-auto md:bottom-6 md:max-w-[26rem] ${panelOpen ? "md:left-[488px]" : "md:left-8"}`}
+            >
               <span className="md:hidden">Ilustración de su lote, no una imagen de él.</span>
               <span className="hidden md:inline">
                 Ilustración de su lote: cada siembra ocupa su parte del área y se dibuja en su etapa por calendario. No es una imagen del

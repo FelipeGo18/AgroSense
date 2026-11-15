@@ -437,6 +437,19 @@ describe("El lote (HU-164)", () => {
     expect(screen.getByText("Ilustración de su lote, no una imagen de él.")).toBeInTheDocument();
   });
 
+  it("la finca se recorre: acercar, alejar, volver a encuadrar, y el panel se oculta y se vuelve a mostrar (HU-187)", async () => {
+    fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: DETAIL } });
+    open(PATHS.lot("a1"));
+    const user = userEvent.setup();
+    await screen.findByRole("img", { name: /Ilustración de su lote/ });
+    await user.click(screen.getByRole("button", { name: "Acercar" }));
+    await user.click(screen.getByRole("button", { name: "Alejar" }));
+    await user.click(screen.getByRole("button", { name: "Volver a encuadrar" }));
+    await user.click(screen.getByRole("button", { name: /Ocultar el panel/ }));
+    await user.click(screen.getByRole("button", { name: /Mostrar el lote/ }));
+    expect(screen.getByRole("button", { name: /Ocultar el panel/ })).toBeInTheDocument();
+  });
+
   it("en modo ligero el lote vivo se ve quieto: sin la vida de la finca, con el perro dormido (HU-158, HU-187)", async () => {
     setLightMode(true);
     fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: DETAIL } });
