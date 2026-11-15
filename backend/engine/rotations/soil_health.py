@@ -14,6 +14,10 @@ TEAM_CRITERION = "criterio_equipo_2026"
 TEAM_NOTE = "criterio del equipo, pendiente de validar por un agrónomo"
 
 _RANK = {"favorable": 2, "moderate": 1, "unfavorable": 0}
+_HISTORY_TEXT = {
+    "none": "No hay cultivos anteriores del terreno: solo se revisan los ciclos de la estrategia",
+    "current_rotation": "Se supuso que antes del primer ciclo el terreno siguió su rotación actual",
+}
 _PENDING = "Este criterio todavía no se calcula en esta versión del motor"
 
 
@@ -77,8 +81,13 @@ def _available(level: str, reason: str, rule: HealthRule) -> Criterion:
 
 
 def _nitrogen(sequence: Sequence[str], crops: Mapping[str, SoilCrop], rule: HealthRule) -> Criterion:
-    """Ciclos con `fixes_nitrogen`. Un dato nulo sin conteo suficiente es `insufficient_data` (supuesto 5)."""
-    flags = [c.fixes_nitrogen if (c := crops.get(crop_id)) else None for crop_id in sequence]
+    """Ciclos con `fixes_nitrogen`. Un dato nulo sin conteo suficiente es `insufficient_data` (supuesto 5). El descanso no
+    siembra nada: no fija nitrógeno ni es un dato que falta (como en la aptitud y el pH de HU-081)."""
+    flags = [
+        c.fixes_nitrogen if (c := crops.get(crop_id)) else None
+        for crop_id in sequence
+        if (crops.get(crop_id) is None or crops[crop_id].kind != "fallow")
+    ]
     count = flags.count(True)
     if None in flags and level_from_cuts(count, rule.levels) != "favorable":
         return _no_data("Falta el dato de fijación de nitrógeno de algún cultivo de la estrategia", rule)
@@ -92,12 +101,15 @@ def _families(crop_id: str, crops: Mapping[str, SoilCrop]) -> set[str]:
     return {f for f in (crop.family, *crop.secondary_families) if f}
 
 
-def _pest_break(sequence: Sequence[str], previous: Sequence[str], crops: Mapping[str, SoilCrop], rule: HealthRule) -> Criterion:
-    """Peor vuelta de `params["family"]` en los ciclos de la estrategia, buscando hacia atrás su aparición anterior
-    (en la estrategia o en los `min_cycles + 1` cultivos anteriores más recientes). Sin vuelta, `favorable`."""
+def _pest_break_rule(
+    sequence: Sequence[str], previous: Sequence[str], crops: Mapping[str, SoilCrop], rule: HealthRule
+) -> tuple[str | None, str]:
+    """Nivel y razón de una regla `pest_break`: la peor vuelta de `params["family"]` en los ciclos de la estrategia,
+    buscando hacia atrás su aparición anterior (en la estrategia o en los `min_cycles + 1` cultivos anteriores más
+    recientes). Sin vuelta, `favorable`. Sin `family`, nivel nulo (R1)."""
     family = rule.params.get("family")
     if not family:
-        return _no_data("La regla no dice la familia que debe esperar", rule)
+        return None, _text(f"La regla {rule.rule_id} no dice la familia que debe esperar", rule)
     kept = list(previous[: int(rule.params.get("min_cycles", 0)) + 1])
     timeline = [*reversed(kept), *sequence]
     start = len(kept)
@@ -110,10 +122,33 @@ def _pest_break(sequence: Sequence[str], previous: Sequence[str], crops: Mapping
             cycles = i - back - 1
             returns.append((_RANK[level_from_cuts(cycles, rule.levels)], cycles, i))
     if not returns:
-        return _available("favorable", f"La familia {family} no vuelve al terreno en los ciclos revisados", rule)
+        return "favorable", _text(f"La familia {family} no vuelve al terreno en los ciclos revisados", rule)
     rank, cycles, _ = min(returns)
     level = next(name for name, value in _RANK.items() if value == rank)
-    return _available(level, rule.reason_template.format(family=family, cycles=cycles), rule)
+    return level, _text(rule.reason_template.format(family=family, cycles=cycles), rule)
+
+
+def _pest_break(
+    sequence: Sequence[str],
+    previous: Sequence[str],
+    crops: Mapping[str, SoilCrop],
+    rules: Sequence[HealthRule],
+    history_basis: str,
+) -> Criterion:
+    """Evalúa cada regla `pest_break` (en orden de `rule_id`); el nivel es el peor de las que se pudieron evaluar. Una
+    razón por regla y, una sola vez al final, el texto de la historia si no fue declarada. Ninguna evaluable: sin nivel."""
+    ordered = sorted(rules, key=lambda r: r.rule_id)
+    results = [(rule, *_pest_break_rule(sequence, previous, crops, rule)) for rule in ordered]
+    reasons = [reason for _, _, reason in results]
+    rule_ids = tuple(sorted({r.rule_id for r in ordered}))
+    source_ids = tuple(sorted({r.source_id for r in ordered}))
+    ranks = [_RANK[level] for _, level, _ in results if level is not None]
+    if not ranks:
+        return Criterion("insufficient_data", None, tuple(reasons), rule_ids, source_ids)
+    if history_basis in _HISTORY_TEXT:
+        reasons.append(_HISTORY_TEXT[history_basis])
+    level = next(name for name, value in _RANK.items() if value == min(ranks))
+    return Criterion("available", level, tuple(reasons), rule_ids, source_ids)
 
 
 def soil_health(
@@ -125,22 +160,32 @@ def soil_health(
     slope: object | None = None,
     cycle_days: Sequence[int | None] | None = None,
     gap_days: Sequence[int | None] | None = None,
+    *,
+    history_basis: str | None = None,
 ) -> dict[str, Criterion]:
     """Los cinco criterios de una estrategia. `sequence` es el `crop_id` de cada ciclo, en orden; `previous_crop_ids`
-    va del más reciente al más antiguo. Sin regla con fuente para un criterio, `insufficient_data` con ids vacíos."""
+    va del más reciente al más antiguo. `history_basis` dice de dónde sale: `declared`, `current_rotation` o `none`; sin
+    él, `declared` si hay cultivos anteriores y `none` si no. Parámetro interno del motor, no un campo del contrato.
+    Sin regla con fuente para un criterio, `insufficient_data` con ids vacíos."""
+    if history_basis is None:
+        history_basis = "declared" if previous_crop_ids else "none"
     by_criterion: dict[str, HealthRule] = {}
+    pest_rules: list[HealthRule] = []
     for rule in sorted(rules, key=lambda r: r.rule_id):
         if rule.source_id:
-            by_criterion.setdefault(rule.criterion, rule)
+            if rule.criterion == "pest_break":
+                pest_rules.append(rule)
+            else:
+                by_criterion.setdefault(rule.criterion, rule)
     result: dict[str, Criterion] = {}
     for name in SOIL_CRITERIA:
         rule = by_criterion.get(name)
-        if rule is None:
+        if name == "pest_break" and pest_rules:
+            result[name] = _pest_break(sequence, previous_crop_ids, crops, pest_rules, history_basis)
+        elif name == "pest_break" or rule is None:
             result[name] = _no_data("No hay una regla con fuente para este criterio", None)
         elif name == "nitrogen":
             result[name] = _nitrogen(sequence, crops, rule)
-        elif name == "pest_break":
-            result[name] = _pest_break(sequence, previous_crop_ids, crops, rule)
         else:
             result[name] = _no_data(_PENDING, rule)
     return result
