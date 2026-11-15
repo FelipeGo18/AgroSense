@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/components/ui/Card";
 import { Mascot } from "@/components/mascot/Mascot";
 
@@ -16,17 +18,20 @@ export interface DiagnosisSkeletonProps {
  * Sigue el diseño oficial de `design/pantallas/estados_resultado.py:loading`.
  */
 export function DiagnosisSkeleton({ querySummary, className = "" }: Readonly<DiagnosisSkeletonProps>) {
+  useTranslation();
   return (
     <Card className={className} bodyClassName="gap-5">
       <div role="status" aria-busy="true" aria-live="polite" className="flex min-w-0 flex-col gap-4">
-        <span className="sr-only">Calculando su diagnóstico. Por favor espere.</span>
+        <span className="sr-only">{t("pages.diagnosis.DiagnosisSkeleton.calculatingYourDiagnosisPleaseWait")}</span>
         {/* Encabezado: Título, resumen de consulta y mascota volando */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-1">
             <h3 className="font-titulos text-[20px] leading-tight font-semibold text-texto-principal sm:text-[22px]">
-              Calculando su diagnóstico…
+              {t("pages.diagnosis.DiagnosisSkeleton.calculatingYourDiagnosis")}
             </h3>
-            <p className="text-[15px] text-texto-secundario">{querySummary ?? "Calculando su ventana de siembra…"}</p>
+            <p className="text-[15px] text-texto-secundario">
+              {querySummary ?? t("pages.diagnosis.DiagnosisSkeleton.calculatingYourPlantingWindow")}
+            </p>
           </div>
           <Mascot mood="flying" size={82} decorative className="-mt-2 -mr-1 shrink-0" />
         </div>

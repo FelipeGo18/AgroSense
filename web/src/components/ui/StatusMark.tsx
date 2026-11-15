@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { PlateProps } from "./Plate";
 
 /**
@@ -50,6 +51,7 @@ export const TONE_STYLE: Record<Tone, { plate: PlateProps; ink: string; icon: Ic
 const OCTAGON = "14.14,0 20,5.86 20,14.14 14.14,20 5.86,20 0,14.14 0,5.86 5.86,0";
 
 export function StatusIcon({ icon }: { icon: Icon }) {
+  useTranslation();
   if (icon === "question" || icon === "dash") {
     return (
       <span aria-hidden="true" className="w-5 shrink-0 text-center font-bold">

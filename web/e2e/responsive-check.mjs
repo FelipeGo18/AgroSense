@@ -31,6 +31,7 @@ const ROUTES = (
   process.env.ROUTES ??
   [
     "/",
+    "/?lang=en",
     "/entrar",
     "/crear-cuenta",
     "/consultar",
@@ -58,7 +59,14 @@ const ROUTES = (
       ? [`/mi-finca/lotes/${LOT}`, `/mi-finca/lotes/${LOT}/editar`, `/mi-finca/lotes/${LOT}/sembrar`, `/consultar?lote=${LOT}`]
       : []),
   ].join(",")
-).split(",");
+)
+  .split(",")
+  .map((route) => {
+    if (process.env.TEST_LANGUAGE !== "en") return route;
+    const url = new URL(route, BASE);
+    url.searchParams.set("lang", "en");
+    return `${url.pathname}${url.search}${url.hash}`;
+  });
 /** El área de una consulta sin cuenta vive en la pestaña (HU-214): con ella se ven las estrategias y el agua de sus ciclos. */
 const AREA = ["agrosense.area", "1,26"];
 /** Anchos de los que hay que cuidarse: teléfono chico, teléfonos comunes, tablet, portátiles y pantalla grande. Con altos bajos a propósito. */
@@ -117,7 +125,7 @@ function inspect({ light, minTarget }) {
     // Cada enlace del menú en una sola línea y sin meterse debajo de los botones de la derecha (con sesión, la cuenta y
     // «Cerrar sesión» ocupan más que «Entrar»: así se rompía a 1280 px).
     const right = bar.querySelector(":scope > div:last-child")?.getBoundingClientRect();
-    for (const link of bar.querySelectorAll('nav[aria-label="Principal"] a')) {
+    for (const link of bar.querySelectorAll("nav a")) {
       const box = link.getBoundingClientRect();
       if (!box.width) continue;
       if (link.getClientRects().length > 1 || box.height > parseFloat(getComputedStyle(link).lineHeight) * 1.5 + 10)
@@ -180,7 +188,10 @@ async function check(context, route, width, light) {
     const loadingState = new URL(route, BASE).searchParams.get("estado") === "cargando";
 
     // HU-168: preparar la cuenta y consulta antes de cargar la pantalla.
-    if (route === "/mi-finca/agregar?desde=consulta") {
+    const location = new URL(route, BASE);
+    const english = location.searchParams.get("lang") === "en";
+    const fromConsult = location.pathname === "/mi-finca/agregar" && location.searchParams.get("desde") === "consulta";
+    if (fromConsult) {
       await page.addInitScript(() => {
         sessionStorage.setItem(
           "agrosense.guest-consult",
@@ -225,13 +236,20 @@ async function check(context, route, width, light) {
 
     if (loadingState) {
       if (new URL(route, BASE).pathname === "/que-cambio") {
-        await page.getByText("Cargando la comparación histórica…", { exact: true }).waitFor({ state: "visible" });
+        await page
+          .getByText(english ? "Loading the historical comparison…" : "Cargando la comparación histórica…", { exact: true })
+          .waitFor({ state: "visible" });
       } else {
-        await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+        await page
+          .getByRole("heading", { name: english ? "Calculating your diagnosis…" : "Calculando su diagnóstico…" })
+          .waitFor({ state: "visible" });
       }
     }
-    if (route === "/mi-finca/agregar?desde=consulta") {
-      await page.getByRole("status").filter({ hasText: "¿Guardar como su primer lote?" }).waitFor({ state: "visible", timeout: 10000 });
+    if (fromConsult) {
+      await page
+        .getByRole("status")
+        .filter({ hasText: english ? "Save this as your first plot?" : "¿Guardar como su primer lote?" })
+        .waitFor({ state: "visible", timeout: 10000 });
     }
     await page.waitForTimeout(1200);
     return [...(await page.evaluate(inspect, { light, minTarget: minTargetFor(width) })), ...errors.map((e) => `error de la página: ${e}`)];

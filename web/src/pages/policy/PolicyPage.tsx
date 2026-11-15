@@ -1,4 +1,6 @@
-import { Link } from "react-router";
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
+import { Link } from "@/components/layout/LanguageLink";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
@@ -11,6 +13,7 @@ const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offse
 
 /** La marca de cada frase, con forma y no solo color: visto bueno (se guarda), equis (nunca) o una flecha (explica). */
 function ItemMark({ mark }: { mark: Mark }) {
+  useTranslation();
   if (mark === "note") {
     return (
       <svg aria-hidden="true" viewBox="0 0 22 22" className="mt-0.5 size-[22px] shrink-0">
@@ -33,7 +36,11 @@ function ItemMark({ mark }: { mark: Mark }) {
 }
 
 /** Lo que la marca dice, para quien no la ve. */
-const MARK_TEXT: Record<Mark, string> = { kept: "Se guarda: ", never: "No se guarda: ", note: "" };
+const MARK_TEXT = (): Record<Mark, string> => ({
+  kept: t("pages.policy.PolicyPage.stored"),
+  never: t("pages.policy.PolicyPage.notStored"),
+  note: "",
+});
 
 /**
  * Política de tratamiento de datos (HU-163). Se puede leer sin cuenta: a ella llevan el consentimiento de «Crear
@@ -41,34 +48,34 @@ const MARK_TEXT: Record<Mark, string> = { kept: "Se guarda: ", never: "No se gua
  * Es una página quieta: no tiene nada que animar, así que se ve igual en modo ligero.
  */
 export function PolicyPage() {
+  useTranslation();
   const { user } = useSession();
   return (
     <div className="min-h-svh bg-paleta-niebla">
-      <title>Política de tratamiento de datos · AgroSense</title>
+      <title>{t("pages.policy.PolicyPage.dataPrivacyPolicyAgrosense")}</title>
       <TopBar />
       {/* El espacio de abajo es para los cerros del pie de página. */}
       <main className="container-page pt-[112px] pb-40 md:pt-[128px] md:pb-48">
         <div className="flex items-start justify-between gap-8">
           <header className="flex max-w-[880px] min-w-0 flex-col gap-3">
-            <h1 className="text-[clamp(1.75rem,4vw,3rem)]">Política de tratamiento de datos</h1>
+            <h1 className="text-[clamp(1.75rem,4vw,3rem)]">{t("footer.policy")}</h1>
             <p className="text-texto-secundario">
-              Versión {CONSENT_VERSION} · vigente desde el {POLICY_SINCE}
+              {t("pages.policy.PolicyPage.version")} {CONSENT_VERSION} {t("pages.policy.PolicyPage.effectiveSince")} {POLICY_SINCE()}
             </p>
-            <p>Lo que guardamos de usted, para qué y cómo borrarlo. Sin cuenta no se guarda nada de su finca.</p>
+            <p>{t("pages.policy.PolicyPage.whatWeStoreAboutYouWhyAnd")}</p>
           </header>
           <Mascot mood="guide" decorative className="hidden h-auto w-[200px] lg:block" />
         </div>
 
         {LEGAL_REVIEW_PENDING && (
           <p role="note" className="mt-6 max-w-[880px] border-l-8 border-paleta-calabaza bg-superficie-panel px-4 py-3 font-bold">
-            Este texto todavía necesita revisión legal. Dice lo que AgroSense hace hoy con sus datos; la redacción puede cambiar cuando un
-            abogado la revise.
+            {t("pages.policy.PolicyPage.thisTextStillRequiresLegalReviewIt")}
           </p>
         )}
 
         <div className="mt-6 max-w-[880px]">
           <Card bodyClassName="gap-0 md:px-4 md:pt-2">
-            {SECTIONS.map((section, i) => (
+            {SECTIONS().map((section, i) => (
               <section key={section.title} className={`flex flex-col gap-3 py-5 ${i ? "border-t-2 border-paleta-niebla" : "pt-1"}`}>
                 <h2 className="text-[clamp(1.25rem,2.4vw,1.625rem)]">{section.title}</h2>
                 <ul className="flex flex-col gap-3">
@@ -76,7 +83,7 @@ export function PolicyPage() {
                     <li key={item.text} className="flex gap-3">
                       <ItemMark mark={item.mark} />
                       <span className="min-w-0">
-                        <span className="sr-only">{MARK_TEXT[item.mark]}</span>
+                        <span className="sr-only">{MARK_TEXT()[item.mark]}</span>
                         {item.text}
                       </span>
                     </li>
@@ -87,19 +94,19 @@ export function PolicyPage() {
           </Card>
         </div>
 
-        <p className="mt-8 max-w-[880px]">Responde por estos datos el equipo RealE4Life, que hace AgroSense.</p>
+        <p className="mt-8 max-w-[880px]">{t("pages.policy.PolicyPage.theReale4lifeTeamWhichDevelopsAgrosenseIs")}</p>
         <p className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
           {user ? (
             <Link to={PATHS.account} className={`${LINK} inline-flex min-h-11 items-center`}>
-              Ir a Mi cuenta
+              {t("pages.policy.PolicyPage.goToMyAccount")}
             </Link>
           ) : (
             <>
               <Link to={PATHS.signup} className={`${LINK} inline-flex min-h-11 items-center`}>
-                Crear cuenta
+                {t("nav.signup")}
               </Link>
               <Link to={PATHS.login} className={`${LINK} inline-flex min-h-11 items-center`}>
-                Entrar
+                {t("login.submit")}
               </Link>
             </>
           )}

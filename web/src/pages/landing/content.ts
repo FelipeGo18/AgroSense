@@ -6,10 +6,10 @@ import type { TONE_LABEL } from "@/components/ui/StatusTag";
 
 /** Paradas del recorrido, en orden: cada una es una sección y un lugar para la mascota. */
 export const STOPS = [
-  { id: "inicio", label: "Inicio" },
-  { id: "preguntas", label: "Cuatro preguntas" },
-  { id: "ejemplo", label: "Un ejemplo" },
-  { id: "fuentes", label: "Los datos" },
+  { id: "inicio", label: "landing.stop.home" },
+  { id: "preguntas", label: "landing.stop.questions" },
+  { id: "ejemplo", label: "landing.stop.example" },
+  { id: "fuentes", label: "landing.stop.sources" },
 ] as const;
 
 export type StopId = (typeof STOPS)[number]["id"];
@@ -18,48 +18,48 @@ export const STOP_IDS: readonly StopId[] = STOPS.map((stop) => stop.id);
 /** Lo que dice la mascota al llegar a cada parada y a dónde invita a seguir. */
 export const GUIDE: Record<Exclude<StopId, "inicio">, { say: string; mood: MascotMood; next: StopId | null; nextLabel: string }> = {
   preguntas: {
-    say: "Estas son las cuatro preguntas que le ayudo a responder.",
+    say: "landing.guide.questions",
     mood: "guide",
     next: "ejemplo",
-    nextLabel: "Ver un ejemplo",
+    nextLabel: "landing.guide.exampleLink",
   },
   ejemplo: {
-    say: "Así reviso cada ciclo: primero qué conviene hacer y después por qué.",
+    say: "landing.guide.example",
     mood: "guide",
     next: "fuentes",
-    nextLabel: "Ver de dónde salen los datos",
+    nextLabel: "landing.guide.sourcesLink",
   },
   fuentes: {
-    say: "Todo sale de datos abiertos. La decisión siempre es suya.",
+    say: "landing.guide.sources",
     mood: "celebrate",
     next: null,
-    nextLabel: "Volver arriba",
+    nextLabel: "landing.guide.top",
   },
 };
 
 /** Las cuatro preguntas del flujo del MVP (decisión 12): estrategias, cada ciclo, agua del plan y qué cambió. */
 export const QUESTIONS: { title: string; text: string; icon: "priority" | "light" | "water" | "frost"; seed: MascotSeed }[] = [
   {
-    title: "¿Qué siembro y en qué orden?",
-    text: "Estrategias de rotación de hasta 3 ciclos, comparadas por agua, suelo, ingreso y riesgo según lo que a usted le importa.",
+    title: "landing.question.rotation",
+    text: "landing.question.rotationText",
     icon: "priority",
     seed: "sprouted",
   },
   {
-    title: "¿Conviene cada siembra?",
-    text: "Un semáforo por ciclo con seis señales: agua, heladas, calor, suelo, oferta y mercado.",
+    title: "landing.question.planting",
+    text: "landing.question.plantingText",
     icon: "light",
     seed: "bean",
   },
   {
-    title: "¿Cuánta agua va a necesitar?",
-    text: "Mes a mes, el agua que faltaría en cada ciclo, en rangos. Es una estimación con el clima de la zona.",
+    title: "landing.question.water",
+    text: "landing.question.waterText",
     icon: "water",
     seed: "maize",
   },
   {
-    title: "¿Qué cambió en su zona?",
-    text: "Heladas, lluvia y calor de dos periodos de la historia, lado a lado. No es un pronóstico.",
+    title: "landing.question.changes",
+    text: "landing.question.changesText",
     icon: "frost",
     seed: "sprouted",
   },
@@ -67,29 +67,29 @@ export const QUESTIONS: { title: string; text: string; icon: "priority" | "light
 
 /** El mismo caso del resultado amarillo del diseño. Son cifras de muestra y se rotulan como ejemplo (R5). */
 export const PREVIEW = {
-  summary: "Papa en Samacá, sembrando el 2 de agosto de 2027. Primero lo que conviene hacer; después, por qué. Cifras de muestra.",
-  action: "Mejor otro cultivo en esta fecha",
-  reason: "Se está sembrando mucha más papa que antes en Samacá. El clima de esta fecha sí le sirve: agua y calor bien, heladas moderadas.",
+  summary: "landing.preview.summary",
+  action: "landing.preview.action",
+  reason: "landing.preview.reason",
   signals: [
-    { key: "water", name: "Agua", tone: "green", detail: "86/100 · alcanzó en 7 de 10 años" },
-    { key: "frost", name: "Heladas", tone: "yellow", detail: "58/100 · heló 12 de cada 100 años" },
-    { key: "heat", name: "Calor", tone: "green", detail: "94/100 · aguanta hasta 28 °C" },
-    { key: "soil", name: "Suelo", tone: "green", detail: "80/100 · pH apto (estimado)" },
-    { key: "supply", name: "Oferta", tone: "red", detail: "30/100 · +35 % de área sembrada" },
-    { key: "market", name: "Mercado", tone: "insufficient_data", detail: "Sin datos de precios" },
-  ] satisfies { key: SignalKey; name: string; tone: keyof typeof TONE_LABEL; detail: string }[],
+    { key: "water", name: "landing.signal.water", tone: "green", detail: "landing.detail.water" },
+    { key: "frost", name: "landing.signal.frost", tone: "yellow", detail: "landing.detail.frost" },
+    { key: "heat", name: "landing.signal.heat", tone: "green", detail: "landing.detail.heat" },
+    { key: "soil", name: "landing.signal.soil", tone: "green", detail: "landing.detail.soil" },
+    { key: "supply", name: "landing.signal.supply", tone: "red", detail: "landing.detail.supply" },
+    { key: "market", name: "landing.signal.market", tone: "insufficient_data", detail: "landing.detail.market" },
+  ] satisfies { key: SignalKey; name: string; tone: keyof ReturnType<typeof TONE_LABEL>; detail: string }[],
 };
 
 export const SOURCES = [
-  { kind: "Clima", name: "NASA POWER", text: "Lluvia, temperatura, heladas y calor de su municipio." },
-  { kind: "Suelo", name: "SoilGrids · ISRIC", text: "pH, carbono orgánico y textura, estimados en celdas de 250 m." },
+  { kind: "landing.source.climate", name: "NASA POWER", text: "landing.source.power" },
+  { kind: "landing.signal.soil", name: "SoilGrids · ISRIC", text: "landing.source.soil" },
   {
-    kind: "Oferta",
+    kind: "landing.signal.supply",
     name: "EVA",
-    full: "Evaluaciones Agropecuarias",
-    text: "Cuánto se sembró de cada cultivo, por municipio, junto a otras fuentes.",
+    full: "landing.source.evaName",
+    text: "landing.source.eva",
   },
-  { kind: "Mercado", name: "SIPSA · DANE", text: "Precios mayoristas, cuando hay datos de la zona." },
+  { kind: "landing.signal.market", name: "SIPSA · DANE", text: "landing.source.sipsa" },
 ];
 
-export const GLOBE_CREDIT = "Contornos: Natural Earth · Color: NASA Blue Marble";
+export const GLOBE_CREDIT = "landing.globe.credit";

@@ -1,5 +1,8 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useId, type ReactNode } from "react";
-import { Link, useLocation, useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
+import { Link } from "@/components/layout/LanguageLink";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
@@ -25,10 +28,12 @@ import { LotChangesLink } from "@/pages/changes/LotChangesLink";
  * HU-182 (P1). El lote vivo es HU-187 (P1).
  */
 export function LotPage() {
+  useTranslation();
   return <RequireSession>{() => <LotView />}</RequireSession>;
 }
 
 function LotView() {
+  useTranslation();
   const { lotId = "" } = useParams();
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
   const lot = useLot(lotId);
@@ -37,29 +42,29 @@ function LotView() {
   const municipality = lot.data ? byId(municipalities.data).get(lot.data.municipality_id) : undefined;
   const back = (
     <Link to={PATHS.farm} className={`${LINK} min-h-11 self-start py-2`}>
-      ‹ Mi finca
+      {t("pages.farm.LotPage.myFarm")}
     </Link>
   );
 
   if (lot.isPending || lot.isError) {
     return (
       <FormScene scene="region" mood={lot.isError ? "no_data" : "idle"}>
-        <title>Lote · Mi finca · AgroSense</title>
+        <title>{t("pages.farm.LotPage.plotMyFarmAgrosense")}</title>
         {back}
         {lot.isPending ? (
-          <p role="status">Cargando el lote…</p>
+          <p role="status">{t("pages.farm.LotPage.loadingThePlot")}</p>
         ) : (
           <Alert>
             {lot.error instanceof ApiError && lot.error.status === 404
-              ? "Ese lote no existe o no es suyo."
-              : "No pudimos cargar el lote. Intente de nuevo."}
+              ? t("pages.farm.LotPage.thatPlotDoesNotExistOrIs")
+              : t("pages.farm.LotPage.weCouldNotLoadThePlotTry")}
           </Alert>
         )}
       </FormScene>
     );
   }
   const geometry = lot.data.geometry as unknown as LotPolygon | null;
-  const town = municipality?.name ?? "su municipio";
+  const town = municipality?.name ?? t("pages.farm.FarmPage.yourMunicipality");
   return (
     <MapScene
       map={
@@ -71,7 +76,7 @@ function LotView() {
         />
       }
     >
-      <title>{`${lot.data.name} · Mi finca · AgroSense`}</title>
+      <title>{t("pages.farm.LotPage.myFarmAgrosense", { v0: lot.data.name })}</title>
       {back}
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
@@ -79,7 +84,7 @@ function LotView() {
           <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)] break-words">{lot.data.name}</h1>
         </div>
         <ButtonLink to={PATHS.editLot(lot.data.lot_id)} variant="secondary" className="w-full sm:w-[180px]">
-          Editar lote
+          {t("pages.farm.LotPage.editPlot")}
         </ButtonLink>
       </header>
       {notice && (
@@ -87,20 +92,20 @@ function LotView() {
           {notice}
         </p>
       )}
-      <Section title="Su lote">
+      <Section title={t("pages.farm.LotPage.yourPlot")}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-1">
-          <dt className="font-bold">Área</dt>
+          <dt className="font-bold">{t("pages.farm.LotPage.area")}</dt>
           <dd>
-            {formatHa(lot.data.area_ha)} · {geometry ? "calculada con su dibujo" : "escrita a mano"}
+            {formatHa(lot.data.area_ha)} · {geometry ? t("pages.farm.LotPage.calculatedFromYourBoundary") : t("farm.manuallyEntered")}
           </dd>
-          <dt className="font-bold">Riego</dt>
+          <dt className="font-bold">{t("pages.farm.LotPage.irrigation")}</dt>
           <dd>{irrigationText(lot.data.irrigated)}</dd>
         </dl>
         {!geometry && (
           <>
             <WithoutDrawing place={town} />
             <Link to={PATHS.drawLot(lot.data.lot_id)} className={`${LINK} min-h-11 self-start py-2`}>
-              Dibujar en el mapa
+              {t("pages.farm.FarmPage.drawOnTheMap")}
             </Link>
           </>
         )}
@@ -113,6 +118,7 @@ function LotView() {
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  useTranslation();
   const id = useId();
   return (
     <section aria-labelledby={id} className="flex flex-col gap-2">
@@ -129,6 +135,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * (GET /lots/{id}/seasons). Registrar siembra, cosecha y corregir van en sus pantallas (HU-165).
  */
 function Seasons({ lot }: { lot: LotDetail }) {
+  useTranslation();
   const crops = useCrops();
   const history = useSeasons(lot.lot_id);
   const names = cropNames(crops.data);
@@ -138,9 +145,9 @@ function Seasons({ lot }: { lot: LotDetail }) {
   const harvested = (history.data ?? []).filter((season) => season.harvest_date);
   return (
     <>
-      <Section title="Siembras en curso">
+      <Section title={t("pages.farm.LotPage.plantingsInProgress")}>
         {lot.current_seasons.length === 0 ? (
-          <p className="text-texto-secundario">Sin siembra en curso.</p>
+          <p className="text-texto-secundario">{t("pages.farm.LotPage.noPlantingInProgress")}</p>
         ) : (
           <ul className="flex flex-col gap-4">
             {lot.current_seasons.map((season) => (
@@ -150,24 +157,28 @@ function Seasons({ lot }: { lot: LotDetail }) {
                   <span className="text-[14px] text-texto-secundario">{formatHa(season.area_ha)}</span>
                 </div>
                 <p className="text-[15px]">
-                  {season.stage ? `${STAGE_NAMES[season.stage] ?? season.stage} · ` : ""}día {season.days_since_sowing}
-                  <span className="text-texto-secundario"> · sembrado el {formatDate(season.sowing_date)}</span>
+                  {season.stage ? `${STAGE_NAMES()[season.stage] ?? season.stage} · ` : ""}
+                  {t("pages.farm.LotPage.day")} {season.days_since_sowing}
+                  <span className="text-texto-secundario">
+                    {" "}
+                    {t("pages.farm.LotPage.plantedOn")} {formatDate(season.sowing_date)}
+                  </span>
                 </p>
                 {season.stage && <StageBar stage={season.stage} progress={season.stage_progress_pct ?? 0} />}
                 {season.harvest_estimate && (
                   <p className="text-[14px] text-texto-secundario">
                     {season.harvest_due
-                      ? `La cosecha estimada era el ${formatDate(season.harvest_estimate)}: ¿ya cosechó?`
-                      : `Cosecha estimada: ${formatDate(season.harvest_estimate)}.`}{" "}
-                    Sale de la duración de las etapas del cultivo, no de lo que se ve en el lote.
+                      ? t("pages.farm.LotPage.theEstimatedHarvestDateWasHaveYou", { v0: formatDate(season.harvest_estimate) })
+                      : t("pages.farm.LotPage.estimatedHarvest", { v0: formatDate(season.harvest_estimate) })}{" "}
+                    {t("pages.farm.LotPage.basedOnCropStageDurationsNotOn")}
                   </p>
                 )}
                 <div className="flex flex-wrap gap-x-6">
                   <Link to={PATHS.harvest(lot.lot_id, season.season_id)} className={`${LINK} min-h-11 py-2`}>
-                    Registrar cosecha
+                    {t("pages.farm.LotPage.recordHarvest")}
                   </Link>
                   <Link to={PATHS.editSeason(lot.lot_id, season.season_id)} className={`${LINK} min-h-11 py-2`}>
-                    Corregir
+                    {t("pages.farm.LotPage.correct")}
                   </Link>
                 </div>
               </li>
@@ -176,18 +187,18 @@ function Seasons({ lot }: { lot: LotDetail }) {
         )}
         {free > 0.0001 ? (
           <ButtonLink to={PATHS.sow(lot.lot_id)} className="w-full sm:w-[240px]">
-            Registrar siembra
+            {t("pages.farm.LotPage.recordPlanting")}
           </ButtonLink>
         ) : (
-          <p className="text-[14px] text-texto-secundario">Todo el lote está sembrado. Registre una cosecha para sembrar de nuevo.</p>
+          <p className="text-[14px] text-texto-secundario">{t("pages.farm.LotPage.theWholePlotIsPlantedRecordA")}</p>
         )}
         {/* La entrada a las estrategias con este lote (HU-164, HU-214): su municipio, su riego y su historial. */}
         <ButtonLink to={`${PATHS.consult}?lote=${lot.lot_id}`} variant="secondary" className="w-full sm:w-auto sm:self-start">
-          Ver estrategias de rotación
+          {t("pages.farm.LotPage.viewRotationStrategies")}
         </ButtonLink>
       </Section>
       {harvested.length > 0 && (
-        <Section title="Ya cosechado">
+        <Section title={t("pages.farm.LotPage.alreadyHarvested")}>
           <ul className="flex flex-col gap-1">
             {harvested.map((season) => (
               <li key={season.season_id} className="flex flex-wrap items-baseline justify-between gap-x-3">
@@ -195,11 +206,12 @@ function Seasons({ lot }: { lot: LotDetail }) {
                   <span className="font-bold">{name(season.crop_id)}</span>
                   <span className="text-[14px] text-texto-secundario">
                     {" "}
-                    · {formatHa(season.area_ha)} · {formatShortDate(season.sowing_date)} a {formatShortDate(season.harvest_date!)}
+                    · {formatHa(season.area_ha)} · {formatShortDate(season.sowing_date)} {t("pages.farm.LotPage.to")}{" "}
+                    {formatShortDate(season.harvest_date!)}
                   </span>
                 </span>
                 <Link to={PATHS.editSeason(lot.lot_id, season.season_id)} className={`${LINK} min-h-11 py-2 text-[15px]`}>
-                  Corregir
+                  {t("pages.farm.LotPage.correct")}
                 </Link>
               </li>
             ))}
@@ -212,11 +224,12 @@ function Seasons({ lot }: { lot: LotDetail }) {
 
 /** Las cuatro etapas de FAO-56 en fila: las pasadas llenas, la de hoy hasta donde va, las que faltan vacías. */
 function StageBar({ stage, progress }: { stage: string; progress: number }) {
+  useTranslation();
   const current = STAGE_ORDER.indexOf(stage);
   return (
     <div
       role="img"
-      aria-label={`${STAGE_NAMES[stage] ?? stage}: lleva el ${Math.round(progress)} % de la etapa`}
+      aria-label={t("pages.farm.LotPage.throughThisStage", { v0: STAGE_NAMES()[stage] ?? stage, v1: Math.round(progress) })}
       className="grid grid-cols-4 gap-1"
     >
       {STAGE_ORDER.map((key, index) => {
@@ -226,7 +239,9 @@ function StageBar({ stage, progress }: { stage: string; progress: number }) {
             <span className="relative h-3 border border-superficie-borde bg-superficie-panel">
               <span className="absolute inset-y-0 left-0 bg-accion-primaria" style={{ width: `${fill}%` }} />
             </span>
-            <span className={`truncate text-[12px] ${index === current ? "font-bold" : "text-texto-secundario"}`}>{STAGE_NAMES[key]}</span>
+            <span className={`truncate text-[12px] ${index === current ? "font-bold" : "text-texto-secundario"}`}>
+              {STAGE_NAMES()[key]}
+            </span>
           </div>
         );
       })}
@@ -239,19 +254,22 @@ function StageBar({ stage, progress }: { stage: string; progress: number }) {
  * significa cada dato. Sin el suelo publicado no se inventa nada (R1); siempre dice que es de la zona (R10).
  */
 function Soil({ municipalityId, town }: { municipalityId: string; town: string }) {
+  useTranslation();
   const soil = useMunicipalitySoil(municipalityId);
   return (
-    <Section title="Suelo de la zona">
+    <Section title={t("pages.farm.LotPage.soilInTheArea")}>
       {soil.isPending ? (
         <p role="status" className="text-texto-secundario">
-          Cargando el suelo de {town}…
+          {t("pages.farm.LotPage.loadingSoilDataFor")} {town}…
         </p>
       ) : soil.data ? (
         <SoilFacts soil={soil.data} place={town} />
       ) : (
         <>
-          <p className="font-bold">Sin datos del suelo de {town}.</p>
-          <p className="text-[14px] text-texto-secundario">Para conocer el suelo de su lote, haga un análisis de suelo.</p>
+          <p className="font-bold">
+            {t("pages.farm.LotPage.noSoilDataFor")} {town}.
+          </p>
+          <p className="text-[14px] text-texto-secundario">{t("pages.farm.LotPage.toLearnAboutYourPlotsSoilGet")}</p>
         </>
       )}
     </Section>

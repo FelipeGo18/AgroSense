@@ -35,9 +35,9 @@ describe("Button", () => {
 });
 
 describe("TrafficLightBadge", () => {
-  it.each(Object.keys(LIGHT_LABEL) as Light[])("%s muestra texto, no solo color (W2)", (light) => {
+  it.each(Object.keys(LIGHT_LABEL()) as Light[])("%s muestra texto, no solo color (W2)", (light) => {
     render(<TrafficLightBadge light={light} />);
-    expect(screen.getByText(LIGHT_LABEL[light])).toBeInTheDocument();
+    expect(screen.getByText(LIGHT_LABEL()[light])).toBeInTheDocument();
   });
 
   it("no evaluable no usa el estilo rojo (R1)", () => {
@@ -147,7 +147,7 @@ describe("PriorityControl", () => {
 describe("Rótulos", () => {
   it("el rótulo de estimación lleva el texto fijo de R10", () => {
     render(<EstimateLabel />);
-    expect(screen.getByText(ESTIMATE_TEXT)).toBeInTheDocument();
+    expect(screen.getByText(ESTIMATE_TEXT())).toBeInTheDocument();
   });
 
   it("el rótulo de ejemplo dice «Ejemplo» (R5)", () => {

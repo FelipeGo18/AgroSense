@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { EstimateLabel } from "@/components/ui/Labels";
 import { Plate } from "@/components/ui/Plate";
@@ -45,10 +47,11 @@ export interface SignalListProps {
  * todas juntas con la que calculó la señal marcada (R8). Nunca un valor combinado.
  */
 export function SignalList({ signals, limiting, irrigated, weights, supplySemester, soil, version, waterChart }: SignalListProps) {
+  useTranslation();
   const list = orderedSignals(signals);
   if (list.length === 0) return null;
   return (
-    <ul className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label="Señales de la ventana">
+    <ul className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label={t("pages.diagnosis.SignalList.windowSignals")}>
       {list.map(([key, signal]) => (
         <SignalItem key={key} id={key} signal={signal} limiting={key === limiting} always={countsAlways(key, signal, weights)}>
           {key === "water" && <Note>{irrigationNote(irrigated)}</Note>}
@@ -59,7 +62,9 @@ export function SignalList({ signals, limiting, irrigated, weights, supplySemest
           {signal.reasons.length > 0 && (
             <ul className="relative flex list-disc flex-col gap-1 pl-5">
               {signal.reasons.map((reason) => (
-                <li key={reason}>{reason}</li>
+                <li lang="es" key={reason}>
+                  {reason}
+                </li>
               ))}
             </ul>
           )}
@@ -84,7 +89,8 @@ function SignalItem({
   always: boolean;
   children: ReactNode;
 }) {
-  const name = SIGNAL_NAME[id] ?? id;
+  useTranslation();
+  const name = SIGNAL_NAME()[id] ?? id;
   const headingId = `senal-${id}`;
   return (
     <li className="relative flex min-w-0 flex-col gap-3 px-5 pt-5 pb-6" data-signal={id}>
@@ -112,13 +118,14 @@ function SignalItem({
 
 /** «Lo que más limita», con forma (un banderín) y texto, no solo con el borde de color. */
 function LimitingTag() {
+  useTranslation();
   return (
     <p className="relative inline-flex w-fit items-center gap-2 font-bold text-oscuro-calabaza">
       <svg aria-hidden="true" viewBox="0 0 20 22" className="size-5 shrink-0">
         <polygon points="3,1 5,1 5,21 3,21" fill="var(--color-paleta-noche)" />
         <polygon points="5,2 18,6 5,11" fill="var(--color-paleta-calabaza)" />
       </svg>
-      Lo que más limita
+      {t("pages.diagnosis.SignalList.mostLimitingFactor")}
     </p>
   );
 }
@@ -129,6 +136,7 @@ function LimitingTag() {
  * sea 0 (R2).
  */
 function CountTag({ kind }: { kind: "not_counted" | "always" }) {
+  useTranslation();
   const always = kind === "always";
   return (
     <p
@@ -141,13 +149,14 @@ function CountTag({ kind }: { kind: "not_counted" | "always" }) {
           <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" />
         )}
       </svg>
-      {always ? "Cuenta siempre: riesgo grave" : "No cuenta para la luz con sus prioridades"}
+      {always ? t("pages.diagnosis.SignalList.alwaysCountsSevereRisk") : t("pages.diagnosis.SignalList.doesNotAffectTheLightWithYour")}
     </p>
   );
 }
 
 /** El estado con silueta, ícono y texto (W2): «Desfavorable» es un cuadrado; «Datos insuficientes», una línea punteada con «?»; «No aplica», un guion. */
 function StatusBadge({ signal, grave }: { signal: Signal; grave: boolean }) {
+  useTranslation();
   const { tone, label } = signalTone({ ...signal, level: signal.level ?? null });
   const style = TONE_STYLE[tone];
   return (
@@ -158,7 +167,7 @@ function StatusBadge({ signal, grave }: { signal: Signal; grave: boolean }) {
       <Plate {...style.plate} c={Math.min(style.plate.c ?? 10, 10)} />
       <span className="relative flex items-center gap-2.5">
         <StatusIcon icon={style.icon} />
-        {grave ? `${label} · riesgo grave` : label}
+        {grave ? t("pages.diagnosis.SignalList.severeRisk", { v0: label }) : label}
       </span>
     </span>
   );
@@ -166,12 +175,14 @@ function StatusBadge({ signal, grave }: { signal: Signal; grave: boolean }) {
 
 /** La calificación de 0 a 100 junto al nivel. Sin calificación no se dibuja nada: una barra en cero diría «muy mal» (R1). */
 function Score({ score }: { score: number | null | undefined }) {
+  useTranslation();
   if (score === null || score === undefined) return null;
   const value = Math.max(0, Math.min(100, score));
   return (
     <div className="relative flex flex-col gap-1.5">
       <p>
-        Calificación: <span className="font-bold">{Math.round(value)}</span> de 100
+        {t("pages.diagnosis.SignalList.score")} <span className="font-bold">{Math.round(value)}</span>{" "}
+        {t("pages.diagnosis.SignalList.outOf100")}
       </p>
       <div aria-hidden="true" className="h-3 w-full overflow-hidden bg-superficie-panel-suave">
         <div className="h-full bg-oscuro-oliva" style={{ width: `${value}%` }} />
@@ -181,16 +192,23 @@ function Score({ score }: { score: number | null | undefined }) {
 }
 
 function Note({ children }: { children: ReactNode }) {
+  useTranslation();
   return <p className="relative text-[15px] leading-snug text-texto-secundario">{children}</p>;
 }
 
 /** El suelo lleva su rango y el rótulo de estimación (R10). Es el del municipio: el del lote llega con HU-182. */
 function SoilNote({ soil }: { soil: MunicipalitySoil | undefined }) {
+  useTranslation();
   const range = phRange(soil);
   return (
     <div className="relative flex flex-col gap-1 border-2 border-dashed border-oscuro-cielo/60 bg-[#E6F0F5] px-3 py-2 text-[15px] leading-snug">
-      {range && <p className="font-bold">{range}, en el municipio.</p>}
-      <p>{SOIL_ESTIMATE}</p>
+      {range && (
+        <p className="font-bold">
+          {range}
+          {t("pages.diagnosis.SignalList.inTheMunicipality")}
+        </p>
+      )}
+      <p>{SOIL_ESTIMATE()}</p>
     </div>
   );
 }
@@ -200,9 +218,10 @@ function SoilNote({ soil }: { soil: MunicipalitySoil | undefined }) {
  * Nunca se mezclan ni se promedian.
  */
 function Sources({ sources, version }: { sources: SourceValue[]; version: Version | undefined }) {
+  useTranslation();
   return (
     <div className="relative flex flex-col gap-2">
-      <p className="text-[15px] font-bold">Qué dice cada fuente</p>
+      <p className="text-[15px] font-bold">{t("pages.diagnosis.SignalList.whatEachSourceSays")}</p>
       <ul className="flex flex-col gap-2">
         {sources.map((source) => {
           const note = sourceNote(source.source_id);
@@ -216,10 +235,13 @@ function Sources({ sources, version }: { sources: SourceValue[]; version: Versio
               <UsedTag used={source.used} />
               <p>
                 <span className="font-bold">{indicatorName(source.indicator)}:</span> {formatValue(source.value, source.unit)}
-                {source.preliminary ? " (preliminar)" : ""}
+                {source.preliminary ? t("data.preliminary") : ""}
               </p>
               <p className="text-texto-secundario">
-                {sourceName(source.source_id, version)} · {source.period ? `periodo ${source.period}` : "periodo no informado"}
+                {sourceName(source.source_id, version)} ·{" "}
+                {source.period
+                  ? t("pages.diagnosis.SignalList.period", { v0: source.period })
+                  : t("pages.diagnosis.SignalList.periodNotReported")}
               </p>
               {note && <p className="text-texto-secundario">{note}</p>}
             </li>
@@ -232,6 +254,7 @@ function Sources({ sources, version }: { sources: SourceValue[]; version: Versio
 
 /** «Usada para la luz» (rombo lleno) o «Para contrastar» (rombo vacío): forma y texto. */
 function UsedTag({ used }: { used: boolean }) {
+  useTranslation();
   return (
     <span className="inline-flex items-center gap-2 font-bold">
       <svg aria-hidden="true" viewBox="0 0 14 14" className="size-3.5 shrink-0">
@@ -242,7 +265,7 @@ function UsedTag({ used }: { used: boolean }) {
           strokeWidth="2"
         />
       </svg>
-      {used ? "Usada para la luz" : "Para contrastar"}
+      {used ? t("pages.diagnosis.SignalList.usedForTheLight") : t("pages.diagnosis.SignalList.forComparison")}
     </span>
   );
 }

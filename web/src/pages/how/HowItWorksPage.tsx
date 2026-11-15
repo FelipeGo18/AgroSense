@@ -1,5 +1,8 @@
+import { t } from "@/lib/i18n";
+import { ApiLanguageNotice } from "@/components/ui/ApiLanguageNotice";
+import { useTranslation } from "react-i18next";
 import { useRef, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link } from "@/components/layout/LanguageLink";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
@@ -60,6 +63,7 @@ export function splitSources(rows: Version["sources"]): { nasa: Source[]; others
 
 /** El título de una sección con el lugar de la mascota a la izquierda: la mascota llega y señala la sección. */
 function SectionTitle({ title, titleId, sub, stop }: { title: string; titleId?: string; sub?: string; stop: keyof typeof SECTION_MOODS }) {
+  useTranslation();
   return (
     <div className="flex items-center gap-4 md:gap-6">
       <MascotSlot id={stop} mood={SECTION_MOODS[stop]} className="w-[72px] md:w-[120px]" />
@@ -78,6 +82,7 @@ function SectionTitle({ title, titleId, sub, stop }: { title: string; titleId?: 
  * globo, porque la tarjeta ya lo explica. En el celular, la mascota va encima de la tarjeta.
  */
 function PathStop({ stop, mood, children }: { stop: StopId; mood: MascotMood; children: ReactNode }) {
+  useTranslation();
   return (
     <li id={stop} data-reveal-item className="flex scroll-mt-32 flex-col gap-2 md:flex-row md:items-center md:gap-6">
       <MascotSlot id={stop} mood={mood} className="w-[72px] md:w-[120px]" />
@@ -89,6 +94,7 @@ function PathStop({ stop, mood, children }: { stop: StopId; mood: MascotMood; ch
 const CELL = "block py-1 pr-4 align-top [overflow-wrap:anywhere] md:table-cell md:py-3";
 
 function SourceRows({ group, sources }: { group: string; sources: Source[] }) {
+  useTranslation();
   return (
     <tbody className="block md:table-row-group">
       <tr className="block md:table-row">
@@ -115,16 +121,16 @@ function SourceRows({ group, sources }: { group: string; sources: Source[] }) {
             {s.institution && <span className="block text-sm text-texto-secundario">{s.institution}</span>}
           </td>
           <td className={`${CELL} md:w-[20%]`}>
-            <span className="font-bold md:hidden">Cobertura: </span>
-            {s.coverage ?? "Sin dato"}
+            <span className="font-bold md:hidden">{t("pages.how.HowItWorksPage.coverage")} </span>
+            {s.coverage ?? t("features.diagnosis.signals.noData")}
           </td>
           <td className={`${CELL} md:w-[17%]`}>
-            <span className="font-bold md:hidden">Periodo: </span>
-            {s.period_covered ?? "Sin dato"}
+            <span className="font-bold md:hidden">{t("pages.how.HowItWorksPage.period")} </span>
+            {s.period_covered ?? t("features.diagnosis.signals.noData")}
           </td>
           <td className={`${CELL} text-sm`}>
-            <span className="font-bold md:hidden">Licencia: </span>
-            {s.license ?? "Sin licencia explícita: se usan cifras con su cita"}
+            <span className="font-bold md:hidden">{t("pages.how.HowItWorksPage.license")} </span>
+            {s.license ?? t("pages.how.HowItWorksPage.noExplicitLicenseFiguresUsedWithAttribution")}
           </td>
         </tr>
       ))}
@@ -133,21 +139,22 @@ function SourceRows({ group, sources }: { group: string; sources: Source[] }) {
 }
 
 function SourceTable({ group, sources }: { group: string; sources: Source[] }) {
+  useTranslation();
   return (
     <table data-sources className="block w-full border-collapse text-left md:table md:table-fixed">
       <thead className="hidden md:table-header-group">
         <tr className="text-sm text-texto-secundario">
           <th scope="col" className="pr-4 pb-2 font-bold">
-            Fuente
+            {t("pages.how.HowItWorksPage.source")}
           </th>
           <th scope="col" className="pr-4 pb-2 font-bold">
-            Cobertura
+            {t("pages.how.HowItWorksPage.coverage2")}
           </th>
           <th scope="col" className="pr-4 pb-2 font-bold">
-            Periodo
+            {t("pages.how.HowItWorksPage.period2")}
           </th>
           <th scope="col" className="pb-2 font-bold">
-            Licencia
+            {t("pages.how.HowItWorksPage.license2")}
           </th>
         </tr>
       </thead>
@@ -157,59 +164,63 @@ function SourceTable({ group, sources }: { group: string; sources: Source[] }) {
 }
 
 function Sources({ version }: { version: Version }) {
+  useTranslation();
   const { nasa, others } = splitSources(version.sources);
   if (!nasa.length && !others.length) {
     return (
       <StateCard
         dashed
         mood="no_data"
-        title="Sin fuentes publicadas"
-        description="Todavía no hay un dataset publicado en este servidor: no mostramos fuentes que no se están usando."
+        title={t("pages.how.HowItWorksPage.noPublishedSources")}
+        description={t("pages.how.HowItWorksPage.noDatasetHasBeenPublishedOnThis")}
       />
     );
   }
   return (
     <Card>
-      {nasa.length > 0 && <SourceTable group="Observaciones de la Tierra de la NASA" sources={nasa} />}
+      {nasa.length > 0 && <SourceTable group={t("how.nasaGroup")} sources={nasa} />}
       {others.length > 0 && (
         // Las demás fuentes son muchas (cada ficha cita las suyas): se abren a pedido, para que la NASA quede a la vista.
         <details className="group">
           <summary className={`${LINK} inline-flex min-h-11 cursor-pointer items-center`}>
-            Ver las {others.length} fuentes de cultivos, suelo, municipios y mercado
+            {t("pages.how.HowItWorksPage.viewThe")} {others.length} {t("pages.how.HowItWorksPage.cropSoilMunicipalityAndMarketSources")}
           </summary>
-          <SourceTable group="Cultivos, suelo, municipios y mercado" sources={others} />
+          <SourceTable group={t("how.otherGroup")} sources={others} />
         </details>
       )}
-      <p className="text-sm text-texto-secundario">
-        NASA POWER es un reanálisis (un modelo con observaciones), no una medición directa de satélite; la lluvia y el verdor son de celdas
-        de kilómetros o de 250 m: datos de la zona, no de su lote. Las fuentes de un mismo indicador se muestran juntas y nunca se mezclan.
-      </p>
+      <p className="text-sm text-texto-secundario">{t("pages.how.HowItWorksPage.nasaPowerIsAReanalysisAModel")}</p>
     </Card>
   );
 }
 
 function Weights({ version }: { version: Version }) {
+  useTranslation();
   return (
     <Card>
+      <ApiLanguageNotice />
       <ul data-reveal className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {P0_SIGNALS.map((key) => (
           <li key={key} data-reveal-item className="flex min-w-0 flex-col gap-2">
             <span className="flex items-center gap-3">
               <SignalIcon signal={key} />
               <span className="flex flex-col">
-                <span className="font-bold">{SIGNAL_NAME[key]}</span>
+                <span className="font-bold">{SIGNAL_NAME()[key]}</span>
                 <span className="[font-family:var(--font-titulos)] text-[1.375rem] leading-tight font-semibold">
-                  {version.default_weights[key] ?? 0} de 5
+                  {version.default_weights[key] ?? 0} {t("pages.how.HowItWorksPage.outOf5")}
                 </span>
               </span>
             </span>
-            {version.weights_reasons[key] && <span className="text-sm text-texto-secundario">{version.weights_reasons[key]}</span>}
+            {version.weights_reasons[key] && (
+              <span lang="es" className="text-sm text-texto-secundario">
+                {version.weights_reasons[key]}
+              </span>
+            )}
           </li>
         ))}
       </ul>
       <p className="text-texto-secundario">
-        Un riesgo grave de agua, heladas o calor cuenta siempre, aunque el peso sea 0. Son criterio del equipo (versión{" "}
-        {version.weights_version}), no un dato agronómico: usted los puede cambiar en sus prioridades.
+        {t("pages.how.HowItWorksPage.severeWaterFrostOrHeatRiskAlways")} {version.weights_version}
+        {t("pages.how.HowItWorksPage.notAgronomicDataYouCanChangeThem")}
       </p>
     </Card>
   );
@@ -217,11 +228,13 @@ function Weights({ version }: { version: Version }) {
 
 function versionLine(version: Version): string {
   const parts = [
-    version.dataset_version ? `Datos ${version.dataset_version}` : "Sin dataset publicado",
-    version.rules_version ? `Reglas ${version.rules_version}` : null,
-    version.region ? `Región: ${version.region}` : null,
+    version.dataset_version
+      ? t("pages.how.HowItWorksPage.data", { v0: version.dataset_version })
+      : t("pages.how.HowItWorksPage.noPublishedDataset"),
+    version.rules_version ? t("pages.how.HowItWorksPage.rules", { v0: version.rules_version }) : null,
+    version.region ? t("pages.how.HowItWorksPage.region", { v0: version.region }) : null,
   ];
-  return `${parts.filter(Boolean).join(" · ")}. Cada respuesta dice qué versión usó.`;
+  return t("pages.how.HowItWorksPage.eachResultIdentifiesTheVersionUsed", { v0: parts.filter(Boolean).join(" · ") });
 }
 
 /**
@@ -231,6 +244,7 @@ function versionLine(version: Version): string {
  * ligero.
  */
 export function HowItWorksPage() {
+  useTranslation();
   const version = useVersion();
   const animated = useAnimated();
   const root = useRef<HTMLDivElement>(null);
@@ -301,15 +315,14 @@ export function HowItWorksPage() {
     <SmoothScroll enabled={animated}>
       <MascotGuide active={active} flying={animated}>
         <div ref={root} className="min-h-svh bg-paleta-niebla">
-          <title>¿Cómo funciona? · AgroSense</title>
+          <title>{t("pages.how.HowItWorksPage.howDoesItWorkAgrosense")}</title>
           <TopBar />
           <main className="container-page flex flex-col gap-12 pt-[112px] pb-40 md:pt-[128px] md:pb-48">
             <div id="inicio" className="flex scroll-mt-32 items-start justify-between gap-8">
               <header data-intro className="flex max-w-[880px] min-w-0 flex-col gap-3">
-                <h1 className="text-[clamp(1.75rem,4vw,3rem)]">¿Cómo funciona?</h1>
+                <h1 className="text-[clamp(1.75rem,4vw,3rem)]">{t("pages.how.HowItWorksPage.howDoesItWork")}</h1>
                 <p className="text-[clamp(1rem,1.6vw,1.125rem)]">
-                  AgroSense mira lo que ha pasado en su zona con observaciones de la Tierra de la NASA, datos abiertos y reglas que se
-                  pueden leer. No es un pronóstico: usted decide.
+                  {t("pages.how.HowItWorksPage.agrosenseExaminesYourAreasHistoryUsingNasa")}
                 </p>
               </header>
               <MascotSlot id="inicio" mood="guide" className="hidden w-[200px] lg:block" />
@@ -317,10 +330,10 @@ export function HowItWorksPage() {
 
             <section className="flex flex-col gap-8" aria-labelledby="como-se-decide-titulo">
               <h2 id="como-se-decide-titulo" className="text-[clamp(1.5rem,3vw,2rem)]">
-                Cómo se decide
+                {t("pages.how.HowItWorksPage.howDecisionsAreMade")}
               </h2>
               <ol data-reveal className="flex flex-col gap-8">
-                {STEPS.map((step, i) => (
+                {STEPS().map((step, i) => (
                   <PathStop key={step.id} stop={step.id} mood={step.mood}>
                     <Card>
                       <span
@@ -337,9 +350,9 @@ export function HowItWorksPage() {
               </ol>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card>
-                  <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">De la nota al nivel</h3>
+                  <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">{t("pages.how.HowItWorksPage.fromScoreToLevel")}</h3>
                   <ul data-bands className="flex gap-[3px]">
-                    {BANDS.map((band) => (
+                    {BANDS().map((band) => (
                       <li
                         key={band.label}
                         className={`flex min-w-0 flex-col items-center px-1 py-2 text-center text-sm font-bold ${band.ink}`}
@@ -347,16 +360,16 @@ export function HowItWorksPage() {
                       >
                         {band.label}
                         <span className="font-normal">
-                          {band.from} a {band.to}
+                          {band.from} {t("pages.farm.LotPage.to")} {band.to}
                         </span>
                       </li>
                     ))}
                   </ul>
-                  <p className="text-texto-secundario">Una señal sin datos no tiene nota y no cuenta como riesgo.</p>
+                  <p className="text-texto-secundario">{t("pages.how.HowItWorksPage.aSignalWithoutDataHasNoScore")}</p>
                 </Card>
 
                 <Card>
-                  <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">Las luces</h3>
+                  <h3 className="text-[clamp(1.125rem,2vw,1.25rem)]">{t("pages.how.HowItWorksPage.theTrafficLights")}</h3>
                   <ul className="flex flex-wrap gap-4">
                     {LIGHTS.map((light) => (
                       <li key={light}>
@@ -370,38 +383,38 @@ export function HowItWorksPage() {
 
             {version.isPending && (
               <p role="status" className="flex items-center gap-3 text-texto-secundario">
-                <Spinner /> Cargando los pesos, las fuentes y la versión de los datos…
+                <Spinner /> {t("pages.how.HowItWorksPage.loadingWeightsSourcesAndDataVersion")}
               </p>
             )}
             {version.isError && (
               <StateCard
-                title="No pudimos cargar las fuentes"
-                description="Los pesos por defecto, las fuentes y la versión de los datos salen del servidor, que no respondió."
-                actions={[{ label: "Volver a intentar", onClick: () => void version.refetch() }]}
+                title={t("pages.how.HowItWorksPage.weCouldNotLoadTheSources")}
+                description={t("pages.how.HowItWorksPage.defaultWeightsSourcesAndTheDataVersion")}
+                actions={[{ label: t("pages.account.PrioritiesCard.tryAgain"), onClick: () => void version.refetch() }]}
               />
             )}
             {version.data && (
               <>
-                <section id="pesos" className="flex scroll-mt-32 flex-col gap-6" aria-label="Pesos por defecto">
-                  <SectionTitle
-                    stop="pesos"
-                    title="Pesos por defecto"
-                    sub="Cuánto pesa cada señal si usted no cambia sus prioridades, y por qué."
-                  />
+                <section id="pesos" className="flex scroll-mt-32 flex-col gap-6" aria-label={t("pages.how.HowItWorksPage.defaultWeights")}>
+                  <SectionTitle stop="pesos" title={t("pages.how.HowItWorksPage.defaultWeights")} sub={t("how.weightsIntro")} />
                   <Weights version={version.data} />
                 </section>
-                <section id="fuentes" className="flex scroll-mt-32 flex-col gap-6" aria-label="Fuentes y versión">
-                  <SectionTitle stop="fuentes" title="Fuentes y versión" sub={versionLine(version.data)} />
+                <section
+                  id="fuentes"
+                  className="flex scroll-mt-32 flex-col gap-6"
+                  aria-label={t("pages.how.HowItWorksPage.sourcesAndVersion")}
+                >
+                  <SectionTitle stop="fuentes" title={t("pages.how.HowItWorksPage.sourcesAndVersion")} sub={versionLine(version.data)} />
                   <Sources version={version.data} />
                 </section>
               </>
             )}
 
             <section id="no-hace" className="flex scroll-mt-32 flex-col gap-6" aria-labelledby="no-hace-titulo">
-              <SectionTitle stop="no-hace" titleId="no-hace-titulo" title="Lo que AgroSense no hace" />
+              <SectionTitle stop="no-hace" titleId="no-hace-titulo" title={t("pages.how.HowItWorksPage.whatAgrosenseDoesNotDo")} />
               <Card>
                 <ul data-reveal className="flex flex-col gap-3">
-                  {NEVER.map((item) => (
+                  {NEVER().map((item) => (
                     <li key={item} data-reveal-item className="flex gap-3">
                       <span aria-hidden="true" className="mt-1.5 size-4 shrink-0 bg-oscuro-rojo" />
                       <span className="min-w-0">{item}</span>
@@ -411,10 +424,10 @@ export function HowItWorksPage() {
               </Card>
               <p className="flex flex-wrap gap-x-8 gap-y-3">
                 <Link to={PATHS.consult} className={`${LINK} inline-flex min-h-11 items-center`}>
-                  Consultar estrategias
+                  {t("pages.how.HowItWorksPage.exploreStrategies")}
                 </Link>
                 <Link to={PATHS.dataPolicy} className={`${LINK} inline-flex min-h-11 items-center`}>
-                  Política de datos
+                  {t("pages.how.HowItWorksPage.dataPolicy")}
                 </Link>
               </p>
             </section>

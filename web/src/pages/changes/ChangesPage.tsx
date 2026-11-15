@@ -1,3 +1,6 @@
+import { ApiLanguageNotice } from "@/components/ui/ApiLanguageNotice";
+import { t, locale } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { ApiError, type Schemas } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
@@ -13,55 +16,47 @@ type Periods = Schemas["Periods"];
 
 type Indicator = "frost_freq_pct" | "precip_normal_mm" | "tmax_p90_c";
 
-const NOTICE = "Así fue en la historia de su zona. No es un pronóstico";
+const NOTICE = () => t("pages.changes.ChangesPage.thisIsYourAreasHistoryItIs");
 
-const MONTHS = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
-];
+const MONTHS = () =>
+  Array.from({ length: 12 }, (_, month) => {
+    const name = new Intl.DateTimeFormat(locale(), { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(2020, month, 1)));
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  });
 
-const NUMBER = new Intl.NumberFormat("es-CO", {
-  maximumFractionDigits: 1,
-});
+const NUMBER = () =>
+  new Intl.NumberFormat(locale(), {
+    maximumFractionDigits: 1,
+  });
 
-const INDICATORS: {
+const INDICATORS = (): {
   key: Indicator;
   title: string;
   unit: string;
   differenceUnit: string;
-}[] = [
+}[] => [
   {
     key: "frost_freq_pct",
-    title: "Heladas",
+    title: t("landing.signal.frost"),
     unit: "%",
-    differenceUnit: "puntos porcentuales",
+    differenceUnit: t("units.percentagePoints"),
   },
   {
     key: "precip_normal_mm",
-    title: "Lluvia normal",
+    title: t("pages.changes.ChangesPage.normalRainfall"),
     unit: "mm",
     differenceUnit: "mm",
   },
   {
     key: "tmax_p90_c",
-    title: "Temperatura máxima · percentil 90",
+    title: t("pages.changes.ChangesPage.maximumTemperature90thPercentile"),
     unit: "°C",
     differenceUnit: "°C",
   },
 ];
 
 function periodLabel(period: Period) {
-  return `Entre ${period.start_year} y ${period.end_year}`;
+  return t("pages.changes.ChangesPage.betweenAnd", { v0: period.start_year, v1: period.end_year });
 }
 
 function sourceLabel(sourceId: string) {
@@ -71,10 +66,11 @@ function sourceLabel(sourceId: string) {
 }
 
 function Missing() {
+  useTranslation();
   return (
     <span className="inline-flex items-start gap-2">
       <span aria-hidden="true">◇</span>
-      <span>Sin datos suficientes</span>
+      <span>{t("features.strategies.strategies.insufficientData")}</span>
     </span>
   );
 }
@@ -94,6 +90,7 @@ function PeriodValue({
   maximum: number;
   before: boolean;
 }) {
+  useTranslation();
   const known = value != null;
   const width = known ? ((value - minimum) / (maximum - minimum)) * 100 : 0;
 
@@ -104,7 +101,7 @@ function PeriodValue({
       {known ? (
         <>
           <p className="font-bold">
-            {NUMBER.format(value)} {unit}
+            {NUMBER().format(value)} {unit}
           </p>
           <div aria-hidden="true" className="mt-1 h-3 border border-current">
             <div
@@ -138,6 +135,7 @@ function Comparison({
   unit: string;
   differenceUnit: string;
 }) {
+  useTranslation();
   const periods = indicator === "precip_normal_mm" ? (data.precip_periods ?? data.periods) : data.periods;
 
   const sameSource = periods.before.source_id === periods.after.source_id;
@@ -163,21 +161,22 @@ function Comparison({
       </p>
 
       {!sameSource ? (
-        <p role="alert">No se pueden comparar estos periodos porque sus fuentes son distintas.</p>
+        <p role="alert">{t("pages.changes.ChangesPage.thesePeriodsCannotBeComparedBecauseThey")}</p>
       ) : (
         <>
           <p className="text-sm text-texto-secundario">
-            Fuente: {sourceLabel(periods.before.source_id)}. Unidades: {unit}.
+            {t("pages.strategies.StrategyCard.source")} {sourceLabel(periods.before.source_id)}
+            {t("pages.changes.ChangesPage.units")} {unit}.
           </p>
 
-          {power && <p className="text-sm">NASA POWER es un reanálisis, un modelo con observaciones; no es una observación directa.</p>}
+          {power && <p className="text-sm">{t("pages.changes.ChangesPage.nasaPowerIsAReanalysisAModel")}</p>}
 
-          {imerg && <p className="text-sm">Los datos de IMERG empiezan en 2000; por eso sus periodos pueden ser más cortos.</p>}
+          {imerg && <p className="text-sm">{t("pages.changes.ChangesPage.imergDataStartsIn2000SoIts")}</p>}
 
-          <p className="text-sm">Antes: barras rayadas. Después: barras llenas. Todas usan la misma escala dentro de esta comparación.</p>
+          <p className="text-sm">{t("pages.changes.ChangesPage.beforeHatchedBarsAfterSolidBarsAll")}</p>
 
           <ol className="flex flex-col gap-5">
-            {MONTHS.map((monthName, index) => {
+            {MONTHS().map((monthName, index) => {
               const metric = data.months.find((month) => month.month === index + 1)?.[indicator];
 
               const comparable = metric?.status === "available" && metric.before != null && metric.after != null && metric.change != null;
@@ -208,12 +207,12 @@ function Comparison({
                   <div className="mt-2 text-sm">
                     {comparable ? (
                       <p>
-                        Cambio, después menos antes: {metric.change! > 0 ? "+" : ""}
-                        {NUMBER.format(metric.change!)} {differenceUnit}.
+                        {t("pages.changes.ChangesPage.changeAfterMinusBefore")} {metric.change! > 0 ? "+" : ""}
+                        {NUMBER().format(metric.change!)} {differenceUnit}.
                       </p>
                     ) : (
                       <>
-                        <p>Cambio entre periodos:</p>
+                        <p>{t("pages.changes.ChangesPage.changeBetweenPeriods")}</p>
                         <Missing />
                       </>
                     )}
@@ -229,11 +228,12 @@ function Comparison({
 }
 
 function Windows({ periods, windows }: { periods: Periods; windows: ChangesResponse["best_windows"] }) {
+  useTranslation();
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-2xl">Las mejores fechas de siembra, antes y después</h2>
+      <h2 className="text-2xl">{t("pages.changes.ChangesPage.bestPlantingDatesBeforeAndAfter")}</h2>
 
-      <p>Con los pesos de AgroSense. Solo cambia el clima: la oferta, el mercado y el suelo son los mismos en ambos periodos.</p>
+      <p>{t("pages.changes.ChangesPage.usingAgrosenseWeightsOnlyClimateChangesSupply")}</p>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {(["before", "after"] as const).map((side) => (
@@ -241,17 +241,19 @@ function Windows({ periods, windows }: { periods: Periods; windows: ChangesRespo
             <h3 className="text-xl">{periodLabel(periods[side])}</h3>
 
             {windows[side].length === 0 ? (
-              <p>La respuesta no incluye mejores ventanas para este periodo. Revise las limitaciones.</p>
+              <p>{t("pages.changes.ChangesPage.theResponseIncludesNoBestWindowsFor")}</p>
             ) : (
               <ol className="flex list-decimal flex-col gap-4 pl-6">
                 {windows[side].map((window) => (
                   <li key={window.month}>
-                    <p className="font-bold">Sembrar en {MONTHS[window.month - 1]?.toLowerCase()}</p>
+                    <p className="font-bold">
+                      {t("pages.changes.ChangesPage.plantIn")} {MONTHS()[window.month - 1]?.toLowerCase()}
+                    </p>
 
                     {window.limiting_score != null ? (
                       <p>
-                        Factor limitante: {NUMBER.format(window.limiting_score)}/100
-                        {window.limiting_signal ? ` · ${SIGNAL_NAME[window.limiting_signal]}` : ""}
+                        {t("pages.changes.ChangesPage.limitingFactor")} {NUMBER().format(window.limiting_score)}/100
+                        {window.limiting_signal ? ` · ${SIGNAL_NAME()[window.limiting_signal]}` : ""}
                       </p>
                     ) : (
                       <Missing />
@@ -268,6 +270,7 @@ function Windows({ periods, windows }: { periods: Periods; windows: ChangesRespo
 }
 
 export function ChangesPage() {
+  useTranslation();
   const context = useChangesContext();
   const { municipalityId, cropId, irrigation } = context;
 
@@ -291,39 +294,40 @@ export function ChangesPage() {
       <TopBar />
 
       <main className="container-page flex min-h-svh flex-col gap-7 pt-28 pb-40">
-        <title>Qué cambió en su zona · AgroSense</title>
+        <title>{t("pages.changes.ChangesPage.whatChangedInYourAreaAgrosense")}</title>
+        <ApiLanguageNotice />
         <Card>
-          <h1 className="text-[clamp(1.75rem,5vw,3rem)]">¿Qué cambió en su zona?</h1>
+          <h1 className="text-[clamp(1.75rem,5vw,3rem)]">{t("landing.question.changes")}</h1>
 
-          <p className="border-2 border-current p-3 font-bold">{NOTICE}</p>
+          <p className="border-2 border-current p-3 font-bold">{NOTICE()}</p>
 
-          <p>Dos periodos de la historia del municipio: heladas, lluvia, calor y mejores fechas de siembra.</p>
+          <p>{t("pages.changes.ChangesPage.twoHistoricalPeriodsInTheMunicipalityFrost")}</p>
           <ChangesContext context={context} />
 
           <ButtonLink to={diagnosisUrl} variant="secondary" className="self-start">
-            Ir al diagnóstico de una siembra
+            {t("pages.changes.ChangesPage.goToPlantingDiagnosis")}
           </ButtonLink>
         </Card>
 
-        {!context.ready && !context.error && <p role="status">Cargando municipios y cultivos…</p>}
+        {!context.ready && !context.error && <p role="status">{t("pages.changes.ChangesPage.loadingMunicipalitiesAndCrops")}</p>}
         {context.ready && !complete && (
           <Card>
-            <p>Elija un municipio, un cultivo y una opción de riego para comparar su historia.</p>
+            <p>{t("pages.changes.ChangesPage.chooseAMunicipalityCropAndIrrigationOption")}</p>
           </Card>
         )}
 
-        {complete && query.isPending && <p role="status">Cargando la comparación histórica…</p>}
+        {complete && query.isPending && <p role="status">{t("pages.changes.ChangesPage.loadingTheHistoricalComparison")}</p>}
 
         {complete && query.isError && (
           <Card>
             <p role="alert">
               {query.error instanceof ApiError && query.error.status === 501
-                ? "La comparación histórica todavía no está disponible para este cultivo y municipio."
+                ? t("pages.changes.ChangesPage.theHistoricalComparisonIsNotAvailableFor")
                 : query.error.message}
             </p>
 
             <Button onClick={() => void query.refetch()} className="self-start">
-              Volver a intentar
+              {t("pages.account.PrioritiesCard.tryAgain")}
             </Button>
           </Card>
         )}
@@ -331,25 +335,29 @@ export function ChangesPage() {
         {complete && data && (
           <>
             {data.versions.dataset === "ejemplo" && (
-              <p className="border-2 border-dashed p-3 font-bold">Datos de ejemplo. No representan observaciones reales.</p>
+              <p className="border-2 border-dashed p-3 font-bold">
+                {t("pages.changes.ChangesPage.exampleDataDoesNotRepresentActualObservations")}
+              </p>
             )}
 
             {data.suitability.level === "not_suitable" ? (
               <Card>
-                <h2 className="text-xl">Este cultivo no se da en su zona</h2>
+                <h2 className="text-xl">{t("pages.diagnosis.Suitability.thisCropIsUnsuitableForYourArea")}</h2>
                 {data.suitability.reasons.map((reason, index) => (
-                  <p key={index}>{reason}</p>
+                  <p lang="es" key={index}>
+                    {reason}
+                  </p>
                 ))}
-                <p>Mostramos únicamente el clima de la zona; no hay ventanas del cultivo que comparar.</p>
+                <p>{t("pages.changes.ChangesPage.onlyTheAreasClimateIsShownThere")}</p>
                 <Button variant="secondary" className="self-start" onClick={() => context.change("cultivo", "")}>
-                  Elegir otro cultivo
+                  {t("pages.diagnosis.Suitability.chooseAnotherCrop")}
                 </Button>
               </Card>
             ) : (
               <>
                 {data.suitability.level === "insufficient_data" && (
                   <p className="border-2 border-dashed p-3">
-                    No hay datos suficientes para confirmar la aptitud del cultivo. Esto no significa que sea desfavorable.
+                    {t("pages.changes.ChangesPage.insufficientDataToConfirmCropSuitabilityThis")}
                   </p>
                 )}
 
@@ -357,8 +365,8 @@ export function ChangesPage() {
               </>
             )}
 
-            <section aria-label="Comparaciones mensuales del clima" className="flex flex-col gap-6">
-              {INDICATORS.map((indicator) => (
+            <section aria-label={t("pages.changes.ChangesPage.monthlyClimateComparisons")} className="flex flex-col gap-6">
+              {INDICATORS().map((indicator) => (
                 <Comparison
                   key={indicator.key}
                   data={data}
@@ -371,26 +379,33 @@ export function ChangesPage() {
             </section>
 
             <Card>
-              <h2 className="text-xl">Lo que dicen los datos</h2>
+              <h2 className="text-xl">{t("pages.changes.ChangesPage.whatTheDataSays")}</h2>
               {data.reasons.length > 0 ? (
-                data.reasons.map((reason, index) => <p key={index}>{reason}</p>)
+                data.reasons.map((reason, index) => (
+                  <p lang="es" key={index}>
+                    {reason}
+                  </p>
+                ))
               ) : (
-                <p>La respuesta no incluye explicaciones adicionales.</p>
+                <p>{t("pages.changes.ChangesPage.theResponseIncludesNoAdditionalExplanations")}</p>
               )}
 
-              <h2 className="text-xl">Limitaciones</h2>
+              <h2 className="text-xl">{t("pages.strategies.StrategyCard.limitations")}</h2>
               {data.limitations.length > 0 ? (
                 <ul className="list-disc space-y-2 pl-6">
                   {data.limitations.map((limitation, index) => (
-                    <li key={index}>{limitation}</li>
+                    <li lang="es" key={index}>
+                      {limitation}
+                    </li>
                   ))}
                 </ul>
               ) : (
-                <p>La respuesta no declara limitaciones adicionales.</p>
+                <p>{t("pages.changes.ChangesPage.theResponseStatesNoAdditionalLimitations")}</p>
               )}
 
               <p className="text-sm text-texto-secundario">
-                Dataset: {data.versions.dataset} · Reglas: {data.versions.rules}
+                {t("pages.changes.ChangesPage.dataset")} {data.versions.dataset} {t("pages.changes.ChangesPage.rules")}{" "}
+                {data.versions.rules}
               </p>
             </Card>
           </>

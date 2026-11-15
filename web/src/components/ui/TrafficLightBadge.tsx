@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { Plate, Stake } from "./Plate";
 import { Spinner } from "./Spinner";
 import { StatusIcon, TONE_STYLE } from "./StatusMark";
@@ -5,12 +7,12 @@ import { StatusIcon, TONE_STYLE } from "./StatusMark";
 /** Valores de `light` del contrato (specs/01-reglas.md). Un solo juego de nombres para todas las pantallas. */
 export type Light = "green" | "yellow" | "red" | "not_evaluable";
 
-export const LIGHT_LABEL: Record<Light, string> = {
-  green: "Luz verde",
-  yellow: "Luz amarilla",
-  red: "Luz roja",
-  not_evaluable: "No evaluable",
-};
+export const LIGHT_LABEL = (): Record<Light, string> => ({
+  green: t("lights.green"),
+  yellow: t("lights.yellow"),
+  red: t("lights.red"),
+  not_evaluable: t("lights.not_evaluable"),
+});
 
 export interface TrafficLightBadgeProps {
   light?: Light;
@@ -20,6 +22,7 @@ export interface TrafficLightBadgeProps {
 
 /** El semáforo como letrero clavado en la parcela. Cada luz tiene silueta, ícono y texto propios. */
 export function TrafficLightBadge({ light, loading = false, className = "" }: TrafficLightBadgeProps) {
+  const { t } = useTranslation();
   const pending = loading || !light;
   const style = pending ? null : TONE_STYLE[light];
   return (
@@ -28,7 +31,7 @@ export function TrafficLightBadge({ light, loading = false, className = "" }: Tr
         <span role="status" className="relative inline-flex h-14 items-center gap-2.5 px-5 font-bold text-texto-secundario">
           <Plate fill="var(--color-superficie-panel-suave)" stroke="var(--color-superficie-borde)" />
           <Spinner className="relative" />
-          <span className="relative">Calculando semáforo…</span>
+          <span className="relative">{t("lights.loading")}</span>
         </span>
       ) : (
         <span
@@ -38,7 +41,7 @@ export function TrafficLightBadge({ light, loading = false, className = "" }: Tr
           <Plate {...style.plate} />
           <span className="relative flex items-center gap-2.5">
             <StatusIcon icon={style.icon} />
-            {LIGHT_LABEL[light]}
+            {t(`lights.${light}`)}
           </span>
         </span>
       )}

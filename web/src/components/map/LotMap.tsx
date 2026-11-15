@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { Suspense, lazy, useState, type ReactNode } from "react";
 import { Plate } from "@/components/ui/Plate";
 import type { Boundary, LotPolygon } from "@/features/farm/geo";
@@ -37,6 +39,7 @@ export interface LotMapProps {
  * dibujo para «Deshacer». Si el navegador no puede mostrar el mapa, lo dice y deja seguir sin él.
  */
 export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fallback, panelWidth = 0 }: LotMapProps) {
+  useTranslation();
   const animated = useAnimated();
   // En escritorio el panel tapa la izquierda del mapa; en el celular va debajo y el mapa es todo visible.
   const wide = useMediaQuery("(min-width: 768px)");
@@ -67,7 +70,7 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
         style={wide && panelWidth ? { paddingLeft: panelWidth + 40 } : undefined}
       >
         <div role="status" className="max-w-[360px] text-center">
-          <p className="font-bold">Su navegador no puede mostrar el mapa.</p>
+          <p className="font-bold">{t("components.map.LotMap.yourBrowserCannotDisplayTheMap")}</p>
           {fallback}
         </div>
       </div>
@@ -78,7 +81,7 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
       <Suspense
         fallback={
           <p role="status" className="absolute inset-0 grid place-items-center font-bold text-texto-secundario">
-            Cargando el mapa…
+            {t("components.map.LotMap.loadingTheMap")}
           </p>
         }
       >
@@ -100,10 +103,10 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
       </Suspense>
       {controls && (
         <div className="absolute top-[104px] right-3 z-10 flex flex-col gap-2 md:right-6">
-          <MapButton label="Acercar" onClick={controls.zoomIn}>
+          <MapButton label={t("components.map.LotMap.zoomIn")} onClick={controls.zoomIn}>
             <path d="M12 5v14M5 12h14" />
           </MapButton>
-          <MapButton label="Alejar" onClick={controls.zoomOut}>
+          <MapButton label={t("components.map.LotMap.zoomOut")} onClick={controls.zoomOut}>
             <path d="M5 12h14" />
           </MapButton>
         </div>
@@ -111,12 +114,12 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
       {controls && drawing && (
         <div
           role="toolbar"
-          aria-label="Dibujo del lote"
+          aria-label={t("components.map.LotMap.plotBoundary")}
           className="absolute inset-x-3 bottom-8 z-10 mx-auto flex max-w-[420px] justify-around px-2 py-2 md:left-[480px]"
         >
           <Plate c={12} fill="var(--color-superficie-panel)" depth={6} bottom={6} side="var(--color-superficie-borde)" />
           <Tool
-            label="Dibujar"
+            label={t("components.map.LotMap.draw")}
             active={drawing.mode === "draw"}
             onClick={() => {
               if (drawing.geometry) change(null);
@@ -126,18 +129,18 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
             <path d="M5 7 L17 5 L19 17 L7 19 Z" />
           </Tool>
           <Tool
-            label="Mover puntos"
+            label={t("components.map.LotMap.movePoints")}
             active={drawing.mode === "move"}
             disabled={!drawing.geometry}
             onClick={() => drawing.onModeChange("move")}
           >
             <path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" />
           </Tool>
-          <Tool label="Deshacer" disabled={history.length === 0} onClick={undo}>
+          <Tool label={t("components.map.LotMap.undo")} disabled={history.length === 0} onClick={undo}>
             <path d="M9 7 L4 12 L9 17 M4 12 h10 a5 5 0 0 1 0 10 h-3" />
           </Tool>
           <Tool
-            label="Borrar"
+            label={t("components.map.LotMap.delete")}
             disabled={!drawing.geometry}
             onClick={() => {
               change(null);
@@ -153,6 +156,7 @@ export function LotMap({ boundary, focus = null, lots, onLotClick, drawing, fall
 }
 
 function MapButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  useTranslation();
   return (
     <button type="button" aria-label={label} onClick={onClick} className="relative grid size-12 place-items-center">
       <Plate c={8} fill="var(--color-superficie-panel)" depth={5} bottom={5} side="var(--color-superficie-borde)" />
@@ -184,6 +188,7 @@ function Tool({
   onClick: () => void;
   children: ReactNode;
 }) {
+  useTranslation();
   return (
     <button
       type="button"

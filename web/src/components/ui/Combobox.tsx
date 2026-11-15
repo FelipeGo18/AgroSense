@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
 import { Plate, tone } from "./Plate";
 import { Spinner } from "./Spinner";
@@ -45,10 +47,11 @@ export function Combobox({
   placeholder,
   loading = false,
   disabled = false,
-  emptyText = "Sin resultados. Revise cómo lo escribió.",
+  emptyText = t("components.ui.Combobox.noResultsCheckYourSpelling"),
   error,
   onBlur,
 }: ComboboxProps) {
+  useTranslation();
   const id = useId();
   const listId = `${id}-list`;
   const [query, setQuery] = useState(value?.label ?? "");
@@ -94,7 +97,7 @@ export function Combobox({
   };
 
   const activeId = open && results[active] ? `${id}-opt-${results[active].id}` : undefined;
-  const message = loading ? "Cargando opciones…" : results.length === 0 ? emptyText : null;
+  const message = loading ? t("components.ui.Combobox.loadingOptions") : results.length === 0 ? emptyText : null;
 
   return (
     <div className="relative flex flex-col gap-1.5">

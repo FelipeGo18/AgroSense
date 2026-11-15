@@ -367,7 +367,7 @@ describe("Agregar lote dibujado (HU-164)", () => {
     const zones = within(await screen.findByRole("group", { name: "En una zona donde ya tiene lotes" }));
     expect(zones.getByRole("radio", { name: /Samacá, Boyacá\s*1 lote/ })).toBeChecked();
     expect(zones.getByRole("radio", { name: /En otro municipio/ })).not.toBeChecked();
-    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Municipio" })).toBeNull();
   });
 
   it("«Cancelar» vuelve a Mi finca sin guardar nada, también desde el dibujo", async () => {

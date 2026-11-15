@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { formatPesos, formatShortDay, seasonPercent, shortMonthName, type Price, type Season } from "@/features/market/prices";
 
 /**
@@ -20,6 +22,7 @@ function ticks(low: number, high: number) {
 
 /** El precio medio de cada día del último año, con la franja entre el mínimo y el máximo. */
 export function PriceChart({ days }: { days: Price[] }) {
+  useTranslation();
   if (days.length < 2) return null;
   const values = days.flatMap((d) => [d.min_cop_kg ?? d.avg_cop_kg, d.max_cop_kg ?? d.avg_cop_kg]);
   const [bottom, middle, top] = ticks(Math.min(...values), Math.max(...values));
@@ -39,10 +42,20 @@ export function PriceChart({ days }: { days: Price[] }) {
   const marks = [0, 1, 2, 3].map((q) => days[Math.max(0, days.length - 1 - Math.round((q * (days.length - 1)) / 3))]);
   const low = days.reduce((a, b) => (b.avg_cop_kg < a.avg_cop_kg ? b : a));
   const high = days.reduce((a, b) => (b.avg_cop_kg > a.avg_cop_kg ? b : a));
-  const summary = `Precio medio más bajo: ${formatPesos(low.avg_cop_kg)} el ${formatShortDay(low.date)}. Más alto: ${formatPesos(high.avg_cop_kg)} el ${formatShortDay(high.date)}.`;
+  const summary = t("pages.prices.charts.lowestAveragePriceOnHighestOn", {
+    v0: formatPesos(low.avg_cop_kg),
+    v1: formatShortDay(low.date),
+    v2: formatPesos(high.avg_cop_kg),
+    v3: formatShortDay(high.date),
+  });
   return (
     <figure className="flex flex-col gap-2">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Precio por kilo del último año. ${summary}`} className="h-auto w-full">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label={t("pages.prices.charts.pricePerKilogramOverTheLastYear", { v0: summary })}
+        className="h-auto w-full"
+      >
         {[bottom, middle, top].map((value) => (
           <g key={value}>
             <line x1={PAD.left} x2={W - PAD.right} y1={y(value)} y2={y(value)} stroke="var(--color-superficie-borde)" strokeWidth="1" />
@@ -67,7 +80,7 @@ export function PriceChart({ days }: { days: Price[] }) {
         ))}
       </svg>
       <figcaption className="text-[15px] leading-snug text-texto-secundario">
-        La línea es el precio medio de cada día; la franja, el mínimo y el máximo. {summary}
+        {t("pages.prices.charts.theLineShowsEachDaysAveragePrice")} {summary}
       </figcaption>
     </figure>
   );
@@ -82,6 +95,7 @@ const SPAD = { top: 22, bottom: 44, side: 4 };
  * año: hacia arriba, más caro; hacia abajo, más barato. Cada barra lleva su porcentaje escrito.
  */
 export function SeasonChart({ season }: { season: Season }) {
+  useTranslation();
   const percents = season.months.map((m) => seasonPercent(m.seasonal_index));
   const reach = Math.max(10, ...percents.map(Math.abs));
   const zero = SPAD.top + (SH - SPAD.top - SPAD.bottom) / 2;

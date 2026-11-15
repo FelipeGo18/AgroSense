@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { TopBar } from "@/components/layout/TopBar";
 import { Card } from "@/components/ui/Card";
@@ -13,6 +14,7 @@ export const PANEL_WIDTH = 440;
  * modo ligero no se mueve.
  */
 export function MapScene({ map, children }: { map: ReactNode; children: ReactNode }) {
+  useTranslation();
   const panel = useEntrance<HTMLDivElement>();
   return (
     <>

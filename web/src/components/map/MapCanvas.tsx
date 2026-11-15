@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -69,6 +70,7 @@ type GeoJSONData = Parameters<GeoJSONSource["setData"]>[0];
  * En modo ligero el mapa no anima: encuadra, acerca y aleja sin movimiento.
  */
 export default function MapCanvas({ animated, boundary, focus, lots = [], onLotClick, editing, padding, onReady, onFail }: MapCanvasProps) {
+  useTranslation();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const draw = useRef<TerraDraw | null>(null);

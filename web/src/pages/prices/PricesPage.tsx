@@ -1,5 +1,7 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "@/components/layout/LanguageLink";
 import { ApiError } from "@/api/client";
 import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
@@ -28,12 +30,13 @@ import { PriceChart, SeasonChart } from "./charts";
 /** «Corabastos (Bogotá)» → «Corabastos»: el nombre corto va en el botón y el completo, debajo. */
 const shortName = (name: string) => name.split(" (")[0];
 
-const NOT_FORECAST = "Así se ha movido el precio en la central. No es un pronóstico.";
+const NOT_FORECAST = () => t("pages.prices.PricesPage.historicalPriceChangesAtTheWholesaleMarket");
 /**
  * La cita textual que piden los términos del DANE (HU-221) llega de la API tal cual, de la fila de su fuente; después,
  * qué datos son. Una fuente sin cita no la tiene: no se inventa.
  */
-const sourceText = (citation: string | null) => `${citation ? `${citation}. ` : ""}Datos de SIPSA, precios mayoristas diarios.`;
+const sourceText = (citation: string | null) =>
+  t("pages.prices.PricesPage.sipsaDataDailyWholesalePrices", { v0: citation ? `${citation}. ` : "" });
 
 /**
  * Precios en la central de abastos (HU-221): el último precio por kilo de cada producto en Corabastos o en Tunja, según
@@ -42,6 +45,7 @@ const sourceText = (citation: string | null) => `${citation ? `${citation}. ` : 
  * Es una página quieta: no tiene nada que animar, así que se ve igual en modo ligero.
  */
 export function PricesPage() {
+  useTranslation();
   const [params, setParams] = useSearchParams();
   const marketId = params.get("central");
   const productId = params.get("producto");
@@ -59,56 +63,54 @@ export function PricesPage() {
 
   return (
     <div className="min-h-svh bg-paleta-niebla">
-      <title>Precios en la central de abastos · AgroSense</title>
+      <title>{t("pages.prices.PricesPage.wholesaleMarketPricesAgrosense")}</title>
       <TopBar />
       {/* El espacio de abajo es para los cerros del pie de página. */}
       <main className="container-page pt-[112px] pb-40 md:pt-[128px] md:pb-48">
         <header className="flex max-w-[880px] min-w-0 flex-col gap-3">
-          <Eyebrow>Precios mayoristas</Eyebrow>
-          <h1 className="text-[clamp(1.75rem,4vw,3rem)]">¿A cuánto se paga en la central?</h1>
-          <p>
-            El precio por kilo que el DANE registra cada día en la central de abastos. Es el precio al por mayor, lo que se paga en la
-            central, no en la tienda.
-          </p>
+          <Eyebrow>{t("pages.prices.PricesPage.wholesalePrices")}</Eyebrow>
+          <h1 className="text-[clamp(1.75rem,4vw,3rem)]">{t("pages.prices.PricesPage.whatDoesTheWholesaleMarketPay")}</h1>
+          <p>{t("pages.prices.PricesPage.thePricePerKilogramRecordedDailyBy")}</p>
         </header>
 
         {prices.isPending ? (
           <p role="status" className="mt-8">
-            Cargando los precios…
+            {t("pages.prices.PricesPage.loadingPrices")}
           </p>
         ) : prices.isError ? (
           <div className="mt-8 flex max-w-[880px] flex-col gap-3">
             <Alert>
               {prices.error instanceof ApiError && prices.error.status === 503
                 ? prices.error.message
-                : "No pudimos cargar los precios. Intente de nuevo en un momento."}
+                : t("pages.prices.PricesPage.weCouldNotLoadPricesTryAgain")}
             </Alert>
             <Button variant="secondary" className="self-start" onClick={() => void prices.refetch()}>
-              Volver a intentar
+              {t("pages.account.PrioritiesCard.tryAgain")}
             </Button>
           </div>
         ) : (
           <>
             <div className="mt-6 grid max-w-[880px] grid-cols-1 gap-4 md:grid-cols-2">
               <ChoiceGroup
-                legend="Central de abastos"
+                legend={t("prices.market")}
                 choices={prices.data.markets.map((m) => ({ value: m.market_id, label: shortName(m.name) }))}
                 value={prices.data.market.market_id}
                 onChange={(value) => choose({ central: value, producto: null })}
                 hint={prices.data.market.name}
               />
               <TextField
-                label="Buscar producto"
+                label={t("pages.prices.PricesPage.findAProduct")}
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Por ejemplo, papa"
+                placeholder={t("pages.prices.PricesPage.forExamplePotato")}
               />
             </div>
             <p className="mt-4 text-[15px] text-texto-secundario">
-              Precios del {formatDay(prices.data.date)} en {prices.data.market.name}.
+              {t("pages.prices.PricesPage.pricesOn")} {formatDay(prices.data.date)} {t("pages.prices.PricesPage.in")}{" "}
+              {prices.data.market.name}.
               {prices.data.updated_at &&
-                ` Actualizados del DANE el ${formatUpdated(prices.data.updated_at)}; se actualizan de lunes a viernes.`}{" "}
+                t("pages.prices.PricesPage.updatedFromDaneOnUpdatedMondayThrough", { v0: formatUpdated(prices.data.updated_at) })}{" "}
               {sourceText(prices.data.citation)}
             </p>
 
@@ -152,10 +154,17 @@ function ProductList({
   selected: string | null;
   link: (productId: string) => string;
 }) {
+  useTranslation();
   const key = searchKey(query);
   const shown = products.filter((p) => searchKey(p.product).includes(key));
   if (shown.length === 0) {
-    return <p className="lg:order-1">No hay precios de «{query.trim()}» en esta central.</p>;
+    return (
+      <p className="lg:order-1">
+        {t("pages.prices.PricesPage.noPricesFor")}
+        {query.trim()}
+        {t("pages.prices.PricesPage.atThisMarket")}
+      </p>
+    );
   }
   const groups = [...new Set(shown.map((p) => p.group))];
   return (
@@ -185,6 +194,7 @@ function ProductList({
 
 /** Flecha con forma propia: el cambio se lee por la forma y por el texto, no solo por el color. */
 function ChangeMark({ change }: { change: number }) {
+  useTranslation();
   if (change === 0) {
     return (
       <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4 shrink-0">
@@ -205,6 +215,7 @@ function ChangeMark({ change }: { change: number }) {
 }
 
 function ProductRow({ product, marketDate, selected, to }: { product: ProductPrice; marketDate: string; selected: boolean; to: string }) {
+  useTranslation();
   const { latest } = product;
   // Un producto que hace rato no tiene precio lo dice: el precio de hace meses no es el de hoy.
   const stale = latest.date !== marketDate;
@@ -219,21 +230,26 @@ function ProductRow({ product, marketDate, selected, to }: { product: ProductPri
     >
       <span className="flex min-w-0 flex-col">
         <span className="text-[18px] font-bold break-words">{product.product}</span>
-        {product.several_varieties && <span className="text-[13px] text-texto-secundario">Varias variedades</span>}
+        {product.several_varieties && (
+          <span className="text-[13px] text-texto-secundario">{t("pages.prices.PricesPage.severalVarieties")}</span>
+        )}
       </span>
       <span className="flex flex-col items-end text-right">
         <span className="text-[18px] font-bold">
-          {formatPesos(latest.avg_cop_kg)} <span className="text-[14px] font-normal text-texto-secundario">/kg</span>
+          {formatPesos(latest.avg_cop_kg)}{" "}
+          <span className="text-[14px] font-normal text-texto-secundario">{t("pages.prices.PricesPage.kg")}</span>
         </span>
         {stale ? (
-          <span className="text-[13px] font-bold text-oscuro-calabaza">Último precio: {formatDay(latest.date)}</span>
+          <span className="text-[13px] font-bold text-oscuro-calabaza">
+            {t("pages.prices.PricesPage.latestPrice")} {formatDay(latest.date)}
+          </span>
         ) : product.change_pct !== null && product.change_pct !== undefined ? (
           <span className="flex items-center gap-1 text-[13px] text-texto-secundario">
             <ChangeMark change={product.change_pct} />
             {changeText(product.change_pct)}
           </span>
         ) : (
-          <span className="text-[13px] text-texto-secundario">Sin precio de hace una semana</span>
+          <span className="text-[13px] text-texto-secundario">{t("pages.prices.PricesPage.noPriceFromAWeekAgo")}</span>
         )}
       </span>
     </Link>
@@ -242,25 +258,26 @@ function ProductRow({ product, marketDate, selected, to }: { product: ProductPri
 
 const range = (price: Price) =>
   price.min_cop_kg != null && price.max_cop_kg != null
-    ? `Entre ${formatPesos(price.min_cop_kg)} y ${formatPesos(price.max_cop_kg)} por kilo`
-    : "El DANE no dio el mínimo o el máximo de ese día";
+    ? t("pages.prices.PricesPage.fromToPerKilogram", { v0: formatPesos(price.min_cop_kg), v1: formatPesos(price.max_cop_kg) })
+    : t("pages.prices.PricesPage.daneDidNotProvideTheMinimumOr");
 
 /** Un producto: su último precio, su último año y en qué meses suele estar más caro o más barato. */
 function ProductDetail({ productId, marketId, onClose }: { productId: string; marketId: string | null; onClose: () => void }) {
+  useTranslation();
   const history = useProductHistory(productId, marketId);
   return (
     <Card bodyClassName="gap-4">
       {history.isPending ? (
-        <p role="status">Cargando el precio…</p>
+        <p role="status">{t("pages.prices.PricesPage.loadingThePrice")}</p>
       ) : history.isError ? (
         <>
           <Alert>
             {history.error instanceof ApiError && history.error.status === 404
               ? history.error.message
-              : "No pudimos cargar este producto. Intente de nuevo en un momento."}
+              : t("pages.prices.PricesPage.weCouldNotLoadThisProductTry")}
           </Alert>
           <Button variant="secondary" className="self-start" onClick={onClose}>
-            Ver todos los productos
+            {t("pages.prices.PricesPage.viewAllProducts")}
           </Button>
         </>
       ) : (
@@ -269,49 +286,50 @@ function ProductDetail({ productId, marketId, onClose }: { productId: string; ma
             <h2 className="text-[clamp(1.375rem,2.6vw,1.75rem)]">{history.data.product}</h2>
             <p className="text-[15px] text-texto-secundario">
               {history.data.market.name}
-              {history.data.several_varieties ? " · el DANE junta varias variedades" : ""}
+              {history.data.several_varieties ? t("pages.prices.PricesPage.daneGroupsSeveralVarietiesTogether") : ""}
             </p>
           </header>
           <div className="flex flex-col">
             <p className="text-[clamp(1.75rem,4vw,2.5rem)] leading-tight font-bold">
-              {formatPesos(history.data.latest.avg_cop_kg)} <span className="text-[18px] font-normal">por kilo</span>
+              {formatPesos(history.data.latest.avg_cop_kg)}{" "}
+              <span className="text-[18px] font-normal">{t("pages.prices.PricesPage.perKilogram")}</span>
             </p>
             <p className="text-[15px] text-texto-secundario">
-              Precio medio del {formatDay(history.data.latest.date)}. {range(history.data.latest)}.
+              {t("pages.prices.PricesPage.averagePriceOn")} {formatDay(history.data.latest.date)}. {range(history.data.latest)}.
             </p>
           </div>
 
           <section aria-labelledby="ultimo-ano" className="flex flex-col gap-2">
             <h3 id="ultimo-ano" className="text-[20px]">
-              El último año
+              {t("pages.prices.PricesPage.theLastYear")}
             </h3>
             <PriceChart days={history.data.days} />
           </section>
 
           <section aria-labelledby="temporada" className="flex flex-col gap-2">
             <h3 id="temporada" className="text-[20px]">
-              ¿En qué meses suele estar más caro?
+              {t("pages.prices.PricesPage.whichMonthsTendToHaveHigherPrices")}
             </h3>
             {history.data.season ? (
               <>
                 <SeasonSummary season={history.data.season} />
                 <SeasonChart season={history.data.season} />
                 <p className="text-[15px] leading-snug text-texto-secundario">
-                  Cada barra compara el precio de ese mes con el promedio de su mismo año, en %: así no cuenta la inflación. Con los años
-                  completos de {history.data.season.first_year} a {history.data.season.last_year}.
+                  {t("pages.prices.PricesPage.eachBarComparesThatMonthsPriceWith")} {history.data.season.first_year}{" "}
+                  {t("pages.farm.LotPage.to")} {history.data.season.last_year}.
                 </p>
               </>
             ) : (
-              <p>Todavía no hay suficientes años completos de precios de este producto en esta central para decirlo.</p>
+              <p>{t("pages.prices.PricesPage.thereAreNotEnoughCompleteYearsOf")}</p>
             )}
           </section>
 
           <p role="note" className="border-l-8 border-paleta-calabaza bg-superficie-panel-suave px-4 py-3 font-bold">
-            {NOT_FORECAST}
+            {NOT_FORECAST()}
           </p>
           <p className="text-[14px] text-texto-secundario">{sourceText(history.data.citation)}</p>
           <Button variant="secondary" className="self-start" onClick={onClose}>
-            Ver todos los productos
+            {t("pages.prices.PricesPage.viewAllProducts")}
           </Button>
         </>
       )}
@@ -320,11 +338,14 @@ function ProductDetail({ productId, marketId, onClose }: { productId: string; ma
 }
 
 function SeasonSummary({ season }: { season: NonNullable<Parameters<typeof SeasonChart>[0]["season"]> }) {
+  useTranslation();
   const { cheapest, priciest } = seasonExtremes(season);
   return (
     <p>
-      Suele estar más barato en <strong>{monthName(cheapest.month)}</strong> ({seasonPercent(cheapest.seasonal_index)} %) y más caro en{" "}
-      <strong>{monthName(priciest.month)}</strong> (+{seasonPercent(priciest.seasonal_index)} %) que el promedio de su año.
+      {t("pages.prices.PricesPage.itTendsToBeCheaperIn")} <strong>{monthName(cheapest.month)}</strong> (
+      {seasonPercent(cheapest.seasonal_index)} {t("pages.prices.PricesPage.andMoreExpensiveIn")}{" "}
+      <strong>{monthName(priciest.month)}</strong> (+{seasonPercent(priciest.seasonal_index)}{" "}
+      {t("pages.prices.PricesPage.thanItsYearsAverage")}
     </p>
   );
 }

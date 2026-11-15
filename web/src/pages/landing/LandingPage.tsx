@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
 import { TopBar } from "@/components/layout/TopBar";
@@ -19,6 +20,7 @@ import { Sources } from "./sections/Sources";
  * Con «reducir movimiento» no hay scroll suave, giro ni vuelo: todo aparece ya colocado.
  */
 export function LandingPage() {
+  const { t } = useTranslation();
   const animated = useAnimated();
   const active = useActiveSection(STOP_IDS) as StopId;
   // Al pasar a otra parada suena una nota, si el sonido está prendido. La primera pintura no cuenta.
@@ -31,7 +33,7 @@ export function LandingPage() {
   return (
     <SmoothScroll enabled={animated}>
       <MascotGuide active={active} flying={animated}>
-        <title>AgroSense · ¿Qué sembrar y en qué orden?</title>
+        <title>{t("landing.title")}</title>
         <TopBar />
         <main>
           <Hero animated={animated} />

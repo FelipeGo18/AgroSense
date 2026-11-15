@@ -57,8 +57,8 @@ describe("¿Cómo funciona? (HU-122, HU-198)", () => {
     respond(VERSION);
     open();
     expect(await screen.findByRole("heading", { level: 1, name: "¿Cómo funciona?" })).toBeInTheDocument();
-    for (const step of STEPS) expect(screen.getByRole("heading", { level: 3, name: step.title })).toBeInTheDocument();
-    for (const item of NEVER) expect(screen.getByText(item)).toBeInTheDocument();
+    for (const step of STEPS()) expect(screen.getByRole("heading", { level: 3, name: step.title })).toBeInTheDocument();
+    for (const item of NEVER()) expect(screen.getByText(item)).toBeInTheDocument();
     expect(screen.getByText(/No es un pronóstico/)).toBeInTheDocument();
   });
 

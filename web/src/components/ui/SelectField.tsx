@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useId, useState, type SelectHTMLAttributes } from "react";
 import { Plate } from "./Plate";
 
@@ -11,6 +12,7 @@ export interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectEl
 
 /** Lista desplegable del kit, para pocas opciones (por ejemplo, los cultivos del catálogo). El select es nativo. */
 export function SelectField({ label, options, hint, error, className = "", ...rest }: SelectFieldProps) {
+  useTranslation();
   const id = useId();
   const [focused, setFocused] = useState(false);
   const note = error ?? hint;

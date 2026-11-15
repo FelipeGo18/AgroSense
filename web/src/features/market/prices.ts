@@ -1,3 +1,4 @@
+import { locale, t } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 
@@ -36,42 +37,49 @@ export function useProductHistory(productId: string | null, marketId: string | n
   });
 }
 
-const PESOS = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
-const PERCENT = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
-const DAY = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-const SHORT_DAY = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", timeZone: "UTC" });
-const MONTH = new Intl.DateTimeFormat("es-CO", { month: "long", timeZone: "UTC" });
-const SHORT_MONTH = new Intl.DateTimeFormat("es-CO", { month: "short", timeZone: "UTC" });
+const PESOS = () => new Intl.NumberFormat(locale(), { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+const PERCENT = () => new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 });
+const DAY = () => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const SHORT_DAY = () => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "short", timeZone: "UTC" });
+const MONTH = () => new Intl.DateTimeFormat(locale(), { month: "long", timeZone: "UTC" });
+const SHORT_MONTH = () => new Intl.DateTimeFormat(locale(), { month: "short", timeZone: "UTC" });
 
 /** «$ 2.925». Sin decimales: el DANE publica pesos enteros por kilo. */
-export const formatPesos = (value: number) => PESOS.format(value);
+export const formatPesos = (value: number) => PESOS().format(value);
 
 /** Las fechas de la API son días («2026-10-19»): se leen en UTC para que no cambien de día con la zona horaria. */
 const asDate = (day: string) => new Date(`${day}T00:00:00Z`);
 
 /** «19 de octubre de 2026». */
-export const formatDay = (day: string) => DAY.format(asDate(day));
+export const formatDay = (day: string) => DAY().format(asDate(day));
 
-const UPDATED = new Intl.DateTimeFormat("es-CO", {
-  day: "numeric",
-  month: "long",
-  hour: "numeric",
-  minute: "2-digit",
-  timeZone: "America/Bogota",
-});
+const UPDATED = () =>
+  new Intl.DateTimeFormat(locale(), {
+    day: "numeric",
+    month: "long",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/Bogota",
+  });
 /** «20 de octubre, 3:05 p. m.»: cuándo bajó la API los precios del DANE (HU-222), en la hora de Colombia. */
-export const formatUpdated = (instant: string) => UPDATED.format(new Date(instant));
+export const formatUpdated = (instant: string) => UPDATED().format(new Date(instant));
 /** «19 oct». */
-export const formatShortDay = (day: string) => SHORT_DAY.format(asDate(day));
+export const formatShortDay = (day: string) => SHORT_DAY().format(asDate(day));
 /** «octubre», con el número de mes de 1 a 12. */
-export const monthName = (month: number) => MONTH.format(new Date(Date.UTC(2000, month - 1, 1)));
+export const monthName = (month: number) => MONTH().format(new Date(Date.UTC(2000, month - 1, 1)));
 /** «oct». */
-export const shortMonthName = (month: number) => SHORT_MONTH.format(new Date(Date.UTC(2000, month - 1, 1))).replace(".", "");
+export const shortMonthName = (month: number) =>
+  SHORT_MONTH()
+    .format(new Date(Date.UTC(2000, month - 1, 1)))
+    .replace(".", "");
 
 /** «Sube 6,4 %», «Baja 3 %» o «Igual». Siempre con palabras: el color no es la única pista. */
 export function changeText(change: number) {
-  if (change === 0) return "Igual que hace una semana";
-  return `${change > 0 ? "Sube" : "Baja"} ${PERCENT.format(Math.abs(change))} % en una semana`;
+  if (change === 0) return t("features.market.prices.sameAsAWeekAgo");
+  return t("features.market.prices.inOneWeek", {
+    v0: change > 0 ? t("features.market.prices.up") : t("features.market.prices.down"),
+    v1: PERCENT().format(Math.abs(change)),
+  });
 }
 
 /** Del índice estacional (1 = un mes como cualquiera) al porcentaje frente al promedio del año: 0,77 → −23. */

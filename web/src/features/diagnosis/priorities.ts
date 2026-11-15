@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import { useState } from "react";
 import type { Schemas } from "@/api/client";
 import { useSession, useUpdateProfile } from "@/features/auth/session";
@@ -10,17 +11,38 @@ export type SignalWeights = Schemas["SignalWeights"];
  * de las rotaciones (HU-101). Las seis del P0, en el orden del diagnóstico, y qué significa darle peso a cada una. Las
  * de clima llevan su nota: un riesgo grave cuenta siempre, aunque su peso sea 0 (`specs/01-reglas.md`).
  */
-export const PRIORITY_SIGNALS = [
-  { key: "water", label: "Agua", hint: "que la lluvia alcance", climate: true },
-  { key: "frost", label: "Heladas", hint: "que no hiele en lo sensible", climate: true },
-  { key: "heat", label: "Calor", hint: "que no haga más calor del que aguanta", climate: true },
-  { key: "soil", label: "Suelo", hint: "que el pH le sirva", climate: false },
-  { key: "supply", label: "Oferta", hint: "que no haya demasiado sembrado", climate: false },
-  { key: "market", label: "Mercado", hint: "que el precio suela estar bien", climate: false },
-] as const;
-export type PriorityKey = (typeof PRIORITY_SIGNALS)[number]["key"];
+export const PRIORITY_SIGNALS = () =>
+  [
+    { key: "water", label: t("landing.signal.water"), hint: t("features.diagnosis.priorities.enoughRainfall"), climate: true },
+    {
+      key: "frost",
+      label: t("landing.signal.frost"),
+      hint: t("features.diagnosis.priorities.noFrostDuringSensitiveStages"),
+      climate: true,
+    },
+    {
+      key: "heat",
+      label: t("landing.signal.heat"),
+      hint: t("features.diagnosis.priorities.temperaturesWithinTheCropsTolerance"),
+      climate: true,
+    },
+    { key: "soil", label: t("landing.signal.soil"), hint: t("features.diagnosis.priorities.suitablePh"), climate: false },
+    {
+      key: "supply",
+      label: t("landing.signal.supply"),
+      hint: t("features.diagnosis.priorities.avoidingExcessivePlantedArea"),
+      climate: false,
+    },
+    {
+      key: "market",
+      label: t("landing.signal.market"),
+      hint: t("features.diagnosis.priorities.seasonallyFavorablePrices"),
+      climate: false,
+    },
+  ] as const;
+export type PriorityKey = ReturnType<typeof PRIORITY_SIGNALS>[number]["key"];
 
-export const PRIORITIES_HINT = "0: no cambia la luz, salvo un riesgo grave de clima. 4 o 5: un resultado medio cuenta como desfavorable.";
+export const PRIORITIES_HINT = () => t("features.diagnosis.priorities.0DoesNotAffectTheLightExcept");
 
 /** Dónde se recuerdan sin cuenta: solo en este navegador (R9). Con cuenta, en el perfil (`PATCH /me`, HU-160). */
 export const STORAGE_KEY = "agrosense.prioridades";
@@ -31,14 +53,14 @@ const isWeight = (value: unknown) => Number.isInteger(value) && (value as number
 export function asWeights(value: unknown): SignalWeights | null {
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
-  if (!PRIORITY_SIGNALS.every(({ key }) => isWeight(record[key]))) return null;
-  return Object.fromEntries(PRIORITY_SIGNALS.map(({ key }) => [key, record[key]])) as SignalWeights;
+  if (!PRIORITY_SIGNALS().every(({ key }) => isWeight(record[key]))) return null;
+  return Object.fromEntries(PRIORITY_SIGNALS().map(({ key }) => [key, record[key]])) as SignalWeights;
 }
 
 /** Con todas en 0 no hay nada que pesar: no se consulta ni se guarda (`specs/02-contratos.md`: 422). */
-export const allZero = (weights: SignalWeights) => PRIORITY_SIGNALS.every(({ key }) => weights[key] === 0);
+export const allZero = (weights: SignalWeights) => PRIORITY_SIGNALS().every(({ key }) => weights[key] === 0);
 
-export const sameWeights = (a: SignalWeights, b: SignalWeights) => PRIORITY_SIGNALS.every(({ key }) => a[key] === b[key]);
+export const sameWeights = (a: SignalWeights, b: SignalWeights) => PRIORITY_SIGNALS().every(({ key }) => a[key] === b[key]);
 
 /** Lo guardado en el navegador. Si el almacenamiento no está (modo privado, bloqueado), no hay nada guardado. */
 export function readStored(): SignalWeights | null {

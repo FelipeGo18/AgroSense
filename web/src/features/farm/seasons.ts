@@ -1,7 +1,16 @@
+import { t, i18n } from "@/lib/i18n";
+import { locale } from "@/lib/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 
 export type Crop = Schemas["CropItem"];
+type NamedCrop = Pick<Crop, "crop_id" | "name_es">;
+export function cropName(crop: NamedCrop): string;
+export function cropName(crop: NamedCrop | null | undefined): string | undefined;
+export function cropName(crop: NamedCrop | null | undefined): string | undefined {
+  if (!crop) return undefined;
+  return i18n.resolvedLanguage === "en" ? i18n.t(`crops.${crop.crop_id}`, { defaultValue: crop.name_es }) : crop.name_es;
+}
 export type Season = Schemas["SeasonOut"];
 
 /**
@@ -34,7 +43,7 @@ export function useCrops() {
 }
 
 export function cropNames(crops: Crop[] | undefined) {
-  return new Map((crops ?? []).map((crop) => [crop.crop_id, crop.name_es]));
+  return new Map((crops ?? []).map((crop) => [crop.crop_id, cropName(crop)]));
 }
 
 /** El historial del lote (GET /lots/{id}/seasons): de la siembra más reciente a la más antigua. */
@@ -75,20 +84,20 @@ export function useDeleteSeason(lotId: string, seasonId: string) {
 }
 
 /** Las etapas son las de FAO-56 (catalog/crops.yaml): se nombran como las dice el manual, sin inventar otras. */
-export const STAGE_NAMES: Record<string, string> = {
-  initial: "Etapa inicial",
-  development: "Desarrollo",
-  mid: "Etapa media",
-  late: "Etapa final",
-};
+export const STAGE_NAMES = (): Record<string, string> => ({
+  initial: t("features.farm.seasons.initialStage"),
+  development: t("features.farm.seasons.development"),
+  mid: t("features.farm.seasons.middleStage"),
+  late: t("features.farm.seasons.finalStage"),
+});
 export const STAGE_ORDER = ["initial", "development", "mid", "late"];
 
-const DATE = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-const SHORT = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+const DATE = () => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const SHORT = () => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 /** «2 de agosto de 2026», a partir de una fecha ISO (sin hora). */
-export const formatDate = (iso: string) => DATE.format(new Date(`${iso}T00:00:00Z`));
-export const formatShortDate = (iso: string) => SHORT.format(new Date(`${iso}T00:00:00Z`));
+export const formatDate = (iso: string) => DATE().format(new Date(`${iso}T00:00:00Z`));
+export const formatShortDate = (iso: string) => SHORT().format(new Date(`${iso}T00:00:00Z`));
 
 /** Hoy en el formato de los campos de fecha (aaaa-mm-dd), en la hora del navegador. */
 export function todayIso() {

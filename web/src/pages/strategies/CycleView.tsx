@@ -1,4 +1,7 @@
-import { Link, useNavigate } from "react-router";
+import { ApiLanguageNotice } from "@/components/ui/ApiLanguageNotice";
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "@/components/layout/LanguageLink";
 import { PATHS } from "@/app/paths";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -64,6 +67,7 @@ export function CycleView({
   versions,
   lot,
 }: CycleViewProps) {
+  useTranslation();
   const { strategy, cycle } = open;
   const key = strategyKey(strategy);
   const total = strategy.cycles.length;
@@ -78,16 +82,18 @@ export function CycleView({
 
   return (
     <div className="flex min-w-0 flex-col gap-10">
-      <title>{`Ciclo ${cycle.cycle} de ${total}: ${name(cycle)} · AgroSense`}</title>
+      <title>{t("pages.strategies.CycleView.cycleOfAgrosense", { v0: cycle.cycle, v1: total, v2: name(cycle) })}</title>
+      <ApiLanguageNotice />
       <div className="max-w-[960px]">
         <Card bodyClassName="gap-5">
           <Link to={backTo} className={`${LINK} inline-flex min-h-11 items-center self-start`}>
-            ‹ Volver a las estrategias
+            {t("pages.strategies.CycleView.backToStrategies")}
           </Link>
           <Eyebrow>
-            {strategy.kind === "current" ? "Lo que siembra hoy" : "Estrategia"} · {sequence(strategy.crop_ids, names)}
+            {strategy.kind === "current" ? t("pages.strategies.CycleView.whatYouPlantToday") : t("pages.strategies.CycleView.strategy")} ·{" "}
+            {sequence(strategy.crop_ids, names)}
           </Eyebrow>
-          <nav aria-label="Ciclos de la estrategia">
+          <nav aria-label={t("pages.strategies.CycleView.strategyCycles")}>
             <ol className={`grid grid-cols-1 gap-2 ${total === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
               {strategy.cycles.map((c) => {
                 const current = c.cycle === cycle.cycle;
@@ -108,7 +114,7 @@ export function CycleView({
             </ol>
           </nav>
           <h1 className="text-[clamp(1.6rem,3.5vw,2.5rem)] leading-tight">
-            Ciclo {cycle.cycle} de {total}: {name(cycle).toLowerCase()}
+            {t("pages.strategies.CycleView.cycle")} {cycle.cycle} {t("pages.farm.HarvestPage.of")} {total}: {name(cycle).toLowerCase()}
           </h1>
 
           {fallow ? (
@@ -117,18 +123,19 @@ export function CycleView({
             <>
               <div className="flex flex-col gap-0.5">
                 <p className="font-bold">
-                  Siembra el {formatDate(cycle.sowing_date)} → {kind === "cover" ? "se incorpora" : "cosecha estimada"} ~
+                  {t("pages.strategies.CycleView.plantingOn")} {formatDate(cycle.sowing_date)} →{" "}
+                  {kind === "cover" ? t("pages.strategies.CycleView.incorporatedIntoTheSoil") : t("cycle.estimatedHarvest")} ~
                   {formatDate(cycle.harvest_estimate)}
                 </p>
                 <p className="text-[15px] text-texto-secundario">{harvestNote(cycle.harvest_basis)}</p>
               </div>
-              {example && <ExampleLabel>respuesta simulada</ExampleLabel>}
+              {example && <ExampleLabel>{t("pages.strategies.CycleView.simulatedResponse")}</ExampleLabel>}
               {diagnosis ? (
                 <DiagnosisLights overall={diagnosis.overall} overallDefault={diagnosis.overall_default} weights={diagnosis.weights} />
               ) : (
                 <p className="border-2 border-dashed border-superficie-borde px-4 py-3">
-                  <span aria-hidden="true">? </span>Este ciclo no trae su diagnóstico: no se puede decir cómo le va al cultivo en esa
-                  ventana.
+                  <span aria-hidden="true">? </span>
+                  {t("pages.strategies.CycleView.thisCycleHasNoDiagnosisItsPlanting")}
                 </p>
               )}
               {cycle.cycle === 1 && (
@@ -140,14 +147,14 @@ export function CycleView({
           <div className="flex flex-wrap justify-between gap-3 border-t-2 border-superficie-borde pt-3">
             {previous ? (
               <Link to={link(previous.cycle)} className={`${LINK} inline-flex min-h-11 items-center`}>
-                ‹ Ciclo {previous.cycle}: {name(previous).toLowerCase()}
+                {t("pages.strategies.CycleView.cycle2")} {previous.cycle}: {name(previous).toLowerCase()}
               </Link>
             ) : (
               <span />
             )}
             {next && (
               <Link to={link(next.cycle)} className={`${LINK} inline-flex min-h-11 items-center`}>
-                Ciclo {next.cycle}: {name(next).toLowerCase()} ›
+                {t("pages.strategies.CycleView.cycle")} {next.cycle}: {name(next).toLowerCase()} ›
               </Link>
             )}
           </div>
@@ -173,10 +180,12 @@ export function CycleView({
           )}
 
       <div className="flex flex-col gap-3">
-        <p className="border-2 border-oscuro-oliva bg-[#EEF2E4] px-4 py-3 font-bold">Es información para decidir. La decisión es suya.</p>
+        <p className="border-2 border-oscuro-oliva bg-[#EEF2E4] px-4 py-3 font-bold">
+          {t("pages.strategies.CycleView.informationToHelpYouDecideTheDecision")}
+        </p>
         <p className="text-[15px] text-texto-secundario">
-          Datos {(diagnosis?.versions ?? versions).dataset ?? "sin versión"} · Reglas{" "}
-          {(diagnosis?.versions ?? versions).rules ?? "sin versión"}
+          {t("pages.strategies.CycleView.data")} {(diagnosis?.versions ?? versions).dataset ?? t("pages.strategies.CycleView.noVersion")}{" "}
+          {t("pages.strategies.CycleView.rules")} {(diagnosis?.versions ?? versions).rules ?? t("pages.strategies.CycleView.noVersion")}
         </p>
       </div>
     </div>
@@ -185,27 +194,31 @@ export function CycleView({
 
 /** Un descanso no tiene semáforo: dice cuánto dura y por qué la estrategia lo propone (sus razones, con regla y fuente). */
 function Rest({ cycle, reasons }: { cycle: Cycle; reasons: string[] }) {
+  useTranslation();
   return (
     <>
       <p className="font-bold">
-        Del {formatDate(cycle.sowing_date)} al {formatDate(cycle.harvest_estimate)} ·{" "}
-        {weeksBetween(cycle.sowing_date, cycle.harvest_estimate)} semanas sin sembrar.
+        {t("pages.strategies.CycleView.from")} {formatDate(cycle.sowing_date)} {t("pages.strategies.CycleView.to")}{" "}
+        {formatDate(cycle.harvest_estimate)} · {weeksBetween(cycle.sowing_date, cycle.harvest_estimate)}{" "}
+        {t("pages.strategies.CycleView.weeksWithoutPlanting")}
       </p>
       <div className="flex items-start gap-3 border-2 border-dashed border-superficie-borde px-4 py-3">
         <svg aria-hidden="true" viewBox="0 0 20 20" className="mt-0.5 size-5 shrink-0">
           <polygon points="10,1 19,10 10,19 1,10" fill="none" stroke="currentColor" strokeWidth="2" />
         </svg>
         <div className="flex flex-col gap-1">
-          <p className="font-bold">Sin semáforo: en un descanso no se siembra</p>
-          <p className="text-[15px] text-texto-secundario">No hay fecha que evaluar ni señales que calificar.</p>
+          <p className="font-bold">{t("pages.strategies.CycleView.noTrafficLightNothingIsPlantedDuring")}</p>
+          <p className="text-[15px] text-texto-secundario">{t("pages.strategies.CycleView.thereIsNoDateToAssessOr")}</p>
         </div>
       </div>
       {reasons.length > 0 && (
         <div className="flex flex-col gap-1">
-          <p className="font-bold">Por qué la estrategia lo propone</p>
+          <p className="font-bold">{t("pages.strategies.CycleView.whyTheStrategySuggestsIt")}</p>
           <ul className="flex list-disc flex-col gap-1 pl-5">
             {reasons.map((reason) => (
-              <li key={reason}>{reason}</li>
+              <li lang="es" key={reason}>
+                {reason}
+              </li>
             ))}
           </ul>
         </div>
@@ -215,14 +228,16 @@ function Rest({ cycle, reasons }: { cycle: Cycle; reasons: string[] }) {
 }
 
 function AfterRest({ next, name, to }: { next: Cycle; name: string; to: string }) {
+  useTranslation();
   return (
     <Card bodyClassName="gap-2">
-      <h2 className="text-[clamp(1.15rem,2.5vw,1.4rem)]">Después del descanso</h2>
+      <h2 className="text-[clamp(1.15rem,2.5vw,1.4rem)]">{t("pages.strategies.CycleView.afterFallow")}</h2>
       <p>
-        El ciclo {next.cycle} es {name.toLowerCase()}, sembrando el {formatDate(next.sowing_date)}.
+        {t("pages.strategies.CycleView.cycle3")} {next.cycle} {t("pages.strategies.CycleView.is")} {name.toLowerCase()}
+        {t("pages.strategies.CycleView.plantingOn2")} {formatDate(next.sowing_date)}.
       </p>
       <Link to={to} className={`${LINK} inline-flex min-h-11 items-center self-start`}>
-        Ver el ciclo {next.cycle}: {name.toLowerCase()}
+        {t("pages.strategies.CycleView.viewTheCycle")} {next.cycle}: {name.toLowerCase()}
       </Link>
     </Card>
   );
@@ -248,20 +263,21 @@ function Register({
   areaHa: number | null;
   irrigated: boolean | null | undefined;
 }) {
+  useTranslation();
   const navigate = useNavigate();
   if (!signedIn) {
     return (
       <ButtonLink to={PATHS.signup} className="w-full sm:w-auto sm:self-start">
-        Crear cuenta y registrarla
+        {t("pages.strategies.CycleView.createAccountAndRecordIt")}
       </ButtonLink>
     );
   }
   if (!lot) {
     return (
       <p className="text-[15px]">
-        Para registrar esta siembra, consulte las estrategias desde uno de sus lotes.{" "}
+        {t("pages.strategies.CycleView.toRecordThisPlantingExploreStrategiesFrom")}{" "}
         <Link to={PATHS.farm} className={LINK}>
-          Ir a Mi finca
+          {t("pages.strategies.CycleView.goToMyFarm")}
         </Link>
       </p>
     );
@@ -269,9 +285,10 @@ function Register({
   if (cycle.sowing_date > todayIso()) {
     return (
       <p className="text-[15px]">
-        Cuando la siembre, desde el {formatDate(cycle.sowing_date)}, regístrela en su lote.{" "}
+        {t("pages.strategies.CycleView.whenYouPlantItFrom")} {formatDate(cycle.sowing_date)}
+        {t("pages.strategies.CycleView.recordItInYourPlot")}{" "}
         <Link to={PATHS.lot(lot.lotId)} className={LINK}>
-          Ir a mi lote
+          {t("pages.strategies.CycleView.goToMyPlot")}
         </Link>
       </p>
     );
@@ -294,7 +311,7 @@ function Register({
   };
   return (
     <Button className="w-full sm:w-auto sm:self-start" onClick={() => void navigate(PATHS.sow(lot.lotId), { state: { plan } })}>
-      Registrar esta siembra de {name.toLowerCase()}
+      {t("pages.strategies.CycleView.recordThisPlantingOf")} {name.toLowerCase()}
     </Button>
   );
 }
@@ -316,6 +333,7 @@ function CycleDetails({
   areaHa: number | null;
   version: Version | undefined;
 }) {
+  useTranslation();
   const soil = useMunicipalitySoil(diagnosis.signals?.soil ? municipalityId : null);
   const water = useWaterPlan(waterRequest(municipalityId, areaHa, cycle));
   const trends = useTrends(municipalityId, cycle.crop_id, cycle.sowing_date);
@@ -331,13 +349,13 @@ function CycleDetails({
       >
         <h2 id="aptitud" className="text-[clamp(1.1rem,2.5vw,1.3rem)]">
           {diagnosis.suitability.level === "not_suitable"
-            ? "No se da en su zona"
+            ? t("pages.strategies.CycleView.unsuitableForYourArea")
             : diagnosis.suitability.level === "suitable"
-              ? "Se da en su zona"
-              : "Aptitud sin datos suficientes"}
+              ? t("pages.strategies.CycleView.suitableForYourArea")
+              : t("pages.strategies.CycleView.insufficientSuitabilityData")}
         </h2>
         {diagnosis.suitability.reasons.map((reason) => (
-          <p key={reason} className="text-[15px]">
+          <p lang="es" key={reason} className="text-[15px]">
             {reason}
           </p>
         ))}
@@ -348,11 +366,11 @@ function CycleDetails({
         <section aria-labelledby="senales" className="flex min-w-0 flex-col gap-4">
           <div className="flex flex-col gap-1">
             <h2 id="senales" className="text-[clamp(1.25rem,3vw,1.75rem)]">
-              Las seis señales de este ciclo
+              {t("pages.strategies.CycleView.theSixSignalsForThisCycle")}
             </h2>
             <p className="max-w-[880px] text-texto-secundario">
-              Las mismas del diagnóstico, calificadas de 0 a 100 frente a lo que necesita {cropName.toLowerCase()}. Ninguna se promedia con
-              otra.
+              {t("pages.strategies.CycleView.theSameAsInTheDiagnosisScored")} {cropName.toLowerCase()}
+              {t("pages.strategies.CycleView.signalsAreNotAveragedTogether")}
             </p>
           </div>
           <SignalList
@@ -382,23 +400,24 @@ function CycleDetails({
       <section aria-labelledby="verdor" className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h2 id="verdor" className="text-[clamp(1.25rem,3vw,1.75rem)]">
-            Verdor de la zona
+            {t("pages.strategies.CycleView.vegetationGreennessInTheArea")}
           </h2>
-          <p className="font-bold">Cuándo suele estar verde el campo en su zona · MODIS, 250 m</p>
+          <p className="font-bold">{t("pages.strategies.CycleView.whenTheAreasFieldsAreUsuallyGreen")}</p>
         </div>
         <Card bodyClassName="gap-3">
           {trends.isPending ? (
-            <p role="status">Cargando el verdor…</p>
+            <p role="status">{t("pages.strategies.CycleView.loadingVegetationGreenness")}</p>
           ) : !ndvi || ndvi.status !== "available" || ndvi.points.every((p) => typeof p.ndvi_normal !== "number") ? (
             <p className="text-texto-secundario">
-              <span aria-hidden="true">? </span>Sin datos suficientes del verdor de su zona.
+              <span aria-hidden="true">? </span>
+              {t("pages.strategies.CycleView.insufficientVegetationGreennessDataForYourArea")}
             </p>
           ) : (
             <>
               <GreenChart points={ndvi.points} spans={windowSpans(cycle.sowing_date, cycle.harvest_estimate)} />
               <p className="text-[14px] text-texto-secundario">
-                Dato de la zona, a 250 m: mezcla cultivos, pastos y bosque. No es una medición de su lote ni dice cómo le irá a su cultivo.
-                {ndvi.quality === "partial" ? " Hay periodos con pocos datos." : ""}
+                {t("pages.strategies.CycleView.areaDataAt250MMixesCrops")}
+                {ndvi.quality === "partial" ? t("pages.strategies.CycleView.somePeriodsHaveLimitedData") : ""}
               </p>
             </>
           )}
@@ -406,24 +425,26 @@ function CycleDetails({
       </section>
 
       <Card bodyClassName="gap-2">
-        <h2 className="text-[clamp(1.1rem,2.5vw,1.3rem)]">¿Qué cambió en su zona?</h2>
+        <h2 className="text-[clamp(1.1rem,2.5vw,1.3rem)]">{t("landing.question.changes")}</h2>
         <p>
-          Heladas, lluvia y calor de dos periodos de la historia de su zona, y cómo se movieron las mejores fechas de{" "}
-          {cropName.toLowerCase()}. No es un pronóstico.
+          {t("pages.strategies.CycleView.frostRainfallAndHeatOverTwoHistorical")} {cropName.toLowerCase()}
+          {t("pages.strategies.CycleView.thisIsNotAForecast")}
         </p>
         <Link to={changes} className={`${LINK} inline-flex min-h-11 items-center self-start`}>
-          Ver qué cambió en su zona
+          {t("pages.changes.LotChangesLink.seeWhatHasChangedInYourArea")}
         </Link>
       </Card>
 
       {diagnosis.limitations.length > 0 && (
         <section aria-labelledby="limitaciones-ciclo" className="flex max-w-[880px] min-w-0 flex-col gap-2">
           <h2 id="limitaciones-ciclo" className="text-[clamp(1.1rem,2.5vw,1.35rem)]">
-            Limitaciones de este ciclo
+            {t("pages.strategies.CycleView.limitationsForThisCycle")}
           </h2>
           <ul className="flex list-disc flex-col gap-1 pl-5">
             {diagnosis.limitations.map((limitation) => (
-              <li key={limitation}>{limitation}</li>
+              <li lang="es" key={limitation}>
+                {limitation}
+              </li>
             ))}
           </ul>
         </section>

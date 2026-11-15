@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useRef, type KeyboardEvent } from "react";
 import { Plate } from "./Plate";
 
@@ -9,24 +11,32 @@ export interface Priorities {
   risk: number;
 }
 
-const CRITERIA: { key: keyof Priorities; label: string; hint: string }[] = [
-  { key: "water", label: "Agua", hint: "que necesite poca agua" },
-  { key: "soil", label: "Suelo", hint: "que cuide el suelo" },
-  { key: "income", label: "Ingreso", hint: "que deje buen ingreso" },
-  { key: "risk", label: "Riesgo", hint: "que tenga poco riesgo" },
+const CRITERIA = (): { key: keyof Priorities; label: string; hint: string }[] => [
+  { key: "water", label: t("landing.signal.water"), hint: t("components.ui.PriorityControl.lowWaterNeeds") },
+  { key: "soil", label: t("landing.signal.soil"), hint: t("components.ui.PriorityControl.protectingTheSoil") },
+  { key: "income", label: t("components.ui.PriorityControl.income"), hint: t("components.ui.PriorityControl.goodIncome") },
+  { key: "risk", label: t("components.ui.PriorityControl.risk"), hint: t("components.ui.PriorityControl.lowRisk") },
 ];
 
-export const LEVEL_WORD = ["No importa", "Muy poco", "Poco", "Algo", "Mucho", "Lo más importante"];
+export const LEVEL_WORD = () => [
+  t("components.ui.PriorityControl.notImportant"),
+  t("components.ui.PriorityControl.veryLittle"),
+  t("components.ui.PriorityControl.little"),
+  t("components.ui.PriorityControl.somewhat"),
+  t("components.ui.PriorityControl.veryMuch"),
+  t("components.ui.PriorityControl.mostImportant"),
+];
 
 export const MAX_PRIORITY = 5;
 const LEVELS = [0, 1, 2, 3, 4, 5];
 
 export function allZero(p: Priorities) {
-  return CRITERIA.every(({ key }) => p[key] === 0);
+  return CRITERIA().every(({ key }) => p[key] === 0);
 }
 
 /** La semilla del kit: llena o vacía. La usan el control de prioridad y la escala de aptitud (HU-194). */
 export function Seed({ filled }: { filled: boolean }) {
+  useTranslation();
   return (
     <svg aria-hidden="true" viewBox="0 0 44 44" className="size-full">
       {filled ? (
@@ -65,6 +75,7 @@ export interface SeedRowProps {
 
 /** Un «0» y cinco semillas. Es un grupo de opciones: se toca la semilla, no se arrastra. */
 export function SeedRow({ label, hint, note, value, disabled, onChange }: SeedRowProps) {
+  useTranslation();
   const group = useRef<HTMLDivElement>(null);
 
   const move = (next: number) => {
@@ -102,7 +113,7 @@ export function SeedRow({ label, hint, note, value, disabled, onChange }: SeedRo
             role="radio"
             data-level={level}
             aria-checked={value === level}
-            aria-label={`${level} de ${MAX_PRIORITY}, ${LEVEL_WORD[level]}`}
+            aria-label={t("components.ui.PriorityControl.outOf", { v0: level, v1: MAX_PRIORITY, v2: LEVEL_WORD()[level] })}
             tabIndex={value === level ? 0 : -1}
             disabled={disabled}
             onClick={() => onChange(level)}
@@ -131,7 +142,7 @@ export function SeedRow({ label, hint, note, value, disabled, onChange }: SeedRo
         ))}
       </div>
       <span className="min-w-44 text-texto-secundario tabular-nums" aria-hidden="true">
-        {value} · {LEVEL_WORD[value]}
+        {value} · {LEVEL_WORD()[value]}
       </span>
     </div>
   );
@@ -144,6 +155,7 @@ export interface PriorityControlProps {
 }
 
 export function PriorityControl({ value, onChange, disabled = false }: PriorityControlProps) {
+  useTranslation();
   const invalid = allZero(value);
   return (
     <fieldset
@@ -151,8 +163,8 @@ export function PriorityControl({ value, onChange, disabled = false }: PriorityC
       className="flex flex-col gap-4 disabled:opacity-60"
       aria-describedby={invalid ? "priorities-error" : undefined}
     >
-      <legend className="mb-3 font-titulos text-lg font-titulo">¿Qué le importa más?</legend>
-      {CRITERIA.map(({ key, label, hint }) => (
+      <legend className="mb-3 font-titulos text-lg font-titulo">{t("components.ui.PriorityControl.whatMattersMostToYou")}</legend>
+      {CRITERIA().map(({ key, label, hint }) => (
         <SeedRow
           key={key}
           label={label}
@@ -164,7 +176,8 @@ export function PriorityControl({ value, onChange, disabled = false }: PriorityC
       ))}
       {invalid && (
         <p id="priorities-error" role="alert" className="font-bold text-oscuro-rojo">
-          <span aria-hidden="true">▲ </span>Suba al menos una prioridad para poder comparar opciones.
+          <span aria-hidden="true">▲ </span>
+          {t("components.ui.PriorityControl.increaseAtLeastOnePriorityToCompare")}
         </p>
       )}
     </fieldset>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { createContext, use, useMemo, type ReactNode } from "react";
 import { useSmoothScroll } from "@/hooks/useSmoothScroll";
 
@@ -27,6 +28,7 @@ const ScrollContext = createContext<ScrollApi>(NATIVE);
 
 /** Scroll con inercia (Lenis) para la página que envuelve, y navegación entre sus secciones. */
 export function SmoothScroll({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+  useTranslation();
   const lenis = useSmoothScroll(enabled);
   const api = useMemo<ScrollApi>(
     () => ({

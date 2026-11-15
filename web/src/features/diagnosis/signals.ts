@@ -1,3 +1,4 @@
+import { t, locale } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 import type { Version } from "@/features/version";
@@ -15,17 +16,17 @@ export const P0_SIGNALS = ["water", "frost", "heat", "soil", "supply", "market"]
 export const P1_SIGNALS = ["excess_rain", "disease", "harvest_weather"] as const;
 export type P0Signal = (typeof P0_SIGNALS)[number];
 
-export const SIGNAL_NAME: Record<string, string> = {
-  water: "Agua",
-  frost: "Heladas",
-  heat: "Calor",
-  soil: "Suelo",
-  supply: "Oferta",
-  market: "Mercado",
-  excess_rain: "Exceso de lluvia",
-  disease: "Enfermedades por clima",
-  harvest_weather: "Clima en la cosecha",
-};
+export const SIGNAL_NAME = (): Record<string, string> => ({
+  water: t("landing.signal.water"),
+  frost: t("landing.signal.frost"),
+  heat: t("landing.signal.heat"),
+  soil: t("landing.signal.soil"),
+  supply: t("landing.signal.supply"),
+  market: t("landing.signal.market"),
+  excess_rain: t("features.diagnosis.signals.excessRainfall"),
+  disease: t("features.diagnosis.signals.climaterelatedDiseases"),
+  harvest_weather: t("features.diagnosis.signals.harvestWeather"),
+});
 
 export const isP0 = (key: string): key is P0Signal => (P0_SIGNALS as readonly string[]).includes(key);
 
@@ -54,43 +55,47 @@ export const isGrave = (key: string, signal: Signal) =>
 /** Cómo se estimó la cosecha (R5: solo se cita lo que el motor evaluó). En el MVP, por la duración de las etapas (HU-220). */
 export function harvestNote(basis: "calendar" | "normal_year" | null | undefined): string {
   return basis === "normal_year"
-    ? "Estimación con un año normal, no es pronóstico."
-    : "Cosecha estimada con la duración de las etapas del cultivo. No es pronóstico.";
+    ? t("features.diagnosis.signals.estimateForANormalYearNotA")
+    : t("features.diagnosis.signals.estimatedHarvestBasedOnCropStageDurations");
 }
 
 /** La señal de agua dice con qué riego se evaluó (HU-092). Nulo se evalúa como sin riego y se dice. */
 export function irrigationNote(irrigated: boolean | null | undefined): string {
-  if (irrigated === true) return "Evaluada con riego: la falta de lluvia no se cuenta como riesgo.";
-  if (irrigated === false) return "Evaluada sin riego.";
-  return "Evaluada sin riego, porque no dijo si tiene riego.";
+  if (irrigated === true) return t("features.diagnosis.signals.assessedWithIrrigationRainfallShortagesDoNot");
+  if (irrigated === false) return t("features.diagnosis.signals.assessedWithoutIrrigation");
+  return t("features.diagnosis.signals.assessedWithoutIrrigationBecauseIrrigationStatusWas");
 }
 
 /** La señal de oferta dice de qué año y semestre de EVA es el dato y si es preliminar (HU-092). */
 export function supplyNote(semester: SupplySemester | null | undefined): string {
-  if (!semester) return "Sin dato de EVA para el semestre en que cae la siembra.";
-  return `Dato de EVA de ${semester.year}, semestre ${semester.semester}${semester.preliminary ? ", preliminar" : ""}.`;
+  if (!semester) return t("features.diagnosis.signals.noEvaDataForTheSemesterIn");
+  return t("features.diagnosis.signals.evaDataFromSemester", {
+    v0: semester.year,
+    v1: semester.semester,
+    v2: semester.preliminary ? ", preliminar" : "",
+  });
 }
 
-const INDICATOR_NAME: Record<string, string> = {
-  precip_mm: "Lluvia en la ventana",
-  soil_wetness_root: "Humedad del suelo en la raíz",
-  sm_rootzone_m3_m3: "Humedad del suelo en la raíz",
-  planted_change_pct: "Cambio del área sembrada",
-};
+const INDICATOR_NAME = (): Record<string, string> => ({
+  precip_mm: t("features.diagnosis.signals.rainfallDuringThePlantingWindow"),
+  soil_wetness_root: t("features.diagnosis.signals.rootzoneSoilMoisture"),
+  sm_rootzone_m3_m3: t("features.diagnosis.signals.rootzoneSoilMoisture"),
+  planted_change_pct: t("features.diagnosis.signals.changeInPlantedArea"),
+});
 
 /** Sin nombre conocido, el código del indicador: nunca se inventa uno. */
-export const indicatorName = (indicator: string) => INDICATOR_NAME[indicator] ?? indicator;
+export const indicatorName = (indicator: string) => INDICATOR_NAME()[indicator] ?? indicator;
 
 /**
  * Lo que hay que decir de cada producto de la NASA junto a su valor (`docs/fuentes.md`; R8 y R10): POWER es un reanálisis,
  * no una observación directa, y la humedad del suelo es un dato de la zona, con su resolución.
  */
-const SOURCE_NOTE: Record<string, string> = {
-  nasa_power: "Reanálisis: un modelo con observaciones, no una medición directa de satélite. Dato de la zona, en celdas de unos 50 km.",
-  imerg: "Lluvia estimada por satélite. Dato de la zona, en celdas de unos 10 km.",
-  smap: "Satélite. Dato de la zona, en celdas de 9 km.",
-};
-export const sourceNote = (sourceId: string) => SOURCE_NOTE[sourceId] ?? null;
+const SOURCE_NOTE = (): Record<string, string> => ({
+  nasa_power: t("features.diagnosis.signals.reanalysisAModelUsingObservationsNotA"),
+  imerg: t("features.diagnosis.signals.satelliteestimatedRainfallAreaDataInCellsOf"),
+  smap: t("features.diagnosis.signals.satelliteDataAreaDataIn9Km"),
+});
+export const sourceNote = (sourceId: string) => SOURCE_NOTE()[sourceId] ?? null;
 
 /** El nombre de los productos de la NASA, de EVA y de SoilGrids como los nombra `docs/fuentes.md`, para cuando su fila aún no está publicada. */
 const PRODUCT_NAME: Record<string, string> = {
@@ -112,23 +117,23 @@ export function sourceName(sourceId: string, version: Version | undefined): stri
   return row.institution ? `${row.name} (${row.institution})` : row.name;
 }
 
-const NUMBER = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
+const NUMBER = () => new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 });
 
 /** «410 mm», «35 %», «0,61 fracción». Sin valor: «Sin dato» (R1). */
 export function formatValue(value: number | null | undefined, unit: string): string {
-  if (value === null || value === undefined) return "Sin dato";
-  return `${NUMBER.format(value)} ${unit}`.trim();
+  if (value === null || value === undefined) return t("features.diagnosis.signals.noData");
+  return `${NUMBER().format(value)} ${unit}`.trim();
 }
 
 /** «pH estimado de 5,2 a 5,8» con el rango p05–p95 (R10). Sin rango, nada: no se inventa. */
 export function phRange(soil: MunicipalitySoil | undefined): string | null {
   const ph = soil?.ph;
   if (!ph || ph.p05 === null || ph.p95 === null) return null;
-  const middle = ph.value === null ? "" : ` (valor central ${NUMBER.format(ph.value)})`;
-  return `pH estimado de ${NUMBER.format(ph.p05)} a ${NUMBER.format(ph.p95)}${middle}`;
+  const middle = ph.value === null ? "" : t("features.diagnosis.signals.centralValue", { v0: NUMBER().format(ph.value) });
+  return t("features.diagnosis.signals.estimatedPhFromTo", { v0: NUMBER().format(ph.p05), v1: NUMBER().format(ph.p95), v2: middle });
 }
 
-export const SOIL_ESTIMATE = "Estimación de un mapa global de 250 m. Un análisis de suelo de su lote es más preciso.";
+export const SOIL_ESTIMATE = () => t("features.diagnosis.signals.estimateFromAGlobal250MMap");
 
 /** El suelo estimado del municipio (`GET /catalogs/municipalities/{id}/soil`), para el rango de la señal de suelo. */
 export function useMunicipalitySoil(municipalityId: string | null | undefined) {

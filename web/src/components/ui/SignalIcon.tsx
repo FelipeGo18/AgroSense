@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { pts, tone, type Pt } from "./Plate";
 
 /** Las seis señales de una ventana de siembra, con sus nombres del contrato (specs/01-reglas.md). */
@@ -20,6 +21,7 @@ const RAYS = Array.from({ length: 8 }, (_, i) => {
 
 /** Ícono low-poly de 44 × 44 de una señal. Misma geometría que design/pantallas/senales.py. */
 export function SignalIcon({ signal, className = "" }: { signal: SignalKey; className?: string }) {
+  useTranslation();
   return (
     <svg aria-hidden="true" viewBox="0 0 44 46" className={`size-11 shrink-0 ${className}`}>
       {signal === "water" && (

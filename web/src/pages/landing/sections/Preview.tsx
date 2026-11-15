@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { PATHS } from "@/app/paths";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -12,25 +13,31 @@ import { PREVIEW } from "../content";
 
 /** Segunda parada: un resultado de muestra, con la acción primero y las seis señales después. */
 export function Preview({ animated }: { animated: boolean }) {
+  const { t, i18n } = useTranslation();
   const scope = useReveal<HTMLElement>(animated, "slide");
   return (
     <section id="ejemplo" ref={scope} aria-labelledby="ejemplo-titulo" className="relative z-10 overflow-x-clip bg-seccion-ejemplo">
       <div className="container-page pt-28 pb-20">
-        <SectionHeader stop="ejemplo" title="Así se revisa un ciclo">
-          {PREVIEW.summary}
+        <SectionHeader stop="ejemplo" title={t("landing.previewTitle")}>
+          {t(PREVIEW.summary, {
+            date: new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-US" : "es-CO", {
+              dateStyle: "long",
+              timeZone: "UTC",
+            }).format(new Date("2027-08-02T12:00:00Z")),
+          })}
         </SectionHeader>
         <div className="mt-10">
           <Card bodyClassName="gap-8 xl:flex-row xl:items-start">
             <div data-reveal="left" className="flex flex-col items-start gap-4 xl:flex-1">
-              <ExampleLabel>cifras de muestra</ExampleLabel>
+              <ExampleLabel>{t("landing.sample")}</ExampleLabel>
               <TrafficLightBadge light="yellow" />
-              <h3 className="text-[clamp(1.75rem,2.5vw,2.125rem)]">{PREVIEW.action}</h3>
-              <p className="max-w-[30rem]">{PREVIEW.reason}</p>
+              <h3 className="text-[clamp(1.75rem,2.5vw,2.125rem)]">{t(PREVIEW.action)}</h3>
+              <p className="max-w-[30rem]">{t(PREVIEW.reason)}</p>
               <ButtonLink to={PATHS.consult} className="w-full sm:w-[340px]">
-                Pruébelo con su municipio
+                {t("landing.try")}
               </ButtonLink>
             </div>
-            <ul aria-label="Las seis señales del ejemplo" className="flex flex-col gap-2.5 xl:w-[560px] xl:shrink-0">
+            <ul aria-label={t("landing.signals")} className="flex flex-col gap-2.5 xl:w-[560px] xl:shrink-0">
               {PREVIEW.signals.map((signal) => {
                 const missing = signal.tone === "insufficient_data";
                 return (
@@ -44,8 +51,8 @@ export function Preview({ animated }: { animated: boolean }) {
                     />
                     <SignalIcon signal={signal.key} className="relative" />
                     <span className="relative flex min-w-40 flex-1 flex-col leading-tight">
-                      <strong>{signal.name}</strong>
-                      <span className="text-xs text-texto-secundario">{signal.detail}</span>
+                      <strong>{t(signal.name)}</strong>
+                      <span className="text-xs text-texto-secundario">{t(signal.detail)}</span>
                     </span>
                     <StatusTag tone={signal.tone} className="w-[168px]" />
                   </li>

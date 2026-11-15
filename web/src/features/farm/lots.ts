@@ -1,3 +1,4 @@
+import { locale } from "@/lib/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 import type { Boundary } from "./geo";
@@ -81,10 +82,10 @@ export function useDeleteLot(lotId: string) {
   });
 }
 
-const HA = new Intl.NumberFormat("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const HA = () => new Intl.NumberFormat(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** «2,50 ha». */
-export const formatHa = (value: number) => `${HA.format(value)} ha`;
+export const formatHa = (value: number) => `${HA().format(value)} ha`;
 
 /**
  * Lo que se escribe en «Área del lote (ha)»: acepta coma o punto decimal («2,5» o «2.5»). Nulo si no es un número
@@ -98,4 +99,4 @@ export function parseHa(text: string): number | null {
 }
 
 /** Lo que se escribe en el campo, a partir del área guardada: «2,5». */
-export const haText = (value: number) => String(value).replace(".", ",");
+export const haText = (value: number) => (locale() === "es-CO" ? String(value).replace(".", ",") : String(value));

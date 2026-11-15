@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { ExampleLabel } from "@/components/ui/Labels";
 
 /**
@@ -5,6 +7,7 @@ import { ExampleLabel } from "@/components/ui/Labels";
  * rotulado como ejemplo, en cualquier pantalla. No se mueve. El espacio de abajo evita que tape el final de la página.
  */
 export function SimulationStrip() {
+  useTranslation();
   return (
     <>
       <div aria-hidden="true" className="h-16" />
@@ -12,9 +15,11 @@ export function SimulationStrip() {
         role="status"
         className="fixed inset-x-0 bottom-0 z-50 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t-2 border-oscuro-calabaza bg-superficie-panel px-3 py-1.5"
       >
-        <ExampleLabel>respuestas simuladas</ExampleLabel>
+        <ExampleLabel>{t("components.layout.SimulationStrip.simulatedResponses")}</ExampleLabel>
         {/* En el celular basta el rótulo: la franja no puede comerse la pantalla. */}
-        <span className="hidden min-w-0 text-sm text-texto-principal sm:inline">Modo simulación: nada de esto viene del motor.</span>
+        <span className="hidden min-w-0 text-sm text-texto-principal sm:inline">
+          {t("components.layout.SimulationStrip.simulationModeTheseResultsDoNotCome")}
+        </span>
       </div>
     </>
   );
