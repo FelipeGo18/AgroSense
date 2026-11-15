@@ -9,7 +9,7 @@ Reglas que este módulo hace cumplir:
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import delete, or_, select, update
+from sqlalchemy import delete, func, or_, select, text, update
 from sqlalchemy.orm import Session as Db
 
 from backend.accounts.models import User
@@ -109,7 +109,10 @@ def page(db: Db, user: User, before: datetime | None, limit: int) -> tuple[list[
 
 def forget_user(db: Db, user: User) -> None:
     """Antes de borrar una cuenta: se borran sus eventos, y en lo que un administrador hizo sobre sus datos se quita
-    de quién eran, para no perder quién hizo qué sin guardar a quién (R9)."""
+    de quién eran, para no perder quién hizo qué sin guardar a quién (R9).
+
+    La base solo deja borrar eventos si en la misma transacción se pide olvidar a esa persona (migración 1.4)."""
+    db.execute(text("select set_config('agrosense.forget_user', :user_id, true)"), {"user_id": str(user.user_id)})
     db.execute(delete(ActivityEvent).where(ActivityEvent.actor_user_id == user.user_id))
     db.execute(
         update(ActivityEvent).where(ActivityEvent.subject_user_id == user.user_id).values(subject_user_id=None, object_id=None, reason=None)
@@ -117,6 +120,10 @@ def forget_user(db: Db, user: User) -> None:
 
 
 def purge_old(db: Db) -> int:
-    """Borra lo que pasó de los 180 días y dice cuántos eventos borró."""
-    result = db.execute(delete(ActivityEvent).where(ActivityEvent.occurred_at < datetime.now(UTC) - RETENTION))
+    """Borra lo que pasó de los 180 días y dice cuántos eventos borró. La base solo lo deja si en la misma transacción se
+    pide la limpieza (migración 1.4)."""
+    db.execute(text("select set_config('agrosense.activity_purge', 'on', true)"))
+    # Con el reloj de la base, el mismo que usa el disparador de la migración 1.4: si se usara el de la API y los dos
+    # relojes no coinciden, la base rechazaría el borrado de lo que está justo en el borde de los 180 días.
+    result = db.execute(delete(ActivityEvent).where(ActivityEvent.occurred_at < func.now() - RETENTION))
     return result.rowcount or 0

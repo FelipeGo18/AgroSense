@@ -48,8 +48,10 @@ from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset
 from backend.engine.sensitive_signal import ClimateNormal
 from backend.engine.stages import CropWindow
+from backend.engine.water_balance import MonthClimate
 from backend.engine.water_need import window_rain_mm
-from backend.engine.water_signal import RainSource, WaterBalanceSummary, missing_data, water_signal
+from backend.engine.water_notes import RainSource, missing_data
+from backend.engine.water_signal import WaterBalanceSummary, water_signal
 from common import signal_sources
 
 # Por qué estos `source_id` viven aquí, en el adaptador y no en el motor (R6, R7): son los productos que este adaptador
@@ -62,16 +64,6 @@ DRY, NORMAL = "precip_dry_mm", "precip_normal_mm"
 WETNESS = "soil_wetness_root"
 MM, FRACTION = "mm", "fracción"
 PERIOD = re.compile(r"^(\d{4})-(\d{4})$")
-
-
-@dataclass(frozen=True)
-class WaterMonth:
-    """El clima normal de la zona en un mes del año, con la forma de `MonthClimate` del balance de HU-144: la
-    ET0 normal y la lluvia del año normal y del año seco de la fuente que calcula la señal. Nulo: sin dato (R1)."""
-
-    et0_mm: float | None
-    rain_normal_mm: float | None
-    rain_dry_mm: float | None
 
 
 @dataclass(frozen=True)
@@ -109,11 +101,13 @@ class ZoneWater:
     et0_mm: Mapping[int, float | None]
     wetness: tuple[Wetness, ...]
 
-    def months(self) -> dict[int, WaterMonth]:
-        """El clima normal de cada mes del año para el balance hídrico (HU-144), con la lluvia de la fuente que calcula
-        la señal: nunca la de contraste (R1)."""
+    def months(self) -> dict[int, MonthClimate]:
+        """El clima normal de cada mes del año para el balance hídrico (HU-144), ya con el tipo del motor
+        (`MonthClimate`), con la lluvia de la fuente que calcula el agua: nunca la de contraste (R1). Lo usan la señal
+        `water` (`window_signals.balance_for`) y el plan de agua (`/water-plans`, HU-146): una sola conversión."""
         return {
-            month: WaterMonth(self.et0_mm.get(month), self.rain.normal_mm.get(month), self.rain.dry_mm.get(month)) for month in range(1, 13)
+            month: MonthClimate(self.et0_mm.get(month), self.rain.normal_mm.get(month), self.rain.dry_mm.get(month))
+            for month in range(1, 13)
         }
 
     def missing(self, window: CropWindow) -> tuple[str, ...]:

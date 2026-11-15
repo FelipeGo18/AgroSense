@@ -41,6 +41,8 @@ const ROUTES = (
     "/diagnostico",
     `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no`,
     "/que-cambio?municipio=15646&cultivo=papa",
+    "/que-cambio",
+    ...["cargando", "sin_conexion", "422", "501", "503"].map((state) => `/que-cambio?municipio=15646&cultivo=papa&estado=${state}`),
     "/mi-finca",
     "/mi-finca/agregar?desde=consulta",
     "/como-funciona",
@@ -223,7 +225,11 @@ async function check(context, route, width, light) {
     });
 
     if (loadingState) {
-      await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+      if (new URL(route, BASE).pathname === "/que-cambio") {
+        await page.getByText("Cargando la comparación histórica…", { exact: true }).waitFor({ state: "visible" });
+      } else {
+        await page.getByRole("heading", { name: "Calculando su diagnóstico…" }).waitFor({ state: "visible" });
+      }
     }
     if (route === "/mi-finca/agregar?desde=consulta") {
       await page.getByRole("status").filter({ hasText: "¿Guardar como su primer lote?" }).waitFor({ state: "visible", timeout: 10000 });

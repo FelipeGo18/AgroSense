@@ -16,10 +16,11 @@ semáforo»).
 - **Sin balance** (o sin lo que pide el cultivo, o sin el déficit del año seco): `insufficient_data`, nivel y
   calificación nulos, no crítica, también con riego (sin balance no se puede decir cuánto regar), y la razón va a las
   limitaciones (R1). Sin la textura del suelo el balance va sin retención: la señal se califica igual y lo dice
-  `NO_RETENTION` en las limitaciones.
+  `NO_RETENTION` (`water_notes.py`) en las limitaciones.
 - **La razón sin datos dice la causa real** (R5): si a algún mes de la ventana le falta la lluvia del año seco de la
-  fuente que calcula la señal o la ET0, el balance ni se pide y la razón es esa (`missing_data`: «Sin la lluvia de GPM
-  IMERG para la zona en …»); «Sin el balance hídrico…» queda solo para cuando esos datos están y falta el balance.
+  fuente que calcula la señal o la ET0, el balance ni se pide y la razón es esa (`water_notes.missing_data`: «Sin la
+  lluvia de GPM IMERG para la zona en …»); «Sin el balance hídrico…» queda solo para cuando esos datos están y falta el
+  balance.
 - **El aviso de la fuente** (`rain_caveat` de `catalog/sources.yaml`) va a las limitaciones en toda respuesta, se
   califique o no la señal (como el `frost_caveat` de HU-077).
 
@@ -34,22 +35,19 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from backend.engine.sensitive_signal import ClimateSignalResult, insufficient, months_phrase, scored
+from backend.engine.sensitive_signal import ClimateSignalResult, insufficient, scored
 from backend.engine.signal_score import AVAILABLE, round_half_up, score_signal
-from backend.engine.stages import CropWindow, WindowMonth
+from backend.engine.stages import CropWindow
+
+# Los textos del agua que comparte con el plan de agua (HU-146) viven en `water_notes.py`.
+from backend.engine.water_notes import NO_RETENTION, RainSource, in_months
+from common.text import of
 
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
 
 WATER = "water"
 INDICATOR = "water_deficit_mm"
-# Sin la textura del suelo o la raíz del cultivo, el balance de HU-144 va sin el agua que guarda el suelo
-# (specs/01-reglas.md, «Cómo se califica cada señal»): la señal se califica igual y se dice. Sin el agua guardada, el
-# déficit no es menor que con ella (el suelo solo guarda lo que sobra de un mes para los siguientes), así que el error
-# va del lado prudente.
-NO_RETENTION = (
-    "El agua se calculó sin la que guarda el suelo: puede faltar menos agua de la que se dice. Verifique la humedad del suelo en campo."
-)
 # La cobertura que deja el riego: pone lo que falta.
 IRRIGATED_COVERAGE = 100.0
 
@@ -84,37 +82,6 @@ class WaterBalanceSummary:
         return (low, high)
 
 
-@dataclass(frozen=True)
-class RainSource:
-    """La fuente de la lluvia que calcula la señal, como se dice en la razón («GPM IMERG»), los años de su periodo
-    normal (del que sale el año seco) y su aviso fijo (`rain_caveat`), si lo tiene."""
-
-    name: str
-    first_year: int | None
-    last_year: int | None
-    caveat: str | None
-
-
-def in_months(months: Sequence[WindowMonth]) -> str:
-    """«en septiembre», «en octubre y diciembre» o «de agosto a noviembre» (sin «en» delante de un tramo)."""
-    phrase = months_phrase(months)
-    return phrase if phrase.startswith("de ") else f"en {phrase}"
-
-
-def missing_data(rain: RainSource, no_rain: Sequence[WindowMonth], no_et0: Sequence[WindowMonth]) -> tuple[str, ...]:
-    """Por qué no se puede pedir el balance de la ventana: los meses sin la lluvia del año seco de la fuente que calcula
-    la señal (`no_rain`) y los meses sin la ET0 (`no_et0`), en orden cronológico. Vacío si no falta nada. Nunca se usa
-    la fuente de contraste en lugar de la que falta (R1)."""
-    notes = []
-    if no_rain:
-        notes.append(
-            f"Sin la lluvia de {rain.name} para la zona {in_months(no_rain)}: el agua no se evalúa, y no se usa otra fuente en su lugar"
-        )
-    if no_et0:
-        notes.append(f"Sin la evapotranspiración de referencia de la zona {in_months(no_et0)}: el agua no se evalúa")
-    return tuple(notes)
-
-
 def water_signal(
     balance: WaterBalanceSummary | None,
     irrigated: bool | None,
@@ -133,7 +100,7 @@ def water_signal(
         return insufficient(missing[0], (*missing[1:], *notices))
     covered = None if balance is None else balance.covered_pct()
     if covered is None or window is None:
-        return insufficient(f"Sin el balance hídrico de {crop_name} en esta ventana: el agua no se evalúa", notices)
+        return insufficient(f"Sin el balance hídrico {of(crop_name)} en esta ventana: el agua no se evalúa", notices)
     if rain.first_year is None or rain.last_year is None:
         # Sin el periodo no se puede decir de qué años es la lluvia del año seco (R5): no se califica.
         return insufficient(f"Sin el periodo de la lluvia de {rain.name}: el agua no se evalúa", notices)
@@ -143,7 +110,7 @@ def water_signal(
     score = score_signal(WATER, IRRIGATED_COVERAGE if irrigated else covered[0], thresholds)
     if score.status != AVAILABLE:
         # Una curva de `water` nula en `thresholds.yaml` (sin fuente para sus cortes): no se califica (R1, R8).
-        return insufficient(f"Sin una curva con fuente para calificar el agua de {crop_name}: el agua no se evalúa", limitations)
+        return insufficient(f"Sin una curva con fuente para calificar el agua {of(crop_name)}: el agua no se evalúa", limitations)
     when = in_months(window.months())
     # El año seco de cada mes, sumado: un poco más seco que el año seco de la ventana (va del lado prudente, PR #115).
     dry_year = (

@@ -19,11 +19,13 @@ from fastapi.testclient import TestClient
 from backend.api import window_signals as window_signals_module
 from backend.api.lot_terrain import lot_texture, zone_texture
 from backend.api.main import app
-from backend.api.water_signals import RainNormal, WaterMonth, ZoneWater
+from backend.api.water_signals import RainNormal, ZoneWater
 from backend.config.settings import get_settings
 from backend.dataset import Grid, get_dataset
 from backend.engine.stages import StageSpan, crop_window
-from backend.engine.water_signal import RainSource, WaterBalanceSummary
+from backend.engine.water_balance import MonthClimate
+from backend.engine.water_notes import RainSource
+from backend.engine.water_signal import WaterBalanceSummary
 from common import region
 from common.grid import GRID_STEP_DEG as STEP
 from common.grid import cell_id, cell_key
@@ -189,7 +191,7 @@ def test_el_balance_recibe_la_ventana_el_clima_de_la_fuente_usada_la_textura_y_l
     for month in range(1, 13):
         rain = imerg.filter(pl.col("month") == month).row(0, named=True)
         et0 = power.filter(pl.col("month") == month).row(0, named=True)["et0_normal_mm"]
-        assert climate[month] == WaterMonth(et0, rain["precip_normal_mm"], rain["precip_dry_mm"])
+        assert climate[month] == MonthClimate(et0, rain["precip_normal_mm"], rain["precip_dry_mm"])
 
 
 def test_sin_la_lluvia_de_la_fuente_usada_el_agua_es_sin_datos_aunque_power_tenga(examples_copy, monkeypatch):
