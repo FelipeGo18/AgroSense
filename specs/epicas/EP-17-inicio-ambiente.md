@@ -43,9 +43,9 @@ estado: en curso
 ### HU-171 · Diseño de la mascota satélite
 
 - **Historia:** Como equipo, quiero una mascota satélite tecnológica y tierna, para que AgroSense tenga una cara reconocible.
-- **Prioridad:** P1 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Bocetos y versión final en Figma, en 2D y como modelo 3D low-poly
+  - [x] Bocetos y versión final en Figma, en 2D y como modelo 3D low-poly. **Cambiado el 14 nov 2026 (decidido por Felipe):** los bocetos están en Figma y en `design/mascota/`; la versión final vive en el código: 2D por capas en `Mascot.tsx` y modelo 3D low-poly en `Mascot3D.tsx`, con las mismas partes y puntos de giro, documentados en `design/mascota/README.md`
   - [x] Original: no se parece a un satélite ni personaje de marca existente
   - [x] Legible a 48 px en su versión 2D
 - **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. El MVP usa la versión estática 2D ya diseñada. Elegida la **Semilla Sputnik**: una semilla germinando dibujada como caricatura de los años 60 (tinta gruesa, ojos de pastel, brazos de manguera). Las raíces son las antenas barridas, el brote es la antena de señal y las hojas son los paneles. La identidad está en la cara, los brazos, las raíces y el brote; **la semilla puede cambiar según el contexto** (germinada, frijol, maíz y las que se agreguen, por ejemplo según el cultivo consultado). Su estilo se aleja a propósito del low-poly: es «otro material» que viaja por el paisaje. Bocetos en Figma (tres rondas: tres conceptos, nueve estilos y la fusión elegida) y en `design/mascota/`; las propuestas descartadas se conservan. Versión 2D en código: `web/src/components/mascot/Mascot.tsx`, con una clase por parte animable. Falta: versión final por capas con puntos de giro en Figma y el modelo 3D.

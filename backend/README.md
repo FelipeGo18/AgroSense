@@ -120,6 +120,20 @@ Sin el perfil `market` no arranca: en desarrollo no se usa la red y la API sirve
 - El log nunca repite una dirección que no existe en la API (`route=[sin ruta]`) y escribe los caracteres de control
   como `\x1b`. Las trazas de errores de base de datos no llevan los valores de la consulta.
 
+## Mensajes al responsable de los datos (HU-163)
+
+Lo que la gente escribe en «Escribir al responsable» (`/mi-cuenta/escribirnos`) queda en `support_tickets`. Mientras no
+exista la bandeja de soporte en la web (HU-170, P1), **Haider los revisa una vez al día** y los contesta por consola, con
+la base del equipo (`AGROSENSE_DATABASE_URL`):
+
+```bash
+uv run python -m backend.accounts.tickets abiertos                              # los sin contestar, el más antiguo primero
+uv run python -m backend.accounts.tickets responder <ticket_id> "La respuesta"  # la guarda, cierra el mensaje y deja la traza
+```
+
+La respuesta se ve en «Mis mensajes». Plazos de la Ley 1581 de 2012: 10 días hábiles para una consulta (art. 14) y 15 para
+un reclamo (art. 15). La traza (`admin.ticket_updated`) nunca guarda el texto (R9).
+
 ## La API sube siempre
 
 La base de datos no tumba la API. Al arrancar se intenta copiar la base y migrar; pase lo que pase, la API sube.
