@@ -9,7 +9,7 @@ from typing import Any
 from fastapi import Depends, FastAPI, Request
 from sqlalchemy.orm import Session
 
-from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, version
+from backend.api import auth, calculations, catalogs, errors, lots, market, seasons, tickets, version
 from backend.api.climate_signals import require_climate_normal
 from backend.config.settings import get_settings
 from backend.config.thresholds import get_thresholds
@@ -101,6 +101,7 @@ def create_app() -> FastAPI:
     app.include_router(version.router)
     app.include_router(catalogs.router)
     app.include_router(lots.router)
+    app.include_router(tickets.router)
     app.include_router(seasons.router)
     app.include_router(calculations.router)
     app.include_router(market.router)

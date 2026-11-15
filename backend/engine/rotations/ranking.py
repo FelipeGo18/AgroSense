@@ -7,9 +7,11 @@ Cuatro criterios de 0 a 100, cada uno con su regla:
 - `soil`: los cinco criterios de salud del suelo (HU-212, `soil_score`);
 - `income`: el promedio, ciclo por ciclo, de la calificación de `supply` y de `market` que tengan dato; un abono verde o
   un descanso no deja cosecha y vale 0. Es el único lugar donde la oferta entra a las estrategias (decisión 12);
-- `risk`: el factor que más limita entre todos los ciclos, el menor `limiting_score` (ley del mínimo). Es la calificación
-  del `limiting_signal` que muestra cada ciclo (el de la luz `light`, con los pesos de quien consulta): un ciclo
-  `not_evaluable` no muestra factor limitante y no cuenta.
+- `risk`: el factor que más limita entre todos los ciclos, el menor `limiting_score` (ley del mínimo). El de cada ciclo
+  es la señal más baja entre las que cuentan y califican con los pesos de quien consulta (`limiting(rated_signals(...))`,
+  la misma primitiva del orden de ventanas, HU-192), también si su luz es `not_evaluable` por falta del agua: que falte
+  un dato nunca mejora el riesgo (R1). Solo un ciclo sin ninguna señal que cuente y califique queda fuera, y se dice
+  (aprobado por Haider el 15 de noviembre de 2026, PR #146).
 
 Un ciclo sin el dato no cuenta y, en `water` y `risk`, se dice; un criterio sin ningún ciclo con dato no califica, no
 entra al total y va a las limitaciones (R1). `total_score` es el promedio de los criterios que califican ponderado por
@@ -26,7 +28,7 @@ from dataclasses import dataclass
 
 from backend.engine.rotations.candidates import FALLOW
 from backend.engine.rotations.soil_health import Criterion, soil_score
-from backend.engine.signal_score import AVAILABLE, SignalScore, round_half_up, weight_of
+from backend.engine.signal_score import AVAILABLE, SignalScore, limiting, rated_signals, round_half_up, weight_of
 
 CRITERIA = ("water", "soil", "income", "risk")
 CROP, COVER = "crop", "cover"
@@ -48,13 +50,11 @@ def _missing_cycle(cycle: int, what: str) -> str:
 
 @dataclass(frozen=True)
 class CycleScores:
-    """Lo que el orden lee de un ciclo: su `kind` (`crop`, `cover` o `fallow`), las calificaciones de sus señales y el
-    factor que más limita de su luz `light`, del mismo diagnóstico de `/diagnostics` (HU-213). `signals` es nulo sin
-    diagnóstico (un descanso o un cultivo no apto); `limiting_signal`, también con la luz `not_evaluable`."""
+    """Lo que el orden lee de un ciclo: su `kind` (`crop`, `cover` o `fallow`) y las calificaciones de sus señales, del
+    mismo diagnóstico de `/diagnostics` (HU-213). `signals` es nulo sin diagnóstico (un descanso o un cultivo no apto)."""
 
     kind: str
     signals: Mapping[str, SignalScore] | None
-    limiting_signal: str | None = None
 
 
 @dataclass(frozen=True)
@@ -79,11 +79,15 @@ def _score(signal: SignalScore | None) -> int | None:
     return signal.score
 
 
-def limiting_score(cycle: CycleScores) -> int | None:
-    """La calificación del factor que más limita que muestra el ciclo; nula sin diagnóstico o sin factor limitante."""
-    if cycle.signals is None or cycle.limiting_signal is None:
+def cycle_limiting(cycle: CycleScores, signal_weights: Mapping[str, float | None]) -> tuple[str, int] | None:
+    """El factor que más limita del ciclo y su calificación: la señal más baja entre las que cuentan y califican con los
+    pesos de quien consulta (`limiting`, `rated_signals`). Nulo sin diagnóstico o sin ninguna señal que cuente y califique."""
+    if cycle.signals is None:
         return None
-    return _score(cycle.signals.get(cycle.limiting_signal))
+    lowest = limiting(rated_signals(cycle.signals, signal_weights))
+    if lowest is None or lowest[1].score is None:  # `rated_signals` solo deja señales con calificación
+        return None
+    return lowest[0], lowest[1].score
 
 
 def _mean(values: Sequence[float]) -> int | None:
@@ -94,6 +98,7 @@ def criteria(
     crop_ids: Sequence[str],
     cycles: Sequence[CycleScores],
     soil_health: Mapping[str, Criterion],
+    signal_weights: Mapping[str, float | None],
 ) -> tuple[dict[str, int | None], tuple[str, ...]]:
     """Los cuatro criterios de una estrategia y sus limitaciones, en el orden de `CRITERIA` (R4)."""
     if len(crop_ids) != len(cycles):
@@ -113,11 +118,11 @@ def criteria(
                 limitations.append(_missing_cycle(number, "calificación de agua"))
             else:
                 water.append(score)
-            lowest = limiting_score(cycle)
+            lowest = cycle_limiting(cycle, signal_weights)
             if lowest is None:
                 limitations.append(_missing_cycle(number, "un factor limitante calificado"))
             else:
-                risk.append(lowest)
+                risk.append(lowest[1])
         if cycle.kind == CROP:
             market = [s for s in (_score((cycle.signals or {}).get(n)) for n in ("supply", "market")) if s is not None]
             if market:
@@ -152,10 +157,11 @@ def score_strategy(
     crop_ids: Sequence[str],
     cycles: Sequence[CycleScores],
     soil_health: Mapping[str, Criterion],
+    signal_weights: Mapping[str, float | None],
     priorities: Mapping[str, float | None],
 ) -> StrategyScores:
     """Los criterios y el total de una estrategia. También sirve para la rotación actual (HU-223), que no entra al orden."""
-    scores, limitations = criteria(crop_ids, cycles, soil_health)
+    scores, limitations = criteria(crop_ids, cycles, soil_health, signal_weights)
     total = total_score(scores, priorities)
     if total is None and any(score is not None for score in scores.values()):
         limitations = (*limitations, NO_TOTAL)

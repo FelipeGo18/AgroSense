@@ -121,15 +121,14 @@ class StrategyCycles:
         return result
 
     def cycle_scores(self, planned: Sequence[PlannedCycle]) -> tuple[CycleScores, ...]:
-        """Lo que el orden de las estrategias (HU-082) lee de cada ciclo: su `kind` del catálogo, las calificaciones de
-        sus señales y el factor que más limita de su luz `light`, los mismos de `cycles`. Nulos en el descanso, que no
-        tiene diagnóstico."""
+        """Lo que el orden de las estrategias (HU-082) lee de cada ciclo: su `kind` del catálogo y las calificaciones de
+        sus señales, las mismas de `cycles`. Nulas en el descanso, que no tiene diagnóstico. El factor que más limita lo
+        calcula el orden con los pesos de quien consulta (`self.query.weights`)."""
         result = []
         for cycle in planned:
             found = self.diagnosis(cycle)
             signals = None if found is None or found.signals is None else signal_scores(found.signals)
-            limiting = None if found is None else found.core.overall.limiting_signal
-            result.append(CycleScores(self.query.dataset.crops[cycle.crop_id]["kind"], signals, limiting))
+            result.append(CycleScores(self.query.dataset.crops[cycle.crop_id]["kind"], signals))
         return tuple(result)
 
     def diagnoser(self) -> Diagnoser:

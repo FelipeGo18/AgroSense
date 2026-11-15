@@ -24,7 +24,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 ### HU-081 · Filtrar estrategias válidas
 
 - **Historia:** Como agricultor, quiero ver solo estrategias agronómicamente válidas, que se den en mi zona y sin ciclos de alto riesgo, para no recibir recomendaciones dañinas.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en revisión (PR de la historia del terreno; código en `backend/engine/rotations/`)
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (PR #108 y #140, 15 nov 2026; código en `backend/engine/rotations/`)
 - **Criterios de aceptación:**
   - **Candidatas (decisión 15, paso 0)**
   - [x] El motor arma todas las secuencias de `cycles` ciclos (2 o 3) con los cultivos del catálogo, de cualquier `kind` (`crop`, `cover`, `fallow`; HU-063), sin el mismo `crop_id` en dos ciclos seguidos y sin dos descansos seguidos
@@ -98,7 +98,7 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
   - [x] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
 - **Reglas que aplican:** R1, R4, R5
 - **Contrato que toca:** `strategies[].scores`, `total_score` y `rank` de `POST /api/v1/rotations`
-- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213. Hecha el 15 de noviembre de 2026 en `backend/engine/rotations/ranking.py`; `StrategyCycles.cycle_scores` (HU-213) le da a cada ciclo su `kind`, sus calificaciones y el factor limitante de su luz. `risk` lee el factor limitante que muestra cada ciclo: un ciclo `not_evaluable` o no apto no cuenta, y se dice (supuesto en `docs/registro-de-decisiones.md`, pendiente de aprobar por Haider o Felipe). El mismo cálculo sirve para la rotación actual (HU-223), que no entra al orden.
+- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213. Hecha el 15 de noviembre de 2026 en `backend/engine/rotations/ranking.py`; `StrategyCycles.cycle_scores` (HU-213) le da a cada ciclo su `kind` y sus calificaciones. El `risk` de cada ciclo es la calificación más baja entre sus señales que cuentan y califican, también si su luz es `not_evaluable` por falta del agua; un ciclo sin ninguna no cuenta, y se dice (aprobado por Haider el 15 de noviembre de 2026, PR #146, con los demás supuestos del registro). El mismo cálculo sirve para la rotación actual (HU-223), que no entra al orden.
 
 ### HU-083 · Explicar el orden de las estrategias
 

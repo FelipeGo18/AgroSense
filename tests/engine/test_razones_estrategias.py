@@ -12,8 +12,6 @@ from backend.engine.rotations.ranking import CycleScores, score_strategy
 from backend.engine.rotations.reasons import NO_TOTAL_DATA, NO_TOTAL_WEIGHTS, PASSES_RULES, strategy_reasons
 from backend.engine.rotations.soil_health import TEAM_NOTE, Criterion
 from backend.engine.signal_score import SignalScore
-from backend.engine.suitability import SUITABLE
-from backend.engine.traffic_light import FARMER, traffic_light
 from tests.engine.test_salud_del_suelo_motor import _sh
 
 EQUAL = {"water": 3, "soil": 3, "income": 3, "risk": 3}
@@ -27,7 +25,7 @@ def crop(water=80, frost=90, heat=95, soil=70, supply=60, kind="crop") -> CycleS
     signals = {
         n: NO_DATA if v is None else SignalScore("available", v, "favorable" if v >= 70 else "moderate", False) for n, v in values.items()
     }
-    return CycleScores(kind, signals, traffic_light(SUITABLE, signals, WEIGHTS, FARMER).limiting_signal)
+    return CycleScores(kind, signals)
 
 
 NITROGEN = Criterion(
@@ -49,8 +47,8 @@ NO_LEVEL = Criterion("insufficient_data", None, ("Falta la pendiente del terreno
 
 def reasons_for(cycles, soil_health, priorities=EQUAL, vs_current=None):
     crop_ids = tuple(f"c{n}" for n in range(len(cycles)))
-    scores = score_strategy(crop_ids, cycles, soil_health, priorities)
-    return scores, strategy_reasons(scores, priorities, cycles, soil_health, vs_current)
+    scores = score_strategy(crop_ids, cycles, soil_health, WEIGHTS, priorities)
+    return scores, strategy_reasons(scores, priorities, cycles, soil_health, WEIGHTS, vs_current)
 
 
 def test_las_cuatro_razones_citan_lo_que_el_motor_evaluo():
@@ -158,9 +156,9 @@ def test_ninguna_razon_dice_cuanto_mejora_el_suelo_ni_cuanto_se_cosecha(vs_curre
 
 def test_los_ciclos_deben_ser_los_de_sus_criterios():
     cycles = (crop(supply=50),)
-    scores = score_strategy(("papa",), cycles, {}, EQUAL)
+    scores = score_strategy(("papa",), cycles, {}, WEIGHTS, EQUAL)
     with pytest.raises(ValueError, match="los ciclos no son los de sus criterios"):
-        strategy_reasons(scores, EQUAL, (crop(supply=70),), {})
+        strategy_reasons(scores, EQUAL, (crop(supply=70),), {}, WEIGHTS)
 
 
 def test_con_las_reglas_del_catalogo_la_razon_de_suelo_es_la_de_soil_health_con_la_nota_del_equipo():
@@ -173,3 +171,11 @@ def test_con_las_reglas_del_catalogo_la_razon_de_suelo_es_la_de_soil_health_con_
     _, reasons = reasons_for((crop(kind="cover"), crop(), crop()), health)
     assert f"Salud del suelo, nitrógeno favorable: {nitrogen.reasons[0]}" in reasons
     assert TEAM_NOTE in nitrogen.reasons[0]
+
+
+def test_un_ciclo_sin_agua_puede_ser_el_factor_que_mas_limita():
+    """Con la regla de Haider (PR #146): sin agua, el ciclo cuenta en el riesgo con sus otras señales; la razón nombra
+    esa señal y ese ciclo, con la misma calificación de `risk`."""
+    scores, reasons = reasons_for((crop(water=None, heat=10), crop(supply=70)), {})
+    assert scores.scores["risk"] == 10
+    assert "El factor que más limita entre sus ciclos es el calor del ciclo 1: 10 de 100" in reasons

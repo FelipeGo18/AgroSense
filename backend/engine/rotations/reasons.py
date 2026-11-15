@@ -19,7 +19,7 @@ salen siempre de 2 a 4 razones, como pide el contrato. Python puro (R6).
 
 from collections.abc import Mapping, Sequence
 
-from backend.engine.rotations.ranking import CRITERIA, CycleScores, StrategyScores, limiting_score
+from backend.engine.rotations.ranking import CRITERIA, CycleScores, StrategyScores, cycle_limiting
 from backend.engine.rotations.soil_health import SOIL_CRITERIA, Criterion
 from backend.engine.signal_score import AVAILABLE, weight_of
 from backend.engine.traffic_light import SIGNAL_NAMES_ES
@@ -93,16 +93,15 @@ def _soil(soil_health: Mapping[str, Criterion]) -> str | None:
     return f"Salud del suelo, {SOIL_CRITERION_NAMES[name]} {level}: {criterion.reasons[0]}"
 
 
-def _limiting(scores: StrategyScores, cycles: Sequence[CycleScores]) -> str | None:
+def _limiting(scores: StrategyScores, cycles: Sequence[CycleScores], signal_weights: Mapping[str, float | None]) -> str | None:
     risk = scores.scores.get("risk")
     if risk is None:
         return None
-    # El primer ciclo con la calificación de `risk` (R4); es la misma cuenta de `criteria`.
-    found = next(((n, c) for n, c in enumerate(cycles, start=1) if limiting_score(c) == risk), None)
-    if found is None:
+    # El primer ciclo con la calificación de `risk` (R4); es la misma cuenta de `criteria` (`cycle_limiting`).
+    lowest = [(n, found) for n, c in enumerate(cycles, start=1) if (found := cycle_limiting(c, signal_weights)) and found[1] == risk]
+    if not lowest:
         raise ValueError(f"Ningún ciclo de {scores.crop_ids} tiene el riesgo {risk}: los ciclos no son los de sus criterios")
-    number, cycle = found
-    signal = cycle.limiting_signal or ""
+    number, (signal, _) = lowest[0]
     return f"El factor que más limita entre sus ciclos es {SIGNAL_NAMES_ES.get(signal, signal)} del ciclo {number}: {risk} de 100"
 
 
@@ -111,17 +110,18 @@ def strategy_reasons(
     priorities: Mapping[str, float | None],
     cycles: Sequence[CycleScores],
     soil_health: Mapping[str, Criterion],
+    signal_weights: Mapping[str, float | None],
     vs_current: Mapping[str, int | None] | None = None,
 ) -> tuple[str, ...]:
-    """Las razones de una estrategia sugerida, de 2 a 4, con los mismos `cycles` y `soil_health` con que se calcularon
-    sus `scores` (HU-082) y, si hay rotación actual, su `vs_current` (HU-223)."""
+    """Las razones de una estrategia sugerida, de 2 a 4, con los mismos `cycles`, `soil_health` y pesos de las señales
+    con que se calcularon sus `scores` (HU-082) y, si hay rotación actual, su `vs_current` (HU-223)."""
     reasons = [
         text
         for text in (
             _top_criterion(scores, priorities),
             _versus_current(vs_current),
             _soil(soil_health),
-            _limiting(scores, cycles),
+            _limiting(scores, cycles, signal_weights),
         )
         if text is not None
     ]
