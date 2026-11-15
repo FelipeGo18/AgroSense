@@ -41,3 +41,8 @@ def join(items: Iterable[str]) -> str:
 def of(name: str) -> str:
     """«de» delante de un nombre con su artículo, con la contracción del español: «de la papa», «del maíz»."""
     return f"del {name[3:]}" if name.startswith("el ") else f"de {name}"
+
+
+def capitalized(text: str) -> str:
+    """La primera letra en mayúscula y lo demás igual: «la papa tolera…» → «La papa tolera…»."""
+    return text[:1].upper() + text[1:]
