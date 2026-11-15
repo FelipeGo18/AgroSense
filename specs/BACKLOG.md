@@ -72,7 +72,7 @@
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-218 | Endpoint de «Qué cambió» | P0 | S | en curso | 14 nov: cargador y comparación mensual conectados para `not_suitable`; 200 con clima, razones, periodos por fuente, versiones y sin ventanas; 422 de entrada y pruebas sin sustitución POWER/IMERG. Aptitud `suitable`/`insufficient_data` sigue en 501 hasta integrar ventanas de HU-217 (HU-144, HU-192 y señales de HU-196). Falta verificar datos publicados de HU-216; no cierra la HU |
 | [EP-07](epicas/EP-07-diagnostico.md) | HU-195 | Señales de exceso de lluvia, enfermedad y cosecha | P1 | M | pendiente | |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-081 | Filtrar estrategias válidas | P0 | M | en revisión | Estrategias de hasta 3 ciclos |
-| [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | pendiente | Nueva |
+| [EP-08](epicas/EP-08-rotaciones.md) | HU-213 | Ciclos de una estrategia con su diagnóstico | P0 | M | hecha | Fechas de los ciclos y diagnóstico por ciclo con la misma función que `/diagnostics` (15 nov); los llama `/rotations` con HU-084 |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-082 | Ordenar estrategias por prioridades | P0 | M | pendiente | Estrategias de hasta 3 ciclos |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-083 | Explicar el orden de las estrategias | P0 | S | pendiente | |
 | [EP-08](epicas/EP-08-rotaciones.md) | HU-084 | Endpoint de estrategias de rotación | P0 | S | pendiente | Suma `current_crop_ids` (decisión 14) |
