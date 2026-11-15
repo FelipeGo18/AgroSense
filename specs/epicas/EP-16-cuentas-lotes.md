@@ -75,6 +75,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Prueba: `usage_daily` no tiene ninguna columna que identifique a una persona ni datos de la finca, y no se puede unir con `activity_log` (R9)
   - [ ] Las métricas son agregadas: consultas por día y municipios y cultivos más consultados salen de `usage_daily` (contador anónimo); lotes y siembras, de las cuentas. Un grupo con menos de 5 va en «Otros». El consentimiento (desde la versión 2) avisa que soporte puede ver los lotes (R9)
 - **Reglas que aplican:** R5, R9
+- **Para la bandeja (revisión del PR #130, 14 nov 2026):** hoy los mensajes de HU-163 se contestan por consola (`python -m backend.accounts.tickets`) y la traza `admin.ticket_updated` queda con `actor_role = admin` pero sin `actor_user_id`, porque no hay usuarios administradores. La bandeja web tiene que registrar quién respondió.
 - **Notas:** Definido el 10 de octubre de 2026. El contador `usage_daily` entra con esta HU (P1): en el P0 los endpoints de cálculo no escriben nada en la base de datos. Falta decidir el resto de funciones del administrador y si su panel va en esta web (supuesto: en `/admin`, solo en escritorio, `specs/05-frontend.md`). El modo desarrollador amplía HU-014. Revisión de seguridad obligatoria.
 
 ### HU-161 · Esquema de cuentas y migraciones

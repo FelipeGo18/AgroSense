@@ -25,13 +25,18 @@ def open_tickets(db: Db) -> list[SupportTicket]:
     return list(db.scalars(select(SupportTicket).where(SupportTicket.status != "closed").order_by(SupportTicket.created_at)))
 
 
-def answer(db: Db, ticket_id: uuid.UUID, reply: str) -> SupportTicket:
-    """Guarda la respuesta, cierra el mensaje y deja la traza. Quien llama confirma la transacción."""
+def answer(db: Db, ticket_id: uuid.UUID, reply: str, *, correct: bool = False) -> SupportTicket:
+    """Guarda la respuesta, cierra el mensaje y deja la traza. Quien llama confirma la transacción.
+
+    Un mensaje que ya tiene respuesta no se vuelve a contestar: la persona pudo haberla leído. Solo con `correct`
+    (`--corregir` en la consola) se cambia, y la traza lo dice."""
     ticket = db.get(SupportTicket, ticket_id)
     if ticket is None:
         raise LookupError(f"No hay un mensaje con el id {ticket_id}.")
     if not reply.strip():
         raise ValueError("La respuesta no puede ir vacía.")
+    if ticket.reply is not None and not correct:
+        raise ValueError("Ese mensaje ya tiene respuesta; use --corregir para cambiarla.")
     now = datetime.now(UTC)
     ticket.reply, ticket.replied_at, ticket.status, ticket.closed_at = reply.strip(), now, "closed", now
     db.add(
@@ -42,7 +47,7 @@ def answer(db: Db, ticket_id: uuid.UUID, reply: str) -> SupportTicket:
             object_type="ticket",
             object_id=ticket.ticket_id,
             ticket_id=ticket.ticket_id,
-            reason="Respuesta por consola",
+            reason="Respuesta corregida por consola" if correct else "Respuesta por consola",
         )
     )
     return ticket
@@ -55,6 +60,7 @@ def main() -> None:
     reply = sub.add_parser("responder", help="Contesta un mensaje y lo cierra")
     reply.add_argument("ticket_id", type=uuid.UUID)
     reply.add_argument("texto")
+    reply.add_argument("--corregir", action="store_true", help="Cambia la respuesta de un mensaje que ya la tiene")
     args = parser.parse_args()
     engine = create_engine(get_settings().database_url, hide_parameters=True, connect_args={"connect_timeout": 3})
     with Db(engine) as db:
@@ -66,7 +72,7 @@ def main() -> None:
                 print(f"{t.ticket_id} · hace {waiting} días{lot}\n  {t.message}\n")
             print(f"{len(tickets)} mensajes sin contestar.")
         else:
-            answer(db, args.ticket_id, args.texto)
+            answer(db, args.ticket_id, args.texto, correct=args.corregir)
             db.commit()
             print("Respuesta guardada; el mensaje quedó cerrado.")
     engine.dispose()

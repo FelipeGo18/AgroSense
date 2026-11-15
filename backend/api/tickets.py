@@ -12,7 +12,7 @@ respuesta (`reply`, `replied_at`) se ve en «Mis mensajes». Hasta 5 mensajes po
 """
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, time
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -28,6 +28,7 @@ from backend.api import calc_examples
 from backend.api.auth import current_user, require_accounts
 from backend.api.errors import ApiError, explain, request_id_of
 from backend.db.session import get_db
+from common.region import region_timezone, region_today
 
 router = APIRouter(
     prefix="/api/v1/me", tags=["cuenta"], dependencies=[Depends(require_accounts)], responses=calc_examples.responses(401, 422)
@@ -68,10 +69,10 @@ def _out(ticket: SupportTicket) -> TicketOut:
 def open_ticket(body: TicketCreate, request: Request, user: User = Depends(current_user), db: Db = Depends(get_db)) -> TicketOut:
     """Abre un mensaje al responsable. Si nombra un lote, tiene que ser uno suyo y sin borrar (404 si no). Hasta
     `DAILY_LIMIT` por día (429 después)."""
+    # «Hoy» es el día en la hora de la región, desde la medianoche, como el resto de la API.
+    midnight = datetime.combine(region_today(), time(0), tzinfo=region_timezone())
     today = db.scalar(
-        select(func.count())
-        .select_from(SupportTicket)
-        .where(SupportTicket.user_id == user.user_id, SupportTicket.created_at > datetime.now(UTC) - timedelta(days=1))
+        select(func.count()).select_from(SupportTicket).where(SupportTicket.user_id == user.user_id, SupportTicket.created_at >= midnight)
     )
     if today >= DAILY_LIMIT:
         raise ApiError(

@@ -9,6 +9,7 @@ from structlog.testing import capture_logs
 
 from backend.accounts import tickets
 from backend.accounts.trace_models import ActivityEvent, SupportTicket
+from common.region import region_timezone, region_today
 
 ROSA = {"username": "rosa.samaca", "password": "papa-criolla-2026", "display_name": "Rosa", "consent_version": 3, "consent_accepted": True}
 LUIS = {**ROSA, "username": "luis.tunja", "display_name": "Luis"}
@@ -108,3 +109,30 @@ def test_contestar_un_mensaje_que_no_existe_o_vacio_falla(client, dataset, db):
         tickets.answer(db, uuid.uuid4(), "Hola")
     with pytest.raises(ValueError, match="vacía"):
         tickets.answer(db, uuid.UUID(ticket_id), "   ")
+
+
+def test_un_mensaje_contestado_no_se_vuelve_a_contestar_sin_corregir(client, dataset, db):
+    client.post("/api/v1/auth/register", json=ROSA)
+    ticket_id = uuid.UUID(client.post("/api/v1/me/tickets", json={"message": MESSAGE}).json()["ticket_id"])
+    tickets.answer(db, ticket_id, "Primera")
+    db.commit()
+    with pytest.raises(ValueError, match="--corregir"):
+        tickets.answer(db, ticket_id, "Segunda")
+    tickets.answer(db, ticket_id, "Segunda", correct=True)
+    db.commit()
+    assert client.get("/api/v1/me/tickets").json()[0]["reply"] == "Segunda"
+    reasons = db.scalars(
+        select(ActivityEvent.reason).where(ActivityEvent.action == "admin.ticket_updated").order_by(ActivityEvent.occurred_at)
+    ).all()
+    assert reasons == ["Respuesta por consola", "Respuesta corregida por consola"]
+
+
+def test_el_limite_cuenta_desde_la_medianoche_de_la_region(client, dataset, db):
+    client.post("/api/v1/auth/register", json=ROSA)
+    user_id = db.scalar(select(ActivityEvent.actor_user_id))
+    # Cinco mensajes de ayer (antes de la medianoche de la región) no cuentan para hoy.
+    midnight = datetime.combine(region_today(), datetime.min.time(), tzinfo=region_timezone())
+    for n in range(5):
+        db.add(SupportTicket(user_id=user_id, message=f"Ayer {n}", created_at=midnight - timedelta(minutes=5)))
+    db.commit()
+    assert client.post("/api/v1/me/tickets", json={"message": "Hoy"}).status_code == 201

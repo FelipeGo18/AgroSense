@@ -346,6 +346,7 @@ Endpoints de cuenta (requieren sesión, salvo `register` y `login`):
 | Intentos fallidos de un usuario **desde cualquier conexión** (ataque repartido) | 20 en 15 minutos | `login_attempts` (sobrevive a un reinicio) | `429` `too_many_attempts` |
 | Inicios de sesión desde una misma conexión, salgan bien o mal | 30 en 15 minutos | Memoria de la API | `429` `too_many_requests` |
 | Registros desde una misma conexión, salgan bien o mal (también los `409`) | 10 por hora | Memoria de la API | `429` `too_many_requests` |
+| Mensajes al responsable de un usuario (`POST /api/v1/me/tickets`, HU-163) | 5 por día, desde la medianoche en la hora de la región | `support_tickets` | `429` `too_many_requests` |
 | Cálculos de contraseña (Argon2, unos 64 MiB cada uno) a la vez | 4; los demás esperan hasta 10 segundos | Memoria de la API | `503` `server_busy` |
 
 - Todo `429` y el `503` llevan `Retry-After` con los segundos que faltan.
@@ -408,7 +409,7 @@ Toda respuesta lleva la cabecera `X-Request-ID` (UUID). Si la petición trae una
 | `lot_id` de un lote de otro municipio que el `municipality_id` de la consulta, en `/diagnostics` y `/rotations` (agregado el 13 de noviembre de 2026 en HU-191, aprobado por Felipe el 13 de noviembre de 2026: mezclaría la temperatura de un municipio con la altitud de otro). Mensaje: «Ese lote es de otro municipio.» | `422` `invalid_input` |
 | Un lote que quedaría más chico que lo sembrado en curso | `422` `area_below_seasons` |
 | Una temporada que no cabe en lo libre del lote | `422` `area_exceeds_free` |
-| Demasiados intentos con la contraseña de un usuario (`too_many_attempts`) o demasiadas peticiones de entrar o crear cuenta desde una misma conexión (`too_many_requests`) | `429` con `Retry-After` |
+| Demasiados intentos con la contraseña de un usuario (`too_many_attempts`) o demasiadas peticiones de entrar o crear cuenta desde una misma conexión, o más de 5 mensajes al responsable en un día (`too_many_requests`) | `429` con `Retry-After` |
 | Todos los cálculos de contraseña ocupados (agregado el 15 de octubre de 2026; aprobado por Felipe) | `503` `server_busy` con `Retry-After` |
 | Lote o temporada que no existe o es de otro usuario | `404` |
 | Entrada válida sin datos | `200` con `insufficient_data` en la señal |
