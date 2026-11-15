@@ -89,28 +89,49 @@ La estrategia empieza en `sowing_date`, la fecha en que se sembraría su primer 
 ### HU-082 · Ordenar estrategias por prioridades
 
 - **Historia:** Como agricultor, quiero ordenar las estrategias según mis prioridades (agua, suelo, ingreso y riesgo), para elegir la que me conviene.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (la ruta `/rotations` lo llama con HU-084)
 - **Criterios de aceptación:**
-  - [ ] Puntaje de 0 a 100 por criterio (`water`, `soil`, `income`, `risk`) y total ponderado por `priorities` (un entero de 0 a 5 por criterio)
-  - [ ] Cada criterio sale de los ciclos con una regla documentada en `specs/01-reglas.md` («Estrategias de rotación»): `water` de las señales `water` de sus ciclos, `soil` de `soil_health` (HU-212), `income` de las señales `supply` y `market` de sus ciclos, y `risk` del factor que más limita entre sus ciclos
-  - [ ] Un criterio sin datos tiene puntaje nulo, no entra al total y va a las limitaciones (R1); nunca se rellena
-  - [ ] Devuelve hasta 10 estrategias; misma entrada, mismo orden; desempate determinista (R4)
-  - [ ] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
+  - [x] Puntaje de 0 a 100 por criterio (`water`, `soil`, `income`, `risk`) y total ponderado por `priorities` (un entero de 0 a 5 por criterio)
+  - [x] Cada criterio sale de los ciclos con una regla documentada en `specs/01-reglas.md` («Estrategias de rotación»): `water` de las señales `water` de sus ciclos, `soil` de `soil_health` (HU-212), `income` de las señales `supply` y `market` de sus ciclos, y `risk` del factor que más limita entre sus ciclos
+  - [x] Un criterio sin datos tiene puntaje nulo, no entra al total y va a las limitaciones (R1); nunca se rellena
+  - [x] Devuelve hasta 10 estrategias; misma entrada, mismo orden; desempate determinista (R4)
+  - [x] Prueba: subir el peso de `soil` sube en el ranking a una estrategia con abono verde frente a una sin él, con todo lo demás igual
 - **Reglas que aplican:** R1, R4, R5
 - **Contrato que toca:** `strategies[].scores`, `total_score` y `rank` de `POST /api/v1/rotations`
-- **Notas:** La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213.
+- **Notas:** **15 de noviembre de 2026 (decisión 17, propuesta):** `income` pasa a salir de la historia del precio del mes de cosecha (HU-241), porque la oferta y el mercado ya no califican. La oferta (`supply`) entra a las estrategias solo por el criterio `income` (decisión 12: es valor agregado, no protagonista); en cada ciclo sigue siendo una de las seis señales, con su peso. Decidido el 8 de noviembre de 2026 (decisión 15, `specs/01-reglas.md`): la fórmula de cada criterio, el tope de 10 estrategias y el desempate (primero `risk` más alto y después el orden de los `crop_id`). Cambiada el 11 de octubre de 2026 a estrategias de hasta 3 ciclos (decisión 12); la fecha de cada ciclo la resuelve HU-213. Hecha el 15 de noviembre de 2026 en `backend/engine/rotations/ranking.py`; `StrategyCycles.cycle_scores` (HU-213) le da a cada ciclo su `kind` y sus calificaciones. El `risk` de cada ciclo es la calificación más baja entre sus señales que cuentan y califican, también si su luz es `not_evaluable` por falta del agua; un ciclo sin ninguna no cuenta, y se dice (aprobado por Haider el 15 de noviembre de 2026, PR #146, con los demás supuestos del registro). El mismo cálculo sirve para la rotación actual (HU-223), que no entra al orden.
 
 ### HU-083 · Explicar el orden de las estrategias
 
 - **Historia:** Como agricultor, quiero entender por qué una estrategia quedó arriba, para confiar en ella.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha (la ruta `/rotations` la llama con HU-084)
 - **Criterios de aceptación:**
-  - [ ] De 2 a 4 razones por estrategia, de plantillas fijas
-  - [ ] Cada razón cita una regla o un indicador que el motor evaluó (R5)
-  - [ ] Al menos una razón cita un criterio de salud del suelo (HU-212) cuando está disponible
-  - [ ] Con rotación actual (HU-223), al menos una razón dice en qué gana o pierde la estrategia frente a ella, con el criterio y la regla que lo explican
-  - [ ] Ninguna razón dice cuánto va a mejorar el suelo ni cuánto se va a cosechar: es una comparación entre estrategias según reglas (decisión 4)
+  - [x] De 2 a 4 razones por estrategia, de plantillas fijas
+  - [x] Cada razón cita una regla o un indicador que el motor evaluó (R5)
+  - [x] Al menos una razón cita un criterio de salud del suelo (HU-212) cuando está disponible
+  - [x] Con rotación actual (HU-223), al menos una razón dice en qué gana o pierde la estrategia frente a ella, con el criterio y la regla que lo explican
+  - [x] Ninguna razón dice cuánto va a mejorar el suelo ni cuánto se va a cosechar: es una comparación entre estrategias según reglas (decisión 4)
 - **Reglas que aplican:** R5, R8
+- **Notas:** Hecha el 15 de noviembre de 2026 en `backend/engine/rotations/reasons.py`, con cuatro plantillas fijas en este orden:
+  1. el criterio que más suma al total (calificación por prioridad) o, sin total, por qué no lo tiene; en `risk` se aclara que más alto es menos riesgo;
+  2. frente a la rotación actual, el criterio en que más gana o, si no gana en ninguno, en el que más pierde, dicho como comparación de calificaciones («califica 38 puntos más que el de su rotación actual»), nunca como «sale mejor», y con la regla de la que sale ese criterio;
+  3. el primer criterio de salud del suelo `favorable` o, sin ninguno, el primero con nivel, con la razón que da `soil_health` (y su nota de «criterio del equipo» si la regla es `criterio_equipo_2026`);
+  4. el factor que más limita, con la señal, el ciclo y la calificación de `risk`.
+
+  Una razón cuyo dato falta no se escribe (R1). Si quedan menos de dos, una sugerida agrega «Ninguna regla de rotación del catálogo la descarta», que es cierto de toda estrategia sugerida. **La rotación actual** (`kind = current`, decisión 14) empieza por «Es la rotación que usted viene haciendo: las demás se comparan contra ella», no se compara con ella misma y nunca lleva esa frase, porque en ella puede ser falsa (no se descarta aunque viole una regla: eso va en `issues`). La razón frente a la rotación actual lee `vs_current`, que calcula HU-223 (Juan Cárdenas): hasta que HU-223 lo calcule y HU-084 conecte `/rotations`, solo existe en las pruebas. Plantillas aprobadas por Haider el 15 de noviembre de 2026 (PR #150), en el registro.
+
+### HU-241 · El ingreso de las estrategias con la historia del precio
+
+- **Historia:** Como agricultor, quiero comparar las estrategias también por el mes en que caen sus cosechas, contando en cuántos años ese mes tuvo mejor precio que el resto de su año, para cuidar el suelo sin perder de vista la venta, sin que me prometan cuánto voy a ganar.
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente (decisión 17: propuesta, pendiente de aprobar por Haider o Felipe)
+- **Criterios de aceptación:**
+  - [ ] `income` es el promedio, ciclo por ciclo, de 100 × `years_above` / `years` del mes de la cosecha estimada de cada ciclo, en su central de referencia (la misma de `signals.market.price_history` del ciclo, HU-073). Un abono verde o un descanso vale 0 (decisión 15). Un cultivo sin historia de precio no cuenta y se dice; si ningún ciclo de cultivo tiene, `income` no califica y va a las limitaciones (R1)
+  - [ ] La oferta no entra a `income` mientras no califique
+  - [ ] La razón del criterio en HU-083 (`CRITERION_RULES["income"]`) pasa a «el porcentaje de años en que el mes de cosecha de sus ciclos tuvo mejor precio que el resto de su año, con el abono verde y el descanso en 0»
+  - [ ] `vs_current` compara el nuevo `income` igual que antes (HU-223)
+  - [ ] Pruebas con valores a mano: papa con cosecha en septiembre de Corabastos (0 de 5) y arveja con cosecha en mayo (5 de 5) dan 0 y 100, y con un abono verde, (0 + 100 + 0) / 3 = 33; un cultivo sin historia no cuenta; todos sin historia, `income` nulo
+- **Reglas que aplican:** R1, R3, R4, R5, R6
+- **Contrato que toca:** ninguno en la forma (`scores.income` sigue de 0 a 100); cambia cómo se calcula (`specs/01-reglas.md`, «Cómo se ordenan»)
+- **Notas:** **15 de noviembre de 2026 (decisión 17, propuesta).** Antes, `income` era el promedio de las calificaciones de `supply` y `market`, que nunca califican: el criterio estaba siempre vacío. Una frecuencia de años no necesita ningún corte, como la de las heladas, y no dice cuánto se va a ganar (decisión 4). **Implementación:** `backend/engine/rotations/ranking.py` (`criteria`) lee `years_above` y `years` de cada ciclo en lugar de las calificaciones; `CycleScores` los recibe de `backend/api/strategy_cycles.py`; la razón cambia en `backend/engine/rotations/reasons.py`. Toca lo hecho en HU-082 y HU-083. **Si no alcanza el tiempo se recorta antes que HU-073**: `income` no califica y se dice.
 
 ### HU-084 · Endpoint de estrategias de rotación
 

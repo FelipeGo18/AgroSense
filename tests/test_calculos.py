@@ -63,6 +63,15 @@ def test_los_ejemplos_cubren_cada_estado():
     assert any(month["tmax_p90_c"]["status"] == "insufficient_data" for month in ex.CHANGES["months"])
 
 
+def test_el_ejemplo_de_cambios_cubre_los_doce_meses_sin_ocultar_datos_insuficientes():
+    example = m.ChangesResponse.model_validate(ex.CHANGES)
+    assert [month.month for month in example.months] == list(range(1, 13))
+    assert example.months[0].tmax_p90_c.before is None
+    assert example.months[0].tmax_p90_c.after == 21.4
+    assert example.months[0].tmax_p90_c.change is None
+    assert "ejemplo" in example.versions.dataset
+
+
 def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     paths = app.openapi()["paths"]
     for path, method, codes in [
@@ -70,7 +79,7 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         ("/api/v1/rotations", "post", {"200", "401", "404", "422", "501", "503"}),
         # Ya responde (HU-146): no anuncia 501.
         ("/api/v1/water-plans", "post", {"200", "422", "500", "503"}),
-        ("/api/v1/changes", "get", {"200", "422", "501", "503"}),
+        ("/api/v1/changes", "get", {"200", "422", "500", "503"}),
         # Ya responde (HU-078): no anuncia 501.
         ("/api/v1/trends", "get", {"200", "422", "500", "503"}),
         ("/api/v1/catalogs/municipalities/{municipality_id}/soil", "get", {"200", "404", "503"}),
@@ -86,7 +95,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     ("method", "path", "body"),
     [
         ("post", "/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["papa"], "current_crop_ids": ["papa", "arveja"]}),
-        ("get", "/api/v1/changes?municipality_id=15646&crop_id=papa", None),
     ],
 )
 def test_una_entrada_valida_responde_501_con_la_forma_de_los_errores(dataset, method, path, body):
