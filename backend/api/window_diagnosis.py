@@ -15,7 +15,7 @@ from datetime import date
 from typing import Any
 
 from backend.accounts.farm_models import Lot
-from backend.api.calc_models import DiagnosisCore, LightResult, Signal, SourceValue, SuitabilityResult, Window
+from backend.api.calc_models import DiagnosisCore, LightResult, PriceHistory, Signal, SourceValue, SuitabilityResult, Window
 from backend.api.errors import ApiError
 from backend.api.lot_terrain import ZoneTemperature, zone_temperature, zone_texture
 from backend.api.soil_signals import soil_for
@@ -24,6 +24,7 @@ from backend.config.thresholds import Thresholds, get_thresholds
 from backend.config.versions import rules_version
 from backend.dataset import Dataset, Municipality
 from backend.engine.diagnosis import Diagnosis, diagnose, evaluates_windows, irrigation_used
+from backend.engine.market_signal import MarketSignalResult
 from backend.engine.signal_score import counts, round_half_up, weight_of
 from backend.engine.stages import CropWindow, crop_window
 from backend.engine.suitability import Suitability, ZoneTemperatureUsed, crop_suitability, suitability_reason
@@ -96,7 +97,15 @@ def signal_result(name: str, result: SignalResult, weights: Mapping[str, int]) -
         indicators=list(result.indicators),
         reasons=list(result.reasons),
         sources=None if sources is None else [SourceValue.model_validate(source, from_attributes=True) for source in sources],
+        price_history=_price_history(result),
     )
+
+
+def _price_history(result: SignalResult) -> PriceHistory | None:
+    """La historia del precio de la señal `market` (HU-073); las demás señales no la traen."""
+    if not isinstance(result, MarketSignalResult) or result.price_history is None:
+        return None
+    return PriceHistory.model_validate(result.price_history, from_attributes=True)
 
 
 @dataclass(frozen=True)

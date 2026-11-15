@@ -7,6 +7,10 @@ por confirmar».
 TODO(HU-121): casos reales sobre `data/published` con la `dataset_version` 2026.11.11 (llega con el PR #62).
 """
 
+import os
+from pathlib import Path
+
+import polars as pl
 import pytest
 
 from backend.api import calc_examples
@@ -33,13 +37,47 @@ def test_ejemplo_repetir_familia_en_ciclos_seguidos_se_excluye_por_regla(api, fa
     familias_de = lambda crop_id: familias[crop_id][0] if crop_id in familias else None  # noqa: E731
     for estrategia in respuesta["strategies"]:
         assert not repite(estrategia["crop_ids"], "haba"), estrategia["crop_ids"]
+    comprobadas = 0
     for item in respuesta["excluded"]:
         if item["kind"] != "rule" or not repite(item["crop_ids"], "haba"):
             continue
         assert item["rule_id"] == "familia_seguida"
         # Supuesto por confirmar: `cycle` es el ciclo (desde 1) del cultivo que repite la familia, como en el ejemplo del contrato.
         assert item["cycle"] == repite(item["crop_ids"], "haba")[0]
-        assert item["reason"]
+        # Plantilla de `familia_seguida` (`catalog/rotation_rules.yaml`) con la familia repetida, escrita a mano: arveja y
+        # haba son Leguminosae; avena con vicia y maíz, Gramineae.
+        familia_repetida = familias_de(item["crop_ids"][item["cycle"] - 1])
+        assert familia_repetida in {"Leguminosae", "Gramineae"}
+        assert item["reason"] == f"Repite la familia {familia_repetida} en dos ciclos seguidos"
+        comprobadas += 1
+    assert comprobadas > 0  # el caso no pasa en vacío: al menos una exclusión por familia se comprobó
+
+
+def test_ejemplo_suelo_fuera_del_rango_de_un_cultivo_lo_excluye_de_las_estrategias(armar_ejemplo):
+    # Suelo de EJEMPLO (R5) en Samacá con pH 8,7 y el intervalo p05 a p95 de 8,4 a 9,0 (`publicar_ejemplo`: pH ± 0,3). Rangos de
+    # pH de `catalog/crops.yaml`: arveja 4,5 a 8,3, cebolla de bulbo 4,3 a 8,3 y avena con vicia 4,5 a 7,5 quedan fuera de todo el
+    # intervalo (su máximo es menor que 8,4); papa 4,2 a 8,5, maíz, haba y zanahoria lo tocan o lo cruzan y no se excluyen.
+    api = armar_ejemplo(ph=8.7)
+    fuera = {
+        "arveja": "la arveja (4,5 a 8,3)",
+        "cebolla_bulbo": "la cebolla de bulbo (4,3 a 8,3)",
+        "avena_vicia": "la avena con vicia (abono verde) (4,5 a 7,5)",
+    }
+    respuesta = rotacion(api, cycles=2)
+    assert respuesta["excluded_counts"]["soil_ph"] > 0
+    assert respuesta["strategies"]
+    for estrategia in respuesta["strategies"]:
+        assert not set(estrategia["crop_ids"]) & set(fuera), estrategia["crop_ids"]
+    por_ph = [e for e in respuesta["excluded"] if e["kind"] == "soil_ph"]
+    assert por_ph  # el caso no pasa en vacío: al menos una exclusión `soil_ph` se comprueba
+    fuentes = set(pl.read_parquet(Path(os.environ["AGROSENSE_DATA_DIR"]) / "sources.parquet")["source_id"].to_list())
+    for item in por_ph:
+        assert item["crop_id"] in fuera, item
+        assert item["cycle"] == item["crop_ids"].index(item["crop_id"]) + 1  # el primer ciclo donde aparece el cultivo
+        assert item["reason"] == f"El pH del suelo de la zona (8,4 a 9,0) queda fuera del que tolera {fuera[item['crop_id']]}"
+        assert item["source_ids"] and set(item["source_ids"]) <= fuentes
+        assert {"fao_ecocrop", "soilgrids"} <= set(item["source_ids"])  # la fuente del pH de la ficha y la del suelo
+    assert {e["crop_id"] for e in por_ph} <= set(fuera)
 
 
 def test_ejemplo_toda_exclusion_y_todo_issue_cita_fuentes_que_existen(api, fuentes):
@@ -261,3 +299,65 @@ def test_ejemplo_con_prioridad_de_suelo_en_5_el_abono_verde_queda_mejor(api):
     assert actual["soil_health"]["nitrogen"]["level"] == "unfavorable"
     assert por_crop_ids[tuple(con)]["total_score"] > actual["total_score"]
     assert por_crop_ids[tuple(con)]["vs_current"]["soil"] > 0
+
+
+def test_ejemplo_el_peso_del_suelo_cambia_el_orden_de_las_estrategias(api, datos_con_heladas_moderadas, hoy_fijo):
+    # Samacá con heladas moderadas en el 30 % de los años (`datos_con_heladas_moderadas`, EJEMPLO): ningún ciclo es de alto
+    # riesgo, `frost` califica 55 o 59 en los cultivos sensibles y 100 en el descanso. Con 2 ciclos, sin agua ni ingreso que
+    # califiquen, `total_score` es el promedio de `soil` y `risk` ponderado (decisión 15):
+    #   A = arveja y zanahoria: soil 100 (leguminosa), risk 59.   B = descanso y zanahoria: soil 33, risk 100.
+    # Los números exactos son del 16 de noviembre de 2026 (`hoy_fijo`), no de otra fecha: con la siembra a mediados de
+    # noviembre la etapa media y la final de la arveja (110 días) caen de enero a marzo del año siguiente, así que la serie por
+    # año de siembra pierde el último año (8 de 29 años = 28 %, `frost` 59). Sembrando desde enero la ventana cabe en un solo año
+    # (9 de 30 = 30 %, `frost` 55) y `risk` baja a 55. Las relaciones valen en cualquier fecha;
+    # los números y el primer puesto de A, solo en esta.
+    # Con `soil` en 5 (y las demás en 3): A = (100*5 + 59*3) / 8 = 85 y B = (33*5 + 100*3) / 8 = 58. Con `soil` en 0, B = 100 y A = 59.
+    assert hoy_fijo.isoformat() == "2026-11-16"
+    a, b = ["arveja", "zanahoria"], ["descanso", "zanahoria"]
+    con_peso = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5})
+    sin_peso = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 0})
+    assert con_peso["weights"] == {**EJEMPLO_PRIORIDADES, "soil": 5}
+    assert sin_peso["weights"] == {**EJEMPLO_PRIORIDADES, "soil": 0}
+    assert con_peso["excluded_counts"] == sin_peso["excluded_counts"]  # lo único que cambia es el peso
+    # Relaciones, que valen en cualquier fecha (comprobadas con el «hoy» simulado en 2026-11-16, 2027-01-01, 2027-03-15,
+    # 2027-05-10 y 2027-12-31). Con el suelo en 5 la de suelo flojo no entra entre las 10 y la de mejor suelo sí, y sube
+    # frente a su puesto con el suelo en 0. Ser la primera NO vale siempre (con otra fecha es la 2.ª o la 5.ª): va abajo.
+    assert rank_de(con_peso, b) is None
+    assert rank_de(con_peso, a) is not None
+    assert rank_de(sin_peso, a) is None or rank_de(con_peso, a) < rank_de(sin_peso, a)
+    # Con el suelo en 0 no cuenta: la de menor riesgo (B) es la primera y la de mejor suelo (A) queda detrás.
+    assert rank_de(sin_peso, b) == 1
+    assert rank_de(sin_peso, a) is None or rank_de(sin_peso, a) > rank_de(sin_peso, b)
+    # Los números exactos y el primer puesto, con la fecha fija.
+    assert rank_de(con_peso, a) == 1
+    por_a = next(s for s in con_peso["strategies"] if s["crop_ids"] == a)
+    assert (por_a["scores"]["soil"], por_a["scores"]["risk"], por_a["total_score"]) == (100, 59, 85)
+    por_b = next(s for s in sin_peso["strategies"] if s["crop_ids"] == b)
+    assert (por_b["scores"]["soil"], por_b["scores"]["risk"], por_b["total_score"]) == (33, 100, 100)
+    por_a0 = next(s for s in sin_peso["strategies"] if s["crop_ids"] == a)
+    assert por_a0["total_score"] == 59
+    # El rango de A con el suelo en 0 es 4: `descanso+zanahoria` y `zanahoria+descanso` tienen 100 (sin ciclo sensible) y van
+    # antes; A, con 59, queda tras ellas (y gana el desempate por `crop_ids` a otras de 59). Se asierta el orden relativo.
+    ciento = [s for s in sin_peso["strategies"] if s["total_score"] == 100]
+    assert {tuple(s["crop_ids"]) for s in ciento} >= {tuple(b), ("zanahoria", "descanso")}
+    assert all(s["rank"] < por_a0["rank"] for s in ciento)
+    assert por_a0["rank"] == 4
+
+
+def test_ejemplo_un_suelo_que_toca_el_borde_del_ph_de_un_cultivo_no_lo_excluye(armar_ejemplo):
+    # Suelo de EJEMPLO (R5) con pH 8,8: el intervalo p05 a p95 es de 8,5 a 9,1 (`publicar_ejemplo`: pH ± 0,3; `8.8 - 0.3` es
+    # exactamente 8.5 en coma flotante). El máximo de la papa y del maíz es 8,5 (`catalog/crops.yaml`): tocan el borde y no se
+    # excluyen (`outside_tolerated` usa `<`, no `<=`). Quedan fuera de todo el intervalo la arveja y la cebolla de bulbo (máximo
+    # 8,3) y la avena con vicia (7,5); la haba (8,6) y la zanahoria (8,7) lo cruzan y tampoco se excluyen.
+    assert 8.8 - 0.3 == 8.5
+    api = armar_ejemplo(ph=8.8)
+    respuesta = rotacion(api, cycles=2)
+    por_ph = {e["crop_id"] for e in respuesta["excluded"] if e["kind"] == "soil_ph"}
+    # `excluded` trae solo las primeras 10 de `excluded_counts["soil_ph"]`: se ven la arveja y la avena con vicia; la cebolla se
+    # comprueba por su ausencia en `strategies`.
+    assert respuesta["excluded_counts"]["soil_ph"] > len(respuesta["excluded"])
+    assert {"arveja", "avena_vicia"} <= por_ph  # el caso no pasa en vacío
+    assert not {"papa", "maiz", "haba", "zanahoria"} & por_ph
+    en_estrategias = {c for e in respuesta["strategies"] for c in e["crop_ids"]}
+    assert {"papa", "maiz"} <= en_estrategias
+    assert not {"arveja", "cebolla_bulbo", "avena_vicia"} & en_estrategias

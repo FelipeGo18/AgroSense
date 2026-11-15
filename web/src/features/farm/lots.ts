@@ -44,9 +44,21 @@ export function byId(municipalities: Municipality[] | undefined) {
   return new Map((municipalities ?? []).map((m) => [m.municipality_id, m]));
 }
 
-/** Los lotes de quien tiene la sesión. Con `enabled` en falso (sin sesión) no se piden: la API respondería 401. */
+const fetchLots = () => api<LotListItem[]>("/lots");
+const active = (lots: LotListItem[]) => lots.filter((lot) => !lot.deleted_at);
+const deleted = (lots: LotListItem[]) => lots.filter((lot) => lot.deleted_at);
+
+/**
+ * Los lotes de quien tiene la sesión, sin los borrados. Con `enabled` en falso (sin sesión) no se piden: la API
+ * respondería 401. `GET /lots` trae también los borrados hace menos de 30 días (HU-204): esos son `useDeletedLots`.
+ */
 export function useLots(enabled = true) {
-  return useQuery({ queryKey: LOTS, queryFn: () => api<LotListItem[]>("/lots"), retry: false, enabled });
+  return useQuery({ queryKey: LOTS, queryFn: fetchLots, select: active, retry: false, enabled });
+}
+
+/** Los lotes borrados hace menos de 30 días, que se pueden restaurar (HU-204). Comparte la petición con `useLots`. */
+export function useDeletedLots() {
+  return useQuery({ queryKey: LOTS, queryFn: fetchLots, select: deleted, retry: false });
 }
 
 export function useLot(lotId: string) {
@@ -78,6 +90,15 @@ export function useDeleteLot(lotId: string) {
       client.removeQueries({ queryKey: lotKey(lotId) });
       void client.invalidateQueries({ queryKey: LOTS });
     },
+  });
+}
+
+/** Restaura un lote borrado hace menos de 30 días, con las temporadas que se borraron con él (HU-204). */
+export function useRestoreLot(lotId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<Lot>(`/lots/${lotId}/restore`, { method: "POST" }),
+    onSuccess: () => void client.invalidateQueries({ queryKey: LOTS }),
   });
 }
 

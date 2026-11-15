@@ -23,9 +23,13 @@ const LEVEL: Record<NonNullable<Signal["level"]>, { tone: Tone; label: string }>
   unfavorable: { tone: "red", label: "Desfavorable" },
 };
 
-/** R1: disponibilidad y nivel son campos distintos; sin datos nunca se pinta como riesgo. */
+/**
+ * R1: disponibilidad y nivel son campos distintos; sin datos nunca se pinta como riesgo. Con dato y sin nivel (la oferta
+ * y el mercado, decisión 17) es «Sin calificar», en tono neutro: se muestra, pero no es un riesgo ni «No aplica».
+ */
 export function signalTone(signal: Signal): { tone: Tone; label: string } {
   if (signal.status === "insufficient_data") return { tone: "insufficient_data", label: "Datos insuficientes" };
+  if (signal.status === "available" && signal.level === null) return { tone: "not_applicable", label: "Sin calificar" };
   if (signal.status === "not_applicable" || signal.level === null) return { tone: "not_applicable", label: "No aplica" };
   return LEVEL[signal.level];
 }

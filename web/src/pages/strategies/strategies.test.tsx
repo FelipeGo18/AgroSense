@@ -395,6 +395,15 @@ describe("La entrada (HU-214): reglas", () => {
       season("v", "arveja", "2025-02-01", "2025-06-30", ["f", "a"]),
     ];
     expect(previousFromSeasons([joined[3]], joined)).toEqual(["arveja", "ajo", "fresa"]);
+    // Cosechadas el mismo día: primero la de mayor área, aunque se haya sembrado antes (Felipe, PR #140). Con la misma
+    // área, la sembrada después; y el orden no depende de cómo llegan (R4).
+    const sameDay = [
+      season("h", "haba", "2025-03-01", "2025-08-10", [], 0.4),
+      season("m", "maiz", "2025-02-01", "2025-08-10", [], 0.6),
+      season("z", "zanahoria", "2025-04-01", "2025-08-10", [], 0.4),
+    ];
+    expect(previousFromSeasons(sameDay)).toEqual(["maiz", "zanahoria", "haba"]);
+    expect(previousFromSeasons([...sameDay].reverse())).toEqual(["maiz", "zanahoria", "haba"]);
     expect(currentFromHistory([SEASONS[1]], SEASONS)).toEqual(["papa", "arveja"]);
     expect(currentFromHistory([SEASONS[0]], SEASONS)).toEqual([]); // con un solo cultivo no hay rotación
   });
