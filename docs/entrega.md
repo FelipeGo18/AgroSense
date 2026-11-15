@@ -4,7 +4,7 @@ HU-132. Borrador de los campos de la página del proyecto en Space Apps, según 
 
 ## Lo que pide la guía (leída el 14 de noviembre de 2026)
 
-El 15 de noviembre no se pudo volver a leer desde el computador de Haider (la conexión segura con spaceappschallenge.org falla por el certificado de la red). Antes de enviar, alguien la abre en el navegador y confirma el plazo y los límites de la demo.
+El 15 de noviembre no se pudo volver a leer desde el computador de Haider (la conexión segura con spaceappschallenge.org falla por el certificado de la red). **El mismo 15 de noviembre se confirmó con el video oficial** «Project Submission and Judging & Awards | 2026 NASA Space Apps Challenge» (<https://www.youtube.com/watch?v=CV7AYfMRyMM>, leído en su transcripción): el plazo, los límites de la demo y lo de abajo coinciden. El video suma lo que va al final de esta lista.
 
 - **Plazo:** el envío abre el sábado 14 de noviembre a las 9:00 a. m. y **cierra el domingo 15 de noviembre a las 11:59 p. m.**, en la hora del evento local. Lo que se guarde o envíe después no entra.
 - **Idioma:** todo en inglés. Un video puede ir hablado en español, pero **con subtítulos en inglés**. Las diapositivas, en inglés.
@@ -12,10 +12,23 @@ El 15 de noviembre no se pudo volver a leer desde el computador de Haider (la co
 - **Criterios del jurado:** impacto, creatividad, validez, relevancia y presentación.
 - **Datos de la NASA:** hay que usar al menos un dato o recurso de la NASA para optar a un premio global, y decir cuáles.
 - **Referencias:** listar todos los datos, recursos y herramientas, incluidos el código, los textos y las imágenes de terceros.
-- **Uso de IA («Super Intelligence»):** el campo lo responde Haider directamente en el formulario (decidido el 14 de noviembre de 2026). No va en este archivo.
+- **Uso de IA («Super Intelligence»):** el campo lo responde Haider directamente en el formulario (decidido el 14 de noviembre de 2026). No va en este archivo. Según el video oficial, hay que marcar en la lista **cada uso que aplique** (o «I did not use SI»), y lo generado con IA se declara así:
+  - **Imágenes y video:** con una **marca de agua visible** que diga que son generados con IA.
+  - **Audio:** se reconoce en el texto descriptivo y en los metadatos.
+  - **Código y datos:** se reconocen en el texto descriptivo y en los metadatos. AgroSense usó asistentes de IA para escribir código y documentación: va declarado.
+  - **Nada de la marca de la NASA en lo generado:** ni logos, ni banderas, ni identificadores de misión.
+  - El jurado mira la originalidad, la intención y la ejecución del trabajo hecho con IA.
 - **Sin personas menores de 18 años** en imágenes, video o audio.
 - **Para enviar:** todos los integrantes confirmados en el mismo evento local, todos los campos llenos, aceptar los términos, confirmar que el trabajo es original y pulsar «Submit for Judging».
 - **Enlace del proyecto:** se recomienda pedir la clasificación de FortiGuard para el sitio, para que el jurado lo pueda abrir (HU-236).
+- **Lo que suma el video oficial (15 de noviembre de 2026):**
+  - La página se edita en la pestaña **Project** con el botón azul **Edit**. **Save progress** guarda sin publicar (solo lo ve el equipo); **Submit for Judging** publica. **Solo cuenta el último envío.**
+  - El interruptor **lock** avisa que alguien está editando, pero otro integrante puede quitarlo y sobrescribir lo no guardado: que edite una sola persona a la vez y guarde seguido.
+  - **Resumen:** de 50 a 200 palabras (qué hicimos, cómo responde al reto y por qué importa).
+  - **Descripción detallada:** además de qué hace y cómo funciona, piden los beneficios, el impacto, las herramientas y lenguajes, qué lo hace creativo y qué factores se consideraron (energía, accesibilidad o costo).
+  - **Equipo:** de 1 a 6 integrantes, todos registrados, sin estar en lista de espera, en el mismo evento local y en la pestaña **Members**. Después del cierre no se puede agregar a nadie.
+  - **Al enviar:** marcar los términos y condiciones y «confirm all work is original». Si quedó enviado, sale un aviso arriba y se habilita el certificado de participación (perfil, «Participant information»; el nombre sale de «Full name»).
+  - **Juzgamiento:** de 1 a 5 en cada criterio, en tres fases (evento local, global y ejecutiva). Nominados globales el 3 de diciembre de 2026, finalistas el 17 de diciembre y ganadores el 26 de enero de 2027. Los premios locales son aparte y no hacen pasar de fase.
 
 ## Antes de enviar
 
@@ -31,6 +44,11 @@ El 15 de noviembre no se pudo volver a leer desde el computador de Haider (la co
 - [ ] Revisar que ninguna imagen ni video tenga personas menores de 18 años.
 - [ ] Las imágenes del video (por ejemplo, la ladera del altiplano) son propias o tienen una licencia que lo permita, y van en las referencias.
 - [ ] Que el texto de los campos no diga que algo funciona si no está en `desarrollo` y desplegado.
+- [ ] Si el video o las diapositivas llevan imágenes o voz generadas con IA: marca de agua visible en las imágenes y aviso en el texto y en los metadatos (video oficial).
+- [ ] Ningún contenido generado con IA usa logos, banderas ni identificadores de misión de la NASA.
+- [ ] En el campo de IA (Haider): marcar cada uso que aplique, incluido el código y la documentación escritos con asistentes de IA.
+- [ ] Todos los integrantes en la pestaña **Members**, registrados en el mismo evento local y sin lista de espera.
+- [ ] Marcar los términos y «confirm all work is original», pulsar **Submit for Judging** antes de las 11:59 p. m. del evento local y comprobar que sale el aviso de envío.
 
 ## Campos de la página
 
