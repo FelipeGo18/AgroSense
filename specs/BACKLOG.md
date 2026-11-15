@@ -150,7 +150,7 @@
 | [EP-18](epicas/EP-18-suelo.md) | HU-181 | Suelo de la región publicado | P0 | M | hecha | SoilGrids 2.0 en `grid_cells` y `soil_municipality` (239 municipios); acierta la acidez de la Sabana, pero da ácidos los suelos básicos de la cuenca baja |
 | [EP-18](epicas/EP-18-suelo.md) | HU-182 | Suelo de un lote | P0 | M | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-183 | Señal de suelo en el diagnóstico | P0 | S | hecha | Curva de HU-196 sobre la mediana `ph` del municipio; el nivel sale siempre de la calificación y el intervalo p05–p95 solo se dice en la razón; un pH fuera de su propio intervalo es `insufficient_data`; nunca crítica. Con `lot_id`, el suelo del municipio y se dice (el del lote es de HU-182) |
-| [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | pendiente | |
-| [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | hecha | Cinco criterios hechos en el motor; `history_basis` obligatorio; el descanso con sus 180 días de `fallow_days` (HU-063) |
-| [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | hecha | Erosión hecha en el motor (PR #121 y #120) |
+| [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | en curso | Motor hecho (exclusión `soil_ph` y razones, 15 nov); falta la lectura del suelo y `soil_basis` en la API (HU-084) y el suelo del lote (HU-182) |
+| [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | hecha | Cinco criterios hechos en el motor (#116, #120 y #121); `history_basis` obligatorio; el descanso dura 180 días (`fallow_days`, #137) |
+| [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | hecha | Erosión hecha en el motor (#121 y #120) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | en curso | El suelo de la zona explicado en el detalle del lote (14 nov); faltan la señal de suelo y la salud del suelo |
