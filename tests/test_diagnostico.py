@@ -118,7 +118,7 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
     water = body["signals"]["water"]
     assert (water["status"], water["level"], water["score"], water["critical"]) == ("insufficient_data", None, None, False)
     assert water["reasons"] != [pending_reason("water")]
-    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.0.0+pesos.1.0.0"}
+    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.1.0"}
 
 
 def test_sin_prioridades_las_dos_luces_coinciden_con_los_pesos_por_defecto(examples):
