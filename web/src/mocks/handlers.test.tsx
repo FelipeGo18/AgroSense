@@ -119,10 +119,11 @@ describe("respuestas simuladas (HU-013)", () => {
       ]),
     );
     // El diagnóstico (HU-076) y las estrategias (HU-084) ya responden con el motor: no tienen 501.
-    expect(SIMULATION_STATES["POST /diagnostics"]).not.toContain("501");
-    expect(SIMULATION_STATES["POST /diagnostics"]).not.toContain("not_implemented");
+    for (const route of ["POST /diagnostics", "POST /rotations"] as const) {
+      expect(SIMULATION_STATES[route]).not.toContain("501");
+      expect(SIMULATION_STATES[route]).not.toContain("not_implemented");
+    }
     expect(SIMULATION_STATES["POST /rotations"]).toEqual(expect.arrayContaining(["estrategias", "sin_actual"]));
-    expect(SIMULATION_STATES["POST /rotations"]).not.toContain("501");
     expect(SIMULATION_STATES.todas).toEqual(["cargando", "sin_conexion"]);
   });
 

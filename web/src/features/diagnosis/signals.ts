@@ -4,6 +4,7 @@ import type { Version } from "@/features/version";
 
 export type Signal = Schemas["Signal"];
 export type SourceValue = Schemas["SourceValue"];
+export type PriceHistory = Schemas["PriceHistory"];
 export type SupplySemester = Schemas["SupplySemester"];
 export type MunicipalitySoil = Schemas["MunicipalitySoil"];
 
@@ -92,7 +93,7 @@ const SOURCE_NOTE: Record<string, string> = {
 };
 export const sourceNote = (sourceId: string) => SOURCE_NOTE[sourceId] ?? null;
 
-/** El nombre de los productos de la NASA, de EVA y de SoilGrids como los nombra `docs/fuentes.md`, para cuando su fila aún no está publicada. */
+/** El nombre de los productos de la NASA, de EVA, de SoilGrids y de SIPSA como los nombra `docs/fuentes.md`, para cuando su fila aún no está publicada. */
 const PRODUCT_NAME: Record<string, string> = {
   nasa_power: "NASA POWER",
   imerg: "GPM IMERG (NASA y JAXA)",
@@ -100,6 +101,7 @@ const PRODUCT_NAME: Record<string, string> = {
   nasadem: "NASADEM (NASA)",
   eva: "EVA (UPRA)",
   soilgrids: "SoilGrids (ISRIC)",
+  dane_sipsa: "SIPSA (DANE)",
 };
 
 /**

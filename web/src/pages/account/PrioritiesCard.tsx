@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SeedRow } from "@/components/ui/PriorityControl";
 import { useUpdateProfile, type Profile } from "@/features/auth/session";
-import { PRIORITY_SIGNALS as SIGNALS } from "@/features/diagnosis/priorities";
+import { PRIORITY_SIGNALS as SIGNALS, RATED_PRIORITY_SIGNALS, UNRATED_PRIORITIES_NOTE } from "@/features/diagnosis/priorities";
 import { useVersion } from "@/features/version";
 import { LINK } from "./AccountShell";
 
@@ -16,7 +16,8 @@ type Weights = Record<string, number>;
  * tocar las semillas (PATCH /me) y cambian el semáforo y el orden de las fechas de sus consultas.
  *
  * Al lado va siempre el criterio de AgroSense (los pesos por defecto, GET /version), para comparar y poder volver a
- * él. Un riesgo grave de agua, heladas o calor cuenta siempre, aunque su peso sea 0: se dice en cada una.
+ * él. La oferta y el mercado no tienen control (decisión 17: se muestran sin calificar), pero su peso se sigue enviando
+ * completo al guardar. Un riesgo grave de agua, heladas o calor cuenta siempre, aunque su peso sea 0: se dice en cada una.
  */
 export function PrioritiesCard({ user }: { user: Profile }) {
   const version = useVersion();
@@ -67,7 +68,7 @@ export function PrioritiesCard({ user }: { user: Profile }) {
       <p className="font-bold">{own ? "Está usando sus prioridades." : "Está usando el criterio de AgroSense."}</p>
       {/* En pantallas muy angostas las seis casillas necesitan todo el ancho de la tarjeta. */}
       <div className="-mx-2 flex flex-col gap-4 sm:mx-0">
-        {SIGNALS.map((signal) => (
+        {RATED_PRIORITY_SIGNALS.map((signal) => (
           <SeedRow
             key={signal.key}
             label={signal.label}
@@ -79,6 +80,7 @@ export function PrioritiesCard({ user }: { user: Profile }) {
           />
         ))}
       </div>
+      <p className="text-[15px] leading-snug text-texto-secundario">{UNRATED_PRIORITIES_NOTE}</p>
       {allZero && (
         <p role="alert" className="font-bold text-oscuro-rojo">
           <span aria-hidden="true">▲ </span>Suba al menos una prioridad: con todas en 0 no se guardan.
@@ -91,7 +93,8 @@ export function PrioritiesCard({ user }: { user: Profile }) {
         </p>
       )}
       <p className="border-t-2 border-superficie-borde pt-3 text-[15px] text-texto-secundario">
-        Criterio de AgroSense: {SIGNALS.map((signal) => `${signal.label.toLowerCase()} ${defaults[signal.key]}`).join(" · ")}.
+        Criterio de AgroSense: {RATED_PRIORITY_SIGNALS.map((signal) => `${signal.label.toLowerCase()} ${defaults[signal.key]}`).join(" · ")}
+        .
       </p>
       {own && (
         <button type="button" onClick={() => update.mutate({ priorities: null })} className={`${LINK} min-h-11 self-start`}>
