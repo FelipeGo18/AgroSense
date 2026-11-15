@@ -1,0 +1,163 @@
+import { useEffect, useId, useState } from "react";
+import { allocateCells, drawStage, timeOfDay, DRAWN_CROPS, type LiveSeason } from "./cells";
+
+/** Las piezas que exporta el diseño (`design/finca/exportar_web.py`): se descargan solo al abrir el lote vivo. */
+interface DioramaBase {
+  width: number;
+  height: number;
+  horizon: number;
+  lot: { x: number; y: number; scale: number };
+  sky: Record<string, string>;
+  tint: Record<string, string>;
+  free: string;
+  layouts: Record<
+    string,
+    { cells: { i: number; j: number; x: number; y: number }[]; ground: string; back: string; front: string; top: number }
+  >;
+}
+type CropStages = Record<string, string>;
+
+const cropFiles = import.meta.glob<CropStages>("./diorama/crops/*.json", { import: "default" });
+const loadBase = () => import("./diorama/base.json").then((m) => m.default as unknown as DioramaBase);
+/** Ancho del rótulo según su texto, como `tag` de escena.py. */
+const labelWidth = (label: { title: string; sub: string }) => Math.max(label.title.length * 8.6, label.sub.length * 7) + 22;
+const isDrawn = (cropId: string) => (DRAWN_CROPS as readonly string[]).includes(cropId);
+
+/** Un fragmento de SVG del diseño. Viene del propio repositorio (el exportador del diseño), nunca de quien usa la web. */
+function Svg({ markup, ...props }: { markup: string } & React.SVGProps<SVGGElement>) {
+  return <g {...props} dangerouslySetInnerHTML={{ __html: markup }} />;
+}
+
+/**
+ * El lote vivo (HU-187): el diorama del lote con la finca alrededor (casa, cerca, huerta, árbol y el perro) y cada
+ * siembra en curso ocupando tantos cubos como su parte del área, dibujada en su etapa (por calendario, HU-220). El cielo
+ * sigue la hora local. Es una ilustración: no mide nada del lote (R5, R10).
+ *
+ * Con movimiento, las plantas se mecen con el viento; en modo ligero el dibujo es el mismo, quieto (HU-158).
+ */
+export function LiveLot({
+  seasons,
+  lotAreaHa,
+  cropName,
+  animated,
+  now = new Date(),
+}: {
+  seasons: LiveSeason[];
+  lotAreaHa: number;
+  cropName: (cropId: string) => string;
+  animated: boolean;
+  now?: Date;
+}) {
+  const clip = useId();
+  const [base, setBase] = useState<DioramaBase | null>(null);
+  const [crops, setCrops] = useState<Record<string, CropStages>>({});
+  const drawn = [...new Set(seasons.map((s) => s.cropId).filter(isDrawn))].sort();
+
+  useEffect(() => {
+    let alive = true;
+    void loadBase().then((data) => alive && setBase(data));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const key = drawn.join(",");
+  useEffect(() => {
+    let alive = true;
+    void Promise.all(drawn.map(async (id) => [id, await cropFiles[`./diorama/crops/${id}.json`]()] as const)).then(
+      (pairs) => alive && setCrops(Object.fromEntries(pairs)),
+    );
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` resume la lista de cultivos del lote
+  }, [key]);
+
+  if (!base) {
+    return (
+      <div role="status" className="flex size-full items-center justify-center bg-paleta-niebla text-texto-secundario">
+        Dibujando su lote…
+      </div>
+    );
+  }
+  const time = timeOfDay(now);
+  const { layout, cells } = allocateCells(seasons, lotAreaHa);
+  const shape = base.layouts[layout];
+  const place = `translate(${base.lot.x} ${base.lot.y}) scale(${base.lot.scale})`;
+  // Los cubos se dibujan de atrás hacia adelante, como en el diseño.
+  const order = shape.cells.map((cell, index) => ({ ...cell, index })).sort((a, b) => a.i + a.j - (b.i + b.j) || a.i - b.i);
+  // Un rótulo por siembra, sobre su primer cubo.
+  const labelled = new Set<string>();
+  const labels: { x: number; y: number; title: string; sub: string }[] = [];
+  shape.cells.forEach((cell, index) => {
+    const season = cells[index].season;
+    const id = season?.seasonId ?? "libre";
+    if (labelled.has(id)) return;
+    labelled.add(id);
+    const free = Math.max(lotAreaHa - seasons.reduce((sum, s) => sum + s.areaHa, 0), 0);
+    labels.push({
+      x: base.lot.x + cell.x * base.lot.scale,
+      y: base.lot.y + (cell.y + shape.top) * base.lot.scale,
+      title: season ? cropName(season.cropId) : "Libre",
+      sub: `${(season ? season.areaHa : free).toLocaleString("es-CO", { maximumFractionDigits: 2 })} ha`,
+    });
+  });
+
+  return (
+    <svg
+      viewBox={`0 0 ${base.width} ${base.height}`}
+      preserveAspectRatio="xMidYMid slice"
+      className="size-full"
+      role="img"
+      aria-label={`Ilustración de su lote: ${labels.map((l) => `${l.title}, ${l.sub}`).join("; ")}`}
+    >
+      <Svg markup={base.sky[time]} />
+      <defs>
+        <clipPath id={clip}>
+          <rect y={base.horizon} width={base.width} height={base.height} />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${clip})`}>
+        <Svg markup={shape.ground} transform={place} />
+      </g>
+      <Svg markup={shape.back} transform={place} />
+      <g transform={place}>
+        {order.map(({ x, y, index }) => {
+          const season = cells[index].season;
+          const markup = season && isDrawn(season.cropId) ? crops[season.cropId]?.[String(drawStage(season.stage))] : base.free;
+          return (
+            <g key={index} transform={`translate(${x} ${y})`}>
+              <Svg
+                markup={markup ?? base.free}
+                className={animated && season ? "live-sway" : undefined}
+                style={{ animationDelay: `${index * -0.7}s` }}
+              />
+            </g>
+          );
+        })}
+      </g>
+      <Svg markup={shape.front} transform={place} />
+      {base.tint[time] && <Svg markup={base.tint[time]} />}
+      {labels.map((label) => (
+        <g key={`${label.title}-${label.x}`} transform={`translate(${label.x} ${label.y})`} aria-hidden="true">
+          <rect
+            x={-labelWidth(label) / 2}
+            y={-46}
+            width={labelWidth(label)}
+            height={40}
+            rx={6}
+            fill="#FFFFFF"
+            stroke="#1E2A3A"
+            strokeWidth={1.5}
+          />
+          <polygon points="-6,-6 6,-6 0,2" fill="#1E2A3A" />
+          <text y={-29} textAnchor="middle" fontSize={14} fontWeight={700} fill="#1E2A3A">
+            {label.title}
+          </text>
+          <text y={-13} textAnchor="middle" fontSize={12} fill="#4A5868">
+            {label.sub}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}

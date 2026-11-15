@@ -422,9 +422,19 @@ describe("El lote (HU-164)", () => {
   it("un lote dibujado sale en el mapa con el área de su dibujo", async () => {
     fakeApi({ ...BASE, "GET /api/v1/lots/d1": { status: 200, body: { ...DRAWN_LOT, soil: null, current_seasons: [] } } });
     open(PATHS.lot("d1"));
+    // La vista de entrada es su finca (HU-187); el mapa sigue a un toque.
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Mapa" }));
     expect(await screen.findByRole("button", { name: "En el mapa: La Vega" })).toBeInTheDocument();
     expect(screen.getByText("0,99 ha · calculada con su dibujo")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Dibujar en el mapa" })).toBeNull();
+  });
+
+  it("el lote vivo dibuja la finca con sus siembras, rotulado como ilustración (HU-187)", async () => {
+    fakeApi({ ...BASE, "GET /api/v1/lots/a1": { status: 200, body: DETAIL } });
+    open(PATHS.lot("a1"));
+    expect(await screen.findByRole("button", { name: "Su finca", pressed: true })).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: /Ilustración de su lote: Libre/ })).toBeInTheDocument();
+    expect(screen.getByText("Ilustración de su lote, no una imagen de él.")).toBeInTheDocument();
   });
 
   it("un lote ajeno o que no existe lo dice", async () => {

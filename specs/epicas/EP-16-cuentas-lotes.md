@@ -227,10 +227,10 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-187 · El lote vivo
 
 - **Historia:** Como agricultor, quiero ver mi lote con sus cultivos creciendo, el clima de ahora y si es probable que haya que regar, para sentir mi finca en la app y entenderla de un vistazo.
-- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P0 (alcance de la demo, ver la nota del 14 de noviembre de 2026) · **Tamaño:** L · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Diorama low-poly del lote: cubos de tierra juntos, y cada cultivo en curso ocupa tantos cubos como su parte del área (al menos uno), cada uno con su arquetipo (`crops.archetype`) y su etapa (HU-150); la parte libre se ve como tierra en descanso
-  - [ ] Alrededor del lote, la finca hecha de bloques: terreno de pasto, camino de tierra entre las camas, cerca de madera con faroles y portón, casa con techo escalonado, porche y materas, huerta de flores, árbol y un perro acostado. Es ambiente: no muestra ningún dato ni tiene controles
+  - [x] Diorama low-poly del lote: cubos de tierra juntos, y cada cultivo en curso ocupa tantos cubos como su parte del área (al menos uno), cada uno con su arquetipo (`crops.archetype`) y su etapa (HU-150); la parte libre se ve como tierra en descanso. **Hecho (14 nov 2026)** con la etapa por calendario (HU-220) mientras no exista HU-150; la parte libre se dibuja con hierba, como en el diseño
+  - [x] Alrededor del lote, la finca hecha de bloques: terreno de pasto, camino de tierra entre las camas, cerca de madera con faroles y portón, casa con techo escalonado, porche y materas, huerta de flores, árbol y un perro acostado. Es ambiente: no muestra ningún dato ni tiene controles
   - [ ] El diorama se puede recorrer: arrastrar para moverse, pellizcar o la rueda para acercarse, y botón para volver a encuadrar; en móvil, el gesto con un dedo mueve la escena y no la página
   - [ ] Tocar un cultivo lo elige: la línea de tiempo y la tarjeta del cultivo pasan a ese cultivo
   - [ ] Línea de tiempo del cultivo elegido que se arrastra y se reproduce, de la siembra a la cosecha estimada (HU-186); los demás cultivos del lote avanzan a la misma fecha; todo punto estimado con un año normal (lo que va después del último dato de temperatura, `thermal_data_until`) lleva «Estimación con un año normal, no es pronóstico»
@@ -238,10 +238,10 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [ ] Si el plan de agua marca déficit este mes, el suelo se ve seco con un aviso que depende del riego del lote (`irrigated`): con riego, «Riego probable este mes · estimación»; sin riego o sin definir, «La lluvia no alcanza este mes · estimación» (R10)
   - [ ] Tocar el cultivo muestra su etapa, los días desde la siembra y el método (temperatura o calendario)
   - [ ] El ambiente está animado: el viento pasa en ráfagas y las matas se inclinan en ola, la lluvia cae en bucle y salpica, las nubes derivan, las estrellas titilan, la escarcha brilla y se derrite al salir el sol, y de día, sin lluvia ni viento fuerte, de vez en cuando cruza una mariposa
-  - [ ] Con movimiento reducido o en modo ligero, la escena es estática: la imagen fija del estado de ahora, con la misma información y los mismos rótulos
+  - [x] Con movimiento reducido o en modo ligero, la escena es estática: la imagen fija del estado de ahora, con la misma información y los mismos rótulos
   - [ ] La animación se pausa cuando la pestaña no se ve y limita las partículas en móvil
 - **Reglas que aplican:** R1, R5, R10
-- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP el lote se ve en 2D: su mapa con la capa de la NASA (HU-211), su suelo, sus temporadas y la entrada a las estrategias. Los estados del clima que no ocurren ahora solo se ven en el modo simulación de desarrollo (HU-014). Cultivos perennes (caña, frutales) tienen arquetipo visual, pero su manejo por temporadas de varios años queda fuera del P0. Decidido el 11 de octubre de 2026.
+- **Notas:** **14 de noviembre de 2026 (decidido por Felipe): vuelve a P0 con un alcance para la demo**, porque la demo tiene que ser visual. Entra: el diorama en SVG isométrico con las piezas del diseño (`design/finca/exportar_web.py` escribe `web/src/components/farm/diorama/`), cada siembra en curso en su parte del área y su etapa, la finca alrededor, el cielo según la hora local (día, atardecer o noche), las plantas que se mecen con movimiento y la escena quieta en modo ligero, el rótulo «Ilustración de su lote, no una imagen de él» (R5, R10) y el botón «Su finca / Mapa» en el detalle del lote (HU-169). Queda fuera, y sigue en P1: recorrer el diorama (arrastrar y acercar), elegir un cultivo, la línea de tiempo (HU-186), el clima en vivo (HU-175) y el aviso de riego del plan de agua. Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP el lote se ve en 2D: su mapa con la capa de la NASA (HU-211), su suelo, sus temporadas y la entrada a las estrategias. Los estados del clima que no ocurren ahora solo se ven en el modo simulación de desarrollo (HU-014). Cultivos perennes (caña, frutales) tienen arquetipo visual, pero su manejo por temporadas de varios años queda fuera del P0. Decidido el 11 de octubre de 2026.
 
 ### HU-169 · Mi finca con varios lotes y zonas
 

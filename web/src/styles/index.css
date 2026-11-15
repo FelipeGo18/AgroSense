@@ -390,3 +390,19 @@
     min-height: 44px;
   }
 }
+
+/* Lote vivo (LiveLot.tsx): las plantas se mecen con el viento. Solo con movimiento (variante `animated:` del CSS global). */
+@keyframes live-sway {
+  0%,
+  100% {
+    transform: skewX(0deg);
+  }
+  50% {
+    transform: skewX(-2.5deg);
+  }
+}
+:root:not([data-light]) .live-sway {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: live-sway 4.2s ease-in-out infinite;
+}
