@@ -291,8 +291,8 @@ sources:
     downloaded_at: "2026-11-15"
     period_covered: "2019 (actualizada el 6 nov 2019)"
     coverage: "Mundial (no es una fuente colombiana)"
-    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho y una cita corta, y no reproduce el contenido"
-    notes: "Secciones de la ficha: Datasheet > Description y Datasheet > Utilisation. Rastrojo de maíz cultivado para grano. La ficha lo llama fibroso y de baja digestibilidad. Cita corta: «Maize stover consists of the residues of maize (Zea mays L.) plants grown for grain and left in the field following the harvest.»"
+    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho, con la sección de la ficha y el enlace, y no reproduce texto de la ficha"
+    notes: "Secciones de la ficha: Datasheet > Description y Datasheet > Utilisation. Rastrojo de maíz cultivado para grano. La ficha lo llama fibroso y de baja digestibilidad."
   - source_id: feedipedia_pea_forage
     name: "Pea forage (Heuzé V., Tran G., Giger-Reverdin S., 2015). Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
     institution: "Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
@@ -300,8 +300,8 @@ sources:
     downloaded_at: "2026-11-15"
     period_covered: "2015 (actualizada el 29 sep 2015)"
     coverage: "Mundial (no es una fuente colombiana)"
-    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho y una cita corta, y no reproduce el contenido"
-    notes: "Secciones de la ficha: Datasheet > Description y Nutritional aspects > Ruminants. Residuo de cosecha (paja o tallos y hojas); la paja es de calidad baja. Cita corta: «The crop residues from harvesting field peas, often named pea straw or pea haulms.»"
+    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho, con la sección de la ficha y el enlace, y no reproduce texto de la ficha"
+    notes: "Secciones de la ficha: Datasheet > Description y Nutritional aspects > Ruminants. Residuo de cosecha (paja o tallos y hojas); la paja es de calidad baja."
   - source_id: feedipedia_oat_forage
     name: "Oat forage (Heuzé V., Tran G., Boudon A., Lebas F., 2016). Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
     institution: "Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
@@ -309,8 +309,8 @@ sources:
     downloaded_at: "2026-11-15"
     period_covered: "2016 (actualizada el 13 abr 2016)"
     coverage: "Mundial (no es una fuente colombiana)"
-    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho y una cita corta, y no reproduce el contenido"
-    notes: "Secciones de la ficha: Datasheet > Description y Forage management > Oat-legume associations. La planta de avena como forraje y su asociación con leguminosas como la vicia. Cita corta: «Oat forage is mainly used for livestock feeding.»"
+    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho, con la sección de la ficha y el enlace, y no reproduce texto de la ficha"
+    notes: "Secciones de la ficha: Datasheet > Description y Forage management > Oat-legume associations. La planta de avena como forraje y su asociación con leguminosas como la vicia."
   - source_id: feedipedia_common_vetch
     name: "Common vetch (Vicia sativa) (Heuzé V., Tran G., Baumont R., 2015). Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
     institution: "Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
@@ -318,8 +318,8 @@ sources:
     downloaded_at: "2026-11-15"
     period_covered: "2015 (actualizada el 11 may 2015)"
     coverage: "Mundial (no es una fuente colombiana)"
-    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho y una cita corta, y no reproduce el contenido"
-    notes: "Secciones de la ficha: Datasheet > Utilisation. La ficha avisa de casos de intoxicación en rumiantes si se deja florecer. Cita corta: «Vicia sativa can be cut for fodder, grazed, fed as hay or ensiled.»"
+    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho, con la sección de la ficha y el enlace, y no reproduce texto de la ficha"
+    notes: "Secciones de la ficha: Datasheet > Utilisation. La ficha avisa de casos de intoxicación en rumiantes si se deja florecer (la planta puede cortarse para forraje, pastorearse, henificarse o ensilarse)."
   - source_id: agrosavia_altoandina_2020
     name: "Altoandina: nueva variedad de avena forrajera para la zona Andina en Colombia (Campuzano-Duque L.F., Castro-Rincón E., Castillo-Sierra J., Torres-Cuesta D., Nieto-Sierra D. y Portillo-López P.A., 2020). Agronomía Mesoamericana 31(3), p. 581 (Resumen)"
     institution: "AGROSAVIA; revista Agronomía Mesoamericana, Universidad de Costa Rica"
@@ -599,7 +599,7 @@ crops:
     family: {v: Gramineae, s: fao_ecocrop, n: "Familia de la avena (Avena sativa), la especie principal de la mezcla. La de la vicia va en `secondary_families`."}
     secondary_families: {v: [Leguminosae], s: fao_ecocrop, n: "La vicia (Vicia sativa) es Leguminosae (FAO EcoCrop, vista cropView id=238003). Cuenta en el corte de plagas, no en el filtro de familia seguida (decisión 16)."}
     fixes_nitrogen: {v: true, s: fao_iyp_2019, n: "Por la vicia, que es leguminosa; la avena no fija."}
-    forage: {v: true, s: feedipedia_oat_forage, n: "Puede cortarse como forraje en vez de incorporarse. Si se corta, no aporta al suelo lo que cuenta la estrategia. También lo apoyan feedipedia_common_vetch (la vicia) y agrosavia_altoandina_2020 (avena forrajera en el Altiplano Cundiboyacense), que el catálogo no cita aquí porque un valor lleva una sola fuente."}
+    forage: {v: true, s: feedipedia_oat_forage, n: "Puede cortarse como forraje en vez de incorporarse. Si se corta, no aporta al suelo lo que cuenta la estrategia. También lo apoyan feedipedia_common_vetch (la vicia) y agrosavia_altoandina_2020 (avena forrajera en el Altiplano Cundiboyacense), que el catálogo no cita aquí porque un valor lleva una sola fuente. La vicia puede intoxicar a los rumiantes si se deja florecer: córtela antes de la floración (feedipedia_common_vetch)."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
     root_type: {v: null, n: "Pendiente de HU-062."}
     tmean_min_c: {v: 5, s: fao_ecocrop, n: "Avena 5 °C (la vicia aguanta 3 °C)."}
