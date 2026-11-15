@@ -19,10 +19,11 @@ El 15 de noviembre no se pudo volver a leer desde el computador de Haider (la co
 
 ## Antes de enviar
 
-- [ ] Revisar «What works in this version» y la tabla de cobertura (abajo), escritas con lo que respondía el 15 de noviembre a las 15:00 UTC, y ajustarlas a lo que responda al enviar. Quitar de los textos lo que no esté.
-- [ ] **Las estrategias de rotación:** el 15 de noviembre, `/rotations` todavía responde 501. Esperan HU-223 (#153) y HU-084; HU-082 (el orden) entró con el #146. Si no responden al enviar: usar el resumen B (abajo), cambiar el tramo 0:10–0:20 del video por el diagnóstico de una siembra (texto al final del guion) y no poner MODIS NDVI en «NASA Data» (solo se ve en el ciclo de una estrategia).
+- [ ] Revisar «What works in this version» y la tabla de cobertura (abajo), escritas con lo que respondía el 15 de noviembre a las 18:30 UTC con el dataset `2026.11.25`, y ajustarlas a lo que responda **la web desplegada** al enviar. Quitar de los textos lo que no esté.
+- [x] **Las estrategias de rotación** responden con datos reales desde el 15 de noviembre (HU-084, #160): el resumen principal, «What works» y el tramo 0:10–0:20 del video ya aplican. Los ejemplos de los textos salen de los casos de la demo, confirmados con el motor (`docs/guion-demo.md`). El resumen B y el tramo de respaldo del video quedan solo por si la web desplegada no trae las estrategias.
+- [ ] **MODIS NDVI no va en «NASA Data»:** está publicado, pero `GET /trends` lo devuelve `insufficient_data` porque `catalog/sources.yaml` no le asigna una fuente al verdor, y el ciclo dice que no hay datos del verdor. Si se corrige antes de enviar (HU-208), se agrega su línea (abajo) y se quita de las referencias la de «published by our pipeline but not shown».
 - [ ] **La web en inglés** (HU-233, #127) todavía no está en `desarrollo`. Sin ella, el enlace del proyecto abre la web en español.
-- [x] `docs/licencias.md` al día: lista las 46 fuentes del dataset `2026.11.24`, las mismas de `sources` (comprobado el 15 de noviembre).
+- [x] `docs/licencias.md` al día: lista las 46 fuentes de `sources`, las mismas en los datasets `2026.11.24` y `2026.11.25` (comprobado el 15 de noviembre).
 - [ ] El enlace del proyecto: el dominio o la dirección de Cloud Run con `?lang=en` (HU-023, HU-233 y HU-236).
 - [ ] **Todo lo enlazado en inglés.** El repositorio está en español: si se enlaza (en «Link to Final Project» o en las referencias), necesita al menos un README en inglés en la raíz, y las referencias en inglés (por ejemplo, la lista de fuentes y licencias). Decidirlo antes de enviar.
 - [ ] El video de 30 segundos (o las 7 diapositivas), subido con enlace público y probado en una ventana privada.
@@ -33,7 +34,7 @@ El 15 de noviembre no se pudo volver a leer desde el computador de Haider (la co
 
 ## Campos de la página
 
-El resumen, «What it does» y «How it works» describen el MVP completo; «What works in this version» y la tabla de cobertura dicen lo que respondía el 15 de noviembre. **Antes de enviar se ajustan a lo que funcione ese día** (ver «Antes de enviar»): la página no puede decir que algo funciona si no está.
+El resumen, «What it does» y «How it works» describen el MVP; «What works in this version» y la tabla de cobertura dicen lo que respondía el 15 de noviembre con el dataset `2026.11.25`. **Antes de enviar se ajustan a lo que funcione ese día** (ver «Antes de enviar»): la página no puede decir que algo funciona si no está.
 
 ### Project Name
 
@@ -41,9 +42,9 @@ AgroSense
 
 ### High-Level Project Summary
 
-> AgroSense is a decision-support web tool that helps small and medium-sized farmers in the Colombian highlands of Boyacá and Cundinamarca explore crop rotation strategies that protect their soil and fit their local climate. For a plot, or just a municipality and an area, it compares up to three-cycle rotation strategies against the rotation the farmer already uses, scoring them by water, soil, income and risk according to the farmer's own priorities. Each cycle gets a sowing-window diagnosis built from NASA data (the NASA POWER reanalysis, NASADEM elevation and GPM IMERG satellite rainfall), global soil data (SoilGrids) and crop data with cited sources. It works from a phone, explains every result in plain language with its data source, and never presents the climate history of the area as a forecast: the decision stays with the farmer.
+> AgroSense is a decision-support web tool that helps small and medium-sized farmers in the Colombian highlands of Boyacá and Cundinamarca explore crop rotation strategies that protect their soil and fit their local climate. For a plot, or just a municipality and an area, it compares up to three-cycle rotation strategies against the rotation the farmer already uses, scoring them by water, soil health and climate risk according to the farmer's own priorities. Each cycle gets a sowing-window diagnosis built from NASA data (the NASA POWER reanalysis, NASADEM elevation and GPM IMERG satellite rainfall), global soil data (SoilGrids) and crop data with cited sources. It works from a phone, explains every result in plain language with its data source, and never presents the climate history of the area as a forecast: the decision stays with the farmer.
 
-**Resumen B**, si `/rotations` no responde al enviar (ver «Antes de enviar»). Dice solo lo que funciona el 15 de noviembre:
+**Resumen B**, solo si la web desplegada no trae las estrategias al enviar (ver «Antes de enviar»):
 
 > AgroSense is a decision-support web tool for small and medium-sized farmers in the Colombian highlands of Boyacá and Cundinamarca. For a crop and a planting date in any of the 239 municipalities of the region, it first checks whether the crop grows there, by the mean annual temperature corrected to the altitude with NASADEM. It then scores the sowing window with signals built from NASA data: water from GPM IMERG satellite rainfall and a FAO-56 water balance with the local soil texture (SoilGrids), and frost and heat from the NASA POWER reanalysis, plus soil pH. A rule-based traffic light, never an average, keeps a severe climate risk from being hidden, and the tool shows the best sowing windows of the next twelve months. Every result says where its data comes from and is never presented as a forecast. The rotation-strategy engine (agronomic filters, five rule-based soil-health criteria, the diagnosis of each cycle and the ranking by the farmer's priorities) is built and tested, but it is not yet connected in this version.
 
@@ -61,7 +62,7 @@ Pendiente: la web desplegada con `?lang=en` (HU-023, HU-233, HU-236). El código
 >
 > **How it works.** The main flow is: a plot (or a municipality and an area, without an account) → rotation strategies of up to 3 cycles → one cycle with its sowing-window diagnosis → the water each cycle needs → how the climate of the area changed between two historical periods.
 >
-> 1. **Rotation strategies.** Sequences of crops, green manure and fallow that pass agronomic filter rules (for example, no potato right after potato) and avoid any cycle with a severe climate risk. They are ranked by four criteria (water, soil, income and risk) weighted by the farmer's priorities, and each one is compared against the rotation the farmer already uses. Each strategy also gets a soil-health comparison with five rule-based criteria: nitrogen, organic carbon, soil cover, pest break and erosion.
+> 1. **Rotation strategies.** Sequences of crops, green manure and fallow that pass agronomic filter rules (for example, no potato right after potato) and avoid any cycle with a severe climate risk. They are ranked by four criteria (water, soil, income and risk; income is not scored yet in this version) weighted by the farmer's priorities, and each one is compared against the rotation the farmer already uses. Each strategy also gets a soil-health comparison with five rule-based criteria: nitrogen, organic carbon, soil cover, pest break and erosion.
 > 2. **Sowing-window diagnosis.** First, whether the crop grows in that municipality at all, by mean annual temperature. Then six signals (water, frost, heat, soil, supply and market), each scored 0–100 against what that crop needs or tolerates. A traffic light is decided by rules, never by averaging, so a severe risk is never hidden by good signals. If the farmer's priorities give a different light than AgroSense's defaults, both are shown. If the date is not a good one, it shows the best sowing windows of the next twelve months.
 > 3. **Water plan.** An estimate of the water each cycle needs month by month, and the months where rain usually falls short.
 > 4. **What changed in your area.** Frost, rainfall and heat month by month in two historical periods of the same source, and how the best sowing windows moved. It is compared history, never a forecast.
@@ -74,36 +75,40 @@ Pendiente: la web desplegada con `?lang=en` (HU-023, HU-233, HU-236). El código
 >
 > **Tools.** Python 3.12 (FastAPI, Pydantic, Polars, Shapely, SQLAlchemy and Alembic, pytest), PostgreSQL, React with TypeScript (Vite, Tailwind, TanStack Query and MapLibre), Docker and GitHub Actions. Data is precomputed by a pipeline and published as versioned Parquet files; the decision engine is a pure Python module, and every response carries the dataset and rules version, so the same input always gives the same result.
 >
-> **What works in this version.** With real data for the 239 municipalities of Boyacá and Cundinamarca (dataset 2026.11.24):
+> **What works in this version.** With real data for the 239 municipalities of Boyacá and Cundinamarca (dataset 2026.11.25):
 >
-> - **Sowing-window diagnosis:** crop suitability by altitude-corrected mean annual temperature; water, frost, heat and soil pH scored 0–100 for the crop; the traffic light with the farmer's priorities and with AgroSense's defaults; and the best sowing windows of the next twelve months, with the rainfall of the window and its sources. Supply and market still show "insufficient data": their data is published (EVA planted area and SIPSA prices), but no published source says what "oversupply" or "a low price" is, so we do not invent a threshold, and the change in planted area is not computed yet.
-> - **Accounts:** sign-up with data-processing consent, plots drawn on a map with the soil of their area, planting and harvest records, and account deletion that removes everything.
+> - **Rotation strategies:** for a plot, or a municipality without an account, strategies of two or three cycles of crops, green manure and fallow that pass the agronomic filter rules and have no cycle with a severe climate risk. Each one has its five rule-based soil-health criteria and is ranked by the farmer's priorities and compared against the rotation the farmer already uses, which is always shown, with the rules it breaks. Each cycle opens its sowing-window diagnosis and the water it needs month by month. For example, in Duitama, sowing in April after potato and with soil health as the top priority, peas → oat-vetch green manure → faba bean comes first with 88 out of 100, against 44 for potato after potato. The income criterion is not scored yet: price and supply data are published but not yet connected to the strategies.
+> - **Sowing-window diagnosis:** crop suitability by altitude-corrected mean annual temperature; water, frost, heat and soil pH scored 0–100 for the crop; the traffic light with the farmer's priorities and with AgroSense's defaults; and the best sowing windows of the next twelve months, with the rainfall of the window and its sources. Supply and market are not scored: no published source says what "oversupply" or "a low price" is, so we do not invent a threshold.
+> - **What changed in your area:** frost, rainfall and heat month by month in two historical periods of the same source (NASA POWER, 1981–2000 and 2005–2024; GPM IMERG, 2001–2012 and 2013–2024), and how the best sowing windows of the crop moved. It is compared history, never a forecast.
+> - **Accounts:** sign-up with data-processing consent, plots drawn on a map whose soil is used in the diagnosis and the strategies, planting and harvest records whose history reaches the strategies, and account deletion that removes everything.
 > - **Wholesale prices** from the Corabastos (Bogotá) and Tunja markets (SIPSA), and a "How it works" page that explains how a result is decided and shows the default weight of each signal with its reason.
-> - **Built and tested, not yet connected:** the rotation-strategy engine (agronomic filters, five rule-based soil-health criteria, the diagnosis of each cycle, the ranking by the farmer's priorities and its reasons), so the strategies screen does not show real results yet; and the water-plan API, which already answers but is shown only inside a strategy cycle.
 >
 > **How the MVP covers the challenge.**
 >
 > | Challenge | How this version covers it |
 > |---|---|
 > | NASA Earth observations | NASA POWER (temperature, frost, heat and reference evapotranspiration; a reanalysis, and the app says so), NASADEM (altitude, to correct temperature) and GPM IMERG (satellite rainfall), each through its own adapter |
-> | Local soil information | SoilGrids pH and texture of the municipality, with its uncertainty range and the warning that it is an estimate, not a soil test of the plot |
+> | Local soil information | SoilGrids pH, organic carbon and texture of the municipality or of the drawn plot, with its uncertainty range and the warning that it is an estimate, not a soil test of the plot |
 > | Crop characteristics | Cited crop sheets for 7 highland crops and fallow: temperature ranges, frost- and heat-sensitive stages, crop coefficient (Kc) and length of each stage, pH and family |
-> | Farmer priorities | A weight from 0 to 5 for each signal; if the farmer's priorities give a different light than AgroSense's defaults, both are shown. A severe climate risk always counts |
+> | Farmer priorities | Two sets of weights from 0 to 5: one for the strategy criteria (water, soil and risk; income is not scored yet) and one for each signal of a sowing window. If the farmer's priorities give a different light than AgroSense's defaults, both are shown. A severe climate risk always counts |
+> | Explore rotation strategies | Strategies of up to three cycles, compared side by side against the rotation the farmer already uses, with how much each one gains or loses on each criterion. The current rotation is always shown, with the rules it breaks, and the excluded strategies come with their reason |
+> | Strengthen soil health | Five rule-based soil-health criteria for each strategy (nitrogen, organic carbon, soil cover, pest break and erosion, with the NASADEM slope), each tied to its cited rule. It compares strategies; it never predicts how much the soil will improve |
+> | Adapt to changing conditions | "What changed in your area": frost, rainfall and heat by month in two historical periods of the same source, and how the best sowing windows moved. Compared history, never a forecast |
 > | Changing temperature and rainfall | Frost and heat signals in the crop's sensitive stages, and a water signal with dry-year rainfall and a water balance by stage |
-> | Extremes | A critical water, frost or heat risk always turns the light red, and that window never appears among the best ones |
+> | Water scarcity | The water each cycle needs month by month, with the deficit and the volume in a normal and a dry year, and the warning that it is an estimate for the area |
+> | Extremes | A critical water, frost or heat risk always turns the light red, that window never appears among the best ones, and it excludes the strategy that has it |
 > | Why, evidence, gaps and risks | Every reason cites the indicator or rule that was evaluated; missing data says "insufficient data" instead of being filled in; each rule and dataset has its source |
 > | AI (optional) | Explicit, cited rules instead of machine learning (see "Why rules and not machine learning") |
 
-**Para el equipo, las filas de la tabla que todavía no funcionan** (el 15 de noviembre). Se agregan, en inglés, solo si responden al enviar:
+**Para el equipo, lo que todavía no funciona** (el 15 de noviembre, 18:30 UTC). Se agrega a los textos, en inglés, solo si responde al enviar:
 
 | Parte del enunciado | Qué falta | De qué depende |
 |---|---|---|
-| Explore rotation strategies (al menos tres, incluida la actual) | `/rotations` responde 501 | HU-223 (#153) y HU-084 |
-| Strengthen soil health | Los cinco criterios están en el motor, pero solo salen con `/rotations` | HU-084 |
-| Adapt to changing conditions («Qué cambió») | Solo responde con un cultivo que no se da en la zona; con uno apto, 501 | HU-217 y HU-218 (#142) |
-| Escasez de agua (el agua de cada ciclo) | La API `/water-plans` responde, pero la web la muestra solo en el ciclo de una estrategia | HU-084 |
-| Suelo del lote dibujado | Hoy es siempre el del municipio | HU-182 (#143) |
-| MODIS NDVI, SMAP y la capa GIBS | El NDVI está publicado, pero solo se ve en el ciclo de una estrategia; SMAP no está publicado; GIBS, en revisión | HU-084, HU-210 y HU-211 (#144) |
+| Prioridades: ingreso | El criterio `income` no califica en ninguna estrategia: «Ningún cultivo tiene dato de oferta ni de mercado» | HU-239 y HU-241 (decisión 17) |
+| Oferta y mercado como contexto | El diagnóstico dice «Esta versión de AgroSense todavía no evalúa la oferta» | HU-072 y HU-073 (decisión 17) |
+| MODIS NDVI en el ciclo | Publicado, pero `GET /trends` lo devuelve `insufficient_data`: `sources.yaml` no le asigna una fuente al verdor | HU-208 |
+| SMAP y la capa GIBS | SMAP no está publicado; GIBS no está en la web | HU-210 y HU-211 |
+| Prioridades: forraje | El valor como forraje en el catálogo (P1) | HU-227 (#161) |
 
 ### NASA Data
 
@@ -111,7 +116,7 @@ Pendiente: la web desplegada con `?lang=en` (HU-023, HU-233, HU-236). El código
 > - **NASADEM HGT v001** (1 arc-second, about 30 m; NASA JPL, distributed by LP DAAC): elevation, to correct temperature to the altitude of the municipality or the plot, and slope, which the rotation-strategy engine uses for the erosion criterion. https://doi.org/10.5067/MEaSUREs/NASADEM/NASADEM_HGT.001
 > - **GPM IMERG Final Run V07, monthly** (NASA and JAXA, GPM mission; distributed by GES DISC): satellite rainfall for the water signal and the water plan, shown next to the POWER rainfall for contrast and never mixed. https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07
 
-Nota para el equipo: MODIS NDVI, SMAP y la capa GIBS solo se agregan aquí si están publicados y en la web el día de enviar (HU-208, HU-210 y HU-211). El 15 de noviembre, el NDVI está publicado (`ndvi_municipality`, desde 2023) pero solo se ve en el ciclo de una estrategia; SMAP no está publicado y GIBS está en revisión (#144). Si las estrategias responden, esta es la línea del NDVI, y se quita la de «NASA data published by our pipeline but not shown in this version» de las referencias:
+Nota para el equipo: MODIS NDVI, SMAP y la capa GIBS solo se agregan aquí si están publicados y en la web el día de enviar (HU-208, HU-210 y HU-211). El 15 de noviembre, el NDVI está publicado (`ndvi_municipality`, desde 2023) pero no se ve: `GET /trends` lo devuelve `insufficient_data` porque `sources.yaml` no le asigna una fuente al verdor, y el ciclo de una estrategia dice que no hay datos. SMAP no está publicado y GIBS no está en la web. Si el verdor se ve al enviar, esta es su línea, y se quita la de «NASA data published by our pipeline but not shown in this version» de las referencias:
 
 > - **MODIS Terra NDVI, MOD13Q1 V061** (250 m, every 16 days; NASA, distributed by LP DAAC): how green the municipality usually is in each part of the year, from 2023 on, shown next to each cycle to contrast the sowing windows with what is really planted. It is the greenness of the whole municipality, not of the plot, and it does not change any result. https://doi.org/10.5067/MODIS/MOD13Q1.061
 
@@ -144,4 +149,4 @@ Sigue los tiempos que propone la guía. Se puede grabar en español con subtítu
 | 0:10–0:20 | Las estrategias comparadas contra la rotación actual, y un ciclo con su diagnóstico | "It compares rotations against what the farmer already does, using NASA POWER, NASADEM and GPM IMERG, with every result explained and sourced." |
 | 0:20–0:30 | El lote dibujado en el mapa de Mi finca | "Our goal: healthier soil and fewer lost harvests, with the farmer always making the final decision." |
 
-Si `/rotations` no responde al enviar, el tramo 0:10–0:20 muestra el diagnóstico de una siembra (la luz, las señales y las mejores ventanas), con este texto: "For a crop and a planting date, it scores the sowing window with NASA POWER, NASADEM and GPM IMERG, with every result explained and sourced."
+Si la web desplegada no trae las estrategias al enviar, el tramo 0:10–0:20 muestra el diagnóstico de una siembra (la luz, las señales y las mejores ventanas), con este texto: "For a crop and a planting date, it scores the sowing window with NASA POWER, NASADEM and GPM IMERG, with every result explained and sourced."
