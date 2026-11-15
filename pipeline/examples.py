@@ -25,6 +25,8 @@ from pipeline.sources import sipsa
 EXAMPLES = Path("data/examples")
 SOURCE_ID = "ejemplo"
 YEARS = range(2015, 2025)
+# Los años con dato que pide el periodo normal de ejemplo (ver `write`).
+EXAMPLE_MIN_YEARS = 8
 # (municipality_id, altitud de ejemplo en m, temperatura media anual de ejemplo en °C, pendiente de ejemplo en %)
 TOWNS = {"15646": (2660.0, 12.8, 9.0), "15814": (2810.0, 11.9, 14.0), "15001": (2780.0, 12.4, 6.0)}
 PERIODS = [
@@ -467,7 +469,14 @@ def write(tables: dict[str, pl.DataFrame], folder: Path = EXAMPLES, published: P
         "rules_version": real_manifest.get("rules_version"),
         # Fija para que los ejemplos sean reproducibles (R4): es la fecha en que se definió el contrato congelado.
         "created_at": "2026-11-08T00:00:00+00:00",
-        "region": {**real_manifest["region"], "name": "Ejemplo: Samacá, Toca y Tunja (Boyacá)"},
+        # El periodo normal es el que cubren los datos de ejemplo (`YEARS`), no el de la región: las razones de heladas y
+        # calor lo citan y no pueden nombrar años que los ejemplos no tienen (R5). `min_years` pide la misma parte del
+        # periodo que la región (24 de 30 años: 8 de 10).
+        "region": {
+            **real_manifest["region"],
+            "name": "Ejemplo: Samacá, Toca y Tunja (Boyacá)",
+            "climate_normal": {"first_year": YEARS[0], "last_year": YEARS[-1], "min_years": EXAMPLE_MIN_YEARS},
+        },
         "periods": PERIODS,
         "tables": {
             name: {"rows": table.height, "coverage": "catálogo real" if name in ("crops", "crop_stages") else "ejemplo"}

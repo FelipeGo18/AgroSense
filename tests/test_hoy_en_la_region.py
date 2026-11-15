@@ -61,8 +61,8 @@ def test_de_noche_el_mes_en_curso_sigue_valiendo(dataset, client, reloj):
     """El caso de HU-076: a las 8:00 p. m. del 30 de noviembre en Bogotá, noviembre todavía es el mes en curso."""
     reloj(NOCHE_DEL_30)
     response = diagnostico(client, "2026-11-01")
-    # Pasa la validación de la fecha; el cálculo todavía no existe (501).
-    assert response.status_code == 501, response.json()
+    # Pasa la validación de la fecha y se diagnostica.
+    assert response.status_code == 200, response.json()
 
 
 def test_pasada_la_medianoche_en_la_region_el_mes_anterior_ya_no_vale(dataset, client, reloj):

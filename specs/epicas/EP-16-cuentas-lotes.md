@@ -135,7 +135,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Criterios de aceptación:**
   - [x] Endpoints de `lots` del contrato del P0, con `geometry` (polígono GeoJSON). Borrar marca `deleted_at` y el lote deja de verse; restaurarlo es HU-204 (P1)
   - [x] El lote guarda `irrigated` (si tiene riego): el formulario pregunta «¿Este lote tiene riego?» con «Sí», «No» y «Todavía no sé»; sin respuesta queda nulo y se puede cambiar después con `PATCH`
-  - [ ] Con `lot_id`, el diagnóstico y las estrategias toman `irrigated` del lote; con `irrigated` nulo, se evalúa como sin riego y la limitación lo dice. En la web ya lo hacen (HU-091 y HU-214, que envían el riego del lote); falta el motor, que hoy responde 501
+  - [ ] Con `lot_id`, el diagnóstico y las estrategias toman `irrigated` del lote; con `irrigated` nulo, se evalúa como sin riego y la limitación lo dice. En la web ya lo hacen (HU-091 y HU-214, que envían el riego del lote); `/diagnostics` ya lo hace (HU-076, 14 de noviembre de 2026, con la limitación); faltan las estrategias, que responden 501
   - [x] En la web, un mapa base de OpenStreetMap centrado en el municipio, donde el agricultor dibuja el contorno del lote; el área se calcula sola. La capa satelital de la NASA es HU-211
   - [x] El polígono debe ser válido y caer dentro de su municipio (422 si no), y se ve el límite municipal mientras se dibuja
   - [x] Si no puede o no quiere dibujar, escribe el área a mano y el lote queda sin ubicación; puede dibujarlo después («Dibujar en el mapa», entrega 2)
@@ -250,7 +250,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Criterios de aceptación:**
   - [ ] Los lotes del usuario en el mapa real con sus polígonos (HU-164) y la capa de la NASA (HU-211), cada uno con sus cultivos y etapas; los lotes sin dibujar se ven en una lista (hecho sin la capa de la NASA, que es HU-211, y sin las etapas, que esperan a HU-165)
   - [ ] **Una sola zona:** Mi finca muestra los lotes de un municipio, sin selector de zonas. Si el usuario tiene lotes en otro municipio, se ven en la lista con su municipio y abrirlos centra el mapa allí
-  - [ ] Detalle de lote en 2D con su suelo (HU-185), sus temporadas en curso y cosechadas, y «Ver estrategias de rotación» (HU-214)
+  - [x] Detalle de lote en 2D con su suelo (HU-185), sus temporadas en curso y cosechadas, y «Ver estrategias de rotación» (HU-214). El suelo es el estimado de su municipio («Suelo de la zona», con su rango y el rótulo de R10); el del polígono del lote es HU-182 (P1) (14 nov 2026)
   - [ ] En la próxima siembra, la pregunta «¿Qué había antes en este terreno?» permite elegir una o varias temporadas cosechadas (HU-165)
   - [x] «Agregar lote» abre el mapa del municipio para dibujar (HU-164), sin descenso
   - [ ] Cada botón tiene una acción o una navegación definida
