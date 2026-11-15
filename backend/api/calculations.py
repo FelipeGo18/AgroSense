@@ -313,7 +313,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     if evaluates_windows(fit.level):
         window = crop_window(dataset.stages.get(body.crop_id, []), body.sowing_date)
         # El suelo no cambia con la fecha: una sola vez por consulta (HU-183).
-        soil = soil_for(dataset, municipality, lot is not None, crop, thresholds, crop_name)
+        soil = soil_for(dataset, municipality, lot, crop, thresholds, crop_name)
         signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds, irrigated, texture, soil)
 
     diagnosis = diagnose(fit.level, fit_result.reasons, zone.limitation, irrigated, signals, weights, basis, defaults)

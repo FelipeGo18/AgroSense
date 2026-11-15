@@ -15,6 +15,7 @@ import polars as pl
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.accounts.farm_models import Lot
 from backend.api import calc_models as m
 from backend.api.main import app
 from backend.api.soil_signals import LOT_SOIL_LIMITATION, soil_for, zone_soil_ph
@@ -84,15 +85,15 @@ def test_soil_for_califica_con_la_ficha_y_con_lote_dice_que_el_suelo_es_del_muni
     dataset = load(EXAMPLES)
     municipality = dataset.municipalities[SAMACA]
     thresholds = load_thresholds()
-    without = soil_for(dataset, municipality, False, dataset.crops["papa"], thresholds, "la papa")
+    without = soil_for(dataset, municipality, None, dataset.crops["papa"], thresholds, "la papa")
     assert (without.status, without.score, without.level, without.critical) == ("available", 100, "favorable", False)
     assert without.reasons == (SAMACA_REASON,)
     assert LOT_SOIL_LIMITATION not in without.limitations
-    with_lot = soil_for(dataset, municipality, True, dataset.crops["papa"], thresholds, "la papa")
+    with_lot = soil_for(dataset, municipality, Lot(geometry=None), dataset.crops["papa"], thresholds, "la papa")
     assert (with_lot.score, with_lot.level, with_lot.reasons) == (100, "favorable", (SAMACA_REASON,))
     assert with_lot.limitations == (LOT_SOIL_LIMITATION,)
     # Sin suelo para el municipio no hay suelo estimado que decir que es del municipio (PR #129).
-    no_soil = soil_for(replace(dataset, soil={}), municipality, True, dataset.crops["papa"], thresholds, "la papa")
+    no_soil = soil_for(replace(dataset, soil={}), municipality, Lot(geometry=None), dataset.crops["papa"], thresholds, "la papa")
     assert no_soil.status == "insufficient_data"
     assert LOT_SOIL_LIMITATION not in no_soil.limitations
 

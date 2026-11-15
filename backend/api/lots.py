@@ -21,10 +21,13 @@ from backend.accounts.farm_models import Lot, Season
 from backend.accounts.models import User
 from backend.api import calc_examples
 from backend.api.auth import current_user, require_accounts
+from backend.api.calc_models import Versions
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain, request_id_of
 from backend.api.lot_geometry import as_geojson, drawn_lot
+from backend.api.lot_soil import zone_soil, zone_terrain
 from backend.api.season_stage import dataset_or_none, stage_fields, today
+from backend.config.versions import rules_version
 from backend.dataset import Dataset
 from backend.db.session import get_db
 
@@ -97,6 +100,8 @@ class CurrentSeason(BaseModel):
 class LotDetail(LotOut):
     # Nulo mientras no esté publicado el suelo (HU-181): no se inventa (R1).
     soil: dict[str, Any] | None
+    terrain: dict[str, Any] | None
+    versions: Versions
     current_seasons: list[CurrentSeason]
 
 
@@ -221,7 +226,14 @@ def get_lot(
         for season in _current(db, lot)
     ]
     explain(request, f"Lote consultado: {len(seasons)} temporadas en curso")
-    return LotDetail(**_out(lot), soil=None, current_seasons=seasons)
+    municipality = dataset.municipalities.get(lot.municipality_id) if dataset is not None else None
+    return LotDetail(
+        **_out(lot),
+        soil=zone_soil(dataset, municipality, lot) if municipality is not None else None,
+        terrain=zone_terrain(dataset, municipality, lot) if municipality is not None else None,
+        versions=Versions(dataset=dataset.version if dataset else None, rules=rules_version(dataset.rules_version) if dataset else None),
+        current_seasons=seasons,
+    )
 
 
 @router.patch("/lots/{lot_id}", responses=calc_examples.responses(404))

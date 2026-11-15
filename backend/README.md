@@ -25,10 +25,21 @@ La API lee el dataset del pipeline de `AGROSENSE_DATA_DIR` (por defecto `data/pu
 Solo lo lee. Si no está, los catálogos y crear o editar un lote responden 503 `dataset_unavailable` y el log dice por qué;
 lo demás sigue. Se publica con `uv run python -m pipeline.build` (`pipeline/README.md`).
 
-Al arrancar, la API también carga `grid_cells.parquet`, la rejilla de 250 m, pero solo las columnas `cell_id` y
-`altitude_m` (unas 594 mil celdas, unos pocos MB en memoria). Con ella corrige la temperatura del municipio a la altitud
+Al arrancar, la API también carga `grid_cells.parquet`, la rejilla de 250 m, con altitud, pendiente,
+textura y propiedades del suelo (HU-182). Con ella corrige la temperatura del municipio a la altitud
 de un lote dibujado para decidir si el cultivo se da. Sin ese archivo, la aptitud de un lote con contorno queda como
 `insufficient_data` y la respuesta lo dice en las limitaciones; no se usa la temperatura del municipio en su lugar.
+
+`GET /lots/{lot_id}` calcula `soil` y `terrain` sin guardarlos y devuelve las versiones usadas. Las propiedades
+numéricas son medianas de las celdas cuyo centro cae en el polígono; la textura es la clase más frecuente,
+con desempate alfabético. Si ningún centro cae dentro, usa la celda del centro del lote (`cells = 1`).
+Sin dibujo usa el municipio y lo dice en `basis`; con dibujo sin datos no sustituye por el municipio.
+El diagnóstico usa ese mismo pH y la textura del lote. Son estimaciones de mapas, no mediciones del lote.
+Rotaciones todavía responde `501`: su integración con este suelo queda pendiente de HU-084/HU-184.
+
+Validación de HU-182 (15 de noviembre de 2026): 216 pruebas relacionadas pasaron en Docker con el código
+del workspace montado y PostgreSQL local de pruebas; Ruff también pasó. Incluye suelo, altitud, textura,
+diagnóstico, detalle de lotes, contrato de cálculos y plan de agua.
 
 Para programar contra datos sin esperar el pipeline: `AGROSENSE_DATA_DIR=data/examples` usa el dataset de ejemplo del
 contrato (`uv run python -m pipeline.examples`, HU-011): tres municipios con cifras inventadas que citan la fuente `ejemplo`.

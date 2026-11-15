@@ -20,6 +20,19 @@ from backend.config.settings import get_settings
 from backend.engine.stages import StageSpan
 from common.grid import GRID_COLUMNS
 
+SOIL_COLUMNS = (
+    "ph",
+    "ph_p05",
+    "ph_p95",
+    "soc_g_kg",
+    "soc_p05",
+    "soc_p95",
+    "nitrogen_g_kg",
+    "clay_pct",
+    "sand_pct",
+    "silt_pct",
+)
+
 
 class DatasetUnavailable(RuntimeError):
     """No hay dataset publicado que leer. El mensaje dice por qué, para el log."""
@@ -54,6 +67,8 @@ class Grid:
     altitude_m: np.ndarray
     texture_code: np.ndarray | None = None
     texture_classes: tuple[str, ...] = ()
+    # Propiedades numéricas y procedencia, en el mismo orden que `keys` (HU-182).
+    properties: pl.DataFrame | None = None
 
 
 @dataclass(frozen=True)
@@ -195,19 +210,27 @@ def _optional(path: Path) -> pl.DataFrame | None:
 
 
 def _grid(path: Path) -> Grid:
-    """Lee solo `cell_id`, `altitude_m` y `texture_class`: el resto de `grid_cells` son unos 86 MB que la altitud y el
-    agua del lote no necesitan. Una rejilla publicada sin `texture_class` (de antes de HU-181) deja la textura nula."""
+    """Carga altitud, textura y propiedades de suelo y pendiente (HU-182), alineadas por llave.
+    Las columnas opcionales ausentes permanecen sin dato; admite datasets anteriores."""
     with_texture = "texture_class" in pl.read_parquet_schema(path)
-    table = pl.read_parquet(path, columns=["cell_id", "altitude_m", *(["texture_class"] if with_texture else [])])
+    columns = pl.read_parquet_schema(path)
+    extra = [name for name in (*SOIL_COLUMNS, "slope_pct", "quality", "source_ids", "municipality_id") if name in columns]
+    table = pl.read_parquet(path, columns=["cell_id", "altitude_m", *(["texture_class"] if with_texture else []), *extra])
     parts = table["cell_id"].str.split_exact("_", 1)
     keys = (parts.struct.field("field_0").cast(pl.Int64) * GRID_COLUMNS + parts.struct.field("field_1").cast(pl.Int64)).to_numpy()
     order = np.argsort(keys)
     altitudes = table["altitude_m"].cast(pl.Float64).fill_null(float("nan")).to_numpy()
     if not with_texture:
-        return Grid(keys=keys[order], altitude_m=altitudes[order])
+        return Grid(keys=keys[order], altitude_m=altitudes[order], properties=table[order.tolist()].select(extra) if extra else None)
     classes = tuple(sorted(table["texture_class"].drop_nulls().unique().to_list()))
     codes = table["texture_class"].replace_strict(list(classes), list(range(len(classes))), default=-1, return_dtype=pl.Int16).to_numpy()
-    return Grid(keys=keys[order], altitude_m=altitudes[order], texture_code=codes[order], texture_classes=classes)
+    return Grid(
+        keys=keys[order],
+        altitude_m=altitudes[order],
+        texture_code=codes[order],
+        texture_classes=classes,
+        properties=table[order.tolist()].select(extra) if extra else None,
+    )
 
 
 def _markets(region: dict[str, Any], latest: pl.DataFrame | None) -> tuple[tuple[str, str], ...]:

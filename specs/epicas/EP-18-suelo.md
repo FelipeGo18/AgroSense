@@ -34,15 +34,15 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 ### HU-182 · Suelo de un lote
 
 - **Historia:** Como agricultor, quiero ver el suelo estimado de mi lote, para entender qué le conviene.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] La API calcula el suelo del lote como la mediana de las celdas de `grid_cells` de su polígono (ver «La rejilla de 250 m» en el contrato); sin polígono, usa `soil_municipality`, y lo dice en `basis`
-  - [ ] `soil` en la respuesta de `GET /lots/{lot_id}`
-  - [ ] El suelo del lote no se guarda en la base de datos
+  - [x] La API calcula el suelo del lote como la mediana de las celdas de `grid_cells` de su polígono (ver «La rejilla de 250 m» en el contrato); sin polígono, usa `soil_municipality`, y lo dice en `basis`
+  - [x] `soil` en la respuesta de `GET /lots/{lot_id}`
+  - [x] El suelo del lote no se guarda en la base de datos
   - [ ] `lot_id` opcional en `/diagnostics` y `/rotations` (y en `/calendar`, P1): usan el suelo del lote; sin sesión responde 401 y un lote ajeno, 404. `/water-plans` no recibe `lot_id` y usa siempre el suelo del municipio, también con cuenta
-  - [ ] Con el mismo método, la API calcula la altitud y la pendiente del lote (`terrain`, de `grid_cells`, HU-206), sin guardarlas (R9). El verdor del lote es P1 (HU-209)
+  - [x] Con el mismo método, la API calcula la altitud y la pendiente del lote (`terrain`, de `grid_cells`, HU-206), sin guardarlas (R9). El verdor del lote es P1 (HU-209)
 - **Reglas que aplican:** R6, R9, R10
-- **Notas:** Depende de HU-164 (polígono del lote) y HU-181. Si se recorta, queda el suelo del municipio (HU-183).
+- **Notas:** Depende de HU-164 (polígono del lote) y HU-181. Si se recorta, queda el suelo del municipio (HU-183). **15 de noviembre de 2026:** implementados `backend/api/lot_soil.py` y la carga de las propiedades de la rejilla en `backend/dataset.py`. El detalle devuelve `soil`, `terrain` y `versions`; el diagnóstico usa el pH del polígono, además de la textura y la altitud ya integradas. Sin dibujo usa el municipio y lo dice; con dibujo sin datos no sustituye por el municipio (R1). Los nulos se excluyen de cada mediana y se conserva `quality = partial`; los percentiles también son medianas. La textura usa la moda con desempate alfabético, como el municipio. `cells` cuenta las celdas seleccionadas, incluida la del centro cuando no cae ningún centro de celda dentro; no certifica que todas tengan cada propiedad. Las fuentes se conservan desde las filas publicadas. Pruebas en `tests/test_suelo_del_lote.py`: medianas conocidas, lote pequeño, nulos, ausencia de datos, detalle, diagnóstico, cambios de contorno, permisos y lectura sin escrituras. **Pendiente para cerrar:** `/rotations` todavía responde `501` (HU-084); al integrar su motor, debe usar `zone_soil` y `zone_terrain` con el lote validado. Sus permisos 401/404 ya se verifican. `/calendar` queda en P1 y `/water-plans` sigue usando solo el municipio. No se modificó el contrato.
 
 ### HU-183 · Señal de suelo en el diagnóstico
 
