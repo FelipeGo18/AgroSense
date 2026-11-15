@@ -1,7 +1,8 @@
 # ruff: noqa: F401, F811  (los fixtures se importan de datos_reales.py y se piden por nombre)
 """Casos de referencia de la aptitud del cultivo en la zona (HU-121, PR 2; regla 0 de la agregación del semáforo).
 
-REALES: papa en Puerto Salgar y en Duitama, sobre `data/published` con la versión fijada (`VERSION_CASOS_REALES`).
+REALES: papa en Puerto Salgar y en Duitama, sobre `data/published`. `versions.dataset` se compara con la `dataset_version` de
+su `manifest.json`, sea cual sea.
 EJEMPLO (R5): Girardot y Samacá con las cifras de clima de `tests/conftest.py`.
 """
 
@@ -13,16 +14,13 @@ from tests.engine.casos.datos_reales import (
     EJEMPLO_CALIDO,
     EJEMPLO_FRIO,
     PUBLICADO,
-    SENALES,
-    VERSION_CASOS_REALES,
     cliente,
     consulta,
     datos_reales,
     diagnostico,
-    pendiente,
     tabla,
     valor,
-    version_fijada,
+    version_publicada,
 )
 
 
@@ -46,7 +44,7 @@ def test_real_papa_en_puerto_salgar_no_es_apta(datos_reales):
     # La razón cita el dato de la ficha que excluye el cultivo (R5): el valor de la zona y el límite de la ficha.
     razon = " ".join(cuerpo["suitability"]["reasons"])
     assert "28,4 °C" in razon and "hasta 16 °C" in razon and "papa" in razon
-    assert cuerpo["versions"]["dataset"] == VERSION_CASOS_REALES  # R4
+    assert cuerpo["versions"]["dataset"] == version_publicada()  # R4
 
 
 def test_real_la_ficha_que_excluye_a_la_papa_trae_fuentes_que_existen(datos_reales):
@@ -95,7 +93,7 @@ def test_real_papa_en_duitama_es_apta_con_nota_100(datos_reales):
     assert cuerpo["suitability"]["level"] == "suitable" and cuerpo["suitability"]["score"] == 100
     assert cuerpo["suitability"]["tmean_annual_c"] == 14.4
     assert cuerpo["window"] is not None and cuerpo["signals"] is not None  # apta: se evalúa la ventana
-    assert cuerpo["versions"]["dataset"] == VERSION_CASOS_REALES
+    assert cuerpo["versions"]["dataset"] == version_publicada()  # R4
 
 
 # Pasa desde el endpoint de diagnóstico (HU-076, PR #102): se quitó la marca de pendiente.

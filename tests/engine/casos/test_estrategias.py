@@ -13,10 +13,10 @@ from backend.api import calc_examples
 from common.region import region_today
 from tests.engine.casos.conftest import EJEMPLO_CALIDO, EJEMPLO_FRIO, EJEMPLO_PRIORIDADES, rotacion
 
-ESPERA_REGLA = pytest.mark.xfail(strict=True, reason="espera HU-081 y HU-084")
-ESPERA_ESTRATEGIAS = pytest.mark.xfail(strict=True, reason="espera HU-081 y HU-084")
-ESPERA_CICLOS = pytest.mark.xfail(strict=True, reason="espera HU-081, HU-213, HU-082 y HU-084")
-ESPERA_HELADA = pytest.mark.xfail(strict=True, reason="espera HU-081, HU-213, HU-082, HU-084 y HU-077 (señal de heladas)")
+ESPERA_REGLA = pytest.mark.xfail(strict=True, reason="espera HU-084")
+ESPERA_ESTRATEGIAS = pytest.mark.xfail(strict=True, reason="espera HU-084")
+ESPERA_CICLOS = pytest.mark.xfail(strict=True, reason="espera HU-213, HU-082 y HU-084")
+ESPERA_HELADA = pytest.mark.xfail(strict=True, reason="espera HU-213, HU-082 y HU-084")
 # Sin sensibilidad a la helada en ninguna etapa de la ficha (catalog/crops.yaml): un ciclo con ellos no es de alto riesgo.
 SIN_HELADA = {"zanahoria", "descanso"}
 # Abono verde y descanso: no dejan cosecha, así que no cuentan como «cultivo» en `income`.

@@ -3,33 +3,56 @@
 ficha real de la papa. Cada resultado esperado sale de `specs/01-reglas.md` («Agregación del semáforo», «Las prioridades del
 agricultor», «Orden de las ventanas») y del contrato de `/diagnostics`.
 
-Hoy `/diagnostics` responde 501 si el cultivo es apto: los casos van con `xfail(strict=True)` y fallan primero en
-`assert status_code == 200`. Armar una señal con un nivel dado exige tablas que `publish()` todavía no escribe (heladas y calor
-por mes: HU-045; suelo: HU-181; oferta: HU-031): no se inventan Parquet. Cada caso dice qué falta; la entrada es la más honesta
-posible y la aserción, solo lo que la spec deduce. Lo que no, queda como «supuesto por confirmar».
+Cada caso arma su entrada con `publicar_ejemplo` (`datos_reales.py`): la lluvia de GPM IMERG, las heladas por mes y el pH
+del suelo son tablas de ejemplo publicadas con `publish()`; el cultivo es la papa real. Los casos de luz, pesos, ventanas, riego y
+fuentes de agua corren hoy. Los que esperan la señal de suelo (HU-183, que hoy sale `insufficient_data` en `/diagnostics`) van con
+`xfail(strict=True)` y fallan solo en la aserción del suelo: el resto de su entrada ya está armada. La oferta (HU-072) no
+tiene tabla ni curva: nunca califica y no cambia la luz.
 """
 
+from datetime import date
+
+import pytest
 from fastapi.testclient import TestClient
 
 from backend.engine.curve import crop_curve, score_from_curve
+from backend.engine.signal_score import signal_order
+from backend.engine.window_order import limiting_decade
+from common.dates import add_months
+from common.region import region_today
 from tests.engine.casos.datos_reales import (
     EJEMPLO_CON_IMERG,
     EJEMPLO_FRIO,
-    SENALES,
-    VERSION_CASOS_REALES,
+    armar_ejemplo,
     cliente,
     datos_reales,
     diagnostico,
     ejemplo_dos_lluvias,
     pendiente,
     valor,
-    version_fijada,
 )
 
 # Pesos para una señal con la que se juega y las demás en importancia normal (3); `supply` y `market` no tienen curva
 # (thresholds.yaml): siempre `insufficient_data`, así que su peso no importa para la luz.
 NORMALES = {"water": 3, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
-VENTANAS = pendiente(*SENALES, "HU-045", "HU-192", extra="y tablas de heladas por mes")
+# Lluvia de ejemplo de GPM IMERG que cubre de sobra lo que pide la papa (agua favorable) y la que no alcanza (agua crítica).
+LLUVIA_SUFICIENTE_MM, LLUVIA_ESCASA_MM = 200.0, 20.0
+# Años de 30 con helada en Samacá (EJEMPLO): 3 de 30 es 10 % (calificación 84, favorable), 9 es 30 % (53, moderada) y 24 es 80 %
+# (11, crítica). Con la curva de `thresholds.yaml`: [[0,100],[20,70],[40,40],[100,0]] y crítica bajo 40.
+SIN_HELADA, HELADA_MODERADA, HELADA_CRITICA = 3, 9, 24
+# Heladas por mes (años de 30): críticas de junio a agosto, moderadas en abril, mayo y septiembre, favorables en el resto.
+# Así unas ventanas de siembra son de alto riesgo, otras salen moderadas y otras favorables.
+HELADAS_POR_MES = {
+    1: SIN_HELADA, 2: SIN_HELADA, 3: SIN_HELADA, 4: HELADA_MODERADA, 5: HELADA_MODERADA, 6: HELADA_CRITICA,
+    7: HELADA_CRITICA, 8: HELADA_CRITICA, 9: HELADA_MODERADA, 10: SIN_HELADA, 11: SIN_HELADA, 12: SIN_HELADA,
+}  # fmt: skip
+SOIL_PENDIENTE = pendiente("HU-183")
+
+
+def armado(armar_ejemplo, **datos) -> TestClient:
+    """La API sobre un dataset de EJEMPLO con agua favorable y sin heladas, más lo que se cambie."""
+    base = {"imerg_en": (EJEMPLO_FRIO,), "lluvia_mm": LLUVIA_SUFICIENTE_MM, "helada_anios": SIN_HELADA, "ph": 5.5}
+    return armar_ejemplo(**{**base, **datos})
 
 
 def con(**pesos) -> dict:
@@ -40,76 +63,94 @@ def luz(cuerpo: dict, clave: str = "overall") -> tuple[str, str]:
     return cuerpo[clave]["light"], cuerpo[clave]["action"]
 
 
+def fecha_en_mes(mes: int) -> str:
+    """Una fecha de siembra del próximo `mes` que la API acepta (en el mes en curso, hoy)."""
+    hoy = region_today()
+    if mes == hoy.month:
+        return hoy.isoformat()
+    return date(hoy.year + (mes < hoy.month), mes, 3).isoformat()
+
+
 # ---------- Luces: verde, rojo, no evaluable ----------
 
 
-@pendiente(*SENALES, "HU-045", "HU-181", extra="y tablas de lluvia, heladas y suelo del ejemplo")
-def test_ejemplo_luz_verde(cliente):
-    # Entrada a armar: agua, heladas, calor y suelo `favorable`. Regla 3: ninguna señal que cuenta es desfavorable y `water` es
-    # favorable: verde y `sow`. `supply` y `market` sin curva son `insufficient_data`: no cambian la luz y van a `limitations`.
-    cuerpo = diagnostico(cliente)
-    assert luz(cuerpo) == ("green", "sow")
-    assert {n: cuerpo["signals"][n]["level"] for n in ("water", "frost", "heat", "soil")} == dict.fromkeys(
-        ("water", "frost", "heat", "soil"), "favorable"
-    )
+def test_ejemplo_luz_verde(armar_ejemplo):
+    # Agua, heladas y calor `favorable`; `soil` no cuenta aquí (hoy sin señal) y `supply` y `market` sin curva son
+    # `insufficient_data`. Regla 3: ninguna señal que cuenta es desfavorable y `water` es favorable: verde y `sow`. Regla 5: lo que
+    # no tiene datos no cambia la luz y va a `limitations`.
+    cuerpo = diagnostico(armado(armar_ejemplo))
+    assert luz(cuerpo) == ("green", "sow") and luz(cuerpo, "overall_default") == ("green", "sow")
+    assert {n: cuerpo["signals"][n]["level"] for n in ("water", "frost", "heat")} == dict.fromkeys(("water", "frost", "heat"), "favorable")
     for nombre in ("supply", "market"):
         assert cuerpo["signals"][nombre]["status"] == "insufficient_data" and cuerpo["signals"][nombre]["level"] is None
     assert cuerpo["limitations"]
 
 
-@pendiente(*SENALES, "HU-045", extra="y tablas de heladas")
-def test_ejemplo_luz_roja_por_helada_critica_con_agua_favorable(cliente):
-    # Entrada a armar: `frost` desfavorable y crítica (calificación < 40: `critical_below`); agua favorable. Regla 2: roja aunque
-    # lo demás sea bueno (R2). Todas las desfavorables son de clima: acción `other_window`, y trae `best_windows` (puede ser vacío).
-    cuerpo = diagnostico(cliente)
+@SOIL_PENDIENTE
+def test_ejemplo_luz_verde_con_suelo_favorable(armar_ejemplo):
+    # El mismo verde, con el pH de Samacá (5,5) dentro del óptimo de la papa (5,0 a 6,2): `soil` favorable y la luz sigue verde.
+    cuerpo = diagnostico(armado(armar_ejemplo))
+    assert cuerpo["signals"]["soil"]["level"] == "favorable"
+    assert luz(cuerpo) == ("green", "sow")
+
+
+def test_ejemplo_luz_roja_por_helada_critica_con_agua_favorable(armar_ejemplo):
+    # `frost` desfavorable y crítica (calificación < 40: `critical_below`); agua favorable. Regla 2: roja aunque lo demás sea
+    # bueno (R2). Todas las desfavorables son de clima: acción `other_window`; las heladas de todo el año hacen de alto riesgo
+    # cada ventana, así que `best_windows` viene vacío, no ausente.
+    cuerpo = diagnostico(armado(armar_ejemplo, helada_anios=HELADA_CRITICA))
     frost = cuerpo["signals"]["frost"]
     assert (frost["level"], frost["critical"]) == ("unfavorable", True) and frost["score"] < 40
     assert cuerpo["signals"]["water"]["level"] == "favorable"
     assert luz(cuerpo) == ("red", "other_window") and luz(cuerpo, "overall_default") == ("red", "other_window")
-    assert cuerpo["best_windows"] is not None
+    assert cuerpo["best_windows"] == []
 
 
-@pendiente(*SENALES, "HU-045", extra="y tablas de heladas, PR #61")
-def test_ejemplo_helada_critica_con_peso_cero_sigue_en_rojo_y_cuenta(cliente):
+def test_ejemplo_helada_critica_con_peso_cero_sigue_en_rojo_y_cuenta(armar_ejemplo):
     # Un peso 0 no esconde un riesgo grave de clima (R2): `frost` crítica con peso 0 da rojo y trae `counts = true`.
-    cuerpo = diagnostico(cliente, priorities=con(frost=0))
+    cuerpo = diagnostico(armado(armar_ejemplo, helada_anios=HELADA_CRITICA), priorities=con(frost=0))
     assert cuerpo["signals"]["frost"]["critical"] is True and cuerpo["signals"]["frost"]["counts"] is True
-    assert luz(cuerpo)[0] == "red"
+    assert luz(cuerpo) == ("red", "other_window")
     assert cuerpo["overall"]["weights_basis"] == "farmer" and cuerpo["weights"]["frost"] == 0
 
 
-# Pasa desde el endpoint de diagnóstico (HU-076, PR #102): se quitó la marca de pendiente.
 def test_ejemplo_agua_sin_datos_es_no_evaluable_y_con_peso_cero_no(cliente):
-    # `dataset_con_clima` no publica lluvia: `water` es `insufficient_data` (R1). Regla 1: si `water` cuenta, la luz es
-    # `not_evaluable` con `review_data`; con peso 0 no cuenta y esa regla no aplica (las demás sin datos no cambian la luz).
+    # `dataset_con_clima` no publica lluvia ni heladas: `water` es `insufficient_data` (R1). Regla 1: si `water` cuenta, la luz es
+    # `not_evaluable` con `review_data`. Con peso 0 no cuenta y esa regla no aplica; como ninguna otra señal tiene datos, no hay
+    # ninguna que cuente y califique: regla 3, `yellow` con `other_window` (HU-074), sin riesgo ni evidencia de que la ventana sea buena.
     cuerpo = diagnostico(cliente)
     assert cuerpo["signals"]["water"]["status"] == "insufficient_data" and cuerpo["signals"]["water"]["level"] is None
     assert luz(cuerpo) == ("not_evaluable", "review_data") and luz(cuerpo, "overall_default") == ("not_evaluable", "review_data")
     sin_agua = diagnostico(cliente, priorities=con(water=0))
-    assert luz(sin_agua)[0] != "not_evaluable"
+    assert sin_agua["signals"]["water"]["counts"] is False
+    assert luz(sin_agua) == ("yellow", "other_window")
     assert luz(sin_agua, "overall_default") == ("not_evaluable", "review_data")  # los pesos de AgroSense sí cuentan el agua
 
 
 # ---------- Pesos ----------
 
 
-@pendiente(*SENALES, "HU-045", extra="y tablas de heladas por mes")
-def test_ejemplo_peso_5_cuenta_un_moderate_como_desfavorable(cliente):
-    # Entrada a armar: `frost` moderada (calificación de 40 a 69, no crítica), el resto favorable. Con el peso por defecto (3), un
-    # `moderate` no frena la luz: verde. Con peso 5, cuenta como `unfavorable`: regla 3 falla (hay una desfavorable) y regla 2 no
-    # aplica (no es crítica ni hay dos): amarilla; acción `other_window` (la desfavorable es de clima).
-    cuerpo = diagnostico(cliente, priorities=con(frost=5))
-    assert cuerpo["signals"]["frost"]["level"] == "moderate" and cuerpo["signals"]["frost"]["counts"] is True
-    assert luz(cuerpo, "overall_default") == ("green", "sow")
-    assert luz(cuerpo) == ("yellow", "other_window")
+def test_ejemplo_peso_5_cuenta_un_moderate_como_desfavorable(armar_ejemplo):
+    # `frost` moderada (53, no crítica), el resto favorable. Con peso 3 (importancia normal) un `moderate` no frena la luz: regla 3,
+    # verde. Con peso 5 cuenta como `unfavorable`: la regla 3 falla (hay una desfavorable) y la 2 no aplica (no es crítica ni
+    # hay dos): amarilla y `other_window` (la desfavorable es de clima). El peso por defecto de `frost` en `weights.yaml` 1.0.0 es 4:
+    # también cuenta el `moderate` como desfavorable, así que `overall_default` es amarilla.
+    api = armado(armar_ejemplo, helada_anios=HELADA_MODERADA)
+    normal = diagnostico(api, priorities=con(frost=3))
+    mucho = diagnostico(api, priorities=con(frost=5))
+    assert normal["signals"]["frost"]["level"] == mucho["signals"]["frost"]["level"] == "moderate"
+    assert mucho["signals"]["frost"]["counts"] is True
+    assert luz(normal) == ("green", "sow")
+    assert luz(mucho) == ("yellow", "other_window")
+    assert luz(mucho, "overall_default") == ("yellow", "other_window")
 
 
-@pendiente(*SENALES, "HU-181", extra="y suelo publicado")
-def test_ejemplo_suelo_desfavorable_no_basta_para_rojo_y_con_peso_cero_cambia_la_luz(cliente):
-    # Entrada a armar: `soil` desfavorable (pH fuera del rango de la papa), las demás favorables. El suelo nunca es crítico
-    # (R10) y una sola desfavorable no da rojo: con el peso por defecto (2), amarilla y `rotate` (cambiar de fecha no arregla
-    # el suelo). Con `soil` en 0 no cuenta: verde y `sow`. Reemplaza el caso de `supply`, que sin curva no tiene nivel.
-    cuerpo = diagnostico(cliente, priorities=con(soil=0))
+@SOIL_PENDIENTE
+def test_ejemplo_suelo_desfavorable_no_basta_para_rojo_y_con_peso_cero_cambia_la_luz(armar_ejemplo):
+    # `soil` desfavorable (pH 9,0, sobre el máximo de la papa: 8,5), las demás favorables. El suelo nunca es crítico (R10) y una sola
+    # desfavorable no da rojo: con el peso por defecto (2), amarilla y `rotate` (cambiar de fecha no arregla el suelo). Con `soil` en 0
+    # no cuenta: verde y `sow`.
+    cuerpo = diagnostico(armado(armar_ejemplo, ph=9.0), priorities=con(soil=0))
     suelo = cuerpo["signals"]["soil"]
     assert suelo["level"] == "unfavorable" and suelo["critical"] is False and suelo["counts"] is False
     assert luz(cuerpo, "overall_default") == ("yellow", "rotate")
@@ -121,62 +162,80 @@ def test_ejemplo_suelo_desfavorable_no_basta_para_rojo_y_con_peso_cero_cambia_la
 
 
 def _ordenadas(ventanas: list[dict]) -> bool:
-    """Orden de la spec: por decena del factor limitante (mayor primero), luego por promedio ponderado, luego la más temprana."""
-    llave = [(-(v["limiting_score"] // 10), -v["weighted_score"], v["sowing_start"]) for v in ventanas]
+    """Orden de la spec: por decena del factor limitante (mayor primero, `limiting_decade`), luego por promedio ponderado (mayor
+    primero, el nulo al final de su decena) y, en empate, la más temprana."""
+    llave = [
+        (-limiting_decade(v["limiting_score"]), v["weighted_score"] is None, -(v["weighted_score"] or 0), v["sowing_start"])
+        for v in ventanas
+    ]
     return llave == sorted(llave)
 
 
-@VENTANAS
-def test_ejemplo_factor_limitante_una_ventana_con_una_senal_en_15_no_queda_arriba(cliente):
-    # Entrada a armar: una ventana con una señal no crítica en 15 (por ejemplo `soil`) y buen promedio, y otra con todas en 60 o
-    # más. Ley del mínimo: la de 15 nunca queda por encima ni entra primera en `best_windows`.
-    cuerpo = diagnostico(cliente)
+def test_ejemplo_el_factor_limitante_manda_sobre_el_promedio(armar_ejemplo):
+    # Con las heladas por mes de `HELADAS_POR_MES` hay ventanas con `frost` favorable (84) y otras moderadas (53 a 59). Ley del
+    # mínimo: la mejor es una de las favorables y ninguna de factor más bajo queda antes de una de factor más alto (decena a decena);
+    # una señal en 15 no puede estar entre las mejores ventanas (las que tienen una señal crítica son de alto riesgo y no entran).
+    cuerpo = diagnostico(armado(armar_ejemplo, helada_anios=HELADAS_POR_MES), sowing_date=fecha_en_mes(7))
     ventanas = cuerpo["best_windows"]
-    assert ventanas and _ordenadas(ventanas)
-    assert ventanas[0]["limiting_score"] >= max(v["limiting_score"] for v in ventanas)
-    assert ventanas[0]["limiting_score"] != 15
-    assert all(v["limiting_score"] >= 60 for v in ventanas[:1])
+    assert len(ventanas) == 3 and _ordenadas(ventanas)
+    assert limiting_decade(ventanas[0]["limiting_score"]) > limiting_decade(ventanas[-1]["limiting_score"])  # hay de dos decenas
+    assert ventanas[0]["limiting_score"] >= 70
+    assert all(v["limiting_score"] >= 40 for v in ventanas)  # ninguna con una señal en 15 (crítica) ni cerca
 
 
-@VENTANAS
-def test_ejemplo_ventana_de_alto_riesgo_nunca_entra_en_las_mejores(cliente):
-    # Entrada a armar: un mes con `frost` crítica y el balance más alto. R2: queda marcada `high_risk` y fuera de `best_windows`,
-    # aunque el promedio sea el mejor; el diagnóstico de esa fecha dice `high_risk = true`.
-    pedida = diagnostico(cliente)
-    assert pedida["overall"]["high_risk"] is True
-    inicios = {v["sowing_start"] for v in pedida["best_windows"]}
-    assert pedida["window"]["sowing_start"] not in inicios
+def test_ejemplo_ventana_de_alto_riesgo_nunca_entra_en_las_mejores(armar_ejemplo):
+    # En julio las heladas son críticas: la ventana pedida es de alto riesgo (R2), aunque agua y calor den 100. Queda marcada
+    # `high_risk` y ninguna mejor ventana lo es ni empieza ese mes.
+    api = armado(armar_ejemplo, helada_anios=HELADAS_POR_MES)
+    pedida = diagnostico(api, sowing_date=fecha_en_mes(7))
+    assert pedida["overall"]["high_risk"] is True and luz(pedida) == ("red", "other_window")
+    assert pedida["best_windows"]
     assert all(v["high_risk"] is False for v in pedida["best_windows"])
+    assert pedida["window"]["sowing_start"][:7] not in {v["sowing_start"][:7] for v in pedida["best_windows"]}
 
 
-@VENTANAS
-def test_ejemplo_other_window_trae_mejores_ventanas_de_los_proximos_doce_meses(cliente):
-    cuerpo = diagnostico(cliente)
+def test_ejemplo_other_window_trae_mejores_ventanas_de_los_proximos_doce_meses(armar_ejemplo):
+    cuerpo = diagnostico(armado(armar_ejemplo, helada_anios=HELADAS_POR_MES), sowing_date=fecha_en_mes(7))
     assert "other_window" in (cuerpo["overall"]["action"], cuerpo["overall_default"]["action"])
     assert 1 <= len(cuerpo["best_windows"]) <= 3
-    assert all(v["sowing_start"] >= cuerpo["window"]["sowing_start"][:7] for v in cuerpo["best_windows"])
+    hoy = region_today()
+    mes_en_curso = date(hoy.year, hoy.month, 1)
+    dentro_de_doce_meses = date(*add_months(hoy.year, hoy.month, 12), 1)
+    inicios = [date.fromisoformat(v["sowing_start"]) for v in cuerpo["best_windows"]]
+    assert all(mes_en_curso <= inicio < dentro_de_doce_meses for inicio in inicios)
 
 
-@VENTANAS
-def test_ejemplo_other_window_con_todas_las_ventanas_de_alto_riesgo_trae_best_windows_vacio(cliente):
-    # Entrada a armar: heladas críticas todo el año. La acción sigue en `other_window`, pero ninguna ventana es candidata:
-    # `best_windows` viene como lista vacía (no ausente) y la web no inventa una fecha.
-    cuerpo = diagnostico(cliente)
+def test_ejemplo_other_window_con_todas_las_ventanas_de_alto_riesgo_trae_best_windows_vacio(armar_ejemplo):
+    # Heladas críticas todo el año. La acción sigue en `other_window`, pero ninguna ventana es candidata: `best_windows` viene
+    # como lista vacía (no ausente) y la web no inventa una fecha.
+    cuerpo = diagnostico(armado(armar_ejemplo, helada_anios=HELADA_CRITICA))
     assert "other_window" in (cuerpo["overall"]["action"], cuerpo["overall_default"]["action"])
     assert cuerpo["best_windows"] == []
 
 
-@VENTANAS
-def test_ejemplo_una_de_las_mejores_ventanas_coincide_con_el_diagnostico_de_esa_fecha(cliente):
+def test_ejemplo_empate_del_factor_limitante_lo_gana_el_agua_luego_heladas_y_calor(armar_ejemplo):
+    # Sin heladas, con lluvia de sobra y calor bajo, `water`, `frost` y `heat` califican 100: un empate de la señal más baja. R4: gana
+    # la primera en el orden `water`, `frost`, `heat`, `soil`, `supply`, `market`. El valor esperado va escrito aquí y no sale de
+    # `signal_order`, para que un orden distinto (por ejemplo el alfabético, que daría `frost`) falle la prueba.
+    cuerpo = diagnostico(armado(armar_ejemplo, helada_anios=0))
+    assert [cuerpo["signals"][n]["score"] for n in ("water", "frost", "heat")] == [100, 100, 100]
+    assert cuerpo["overall"]["limiting_signal"] == "water"
+    # Con el agua en 0 no cuenta (peso 0, favorable): el empate queda entre `frost` y `heat`, y gana `frost`.
+    sin_agua = diagnostico(armado(armar_ejemplo, helada_anios=0), priorities=con(water=0))
+    assert sin_agua["signals"]["water"]["counts"] is False
+    assert sin_agua["overall"]["limiting_signal"] == "frost"
+
+
+def test_ejemplo_una_de_las_mejores_ventanas_coincide_con_el_diagnostico_de_esa_fecha(armar_ejemplo):
     # Coherencia: el diagnóstico de la fecha de una mejor ventana da el mismo factor limitante y el mismo promedio ponderado.
     # Supuesto por confirmar: `weighted_score` se redondea a entero, así que se compara con tolerancia de 1.
-    base = diagnostico(cliente)
-    mejor = base["best_windows"][0]
-    otra = diagnostico(cliente, sowing_date=mejor["sowing_start"])
+    api = armado(armar_ejemplo, helada_anios=HELADAS_POR_MES)
+    mejor = diagnostico(api, sowing_date=fecha_en_mes(7))["best_windows"][0]
+    otra = diagnostico(api, sowing_date=mejor["sowing_start"])
     cuentan = {n: s for n, s in otra["signals"].items() if s["counts"] and s["score"] is not None}
-    limitante = min(cuentan, key=lambda n: (cuentan[n]["score"], n))
+    limitante = min(cuentan, key=lambda n: (cuentan[n]["score"], signal_order(n)))
     assert mejor["limiting_score"] == cuentan[limitante]["score"]
-    assert mejor["limiting_signal"] == otra["overall"]["limiting_signal"]
+    assert mejor["limiting_signal"] == otra["overall"]["limiting_signal"] == limitante
     pesos = otra["weights"]
     ponderado = sum(cuentan[n]["score"] * pesos[n] for n in cuentan) / sum(pesos[n] for n in cuentan)
     assert abs(mejor["weighted_score"] - ponderado) <= 1
@@ -186,14 +245,15 @@ def test_ejemplo_una_de_las_mejores_ventanas_coincide_con_el_diagnostico_de_esa_
 # ---------- Riego ----------
 
 
-@pendiente(*SENALES, extra="y una lluvia de ejemplo con déficit para la papa en Samacá")
-def test_ejemplo_con_y_sin_riego_y_riego_nulo(cliente):
-    # Entrada a armar: la misma ventana con déficit de agua. Sin riego, `water` es `unfavorable`; con riego no lo es (es
-    # `favorable` y la razón dice cuánto riego haría falta). Con `irrigated` nulo se evalúa como sin riego y lo dice.
-    sin_riego = diagnostico(cliente, irrigated=False)["signals"]["water"]
-    con_riego = diagnostico(cliente, irrigated=True)["signals"]["water"]
-    nulo = diagnostico(cliente, irrigated=None)
-    assert sin_riego["level"] == "unfavorable" and con_riego["level"] != "unfavorable"
+def test_ejemplo_con_y_sin_riego_y_riego_nulo(armar_ejemplo):
+    # La misma ventana con déficit de agua (lluvia de 20 mm al mes). Sin riego, `water` es `unfavorable`; con riego es
+    # `favorable` y la razón dice cuánto riego haría falta. Con `irrigated` nulo se evalúa como sin riego y lo dice.
+    api = armado(armar_ejemplo, lluvia_mm=LLUVIA_ESCASA_MM)
+    sin_riego = diagnostico(api, irrigated=False)["signals"]["water"]
+    con_riego = diagnostico(api, irrigated=True)["signals"]["water"]
+    nulo = diagnostico(api, irrigated=None)
+    assert sin_riego["level"] == "unfavorable"
+    assert con_riego["level"] == "favorable"
     assert nulo["signals"]["water"] == sin_riego
     # Supuesto por confirmar: el texto de la limitación; la spec pide que diga que se evaluó sin riego.
     assert any("riego" in texto.lower() for texto in nulo["limitations"])
@@ -202,16 +262,20 @@ def test_ejemplo_con_y_sin_riego_y_riego_nulo(cliente):
 # ---------- Dos fuentes de lluvia ----------
 
 
-@pendiente(*SENALES, extra="y que `Dataset` lea `precip_month` y `climate_month`")
 def test_ejemplo_sin_dato_de_la_fuente_de_agua_es_insufficient_data_aunque_la_otra_tenga(ejemplo_dos_lluvias):
     # `catalog/sources.yaml`: `water` usa `imerg` y contrasta con `nasa_power`. Samacá (EJEMPLO) trae lluvia de NASA POWER
     # (`climate_month`) pero no de IMERG (`precip_month`): R1, nunca se cambia de fuente en silencio. `sources` trae las dos.
     agua = diagnostico(ejemplo_dos_lluvias, municipality_id=EJEMPLO_FRIO)["signals"]["water"]
     assert agua["status"] == "insufficient_data" and agua["level"] is None
-    usadas = {fuente["source_id"]: fuente["used"] for fuente in agua["sources"]}
-    assert usadas["imerg"] is True and usadas["nasa_power"] is False
-    # Control: el otro municipio sí tiene IMERG y su agua se calcula.
-    assert EJEMPLO_CON_IMERG != EJEMPLO_FRIO
+    seca = {fuente["source_id"]: fuente for fuente in agua["sources"] if fuente["indicator"] == "precip_dry_mm"}
+    assert (seca["imerg"]["used"], seca["imerg"]["value"]) == (True, None)  # la fuente elegida, sin dato
+    assert (seca["nasa_power"]["used"], seca["nasa_power"]["value"]) == (False, 328.0)  # solo para contrastar
+    # Control: Villa de Leyva sí tiene IMERG y su agua se calcula con ella.
+    control = diagnostico(ejemplo_dos_lluvias, municipality_id=EJEMPLO_CON_IMERG)["signals"]["water"]
+    assert control["status"] == "available" and control["level"] is not None
+    seca = {fuente["source_id"]: fuente for fuente in control["sources"] if fuente["indicator"] == "precip_dry_mm"}
+    assert (seca["imerg"]["used"], seca["imerg"]["value"]) == (True, 328.0)
+    assert seca["nasa_power"]["used"] is False
 
 
 # ---------- Curva (HU-196): pasa hoy ----------
@@ -228,4 +292,3 @@ def test_real_curva_optimo_100_limite_absoluto_0_y_punto_medio_50(datos_reales):
     assert score_from_curve(curva, 13.5) == 100
     assert score_from_curve(curva, 8.0) == 0 and score_from_curve(curva, 16.0) == 0
     assert score_from_curve(curva, 10.0) == 50 and score_from_curve(curva, 15.5) == 50
-    assert VERSION_CASOS_REALES  # la versión fijada ya la comprobó `datos_reales`
