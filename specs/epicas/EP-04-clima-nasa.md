@@ -217,11 +217,13 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-046 · Aguaceros, ventanas secas y gota por mes
 
 - **Historia:** Como agricultor, quiero saber en qué meses suelen caer aguaceros, cuándo hay días secos seguidos y cuándo el clima favorece la gota, para decidir cuándo abonar, cuándo hacer labores y cosechar, y cuándo vigilar mi papa.
-- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] `heavy_rain_days_mean`, `dry_window_freq_pct` y `blight_days_mean` en `climate_risk_month` y en `climate_risk_week`, con umbrales con fuente
-  - [ ] La gota usa humedad relativa (`RH2M`) y temperatura de NASA POWER con una regla publicada
-- **Notas:** Ver `docs/investigacion-decisiones.md`. La humedad de NASA POWER es de celda de unos 50 km: se presenta como orientación. Con estos datos el motor arma las señales `excess_rain`, `disease` y `harvest_weather` (HU-195).
+  - [x] `heavy_rain_days_mean` en `climate_risk_month`, con umbral con fuente: días con lluvia de NASA POWER ≥ 20 mm (R20mm de ETCCDI, `etccdi_indices`), en promedio por año en 1991–2020 (15 de noviembre de 2026; por aprobar por Haider o Felipe)
+  - [ ] `dry_window_freq_pct` en `climate_risk_month`, con umbral con fuente
+  - [ ] `blight_days_mean` en `climate_risk_month`: la gota usa humedad relativa (`RH2M`) y temperatura de NASA POWER con una regla publicada
+  - [ ] Las tres columnas en `climate_risk_week`, cuando exista (HU-193)
+- **Notas:** Ver `docs/investigacion-decisiones.md`. **15 de noviembre de 2026 (spec corregida):** `climate_risk_week` es de HU-193, que sigue pendiente: las columnas semanales se llenan cuando exista. **Aguaceros:** un día de aguacero es uno con lluvia ≥ 20 mm (`heavy_rain` en `pipeline/region.yaml`, con la fila `etccdi_indices` en `sources`); es un índice climático, no un umbral agronómico de lavado del abono. La lluvia es la de NASA POWER (`PRECTOTCORR`) de la celda del municipio: IMERG solo está en la caché por mes. En los valles del altiplano POWER da casi el doble de lluvia que el IDEAM (PR #44): el conteo es una orientación de la zona. Un año cuenta en un mes con el 90 % de sus días con lluvia (R1). Comprobado a mano en Duitama, octubre: 42 aguaceros en 30 años, 1,4 por año. **Ventanas secas:** el contrato dice «3 días seguidos de menos de 5 mm», pero ninguna fuente revisada da esos números (ETCCDI define el día seco como < 1 mm, sin largo de racha para labores); por la decisión 16 no puede ser criterio del equipo (no es central). Queda nula hasta tener fuente (R1, R8). **Gota:** el artículo de Uniandes (Luengas et al., 2021, *Naturaleza y Sociedad* n.º 1, https://doi.org/10.53010/nys1.01) usa SimCast (Fry et al., 1983; Grünwald et al., 2002, *Plant Disease* 86(10):1163-1168, validado en el valle de Toluca), que cuenta horas seguidas con humedad ≥ 90 % y su temperatura. La humedad diaria de POWER no alcanza: hace falta POWER por hora (`RH2M`, `T2M`) y la tabla de Grünwald et al. Queda nula hasta decidir esa descarga. La humedad de NASA POWER es de celda de unos 50 km: se presenta como orientación. Con estos datos el motor arma las señales `excess_rain`, `disease` y `harvest_weather` (HU-195).
 
 ### HU-188 · Riesgos que cubre un seguro, por municipio
 
