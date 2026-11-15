@@ -17,7 +17,7 @@ export function Sources({ animated }: { animated: boolean }) {
         <SectionHeader stop="fuentes" title={t("landing.sourcesTitle")}>
           {t("landing.sourcesIntro")}
         </SectionHeader>
-        <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {SOURCES.map((source) => (
             <li key={t(source.kind)} data-reveal className="flex">
               <Card className="grow">

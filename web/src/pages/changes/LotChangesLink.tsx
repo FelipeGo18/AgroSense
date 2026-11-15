@@ -7,11 +7,20 @@ import { SelectField } from "@/components/ui/SelectField";
 import { changesLink } from "@/features/changes/changes";
 import { useCrops } from "@/features/farm/seasons";
 
-/** Un lote puede tener varios cultivos: la persona elige cuál comparar. */
-export function LotChangesLink({ municipalityId, irrigated }: { municipalityId: string; irrigated: boolean | null }) {
+/** Solo una siembra en curso permite preseleccionar sin adivinar (decisión de Haider, 15 nov). */
+export function LotChangesLink({
+  municipalityId,
+  irrigated,
+  currentSeasons = [],
+}: {
+  municipalityId: string;
+  irrigated: boolean | null;
+  currentSeasons?: readonly { crop_id: string }[];
+}) {
   useTranslation();
   const crops = useCrops();
-  const [cropId, setCropId] = useState("");
+  const [choice, setChoice] = useState<string | null>(null);
+  const cropId = choice ?? (currentSeasons.length === 1 ? currentSeasons[0].crop_id : "");
   const selected = crops.data?.find((crop) => crop.crop_id === cropId && crop.kind === "crop");
   return (
     <section aria-label={t("pages.changes.LotChangesLink.whatHasChangedInYourArea")} className="flex min-w-0 flex-col gap-3">
@@ -27,7 +36,7 @@ export function LotChangesLink({ municipalityId, irrigated }: { municipalityId: 
             label={t("pages.changes.LotChangesLink.cropForComparingTheAreasHistory")}
             value={cropId}
             disabled={crops.isPending}
-            onChange={(event) => setCropId(event.target.value)}
+            onChange={(event) => setChoice(event.target.value)}
             options={[
               {
                 value: "",

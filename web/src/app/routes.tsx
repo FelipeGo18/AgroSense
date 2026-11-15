@@ -87,7 +87,6 @@ const pages: RouteObject[] = [
       { path: PATHS.consult, lazy: async () => ({ Component: (await import("@/pages/strategies/StrategiesPage")).StrategiesPage }) },
       { path: PATHS.diagnosis, lazy: async () => ({ Component: (await import("@/pages/diagnosis/DiagnosisPage")).DiagnosisPage }) },
       { path: PATHS.changes, lazy: async () => ({ Component: (await import("@/pages/changes/ChangesPage")).ChangesPage }) },
-      ...PENDING.map(pending),
       // Pruebas de la fase 0. Cada recorrido se carga aparte: trae sus propias escenas.
       { path: PATHS.lab, lazy: async () => ({ Component: (await import("@/pages/lab/LabIndexPage")).LabIndexPage }) },
       { path: PATHS.kit, lazy: async () => ({ Component: (await import("@/pages/lab/KitPage")).KitPage }) },

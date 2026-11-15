@@ -7,8 +7,11 @@ import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { StateCard } from "@/components/ui/StateCard";
+import { ExampleLabel } from "@/components/ui/Labels";
+import { useVersion } from "@/features/version";
 import { useChanges, type ChangesResponse } from "@/features/changes/changes";
-import { SIGNAL_NAME } from "@/features/diagnosis/signals";
+import { SIGNAL_NAME, sourceName } from "@/features/diagnosis/signals";
 import { ChangesContext, useChangesContext } from "./ChangesContext";
 
 type Period = Schemas["Period"];
@@ -56,13 +59,7 @@ const INDICATORS = (): {
 ];
 
 function periodLabel(period: Period) {
-  return t("pages.changes.ChangesPage.betweenAnd", { v0: period.start_year, v1: period.end_year });
-}
-
-function sourceLabel(sourceId: string) {
-  if (sourceId === "nasa_power") return "NASA POWER";
-  if (/imerg/i.test(sourceId)) return "GPM IMERG";
-  return sourceId;
+  return `Entre ${period.start_year} y ${period.end_year}`;
 }
 
 function Missing() {
@@ -136,6 +133,7 @@ function Comparison({
   differenceUnit: string;
 }) {
   useTranslation();
+  const version = useVersion();
   const periods = indicator === "precip_normal_mm" ? (data.precip_periods ?? data.periods) : data.periods;
 
   const sameSource = periods.before.source_id === periods.after.source_id;
@@ -165,9 +163,11 @@ function Comparison({
       ) : (
         <>
           <p className="text-sm text-texto-secundario">
-            {t("pages.strategies.StrategyCard.source")} {sourceLabel(periods.before.source_id)}
+            {t("pages.strategies.StrategyCard.source")} {sourceName(periods.before.source_id, version.data)}
             {t("pages.changes.ChangesPage.units")} {unit}.
           </p>
+          {indicator === "frost_freq_pct" && <p className="text-sm">Porcentaje de años con heladas en cada mes.</p>}
+          {indicator === "tmax_p90_c" && <p className="text-sm">En 9 de cada 10 días, la temperatura máxima no superó este valor.</p>}
 
           {power && <p className="text-sm">{t("pages.changes.ChangesPage.nasaPowerIsAReanalysisAModel")}</p>}
 
@@ -184,39 +184,46 @@ function Comparison({
               return (
                 <li key={monthName} className="border-t border-superficie-borde pt-3">
                   <h3 className="font-bold">{monthName}</h3>
+                  {!metric ? (
+                    <p>La respuesta no trae este mes.</p>
+                  ) : (
+                    <>
+                      <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <PeriodValue
+                          label={periodLabel(periods.before)}
+                          value={metric?.before}
+                          unit={unit}
+                          minimum={minimum}
+                          maximum={maximum}
+                          before
+                        />
+                        <PeriodValue
+                          label={periodLabel(periods.after)}
+                          value={metric?.after}
+                          unit={unit}
+                          minimum={minimum}
+                          maximum={maximum}
+                          before={false}
+                        />
+                      </div>
+                    </>
+                  )}
 
-                  <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <PeriodValue
-                      label={periodLabel(periods.before)}
-                      value={metric?.before}
-                      unit={unit}
-                      minimum={minimum}
-                      maximum={maximum}
-                      before
-                    />
-                    <PeriodValue
-                      label={periodLabel(periods.after)}
-                      value={metric?.after}
-                      unit={unit}
-                      minimum={minimum}
-                      maximum={maximum}
-                      before={false}
-                    />
-                  </div>
-
-                  <div className="mt-2 text-sm">
-                    {comparable ? (
-                      <p>
-                        {t("pages.changes.ChangesPage.changeAfterMinusBefore")} {metric.change! > 0 ? "+" : ""}
-                        {NUMBER().format(metric.change!)} {differenceUnit}.
-                      </p>
-                    ) : (
-                      <>
-                        <p>{t("pages.changes.ChangesPage.changeBetweenPeriods")}</p>
-                        <Missing />
-                      </>
-                    )}
-                  </div>
+                  {metric && (
+                    <div className="mt-2 text-sm">
+                      {comparable ? (
+                        <p>
+                          {t("pages.changes.ChangesPage.changeAfterMinusBefore")} {metric.change! > 0 ? "+" : ""}
+                          {NUMBER().format(metric.change!)} {differenceUnit}.
+                        </p>
+                      ) : (
+                        <>
+                          <p>{t("pages.changes.ChangesPage.changeBetweenPeriods")}</p>
+                          <Missing />
+                        </>
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -414,5 +421,38 @@ export function ChangesPage() {
 
       <Footer />
     </>
+  );
+}
+
+function ChangesError({ error, onRetry }: { error: Error; onRetry: () => void }) {
+  const status = error instanceof ApiError ? error.status : null;
+  if (status === 501)
+    return (
+      <StateCard
+        title="Este cálculo todavía no está disponible"
+        description="Esta versión de AgroSense todavía no calcula esta comparación."
+      />
+    );
+  const actions = [{ label: "Reintentar", onClick: onRetry }];
+  if (status === 0)
+    return <StateCard title="Sin conexión" description="Revise la señal e intente de nuevo. Lo que eligió sigue aquí." actions={actions} />;
+  if (status === 422)
+    return (
+      <StateCard
+        title="Revise lo que eligió"
+        description="No pudimos comparar con esas opciones. Revise el municipio, el cultivo y el riego en el formulario."
+      />
+    );
+  if (status === 503)
+    return (
+      <StateCard title="Los datos no están disponibles en este momento" description="Intente más tarde." mood="no_data" actions={actions} />
+    );
+  return (
+    <StateCard
+      title="Algo falló de nuestro lado"
+      description="No pudimos comparar la historia de su zona. Lo que eligió sigue aquí. Intente de nuevo en un momento."
+      code={error instanceof ApiError ? error.requestId : null}
+      actions={actions}
+    />
   );
 }

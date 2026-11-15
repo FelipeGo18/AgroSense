@@ -2,6 +2,7 @@
 
     uv run python -m pipeline.build              # lee la caché de data/raw/ y publica
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
+    uv run python -m pipeline.build --traer-cache  # antes, trae la caché compartida (HU-237)
     uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044, con la altura de su celda de NASA POWER),
@@ -40,7 +41,7 @@ import yaml
 from common import signal_sources
 from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
-from pipeline import climate_normals, climate_risk, rotation_rules, schema
+from pipeline import climate_change, climate_normals, climate_risk, raw_cache, rotation_rules, schema
 from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
 
@@ -259,6 +260,40 @@ def validate_frost(
         raise ValidationError(f"`climate_frost_month` con un mes o unos días fuera de lo permitido: {bad.head(3).to_dicts()}")
 
 
+def validate_change(change: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame, periods: list) -> None:
+    """`climate_change_month` (HU-216) solo trae municipios publicados (R7), meses de 1 a 12, frecuencias de 0 a 100,
+    lluvia no negativa, una máxima p90 verosímil (de -10 a 50 °C), años que caben en su periodo, periodos de
+    `region.yaml` con su misma fuente (decisión 11) y fuentes que existen (R8). Las dos comprobaciones del calor y de los
+    años las pidió Haider en la revisión del PR #79."""
+    extra = set(change["municipality_id"].unique().to_list()) - set(municipalities["municipality_id"].to_list())
+    if extra:
+        raise ValidationError(f"`climate_change_month` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+    bad = change.filter(
+        ~pl.col("month").is_between(1, 12)
+        | ~pl.col("frost_freq_pct").is_between(0, 100)
+        | (pl.col("precip_normal_mm") < 0)
+        | ~pl.col("tmax_p90_c").is_between(-10, 50)
+    )
+    if not bad.is_empty():
+        raise ValidationError(
+            f"`climate_change_month` con un mes, una frecuencia, una lluvia o un calor fuera de lo permitido: {bad.head(3).to_dicts()}"
+        )
+    lengths = pl.DataFrame(
+        {"period_id": [p.period_id for p in periods], "period_years": [p.end_year - p.start_year + 1 for p in periods]},
+        schema={"period_id": pl.String, "period_years": pl.Int64},
+    )
+    too_many = change.join(lengths, on="period_id", how="left").filter((pl.col("years") < 1) | (pl.col("years") > pl.col("period_years")))
+    if not too_many.is_empty():
+        raise ValidationError(f"`climate_change_month` con más años de los que tiene su periodo: {too_many.head(3).to_dicts()}")
+    allowed = {(p.period_id, p.source_id) for p in periods}
+    wrong = set(change.select("period_id", "source_id").unique().iter_rows()) - allowed
+    if wrong:
+        raise ValidationError(f"`climate_change_month` trae un periodo que no es de esa fuente en region.yaml: {sorted(wrong)}")
+    unknown = set(change["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+    if unknown:
+        raise ValidationError(f"`climate_change_month` cita una fuente que no está en `sources`: {sorted(unknown)}")
+
+
 def soil_out_of_range() -> pl.Expr:
     """Las filas con un suelo imposible: pH fuera de 0 a 14, un porcentaje fuera de 0 a 100, carbono o nitrógeno
     negativos o el percentil 5 por encima del 95. Un valor nulo (sin suelo) no cuenta: el filtro lo descarta."""
@@ -342,6 +377,7 @@ def publish(
     climate_month: pl.DataFrame | None = None,
     precip_month: pl.DataFrame | None = None,
     frost: tuple[pl.DataFrame, pl.DataFrame] | None = None,
+    change: pl.DataFrame | None = None,
     soil: pl.DataFrame | None = None,
     rules: pl.DataFrame | None = None,
 ) -> dict[str, Any]:
@@ -379,6 +415,10 @@ def publish(
     if has_precip:
         validate_precip_month(precip_month, municipalities, sources)
     has_frost = frost is not None and not frost[0].is_empty()
+    change_periods = climate_change.periods_from_region(region)
+    has_change = change is not None and not change.is_empty()
+    if has_change:
+        validate_change(change, municipalities, sources, change_periods)
     if has_frost:
         validate_frost(frost[0], frost[1], municipalities, sources, climate_risk.frost_source(region))
     has_grid = grid is not None and not grid.is_empty()
@@ -407,6 +447,8 @@ def publish(
         tables["precip_month"] = precip_month
     if has_frost:
         tables["climate_risk_month"], tables["climate_frost_month"] = frost
+    if has_change:
+        tables["climate_change_month"] = change
     if has_grid:
         tables["grid_cells"] = grid
     if has_soil:
@@ -431,8 +473,8 @@ def publish(
         "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "region": {**region["region"], **lapse_rate_entry(region), **climate_normal_entry(region)},
-        # Los periodos de «Qué cambió» llegan con HU-216.
-        "periods": [],
+        # Los periodos de «Qué cambió» (HU-216): solo los de las fuentes que se publicaron.
+        "periods": [p.manifest() for p in change_periods if has_change and p.source_id in set(change["source_id"].to_list())],
         "tables": {
             "municipalities": {"rows": municipalities.height, "coverage": region["region"]["name"]},
             "sources": {"rows": sources.height, "coverage": "todas las fuentes de lo publicado"},
@@ -472,6 +514,10 @@ def publish(
         years = f"de {by_year['year'].min()} a {by_year['year'].max()}"
         coverage = f"{by_year['municipality_id'].n_unique()} municipios con altitud; días con mínima ≤ {threshold:g} °C por mes, {years}"
         manifest["tables"]["climate_frost_month"] = {"rows": by_year.height, "coverage": coverage}
+    if has_change:
+        names = ", ".join(f"{p.period_id} ({p.source_id})" for p in change_periods)
+        coverage = f"{change['municipality_id'].n_unique()} municipios; periodos {names}"
+        manifest["tables"]["climate_change_month"] = {"rows": change.height, "coverage": coverage}
     if has_grid:
         with_soil = grid.filter(pl.col("ph").is_not_null()).height
         soil_text = f"suelo de SoilGrids en {with_soil} celdas" if with_soil else "sin suelo (falta la caché de SoilGrids)"
@@ -757,6 +803,8 @@ def build(
     municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
     precip_month, rain_sources = precip_from_cache(region, boundaries, rain_cache)
     frost = frost_tables(region, climate)
+    # «Qué cambió» (HU-216): los indicadores de cada periodo de region.yaml, cada uno de una sola fuente.
+    change = climate_change.climate_change_month(region, climate, climate_month, precip_month)
     # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
     normal = climate_normals.Normal.from_region(region)
     if climate is not None and not climate.is_empty():
@@ -824,6 +872,7 @@ def build(
         climate_month,
         precip_month,
         frost,
+        change,
         soil,
         rules_table,
     )
@@ -857,6 +906,9 @@ def check_signal_sources(region_id: str, published: set[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reconstruye data/published desde la caché.")
     parser.add_argument("--descargar", action="store_true", help="Baja otra vez las fuentes a data/raw/ antes de publicar.")
+    parser.add_argument(
+        "--traer-cache", action="store_true", help="Antes de publicar, trae la caché compartida de pipeline/raw_cache.json (HU-237)."
+    )
     parser.add_argument("--verificar", action="store_true", help="No publica: solo revisa que data/published coincida con su manifiesto.")
     args = parser.parse_args()
     # El pipeline no usa la base de datos: lee su configuración de `pipeline/settings.py`, no la de la API.
@@ -864,6 +916,8 @@ def main() -> None:
     configure(settings.log_level, settings.log_format)
     expected = load_region()["dataset_version"]
     try:
+        if args.traer_cache and not args.verificar:
+            raw_cache.pull()
         if not args.verificar:
             build(download=args.descargar)
         manifest = verify(PUBLISHED, expected)
@@ -874,6 +928,7 @@ def main() -> None:
         rotation_rules.RotationRulesError,
         nasa_power.DownloadError,
         nasadem.TileError,
+        raw_cache.CacheError,
     ) as error:
         event = "dataset_mismatch" if args.verificar else "dataset_not_published"
         log.error(event, detail=f"{'Lo publicado no pasó la revisión' if args.verificar else 'No se publicó nada'}: {error}")

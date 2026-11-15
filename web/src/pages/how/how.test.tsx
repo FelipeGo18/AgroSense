@@ -53,6 +53,14 @@ afterEach(() => {
 });
 
 describe("¿Cómo funciona? (HU-122, HU-198)", () => {
+  it("tiene una sola ruta y carga la página real, sin la pantalla pendiente", async () => {
+    expect(routes.flatMap((route) => route.children ?? []).filter((route) => route.path === PATHS.howItWorks)).toHaveLength(1);
+    respond(VERSION);
+    setLightMode(true);
+    open();
+    expect(await screen.findByRole("heading", { level: 1, name: "¿Cómo funciona?" })).toBeInTheDocument();
+    expect(screen.queryByText(/todavía no está programada/)).not.toBeInTheDocument();
+  });
   it("explica cómo se decide y lo que AgroSense no hace", async () => {
     respond(VERSION);
     open();
