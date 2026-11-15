@@ -22,21 +22,22 @@ El guion se escribe desde la hora 0; el video y la entrega se cierran a partir d
 ### HU-131 · Dos casos reales para la demo
 
 - **Historia:** Como jurado, quiero ver dos casos reales en pocos minutos, para entender el valor rápido.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] El guion sigue el flujo del MVP: lote (o municipio y área) → estrategias de rotación de 3 ciclos con su salud del suelo → un ciclo con su diagnóstico → agua del plan → «Qué cambió en su zona»
-  - [ ] El guion nombra en pantalla cada producto NASA que se usa y para qué (POWER, NASADEM, IMERG, MODIS NDVI, SMAP y la capa GIBS del mapa), y dice que POWER es un reanálisis
-  - [ ] El guion abre con la rotación, el suelo, los datos de la NASA y «Qué cambió»; la oferta va al final, como valor agregado («además, le avisamos si hay mucha papa sembrada en su zona»)
+  - [x] El guion sigue el flujo del MVP: lote (o municipio y área) → estrategias de rotación de 3 ciclos con su salud del suelo → un ciclo con su diagnóstico → agua del plan → «Qué cambió en su zona»
+  - [x] El guion nombra en pantalla cada producto NASA que se usa y para qué (POWER, NASADEM, IMERG, MODIS NDVI, SMAP y la capa GIBS del mapa), y dice que POWER es un reanálisis
+  - [x] El guion abre con la rotación, el suelo, los datos de la NASA y «Qué cambió»; la oferta va al final, como valor agregado («además, le avisamos si hay mucha papa sembrada en su zona»)
   - [ ] Dos casos: uno favorable, con una estrategia que cuida el suelo, y uno con una estrategia excluida por un ciclo de alto riesgo de clima. Ninguno de los dos tiene la sobreoferta como historia principal
-  - [ ] El guion muestra una ventana que no conviene con sus mejores ventanas (`other_window`) y, si el tiempo alcanza, un cultivo que no es apto para la zona
-  - [ ] El guion habla de «ventana de siembra», presenta el orden de ventanas y «Qué cambió» como historia de la zona, nunca como pronóstico, y dice que las estrategias se comparan por reglas, sin predecir cuánto mejora el suelo
-  - [ ] Si el tiempo alcanza, el guion muestra las dos luces (con las prioridades del agricultor y con el criterio de AgroSense) y dice que la decisión es del agricultor
-  - [ ] El guion dice que la región es un piloto y qué fuentes son propias de ella (decisión 11)
+  - [x] El guion muestra una ventana que no conviene con sus mejores ventanas (`other_window`) y, si el tiempo alcanza, un cultivo que no es apto para la zona
+  - [x] El guion habla de «ventana de siembra», presenta el orden de ventanas y «Qué cambió» como historia de la zona, nunca como pronóstico, y dice que las estrategias se comparan por reglas, sin predecir cuánto mejora el suelo
+  - [x] Si el tiempo alcanza, el guion muestra las dos luces (con las prioridades del agricultor y con el criterio de AgroSense) y dice que la decisión es del agricultor
+  - [x] El guion dice que la región es un piloto y qué fuentes son propias de ella (decisión 11)
   - [ ] La oferta se muestra en un ciclo como una señal más, con su fuente y su fecha
   - [ ] Usuario de demo con lotes e historial, rotulado como ejemplo, y recorrido sin cuenta como respaldo
   - [ ] Ensayado al menos una vez
 - **Reglas que aplican:** R5, R8
 - **Notas:** Cambiado el 11 de octubre de 2026 (decisión 12): la oferta (`supply`) es valor agregado, no protagonista. Sigue siendo una de las seis señales, con su peso, y en las estrategias entra solo por el criterio de ingreso.
+- **En curso (14 nov):** el guion está en `docs/guion-demo.md`. Los dos casos están elegidos con los datos publicados (dataset `2026.11.18`): **Duitama**, la sede, con la rotación de Agrosavia (papa, avena y arveja) adaptada al catálogo, donde la avena es avena con vicia, y empezando después de la papa (avena con vicia → arveja → papa), y **Güicán de la Sierra**, donde una papa sembrada en diciembre cae en una ventana con helada en unos 2 de cada 3 años del periodo normal y queda excluida por alto riesgo de clima. Si alcanza, la papa en Puerto Salgar como cultivo no apto, ya confirmada con el motor (el diagnóstico responde desde el #102). **Faltan:** confirmar los resultados de los dos casos con el motor (HU-071, HU-183, HU-084, HU-146, HU-216, HU-218 y HU-219, el agua para cerrar HU-076, y `climate_normal` en el manifiesto publicado, que llega con el #96); la oferta con su fuente y su fecha, que hoy sale «datos insuficientes» (HU-031, HU-072); el usuario de demo y el recorrido sin cuenta; y el ensayo.
 
 ### HU-132 · Video y descripción de la entrega
 
