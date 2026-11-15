@@ -94,7 +94,7 @@ Ninguno cambia la forma de las tablas:
 
 ## Configuración versionada
 
-Decisión 15. El motor la recibe ya leída (R6). Cada archivo tiene `version`, que va en `versions.rules` de cada respuesta (R4), y la API no arranca si un archivo no cumple su forma.
+Decisión 15. El motor la recibe ya leída (R6). Cada archivo tiene `version`, que va en `versions.rules` de cada respuesta (R4), y la API no arranca si un archivo no cumple su forma. **`versions.rules` junta tres versiones en un texto** con la forma de los metadatos de compilación de SemVer: la del catálogo (`rules_version` del manifiesto), la de `thresholds.yaml` y la de `weights.yaml`, por ejemplo `0.1.0+umbrales.1.0.0+pesos.1.0.0` (`backend/config/versions.py`). Si cambian los umbrales o los pesos, cambia la versión de la respuesta. La forma de `versions` no cambia; sin la versión del catálogo es nula (R5). Aprobado por Felipe el 14 de noviembre de 2026 (HU-075).
 
 ### `backend/config/weights.yaml` (hecho, HU-075 y HU-198)
 

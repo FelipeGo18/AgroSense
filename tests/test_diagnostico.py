@@ -105,7 +105,7 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
         assert (signal["status"], signal["level"], signal["score"], signal["critical"], signal["reasons"]) == (
             "insufficient_data", None, None, False, [reason]
         )  # fmt: skip
-    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0"}
+    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.0.0+pesos.1.0.0"}
 
 
 def test_sin_prioridades_las_dos_luces_coinciden_con_los_pesos_por_defecto(examples):
