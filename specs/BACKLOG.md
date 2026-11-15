@@ -150,6 +150,6 @@
 | [EP-18](epicas/EP-18-suelo.md) | HU-182 | Suelo de un lote | P0 | M | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-183 | Señal de suelo en el diagnóstico | P0 | S | hecha | Curva de HU-196 sobre la mediana `ph` del municipio; el intervalo p05–p95 se informa y solo baja el nivel si queda todo fuera de lo que tolera el cultivo; nunca crítica. Con `lot_id`, el suelo del municipio y se dice (el del lote es de HU-182) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | pendiente | |
-| [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | pendiente | Cinco criterios con la erosión (decisión 14) |
+| [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | en curso | Cinco criterios con la erosión (decisión 14); spec precisada el 14 nov |
 | [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | pendiente | Nueva (8 nov, decisión 14) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-185 | Ver el suelo en la web | P0 | S | en curso | El suelo de la zona explicado en el detalle del lote (14 nov); faltan la señal de suelo y la salud del suelo |
