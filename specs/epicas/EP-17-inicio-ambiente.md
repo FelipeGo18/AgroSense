@@ -22,14 +22,14 @@ estado: en curso
 ### HU-173 · Pantalla de inicio
 
 - **Historia:** Como visitante, quiero entender en segundos qué es AgroSense y qué hace, para decidir si la uso.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] La mascota (`Mascot` 2D) presenta qué es AgroSense y lo que hace con cuatro preguntas: qué siembro y en qué orden (estrategias de rotación), si conviene cada siembra (la revisión de cada ciclo), cuánta agua va a necesitar (el agua del plan) y qué cambió en su zona
   - [x] El inicio es un recorrido de paradas con scroll suave (GSAP y Lenis): portada, «Cuatro preguntas», «Así se revisa un ciclo» y «De dónde salen los datos». Se avanza con el scroll, con el enlace de cada parada o con los puntos del borde, que dicen en cuál va; al llegar, el foco queda en el título de la parada
   - [x] La mascota guía el recorrido: cada parada le reserva un lugar y una sola mascota vuela de uno al siguiente; si el lugar no se ve, espera en una esquina. Lo que dice va escrito al lado (nunca es la única señal)
   - [x] La Tierra gira de fondo en la portada (continentes reales, en un lienzo 2D); al bajar frena con la región piloto al frente y se acerca. Fuera de la pantalla deja de dibujarse
   - [x] Botones «Consultar sin cuenta» y «Entrar». Mientras su pantalla no esté programada llevan a una página que lo dice; «Consultar sin cuenta» irá a la entrada de las estrategias (HU-214)
-  - [ ] Habla de AgroSense, no del problema ni de NASA
+  - [x] Habla de AgroSense, no del problema. **Cambiado el 14 nov 2026 (decidido por Felipe):** nombra los datos de la NASA, en una línea de la portada («con datos de la NASA») y en «De dónde salen los datos», con los productos que calculan: GPM IMERG, NASA POWER (rotulado como reanálisis) y NASADEM (prueba en `LandingPage.test.tsx`)
   - [x] Sin escena 3D ni three.js: la pantalla es 2D (HU-158)
   - [x] Usable a 360 px y con «reducir movimiento»: sin scroll suave, giro ni vuelo; cada parada muestra su mascota quieta
   - [x] El resultado de muestra va rotulado como ejemplo (R5) y la señal sin datos no se pinta como riesgo (R1)
@@ -38,7 +38,7 @@ estado: en curso
   - [x] La Tierra se puede girar arrastrándola con el ratón o con el dedo (en táctil, el arrastre vertical sigue haciendo scroll); al soltarla retoma su giro
   - [x] Las piezas de cada parada entran y salen con una animación sutil de GSAP, distinta en cada una: la portada llega de lado, las preguntas suben, el ejemplo entra por los dos lados y las fuentes aparecen creciendo. Con «reducir movimiento» no hay ninguna
 - **Reglas que aplican:** R5
-- **Notas:** Programada el 11 de octubre de 2026 en `web/src/pages/landing/` desde el diseño de Figma (`design/pantallas/inicio.py`), con el recorrido, la mascota guía y la Tierra girando pedidos por Felipe. Ajustada el 11 de octubre de 2026 al flujo del MVP (decisión 12). El registro de decisiones dice que el inicio «no habla de NASA»; con la NASA en el núcleo, nombrar los datos de la NASA en una línea del inicio queda por decidir (`docs/registro-de-decisiones.md`).
+- **Notas:** Programada el 11 de octubre de 2026 en `web/src/pages/landing/` desde el diseño de Figma (`design/pantallas/inicio.py`), con el recorrido, la mascota guía y la Tierra girando pedidos por Felipe. Ajustada el 11 de octubre de 2026 al flujo del MVP (decisión 12). El inicio nombra los datos de la NASA desde el 14 de noviembre de 2026 (decidido por Felipe, `docs/registro-de-decisiones.md`).
 
 ### HU-171 · Diseño de la mascota satélite
 

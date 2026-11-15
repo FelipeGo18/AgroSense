@@ -73,6 +73,18 @@ def write_cache(folder, cells=(NORTH, SOUTH), elevations=(2476.01, 2600.0)):
     return folder
 
 
+def test_la_lluvia_rota_de_power_en_2021_queda_nula_y_la_temperatura_no(tmp_path):
+    # De mayo a agosto de 2021 POWER publica casi 0 mm en toda la región (revisión del PR #79): sin dato, nunca lluvia (R1).
+    days = {"20210430": (8.0, 19.0, 6.0), "20210501": (8.0, 19.0, 0.0), "20210831": (8.0, 19.0, 0.0), "20210901": (8.0, 19.0, 4.0)}
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    (tmp_path / f"{NORTH}.json").write_text(json.dumps(response(NORTH, 2476.01, days)), encoding="utf-8")
+    meta = {"downloaded_at": "2026-11-09T14:00:00+00:00", "requested_end": "2021-09-01", "cells": [NORTH]}
+    (tmp_path / nasa_power.META_FILE).write_text(json.dumps(meta), encoding="utf-8")
+    series, _ = nasa_power.read_cache([NORTH], tmp_path)
+    assert series["precip_mm"].to_list() == [6.0, None, None, 4.0]
+    assert series["temp_min_c"].to_list() == [8.0, 8.0, 8.0, 8.0]
+
+
 def municipalities(altitudes=None):
     """Los municipios de ejemplo; `altitudes` les pone una altitud, como la que traerá NASADEM (HU-206)."""
     table = dane.municipalities(SAMPLE_MUNICIPALITIES, ["15", "25"])
