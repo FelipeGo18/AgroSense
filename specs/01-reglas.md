@@ -207,7 +207,7 @@ Decisión 15 (antes era un supuesto de HU-082):
 | Criterio | Qué mira | Con qué datos |
 |---|---|---|
 | `nitrogen` (nitrógeno) | Si la estrategia incluye leguminosas, que fijan nitrógeno | `fixes_nitrogen` de la ficha |
-| `organic_carbon` (carbono orgánico) | Si incluye abono verde, descanso o cultivos que dejan residuos, según qué tan bajo está el carbono orgánico del suelo | Carbono orgánico de SoilGrids, del lote o del municipio |
+| `organic_carbon` (carbono orgánico) | Si incluye abono verde o descanso, según qué tan bajo está el carbono orgánico del suelo (los residuos de cultivo no cuentan: HU-062, nota 3; aprobado por Felipe el 14 de noviembre de 2026, PR #109) | Carbono orgánico de SoilGrids, del lote o del municipio |
 | `soil_cover` (suelo cubierto) | Cuántos meses queda el suelo cubierto mientras dura la estrategia | La duración de cada ciclo y, cuando existe, el NDVI para contrastar |
 | `pest_break` (corte de plagas) | Si una familia vuelve al mismo terreno demasiado pronto, contando los cultivos anteriores | `family` de la ficha y el historial del terreno |
 | `erosion` (erosión, decisión 14) | Si la estrategia deja el suelo descubierto en un terreno con pendiente | La pendiente del lote o del municipio (NASADEM, HU-206) y los meses descubiertos de `soil_cover` |
