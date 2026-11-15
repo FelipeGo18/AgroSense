@@ -31,6 +31,7 @@ from backend.api.calc_models import (
     RotationRequest,
     RotationResponse,
     Signal,
+    SourceValue,
     SuitabilityResult,
     TrendsResponse,
     WaterPlanRequest,
@@ -40,7 +41,7 @@ from backend.api.calc_models import (
 )
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
-from backend.api.lot_terrain import ZoneTemperature, zone_temperature
+from backend.api.lot_terrain import ZoneTemperature, zone_temperature, zone_texture
 from backend.api.lots import _own_lot
 from backend.api.trends import trends as build_trends
 from backend.api.window_signals import (
@@ -49,10 +50,12 @@ from backend.api.window_signals import (
     SignalZone,
     pending_reason,
     signal_scores,
+    signal_sources,
     signal_zone,
     window_signals,
 )
 from backend.config.thresholds import Thresholds, get_thresholds
+from backend.config.versions import rules_version
 from backend.config.weights import get_default_weights
 from backend.dataset import Dataset, Municipality
 from backend.db.session import get_db
@@ -144,7 +147,7 @@ def calc_dataset(request: Request) -> Dataset:
     endpoints de cálculo dicen con qué dataset y qué reglas respondieron (R4; contrato, «Logs de la terminal»). Solo
     las versiones: el cuerpo de la consulta nunca va al log (R9)."""
     dataset = require_dataset()
-    request.state.versions = {"dataset": dataset.version, "rules": dataset.rules_version}
+    request.state.versions = {"dataset": dataset.version, "rules": rules_version(dataset.rules_version)}
     return dataset
 
 
@@ -256,7 +259,9 @@ def _light(result: TrafficLight, weights_basis: str) -> LightResult:
 
 def _signal(name: str, result: SignalResult, weights: dict[str, int]) -> Signal:
     """Una señal con la forma del contrato. `counts` es si cuenta para la luz con los pesos de `overall` (contrato,
-    «Respuesta de diagnóstico»), con la misma definición que el semáforo y el orden (`counts` del motor)."""
+    «Respuesta de diagnóstico»), con la misma definición que el semáforo y el orden (`counts` del motor). `sources` solo
+    viene en la señal que trae varias fuentes para contrastar (en el MVP, el agua); en las demás es nulo."""
+    sources = signal_sources(result)
     return Signal(
         status=result.status,
         level=result.level,
@@ -265,19 +270,29 @@ def _signal(name: str, result: SignalResult, weights: dict[str, int]) -> Signal:
         counts=counts(name, weight_of(weights, name), result.critical),
         indicators=list(result.indicators),
         reasons=list(result.reasons),
+        sources=None if sources is None else [SourceValue.model_validate(source, from_attributes=True) for source in sources],
     )
 
 
 def _best_windows(
-    dataset: Dataset, zone: SignalZone, crop_id: str, crop: dict[str, Any], crop_name: str, thresholds: Thresholds, weights: dict[str, int]
+    dataset: Dataset,
+    zone: SignalZone,
+    crop_id: str,
+    crop: dict[str, Any],
+    crop_name: str,
+    thresholds: Thresholds,
+    weights: dict[str, int],
+    irrigated: bool | None,
+    texture_class: str | None,
 ) -> list[WindowSummary]:
     """Hasta tres ventanas de los próximos doce meses, desde el mes en curso en la región, sin las de alto riesgo
-    (HU-192). Cada una se califica con `window_signals`, el mismo cálculo de la ventana consultada."""
+    (HU-192). Cada una se califica con `window_signals`, el mismo cálculo de la ventana consultada (con el mismo riego
+    y el mismo suelo)."""
     windows = [
         WindowSignals(
             window.sowing_date,
             window.harvest_estimate,
-            signal_scores(window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds)),
+            signal_scores(window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class)),
         )
         for window in monthly_sowing_windows(dataset.stages.get(crop_id, []), region_today())
     ]
@@ -338,14 +353,20 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         limitations.append(IRRIGATION_UNKNOWN)
     thresholds = get_thresholds()
     signal_place = signal_zone(dataset, municipality)
+    # La textura del suelo para el agua: la del lote si tiene contorno, si no la del municipio. No va al log ni se guarda
+    # (R9).
+    texture = zone_texture(dataset, municipality, lot)
     window = signals = None
     scores = {}
     if fit.level != NOT_SUITABLE:
         window = crop_window(dataset.stages.get(body.crop_id, []), body.sowing_date)
-        signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds)
+        signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds, irrigated, texture)
         scores = signal_scores(signals)
         limitations.extend(text for signal in signals.values() for text in signal.limitations)
-        limitations.extend(missing_data_limitations(scores, {name: pending_reason(name) for name in PENDING_SIGNALS}))
+        # El agua sin datos ya dice por qué en su razón (la lluvia de su fuente, la ET0 o el balance hídrico), que va a las
+        # limitaciones: no se agrega «Sin datos para la zona» encima (R5).
+        texts = {name: pending_reason(name) for name in PENDING_SIGNALS} | {"water": signals["water"].reasons[0]}
+        limitations.extend(missing_data_limitations(scores, texts))
 
     overall = traffic_light(fit.level, scores, weights, basis)
     overall_default = traffic_light(fit.level, scores, defaults, DEFAULT)
@@ -354,7 +375,15 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     # (docs/registro-de-decisiones.md, 14 de noviembre de 2026). La regla 0 nunca da `other_window`.
     if OTHER_WINDOW in (overall.action, overall_default.action):
         best = _best_windows(
-            dataset, signal_place, body.crop_id, crop, crop_name, thresholds, weights if overall.action == OTHER_WINDOW else defaults
+            dataset,
+            signal_place,
+            body.crop_id,
+            crop,
+            crop_name,
+            thresholds,
+            weights if overall.action == OTHER_WINDOW else defaults,
+            irrigated,
+            texture,
         )
 
     return DiagnosisResponse(
@@ -382,7 +411,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         # Sin repetir y en un orden fijo (R4): la zona, la aptitud, el riego sin dato, lo que dice cada señal y las
         # señales sin datos.
         limitations=list(dict.fromkeys(limitations)),
-        versions={"dataset": dataset.version, "rules": dataset.rules_version},
+        versions={"dataset": dataset.version, "rules": rules_version(dataset.rules_version)},
     )
 
 
@@ -647,7 +676,7 @@ def changes(
         limitations=limitations,
         versions={
             "dataset": dataset.version,
-            "rules": dataset.rules_version,
+            "rules": rules_version(dataset.rules_version),
         },
     )
 

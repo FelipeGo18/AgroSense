@@ -12,6 +12,7 @@ from structlog.testing import capture_logs
 
 from backend.api import calculations
 from backend.api.main import app
+from backend.config.versions import rules_version
 from backend.dataset import get_dataset, load
 from common.signal_sources import SignalSource, SignalSources
 
@@ -49,7 +50,7 @@ def test_el_log_de_un_calculo_trae_las_versiones_y_nunca_la_consulta(dataset, me
     line = request_line(logs)
     published = get_dataset()
     assert (line["route"], line["status"], line["dataset"], line["rules"]) == (
-        route, response.status_code, published.version, published.rules_version
+        route, response.status_code, published.version, rules_version(published.rules_version)
     )  # fmt: skip
     assert isinstance(line["duration_ms"], int)
     # Ni el municipio, ni el cultivo, ni la fecha, ni el área de la consulta (R9): ninguna parte de lo que llegó.
