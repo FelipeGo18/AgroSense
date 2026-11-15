@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMotionEffect } from "@/hooks/useMotionEffect";
 import { gsap } from "@/lib/motion";
 import { allocateCells, drawStage, timeOfDay, DRAWN_CROPS, type LiveSeason } from "./cells";
@@ -62,6 +63,8 @@ export function LiveLot({
 }) {
   const clip = useId();
   const root = useRef<SVGSVGElement>(null);
+  // En el celular (menos de 768 px, el corte `md`), menos partículas: luciérnagas, mariposas, hojas y abejas (HU-187).
+  const few = useMediaQuery("(max-width: 767px)");
   const [base, setBase] = useState<DioramaBase | null>(null);
   const [crops, setCrops] = useState<Record<string, CropStages>>({});
   // La hora se vuelve a mirar cada minuto: el lote se hace de tarde y de noche solo, sin recargar.
@@ -196,21 +199,21 @@ export function LiveLot({
           </g>
           {/* Los animales van delante de las camas y detrás de las cercas del frente y del potrero. */}
           <g transform={place}>
-            <FarmAnimals anchors={shape.anchors} dogMarkup={shape.dog} animated={animated} />
+            <FarmAnimals anchors={shape.anchors} dogMarkup={shape.dog} animated={animated} few={few} />
           </g>
           <Svg markup={shape.front} transform={place} />
           {animated && (
             <g transform={place}>
-              <FarmLifeWorld anchors={shape.anchors} time={time} flowering={flowering} />
+              <FarmLifeWorld anchors={shape.anchors} time={time} flowering={flowering} few={few} />
             </g>
           )}
         </g>
         {/* Las mariposas y el viento cruzan por encima de la finca (el pasto llena toda la vista). */}
-        {animated && <FarmLifeSky width={base.width} height={base.height} time={time} />}
+        {animated && <FarmLifeSky width={base.width} height={base.height} time={time} few={few} />}
         {base.tint[time] && <Svg markup={base.tint[time]} />}
         {animated && time === "noche" && (
           <g transform={place}>
-            <FarmFireflies anchors={shape.anchors} />
+            <FarmFireflies anchors={shape.anchors} few={few} />
           </g>
         )}
         {labels.map((label) => (

@@ -178,6 +178,14 @@ def download(cell_ids: list[str], cache: Path = CACHE, end: date | None = None) 
     return cache
 
 
+# Días en que la lluvia de POWER está rota en la fuente y se toma como sin dato (R1, R5): de mayo a agosto de 2021 las
+# celdas de la región dan casi 0 mm (la mediana de la región es 0, 47, 9 y 5 mm, frente a 150 a 300 mm de los otros
+# años) y GPM IMERG da lluvia normal esos mismos meses (241, 238, 132 y 188 mm). No es el valor de relleno (-999): son
+# ceros que publica POWER. Encontrado por Haider en la revisión del PR #79 (HU-216, 14 de noviembre de 2026). Solo la
+# lluvia: la temperatura de esos días está bien.
+RAIN_GAPS = ((date(2021, 5, 1), date(2021, 8, 31)),)
+
+
 def _values(series: dict[str, float], days: list[str], fill: float) -> list[float | None]:
     """El valor de cada día; el de relleno de POWER (-999) es un día sin dato: nulo, nunca un número (R1)."""
     return [None if (value := series.get(day)) is None or value == fill else float(value) for day in days]
@@ -223,6 +231,8 @@ def read_cache(cell_ids: list[str], cache: Path = CACHE) -> tuple[pl.DataFrame, 
     meta["elevations"] = elevations
     meta["api_version"] = ", ".join(sorted(v for v in versions if v)) or None
     series = pl.concat(frames) if frames else pl.DataFrame(schema=SERIES_SCHEMA)
+    broken = pl.any_horizontal(pl.col("date").is_between(start, end) for start, end in RAIN_GAPS) if RAIN_GAPS else pl.lit(False)
+    series = series.with_columns(pl.when(broken).then(None).otherwise(pl.col("precip_mm")).alias("precip_mm"))
     return series.sort("cell", "date"), meta
 
 
