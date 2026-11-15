@@ -413,7 +413,7 @@ ROTATIONS_EMPTY = {
         },
     ],
     "excluded_counts": {"rule": 180, "high_risk": 110, "not_suitable": 0, "soil_ph": 40},
-    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
+    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay una referencia para comparar las estrategias"],
 }
 
 # Sin rotación actual: no hay referencia ni `vs_current`, y la limitación lo dice (decisión 14).
@@ -421,7 +421,7 @@ ROTATIONS_NO_CURRENT = {
     **ROTATIONS,
     "strategies": [{**s, "vs_current": None} for s in ROTATIONS["strategies"]],
     "current_strategy": None,
-    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
+    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay una referencia para comparar las estrategias"],
 }
 
 
