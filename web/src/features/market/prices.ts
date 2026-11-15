@@ -8,6 +8,23 @@ export type ProductHistory = Schemas["ProductHistory"];
 export type Price = Schemas["Price"];
 export type Season = Schemas["Season"];
 
+/** Nombres de presentación; la consulta y el contrato conservan los identificadores del DANE. */
+export const marketProductName = (product: Pick<ProductPrice, "product_id" | "product">) =>
+  locale() === "en-US" ? t(`market.products.${product.product_id}`, { defaultValue: product.product }) : product.product;
+
+const GROUP_KEYS: Record<string, string> = {
+  "Tubérculos, raíces y plátanos": "tubers",
+  "Verduras y hortalizas": "vegetables",
+  Frutas: "fruits",
+};
+export const marketGroupName = (group: string) => (GROUP_KEYS[group] ? t(`market.groups.${GROUP_KEYS[group]}`) : group);
+
+/** Buscar por el nombre original o en inglés funciona también después de cambiar el idioma. */
+export const matchesMarketProduct = (product: Pick<ProductPrice, "product_id" | "product">, query: string) =>
+  [product.product, t(`market.products.${product.product_id}`, { lng: "en", defaultValue: product.product })].some((name) =>
+    searchKey(name).includes(searchKey(query)),
+  );
+
 /** Una hora: los precios cambian una vez al día, y la API mira si hay una versión nueva cada minuto. */
 const FRESH_FOR = 60 * 60 * 1000;
 

@@ -1,4 +1,4 @@
-import { t } from "@/lib/i18n";
+import { locale, t } from "@/lib/i18n";
 import { ApiLanguageNotice } from "@/components/ui/ApiLanguageNotice";
 import { useTranslation } from "react-i18next";
 import { useRef, type ReactNode } from "react";
@@ -57,7 +57,7 @@ function toSource(row: Record<string, unknown>): Source | null {
 export function splitSources(rows: Version["sources"]): { nasa: Source[]; others: Source[] } {
   const sources = rows.map(toSource).filter((s): s is Source => s !== null);
   const isNasa = (s: Source) => /\bNASA\b/.test(`${s.name} ${s.institution}`);
-  const byName = (a: Source, b: Source) => a.name.localeCompare(b.name, "es");
+  const byName = (a: Source, b: Source) => a.name.localeCompare(b.name, locale());
   return { nasa: sources.filter(isNasa).sort(byName), others: sources.filter((s) => !isNasa(s)).sort(byName) };
 }
 

@@ -53,6 +53,7 @@ const season = {
 };
 const strategyPath = `/consultar?municipio=15646&siembra=${yearMonth}&anterior=papa&riego=no&ciclos=3`;
 const allCases = [
+  [false, "/"],
   [false, "/entrar"],
   [false, "/crear-cuenta"],
   [false, "/consultar"],
@@ -61,10 +62,16 @@ const allCases = [
   [false, `/diagnostico?municipio=15646&cultivo=papa&siembra=${yearMonth}&riego=no`],
   [false, "/que-cambio?municipio=15646&cultivo=papa"],
   [false, "/precios"],
+  [false, "/precios?producto=papa-negra"],
   [false, "/como-funciona"],
   [false, "/del-satelite-a-su-finca"],
   [false, "/politica-de-datos"],
   [false, "/ruta-que-no-existe"],
+  [false, "/pruebas"],
+  [false, "/kit"],
+  [false, "/recorrido/1"],
+  [false, "/recorrido/2"],
+  [false, "/recorrido/3"],
   [true, "/mi-cuenta"],
   [true, "/mi-cuenta/contrasena"],
   [true, "/mi-cuenta/actividad"],
@@ -124,6 +131,29 @@ try {
             else if (path === "/water-plans") data = examples.routes["POST /water-plans"].ok.plan;
             else if (path === "/changes") data = examples.routes["GET /changes"].ok.cambios;
             else if (path === "/trends") data = examples.routes["GET /trends"].ok.series;
+            else if (path === "/market/prices/papa-negra")
+              data = {
+                version: "example",
+                updated_at: "2026-10-11T12:00:00Z",
+                product_id: "papa-negra",
+                product: "Papa negra",
+                group: "Tubérculos, raíces y plátanos",
+                several_varieties: true,
+                market: { market_id: "1", name: "Example market" },
+                latest: { date: "2026-10-11", min_cop_kg: 2000, avg_cop_kg: 2500, max_cop_kg: 3000 },
+                days: [
+                  { date: "2026-10-10", avg_cop_kg: 2400 },
+                  { date: "2026-10-11", avg_cop_kg: 2500 },
+                ],
+                season: {
+                  years: 5,
+                  first_year: 2021,
+                  last_year: 2025,
+                  months: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, seasonal_index: i === 5 ? 1.1 : 0.9 })),
+                },
+                source_id: "example",
+                citation: null,
+              };
             else if (path === "/market/prices")
               data = {
                 version: "example",
@@ -133,7 +163,17 @@ try {
                 date: "2026-10-11",
                 source_id: "example",
                 citation: null,
-                products: [],
+                products: [
+                  { product_id: "papa-negra", product: "Papa negra", group: "Tubérculos, raíces y plátanos" },
+                  { product_id: "frijol-verde", product: "Fríjol verde", group: "Verduras y hortalizas" },
+                  { product_id: "maracuya", product: "Maracuyá", group: "Frutas" },
+                ].map((product) => ({
+                  ...product,
+                  several_varieties: false,
+                  latest: { date: "2026-10-11", avg_cop_kg: 2500 },
+                  week_ago: null,
+                  change_pct: null,
+                })),
               };
             else return Response.json({ error: { code: "dataset_unavailable", message: "Sin datos de ejemplo" } }, { status: 503 });
             return Response.json(data);
@@ -155,15 +195,12 @@ try {
           const url = new URL(path, base);
           url.searchParams.set("lang", language);
           await page.goto(url.href);
-          await page
-            .getByRole("heading", path === "/del-satelite-a-su-finca" ? { level: 2 } : { level: 1 })
-            .first()
-            .waitFor();
+          await page.getByRole("heading").first().waitFor();
           await page.evaluate(() => document.fonts.ready);
           await page.waitForTimeout(500);
           const text = await page.locator("body").innerText();
           assert.doesNotMatch(text, /Unexpected Application Error|Application error/i, `${path}: error de renderizado`);
-          assert.doesNotMatch(text, /\b(?:pages|features|components|pending)\.[A-Za-z]/, `${path}: clave sin traducir`);
+          assert.doesNotMatch(text, /\b(?:pages|features|components|pending|lab|map|soil|market)\.[A-Za-z]/, `${path}: clave sin traducir`);
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
           if (overflow) {
             mkdirSync(new URL("results/", import.meta.url), { recursive: true });
@@ -194,6 +231,25 @@ try {
           assert.equal(overflow, false, `${path}, ${language}, ${width}px: desborde horizontal`);
           assert.equal(await page.locator("html").getAttribute("lang"), language);
           assert.deepEqual(errors, [], `${path}: errores de página`);
+          const labHeading = {
+            "/pruebas": "AgroSense · prototypes",
+            "/kit": "Component kit · AgroSense",
+            "/recorrido/1": "AgroSense",
+            "/recorrido/2": "The land is ready",
+            "/recorrido/3": "Páramo highlands",
+          }[path];
+          if (labHeading && language === "en") {
+            await page.getByRole("heading", { name: labHeading, exact: true }).waitFor();
+            assert.doesNotMatch(
+              text,
+              /Recorridos de prueba|Ver diagnóstico|Semestre \(deshabilitado\)|Baje con el scroll|La tierra está lista/,
+            );
+          }
+          if (path.startsWith("/precios") && language === "en") {
+            await page.getByRole("link", { name: /Black potato/ }).waitFor();
+            await page.getByRole("heading", { name: "Tubers, roots and plantains" }).waitFor();
+            if (path.includes("producto=")) await page.getByRole("heading", { name: "Black potato", exact: true }).waitFor();
+          }
           if (path === "/mi-cuenta/escribirnos") {
             await page.getByLabel(language === "en" ? "Your message" : "Su mensaje", { exact: true }).waitFor();
             assert.match(text, language === "en" ? /Answered/ : /Respondido/);

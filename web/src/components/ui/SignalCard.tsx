@@ -98,13 +98,15 @@ function Mist() {
 }
 
 export interface SignalCardProps {
+  /** Las razones reales de la API siguen en español; el kit puede mostrar ejemplos locales traducidos. */
+  reasonLanguage?: "es" | "en";
   kind: SignalKind;
   signal?: Signal;
   loading?: boolean;
 }
 
 /** Tarjeta de señal: un letrero de campo sobre dos estacas, con un banderín de estado. */
-export function SignalCard({ kind, signal, loading = false }: SignalCardProps) {
+export function SignalCard({ kind, signal, loading = false, reasonLanguage = "es" }: SignalCardProps) {
   useTranslation();
   const headingId = `signal-${kind}`;
   const pending = loading || !signal;
@@ -133,7 +135,7 @@ export function SignalCard({ kind, signal, loading = false }: SignalCardProps) {
             <span aria-hidden="true" className="block h-4 w-3/4 animate-pulse bg-superficie-panel-suave motion-reduce:animate-none" />
           </div>
         ) : (
-          <SignalBody signal={signal} />
+          <SignalBody signal={signal} reasonLanguage={reasonLanguage} />
         )}
       </article>
       <div aria-hidden="true" className="-mt-1.5 flex justify-between px-[60px]">
@@ -144,7 +146,7 @@ export function SignalCard({ kind, signal, loading = false }: SignalCardProps) {
   );
 }
 
-function SignalBody({ signal }: { signal: Signal }) {
+function SignalBody({ signal, reasonLanguage }: { signal: Signal; reasonLanguage: "es" | "en" }) {
   useTranslation();
   const { tone, label } = signalTone(signal);
   const style = TONE_STYLE[tone];
@@ -163,7 +165,7 @@ function SignalBody({ signal }: { signal: Signal }) {
       {signal.reasons.length > 0 && (
         <ul className="relative list-disc pl-5 text-texto-principal">
           {signal.reasons.map((reason) => (
-            <li lang="es" key={reason}>
+            <li lang={reasonLanguage} key={reason}>
               {reason}
             </li>
           ))}

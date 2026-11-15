@@ -50,6 +50,15 @@ a `e2e/language-pages.mjs`, con respuestas locales si requieren sesión, y compr
 Esta revisión incluye Mensajes y el recorrido «Del satélite a su finca». Los mensajes escritos por usuarios y las
 respuestas del responsable conservan su texto original; solo se traducen los rótulos, estados y fechas de la interfaz.
 
+También se traducen el laboratorio (`/pruebas`, `/kit` y `/recorrido/1` a `/recorrido/3`) y sus ejemplos locales.
+`src/lib/i18n-audit.test.ts` recorre todos los archivos de interfaz y detecta textos fijos en JSX, atributos accesibles
+sin diccionario y llamadas a claves inexistentes. Los datos recibidos de la API se revisan aparte: Precios usa
+`marketProductName`, `marketGroupName` y `matchesMarketProduct` para mostrar nombres traducidos y buscar en ambos idiomas,
+conservando los identificadores y las citas del DANE. Los 36 productos del catálogo publicado tienen traducción;
+si el catálogo incorpora otro producto, agregue su clave `market.products.<product_id>` en ambos diccionarios.
+Un producto desconocido conserva su nombre original, sin inventar una traducción. La revisión de páginas incluye
+30 casos de navegación: 480 combinaciones de idioma, ancho y movimiento.
+
 ## Rendimiento
 
 **Se mide con `npm run perf`, nunca sobre `npm run dev`.** El servidor de desarrollo entrega el código sin empaquetar y da notas muy bajas que no dicen nada del producto. `npm run perf` hace el build, lo sirve comprimido y corre Lighthouse tres veces por caso (Inicio y Entrar, en escritorio y en móvil, con y sin movimiento); cuenta la mediana y termina con error si un caso baja de su presupuesto (`e2e/perf.mjs`). El «móvil» es un teléfono de gama media con 4G lento, simulado: antes del evento hay que probar también en un teléfono de verdad.

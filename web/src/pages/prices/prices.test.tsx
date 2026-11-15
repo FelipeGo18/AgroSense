@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
+import { i18n } from "@/lib/i18n";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -89,6 +90,27 @@ afterEach(() => {
 });
 
 describe("Precios en la central de abastos (HU-221)", () => {
+  it("traduce grupos y productos, busca en ambos idiomas y conserva el identificador (HU-233)", async () => {
+    const fetch = api();
+    open();
+    await screen.findByRole("link", { name: /Papa negra/ });
+    await userEvent.type(screen.getByRole("searchbox"), "potato");
+    expect(screen.getByRole("link", { name: /Papa negra/ })).toBeInTheDocument();
+    await userEvent.clear(screen.getByRole("searchbox"));
+    await act(() => i18n.changeLanguage("en"));
+    expect(screen.getByRole("heading", { name: "Tubers, roots and plantains" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Vegetables" })).toBeInTheDocument();
+    const search = screen.getByRole("searchbox");
+    await userEvent.type(search, "potato");
+    expect(screen.getByRole("link", { name: /Black potato/ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Fresh beans/ })).toBeNull();
+    await userEvent.clear(search);
+    await userEvent.type(search, "papa");
+    await userEvent.click(screen.getByRole("link", { name: /Black potato/ }));
+    expect(await screen.findByRole("heading", { name: "Black potato" })).toBeInTheDocument();
+    expect(fetch.mock.calls.some(([input]) => String(input).includes("/market/prices/papa-negra"))).toBe(true);
+    expect(screen.getAllByText(/Fuente: Departamento Administrativo Nacional de Estadística/).length).toBeGreaterThan(0);
+  });
   it("se ve sin cuenta: el último precio por kilo de cada producto, por grupo, con la fecha y la fuente", async () => {
     api();
     open();

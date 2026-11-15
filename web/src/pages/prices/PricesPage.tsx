@@ -1,4 +1,5 @@
 import { t } from "@/lib/i18n";
+import { marketGroupName, marketProductName, matchesMarketProduct } from "@/features/market/prices";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Link, useSearchParams } from "@/components/layout/LanguageLink";
@@ -155,8 +156,7 @@ function ProductList({
   link: (productId: string) => string;
 }) {
   useTranslation();
-  const key = searchKey(query);
-  const shown = products.filter((p) => searchKey(p.product).includes(key));
+  const shown = products.filter((p) => matchesMarketProduct(p, query));
   if (shown.length === 0) {
     return (
       <p className="lg:order-1">
@@ -175,7 +175,7 @@ function ProductList({
             id={`grupo-${searchKey(group).replace(/\W+/g, "-")}`}
             className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase"
           >
-            {group}
+            {marketGroupName(group)}
           </h2>
           <ul className="flex flex-col gap-2">
             {shown
@@ -229,7 +229,7 @@ function ProductRow({ product, marketDate, selected, to }: { product: ProductPri
       }`}
     >
       <span className="flex min-w-0 flex-col">
-        <span className="text-[18px] font-bold break-words">{product.product}</span>
+        <span className="text-[18px] font-bold break-words">{marketProductName(product)}</span>
         {product.several_varieties && (
           <span className="text-[13px] text-texto-secundario">{t("pages.prices.PricesPage.severalVarieties")}</span>
         )}
@@ -283,7 +283,7 @@ function ProductDetail({ productId, marketId, onClose }: { productId: string; ma
       ) : (
         <>
           <header className="flex flex-col gap-1">
-            <h2 className="text-[clamp(1.375rem,2.6vw,1.75rem)]">{history.data.product}</h2>
+            <h2 className="text-[clamp(1.375rem,2.6vw,1.75rem)]">{marketProductName(history.data)}</h2>
             <p className="text-[15px] text-texto-secundario">
               {history.data.market.name}
               {history.data.several_varieties ? t("pages.prices.PricesPage.daneGroupsSeveralVarietiesTogether") : ""}
