@@ -45,6 +45,7 @@ const pages: RouteObject[] = [
       { path: PATHS.account, lazy: async () => ({ Component: (await import("@/pages/account/AccountPage")).AccountPage }) },
       { path: PATHS.password, lazy: async () => ({ Component: (await import("@/pages/account/PasswordPage")).PasswordPage }) },
       { path: PATHS.activity, lazy: async () => ({ Component: (await import("@/pages/account/ActivityPage")).ActivityPage }) },
+      { path: PATHS.messages, lazy: async () => ({ Component: (await import("@/pages/account/MessagesPage")).MessagesPage }) },
       { path: PATHS.farm, lazy: async () => ({ Component: (await import("@/pages/farm/FarmPage")).FarmPage }) },
       { path: PATHS.addLot, lazy: async () => ({ Component: (await import("@/pages/farm/AddLotPage")).AddLotPage }) },
       { path: PATHS.lot(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/LotPage")).LotPage }) },
