@@ -111,6 +111,7 @@ TABLES: dict[str, Table] = {
             "root_depth_min_m": c(F, "m"),
             "root_depth_max_m": c(F, "m"),
             "depletion_p": c(F, "fracción"),
+            "fallow_days": c(I32, "días"),
             "cycle_months": c(F, "meses"),
             "source_ids": c(IDS, "", False),
         },

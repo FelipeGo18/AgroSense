@@ -1,6 +1,7 @@
 """HU-012: los endpoints de cálculo ya tienen su forma del contrato, sus ejemplos y sus validaciones; los que todavía no
-tienen motor responden 501. El diagnóstico (HU-076), las tendencias (HU-078) y el plan de agua (HU-146) ya responden: sus
-pruebas están en `tests/test_diagnostico.py`, `tests/test_tendencias.py` y `tests/test_endpoint_plan_de_agua.py`."""
+tienen motor responden 501. El diagnóstico (HU-076), las estrategias (HU-084), las tendencias (HU-078) y el plan de agua
+(HU-146) ya responden: sus pruebas están en `tests/test_diagnostico.py`, `tests/test_endpoint_rotaciones.py`,
+`tests/test_tendencias.py` y `tests/test_endpoint_plan_de_agua.py`."""
 
 from datetime import date, timedelta
 from pathlib import Path
@@ -10,10 +11,10 @@ from fastapi.testclient import TestClient
 
 from backend.api import calc_examples as ex
 from backend.api import calc_models as m
-from backend.api.calculations import _get_article, _suitability_result
 from backend.api.errors import ApiError
 from backend.api.lot_terrain import ZoneTemperature
 from backend.api.main import app
+from backend.api.window_diagnosis import get_article, suitability_result
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
 from backend.dataset import Municipality
@@ -63,14 +64,24 @@ def test_los_ejemplos_cubren_cada_estado():
     assert any(month["tmax_p90_c"]["status"] == "insufficient_data" for month in ex.CHANGES["months"])
 
 
+def test_el_ejemplo_de_cambios_cubre_los_doce_meses_sin_ocultar_datos_insuficientes():
+    example = m.ChangesResponse.model_validate(ex.CHANGES)
+    assert [month.month for month in example.months] == list(range(1, 13))
+    assert example.months[0].tmax_p90_c.before is None
+    assert example.months[0].tmax_p90_c.after == 21.4
+    assert example.months[0].tmax_p90_c.change is None
+    assert "ejemplo" in example.versions.dataset
+
+
 def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     paths = app.openapi()["paths"]
     for path, method, codes in [
         ("/api/v1/diagnostics", "post", {"200", "401", "404", "422", "503"}),
-        ("/api/v1/rotations", "post", {"200", "401", "404", "422", "501", "503"}),
+        # Ya responde (HU-084): no anuncia 501.
+        ("/api/v1/rotations", "post", {"200", "401", "404", "422", "500", "503"}),
         # Ya responde (HU-146): no anuncia 501.
         ("/api/v1/water-plans", "post", {"200", "422", "500", "503"}),
-        ("/api/v1/changes", "get", {"200", "422", "501", "503"}),
+        ("/api/v1/changes", "get", {"200", "422", "500", "503"}),
         # Ya responde (HU-078): no anuncia 501.
         ("/api/v1/trends", "get", {"200", "422", "500", "503"}),
         ("/api/v1/catalogs/municipalities/{municipality_id}/soil", "get", {"200", "404", "503"}),
@@ -80,20 +91,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         assert ("501" in responses) == ("501" in codes), path
         content = responses["200"]["content"]["application/json"]
         assert "examples" in content or "example" in content, path
-
-
-@pytest.mark.parametrize(
-    ("method", "path", "body"),
-    [
-        ("post", "/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["papa"], "current_crop_ids": ["papa", "arveja"]}),
-        ("get", "/api/v1/changes?municipality_id=15646&crop_id=papa", None),
-    ],
-)
-def test_una_entrada_valida_responde_501_con_la_forma_de_los_errores(dataset, method, path, body):
-    response = getattr(TestClient(app), method)(path, **({"json": body} if body else {}))
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "not_implemented"
-    assert response.json()["error"]["request_id"]
 
 
 @pytest.mark.parametrize(
@@ -110,6 +107,17 @@ def test_una_entrada_valida_responde_501_con_la_forma_de_los_errores(dataset, me
         ("/api/v1/rotations", {**ROTATION, "current_crop_ids": ["papa"]}),
         ("/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["papa", "arveja", "haba", "maiz"]}),
         ("/api/v1/rotations", {**ROTATION, "priorities": {"water": 0, "soil": 0, "income": 0, "risk": 0}}),
+        ("/api/v1/rotations", {**ROTATION, "current_crop_ids": ["papa", "arveja", "haba", "maiz"]}),
+        ("/api/v1/rotations", {**ROTATION, "current_crop_ids": ["papa", "yuca"]}),
+        ("/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["yuca"]}),
+        ("/api/v1/rotations", {**ROTATION, "cycles": 1}),
+        ("/api/v1/rotations", {**ROTATION, "priorities": {"water": 6, "soil": 0, "income": 0, "risk": 0}}),
+        ("/api/v1/rotations", {**ROTATION, "signal_priorities": {s: 0 for s in ("water", "frost", "heat", "soil", "supply", "market")}}),
+        ("/api/v1/rotations", {**ROTATION, "signal_priorities": {"water": 9, "frost": 1, "heat": 1, "soil": 1, "supply": 1, "market": 1}}),
+        ("/api/v1/rotations", {**ROTATION, "sowing_date": "2027-13-01"}),
+        ("/api/v1/rotations", {**ROTATION, "sowing_date": (date.today() - timedelta(days=40)).isoformat()}),
+        ("/api/v1/rotations", {**ROTATION, "sowing_date": (date.today() + timedelta(days=420)).isoformat()}),
+        ("/api/v1/rotations", {**ROTATION, "municipality_id": "05001"}),
         (
             "/api/v1/water-plans",
             {
@@ -158,22 +166,22 @@ def test_el_suelo_del_municipio_con_los_datos_de_ejemplo(monkeypatch):
     assert body["slope_pct"] == 9.0
 
 
-# ---------- `_get_article`: el artículo sale del catálogo, nunca de una heurística ----------
+# ---------- `get_article`: el artículo sale del catálogo, nunca de una heurística ----------
 
 
 def test_get_article_lee_el_campo_del_catalogo():
     """Lee `article` del catálogo tal cual, sin adivinar por la terminación del nombre."""
-    assert _get_article({"crop_id": "papa", "name_es": "Papa", "article": "la"}) == "la"
+    assert get_article({"crop_id": "papa", "name_es": "Papa", "article": "la"}) == "la"
     # Caso que la heurística vieja («termina en 'a' → la») habría fallado: «Haba» termina en «a» pero lleva «el»
     # (excepción fonética, como «el agua»).
-    assert _get_article({"crop_id": "haba", "name_es": "Haba", "article": "el"}) == "el"
+    assert get_article({"crop_id": "haba", "name_es": "Haba", "article": "el"}) == "el"
 
 
 def test_get_article_sin_el_campo_lanza_error_claro():
     """Sin `article` no se adivina en silencio: se lanza un error que nombra el `crop_id` (en vez de una frase mal
     escrita), con el código del proyecto para errores de la API, no una excepción cruda."""
     with pytest.raises(ApiError) as excinfo:
-        _get_article({"crop_id": "cultivo_ficticio", "name_es": "Cultivo ficticio"})
+        get_article({"crop_id": "cultivo_ficticio", "name_es": "Cultivo ficticio"})
     assert excinfo.value.status_code == 500 and excinfo.value.code == "internal_error"
     assert "cultivo_ficticio" in excinfo.value.log
 
@@ -195,7 +203,7 @@ def test_la_aptitud_sin_article_propaga_el_error():
     result = Suitability("not_suitable", 0.0, ABOVE_MAX)
     place, zone = municipality(30.0)
     with pytest.raises(ApiError) as excinfo:
-        _suitability_result(crop, result, zone, place)
+        suitability_result(crop, result, zone, place)
     assert "cultivo_ficticio" in excinfo.value.log
 
 
@@ -204,7 +212,7 @@ def test_la_razon_de_la_aptitud_usa_el_articulo_del_catalogo():
     bien escrita porque el nombre con su artículo se lee del catálogo, no de la terminación del nombre."""
     crop = {"crop_id": "haba", "name_es": "Haba", "article": "el", "tmean_min_c": 5.0, "tmean_max_c": 32.0}
     place, zone = municipality(35.0)
-    reason = _suitability_result(crop, Suitability("not_suitable", 0.0, ABOVE_MAX), zone, place).reasons[0]
+    reason = suitability_result(crop, Suitability("not_suitable", 0.0, ABOVE_MAX), zone, place).reasons[0]
     assert "aguanta el haba" in reason
 
 

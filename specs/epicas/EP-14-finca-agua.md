@@ -140,7 +140,9 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
   - [ ] Cada ventana trae la calificación de 0 a 100 de cada señal (HU-196) y cuál es su factor limitante
   - [ ] `priorities` usa los mismos pesos y el mismo significado que en el diagnóstico (0 a 5 por señal); sin `priorities`, los de `weights.yaml`
   - [ ] Si el cultivo no es apto para la zona, `windows` viene vacío y `suitability` dice por qué (HU-191)
+  - [ ] La aptitud usa la misma función que el diagnóstico (`backend/engine/suitability.py`, HU-191). Viene de HU-191 el 15 de noviembre de 2026
   - [ ] **Mi cultivo** (con `sowing_date`): responde `months`, uno por cada mes de la siembra a la cosecha estimada, con `month`, `year`, `stage`, `basis` y los bloques `frost` y `heat`, cada uno con `status`, `level`, `reasons`, `sensitive` y `watch`; más `harvest_estimate` y `harvest_basis`. Usa el cálculo de etapas de HU-150 y HU-186
+  - [ ] Los bloques `frost` y `heat` de «Mi cultivo» salen del mismo cálculo que las señales de heladas (HU-077) y calor (HU-190) del diagnóstico, no de uno propio. Viene de HU-077 y HU-190 el 15 de noviembre de 2026
   - [ ] El cruce entre el riesgo y la etapa lo hace el motor: `watch` es verdadero solo si la etapa es sensible y el nivel no es `favorable` (R5)
   - [ ] `irrigated` se comporta igual que en el diagnóstico; con `lot_id`, sale del lote
   - [ ] `month` fuera de 1 a 12, o `priorities` fuera de 0 a 5 o todas en 0, responden 422

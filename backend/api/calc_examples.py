@@ -384,7 +384,7 @@ ROTATIONS_EMPTY = {
         },
     ],
     "excluded_counts": {"rule": 180, "high_risk": 110, "not_suitable": 0, "soil_ph": 40},
-    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
+    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay una referencia para comparar las estrategias"],
 }
 
 # Sin rotación actual: no hay referencia ni `vs_current`, y la limitación lo dice (decisión 14).
@@ -392,7 +392,7 @@ ROTATIONS_NO_CURRENT = {
     **ROTATIONS,
     "strategies": [{**s, "vs_current": None} for s in ROTATIONS["strategies"]],
     "current_strategy": None,
-    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay con qué comparar"],
+    "limitations": [EXAMPLE_NOTE, "Sin rotación actual: no hay una referencia para comparar las estrategias"],
 }
 
 
@@ -482,7 +482,40 @@ CHANGES = {
             "frost_freq_pct": {"status": "available", "before": 30, "after": 18, "change": -12},
             "precip_normal_mm": {"status": "available", "before": 28, "after": 35, "change": 7},
             "tmax_p90_c": {"status": "insufficient_data", "before": None, "after": 21.4, "change": None},
-        }
+        },
+        # Cifras ficticias explícitas para la simulación (R5), no meses
+        # rellenados con los valores de enero ni observaciones del municipio.
+        *[
+            {
+                "month": month,
+                "frost_freq_pct": {
+                    "status": "available",
+                    "before": frost_before,
+                    "after": frost_after,
+                    "change": frost_after - frost_before,
+                },
+                "precip_normal_mm": {"status": "available", "before": rain_before, "after": rain_after, "change": rain_after - rain_before},
+                "tmax_p90_c": {
+                    "status": "available",
+                    "before": heat_before,
+                    "after": heat_after,
+                    "change": round(heat_after - heat_before, 1),
+                },
+            }
+            for month, frost_before, frost_after, rain_before, rain_after, heat_before, heat_after in (
+                (2, 25, 15, 40, 45, 20.0, 21.0),
+                (3, 15, 10, 70, 80, 20.5, 21.2),
+                (4, 10, 8, 110, 105, 20.0, 20.8),
+                (5, 5, 4, 130, 120, 19.5, 20.2),
+                (6, 8, 6, 90, 85, 19.0, 19.7),
+                (7, 12, 10, 70, 65, 18.5, 19.4),
+                (8, 10, 8, 75, 70, 19.0, 19.8),
+                (9, 8, 6, 100, 110, 19.5, 20.3),
+                (10, 5, 4, 140, 150, 20.0, 20.9),
+                (11, 10, 8, 110, 100, 20.5, 21.3),
+                (12, 20, 12, 50, 45, 20.0, 21.1),
+            )
+        ],
     ],
     "best_windows": {
         "before": [{"month": 3, "limiting_signal": "frost", "limiting_score": 64, "high_risk": False}],
@@ -588,6 +621,7 @@ ERRORS = {
     401: error("unauthorized", "Inicie sesión para continuar."),
     404: error("not_found", "Ese lote no existe o no es suyo."),
     422: error("invalid_input", "Hay datos que no son válidos. Revise: priorities."),
+    429: error("too_many_requests", "Ya nos escribió 5 mensajes hoy. Espere nuestra respuesta o vuelva a escribir mañana."),
     500: error("internal_error", "Algo falló de nuestro lado. Intente de nuevo en un momento."),
     501: error("not_implemented", "Este cálculo todavía no está disponible."),
     503: error("dataset_unavailable", "Los datos de AgroSense no están disponibles en este momento. Intente de nuevo más tarde."),
@@ -597,6 +631,7 @@ SUMMARIES = {
     401: "Sin sesión, o con `lot_id` y sin sesión",
     404: "Un lote o una temporada que no existe o es de otro usuario",
     422: "Entrada inválida",
+    429: "Demasiadas peticiones (por ejemplo, más de 5 mensajes al responsable en un día)",
     500: "Error interno del servidor",
     501: "El motor todavía no está construido",
     503: "El dataset publicado no está",

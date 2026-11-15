@@ -56,6 +56,7 @@ const pages: RouteObject[] = [
       { path: PATHS.account, lazy: async () => ({ Component: (await import("@/pages/account/AccountPage")).AccountPage }) },
       { path: PATHS.password, lazy: async () => ({ Component: (await import("@/pages/account/PasswordPage")).PasswordPage }) },
       { path: PATHS.activity, lazy: async () => ({ Component: (await import("@/pages/account/ActivityPage")).ActivityPage }) },
+      { path: PATHS.messages, lazy: async () => ({ Component: (await import("@/pages/account/MessagesPage")).MessagesPage }) },
       { path: PATHS.farm, lazy: async () => ({ Component: (await import("@/pages/farm/FarmPage")).FarmPage }) },
       { path: PATHS.addLot, lazy: async () => ({ Component: (await import("@/pages/farm/AddLotPage")).AddLotPage }) },
       { path: PATHS.lot(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/LotPage")).LotPage }) },
@@ -70,6 +71,7 @@ const pages: RouteObject[] = [
         lazy: async () => ({ Component: (await import("@/pages/farm/HarvestPage")).HarvestPage }),
       },
       { path: PATHS.howItWorks, lazy: async () => ({ Component: (await import("@/pages/how/HowItWorksPage")).HowItWorksPage }) },
+      { path: PATHS.journeyTour, lazy: async () => ({ Component: (await import("@/pages/journey/JourneyPage")).JourneyPage }) },
       { path: PATHS.dataPolicy, lazy: async () => ({ Component: (await import("@/pages/policy/PolicyPage")).PolicyPage }) },
       { path: PATHS.prices, lazy: async () => ({ Component: (await import("@/pages/prices/PricesPage")).PricesPage }) },
       // «Consultar» es la entrada a las estrategias de rotación (HU-214, decisión 12).

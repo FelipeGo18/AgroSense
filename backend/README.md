@@ -25,10 +25,20 @@ La API lee el dataset del pipeline de `AGROSENSE_DATA_DIR` (por defecto `data/pu
 Solo lo lee. Si no está, los catálogos y crear o editar un lote responden 503 `dataset_unavailable` y el log dice por qué;
 lo demás sigue. Se publica con `uv run python -m pipeline.build` (`pipeline/README.md`).
 
-Al arrancar, la API también carga `grid_cells.parquet`, la rejilla de 250 m, pero solo las columnas `cell_id` y
-`altitude_m` (unas 594 mil celdas, unos pocos MB en memoria). Con ella corrige la temperatura del municipio a la altitud
+Al arrancar, la API también carga `grid_cells.parquet`, la rejilla de 250 m, con altitud, pendiente,
+textura y propiedades del suelo (HU-182). Con ella corrige la temperatura del municipio a la altitud
 de un lote dibujado para decidir si el cultivo se da. Sin ese archivo, la aptitud de un lote con contorno queda como
 `insufficient_data` y la respuesta lo dice en las limitaciones; no se usa la temperatura del municipio en su lugar.
+
+`GET /lots/{lot_id}` calcula `soil` y `terrain` sin guardarlos y devuelve las versiones usadas. Las propiedades
+numéricas son medianas de las celdas cuyo centro cae en el polígono; la textura es la clase más frecuente,
+con desempate alfabético. Si ningún centro cae dentro, usa la celda del centro del lote (`cells = 1`).
+Sin dibujo usa el municipio y lo dice en `basis`; con dibujo sin datos no sustituye por el municipio.
+El diagnóstico usa ese mismo pH y la textura del lote. Son estimaciones de mapas, no mediciones del lote.
+Rotaciones todavía responde `501`: su integración con este suelo queda pendiente de HU-084/HU-184.
+
+La rejilla del suelo del lote se carga una vez por proceso: unos 40 MB (propiedades en float32, las fuentes de
+cada celda como bits y el municipio solo como conteo de celdas), frente a unos 19 MB sin ella.
 
 Para programar contra datos sin esperar el pipeline: `AGROSENSE_DATA_DIR=data/examples` usa el dataset de ejemplo del
 contrato (`uv run python -m pipeline.examples`, HU-011): tres municipios con cifras inventadas que citan la fuente `ejemplo`.
@@ -42,12 +52,37 @@ entrada como dice el contrato (422, y 401 o 404 con `lot_id`) y, mientras el mot
 
 Los tipos de la web salen de este OpenAPI: con la API arriba y `AGROSENSE_API_DOCS=true`, `npm --prefix web run api:types`.
 
-### Qué cambió (HU-217 y HU-218, avance parcial)
+### Qué cambió (HU-217 y HU-218)
 
-`GET /api/v1/changes?municipality_id=15001&crop_id=papa&irrigated=false` devuelve 200 para un cultivo no apto:
-compara los doce meses y devuelve la aptitud, ventanas vacías, periodos por fuente, versiones y limitaciones.
-Con valores ausentes conserva `insufficient_data`; sin periodos configurados responde 503. Los casos apto y de
-aptitud desconocida siguen en 501 hasta integrar las ventanas. No recibe lote ni accede a la base de datos.
+El motor de HU-217 está completo en `backend/engine/change_windows.py`, función
+`compare_historical_changes`. Recibe filas ya cargadas, periodos, ficha y etapas del cultivo,
+temperatura y suelo del municipio, señales de oferta/mercado por mes de siembra y `ChangeConfig`.
+No abre archivos ni conoce HTTP. Primero evalúa la aptitud; si no es apto, no calcula ventanas.
+En los demás casos evalúa doce meses de siembra por periodo con las funciones existentes y
+selecciona hasta tres ventanas sin alto riesgo con HU-192 y los pesos por defecto.
+
+Además de las tablas mensuales necesita `climate_frost_month`: la frecuencia mensual no
+permite contar los años con helada en cualquiera de los meses sensibles de una ventana.
+Para el agua calcula las normales y el percentil seco de los años del periodo de lluvia y
+usa HU-144; no toma las columnas de normales globales de las filas anuales. Las fuentes nunca
+se sustituyen. `ChangeConfig` recibe `min_year_share` y `dry_quantile` de `pipeline/region.yaml`,
+las fuentes de `catalog/sources.yaml`, umbrales y pesos ya leídos. El mismo suelo y las mismas
+señales de oferta/mercado se usan en ambos periodos. Los diagnósticos de las 24 ventanas quedan
+en `window_evaluations` para comprobar el motor; ese bloque interno no amplía el contrato HTTP.
+Prueba del motor y del endpoint con datos reales publicados: `tests/test_historical_changes_published.py` (papa, Duitama).
+
+`GET /api/v1/changes?municipality_id=15238&crop_id=papa&irrigated=false` devuelve 200:
+compara los doce meses y devuelve la aptitud, hasta tres meses de siembra por periodo, periodos por fuente,
+versiones y limitaciones. Si el cultivo no es apto, las ventanas vienen vacías y la razón lo dice; si su aptitud
+es desconocida, se evalúan las ventanas y se declara esa incertidumbre. Con valores ausentes conserva
+`insufficient_data`; sin periodos o con configuración inválida responde 503. Municipio/cultivo inválidos: 422.
+No recibe lote ni accede a la base de datos. Ya no responde 501.
+
+La preparación de entradas vive en `backend/api/historical_changes.py`. `backend/config/changes.py` lee y valida
+los cortes de `pipeline/region.yaml`, sin valores por defecto inventados. La tabla de lluvia se selecciona por
+la fuente publicada antes de filtrar el municipio: no se combinan tablas ni se usa otra cuando faltan sus filas.
+`irrigated=true` evalúa la cobertura con riego, sin cambiar los indicadores históricos de `months`; si se omite,
+las ventanas se evalúan sin riego y se dice. La oferta sigue sin motor (HU-072), con su limitación explícita.
 
 Las diferencias se redondean a un decimal. Las razones resumen la mayor diferencia absoluta de cada indicador,
 con desempate por el primer mes, los valores, periodos y número de meses comparables; no son pruebas de
@@ -61,11 +96,11 @@ no es una probabilidad por municipio. El aumento de máxima de hasta 7,3 °C se 
 sin modificar silenciosamente los datos. Las fuentes de los indicadores siguen siendo `nasa_power` e `imerg`.
 
 El 200 registra un detalle genérico y las versiones mediante `calc_dataset`, nunca el municipio ni el cultivo
-consultados. Los casos de referencia de cultivos aptos conservan `xfail(strict=True)` hasta implementar las ventanas.
+consultados, para los tres estados de aptitud. Los cuatro casos de referencia de «Qué cambió» ya pasan sin `xfail`.
 El antiguo script de simulación se reemplazó por la prueba de enero sin periodo anterior en `tests/engine/test_changes.py`.
 
 ```bash
-docker compose run --build --rm app uv run pytest tests/engine/test_changes.py tests/test_changes_endpoint.py tests/test_dataset_changes.py tests/test_logs_de_calculo.py
+docker compose run --build --rm app uv run pytest tests/engine/test_changes.py tests/engine/test_change_windows.py tests/engine/casos/test_que_cambio.py tests/test_historical_changes_published.py tests/test_changes_endpoint.py tests/test_changes_configuration.py tests/test_dataset_changes.py tests/test_logs_de_calculo.py
 ```
 
 ## Precios de SIPSA al día (HU-222)
@@ -119,6 +154,20 @@ Sin el perfil `market` no arranca: en desarrollo no se usa la red y la API sirve
 - Las copias de `backups/` quedan solo para el dueño (carpeta 700 y archivos 600; en Windows valen los permisos de su carpeta).
 - El log nunca repite una dirección que no existe en la API (`route=[sin ruta]`) y escribe los caracteres de control
   como `\x1b`. Las trazas de errores de base de datos no llevan los valores de la consulta.
+
+## Mensajes al responsable de los datos (HU-163)
+
+Lo que la gente escribe en «Escribir al responsable» (`/mi-cuenta/escribirnos`) queda en `support_tickets`. Mientras no
+exista la bandeja de soporte en la web (HU-170, P1), **Haider los revisa una vez al día** y los contesta por consola, con
+la base del equipo (`AGROSENSE_DATABASE_URL`):
+
+```bash
+uv run python -m backend.accounts.tickets abiertos                              # los sin contestar, el más antiguo primero
+uv run python -m backend.accounts.tickets responder <ticket_id> "La respuesta"  # la guarda, cierra el mensaje y deja la traza
+```
+
+La respuesta se ve en «Mis mensajes». Plazos de la Ley 1581 de 2012: 10 días hábiles para una consulta (art. 14) y 15 para
+un reclamo (art. 15). La traza (`admin.ticket_updated`) nunca guarda el texto (R9).
 
 ## La API sube siempre
 
@@ -345,8 +394,11 @@ a ningún lado; borre las que ya no sirvan.
 Para recuperar una copia: descargue el archivo del workflow y descífrelo con la clave.
 
 ```bash
-gpg --decrypt agrosense_<fecha>_de-1.3_a-1.4.dump.gpg > copia.dump
+gpg --decrypt <base>_<fecha>_de-1.4_a-1.5.dump.gpg > copia.dump
 ```
+
+El nombre empieza por el de la base de datos de la cadena de conexión (hoy `postgres`), por ejemplo
+`postgres_20261115-135854_de-1.4_a-1.5.dump.gpg`.
 
 También se puede correr a mano desde *Actions* → *Migraciones* → *Run workflow*, sobre `desarrollo`.
 

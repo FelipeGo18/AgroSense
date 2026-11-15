@@ -18,6 +18,7 @@ const COLUMNS = [
       { to: PATHS.farm, label: "nav.farm" },
       { to: PATHS.prices, label: "nav.prices" },
       { to: PATHS.howItWorks, label: "nav.how" },
+      { to: PATHS.journeyTour, label: "Del satélite a su finca" },
     ],
   },
   {

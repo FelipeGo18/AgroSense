@@ -43,10 +43,11 @@ const ROUTES = (
     `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no`,
     "/que-cambio?municipio=15646&cultivo=papa",
     "/que-cambio",
-    ...["cargando", "sin_conexion", "422", "501", "503"].map((state) => `/que-cambio?municipio=15646&cultivo=papa&estado=${state}`),
+    ...["cargando", "sin_conexion", "422", "500", "503"].map((state) => `/que-cambio?municipio=15646&cultivo=papa&estado=${state}`),
     "/mi-finca",
     "/mi-finca/agregar?desde=consulta",
     "/como-funciona",
+    "/del-satelite-a-su-finca",
     "/politica-de-datos",
     "/precios",
     "/precios?producto=papa-negra",
@@ -54,7 +55,9 @@ const ROUTES = (
       (state) => `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no&estado=${state}`,
     ),
     "/ruta-que-no-existe",
-    ...(process.env.SESSION ? ["/mi-finca/agregar", "/mi-cuenta", "/mi-cuenta/contrasena", "/mi-cuenta/actividad"] : []),
+    ...(process.env.SESSION
+      ? ["/mi-finca/agregar", "/mi-cuenta", "/mi-cuenta/contrasena", "/mi-cuenta/actividad", "/mi-cuenta/escribirnos"]
+      : []),
     ...(process.env.SESSION && LOT
       ? [`/mi-finca/lotes/${LOT}`, `/mi-finca/lotes/${LOT}/editar`, `/mi-finca/lotes/${LOT}/sembrar`, `/consultar?lote=${LOT}`]
       : []),

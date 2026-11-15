@@ -29,6 +29,8 @@ if (!args.includes("--sin-build")) execSync("npm run build", { stdio: "inherit" 
 const manifest = JSON.parse(readFileSync(join(DIST, ".vite", "manifest.json"), "utf8"));
 const engine = manifest["src/lib/motionEngine.ts"];
 const ENGINE_FILES = new Set([engine.file, ...(engine.imports ?? []).map((key) => manifest[key].file)].map((file) => `/${file}`));
+// La escena 3D del recorrido (HU-155): three.js va en su trozo, y en modo ligero nunca se pide.
+const THREE_D = `/${manifest["src/pages/journey/JourneyCanvas.tsx"].file}`;
 /** El trozo de la aplicación: hasta que llega y corre, una página del build es solo el HTML pintado. */
 const APP_FILE = `/${manifest["src/app/main.tsx"].file}`;
 
@@ -87,7 +89,15 @@ async function open({ reduced = false, pref } = {}) {
     while (Date.now() - start < 15_000 && (!scripts.includes(APP_FILE) || Date.now() - lastScript < 1000)) await page.waitForTimeout(100);
     if (!scripts.includes(APP_FILE)) errors.push("la aplicación no arrancó en 15 s");
   };
-  return { context, page, errors, toggle, settle, engine: () => scripts.some((script) => ENGINE_FILES.has(script)) };
+  return {
+    context,
+    page,
+    errors,
+    toggle,
+    settle,
+    engine: () => scripts.some((script) => ENGINE_FILES.has(script)),
+    threeD: () => scripts.includes(THREE_D),
+  };
 }
 
 /** Navega dentro de la web, sin recargar, como un enlace. */
@@ -97,7 +107,7 @@ const navigate = (page, path) =>
     dispatchEvent(new PopStateEvent("popstate"));
   }, path);
 
-const PAGES = ["/", "/entrar", "/consultar", "/diagnostico", "/politica-de-datos"];
+const PAGES = ["/", "/entrar", "/consultar", "/diagnostico", "/politica-de-datos", "/del-satelite-a-su-finca"];
 
 console.log("Modo ligero elegido, al abrir cada página");
 for (const path of PAGES) {
@@ -106,8 +116,8 @@ for (const path of PAGES) {
   await tab.settle();
   const whole = (await tab.toggle().count()) === 1 && (await tab.page.getByRole("heading").first().isVisible());
   check(
-    !tab.engine() && whole && tab.errors.length === 0,
-    `${path}: sin motor, con la barra y el título, sin errores ${tab.errors.join(" | ")}`,
+    !tab.engine() && !tab.threeD() && whole && tab.errors.length === 0,
+    `${path}: sin motor ni 3D, con la barra y el título, sin errores ${tab.errors.join(" | ")}`,
   );
   await tab.context.close();
 }

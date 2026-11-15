@@ -26,6 +26,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `alharbi_2021_faba` · Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925 | MDPI, Plants; doi:10.3390/plants10091925 | Acceso abierto (CC BY 4.0 por confirmar) |
 | `barrales_2002` · Barrales Domínguez et al. (2002): Relaciones térmicas en el sistema suelo-planta-atmósfera durante la incidencia de una helada. Revista Fitotecnia Mexicana 25(3):289-297 | Sociedad Mexicana de Fitogenética; Universidad Autónoma Chapingo | Acceso abierto (Redalyc); licencia por confirmar |
 | `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Artículo de acceso abierto con derechos de autor reservados (revista Avances en Recursos Hidráulicos, Universidad Nacional): se usan dos cifras con su cita |
+| `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Artículo de acceso abierto con derechos de autor reservados (revista Avances en Recursos Hidráulicos, Universidad Nacional): se usan dos cifras con su cita |
 | `cevipapa_taller_2005` · Memorias del I Taller Nacional sobre suelos, fisiología y nutrición vegetal en el cultivo de la papa (capítulos de Hugo E. Castro Franco y de Gilberto A. Murcia Contreras) | CEVIPAPA y Consejo Nacional de la Papa, con el MADR; capítulo de Murcia: Corpoica; copia en el repositorio de Agrosavia | Sin licencia declarada; uso con cita |
 | `ciren_1989_chacras` · CIREN-CORFO: Requerimientos de clima y suelo. Chacras y hortalizas, publicación n.º 85 (1989) | Centro de Información de Recursos Naturales (CIREN), Chile | Sin dato; se cita |
 | `criterio_equipo_2026` · Cortes de salud del suelo de AgroSense: criterio propio del equipo (HU-062) | Equipo RealE4Life (AgroSense) | Del proyecto |
@@ -50,6 +51,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `igac_capacidad_uso_2021` · Clasificación de las tierras por su capacidad de uso (instructivo IN-GAG-PC05-02, versión 1) | Instituto Geográfico Agustín Codazzi (IGAC) | Documento público del IGAC, uso con cita (copia no controlada) |
 | `imerg` · GPM IMERG Final Run V07 · Lluvia mensual por satélite (GPM_3IMERGM) | NASA y JAXA, misión GPM (Global Precipitation Measurement); distribuido por GES DISC de la NASA | Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita (https://disc.gsfc.nasa.gov/data-guidelines) |
 | `mapa_zarc_2025` · Zoneamento Agrícola de Risco Climático (ZARC): Portaria SPA/MAPA n.º 388, del 21 de agosto de 2025 | Ministério da Agricultura e Pecuária (MAPA), Brasil | Acto oficial del gobierno de Brasil, publicado en el Diário Oficial |
+| `modis_ndvi` · MODIS Terra · Índice de vegetación NDVI de 250 m cada 16 días (MOD13Q1 V061) | NASA, sensor MODIS del satélite Terra; distribuido por LP DAAC de la NASA y el USGS | Datos abiertos de la NASA (EOSDIS), sin restricciones de uso; se cita con su DOI |
 | `msu_e1307_onion` · Zandstra, Grafius, Lacy y Warncke: Commercial Vegetable Recommendations: Onions, MSU E1307 (revisión de 1996) | Michigan State University Extension | Sin dato; se cita |
 | `msu_e1437_carrot` · Zandstra y Baker: Commercial Vegetable Recommendations: Carrots, MSU Extension Bulletin E-1437 (1980) | Michigan State University Extension | Sin dato; se cita |
 | `nasa_power` · NASA POWER · Datos diarios por punto (comunidad AG) | NASA Langley Research Center, proyecto POWER (Prediction Of Worldwide Energy Resources) | La página de POWER no da una licencia; pide citar la fuente (https://power.larc.nasa.gov/docs/referencing/) |
@@ -143,10 +145,11 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | pytest | 9.1.1 | MIT |
 | ruff | 0.17.0 | MIT |
 
-## Librerías de la web que van en la aplicación (73, de `web/package-lock.json`)
+## Librerías de la web que van en la aplicación (82, de `web/package-lock.json`)
 
 | Paquete | Versión | Licencia |
 |---|---|---|
+| @babel/runtime | 7.29.10 | MIT |
 | @fontsource/atkinson-hyperlegible | 5.3.0 | OFL-1.1 |
 | @fontsource/fredoka | 5.3.0 | OFL-1.1 |
 | @gsap/react | 2.1.2 | SEE LICENSE AT https://gsap.com/standard-license |
@@ -175,14 +178,19 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | @radix-ui/react-use-controllable-state | 1.3.0 | MIT |
 | @radix-ui/react-use-effect-event | 0.0.5 | MIT |
 | @radix-ui/react-use-layout-effect | 1.1.4 | MIT |
+| @react-three/fiber | 9.8.2 | MIT |
 | @remix-run/route-pattern | 0.22.1 | MIT |
 | @tanstack/query-core | 5.104.2 | MIT |
 | @tanstack/react-query | 5.104.2 | MIT |
 | @types/geojson | 7946.0.16 | MIT |
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |
+| @types/react-reconciler | 0.28.9 | MIT |
+| @types/webxr | 0.5.24 | MIT |
 | aria-hidden | 1.2.6 | MIT |
+| base64-js | 1.5.1 | MIT |
 | bidi-js | 1.1.0 | MIT |
+| buffer | 6.0.3 | MIT |
 | cookie-es | 3.1.1 | MIT |
 | csstype | 3.2.3 | MIT |
 | detect-node-es | 1.1.0 | MIT |
@@ -192,6 +200,8 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | gsap | 3.15.0 | Standard 'no charge' license: https://gsap.com/standard-license. |
 | html-parse-stringify | 4.0.1 | MIT |
 | i18next | 27.1.1 | MIT |
+| ieee754 | 1.2.1 | BSD-3-Clause |
+| its-fine | 2.1.1 | MIT |
 | json-stringify-pretty-compact | 4.0.0 | MIT |
 | kdbush | 4.1.0 | ISC |
 | lenis | 1.3.26 | MIT |
@@ -209,17 +219,22 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | react-remove-scroll-bar | 2.3.8 | MIT |
 | react-router | 8.4.0 | MIT |
 | react-style-singleton | 2.2.3 | MIT |
+| react-use-measure | 2.1.7 | MIT |
 | require-from-string | 2.0.2 | MIT |
 | resolve-protobuf-schema | 2.1.0 | MIT |
 | scheduler | 0.28.0 | MIT |
+| suspend-react | 0.1.3 | MIT |
 | terra-draw | 1.35.0 | MIT |
 | terra-draw-maplibre-gl-adapter | 1.4.1 | MIT |
+| three | 0.186.1 | MIT |
 | tinyqueue | 3.0.0 | ISC |
 | tslib | 2.8.1 | 0BSD |
 | typescript | 6.0.3 | Apache-2.0 |
 | use-callback-ref | 1.3.3 | MIT |
 | use-sidecar | 1.1.3 | MIT |
+| use-sync-external-store | 1.7.0 | MIT |
 | world-atlas | 2.0.2 | ISC |
+| zustand | 5.1.0 | MIT |
 
 ## Herramientas de desarrollo de la web (513 paquetes; no van en la aplicación)
 
@@ -227,8 +242,8 @@ Solo se usan para construir y probar la web (Vite, TypeScript, Vitest, ESLint, P
 
 | Licencia | Paquetes |
 |---|---|
-| MIT | 353 |
-| Apache-2.0 | 75 |
+| MIT | 357 |
+| Apache-2.0 | 77 |
 | ISC | 29 |
 | MPL-2.0 | 25 |
 | BSD-2-Clause | 13 |

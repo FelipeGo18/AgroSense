@@ -13,7 +13,11 @@ uv run python -m pipeline.build --traer-cache # antes de publicar, trae la cach�
 ## Caché compartida de las fuentes (HU-237)
 
 Para que todos construyan el dataset desde la misma caché, cada carpeta de `data/raw/` se guarda como un archivo en la
-*release* `cache-datos` del repositorio, y `pipeline/raw_cache.json` (en git) dice cuál usa cada fuente:
+*release* `cache-datos` del repositorio, y `pipeline/raw_cache.json` (en git) dice cuál usa cada fuente.
+
+**Todavía no hay caché compartida** (15 nov 2026): `raw_cache.json` y la *release* los crea la primera subida, que
+hace quien tenga la caché de cada fuente (HU-237). Mientras tanto, `traer` sin carpetas no baja nada, y
+`pipeline.build --traer-cache` construye con la caché local de quien lo corre.
 
 ```bash
 uv run python -m pipeline.raw_cache estado            # qué carpetas de data/raw/ están al día con raw_cache.json
@@ -67,6 +71,7 @@ uv run python -m pipeline.raw_cache subir imerg       # empaqueta data/raw/imerg
 | `climate_risk_month` y `climate_frost_month` | Desde `climate_day` (`pipeline/climate_risk.py`): por mes, el porcentaje de años con helada (mínima ≤ 2 °C, el criterio del ZARC), los días de helada y la máxima que se supera uno de cada diez días, en 1991–2020; y los días de helada de cada mes de cada año, para la señal de heladas | HU-045 |
 | `climate_change_month` | «Qué cambió» (`pipeline/climate_change.py`): por municipio, periodo y mes, las heladas, la máxima p90 y la lluvia normal de dos periodos de NASA POWER, y la lluvia normal de dos periodos de GPM IMERG, en filas aparte. Los periodos están en `region.yaml` (`change_periods`) y el manifiesto los lista | HU-216 |
 | `precip_month` | GPM IMERG mensual, corrida final V07 (`pipeline/sources/imerg.py`): la lluvia de cada mes por municipio, promedio de sus celdas de 0,1° ponderado por área, con su normal 2001–2024 y su año seco. Pide cuenta de NASA Earthdata (`AGROSENSE_EARTHDATA_TOKEN`); sin la caché se publica lo demás y el log dice `source_missing` | HU-207 |
+| `ndvi_municipality` y `ndvi_municipality_normal` | MODIS NDVI de Terra, MOD13Q1 V061 (`pipeline/sources/modis_ndvi.py`): la mediana del NDVI de los píxeles sin nubes de cada municipio, cada 16 días desde 2023, y su promedio 2023–2025. Es de todo el municipio, sin máscara de cultivos (R10). Pide cuenta de NASA Earthdata; sin la caché se publica lo demás | HU-208 |
 | `grid_cells` | NASADEM (`pipeline/sources/nasadem.py`) y SoilGrids (`pipeline/sources/soilgrids.py`): altitud, pendiente y suelo de 0 a 30 cm de cada celda de 250 m | HU-206 |
 | `soil_municipality` | SoilGrids 2.0 (`pipeline/sources/soilgrids.py`): la mediana de las celdas de cada municipio (pH, carbono orgánico, nitrógeno, arcilla, arena y limo de 0 a 30 cm, con los percentiles 5 y 95 del pH y del carbono) y la textura más frecuente. Sin la caché de SoilGrids se publica lo demás y el log dice `source_missing` | HU-181 |
 | `municipality_boundaries` | Marco Geoestadístico Nacional 2025 del DANE, servicio del geoportal (`pipeline/sources/dane_mgn.py`), simplificado a unos 10 m | HU-044 |
@@ -74,7 +79,7 @@ uv run python -m pipeline.raw_cache subir imerg       # empaqueta data/raw/imerg
 | `rotation_rules` | Reglas de rotación de `catalog/rotation_rules.yaml`, cada una con su fuente (`pipeline/rotation_rules.py`) | HU-062 |
 | `market_price_day`, `market_price_latest`, `market_price_season` | SIPSA del DANE, servicio web (`pipeline/sources/sipsa.py`): precios de Corabastos y Tunja desde 2020, el último de cada producto con el de hace una semana y su cambio (lo que lee `/market/prices`, que no calcula nada), y su temporada. Sin la caché de SIPSA se publica lo demás y el log dice `source_missing`. Los días que faltan después del dataset los suman los crons de precios (HU-222, `backend/README.md`), también con el boletín diario (`pipeline/sources/sipsa_boletin.py`) | HU-221, HU-222 |
 | `market_month` | Lo mismo por cultivo, con el producto de `pipeline/sipsa_crops.yaml`: índice estacional y precio de cada mes del último año completo | HU-051 |
-| `supply_semester` | EVA de la UPRA (`pipeline/sources/eva.py`): área sembrada y cosechada, producción y rendimiento por municipio, cultivo (los códigos de `pipeline/eva_crops.yaml`) y semestre de siembra, con los dos últimos años como preliminares. La variación del área sembrada y la participación del departamento llegan con HU-032. Sin la caché de EVA se publica lo demás y el log dice `source_missing` | HU-031 |
+| `supply_semester` | EVA de la UPRA (`pipeline/sources/eva.py`): área sembrada y cosechada, producción y rendimiento por municipio, cultivo (los códigos de `pipeline/eva_crops.yaml`) y semestre de siembra, con los dos últimos años como preliminares. La variación del área sembrada (contra el mismo semestre de los tres años anteriores; `partial` con menos de tres) y la participación entre los municipios del departamento que reportan son de HU-032 (`eva.indicators()`). Sin la caché de EVA se publica lo demás y el log dice `source_missing` | HU-031, HU-032 |
 | `sources` | Una fila por fuente, con la cita textual que pide (`citation`, nula si no pide una) | HU-122, HU-221 |
 | `manifest.json` | Versión, región, filas y cobertura por tabla | HU-122 |
 
@@ -111,6 +116,22 @@ tipos, nulos, llave sin repetir y `quality`. Si no cumple, no se publica nada.
   `partial` si cubre al menos el 90 %, y con menos no se publica (R1).
 - La normal es 2001–2024 (`imerg_normal` en `region.yaml`), con al menos 20 años completos: nunca se completa con
   años de NASA POWER (R1).
+
+## Verdor de MODIS NDVI (HU-208)
+
+- Usa el mismo token de Earthdata que IMERG (`AGROSENSE_EARTHDATA_TOKEN`); sin él, `--descargar` lo dice en el log.
+- El catálogo de la NASA (CMR) da los compuestos de 16 días de MOD13Q1 V061 de la tesela `h10v08`; si alguno no es
+  de la versión 061, la descarga falla. De cada uno se baja por OPeNDAP solo el recuadro de la región, con el NDVI
+  y la confiabilidad del píxel, tomando un píxel de cada 4 en filas y columnas (`ndvi.sample_step`): 400 × 400
+  píxeles, unos 370 KB comprimidos por compuesto en `data/raw/modis_ndvi/`. Los 88 compuestos de 2023 a octubre
+  de 2026 bajan en unos 3 minutos, de a 4 a la vez y con 4 intentos (`AGROSENSE_MODIS_TIMEOUT_S` y
+  `AGROSENSE_MODIS_MAX_MB`). El manifiesto de la caché (`modis_ndvi.meta.json`) solo se escribe si bajaron todos.
+- **Solo desde 2023:** OPeNDAP no sirve la mayoría de los compuestos anteriores (de 484, responden 130; el resto da
+  404, comprobado el 14 de noviembre de 2026). Por eso se baja desde `ndvi.normal.first_year` y el promedio es
+  2023–2025: muestra en qué épocas suele estar verde la zona, no un clima de 30 años.
+- Un píxel es válido con confiabilidad 0 (bueno) o 1 (marginal). Cada píxel va con el municipio que contiene su
+  centro. Con menos del 30 % de píxeles válidos (`ndvi.min_valid_pct`) el periodo es `partial`; sin ninguno, no
+  hay fila (R1). El promedio usa los periodos `ok`: con menos de 2 años no se publica y es `ok` con los 3. Se llama «promedio» y no normal: son 3 años.
 
 ## Clima diario de NASA POWER (HU-041)
 

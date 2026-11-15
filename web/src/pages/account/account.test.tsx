@@ -430,3 +430,103 @@ describe("Mi actividad (HU-178)", () => {
     expect(keptSince(now)).toBe("15 de abril de 2026");
   });
 });
+
+describe("Escribir al responsable (HU-163)", () => {
+  const TICKET = {
+    ticket_id: "t1",
+    lot_id: "a1",
+    message: "¿Qué guardan de mi lote?",
+    status: "open",
+    created_at: "2026-11-14T10:00:00Z",
+    closed_at: null,
+    reply: null,
+    replied_at: null,
+  };
+  const LOTS = [
+    {
+      lot_id: "a1",
+      municipality_id: "15646",
+      name: "El Alto",
+      geometry: null,
+      area_ha: 2.5,
+      irrigated: false,
+      current_crop_ids: [],
+      created_at: "2026-10-15T10:00:00Z",
+      updated_at: "2026-10-15T10:00:00Z",
+    },
+  ];
+
+  it("Mi cuenta lleva a escribir al responsable", async () => {
+    fakeApi(ME);
+    open(PATHS.account);
+    expect(await screen.findByRole("link", { name: "Escribir un mensaje" })).toHaveAttribute("href", PATHS.messages);
+  });
+
+  it("envía el mensaje, opcionalmente sobre un lote, y muestra los enviados con su estado", async () => {
+    const calls = fakeApi({
+      ...ME,
+      "GET /api/v1/lots": { status: 200, body: LOTS },
+      "GET /api/v1/me/tickets": { status: 200, body: [TICKET] },
+      "POST /api/v1/me/tickets": { status: 201, body: TICKET },
+    });
+    open(PATHS.messages);
+    expect(await screen.findByRole("heading", { level: 1, name: "Escribir al responsable" })).toBeInTheDocument();
+    const sent = within(await screen.findByRole("region", { name: "Mis mensajes" }));
+    expect(await sent.findByText("¿Qué guardan de mi lote?")).toBeInTheDocument();
+    expect(sent.getByText(/Recibido · El Alto/)).toBeInTheDocument();
+    // Sin texto no envía nada.
+    await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    expect(screen.getByText("Escriba su mensaje.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("POST"))).toBe(false);
+    await userEvent.type(screen.getByLabelText("Su mensaje"), "¿Qué guardan de mi lote?");
+    await userEvent.selectOptions(await screen.findByLabelText("¿Es sobre un lote?"), "a1");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    expect(await screen.findByText("Recibimos su mensaje. Abajo puede ver cómo va.")).toBeInTheDocument();
+    const post = calls.find((call) => call.key === "POST /api/v1/me/tickets");
+    expect(post?.body).toEqual({ message: "¿Qué guardan de mi lote?", lot_id: "a1" });
+  });
+
+  it("muestra la respuesta del responsable y dice en cuánto tiempo se contesta", async () => {
+    const answered = {
+      ...TICKET,
+      status: "closed",
+      closed_at: "2026-11-15T10:00:00Z",
+      reply: "Guardamos su usuario, su nombre y sus lotes.",
+      replied_at: "2026-11-15T10:00:00Z",
+    };
+    fakeApi({ ...ME, "GET /api/v1/lots": { status: 200, body: LOTS }, "GET /api/v1/me/tickets": { status: 200, body: [answered] } });
+    open(PATHS.messages);
+    expect(await screen.findByText(/máximo 10 días hábiles/)).toBeInTheDocument();
+    const sent = within(await screen.findByRole("region", { name: "Mis mensajes" }));
+    expect(await sent.findByText("Guardamos su usuario, su nombre y sus lotes.")).toBeInTheDocument();
+    expect(sent.getByText(/Respondido · El Alto/)).toBeInTheDocument();
+  });
+
+  it("si ya escribió 5 mensajes hoy, lo dice", async () => {
+    fakeApi({
+      ...ME,
+      "GET /api/v1/lots": { status: 200, body: [] },
+      "GET /api/v1/me/tickets": { status: 200, body: [] },
+      "POST /api/v1/me/tickets": {
+        status: 429,
+        body: {
+          error: {
+            code: "too_many_requests",
+            message: "Ya nos escribió 5 mensajes hoy. Espere nuestra respuesta o vuelva a escribir mañana.",
+          },
+        },
+      },
+    });
+    open(PATHS.messages);
+    await userEvent.type(await screen.findByLabelText("Su mensaje"), "Otro más");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    expect(await screen.findByText(/Ya nos escribió 5 mensajes hoy/)).toBeInTheDocument();
+  });
+
+  it("la política nombra el canal de contacto", async () => {
+    fakeApi(ME);
+    open(PATHS.dataPolicy);
+    expect(await screen.findByText(/en «Escribir al responsable»/)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Escribir al responsable" })).toHaveAttribute("href", PATHS.messages);
+  });
+});
