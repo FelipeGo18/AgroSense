@@ -102,7 +102,7 @@ def starts_with(result: TrafficLight, prefix: str) -> bool:
 
 def test_los_pesos_por_defecto_son_los_de_weights_yaml_1_0_0():
     weights = load_weights()
-    assert weights.version == "1.1.0"
+    assert weights.version == "1.3.0"
     assert weights.weights == {"water": 3, "frost": 4, "heat": 2, "soil": 2, "supply": 1, "market": 1}
 
 
