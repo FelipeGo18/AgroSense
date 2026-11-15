@@ -558,6 +558,7 @@ TRENDS = {
             )
         ],
     },
+    "limitations": ["Sin el área sembrada de eva del semestre B en la zona: la serie de oferta viene vacía"],
     "versions": EXAMPLE_VERSIONS,
 }
 

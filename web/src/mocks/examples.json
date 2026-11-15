@@ -4267,6 +4267,9 @@
               }
             ]
           },
+          "limitations": [
+            "Sin el área sembrada de eva del semestre B en la zona: la serie de oferta viene vacía"
+          ],
           "versions": {
             "dataset": "ejemplo",
             "rules": "ejemplo"
@@ -4281,10 +4284,10 @@
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
-        "501": {
+        "500": {
           "error": {
-            "code": "not_implemented",
-            "message": "Este cálculo todavía no está disponible.",
+            "code": "internal_error",
+            "message": "Algo falló de nuestro lado. Intente de nuevo en un momento.",
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },

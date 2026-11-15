@@ -146,7 +146,7 @@ Cada regla es una fila con un `condition_type` de esta lista cerrada. El motor s
 | `condition_type` | `kind` | Qué mira | `params` | `levels` |
 |---|---|---|---|---|
 | `same_family_consecutive` | `filter` | Dos ciclos seguidos (o el último anterior y el primero) de la misma familia. Compara **solo `family`**: `secondary_families` no cuenta (decisión 16) | `{"families": null}` (nulo: todas) | — |
-| `family_return_min_cycles` | `filter` o `health` (`pest_break`) | Una familia vuelve antes de `min_cycles` ciclos de otras familias. Cuenta **`family` y `secondary_families`** de cada ciclo (decisión 16). **En `pest_break` cuenta también los cultivos anteriores del terreno**, además de los ciclos de la estrategia, para que una estrategia de 3 ciclos pueda llegar a `favorable` (11 de noviembre de 2026). En una estrategia sugerida, los cultivos anteriores son los `previous_crop_ids`; en la rotación actual, sus propios cultivos repetidos hacia atrás (aprobado por Felipe el 14 de noviembre de 2026, PR #109) | `{"family": "Solanaceae", "min_cycles": 3}` | Cortes por ciclos de espera, por ejemplo `{"favorable": 3, "moderate": 2}` (`papa_espera`; con franja intermedia). En `kind = health`, `params.min_cycles` es igual a `levels.favorable` (si no, el pipeline falla) |
+| `family_return_min_cycles` | `filter` o `health` (`pest_break`) | Una familia vuelve antes de `min_cycles` ciclos de otras familias. Cuenta **`family` y `secondary_families`** de cada ciclo (decisión 16). **En `pest_break` cuenta también los cultivos anteriores del terreno**, además de los ciclos de la estrategia, para que una estrategia de 3 ciclos pueda llegar a `favorable` (11 de noviembre de 2026). Los cultivos anteriores son los `previous_crop_ids` si llegan; si llegan vacíos y hay `current_crop_ids`, la rotación actual repetida hacia atrás, para todas las estrategias (sugeridas y actual); sin ninguna de las dos, no hay cultivos anteriores y la razón lo dice. La historia la arma quien llama y `soil_health` recibe la lista ya armada (cambiado por Felipe el 14 de noviembre de 2026, PR #109) | `{"family": "Solanaceae", "min_cycles": 3}` | Cortes por ciclos de espera, por ejemplo `{"favorable": 3, "moderate": 2}` (`papa_espera`; con franja intermedia). En `kind = health`, `params.min_cycles` es igual a `levels.favorable` (si no, el pipeline falla) |
 | `legume_cycles` | `health` (`nitrogen`) | Cuántos ciclos tienen un cultivo con `fixes_nitrogen` (o un abono verde con leguminosa) | `{}` | Por número de ciclos, `{"favorable": 2, "moderate": 1}` |
 | `organic_matter_cycles` | `health` (`organic_carbon`) | Cuántos ciclos devuelven materia orgánica (abono verde o descanso), según el carbono del suelo | `{"soc_low_g_kg": 20}` | Por número de ciclos, con el suelo bajo y con el suelo normal: `{"low": {"favorable": 2, "moderate": 1}, "normal": {"favorable": 1, "moderate": 0}}` (ver abajo) |
 | `covered_months_pct` | `health` (`soil_cover`) | Porcentaje de los meses de la estrategia con el suelo cubierto por un ciclo. Un descanso cuenta como suelo descubierto | `{}` | `{"favorable": 80, "moderate": 60}` |
@@ -443,10 +443,12 @@ Evalúa **una ventana de siembra**: de `sowing_date` a la cosecha estimada de es
 Tres series separadas, cada una con su unidad, para no mezclar unidades en un eje (W3):
 
 - `water`: por año, la lluvia que cayó en los meses de la ventana (`precip_mm`) y lo que el cultivo habría necesitado (`need_mm`), en mm, con el `source_id` de la lluvia (la fuente que calcula la señal).
+  - `need_mm` es la ETc de FAO-56: Kc × ET0 sumado día por día, con la curva de Kc de FAO-56 (constante en la etapa inicial y en la media, en rampa en el desarrollo y en la final; Allen et al. 1998, cap. 6, ec. 66 y fig. 25). Un mes que la ventana toca en parte aporta la fracción de su total igual a los días de la ventana en ese mes sobre los días del mes en el año histórico; la misma fracción vale para `precip_mm` y para `need_mm`. Aprobado por Felipe el 14 de noviembre de 2026 (PR #104) como precisión del contrato.
 - `supply`: por año, `planted_ha` (ha) y `preliminary` del semestre en que cae la fecha de siembra.
-- `ndvi`: por `period` (1 a 23), `ndvi_normal` del municipio, con `source_id` y `quality` (HU-208). Sirve para ver cuándo suele estar verde el campo junto a la ventana.
+- `ndvi`: por `period` (1 a 23), `ndvi_normal` del municipio, con `source_id` y `quality` (HU-208). Sirve para ver cuándo suele estar verde el campo junto a la ventana. Mientras `sources.yaml` no le asigne una fuente al verdor, viene vacía con `insufficient_data` (R1, R8; 14 nov 2026, PR #104).
+- `limitations`: una frase por cada serie vacía.
 
-Sin datos para una serie, la serie viene vacía con `status = insufficient_data`. No guarda nada (R9).
+Sin datos para una serie, la serie viene vacía con `status = insufficient_data` y `limitations` lo dice. No guarda nada (R9).
 
 ```json
 {
@@ -456,6 +458,7 @@ Sin datos para una serie, la serie viene vacía con `status = insufficient_data`
   "supply": { "status": "insufficient_data", "source_id": "eva", "unit": "ha", "semester": "B", "points": [] },
   "ndvi": { "status": "available", "source_id": "modis_ndvi", "quality": "ok",
             "points": [ { "period": 1, "ndvi_normal": 0.52 } ] },
+  "limitations": ["Sin el área sembrada de eva del semestre B en la zona: la serie de oferta viene vacía"],
   "versions": { "dataset": "2026.11.0", "rules": "1.0.0" }
 }
 ```
