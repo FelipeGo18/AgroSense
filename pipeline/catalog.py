@@ -7,6 +7,8 @@ Validaciones (si una falla, no se publica nada):
 - Decisión 16: `secondary_families` es una lista de textos con fuente (vacía si falta), sin repetidos, sin la `family` de la
   propia ficha y con valores que son la `family` de alguna ficha del catálogo.
 - HU-199: cada óptimo cae dentro de su rango absoluto (un límite nulo con fuente es un rango abierto).
+- HU-063: `fallow_days` es solo del descanso, un entero de días mayor que cero (o nulo con nota), y el descanso no lleva
+  etapas. Su `cycle_months` sale de esos días.
 """
 
 import re
@@ -36,9 +38,12 @@ FIELDS = (
     "name_es", "article", "kind", "archetype", "family", "water_need", "root_type", "fixes_nitrogen",
     *RANGES["tmean"], "base_temp_c", "temp_min_c", "temp_opt_min_c", "temp_opt_max_c", "heat_max_c",
     *RANGES["rain"], *RANGES["ph"], "frost_killing_c", "root_depth_min_m", "root_depth_max_m", "depletion_p",
+    "fallow_days",
 )  # fmt: skip
 # La raíz (FAO-56, tabla 22; HU-144): profundidad en m y fracción de 0 a 1.
 ROOT_FIELDS = ("root_depth_min_m", "root_depth_max_m", "depletion_p")
+# Un mes promedio, para `cycle_months` (contrato).
+DAYS_PER_MONTH = 30.44
 # El orden de las columnas de `crops` es el del contrato: `secondary_families` va tras `family`.
 _FAMILY = FIELDS.index("family") + 1
 ORDER = ("crop_id", *FIELDS[:_FAMILY], "secondary_families", *FIELDS[_FAMILY:], "cycle_months", "source_ids")
@@ -113,6 +118,20 @@ def _check_root(crop_id: str, row: dict[str, Any]) -> None:
         raise CatalogError(f"{crop_id}: `depletion_p` {p} debe estar entre 0 y 1.")
 
 
+def _check_fallow(crop_id: str, row: dict[str, Any], has_stages: bool) -> None:
+    """`fallow_days` es solo del descanso (HU-063, decisión 7 del PR #109): un entero de días mayor que cero, o nulo con su
+    nota (R1). Un descanso no lleva etapas: su duración es esa y no hay dos maneras de contarla."""
+    days = row.get("fallow_days")
+    if row["kind"] != "fallow":
+        if days is not None:
+            raise CatalogError(f"{crop_id}: `fallow_days` es solo del descanso; la duración de un cultivo sale de sus etapas.")
+        return
+    if has_stages:
+        raise CatalogError(f"{crop_id}: un descanso no lleva etapas; su duración es `fallow_days`.")
+    if days is not None and (isinstance(days, bool) or not isinstance(days, int) or days <= 0):
+        raise CatalogError(f"{crop_id}: `fallow_days` {days!r} debe ser un entero de días mayor que cero.")
+
+
 def _check_ranges(crop_id: str, row: dict[str, Any]) -> None:
     for name, (low, opt_low, opt_high, high) in RANGES.items():
         values = [row.get(k) for k in (low, opt_low, opt_high, high)]
@@ -155,6 +174,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             raise CatalogError(f"{crop_id}: `article` {row['article']!r} debe ser uno de {sorted(ARTICLES)}.")
         _check_ranges(crop_id, row)
         _check_root(crop_id, row)
+        _check_fallow(crop_id, row, bool((crop.get("stages") or {}).get("list")))
         days = 0
         for stage in (crop.get("stages") or {}).get("list") or []:
             name = stage.get("stage")
@@ -190,8 +210,10 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             )
         if row["kind"] != "fallow" and days == 0:
             raise CatalogError(f"{crop_id}: un cultivo o abono verde necesita sus etapas con su duración.")
-        # Derivado de las etapas: días entre 30,44 (un mes promedio), con un decimal.
-        row["cycle_months"] = round(days / 30.44, 1) if days else None
+        # Derivado de las etapas (o, en el descanso, de `fallow_days`): días entre 30,44 (un mes promedio), con un decimal.
+        if row["kind"] == "fallow":
+            days = row["fallow_days"] or 0
+        row["cycle_months"] = round(days / DAYS_PER_MONTH, 1) if days else None
         row["source_ids"] = sorted(cited)
         crops.append(row)
     if not crops:
@@ -214,6 +236,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             pl.col(numeric).cast(pl.Float64),
             pl.col(text).cast(pl.String),
             pl.col("fixes_nitrogen").cast(pl.Boolean),
+            pl.col("fallow_days").cast(pl.Int32),
             pl.col("secondary_families").cast(pl.List(pl.String)),
         )
         .select(*ORDER)

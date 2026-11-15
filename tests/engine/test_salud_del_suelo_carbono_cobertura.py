@@ -102,7 +102,7 @@ def test_el_catalogo_trae_las_reglas_y_los_cortes_que_usa_la_prueba():
 def test_carbono_bajo_cuenta_abono_verde_y_descanso_contra_los_cortes_2_y_1(secuencia, ciclos, nivel):
     c = _carbono(secuencia, BAJO)
     assert (c.status, c.level) == ("available", nivel)
-    assert CARBONO.reason_template.format(count=ciclos, soc_level="bajo", soc_range="3,8 a 141,2") in c.reasons[0]
+    assert CARBONO.reason_template.format(count=ciclos, soc_level="bajo", soc_range="3,8 a 141,2 g/kg") in c.reasons[0]
 
 
 @pytest.mark.parametrize(("secuencia", "nivel"), [(("papa", "maiz", "haba"), "moderate"), (("papa", "avena_vicia", "maiz"), "favorable")])
@@ -312,10 +312,6 @@ _CARBONO_LITERAL = (
 )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="espera la plantilla de materia_organica_ciclos con {soc_range} sin la unidad (PR del catálogo con HU-063)",
-)
 def test_carbono_sin_rango_el_texto_literal_no_deja_g_kg_suelto():
     c = _carbono(SEC3, SoilCarbon(20.0, None, None, "soilgrids"))
     assert c.reasons == (_CARBONO_LITERAL.format(rango="sin su rango de incertidumbre"),)  # EJEMPLO (R5)

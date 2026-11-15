@@ -126,7 +126,8 @@ def use(folder: Path, monkeypatch) -> None:
 
 @pytest.fixture
 def published_like(tmp_path, monkeypatch):
-    """Como el dataset publicado hoy: con lluvia y ET0, sin `supply_semester` ni `ndvi_municipality_normal`."""
+    """Un dataset con lluvia y ET0, sin `supply_semester` ni `ndvi_municipality_normal`: el caso sin oferta ni verdor. El
+    publicado trae `supply_semester` desde HU-031; ese caso es el de `complete`."""
     folder = tmp_path / "published"
     write_dataset(folder, supply=False, ndvi=False)
     use(folder, monkeypatch)
