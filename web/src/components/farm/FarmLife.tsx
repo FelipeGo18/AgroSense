@@ -163,11 +163,14 @@ export function FarmLifeWorld({
   anchors,
   time,
   flowering,
+  few = false,
 }: {
   anchors: FarmAnchors;
   time: TimeOfDay;
   /** Los centros de los cubos con cultivos en flor (etapa media o final), para las abejas. */
   flowering: Pt[];
+  /** En el celular (`few`), menos partículas: la escena es la misma, con menos cosas que se mueven (HU-187). */
+  few?: boolean;
 }) {
   const day = time !== "noche";
   const [f0, f1] = anchors.field;
@@ -227,7 +230,7 @@ export function FarmLifeWorld({
 
       {/* 12. Abejas sobre los cultivos en flor. */}
       {day &&
-        flowering.slice(0, 3).map(([x, y], i) => (
+        flowering.slice(0, few ? 1 : 3).map(([x, y], i) => (
           <g key={`${x}-${y}`} transform={`translate(${x} ${y - 40})`}>
             {[0, 1].map((n) => (
               <circle key={n} r={2.2} fill="#F2C232" stroke={INK} strokeWidth={0.8}>
@@ -296,13 +299,14 @@ export function FarmLifeWorld({
  * 8. Las luciérnagas de noche, al azar por toda la finca (en coordenadas del lote): cada una en su sitio, con su propio
  * vuelo errático y su propio ritmo de encenderse y apagarse. Van encima del tono de la noche, para que brillen.
  */
-export function FarmFireflies({ anchors }: { anchors: FarmAnchors }) {
+export function FarmFireflies({ anchors, few = false }: { anchors: FarmAnchors; few?: boolean }) {
   const [flies] = useState(() => {
     const xs = anchors.path.map((p) => p[0]);
     const ys = anchors.path.map((p) => p[1]);
     const [x0, x1] = [Math.min(...xs) - 140, Math.max(...xs) + 140];
     const [y0, y1] = [Math.min(...ys) - 80, Math.max(...ys) + 180];
     const r = (a: number, b: number) => a + Math.random() * (b - a);
+    // Se arman siempre 24 y se muestran 10 en el celular: si cambia el ancho (girar el celular), la cantidad se ajusta.
     return Array.from({ length: 24 }, () => {
       const hops = Array.from({ length: 4 }, () => `${r(-45, 45).toFixed(0)} ${r(-30, 30).toFixed(0)}`);
       return {
@@ -318,7 +322,7 @@ export function FarmFireflies({ anchors }: { anchors: FarmAnchors }) {
   });
   return (
     <g aria-hidden="true">
-      {flies.map((f, i) => (
+      {flies.slice(0, few ? 10 : 24).map((f, i) => (
         <g key={i} transform={`translate(${f.x.toFixed(0)} ${f.y.toFixed(0)})`}>
           <g className="farm-firefly" style={{ animationDuration: f.blink, animationDelay: f.delay }}>
             <circle r={f.size * 2.6} fill="#F7F28A" opacity={0.25} />
@@ -332,7 +336,18 @@ export function FarmFireflies({ anchors }: { anchors: FarmAnchors }) {
 }
 
 /** Lo que cruza la vista por encima de la finca (en coordenadas de la vista: `width` × `height`). */
-export function FarmLifeSky({ width, height, time }: { width: number; height: number; time: TimeOfDay }) {
+export function FarmLifeSky({
+  width,
+  height,
+  time,
+  few = false,
+}: {
+  width: number;
+  height: number;
+  time: TimeOfDay;
+  /** En el celular (`few`), menos partículas: la escena es la misma, con menos cosas que se mueven (HU-187). */
+  few?: boolean;
+}) {
   const day = time !== "noche";
   return (
     <g aria-hidden="true">
@@ -341,21 +356,23 @@ export function FarmLifeSky({ width, height, time }: { width: number; height: nu
         [
           { color: "#F2C232", y: height * 0.55, dur: "16s", begin: "0s" },
           { color: "#E8A0C0", y: height * 0.68, dur: "21s", begin: "-8s" },
-        ].map(({ color, y, dur, begin }) => (
-          <g key={color}>
-            <Butterfly color={color} />
-            <animateMotion
-              dur={dur}
-              begin={begin}
-              repeatCount="indefinite"
-              path={`M${-30} ${y} q80 -60 160 0 t160 0 t160 0 t160 0 t160 0 t160 0 t160 0`}
-            />
-          </g>
-        ))}
+        ]
+          .slice(0, few ? 1 : 2)
+          .map(({ color, y, dur, begin }) => (
+            <g key={color}>
+              <Butterfly color={color} />
+              <animateMotion
+                dur={dur}
+                begin={begin}
+                repeatCount="indefinite"
+                path={`M${-30} ${y} q80 -60 160 0 t160 0 t160 0 t160 0 t160 0 t160 0 t160 0`}
+              />
+            </g>
+          ))}
 
       {/* 5. Ráfagas de viento: unas hojas que cruzan con la ola de viento. */}
       {day &&
-        [0, 0.6, 1.2].map((delay, i) => (
+        (few ? [0] : [0, 0.6, 1.2]).map((delay, i) => (
           <polygon key={delay} points="0,-4 8,0 0,4 -3,0" fill={["#6FA03C", "#9CC152", "#C9A86A"][i]}>
             <animateMotion
               dur="9s"

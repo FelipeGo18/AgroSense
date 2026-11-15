@@ -9,7 +9,7 @@ Ni el pipeline ni las actualizaciones de precios usan la base de datos: por eso 
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -51,6 +51,15 @@ class PipelineSettings(BaseSettings):
     # boletín diario, unos 340 KB.
     market_timeout_s: float = Field(900, gt=0, validation_alias="AGROSENSE_MARKET_TIMEOUT_S")
     market_max_mb: float = Field(600, gt=0, validation_alias="AGROSENSE_MARKET_MAX_MB")
+
+    # Caché compartida de las fuentes (HU-237): la *release* de GitHub donde vive cada carpeta de `data/raw/`. Bajar no
+    # pide token (el repositorio es público); subir pide uno con permiso de escritura. Acepta el `GH_TOKEN` de `gh` o el
+    # `GITHUB_TOKEN` de GitHub Actions. Va solo en el .env o en el entorno, nunca en git ni en el log.
+    cache_repo: str = Field("FelipeGo18/AgroSense", validation_alias="AGROSENSE_CACHE_REPO")
+    cache_token: SecretStr | None = Field(None, validation_alias=AliasChoices("AGROSENSE_CACHE_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"))
+    # Tiempo y tamaño máximos de cada archivo de la caché. Hoy el más grande es el de SIPSA, de unos 300 MB.
+    cache_timeout_s: float = Field(900, gt=0, validation_alias="AGROSENSE_CACHE_TIMEOUT_S")
+    cache_max_mb: float = Field(1500, gt=0, validation_alias="AGROSENSE_CACHE_MAX_MB")
 
 
 @lru_cache

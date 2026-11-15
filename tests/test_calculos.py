@@ -10,14 +10,14 @@ from fastapi.testclient import TestClient
 
 from backend.api import calc_examples as ex
 from backend.api import calc_models as m
-from backend.api.calculations import _get_article, _suitability_reason
+from backend.api.calculations import _get_article, _suitability_result
 from backend.api.errors import ApiError
 from backend.api.lot_terrain import ZoneTemperature
 from backend.api.main import app
 from backend.config.settings import get_settings
 from backend.config.weights import get_default_weights
 from backend.dataset import Municipality
-from backend.engine.suitability import ABOVE_MAX, BELOW_MIN, Suitability
+from backend.engine.suitability import ABOVE_MAX, BELOW_MIN, Suitability, ZoneTemperatureUsed, suitability_reason
 
 SOON = (date.today() + timedelta(days=40)).isoformat()
 DIAGNOSIS = {"municipality_id": "15646", "crop_id": "papa", "sowing_date": SOON}
@@ -185,35 +185,40 @@ def municipality(tmean: float, altitude: float | None = 100.0) -> tuple[Municipa
     return place, ZoneTemperature("municipality", tmean, altitude)
 
 
-def test_suitability_reason_sin_article_propaga_el_error():
-    """`_suitability_reason` no produce una frase mal escrita cuando la ficha no trae `article`: propaga el error."""
-    crop = {"crop_id": "cultivo_ficticio", "name_es": "Cultivo ficticio"}
+def used(tmean: float, altitude: float | None = 100.0) -> ZoneTemperatureUsed:
+    """La temperatura de un municipio de ejemplo (R5), la del municipio."""
+    return ZoneTemperatureUsed("municipality", tmean, altitude, False, tmean, altitude)
+
+
+def test_la_aptitud_sin_article_propaga_el_error():
+    """La API no arma una frase mal escrita cuando la ficha no trae `article`: propaga el error."""
+    crop = {"crop_id": "cultivo_ficticio", "name_es": "Cultivo ficticio", "tmean_min_c": 10.0, "tmean_max_c": 20.0}
     result = Suitability("not_suitable", 0.0, ABOVE_MAX)
+    place, zone = municipality(30.0)
     with pytest.raises(ApiError) as excinfo:
-        _suitability_reason(crop, result, municipality(30.0)[1], municipality(30.0)[0], 10.0, 20.0)
+        _suitability_result(crop, result, zone, place)
     assert "cultivo_ficticio" in excinfo.value.log
 
 
-def test_suitability_reason_usa_el_articulo_del_catalogo():
+def test_la_razon_de_la_aptitud_usa_el_articulo_del_catalogo():
     """Con un cultivo cuyo nombre termina en «a» pero cuyo artículo correcto es «el» (como «haba»), la frase sale
-    bien escrita porque se lee del catálogo, no de la terminación del nombre."""
-    crop = {"crop_id": "haba", "name_es": "Haba", "article": "el"}
-    result = Suitability("not_suitable", 0.0, ABOVE_MAX)
+    bien escrita porque el nombre con su artículo se lee del catálogo, no de la terminación del nombre."""
+    crop = {"crop_id": "haba", "name_es": "Haba", "article": "el", "tmean_min_c": 5.0, "tmean_max_c": 32.0}
     place, zone = municipality(35.0)
-    reason = _suitability_reason(crop, result, zone, place, 5.0, 32.0)
+    reason = _suitability_result(crop, Suitability("not_suitable", 0.0, ABOVE_MAX), zone, place).reasons[0]
     assert "aguanta el haba" in reason
 
 
-def test_suitability_reason_lee_que_limite_se_cruzo_del_motor_sin_repetir_la_comparacion():
-    """La API no vuelve a comparar `tmean_annual_c` contra los límites: lee `result.exceeded`, que ya decidió
-    `backend.engine.suitability.suitability()` (R6, «la API es una capa delgada»)."""
-    crop = {"crop_id": "maiz", "name_es": "Maíz", "article": "el"}
+def test_la_razon_de_la_aptitud_lee_que_limite_se_cruzo_sin_repetir_la_comparacion():
+    """El motor no vuelve a comparar `tmean_annual_c` contra los límites: lee `result.exceeded`, que ya decidió
+    `suitability()`."""
+    crop = {"tmean_min_c": 10.0, "tmean_max_c": 34.0}
     below = Suitability("not_suitable", 0.0, BELOW_MIN)
-    place, zone = municipality(6.0)
-    assert "no alcanza la que necesita" in _suitability_reason(crop, below, zone, place, 10.0, 34.0)
+    assert "no alcanza la que necesita el maíz" in suitability_reason(below, crop, "el maíz", used(6.0))
     above = Suitability("not_suitable", 0.0, ABOVE_MAX)
-    place, zone = municipality(40.0)
-    assert "pasa de la que aguanta" in _suitability_reason(crop, above, zone, place, 10.0, 34.0)
+    assert "pasa de la que aguanta el maíz" in suitability_reason(above, crop, "el maíz", used(40.0))
+    inside = Suitability("suitable", 100.0)
+    assert "está dentro del rango del maíz (10 a 34 °C)" in suitability_reason(inside, crop, "el maíz", used(20.0))
 
 
 # ---------- HU-191: aptitud del cultivo (regla 0 de la agregación del semáforo) ----------
