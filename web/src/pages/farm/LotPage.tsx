@@ -1,9 +1,7 @@
 import { useId, useState, type ReactNode } from "react";
-import { Link, useLocation, useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
 import { t } from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import { useId, type ReactNode } from "react";
-import { useLocation, useParams } from "react-router";
 import { Link } from "@/components/layout/LanguageLink";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
