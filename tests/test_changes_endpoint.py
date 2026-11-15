@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from backend.api import calculations
 from backend.api.calc_models import ChangesResponse
 from backend.api.main import app
+from backend.config.versions import rules_version
 from backend.dataset import load
 from backend.db.session import get_db
 from common.signal_sources import SignalSource, SignalSources
@@ -76,7 +77,7 @@ def test_not_suitable_returns_complete_response(changes_api):
     assert body["weights_basis"] == "default"
     assert body["versions"] == {
         "dataset": holder["dataset"].version,
-        "rules": holder["dataset"].rules_version,
+        "rules": rules_version(holder["dataset"].rules_version),
     }
     assert len(body["months"]) == 12
     assert body["months"][0]["frost_freq_pct"]["before"] == 60
