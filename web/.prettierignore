@@ -8,3 +8,5 @@ src/assets/globe.json
 src/api/schema.d.ts
 # Respuestas simuladas, generadas con `npm run api:examples`
 src/mocks/examples.json
+# Piezas del lote vivo, generadas por design/finca/exportar_web.py
+src/components/farm/diorama/

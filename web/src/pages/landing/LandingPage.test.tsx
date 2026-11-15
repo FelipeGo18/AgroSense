@@ -85,6 +85,16 @@ describe("Inicio (HU-173)", () => {
     expect(tag).toHaveAttribute("data-tone", "insufficient_data");
   });
 
+  it("habla de AgroSense y nombra los datos de la NASA, en la portada y en las fuentes (HU-173)", async () => {
+    open(PATHS.home);
+    expect(await screen.findByText(/estrategias de rotación con datos de la NASA/)).toBeInTheDocument();
+    const sources = within(screen.getByRole("region", { name: "De dónde salen los datos" }));
+    for (const name of ["GPM IMERG · NASA", "NASA POWER", "NASADEM · NASA"]) {
+      expect(sources.getByRole("heading", { name })).toBeInTheDocument();
+    }
+    expect(sources.getByText(/Es un reanálisis/)).toBeInTheDocument();
+  });
+
   it("dice que no es un pronóstico", async () => {
     open(PATHS.home);
     expect((await screen.findAllByText(/No es un pronóstico/)).length).toBeGreaterThan(0);
@@ -123,8 +133,10 @@ describe("rutas", () => {
   it("una pantalla que aún no está programada lo dice y deja volver al inicio", async () => {
     // «Consultar» ya es la entrada a las estrategias (HU-214) y «¿Cómo funciona?» ya existe (HU-122, #103); «Qué cambió en
     // su zona» sigue pendiente (HU-219).
+    // Cuando HU-219 la saque de PENDING (app/routes.tsx), esta prueba y la del pie (pending.test.tsx) se reescriben.
     open(PATHS.changes);
     expect(await screen.findByRole("heading", { level: 1, name: "Qué cambió en su zona" })).toBeInTheDocument();
+    expect(screen.getByText(/todavía no está programada/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", PATHS.home);
   });
 
