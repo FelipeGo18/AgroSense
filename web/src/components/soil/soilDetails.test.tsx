@@ -31,6 +31,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("Suelo explicado del contexto del cálculo (HU-185)", () => {
   it("muestra las propiedades del polígono con precisión, incertidumbre y advertencia, sin pedir el municipio", async () => {
     const fetch = open({ soil: SOIL });
+    expect(await screen.findByText("5,75")).not.toBeVisible();
     await userEvent.click(screen.getByText("Ver el suelo usado y qué significa"));
     expect(await screen.findByText("5,75")).toBeVisible();
     expect(screen.getByText("rango probable de 4,08 a 7,9")).toBeVisible();
@@ -42,7 +43,11 @@ describe("Suelo explicado del contexto del cálculo (HU-185)", () => {
   });
   it("sin suelo del lote no sustituye por el municipio ni muestra un riesgo", async () => {
     const fetch = open({ soil: null });
-    expect(await screen.findByText(/Sin datos del suelo/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText("Ver el suelo usado y qué significa"));
+    expect(
+      await screen.findByText("Sin datos del suelo de su lote. Para conocer el suelo de su lote, haga un análisis de suelo."),
+    ).toBeVisible();
+    expect(screen.queryByText(/Estimación de un mapa global/)).not.toBeInTheDocument();
     expect(screen.queryByText("Bajo")).not.toBeInTheDocument();
     expect(fetch.mock.calls).toHaveLength(1);
   });

@@ -183,7 +183,7 @@ function LotView() {
         currentSeasons={lot.data.current_seasons}
       />
       <Section title="Suelo estimado">
-        <SoilDetails municipalityId={lot.data.municipality_id} lotId={lot.data.lot_id} />
+        <SoilDetails municipalityId={lot.data.municipality_id} lotId={lot.data.lot_id} open />
       </Section>
     </MapScene>
   );

@@ -1,5 +1,5 @@
 import { SoilFacts, type SoilProperties } from "@/components/soil/SoilFacts";
-import { SOIL_ESTIMATE, useMunicipalitySoil } from "@/features/diagnosis/signals";
+import { useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { useLot } from "@/features/farm/lots";
 
 export interface SoilContext {
@@ -19,7 +19,7 @@ export function lotSoilProperties(soil: Record<string, unknown>): SoilProperties
 }
 
 /** Sin suelo del polígono no se sustituye por el municipal (R1). Las consultas comparten la caché. */
-export function SoilDetails({ municipalityId, lotId }: SoilContext) {
+export function SoilDetails({ municipalityId, lotId, open = false }: SoilContext & { open?: boolean }) {
   const lot = useLot(lotId ?? "");
   const municipal = useMunicipalitySoil(lotId ? null : municipalityId);
   const query = lotId ? lot : municipal;
@@ -27,7 +27,7 @@ export function SoilDetails({ municipalityId, lotId }: SoilContext) {
   const soil = lotId ? (raw ? lotSoilProperties(raw) : undefined) : municipal.data;
   const place = lotId && raw?.basis === "lot" ? "su lote dibujado" : "su municipio";
   return (
-    <details className="relative min-w-0 text-[15px]">
+    <details open={open} className="relative min-w-0 text-[15px]">
       <summary className="flex min-h-11 cursor-pointer items-center font-bold text-oscuro-oliva underline decoration-2 underline-offset-4">
         Ver el suelo usado y qué significa
       </summary>
@@ -44,7 +44,7 @@ export function SoilDetails({ municipalityId, lotId }: SoilContext) {
         ) : soil ? (
           <SoilFacts soil={soil} place={place} />
         ) : (
-          <p>Sin datos del suelo. {SOIL_ESTIMATE}</p>
+          <p>Sin datos del suelo de {lotId ? "su lote" : "su municipio"}. Para conocer el suelo de su lote, haga un análisis de suelo.</p>
         )}
       </div>
     </details>
