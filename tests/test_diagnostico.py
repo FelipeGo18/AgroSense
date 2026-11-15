@@ -194,6 +194,47 @@ def test_caso_de_referencia_helada_critica_da_rojo_y_busca_otra_ventana(examples
     }
 
 
+def with_favorable_water_and_supply(monkeypatch, folder: Path) -> None:
+    """El agua y la oferta favorables, para los casos de referencia de HU-077 y HU-190. El agua sale de la lluvia del
+    ejemplo rotulada con su fuente y de un balance DE EJEMPLO que cubre toda la necesidad; la oferta, de una señal DE
+    EJEMPLO (R5), porque en el MVP la oferta no se califica (HU-072). Las heladas y el calor son los del dataset."""
+    use(monkeypatch, folder)
+    monkeypatch.setattr(window_signals, "balance_for", lambda *args, **kwargs: NO_DEFICIT)
+    favorable_supply = window_signals.PendingSignal("available", "favorable", False, 90, (), ("Oferta DE EJEMPLO, favorable",))
+    real = window_signals.pending_signal
+    monkeypatch.setattr(window_signals, "pending_signal", lambda name: favorable_supply if name == "supply" else real(name))
+
+
+def test_caso_de_referencia_helada_critica_con_agua_y_oferta_favorables_da_rojo_y_otra_ventana(tmp_path, monkeypatch):
+    """HU-077, caso de referencia: con el agua y la oferta favorables y los pesos de AgroSense, la helada crítica de
+    noviembre (los datos de ejemplo) da rojo y `other_window` en el diagnóstico completo (R2)."""
+    with_favorable_water_and_supply(monkeypatch, examples_with_sources(tmp_path / "ejemplos"))
+    body = diagnose(TestClient(app), NOVEMBER)
+    signals = body["signals"]
+    assert (signals["water"]["level"], signals["supply"]["level"]) == ("favorable", "favorable")
+    assert (signals["frost"]["level"], signals["frost"]["critical"]) == ("unfavorable", True)
+    light = body["overall_default"]
+    assert (light["light"], light["action"], light["limiting_signal"], light["high_risk"]) == ("red", "other_window", "frost", True)
+
+
+def test_caso_de_referencia_calor_critico_con_agua_y_oferta_favorables_da_rojo_y_otra_ventana(tmp_path, monkeypatch):
+    """HU-190, caso de referencia: con el agua y la oferta favorables y los pesos de AgroSense, un calor crítico (45 °C
+    todo el año en Samacá, datos cambiados a propósito, R5) da rojo y `other_window` en el diagnóstico completo (R2). Se
+    siembra en abril, cuando la helada del ejemplo es favorable, para que el calor sea el único riesgo."""
+    folder = examples_with_sources(tmp_path / "ejemplos")
+    table = folder / "climate_risk_month.parquet"
+    rows = pl.read_parquet(table)
+    hot = pl.when(pl.col("municipality_id") == SAMACA).then(pl.lit(45.0)).otherwise(pl.col("tmax_p90_c"))
+    rows.with_columns(hot.cast(rows.schema["tmax_p90_c"]).alias("tmax_p90_c")).write_parquet(table)
+    with_favorable_water_and_supply(monkeypatch, folder)
+    body = diagnose(TestClient(app), APRIL)
+    signals = body["signals"]
+    assert (signals["water"]["level"], signals["supply"]["level"], signals["frost"]["level"]) == ("favorable", "favorable", "favorable")
+    assert (signals["heat"]["level"], signals["heat"]["critical"]) == ("unfavorable", True)
+    light = body["overall_default"]
+    assert (light["light"], light["action"], light["limiting_signal"], light["high_risk"]) == ("red", "other_window", "heat", True)
+
+
 def test_una_helada_critica_con_peso_0_sigue_contando(examples):
     body = diagnose(TestClient(app), NOVEMBER, priorities={**NO_WATER, "frost": 0})
     assert body["signals"]["frost"]["counts"] is True
