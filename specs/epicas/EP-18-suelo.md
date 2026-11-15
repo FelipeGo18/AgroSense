@@ -93,10 +93,10 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
   - [x] **Cultivos anteriores.** `previous_crop_ids` solo lo usa `pest_break`: de ellos, la función mira hasta `params.min_cycles + 1` cultivos hacia atrás (así una vuelta justo en el corte favorable se cuenta con sus ciclos; más lejos, la familia «no vuelve» y es `favorable` igual). Lo arma quien llama (HU-081, HU-213): en una estrategia sugerida, los `previous_crop_ids` del cuerpo (con cuenta, los de las temporadas de `follows_season_ids`), invertidos; en la de referencia (`kind = current`), sus propios cultivos repetidos hacia atrás. Aprobado por Felipe el 14 de noviembre de 2026 (PR #109): en una estrategia sugerida, solo los `previous_crop_ids`; en la rotación actual, sus propios cultivos repetidos hacia atrás. Prueba: papa → avena → arveja (`papa_espera`, `favorable: 3` y `moderate: 2`) sin anteriores no sale `unfavorable`; con `previous_crop_ids = [papa]` seguida de 3 ciclos de otros cultivos, sale `favorable`; la rotación de referencia papa, avena, arveja repetida hacia atrás da una vuelta de 2 ciclos y sale `moderate`
   - [x] **Hueco entre ciclos.** Los `gap_days` cuentan como suelo descubierto en `soil_cover` y en `erosion` (el comentario de `erosion_pendiente` lo supone: «el paso entre cosecha y siembra»). Supuesto por confirmar
   - [x] **«Criterio del equipo».** La razón de todo criterio cuya regla tenga `source_id = criterio_equipo_2026` termina con «criterio del equipo, pendiente de validar por un agrónomo» (R8, decisión 16, 11 nov 2026). Hoy son las cinco reglas `health`. Prueba: una estrategia con `nitrogen` evaluado por `leguminosa_en_rotacion` trae la frase en su razón
-  - [ ] **Puntaje `soil` para HU-082.** La función entrega también el puntaje del criterio `soil` del ranking: `favorable` vale 100, `moderate` 50 y `unfavorable` 0, y el puntaje es el promedio entre los criterios con `level` (los `insufficient_data` no entran). Sin ninguno, nulo. HU-082 lo usa sin recalcularlo (`specs/01-reglas.md`, «Estrategias de rotación»)
-  - [ ] Ninguna razón dice cuánto va a mejorar el suelo, cuánto nitrógeno o carbono queda ni cuánto se va a cosechar: compara estrategias según reglas (decisión 4, R5). Las razones solo llenan los marcadores de su `reason_template`
-  - [ ] Prueba: dos estrategias iguales salvo una leguminosa dan `nitrogen` mejor a la que la tiene; con carbono bajo, la que tiene abono verde da `organic_carbon` mejor
-  - [ ] Prueba (R1): sin suelo, `organic_carbon` es `insufficient_data` con `level` nulo; sin duración en algún ciclo, `soil_cover` también
+  - [x] **Puntaje `soil` para HU-082.** La función entrega también el puntaje del criterio `soil` del ranking: `favorable` vale 100, `moderate` 50 y `unfavorable` 0, y el puntaje es el promedio entre los criterios con `level` (los `insufficient_data` no entran). Sin ninguno, nulo. HU-082 lo usa sin recalcularlo (`specs/01-reglas.md`, «Estrategias de rotación»)
+  - [x] Ninguna razón dice cuánto va a mejorar el suelo, cuánto nitrógeno o carbono queda ni cuánto se va a cosechar: compara estrategias según reglas (decisión 4, R5). Las razones solo llenan los marcadores de su `reason_template`
+  - [x] Prueba: dos estrategias iguales salvo una leguminosa dan `nitrogen` mejor a la que la tiene; con carbono bajo, la que tiene abono verde da `organic_carbon` mejor
+  - [x] Prueba (R1): sin suelo, `organic_carbon` es `insufficient_data` con `level` nulo; sin duración en algún ciclo, `soil_cover` también
   - [x] Prueba (R6): `backend/engine/` no importa `fastapi`, `sqlalchemy` ni `polars`
 - **Reglas que aplican:** R1, R3, R4, R5, R6, R8, R10
 - **Contrato que toca:** `strategies[].soil_health` de `POST /api/v1/rotations`; `rotation_rules`; `grid_cells`, `soil_municipality`, `ndvi_grid`, `ndvi_municipality_normal`
@@ -105,17 +105,17 @@ El reto («Field Shift») pide usar información local del suelo y rotaciones qu
 ### HU-224 · Erosión en la salud del suelo
 
 - **Historia:** Como agricultor, quiero saber si una estrategia deja mi suelo descubierto en un terreno con pendiente, para no perder suelo con la lluvia.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Criterio `erosion` de `soil_health`, con `status`, `level`, `reasons`, `rule_ids` y `source_ids`, como los otros cuatro (HU-212)
-  - [ ] Sale de la pendiente (`slope_pct`) del lote o del municipio (HU-206) y de los meses descubiertos, los mismos de `soil_cover` (descanso y hueco entre ciclos, en días / 30,4), con los cortes de `erosion_pendiente` (`bare_months_on_slope`, HU-062)
-  - [ ] Con `slope_pct >= slope_pct_from` (12 hoy), el nivel sale de los meses descubiertos con cortes máximos: `favorable` hasta el corte `favorable`, `moderate` hasta el `moderate`, `unfavorable` por encima. Con pendiente menor, `favorable` (contrato), sin necesitar la duración de los ciclos
-  - [ ] La razón dice la pendiente, de dónde sale (lote o municipio, NASADEM a 30 m) y, si la pendiente cuenta, cuántos meses queda descubierto el suelo; la pendiente es del terreno de la zona, no una medición del lote (R10). Termina con «criterio del equipo» (HU-212)
-  - [ ] Sin pendiente o sin regla con fuente, `insufficient_data`: no se inventa un corte (R1, R8). Con pendiente de `slope_pct_from` o más y algún ciclo sin duración, también
-  - [ ] El criterio entra al puntaje `soil` de HU-212 como los otros cuatro
-  - [ ] Ninguna razón dice cuánto suelo se va a perder: compara estrategias según reglas (decisión 4)
-  - [ ] Prueba: en un terreno con pendiente, una estrategia con abono verde en los meses de lluvia da `erosion` mejor que una con descanso desnudo
-  - [ ] Prueba (límite): `slope_pct` igual a `slope_pct_from` cuenta; un punto menos da `favorable`
+  - [x] Criterio `erosion` de `soil_health`, con `status`, `level`, `reasons`, `rule_ids` y `source_ids`, como los otros cuatro (HU-212)
+  - [x] Sale de la pendiente (`slope_pct`) del lote o del municipio (HU-206) y de los meses descubiertos, los mismos de `soil_cover` (descanso y hueco entre ciclos, en días / 30,4), con los cortes de `erosion_pendiente` (`bare_months_on_slope`, HU-062)
+  - [x] Con `slope_pct >= slope_pct_from` (12 hoy), el nivel sale de los meses descubiertos con cortes máximos: `favorable` hasta el corte `favorable`, `moderate` hasta el `moderate`, `unfavorable` por encima. Con pendiente menor, `favorable` (contrato), sin necesitar la duración de los ciclos
+  - [x] La razón dice la pendiente, de dónde sale (lote o municipio, NASADEM a 30 m) y, si la pendiente cuenta, cuántos meses queda descubierto el suelo; la pendiente es del terreno de la zona, no una medición del lote (R10). Termina con «criterio del equipo» (HU-212)
+  - [x] Sin pendiente o sin regla con fuente, `insufficient_data`: no se inventa un corte (R1, R8). Con pendiente de `slope_pct_from` o más y algún ciclo sin duración, también
+  - [x] El criterio entra al puntaje `soil` de HU-212 como los otros cuatro
+  - [x] Ninguna razón dice cuánto suelo se va a perder: compara estrategias según reglas (decisión 4)
+  - [x] Prueba: en un terreno con pendiente, una estrategia con abono verde en los meses de lluvia da `erosion` mejor que una con descanso desnudo
+  - [x] Prueba (límite): `slope_pct` igual a `slope_pct_from` cuenta; un punto menos da `favorable`
 - **Reglas que aplican:** R1, R5, R6, R8, R10
 - **Contrato que toca:** `strategies[].soil_health.erosion` de `POST /api/v1/rotations`; `municipalities.slope_pct`; `grid_cells`; `rotation_rules`
 - **Notas:** Decisión 14: el enunciado completo nombra la erosión entre las prioridades del agricultor. Depende de HU-206 (pendiente), HU-062 (la regla con fuente; candidatas: el factor de cobertura C de la ecuación universal de pérdida de suelo y las guías de conservación de suelos de la FAO) y HU-212. Agregada el 8 de noviembre de 2026.
