@@ -55,6 +55,7 @@ from backend.api.window_signals import (
     window_signals,
 )
 from backend.config.thresholds import Thresholds, get_thresholds
+from backend.config.versions import rules_version
 from backend.config.weights import get_default_weights
 from backend.dataset import Dataset, Municipality
 from backend.db.session import get_db
@@ -146,7 +147,7 @@ def calc_dataset(request: Request) -> Dataset:
     endpoints de cálculo dicen con qué dataset y qué reglas respondieron (R4; contrato, «Logs de la terminal»). Solo
     las versiones: el cuerpo de la consulta nunca va al log (R9)."""
     dataset = require_dataset()
-    request.state.versions = {"dataset": dataset.version, "rules": dataset.rules_version}
+    request.state.versions = {"dataset": dataset.version, "rules": rules_version(dataset.rules_version)}
     return dataset
 
 
@@ -410,7 +411,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
         # Sin repetir y en un orden fijo (R4): la zona, la aptitud, el riego sin dato, lo que dice cada señal y las
         # señales sin datos.
         limitations=list(dict.fromkeys(limitations)),
-        versions={"dataset": dataset.version, "rules": dataset.rules_version},
+        versions={"dataset": dataset.version, "rules": rules_version(dataset.rules_version)},
     )
 
 
@@ -675,7 +676,7 @@ def changes(
         limitations=limitations,
         versions={
             "dataset": dataset.version,
-            "rules": dataset.rules_version,
+            "rules": rules_version(dataset.rules_version),
         },
     )
 

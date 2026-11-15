@@ -221,14 +221,14 @@ Orden dentro de la épica: aptitud (HU-191) → calificación (HU-196) → seña
 ### HU-075 · Umbrales y pesos versionados
 
 - **Historia:** Como equipo, quiero umbrales y pesos versionados en configuración, para ajustarlos sin tocar código y explicar qué versión se usó.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Archivos YAML con número de versión
   - [x] `thresholds.yaml` con la forma del contrato («Configuración versionada»): los cortes de nivel (70 y 40) y, por señal, `variable`, `unit`, `curve` (puntos o `crop`), `critical_below` y `source_id`; la señal de suelo no tiene umbral crítico (R10). Versión 1.0.0, decidido por Felipe el 10 de noviembre de 2026
   - [x] `weights.yaml` fija el peso por defecto de 0 a 5 de cada señal del P0; su contenido y su porqué salen de HU-198
-  - [ ] El motor recibe la configuración ya leída: no abre los archivos (R6)
+  - [x] El motor recibe la configuración ya leída: no abre los archivos (R6). **Hecho:** las señales reciben `Thresholds` y los pesos como argumentos; `tests/engine/test_r6.py` comprueba que `backend/engine/` no llama a `open()`, no lee rutas y que importarlo no carga `backend.config` ni `yaml`
   - [x] Si falta una señal en `weights.yaml` o un peso está fuera de 0 a 5, la API no arranca y dice por qué. Lo mismo con `thresholds.yaml`: una curva sin orden, una calificación fuera de 0 a 100, una curva sin fuente, un suelo crítico o una señal sin curva con umbral (`backend/config/thresholds.py`, pruebas en `tests/test_umbrales.py`)
-  - [ ] La respuesta incluye la versión del dataset y de las reglas, y los pesos usados (`weights`)
+  - [x] La respuesta incluye la versión del dataset y de las reglas, y los pesos usados (`weights`). **Hecho (14 nov 2026):** `versions.rules` junta el catálogo, los umbrales y los pesos (`0.1.0+umbrales.1.0.0+pesos.1.0.0`, `backend/config/versions.py`), en `/diagnostics`, `/changes`, `/trends`, los catálogos y la línea del log; pruebas en `tests/test_version_de_reglas.py`
 - **Reglas que aplican:** R4, R6, R10
 - **Notas:** **13 de octubre de 2026:** hecha la parte de los pesos (`backend/config/weights.py`, con pruebas en `tests/test_version.py`). Falta `thresholds.yaml` y todo lo que depende del motor. **10 de noviembre de 2026:** hecho `thresholds.yaml` 1.0.0 (decidido por Felipe el 10 de noviembre de 2026). Agua: clases del WRSI de FEWS NET (100 sin déficit, menos de 50 pérdida, Smith 1992); heladas: niveles de riesgo del ZARC de Brasil (20, 30 y 40 % de los años, mínima ≤ 2 °C); calor: crítica solo al llegar a `heat_max_c` de EcoCrop; suelo: de la ficha y nunca crítica; oferta y mercado: **sin fuente**, `insufficient_data` (para el mercado se investigó una curva: propuesta en `docs/investigacion-decisiones.md`, 5e); 70 y 40: convención, con el ejemplo de la FAO de 1985. Las fuentes del agua y las heladas son derivadas y se dice en `sources`. Falta lo que depende del motor: que reciba los umbrales ya leídos y que cada respuesta diga sus versiones.
 
