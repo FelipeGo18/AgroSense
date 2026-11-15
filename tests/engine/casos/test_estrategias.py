@@ -10,6 +10,7 @@ TODO(HU-121): casos reales sobre `data/published` con la `dataset_version` 2026.
 import pytest
 
 from backend.api import calc_examples
+from backend.engine.rotations.ranking import NO_CRITERION
 from common.region import region_today
 from tests.engine.casos.conftest import EJEMPLO_CALIDO, EJEMPLO_FRIO, EJEMPLO_PRIORIDADES, rotacion
 
@@ -17,6 +18,7 @@ from tests.engine.casos.conftest import EJEMPLO_CALIDO, EJEMPLO_FRIO, EJEMPLO_PR
 SIN_HELADA = {"zanahoria", "descanso"}
 # Abono verde y descanso: no dejan cosecha, así que no cuentan como «cultivo» en `income`.
 SIN_COSECHA = {"avena_vicia", "descanso"}
+NO_INCOME = NO_CRITERION["income"]
 
 
 def test_ejemplo_repetir_familia_en_ciclos_seguidos_se_excluye_por_regla(api, familias):
@@ -193,10 +195,12 @@ def test_ejemplo_un_ciclo_con_helada_critica_excluye_la_estrategia(api, datos_co
     assert not any(e["kind"] == "high_risk" and set(e["crop_ids"]) <= SIN_HELADA for e in respuesta["excluded"])
 
 
-def test_ejemplo_la_oferta_y_el_mercado_no_excluyen_y_sin_ellos_el_ingreso_no_califica(api):
-    # Hoy `supply` y `market` no tienen curva (`thresholds.yaml`, decisión de Felipe del 11 nov 2026): siempre salen
-    # `insufficient_data`. Por eso no se puede escribir «con `supply` crítico»: es imposible con las reglas de hoy. Lo que
-    # sí se comprueba es que, sin oferta ni mercado, `scores.income` no califica (decisión 15) y las limitaciones lo dicen.
+def test_ejemplo_la_oferta_y_el_mercado_no_excluyen_y_sin_historia_el_ingreso_no_califica(api):
+    # `supply` y `market` nunca se califican (decisión 17): no pueden ser críticos, así que no se puede escribir «con
+    # `supply` crítico». Este dataset de ejemplo no publica precios, así que ningún cultivo tiene historia del precio.
+    # Lo que sí se comprueba (HU-241, decidido por Felipe el 15 nov 2026): una estrategia solo de cultivos queda sin
+    # `scores.income` y lo dice en sus limitaciones; una con abono verde o descanso tiene ingreso 0, porque que no deja
+    # cosecha no depende de los precios.
     respuesta = rotacion(api, cycles=2, previous_crop_ids=["haba"])
     comprobar_sin_oferta_ni_mercado(respuesta)
     con_cultivo = [s for s in respuesta["strategies"] if set(s["crop_ids"]) - SIN_COSECHA]
@@ -206,13 +210,13 @@ def test_ejemplo_la_oferta_y_el_mercado_no_excluyen_y_sin_ellos_el_ingreso_no_ca
             if ciclo["diagnosis"]:
                 assert ciclo["diagnosis"]["signals"]["supply"]["status"] == "insufficient_data"
                 assert ciclo["diagnosis"]["signals"]["market"]["status"] == "insufficient_data"
-        assert estrategia["scores"]["income"] is None
-    # La limitación nombra el ingreso, la oferta o el mercado. Va en las de cada estrategia, que es donde el criterio no
-    # califica (HU-082, `NO_CRITERION`), no en las generales de la respuesta (HU-084).
-    assert all(
-        any(palabra in t.lower() for t in estrategia["limitations"] for palabra in ("ingreso", "oferta", "mercado"))
-        for estrategia in con_cultivo
-    )
+        # Lo dice en las limitaciones de su estrategia (R1): por ciclo si hay ingreso, o la limitación general si no.
+        assert any("historia del precio" in t or "historia de precio" in t for t in estrategia["limitations"]), estrategia["limitations"]
+        if set(estrategia["crop_ids"]) & SIN_COSECHA:
+            assert estrategia["scores"]["income"] == 0
+        else:
+            assert estrategia["scores"]["income"] is None
+            assert NO_INCOME in estrategia["limitations"]
 
 
 def test_ejemplo_el_primer_ciclo_coincide_con_el_diagnostico(api):
@@ -251,8 +255,10 @@ def test_ejemplo_con_prioridad_de_suelo_en_5_el_abono_verde_queda_mejor(api):
     # Supuestos por confirmar: el agua y el riesgo de la avena y de la cebolla en Samacá no se comparan aquí; se espera que
     # el peso de `soil` en 5 baste para que la avena con vicia gane. Sin datos de agua en el ejemplo, muchas estrategias
     # empatan arriba y la de cebolla no entra entre las 10: se pide como rotación actual, que se evalúa igual (decisión 14).
+    # Con el ingreso en 0 (HU-241): el abono verde vale 0 en el ingreso siempre, porque no deja cosecha (decidido por
+    # Felipe el 15 nov 2026), y la cebolla sin historia de precio no cuenta; este caso compara solo el suelo.
     con, sin = ["avena_vicia", "zanahoria"], ["cebolla_bulbo", "zanahoria"]
-    respuesta = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5}, current_crop_ids=sin)
+    respuesta = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5, "income": 0}, current_crop_ids=sin)
     assert respuesta["weights"]["soil"] == 5
     por_crop_ids = {tuple(s["crop_ids"]): s for s in respuesta["strategies"]}
     actual = respuesta["current_strategy"]
