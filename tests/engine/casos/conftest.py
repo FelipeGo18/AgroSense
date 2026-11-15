@@ -124,9 +124,11 @@ def _publicar_heladas(datos, *, con_helada, frecuencia: float):
 
 @pytest.fixture
 def datos_con_heladas_moderadas(datos):
-    """`datos` con heladas de ejemplo (R5) en 9 de los 30 años en cada mes (30 %): `frost` califica 55, moderada, no crítica
+    """`datos` con heladas de ejemplo (R5) en 9 de los 30 años en cada mes (30 %): `frost` es moderada, no crítica
     (curva de `thresholds.yaml`: 70 en 20 % y 40 en 40 %). Ningún ciclo es de alto riesgo, pero los cultivos sensibles bajan el
-    `risk` de su estrategia frente a la zanahoria y el descanso."""
+    `risk` de su estrategia frente al descanso. El número depende de la siembra: dentro de un año (desde enero) son 9 de 30 años,
+    30 %, y `frost` 55. Con la arveja sembrada el 16 de nov de 2026 su etapa media y la final caen de enero a marzo del año
+    siguiente, la serie por año de siembra pierde el último año y quedan 8 de 29 (28 %): `frost` 59, y ese es su `risk`."""
     return _publicar_heladas(datos, con_helada=lambda año: año % 10 in (1, 2, 3), frecuencia=30.0)
 
 
