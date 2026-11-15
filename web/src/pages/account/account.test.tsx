@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -183,6 +183,10 @@ describe("Mi cuenta (HU-160, HU-163)", () => {
     expect(calls.some((call) => call.key.startsWith("DELETE"))).toBe(false);
     await userEvent.type(within(again).getByLabelText("Su contraseña, para confirmar"), "papa-criolla-2026");
     await userEvent.click(within(again).getByRole("button", { name: "Sí, borrar todo" }));
+    // La navegación posterior al borrado importa el inicio antes de mostrar su encabezado.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     expect(await screen.findByRole("heading", { level: 1, name: "AgroSense" })).toBeInTheDocument();
     expect(calls.find((call) => call.key === "DELETE /api/v1/me")?.body).toEqual({ password: "papa-criolla-2026" });
   });
