@@ -236,6 +236,13 @@ resource "google_cloud_run_v2_service" "app" {
         name  = "AGROSENSE_AUTO_MIGRATE"
         value = "false"
       }
+      # Cloud Run termina el HTTPS y le pasa la petición a la app por HTTP: Uvicorn confía en sus `X-Forwarded-*` para ver
+      # `https` (la protección contra CSRF compara el origen con el propio) y la IP real (límite de intentos). Solo el
+      # frente de Google llega al contenedor.
+      env {
+        name  = "FORWARDED_ALLOW_IPS"
+        value = "*"
+      }
       dynamic "env" {
         for_each = var.web_origins == "" ? [] : [var.web_origins]
         content {

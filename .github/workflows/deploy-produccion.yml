@@ -56,9 +56,12 @@ jobs:
       - name: Desplegar en Cloud Run
         id: deploy
         run: |
-          previous="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.latestReadyRevisionName)')"
+          # La revisión que sirve hoy (no la última creada: tras volver atrás, la última es la que falló).
+          previous="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json | jq -r '[.status.traffic[] | select(.percent == 100) | .revisionName][0] // empty')"
           echo "previous=$previous" >> "$GITHUB_OUTPUT"
-          gcloud run deploy "$SERVICE" --image "$IMAGE" --region "$REGION" --quiet
+          gcloud run services update "$SERVICE" --image "$IMAGE" --region "$REGION" --quiet
+          # Si un despliegue anterior volvió atrás, el tráfico quedó fijo en esa revisión: se devuelve a la nueva.
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest --quiet
           echo "url=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"
 
       - name: Comprobar la dirección pública
@@ -66,8 +69,11 @@ jobs:
           URL: ${{ steps.deploy.outputs.url }}
         run: |
           for attempt in 1 2 3 4 5; do
-            if curl -fsS --max-time 30 "$URL/api/v1/version" > /dev/null && curl -fsS --max-time 30 "$URL/" > /dev/null; then
-              echo "La API y la web responden en $URL"
+            # La API, la web y las cuentas (la base de producción y sus migraciones al día).
+            if curl -fsS --max-time 30 "$URL/api/v1/version" > /dev/null \
+              && curl -fsS --max-time 30 "$URL/" > /dev/null \
+              && curl -fsS --max-time 30 "$URL/api/v1/health" | jq -e '.accounts.available == true' > /dev/null; then
+              echo "La API, la web y las cuentas responden en $URL"
               exit 0
             fi
             sleep 10
