@@ -89,8 +89,8 @@ export function Hero({ animated }: { animated: boolean }) {
               data-hero-in
               className="mt-5 max-w-[37rem] text-[clamp(1.25rem,2.1vw,1.875rem)] leading-[1.4] [text-shadow:0_2px_0_rgb(11_18_38/0.6)]"
             >
-              ¿Qué sembrar y en qué orden? Le mostramos estrategias de rotación con datos del satélite y reglas que se pueden explicar.
-              Usted decide.
+              ¿Qué sembrar y en qué orden? Le mostramos estrategias de rotación con datos de la NASA y reglas que se pueden explicar. Usted
+              decide.
             </p>
             <div data-hero-in className="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:gap-6">
               <ButtonLink to={PATHS.consult} className="sm:w-[300px]">
