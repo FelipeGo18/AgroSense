@@ -16,6 +16,12 @@ def format_number(value: float) -> str:
     """
     if value == int(value):
         return str(int(value))
+    return format_decimal(value)
+
+
+def format_decimal(value: float) -> str:
+    """Siempre con un decimal y coma, también si es entero: «5,0», «5,75» → «5,8». Así se escribe el pH en las razones
+    de la señal de suelo (HU-183) y en el descarte `soil_ph` de las estrategias."""
     return f"{value:.1f}".replace(".", ",")
 
 

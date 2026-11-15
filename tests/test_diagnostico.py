@@ -5,7 +5,8 @@ calor de ejemplo. «Hoy» queda fijo en el 14 de noviembre de 2026 en la región
 en que corre la prueba (R4). En esos datos, la papa sembrada en noviembre tiene helada crítica (7 de 100) y la de abril
 no tiene heladas (100); el calor da 100 en todo el año.
 
-El suelo (HU-183) y la oferta (HU-072) todavía no tienen motor: son `insufficient_data`. El agua (HU-071) sí (sus
+La oferta (HU-072) todavía no tiene motor: es `insufficient_data`. El suelo (HU-183) sí: el del ejemplo (pH 5,5, de 5,1 a
+5,9) le da 100 a la papa (sus pruebas están en `tests/test_senal_suelo_datos.py`). El agua (HU-071) también (sus
 pruebas están en `tests/test_senal_agua_datos.py`), pero las filas de lluvia del ejemplo están rotuladas `ejemplo` y no
 cuentan como de ninguna fuente (`monthly_climate.rain_rows`): aquí el agua es `insufficient_data`. Con los pesos por
 defecto el agua pesa 3, así que la luz de AgroSense es `not_evaluable` (regla 1): es lo honesto (R1). Para ver una luz
@@ -45,8 +46,8 @@ TODAY = datetime(2026, 11, 14, 17, 0, tzinfo=UTC)
 NOVEMBER, APRIL = "2026-11-01", "2027-04-01"
 # El agua en 0: con la lluvia del ejemplo sin fuente, con peso la luz sería siempre `not_evaluable`.
 NO_WATER = {"water": 0, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
-# Las señales que todavía no tienen motor (el agua ya lo tiene desde HU-071).
-PENDING = {name: pending_reason(name) for name in ("soil", "supply")}
+# Las señales que todavía no tienen motor (el agua ya lo tiene desde HU-071 y el suelo desde HU-183).
+PENDING = {name: pending_reason(name) for name in ("supply",)}
 
 
 @pytest.fixture(autouse=True)
@@ -264,7 +265,7 @@ def test_una_ventana_del_orden_y_el_diagnostico_de_esa_fecha_dan_lo_mismo(exampl
         assert body["window"]["harvest_estimate"] == window["harvest_estimate"]
         assert (overall["limiting_signal"], overall["high_risk"]) == (window["limiting_signal"], window["high_risk"])
         assert body["signals"][window["limiting_signal"]]["score"] == window["limiting_score"]
-        rated = [name for name in ("frost", "heat") if body["signals"][name]["score"] is not None]
+        rated = [name for name in ("frost", "heat", "soil") if body["signals"][name]["score"] is not None]
         assert min(body["signals"][name]["score"] for name in rated) == window["limiting_score"]
 
 
@@ -294,6 +295,9 @@ def test_sin_las_etapas_del_cultivo_no_hay_ventana_y_nada_se_inventa(examples_co
     assert body["window"] is None
     assert all(signal["status"] == "insufficient_data" for signal in body["signals"].values())
     assert body["signals"]["frost"]["reasons"] == ["Sin las etapas de la papa: la señal no se evalúa"]
+    # El suelo no cambia con la fecha, pero sin ventana tampoco se califica (HU-076; HU-183): la misma razón.
+    assert body["signals"]["soil"]["reasons"] == ["Sin las etapas de la papa: la señal no se evalúa"]
+    assert (body["signals"]["soil"]["level"], body["signals"]["soil"]["score"]) == (None, None)
     assert (body["overall"]["light"], body["overall"]["action"]) == ("yellow", "other_window")
     assert body["best_windows"] == []
 

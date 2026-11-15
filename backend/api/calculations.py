@@ -43,6 +43,7 @@ from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
 from backend.api.lot_terrain import ZoneTemperature, zone_temperature, zone_texture
 from backend.api.lots import _own_lot
+from backend.api.soil_signals import soil_for
 from backend.api.trends import trends as build_trends
 from backend.api.window_signals import (
     PENDING_SIGNALS,
@@ -284,15 +285,16 @@ def _best_windows(
     weights: dict[str, int],
     irrigated: bool | None,
     texture_class: str | None,
+    soil: SignalResult,
 ) -> list[WindowSummary]:
     """Hasta tres ventanas de los próximos doce meses, desde el mes en curso en la región, sin las de alto riesgo
     (HU-192). Cada una se califica con `window_signals`, el mismo cálculo de la ventana consultada (con el mismo riego
-    y el mismo suelo)."""
+    y el mismo suelo: la textura del agua y la señal de suelo, que no cambia con la fecha)."""
     windows = [
         WindowSignals(
             window.sowing_date,
             window.harvest_estimate,
-            signal_scores(window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class)),
+            signal_scores(window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class, soil)),
         )
         for window in monthly_sowing_windows(dataset.stages.get(crop_id, []), region_today())
     ]
@@ -356,16 +358,23 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
     # La textura del suelo para el agua: la del lote si tiene contorno, si no la del municipio. No va al log ni se guarda
     # (R9).
     texture = zone_texture(dataset, municipality, lot)
-    window = signals = None
+    window = signals = soil = None
     scores = {}
     if fit.level != NOT_SUITABLE:
         window = crop_window(dataset.stages.get(body.crop_id, []), body.sowing_date)
-        signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds, irrigated, texture)
+        # El suelo no cambia con la fecha: una sola vez por consulta, la del municipio también con lote (HU-183; el del
+        # lote es de HU-182). Con lote, la señal lo dice en sus limitaciones.
+        soil = soil_for(dataset, municipality, lot is not None, crop, thresholds, crop_name)
+        signals = window_signals(dataset, signal_place, body.crop_id, crop, crop_name, window, thresholds, irrigated, texture, soil)
         scores = signal_scores(signals)
         limitations.extend(text for signal in signals.values() for text in signal.limitations)
-        # El agua sin datos ya dice por qué en su razón (la lluvia de su fuente, la ET0 o el balance hídrico), que va a las
-        # limitaciones: no se agrega «Sin datos para la zona» encima (R5).
-        texts = {name: pending_reason(name) for name in PENDING_SIGNALS} | {"water": signals["water"].reasons[0]}
+        # El agua y el suelo sin datos ya dicen por qué en su razón (el agua: la lluvia de su fuente, la ET0 o el balance
+        # hídrico; el suelo: sin suelo para la zona, sin el rango de pH de la ficha o sin etapas), que va a las limitaciones:
+        # no se agrega «Sin datos para la zona» encima (R5).
+        texts = {name: pending_reason(name) for name in PENDING_SIGNALS} | {
+            "water": signals["water"].reasons[0],
+            "soil": signals["soil"].reasons[0],
+        }
         limitations.extend(missing_data_limitations(scores, texts))
 
     overall = traffic_light(fit.level, scores, weights, basis)
@@ -384,6 +393,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
             weights if overall.action == OTHER_WINDOW else defaults,
             irrigated,
             texture,
+            soil,
         )
 
     return DiagnosisResponse(

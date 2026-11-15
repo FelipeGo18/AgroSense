@@ -148,7 +148,7 @@
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-176 | Lluvia, nubes y viento en la escena | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-18](epicas/EP-18-suelo.md) | HU-181 | Suelo de la región publicado | P0 | M | hecha | SoilGrids 2.0 en `grid_cells` y `soil_municipality` (239 municipios); acierta la acidez de la Sabana, pero da ácidos los suelos básicos de la cuenca baja |
 | [EP-18](epicas/EP-18-suelo.md) | HU-182 | Suelo de un lote | P0 | M | pendiente | |
-| [EP-18](epicas/EP-18-suelo.md) | HU-183 | Señal de suelo en el diagnóstico | P0 | S | pendiente | |
+| [EP-18](epicas/EP-18-suelo.md) | HU-183 | Señal de suelo en el diagnóstico | P0 | S | hecha | Curva de HU-196 sobre la mediana `ph` del municipio; el intervalo p05–p95 solo cambia el nivel; nunca crítica. Con `lot_id`, el suelo del municipio y se dice (el del lote es de HU-182) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-184 | Suelo en las estrategias de rotación | P0 | M | pendiente | |
 | [EP-18](epicas/EP-18-suelo.md) | HU-212 | Salud del suelo de cada estrategia | P0 | L | pendiente | Cinco criterios con la erosión (decisión 14) |
 | [EP-18](epicas/EP-18-suelo.md) | HU-224 | Erosión en la salud del suelo | P0 | S | pendiente | Nueva (8 nov, decisión 14) |

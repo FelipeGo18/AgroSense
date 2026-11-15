@@ -4,7 +4,7 @@ la aptitud, la de heladas y los boletines de SIPSA, sin importarse (R6)."""
 import pytest
 
 from common.months import MONTH_NAMES, month_name
-from common.text import format_number, join
+from common.text import format_decimal, format_number, join
 
 
 @pytest.mark.parametrize(
@@ -21,6 +21,12 @@ from common.text import format_number, join
 )
 def test_format_number_sin_decimales_si_es_entero_y_con_coma_si_no(value, expected):
     assert format_number(value) == expected
+
+
+@pytest.mark.parametrize(("value", "expected"), [(5, "5,0"), (5.0, "5,0"), (5.75, "5,8"), (4.13, "4,1"), (7.88, "7,9")])
+def test_format_decimal_siempre_con_un_decimal_y_coma(value, expected):
+    """El pH de la señal de suelo (HU-183) y del descarte `soil_ph` de las estrategias."""
+    assert format_decimal(value) == expected
 
 
 @pytest.mark.parametrize(

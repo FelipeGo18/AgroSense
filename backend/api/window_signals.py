@@ -5,10 +5,14 @@ y calificaciones»), y después para cada ciclo de `/rotations` (HU-213).
 Es la capa delgada de la API (R6): lee del dataset lo de la zona una sola vez (`signal_zone`) y, por ventana, llama al
 motor con todo ya leído. No escribe nada ni guarda la consulta (R9).
 
-Hoy hay cuatro señales con motor (`water`, HU-071; `frost`, HU-077; `heat`, HU-190; `market`, HU-073) y dos sin él
-(`soil`, HU-183; `supply`, HU-072). Las que faltan salen de `pending_signal`: `insufficient_data`, con nivel y
-calificación nulos, sin críticas, y una razón que dice que todavía no se evalúan (R1, R5). Pasan por el mismo camino
-que las demás: el semáforo, el orden y las limitaciones no saben que son provisionales.
+Hoy hay cinco señales con motor (`water`, HU-071; `frost`, HU-077; `heat`, HU-190; `soil`, HU-183; `market`, HU-073)
+y una sin él (`supply`, HU-072). La que falta sale de `pending_signal`: `insufficient_data`, con nivel y calificación
+nulos, sin críticas, y una razón que dice que todavía no se evalúa (R1, R5). Pasa por el mismo camino que las demás: el
+semáforo, el orden y las limitaciones no saben que es provisional.
+
+**El suelo** no cambia con la fecha: quien llama calcula la señal una vez por consulta (`soil_signals.soil_for`, con el
+suelo del municipio) y la pasa ya hecha (`soil`); todas las ventanas llevan la misma. Sin ventana (un cultivo sin
+etapas) no se califica, como las demás señales (HU-076).
 
 **El balance hídrico del agua** se pide en un solo punto, `balance_for`, que se busca como global de este módulo en
 cada llamada (las pruebas lo cambian con `monkeypatch`). Es el de HU-144 (`backend/engine/water_balance.py`), que usa la
@@ -29,6 +33,7 @@ from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset, Municipality
 from backend.engine.market_signal import market_signal
 from backend.engine.signal_score import INSUFFICIENT_DATA, SignalScore
+from backend.engine.soil_signal import soil_without_stages
 from backend.engine.stages import CropWindow
 from backend.engine.traffic_light import SIGNAL_NAMES_ES
 from backend.engine.water_balance import DRY, MonthClimate, root_zone, water_balance
@@ -37,8 +42,8 @@ from backend.engine.water_signal import WaterBalanceSummary
 
 class SignalResult(Protocol):
     """Lo que trae cada señal de una ventana, con los nombres de campo del contrato (sin `counts`, que dependen de los
-    pesos y los pone el diagnóstico). Lo cumplen `ClimateSignalResult`, `MarketSignalResult`, `WaterSignal` y
-    `PendingSignal`.
+    pesos y los pone el diagnóstico). Lo cumplen `ClimateSignalResult`, `MarketSignalResult`, `WaterSignal`,
+    `SoilSignalResult` y `PendingSignal`.
 
     `sources` (las fuentes para contrastar, opcional en el contrato) no está aquí: un miembro de un `Protocol` no puede
     ser opcional, y declararlo obligaría a `ClimateSignalResult` y `MarketSignalResult`, que son del motor, a llevar un
@@ -80,7 +85,7 @@ class PendingSignal:
     limitations: tuple[str, ...] = ()
 
 
-PENDING_SIGNALS = ("soil", "supply")
+PENDING_SIGNALS = ("supply",)
 
 
 def pending_reason(name: str) -> str:
@@ -89,9 +94,8 @@ def pending_reason(name: str) -> str:
 
 
 def pending_signal(name: str) -> PendingSignal:
-    """Provisional: la señal `name` mientras no exista su motor. Se reemplaza, una por una, cuando lleguen `soil`
-    (HU-183) y `supply` (HU-072). No inventa un nivel ni una
-    calificación (R1): la razón dice que esta versión no la evalúa (R5).
+    """Provisional: la señal `name` mientras no exista su motor. Hoy solo `supply`, que se reemplaza cuando llegue
+    HU-072. No inventa un nivel ni una calificación (R1): la razón dice que esta versión no la evalúa (R5).
     La limitación es esa misma frase y no «sin datos para la zona»: no faltan datos, falta el motor."""
     return PendingSignal(INSUFFICIENT_DATA, None, False, None, (), (pending_reason(name),))
 
@@ -142,6 +146,7 @@ def window_signals(
     thresholds: Thresholds,
     irrigated: bool | None,
     texture_class: str | None,
+    soil: SignalResult,
 ) -> dict[str, SignalResult]:
     """Las seis señales de la ventana, en el orden del contrato (`water`, `frost`, `heat`, `soil`, `supply`, `market`).
 
@@ -149,6 +154,8 @@ def window_signals(
     cultivo sin etapas publicadas) deja sin datos las que la necesitan (R1). El mercado mira el mes de la cosecha
     estimada (HU-073); sin ventana no hay mes y no hay índice. `irrigated` (nulo: se evalúa como sin riego) y
     `texture_class` (la del lote o la del municipio, `lot_terrain.zone_texture`; nula: sin retención) son del agua.
+    `soil` es la señal de suelo ya calculada para la consulta (`soil_signals.soil_for`): no depende de la fecha, pero sin
+    ventana no se usa y el suelo es `insufficient_data`, como las demás (`soil_without_stages`).
     """
     index, years = seasonal_index(dataset, crop_id, zone.market_id, window.harvest_estimate.month) if window else (None, None)
     balance = _balance(zone.water, window, texture_class, crop)
@@ -156,7 +163,8 @@ def window_signals(
         "water": water_in(zone.water, window, balance, irrigated, thresholds, crop_name),
         "frost": frost_in(zone.climate, window, thresholds, crop_name),
         "heat": heat_in(zone.climate, window, crop, thresholds, crop_name),
-        "soil": pending_signal("soil"),
+        # Sin ventana tampoco se califica el suelo, como las demás (HU-076): no hay ventana que diagnosticar.
+        "soil": soil if window is not None else soil_without_stages(crop_name),
         "supply": pending_signal("supply"),
         "market": market_signal(index, years, thresholds),
     }

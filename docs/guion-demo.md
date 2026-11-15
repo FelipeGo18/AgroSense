@@ -107,7 +107,7 @@ Un municipio alto de Boyacá, donde las heladas de verdad pesan.
 | Qué | HU | Por qué |
 |---|---|---|
 | Señal de agua | HU-071 | Sin agua, la luz con los pesos de AgroSense sale siempre «no evaluable» (regla 1 del semáforo). Felipe lo puso como condición para la demo |
-| Señal de suelo | HU-183 | Paso 3 y la salud del suelo de los dos casos. Hoy el diagnóstico responde «Esta versión de AgroSense todavía no evalúa el suelo» |
+| Señal de suelo | HU-183 | Paso 3 y la salud del suelo de los dos casos. El diagnóstico ya califica el suelo con el pH estimado del municipio y su rango (SoilGrids); con los datos publicados casi siempre sale `moderate`, porque el rango 5–95 % de SoilGrids es ancho, y la razón pide un análisis de suelo del lote |
 | Diagnóstico con el motor | HU-076 | Pasos 3 y 6. Ya responde (#102, 14 nov); sigue en curso hasta que esté el agua |
 | Estrategias con el motor | HU-084 | Paso 2 y los dos casos |
 | Agua del plan | HU-146 | Paso 4 |
