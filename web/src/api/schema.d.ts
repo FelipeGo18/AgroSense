@@ -283,6 +283,30 @@ export interface paths {
         patch: operations["update_lot_api_v1_lots__lot_id__patch"];
         trace?: never;
     };
+    "/api/v1/me/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tickets
+         * @description Los mensajes del usuario, del más reciente al más antiguo. Nunca los de otro usuario.
+         */
+        get: operations["list_tickets_api_v1_me_tickets_get"];
+        put?: never;
+        /**
+         * Open Ticket
+         * @description Abre un mensaje al responsable. Si nombra un lote, tiene que ser uno suyo y sin borrar (404 si no).
+         */
+        post: operations["open_ticket_api_v1_me_tickets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/lots/{lot_id}/seasons": {
         parameters: {
             query?: never;
@@ -1649,6 +1673,34 @@ export interface components {
             /** Points */
             points: components["schemas"]["SupplyPoint"][];
         };
+        /** TicketCreate */
+        TicketCreate: {
+            /** Message */
+            message: string;
+            /** Lot Id */
+            lot_id?: string | null;
+        };
+        /** TicketOut */
+        TicketOut: {
+            /**
+             * Ticket Id
+             * Format: uuid
+             */
+            ticket_id: string;
+            /** Lot Id */
+            lot_id: string | null;
+            /** Message */
+            message: string;
+            /** Status */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Closed At */
+            closed_at: string | null;
+        };
         /** TrendsRequestEcho */
         TrendsRequestEcho: {
             /** Municipality Id */
@@ -2576,6 +2628,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LotOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    list_tickets_api_v1_me_tickets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    open_ticket_api_v1_me_tickets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TicketCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketOut"];
                 };
             };
             /** @description Unauthorized */

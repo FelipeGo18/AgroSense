@@ -6,8 +6,8 @@
  * specs/02-contratos.md): aquí no se promete nada que el sistema no haga. Si cambia lo que se guarda, cambia este
  * texto y sube la versión del consentimiento.
  *
- * **Falta la revisión legal** (Ley 1581 de 2012 de Colombia, decisión 11) y el canal de contacto del responsable: la
- * página lo dice mientras `LEGAL_REVIEW_PENDING` sea verdadero.
+ * **Falta la revisión legal** (Ley 1581 de 2012 de Colombia, decisión 11): la página lo dice mientras
+ * `LEGAL_REVIEW_PENDING` sea verdadero. El canal de contacto es «Escribir al responsable» (`/mi-cuenta/escribirnos`, HU-163).
  */
 
 /** Mientras sea verdadero, la página avisa que el texto todavía no pasó por revisión legal. */
@@ -59,6 +59,16 @@ export const SECTIONS: { title: string; items: { mark: Mark; text: string }[] }[
         mark: "note",
         text: "Soporte puede ver sus lotes para ayudarle. Cada vez que lo hace queda escrito en «Mi actividad», donde usted lo puede ver.",
       },
+    ],
+  },
+  {
+    title: "Cómo escribirnos",
+    items: [
+      {
+        mark: "note",
+        text: "Para preguntar qué datos suyos guardamos, pedir que los corrijamos o reportar un problema, escríbanos desde «Mi cuenta», en «Escribir al responsable». Ahí ve cómo va su mensaje.",
+      },
+      { mark: "note", text: "Sin cuenta no guardamos nada suyo, así que no hay datos suyos que pedir." },
     ],
   },
   {

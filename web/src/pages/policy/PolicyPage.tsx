@@ -90,9 +90,14 @@ export function PolicyPage() {
         <p className="mt-8 max-w-[880px]">Responde por estos datos el equipo RealE4Life, que hace AgroSense.</p>
         <p className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
           {user ? (
-            <Link to={PATHS.account} className={`${LINK} inline-flex min-h-11 items-center`}>
-              Ir a Mi cuenta
-            </Link>
+            <>
+              <Link to={PATHS.account} className={`${LINK} inline-flex min-h-11 items-center`}>
+                Ir a Mi cuenta
+              </Link>
+              <Link to={PATHS.messages} className={`${LINK} inline-flex min-h-11 items-center`}>
+                Escribir al responsable
+              </Link>
+            </>
           ) : (
             <>
               <Link to={PATHS.signup} className={`${LINK} inline-flex min-h-11 items-center`}>
