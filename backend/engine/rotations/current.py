@@ -20,10 +20,9 @@ se arma y se evalúa como cualquier estrategia. Armar `current_strategy` en la r
 
 from collections.abc import Mapping, Sequence
 
-NO_CURRENT_LIMITATION = "Sin rotación actual: no hay una referencia para comparar las estrategias"
+from backend.engine.rotations.ranking import CRITERIA
 
-# Es el mismo orden que el de HU-082 (`ranking.CRITERIA`, PR #146); cuando entre, se importa de ahí.
-CRITERIA = ("water", "soil", "income", "risk")
+NO_CURRENT_LIMITATION = "Sin rotación actual: no hay una referencia para comparar las estrategias"
 
 _VALID_CYCLES = (2, 3)
 

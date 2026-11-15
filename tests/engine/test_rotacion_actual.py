@@ -6,7 +6,11 @@ import inspect
 import pytest
 
 import backend.engine.rotations.current as current
+import backend.engine.rotations.ranking as ranking
 from backend.engine.rotations.current import NO_CURRENT_LIMITATION, current_sequence, drop_current, vs_current
+from backend.engine.rotations.ranking import CycleScores, score_strategy
+from backend.engine.rotations.soil_health import Criterion
+from backend.engine.signal_score import SignalScore
 
 CRITERIOS = ("water", "soil", "income", "risk")
 
@@ -177,3 +181,56 @@ def test_r6_current_no_importa_la_web_la_base_ni_polars_ni_abre_archivos():
             assert not any(nombre == p or nombre.startswith(p + ".") for p in prohibidos), f"importa {nombre}"
         if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name):
             assert nodo.func.id != "open", "abre un archivo"
+
+
+# --- el puntaje de la actual sale de `score_strategy` (HU-082) ---
+
+
+def test_los_criterios_de_la_actual_son_los_del_ranking():
+    assert current.CRITERIA is ranking.CRITERIA
+
+
+def test_vs_current_con_el_puntaje_de_score_strategy_de_las_dos():
+    """Datos de EJEMPLO inventados para la prueba (R5), no salen de ningún dataset.
+
+    Sugerida (papa, arveja, descanso), con suelo bueno: agua (80 + 71) / 2 = 75,5 -> 76; suelo 88; ingreso
+    (60 + 59,5 + 0) / 3 -> 40; riesgo 55; total (76 + 88 + 40 + 55) / 4 = 64,75 -> 65.
+    Actual (dos ciclos), con suelo pobre: agua 55; suelo 25; ingreso (50 + 45) / 2 = 47,5 -> 45 con mercado 40
+    (ciclo 2: (40 + 40) / 2 = 40, ciclo 1: 50, promedio 45); riesgo 40; total (55 + 25 + 45 + 40) / 4 = 41,25 -> 41.
+    """
+
+    def senales(water, supply, market=None):
+        def una(valor):
+            nivel = "favorable" if valor >= 70 else "moderate" if valor >= 40 else "unfavorable"
+            return SignalScore("available", valor, nivel, False)
+
+        sin_dato = SignalScore("insufficient_data", None, None, False)
+        valores = {"water": water, "frost": 90, "heat": 95, "soil": 70, "supply": supply, "market": market}
+        return CycleScores("crop", {n: sin_dato if v is None else una(v) for n, v in valores.items()})
+
+    def salud(*niveles):
+        nombres = ("nitrogen", "organic_carbon", "soil_cover", "pest_break", "erosion")
+        return {n: Criterion("available" if v else "insufficient_data", v, (), (), ()) for n, v in zip(nombres, niveles, strict=True)}
+
+    pesos_senales = {"water": 3, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
+    prioridades = {"water": 3, "soil": 3, "income": 3, "risk": 3}
+    sugerida = score_strategy(
+        ("papa", "arveja", "descanso"),
+        (senales(80, 60), senales(71, 55, 64), CycleScores("fallow", None)),
+        salud("favorable", "favorable", "favorable", "moderate", None),
+        pesos_senales,
+        prioridades,
+    )
+    actual = score_strategy(
+        ("papa", "papa"),
+        (senales(60, 50), senales(50, 40, 40)),
+        salud("unfavorable", "moderate", "unfavorable", "moderate", None),
+        pesos_senales,
+        prioridades,
+    )
+    assert dict(sugerida.scores) == {"water": 76, "soil": 88, "income": 40, "risk": 55}
+    assert sugerida.total_score == 65
+    assert dict(actual.scores) == {"water": 55, "soil": 25, "income": 45, "risk": 40}
+    assert actual.total_score == 41
+    resultado = vs_current(sugerida.scores, sugerida.total_score, actual.scores, actual.total_score)
+    assert resultado == {"water": 21, "soil": 63, "income": -5, "risk": 15, "total": 24}
