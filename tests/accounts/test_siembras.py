@@ -157,10 +157,12 @@ def test_corregir_la_siembra_revisa_que_quepa(client, lot):
     assert fixed.status_code == 200 and (fixed.json()["crop_id"], fixed.json()["area_ha"]) == ("haba", 0.8)
 
 
-def test_borrar_una_siembra_la_marca_y_deja_de_verse(client, lot, db):
+def test_borrar_una_siembra_la_marca_y_deja_de_contar(client, lot, db):
     papa = sow(client, lot, area_ha=1).json()["season_id"]
     assert client.delete(f"/api/v1/seasons/{papa}").status_code == 204
-    assert client.get(f"/api/v1/lots/{lot}/seasons").json() == []
+    # Sale en el historial marcada, para poder restaurarla (HU-204), y ya no está en curso.
+    assert [s["deleted_at"] is not None for s in client.get(f"/api/v1/lots/{lot}/seasons").json()] == [True]
+    assert client.get(f"/api/v1/lots/{lot}").json()["current_seasons"] == []
     db.expire_all()
     assert db.scalar(select(Season.deleted_at).where(Season.crop_id == "papa")) is not None
     assert client.patch(f"/api/v1/seasons/{papa}", json={"harvest_date": ago(1)}).status_code == 404

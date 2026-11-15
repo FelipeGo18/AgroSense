@@ -175,18 +175,24 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-204 · Historial con lo borrado y «Restaurar»
 
 - **Historia:** Como agricultor, quiero ver en el historial del lote lo que borré hace poco y poder restaurarlo, para corregir un error sin perder mis datos.
-- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] `GET /api/v1/lots/{lot_id}/seasons` trae las temporadas borradas hace menos de 30 días, con `deleted_at` y `restorable_until`; las borradas hace 30 días o más no vienen
-  - [ ] Lo mismo para los lotes: `GET /api/v1/lots` trae los borrados hace menos de 30 días y `POST /api/v1/lots/{lot_id}/restore` los restaura con las temporadas que se borraron con ellos; en Mi finca se ven aparte («Borrados hace poco»)
-  - [ ] En la web, las borradas se ven aparte, con el rótulo «Borrada · se puede restaurar hasta <fecha>» y el botón «Restaurar», que llama a `POST /api/v1/seasons/{season_id}/restore`
-  - [ ] Al restaurar, la temporada vuelve al historial y al progreso y, si existe `activity_log` (HU-178), queda el evento `season.restored`
-  - [ ] Restaurar valida lo mismo que crear: si la temporada restaurada hace pasar las temporadas en curso del área del lote, o sus `follows_season_ids` ya no son válidas, responde 422 y la web dice por qué
-  - [ ] Restaurar después de 30 días, o algo que no está borrado, responde 404
-  - [ ] Cada botón tiene una acción definida
+  - [x] `GET /api/v1/lots/{lot_id}/seasons` trae las temporadas borradas hace menos de 30 días, con `deleted_at` y `restorable_until`; las borradas hace 30 días o más no vienen
+  - [x] Lo mismo para los lotes: `GET /api/v1/lots` trae los borrados hace menos de 30 días y `POST /api/v1/lots/{lot_id}/restore` los restaura con las temporadas que se borraron con ellos; en Mi finca se ven aparte («Borrados hace poco»)
+  - [x] En la web, las borradas se ven aparte, con el rótulo «Borrada · se puede restaurar hasta <fecha>» y el botón «Restaurar», que llama a `POST /api/v1/seasons/{season_id}/restore`
+  - [x] Al restaurar, la temporada vuelve al historial y al progreso y, si existe `activity_log` (HU-178), queda el evento `season.restored` (y `lot.restored` al restaurar un lote). El progreso todavía no existe (HU-167, P1): cuando exista, lo restaurado cuenta porque vuelve a tener `deleted_at` nulo
+  - [x] Restaurar valida lo mismo que crear: si la temporada restaurada hace pasar las temporadas en curso del área del lote, o sus `follows_season_ids` ya no son válidas, responde 422 y la web dice por qué
+  - [x] Restaurar después de 30 días, o algo que no está borrado, responde 404
+  - [x] Cada botón tiene una acción definida
 - **Reglas que aplican:** R9
 - **Contrato que toca:** `GET /api/v1/lots/{lot_id}/seasons`, `POST /api/v1/seasons/{season_id}/restore`, `activity_log`
 - **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Borrar un lote o una siembra sigue siendo posible en el MVP (HU-164, HU-165); los datos quedan marcados con `deleted_at` y se borran para siempre a los 30 días. La restauración de lotes, que estaba en HU-164, se movió aquí. Decidido el 11 de octubre de 2026 (antes «cómo se listan los borrados» estaba por decidir). El contrato fija los códigos (`POST /api/v1/seasons/{season_id}/restore`): restaurar vuelve a validar el área y las temporadas de las que viene (422 si ya no cabe); pasados los 30 días, o si no está borrada, 404; lo borrado no cuenta en el área libre ni en el progreso. Los lotes borrados vienen en `GET /lots` con `restorable_until` y se restauran desde «Borrados hace poco» en Mi finca (HU-164).
+- **Hecho (15 nov):**
+  - **API:** `GET /lots` y `GET /lots/{lot_id}/seasons` traen lo borrado hace menos de 30 días con `deleted_at` y `restorable_until` (30 días después de borrar). `POST /lots/{lot_id}/restore` devuelve el lote con las temporadas que tienen su misma hora de borrado; una que se había borrado sola, antes, sigue borrada y se restaura aparte. `POST /seasons/{season_id}/restore` valida el cultivo, lo que había antes y, si sigue en curso, el área libre (422); con el lote borrado responde 404: se restaura el lote. Los dos registran `lot.restored` y `season.restored`.
+  - **Borrar para siempre:** el mantenimiento de las cuentas (`backend/accounts/maintenance.py`, que corre al arrancar la API) borra los lotes y las temporadas con 30 días o más de borrados, y lo dice en el log. El plazo es una constante (`RESTORE_WINDOW` en `backend/accounts/farm_models.py`): no hay migración.
+  - **Web:** «Borrados hace poco» en Mi finca (también cuando todos los lotes están borrados) y «Borradas hace poco» en el lote, cada uno con «Borrado · se puede restaurar hasta el <fecha>» y «Restaurar». Si la API no deja (por ejemplo, «No cabe: en el lote quedan 0,30 ha libres»), lo dice junto al botón. Las confirmaciones de borrar dicen hasta qué fecha se puede restaurar y desde dónde. `useLots` y `useSeasons` siguen dando solo lo activo, así que el diagnóstico, las estrategias y el formulario de siembra no ven lo borrado.
+  - **Pruebas:** `tests/accounts/test_restaurar.py` (API y mantenimiento) y `web/src/pages/farm/farm.test.tsx`.
+  - **Queda fuera:** que el administrador restaure (el contrato lo dice; espera los roles de HU-170, P1).
 
 ### HU-166 · Borrar mi cuenta
 

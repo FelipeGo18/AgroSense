@@ -207,8 +207,9 @@ def on_startup(url: URL, config: Config, auto: bool = True) -> None:
 
 
 def purge_activity(url: URL) -> None:
-    """El mantenimiento de las cuentas al arrancar (`backend/accounts/maintenance.py`): sesiones vencidas y actividad de
-    más de 180 días (HU-178). Ningún endpoint lo hace: cada uno hace solo lo suyo. Si falla, lo registra y la API sube igual."""
+    """El mantenimiento de las cuentas al arrancar (`backend/accounts/maintenance.py`): sesiones vencidas, actividad de
+    más de 180 días (HU-178) y lotes y temporadas borrados hace 30 días o más (HU-204). Ningún endpoint lo hace: cada uno
+    hace solo lo suyo. Si falla, lo registra y la API sube igual."""
     log = get_logger("agrosense.migrate")
     engine = create_engine(url, hide_parameters=True, connect_args={"connect_timeout": 3})
     try:
@@ -224,6 +225,13 @@ def purge_activity(url: URL) -> None:
         log.info("activity_purged", purged=cleaned.events, detail=f"Se borraron {cleaned.events} eventos de actividad de más de 180 días")
     if cleaned.sessions:
         log.info("sessions_purged", purged=cleaned.sessions, detail=f"Se borraron {cleaned.sessions} sesiones vencidas")
+    if cleaned.lots or cleaned.seasons:
+        log.info(
+            "deleted_farm_purged",
+            lots=cleaned.lots,
+            seasons=cleaned.seasons,
+            detail=f"Se borraron para siempre {cleaned.lots} lotes y {cleaned.seasons} temporadas borrados hace 30 días o más",
+        )
 
 
 def main() -> None:
