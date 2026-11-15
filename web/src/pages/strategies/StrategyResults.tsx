@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import type { SoilContext } from "@/components/soil/SoilDetails";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { Alert } from "@/components/ui/Alert";
@@ -22,6 +23,7 @@ const NOT_FORECAST = "Compara estrategias según reglas con fuente. No predice c
 const YOUR_CALL = "Es información para decidir. La decisión es suya.";
 
 export interface StrategyResultsProps {
+  soilContext?: SoilContext;
   rotations: ReturnType<typeof useRotations>;
   weights: RotationWeights;
   cycles: 2 | 3;
@@ -45,6 +47,7 @@ export interface StrategyResultsProps {
  */
 export function StrategyResults({
   rotations,
+  soilContext,
   weights,
   cycles,
   names,
@@ -74,7 +77,7 @@ export function StrategyResults({
   }
   const data = rotations.data;
   const empty = data.strategies.length === 0;
-  const cardProps = { names, kinds, weights: data.weights ?? weights, version };
+  const cardProps = { names, kinds, weights: data.weights ?? weights, version, soilContext };
   return (
     <div aria-busy={rotations.isPlaceholderData || undefined} className="mt-8 flex min-w-0 flex-col gap-10">
       <div className="flex flex-col gap-3">

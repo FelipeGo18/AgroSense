@@ -459,7 +459,7 @@ describe("El lote (HU-164)", () => {
     expect(screen.getByText("Sin riego")).toBeInTheDocument();
     expect(screen.getByText("Sin siembra en curso.")).toBeInTheDocument();
     // Sin el suelo publicado de su municipio no se inventa nada (R1).
-    expect(await screen.findByText("Sin datos del suelo de Samacá.")).toBeInTheDocument();
+    expect(await screen.findByText(/Sin datos del suelo de su lote\./)).toBeVisible();
     expect(screen.getByText("No sale en el mapa de su finca.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Dibujar en el mapa" })).toHaveAttribute("href", PATHS.drawLot("a1"));
     expect(screen.getByRole("link", { name: "Editar lote" })).toHaveAttribute("href", PATHS.editLot("a1"));
@@ -524,24 +524,40 @@ describe("El lote (HU-164)", () => {
     };
     fakeApi({
       ...BASE,
-      "GET /api/v1/lots/a1": { status: 200, body: DETAIL },
+      "GET /api/v1/lots/a1": {
+        status: 200,
+        body: {
+          ...DETAIL,
+          soil: {
+            basis: "municipality",
+            ph: soil.ph.value,
+            ph_p05: soil.ph.p05,
+            ph_p95: soil.ph.p95,
+            soc_g_kg: soil.soc_g_kg.value,
+            soc_p05: soil.soc_g_kg.p05,
+            soc_p95: soil.soc_g_kg.p95,
+            texture_class: soil.texture_class,
+            quality: soil.quality,
+          },
+        },
+      },
       "GET /api/v1/catalogs/municipalities/15646/soil": { status: 200, body: soil },
     });
     open(PATHS.lot("a1"));
-    const section = await screen.findByRole("region", { name: "Suelo de la zona" });
+    const section = await screen.findByRole("region", { name: "Suelo estimado" });
     // De un vistazo: el valor y lo que significa; el rango, en letra chica.
-    expect(await within(section).findByText("52,4 g/kg")).toBeInTheDocument();
-    expect(within(section).getByText("Medio")).toBeInTheDocument();
-    expect(within(section).getByText("rango probable de 4,7 a 172 g/kg")).toBeInTheDocument();
-    expect(within(section).getByText("franco arcilloso")).toBeInTheDocument();
-    expect(within(section).getByText("Guarda bien el agua")).toBeInTheDocument();
-    expect(within(section).getByText("5,7")).toBeInTheDocument();
-    expect(within(section).getByText("rango probable de 4,1 a 7,9")).toBeInTheDocument();
+    expect(await within(section).findByText("52,37 g/kg")).toBeVisible();
+    expect(within(section).getByText("Medio")).toBeVisible();
+    expect(within(section).getByText("rango probable de 4,67 a 172,03 g/kg")).toBeVisible();
+    expect(within(section).getByText("franco arcilloso")).toBeVisible();
+    expect(within(section).getByText("Guarda bien el agua")).toBeVisible();
+    expect(within(section).getByText("5,7")).toBeVisible();
+    expect(within(section).getByText("rango probable de 4,13 a 7,88")).toBeVisible();
     // La explicación va a pedido, en «¿Qué es esto?».
     expect(within(section).getAllByText("¿Qué es esto?")).toHaveLength(3);
     expect(within(section).getByText(/por eso entra en la señal de agua/)).toBeInTheDocument();
     // R10: siempre dice que es de la zona y que un análisis del lote es más preciso.
-    expect(within(section).getByText(/Es el suelo de Samacá, no una medición de su lote/)).toHaveTextContent(
+    expect(within(section).getByText(/Es el suelo de su municipio, no una medición de su lote/)).toHaveTextContent(
       "Un análisis de suelo de su lote es más preciso",
     );
     expect(within(section).getByText(/la estimación es menos segura/)).toBeInTheDocument();

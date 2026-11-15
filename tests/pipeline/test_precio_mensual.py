@@ -50,6 +50,32 @@ def test_cada_mes_trae_el_indice_y_el_precio_del_ultimo_ano_completo():
     assert october["quality"] == "ok"
 
 
+def test_cuenta_los_anos_por_encima_y_por_debajo_del_promedio_de_su_ano():
+    """HU-073 (decisión 17): octubre, a la mitad, estuvo por debajo los 3 años; los demás meses, por encima los 3. Pasa
+    igual a `market_price_season` y a `market_month`, con el periodo."""
+    table = month_table(PAPA + JANUARY_2024)
+    october = table.filter(pl.col("month") == 10).row(0, named=True)
+    january = table.filter(pl.col("month") == 1).row(0, named=True)
+    assert (october["years_above"], october["years_below"]) == (0, 3)
+    assert (january["years_above"], january["years_below"]) == (3, 0)
+    assert (october["first_year"], october["last_year"]) == (2021, 2023)
+    season = sipsa.seasonal(read(PAPA + JANUARY_2024))
+    assert (
+        season.select("month", "years_above", "years_below")
+        .sort("month")
+        .equals(table.select("month", "years_above", "years_below").sort("month"))
+    )
+
+
+def test_un_mes_justo_en_el_promedio_de_su_ano_no_cuenta_en_ninguno():
+    """El precio igual todo el año: cada mes queda en 1,00 y no cuenta ni por encima ni por debajo (contrato)."""
+    flat = rows("1", "Papa negra*", range(2021, 2024), lambda y, m: 1000)
+    table = month_table(flat + JANUARY_2024)
+    assert table["years_above"].unique().to_list() == [0]
+    assert table["years_below"].unique().to_list() == [0]
+    assert table["years"].unique().to_list() == [3]
+
+
 def test_el_indice_es_el_mismo_de_la_temporada_del_producto():
     prices = read(PAPA + JANUARY_2024)
     season = sipsa.seasonal(prices).select("month", "seasonal_index")
@@ -135,6 +161,10 @@ def valid_month() -> pl.DataFrame:
         (lambda t: t.with_columns(pl.lit("buena").alias("quality")), "fuera de lo permitido"),
         (lambda t: t.with_columns(pl.lit("papa-criolla").alias("product_id")), "no es el de `sipsa_crops.yaml`"),
         (lambda t: t.with_columns(pl.lit("otra_fuente").alias("source_id")), "no está en `sources`"),
+        # Los años por encima y por debajo nunca suman más que los años del índice (HU-073).
+        (lambda t: t.with_columns(pl.lit(3, dtype=pl.Int16).alias("years_above"), pl.lit(1, dtype=pl.Int16).alias("years_below")), "años"),
+        (lambda t: t.with_columns(pl.lit(None, dtype=pl.Int16).alias("years_above")), "años"),
+        (lambda t: t.with_columns(pl.lit(-1, dtype=pl.Int16).alias("years_below")), "años"),
     ],
 )
 def test_un_market_month_que_no_cumple_no_se_acepta(change, message):

@@ -4,7 +4,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 
 | Código | Regla | Qué significa en la práctica |
 |---|---|---|
-| R1 | Disponibilidad y nivel son campos distintos | Una señal sin datos tiene `status = insufficient_data` y `level = null`. Nunca se interpreta como riesgo. |
+| R1 | Disponibilidad y nivel son campos distintos | Una señal sin datos tiene `status = insufficient_data` y `level = null`. Nunca se interpreta como riesgo. Una señal con dato pero sin calificar (`supply` y `market`, decisión 17) tiene `status = available` y `level = null`: se muestra, pero no es riesgo ni favorable, no entra al factor limitante ni al promedio ponderado y nunca cambia la luz. |
 | R2 | El semáforo se decide por reglas, no por promedio | Un riesgo desfavorable no se compensa con señales favorables. |
 | R3 | Las restricciones agronómicas filtran | Una rotación inválida se excluye y se registra el motivo. No se castiga con puntos. |
 | R4 | Resultados deterministas y versionados | Mismos datos, reglas y entrada producen el mismo resultado. Cada respuesta lleva la versión del dataset y de las reglas. |
@@ -23,7 +23,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 
 | Regla | Comprobación sugerida |
 |---|---|
-| R1 | Prueba: una señal sin datos devuelve `insufficient_data` y `level` nulo; la web no la pinta como riesgo. |
+| R1 | Prueba: una señal sin datos devuelve `insufficient_data` y `level` nulo; la web no la pinta como riesgo. Prueba (decisión 17): una señal `available` sin calificar no entra al factor limitante ni al promedio, y la luz, la acción y el orden son los mismos que sin ella; la web no la pinta como riesgo ni como favorable. |
 | R2 | Prueba: una señal `unfavorable` crítica nunca da verde, aunque las otras sean `favorable`. Prueba: una helada crítica da rojo con agua y oferta favorables. Prueba: una ventana con una señal crítica queda marcada como de alto riesgo y nunca entra entre las mejores, por alto que sea su balance. Prueba (decisión 17): con oferta y mercado sin calificar, la luz y la acción son las mismas que sin ellas, y el precio nunca saca a una ventana de su decena ni sube una de alto riesgo. |
 | R3 | Prueba: una estrategia que viola un `filter` entre dos ciclos seguidos no aparece en el ranking y su exclusión cita la regla. Prueba: un cultivo que no es apto para la zona no se evalúa por ventanas y la respuesta cita el dato de su ficha que lo excluye. |
 | R4 | Prueba: dos ejecuciones iguales dan salida idéntica; toda respuesta trae `versions.dataset` y `versions.rules`. |
@@ -253,7 +253,7 @@ Las siembras registradas en AgroSense solo se muestran como totales por municipi
 | Campo | Valores |
 |---|---|
 | `status` | `available`, `insufficient_data`, `not_applicable` |
-| `level` | `favorable`, `moderate`, `unfavorable` o nulo |
+| `level` | `favorable`, `moderate`, `unfavorable` o nulo (nulo con `insufficient_data` y `not_applicable`, y también con `available` en `supply` y `market` sin calificar, decisión 17) |
 | `light` | `green`, `yellow`, `red`, `not_evaluable` |
 | `action` | `sow`, `other_window`, `rotate`, `review_data` |
 | `suitability` | `suitable`, `not_suitable`, `insufficient_data` |
