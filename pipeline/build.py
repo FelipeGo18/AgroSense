@@ -322,7 +322,7 @@ def validate_soil(soil: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.
 
 def validate_ndvi(ndvi: pl.DataFrame, normal: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`ndvi_municipality` y `ndvi_municipality_normal` (HU-208) solo traen municipios publicados (R7), periodos de 1 a
-    23, un NDVI posible (de -0,2 a 1, el rango válido de MOD13Q1), porcentajes de 0 a 100, al menos un año en la normal
+    23, un NDVI posible (de -0,2 a 1, el rango válido de MOD13Q1), porcentajes de 0 a 100, al menos un año en el promedio
     y fuentes que existen (R8)."""
     known = set(municipalities["municipality_id"].to_list())
     for name, table, value in (("ndvi_municipality", ndvi, "ndvi_median"), ("ndvi_municipality_normal", normal, "ndvi_normal")):
@@ -568,7 +568,7 @@ def publish(
         config = modis_ndvi.config_from_region(region)
         period = f" de {config.first_year}-{config.last_year}" if config is not None else ""
         partial = normal_ndvi.filter(pl.col("quality") == "partial").height
-        coverage = f"{normal_ndvi['municipality_id'].n_unique()} municipios, verdor normal{period} por periodo; {partial} partial"
+        coverage = f"{normal_ndvi['municipality_id'].n_unique()} municipios, verdor promedio{period} por periodo; {partial} partial"
         manifest["tables"]["ndvi_municipality_normal"] = {"rows": normal_ndvi.height, "coverage": coverage}
     if prices is not None:
         manifest["tables"]["market_price_day"] = {
@@ -789,7 +789,7 @@ def ndvi_from_cache(
         rows_kept=table.height,
         detail=f"MODIS NDVI: {len(meta['composites'])} compuestos; ndvi_municipality con {table.height} filas de "
         f"{table['municipality_id'].n_unique()} municipios, {partial} partial (menos del {config.min_valid_pct:g} % de "
-        f"píxeles sin nubes); normal con {normal.height} filas (R1)",
+        f"píxeles sin nubes); promedio con {normal.height} filas (R1)",
     )
     return (table, normal), [modis_ndvi.source(table, meta, config)]
 

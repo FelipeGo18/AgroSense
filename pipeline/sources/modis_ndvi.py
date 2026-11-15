@@ -16,8 +16,9 @@ píxel (`pixel_reliability`). Pide una cuenta de NASA Earthdata, como IMERG.
   sin dato (guía del usuario de MOD13, tabla 4). `valid_pixels_pct` es el porcentaje de píxeles válidos del municipio.
 - **`ndvi_median`** es la mediana de los píxeles válidos. Con menos de `min_valid_pct` válidos, el periodo es `partial`;
   sin ninguno, no se publica. Nunca se interpola (R1).
-- **`ndvi_municipality_normal`** es el promedio, por periodo del año, de los `ndvi_median` de los años de la normal que
-  salieron `ok`. Con menos de `min_years`, `partial`; sin ninguno, no hay fila.
+- **`ndvi_municipality_normal`** es el promedio 2023–2025, por periodo del año, de los `ndvi_median` que salieron `ok`.
+  Se llama «promedio» y no normal: son 3 años, no un clima de 30 (R5; revisión de Haider del PR #126). Con menos de
+  `min_publish_years` años `ok` (2) no hay fila: un solo año no es un promedio. Con menos de `min_years` (3), `partial`.
 
 Sin máscara de cultivos: el valor es de todo el municipio, con sus bosques, páramos y ciudades, y se dice (R10). El
 NDVI es contraste, no una señal: no cambia la luz ni el orden de las ventanas.
@@ -104,6 +105,7 @@ class Config:
     first_year: int
     last_year: int
     min_years: int
+    min_publish_years: int
 
 
 def config_from_region(region: dict[str, Any]) -> Config | None:
@@ -118,6 +120,7 @@ def config_from_region(region: dict[str, Any]) -> Config | None:
         first_year=int(normal["first_year"]),
         last_year=int(normal["last_year"]),
         min_years=int(normal["min_years"]),
+        min_publish_years=int(normal["min_publish_years"]),
     )
 
 
@@ -379,11 +382,13 @@ def read_cache(boundaries: pl.DataFrame, config: Config, cache: Path = CACHE) ->
 
 def ndvi_normal(table: pl.DataFrame, config: Config) -> pl.DataFrame:
     """`ndvi_municipality_normal`: por municipio y periodo del año, el promedio de los `ndvi_median` que salieron `ok` en
-    los años de la normal. Se ordena antes de promediar: mismos datos, mismo resultado (R4)."""
+    los años del promedio, solo con al menos `min_publish_years` años. Se ordena antes de promediar: mismos datos, mismo
+    resultado (R4)."""
     return (
         table.filter(pl.col("year").is_between(config.first_year, config.last_year) & (pl.col("quality") == "ok"))
         .group_by("municipality_id", "period")
         .agg(pl.col("ndvi_median").sort().mean().round(4).alias("ndvi_normal"), pl.len().cast(pl.Int16).alias("years"))
+        .filter(pl.col("years") >= config.min_publish_years)
         .with_columns(
             pl.when(pl.col("years") >= config.min_years).then(pl.lit("ok")).otherwise(pl.lit("partial")).alias("quality"),
             pl.lit(SOURCE_ID).alias("source_id"),
@@ -421,6 +426,8 @@ def source(table: pl.DataFrame, meta: dict[str, Any], config: Config) -> dict[st
             "Verdor de la zona, no del lote (R10): la mediana de los píxeles sin nubes de todo el municipio, sin máscara de "
             "cultivos (incluye bosques, páramos y ciudades). Un píxel es válido con confiabilidad 0 (bueno) o 1 (marginal). "
             f"Con menos del {config.min_valid_pct:g} % de píxeles válidos el periodo es partial; sin ninguno, no se publica. "
+            f"ndvi_municipality_normal es el promedio {config.first_year}-{config.last_year}, no una normal climática: se publica "
+            f"con al menos {config.min_publish_years} años y es partial con menos de {config.min_years}. "
             "Es contraste: no cambia la luz ni el orden de las ventanas. La NASA deja de tomar datos de Terra MODIS hacia "
             "enero de 2027."
         ),

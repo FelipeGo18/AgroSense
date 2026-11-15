@@ -14,8 +14,12 @@ import shapely
 from pipeline import build
 from pipeline.sources import modis_ndvi
 
-CONFIG = modis_ndvi.Config(sample_step=1, min_valid_pct=30, first_year=2023, last_year=2025, min_years=3)
-REGION_NDVI = {"sample_step": 1, "min_valid_pct": 30, "normal": {"first_year": 2023, "last_year": 2025, "min_years": 3}}
+CONFIG = modis_ndvi.Config(sample_step=1, min_valid_pct=30, first_year=2023, last_year=2025, min_years=3, min_publish_years=2)
+REGION_NDVI = {
+    "sample_step": 1,
+    "min_valid_pct": 30,
+    "normal": {"first_year": 2023, "last_year": 2025, "min_years": 3, "min_publish_years": 2},
+}
 ROWS = [
     ("15001", 2023, 1, 0.5, 80.0, "ok", "modis_ndvi"),
     ("15001", 2024, 1, 0.7, 90.0, "ok", "modis_ndvi"),
@@ -24,6 +28,9 @@ ROWS = [
     ("15001", 2026, 1, 0.9, 95.0, "ok", "modis_ndvi"),
     ("15001", 2023, 2, 0.4, 10.0, "partial", "modis_ndvi"),
     ("15001", 2024, 2, 0.6, 70.0, "ok", "modis_ndvi"),
+    ("15001", 2025, 2, 0.8, 60.0, "ok", "modis_ndvi"),
+    # El periodo 3 tiene un solo año ok: no es un promedio y no se publica.
+    ("15001", 2024, 3, 0.5, 90.0, "ok", "modis_ndvi"),
 ]
 
 
@@ -123,7 +130,7 @@ def test_cada_pixel_va_con_el_municipio_que_contiene_su_centro():
     assert owner.tolist() == [[0, -1, 1]]
 
 
-def test_la_normal_promedia_los_anos_ok_del_periodo_normal():
+def test_el_promedio_usa_los_anos_ok_del_periodo_y_pide_dos_para_publicarse():
     normal = modis_ndvi.ndvi_normal(table(), CONFIG)
     by_period = {row["period"]: row for row in normal.to_dicts()}
     assert by_period[1] == {
@@ -134,11 +141,12 @@ def test_la_normal_promedia_los_anos_ok_del_periodo_normal():
         "quality": "ok",
         "source_id": "modis_ndvi",
     }
-    # El periodo 2 solo tiene un año ok: la normal es partial y lo dice (R1).
-    assert (by_period[2]["ndvi_normal"], by_period[2]["years"], by_period[2]["quality"]) == (0.6, 1, "partial")
+    # El periodo 2 tiene dos años ok: se publica partial (R1). El 3 tiene uno solo: no hay fila (revisión del PR #126).
+    assert (by_period[2]["ndvi_normal"], by_period[2]["years"], by_period[2]["quality"]) == (0.7, 2, "partial")
+    assert 3 not in by_period
 
 
-def test_un_periodo_sin_anos_ok_no_tiene_normal():
+def test_un_periodo_sin_anos_ok_no_tiene_promedio():
     rows = [("15001", 2024, 3, 0.4, 10.0, "partial", "modis_ndvi")]
     assert modis_ndvi.ndvi_normal(table(rows), CONFIG).is_empty()
 
@@ -267,6 +275,7 @@ def test_con_la_cache_de_modis_se_publica_el_verdor_con_su_fuente(tmp_path, monk
     assert normal.height == 3 * 2 and set(normal["years"]) == {3} and set(normal["quality"]) == {"ok"}
     sources = pl.read_parquet(folder / "sources.parquet").filter(pl.col("source_id") == "modis_ndvi").to_dicts()
     assert sources and "10.5067/MODIS/MOD13Q1.061" in sources[0]["citation"] and "no del lote" in sources[0]["notes"]
+    assert "promedio 2023-2025, no una normal" in sources[0]["notes"]
     assert "2023-2025" in manifest["tables"]["ndvi_municipality_normal"]["coverage"]
     build.verify(folder, region["dataset_version"])
 

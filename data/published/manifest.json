@@ -118,8 +118,8 @@
       "coverage": "239 municipios, mediana de los píxeles sin nubes cada 16 días, de 2023 a 2026; 3594 partial"
     },
     "ndvi_municipality_normal": {
-      "rows": 5203,
-      "coverage": "239 municipios, verdor normal de 2023-2025 por periodo; 1927 partial"
+      "rows": 4666,
+      "coverage": "239 municipios, verdor promedio de 2023-2025 por periodo; 1390 partial"
     },
     "market_price_day": {
       "rows": 101706,
