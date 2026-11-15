@@ -5,7 +5,7 @@ Se carga una vez y queda en memoria. Si falta o no se puede leer, los endpoints 
 """
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -19,6 +19,19 @@ from shapely.geometry.base import BaseGeometry
 from backend.config.settings import get_settings
 from backend.engine.stages import StageSpan
 from common.grid import GRID_COLUMNS
+
+SOIL_COLUMNS = (
+    "ph",
+    "ph_p05",
+    "ph_p95",
+    "soc_g_kg",
+    "soc_p05",
+    "soc_p95",
+    "nitrogen_g_kg",
+    "clay_pct",
+    "sand_pct",
+    "silt_pct",
+)
 
 
 class DatasetUnavailable(RuntimeError):
@@ -54,6 +67,11 @@ class Grid:
     altitude_m: np.ndarray
     texture_code: np.ndarray | None = None
     texture_classes: tuple[str, ...] = ()
+    # Propiedades del suelo y la pendiente (float32) y de qué fuentes de suelo es cada celda (`soil_sources`, separadas
+    # por comas), en el mismo orden que `keys` (HU-182).
+    properties: pl.DataFrame | None = None
+    # Cuántas celdas tiene cada municipio, para el terreno de un lote sin dibujo.
+    cells_by_municipality: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -194,20 +212,58 @@ def _optional(path: Path) -> pl.DataFrame | None:
     return pl.read_parquet(path) if path.exists() else None
 
 
+# La fuente de la altitud y la pendiente en `grid_cells.source_ids`: no es una fuente del suelo.
+NON_SOIL_SOURCE = "nasadem"
+
+
 def _grid(path: Path) -> Grid:
-    """Lee solo `cell_id`, `altitude_m` y `texture_class`: el resto de `grid_cells` son unos 86 MB que la altitud y el
-    agua del lote no necesitan. Una rejilla publicada sin `texture_class` (de antes de HU-181) deja la textura nula."""
-    with_texture = "texture_class" in pl.read_parquet_schema(path)
-    table = pl.read_parquet(path, columns=["cell_id", "altitude_m", *(["texture_class"] if with_texture else [])])
+    """Carga altitud, textura y propiedades de suelo y pendiente (HU-182), alineadas por llave.
+    Las columnas opcionales ausentes permanecen sin dato; admite datasets anteriores.
+
+    Para no cargar más de lo que se usa (revisión del PR #143): las propiedades van en float32, las fuentes de suelo de cada celda
+    como texto categórico (`soil_sources`) y el municipio solo como un conteo de celdas. Unos 40 MB por proceso de la API, frente a
+    unos 19 sin el suelo del lote."""
+    columns = pl.read_parquet_schema(path)
+    with_texture = "texture_class" in columns
+    numeric = [name for name in (*SOIL_COLUMNS, "slope_pct") if name in columns]
+    optional = [name for name in ("source_ids", "municipality_id") if name in columns]
+    table = pl.read_parquet(path, columns=["cell_id", "altitude_m", *(["texture_class"] if with_texture else []), *numeric, *optional])
+    cells_by_municipality = dict(table.group_by("municipality_id").len().iter_rows()) if "municipality_id" in table.columns else {}
+    flags = []
+    if "source_ids" in table.columns:
+        # Sin `nasadem`, que es de la altitud y la pendiente y no del suelo (R8); como texto categórico, porque casi
+        # todas las celdas comparten la misma lista.
+        flags = [
+            pl.col("source_ids")
+            .list.filter(pl.element() != NON_SOIL_SOURCE)
+            .list.sort()
+            .list.join(",")
+            .cast(pl.Categorical)
+            .alias("soil_sources")
+        ]
+    table = table.with_columns([pl.col(name).cast(pl.Float32) for name in numeric] + flags)
+    extra = [*numeric, *(["soil_sources"] if flags else [])]
     parts = table["cell_id"].str.split_exact("_", 1)
     keys = (parts.struct.field("field_0").cast(pl.Int64) * GRID_COLUMNS + parts.struct.field("field_1").cast(pl.Int64)).to_numpy()
     order = np.argsort(keys)
     altitudes = table["altitude_m"].cast(pl.Float64).fill_null(float("nan")).to_numpy()
     if not with_texture:
-        return Grid(keys=keys[order], altitude_m=altitudes[order])
+        return Grid(
+            keys=keys[order],
+            altitude_m=altitudes[order],
+            properties=table[order.tolist()].select(extra) if extra else None,
+            cells_by_municipality=cells_by_municipality,
+        )
     classes = tuple(sorted(table["texture_class"].drop_nulls().unique().to_list()))
     codes = table["texture_class"].replace_strict(list(classes), list(range(len(classes))), default=-1, return_dtype=pl.Int16).to_numpy()
-    return Grid(keys=keys[order], altitude_m=altitudes[order], texture_code=codes[order], texture_classes=classes)
+    return Grid(
+        keys=keys[order],
+        altitude_m=altitudes[order],
+        texture_code=codes[order],
+        texture_classes=classes,
+        properties=table[order.tolist()].select(extra) if extra else None,
+        cells_by_municipality=cells_by_municipality,
+    )
 
 
 def _markets(region: dict[str, Any], latest: pl.DataFrame | None) -> tuple[tuple[str, str], ...]:
