@@ -161,9 +161,8 @@ Pruebas: `src/components/map/gibs.test.tsx` y regresión en `src/pages/farm/farm
 docker compose run --rm --no-deps test sh -c 'cd web && npm test -- src/components/map/gibs.test.tsx src/pages/farm/farm.test.tsx'
 ```
 
-Procedencia compartida con el pipeline: `catalog/gibs.json`; se publica con la reconstrucción normal.
-Para actualizar solo el registro de fuentes de un dataset existente, sin cambiar los indicadores:
-`docker compose run --rm --no-deps test uv run python -m scripts.publish_gibs_source`.
+Procedencia compartida con el pipeline: `catalog/gibs.json`; se publica solo con la reconstrucción normal
+(`pipeline.build`), que es el único camino de publicación (R4).
 
 ## Pruebas de scroll
 

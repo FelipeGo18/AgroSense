@@ -47,6 +47,8 @@ from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, eva, imerg, modis_ndvi, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
+# HU-211: la fuente de las capas de NASA GIBS que consume la web, relativa al módulo y no a la carpeta desde donde se corre.
+GIBS_FILE = Path(__file__).resolve().parents[1] / "catalog" / "gibs.json"
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
 EVA_CROPS_FILE = Path(__file__).with_name("eva_crops.yaml")
 PUBLISHED = Path("data/published")
@@ -1001,7 +1003,7 @@ def build(
         expected_version=catalog["version"],
     )
     # HU-211: fuente de las capas públicas que consume la web; no calcula ninguna señal.
-    gibs = json.loads(Path("catalog/gibs.json").read_text(encoding="utf-8"))
+    gibs = json.loads(GIBS_FILE.read_text(encoding="utf-8"))
     own = [dane.source(meta), dane_mgn.source(mgn_meta), gibs]
     prices = crop_products = None
     counts: Counter[str] = Counter()

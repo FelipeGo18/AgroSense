@@ -5,6 +5,7 @@ export function useGibs() {
   const [selected, setSelected] = useState<GibsSelection>({ color: false, ndvi: false });
   const [dates, setDates] = useState<GibsDates | null>(null);
   const [latestDates, setLatestDates] = useState<GibsDates | null>(null);
+  const [earliestDates, setEarliestDates] = useState<Partial<GibsDates>>({});
   const [status, setStatus] = useState<Record<GibsLayer, GibsStatus>>({ color: "off", ndvi: "off" });
   const [attempt, setAttempt] = useState(0);
   const enabled = selected.color || selected.ndvi;
@@ -20,8 +21,9 @@ export function useGibs() {
     fetchGibsDates(controller.signal)
       .then((value) => {
         if (active) {
-          setDates(value);
-          setLatestDates(value);
+          setDates(value.dates);
+          setLatestDates(value.dates);
+          setEarliestDates(value.earliest);
         }
       })
       .catch(() => {
@@ -45,9 +47,10 @@ export function useGibs() {
     setAttempt((previous) => previous + 1);
   };
   const chooseDate = (layer: GibsLayer, date: string) => {
-    if (!dates || !latestDates || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > latestDates[layer]) return;
+    const earliest = earliestDates[layer];
+    if (!dates || !latestDates || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > latestDates[layer] || (earliest && date < earliest)) return;
     setDates({ ...dates, [layer]: date });
     if (selected[layer]) onStatus(layer, "loading");
   };
-  return { selected, dates, latestDates, status, attempt, onStatus, toggle, retry, chooseDate };
+  return { selected, dates, latestDates, earliestDates, status, attempt, onStatus, toggle, retry, chooseDate };
 }

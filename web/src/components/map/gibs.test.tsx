@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GibsPanel } from "./GibsPanel";
-import { GIBS_LAYERS, gibsSample, gibsTiles, hasVisiblePixels, parseGibsDates } from "./gibs";
+import { GIBS_LAYERS, gibsSample, gibsTiles, hasVisiblePixels, parseGibsDates, parseGibsEarliest } from "./gibs";
 import { mountGibsColor, mountGibsLayer } from "./gibsMap";
 import { useGibs } from "./useGibs";
 
@@ -12,7 +12,7 @@ const XML = `<Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:ows="ht
 )
   .map(
     ([key, spec]) =>
-      `<Layer><ows:Identifier>${spec.product}</ows:Identifier><Dimension><ows:Identifier>Time</ows:Identifier><Default>2026-11-${key === "color" ? "15" : "14"}</Default></Dimension><TileMatrixSetLink><TileMatrixSet>GoogleMapsCompatible_Level9</TileMatrixSet></TileMatrixSetLink><Format>${spec.format}</Format></Layer>`,
+      `<Layer><ows:Identifier>${spec.product}</ows:Identifier><Dimension><ows:Identifier>Time</ows:Identifier><Default>2026-11-${key === "color" ? "15" : "14"}</Default><Value>${key === "color" ? "2000-02-24/2026-11-15/P1D" : "2025-02-12/2026-11-14/P8D"}</Value></Dimension><TileMatrixSetLink><TileMatrixSet>GoogleMapsCompatible_Level9</TileMatrixSet></TileMatrixSetLink><Format>${spec.format}</Format></Layer>`,
   )
   .join("")}</Contents></Capabilities>`;
 
@@ -30,7 +30,9 @@ describe("HU-211 · catálogo y controles", () => {
   it("distingue la tesela negra de Aquitania de una observación oscura real", () => {
     expect(gibsSample(-72.88, 5.52)).toMatchObject({ x: 152, y: 248 });
     expect(hasVisiblePixels(new Uint8ClampedArray([0, 0, 0, 255, 0, 0, 0, 255]))).toBe(false);
-    expect(hasVisiblePixels(new Uint8ClampedArray([0, 1, 0, 255]))).toBe(true);
+    // El ruido del JPEG en una zona negra (1 a 3) no es imagen; una observación oscura real sí.
+    expect(hasVisiblePixels(new Uint8ClampedArray([1, 3, 2, 255, 0, 2, 1, 255]))).toBe(false);
+    expect(hasVisiblePixels(new Uint8ClampedArray([12, 9, 8, 255]))).toBe(true);
   });
 
   it("permite elegir otro día de forma explícita", async () => {
@@ -44,6 +46,9 @@ describe("HU-211 · catálogo y controles", () => {
   });
   it("usa la fecha de cada producto y la matriz y formato verificados, sin suponer hoy", () => {
     expect(parseGibsDates(XML)).toEqual({ color: "2026-11-15", ndvi: "2026-11-14" });
+    // La primera fecha también sale del servicio: si GIBS recorta su historial, el selector lo sigue.
+    expect(parseGibsEarliest(XML)).toEqual({ color: "2000-02-24", ndvi: "2025-02-12" });
+    expect(parseGibsEarliest(XML.replace("2025-02-12/2026-11-14/P8D", "2025-06-01/2026-11-14/P8D"))).toMatchObject({ ndvi: "2025-06-01" });
     expect(gibsTiles("ndvi", "2026-11-14")).toContain(
       "MODIS_Terra_NDVI_8Day/default/2026-11-14/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png",
     );
@@ -171,6 +176,25 @@ describe("HU-211 · integración MapLibre", () => {
     await waitFor(() => expect(layers.has("gibs-color")).toBe(true));
     dispose();
     expect(layers.has("gibs-color")).toBe(false);
+  });
+
+  it("al mover el mapa la capa con imagen no se quita mientras se comprueba: no parpadea", async () => {
+    const { map, layers, emit } = fakeMap();
+    const status = vi.fn();
+    let resolve!: (value: boolean) => void;
+    const probe = vi
+      .fn()
+      .mockResolvedValueOnce(true)
+      .mockImplementationOnce(() => new Promise<boolean>((done) => (resolve = done)));
+    const dispose = mountGibsColor(map as unknown as MapLibreMap, "2026-11-15", status, probe);
+    await waitFor(() => expect(layers.has("gibs-color")).toBe(true));
+    emit("moveend", {});
+    expect(layers.has("gibs-color")).toBe(true);
+    expect(map.addLayer).toHaveBeenCalledTimes(1);
+    resolve(false);
+    await waitFor(() => expect(layers.has("gibs-color")).toBe(false));
+    expect(status).toHaveBeenLastCalledWith("color", "empty");
+    dispose();
   });
 
   it("descarta una comprobación tardía al apagar la capa", async () => {

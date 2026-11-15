@@ -35,10 +35,30 @@ export function parseGibsDates(xml: string): GibsDates {
   return { color: date("color"), ndvi: date("ndvi") };
 }
 
-export async function fetchGibsDates(signal: AbortSignal): Promise<GibsDates> {
+/** La primera fecha con imagen de cada producto, de los `<Value>` de su dimensión Time («inicio/fin/periodo»). Sale del
+ * servicio, como la última: si GIBS recorta su historial, el selector lo sigue. Sin el dato, no se pone mínimo. */
+export function parseGibsEarliest(xml: string): Partial<GibsDates> {
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const layers = Array.from(doc.getElementsByTagNameNS(WMTS, "Layer"));
+  const earliest: Partial<GibsDates> = {};
+  for (const key of Object.keys(GIBS_LAYERS) as GibsLayer[]) {
+    const layer = layers.find((item) => item.getElementsByTagNameNS(OWS, "Identifier")[0]?.textContent === GIBS_LAYERS[key].product);
+    const starts = Array.from(layer?.getElementsByTagNameNS(WMTS, "Value") ?? [])
+      .map((item) => item.textContent?.trim().split("/")[0] ?? "")
+      .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value))
+      .sort();
+    if (starts.length) earliest[key] = starts[0];
+  }
+  return earliest;
+}
+
+export type GibsCatalog = { dates: GibsDates; earliest: Partial<GibsDates> };
+
+export async function fetchGibsDates(signal: AbortSignal): Promise<GibsCatalog> {
   const response = await fetch(`${GIBS_URL}/1.0.0/WMTSCapabilities.xml`, { signal });
   if (!response.ok) throw new Error("GIBS unavailable");
-  return parseGibsDates(await response.text());
+  const xml = await response.text();
+  return { dates: parseGibsDates(xml), earliest: parseGibsEarliest(xml) };
 }
 
 export function gibsTiles(layer: GibsLayer, date: string): string {
@@ -54,9 +74,12 @@ export function gibsSample(lng: number, lat: number) {
   return { x: Math.floor(x), y: Math.floor(y), px: Math.floor((x % 1) * 256), py: Math.floor((y % 1) * 256) };
 }
 
+// El JPEG deja ruido de 1 a 3 en una zona negra: por debajo de este valor no hay imagen (revisión del PR #144).
+export const BLACK_NOISE = 10;
+
 /** Los píxeles negros del JPEG de color real son zonas sin imagen; no se presentan como terreno observado. */
 export function hasVisiblePixels(pixels: Uint8ClampedArray) {
-  return pixels.some((value, index) => index % 4 !== 3 && value > 0);
+  return pixels.some((value, index) => index % 4 !== 3 && value > BLACK_NOISE);
 }
 
 export async function hasGibsObservation(date: string, lng: number, lat: number, signal: AbortSignal) {

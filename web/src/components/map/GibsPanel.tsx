@@ -27,7 +27,7 @@ export function GibsPanel({ gibs }: { gibs: ReturnType<typeof useGibs> }) {
                   type="date"
                   className="mt-1 min-h-11 w-full rounded border p-2"
                   value={gibs.dates[key]}
-                  min={key === "color" ? "2000-02-24" : "2025-02-12"}
+                  min={gibs.earliestDates[key]}
                   max={gibs.latestDates?.[key]}
                   onChange={(event) => gibs.chooseDate(key, event.target.value)}
                 />

@@ -1,7 +1,9 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { gibsTiles, hasGibsObservation, type GibsLayer, type GibsStatus } from "./gibs";
 
-/** Verifica cobertura al activar y al mover el mapa. Un JPEG negro también puede responder HTTP 200. */
+/** Verifica cobertura al activar y al mover el mapa. Un JPEG negro también puede responder HTTP 200.
+ * La capa montada se queda mientras se comprueba la nueva vista (sin parpadeo al mover el mapa) y solo se quita cuando la
+ * comprobación dice que no hay imagen o falla (revisión del PR #144). */
 export function mountGibsColor(
   map: MapLibreMap,
   date: string,
@@ -14,25 +16,47 @@ export function mountGibsColor(
   const check = () => {
     controller?.abort();
     clearTimeout(timeout);
-    dispose?.();
-    dispose = undefined;
     const request = new AbortController();
     controller = request;
+    const unmount = () => {
+      dispose?.();
+      dispose = undefined;
+    };
     timeout = setTimeout(() => {
       request.abort();
-      if (controller === request) onStatus("color", "error");
+      if (controller === request) {
+        unmount();
+        onStatus("color", "error");
+      }
     }, 20000);
     const { lng, lat } = map.getCenter();
-    onStatus("color", "loading");
+    if (!dispose) onStatus("color", "loading");
     probe(date, lng, lat, request.signal)
       .then((available) => {
         if (request !== controller || request.signal.aborted) return;
         clearTimeout(timeout);
-        if (available) dispose = mountGibsLayer(map, "color", date, onStatus);
-        else onStatus("color", "empty");
+        if (available) {
+          // Si las teselas fallan, la capa se quita sola: se olvida para volver a montarla en la próxima vista.
+          if (!dispose) {
+            let failed = false;
+            const remove = mountGibsLayer(map, "color", date, (layer, value) => {
+              if (value === "error") {
+                failed = true;
+                if (dispose === remove) dispose = undefined;
+              }
+              onStatus(layer, value);
+            });
+            if (!failed) dispose = remove;
+          }
+        } else {
+          unmount();
+          onStatus("color", "empty");
+        }
       })
       .catch(() => {
-        if (request === controller) onStatus("color", "error");
+        if (request !== controller) return;
+        unmount();
+        onStatus("color", "error");
       });
   };
   map.on("moveend", check);
