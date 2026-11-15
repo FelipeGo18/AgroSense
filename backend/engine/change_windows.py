@@ -6,6 +6,8 @@ en las tablas anuales: vuelve a calcularlas exclusivamente dentro de cada period
 
 from __future__ import annotations
 
+import re
+from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
@@ -18,14 +20,16 @@ from backend.engine.diagnosis import IRRIGATION_UNKNOWN, SignalOutcome
 from backend.engine.frost_signal import FrostMonth, frost_signal
 from backend.engine.heat_signal import HeatMonth, heat_signal
 from backend.engine.sensitive_signal import ClimateNormal, insufficient
-from backend.engine.signal_score import INSUFFICIENT_DATA, signal_scores
+from backend.engine.signal_score import INSUFFICIENT_DATA, is_grave, rated_signals, signal_scores
 from backend.engine.soil_signal import ZoneSoilPh, soil_signal
 from backend.engine.stages import StageSpan, monthly_sowing_windows
 from backend.engine.suitability import NOT_SUITABLE, ZoneTemperatureUsed, crop_suitability, suitability_reason
+from backend.engine.traffic_light import SIGNAL_NAMES_ES
 from backend.engine.water_balance import DRY, MonthClimate, root_zone, water_balance
 from backend.engine.water_notes import RainSource, missing_data
 from backend.engine.water_signal import WaterBalanceSummary, water_signal
-from backend.engine.window_order import WindowSignals, best_windows, order_windows
+from backend.engine.window_order import RankedWindow, WindowSignals, best_windows, order_windows
+from common.months import MONTH_NAMES
 
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
@@ -66,6 +70,80 @@ class ChangeConfig:
             raise HistoricalChangesError("Se necesitan las fuentes de ET0 y heladas")
         if self.rain_table not in {"climate_month", "precip_month"}:
             raise HistoricalChangesError("Tabla de lluvia inválida")
+
+
+# Un aviso que termina en una lista de meses entre paréntesis, «… (marzo y agosto): esos meses no se evaluaron».
+_MONTHS_IN_PARENS = re.compile(r"^(?P<head>.*) \((?P<months>[^()]*)\)(?P<tail>[^()]*)$")
+
+
+def _month_list(text: str) -> list[str] | None:
+    """Los meses de «marzo, abril y agosto», o None si alguna parte no es un mes."""
+    names = [name.strip() for part in text.split(",") for name in part.split(" y ")]
+    return names if names and all(name in MONTH_NAMES for name in names) else None
+
+
+def _join_months(names: Iterable[str]) -> str:
+    ordered = sorted(set(names), key=MONTH_NAMES.index)
+    return ordered[0] if len(ordered) == 1 else f"{', '.join(ordered[:-1])} y {ordered[-1]}"
+
+
+def merge_month_notes(notes: Iterable[str]) -> list[str]:
+    """Junta los avisos que solo cambian en la lista de meses entre paréntesis: uno solo, con todos los meses en orden
+    del calendario, en el lugar del primero. Los demás avisos quedan iguales y sin repetir."""
+    merged: dict[tuple[str, str] | str, list[str] | None] = {}
+    for note in notes:
+        match = _MONTHS_IN_PARENS.match(note)
+        months = _month_list(match["months"]) if match else None
+        if match is None or months is None:
+            merged.setdefault(note, None)
+            continue
+        merged.setdefault((match["head"], match["tail"]), []).extend(months)
+    return [
+        key if months is None else f"{key[0]} ({_join_months(months)}){key[1]}"  # type: ignore[index]
+        for key, months in merged.items()
+    ]
+
+
+def _no_best_windows_reason(
+    ranked: Sequence[RankedWindow],
+    candidates: Sequence[WindowSignals],
+    weights: Mapping[str, int],
+    period: Period,
+    rain_period: Period,
+) -> str:
+    """Por qué un periodo no deja ninguna ventana entre las mejores (cultivo apto): cuántos meses de siembra son de alto
+    riesgo y qué señales críticas los descartan, o cuántos no tienen señales para calificar (R2, R5)."""
+    total = len(ranked)
+    high = sum(window.high_risk for window in ranked)
+    unrated = sum(window.limiting_score is None for window in ranked)
+    causes: Counter[str] = Counter()
+    for window in candidates:
+        causes.update({name for name, signal, _ in rated_signals(window.signals, weights) if is_grave(signal)})
+    label = rain_period if set(causes) == {"water"} else period
+    where = f"En {label.start_year}–{label.end_year}"
+    parts = []
+    for index, (name, count) in enumerate(sorted(causes.items(), key=lambda item: (-item[1], CLIMATE_ORDER.get(item[0], 9), item[0]))):
+        verb = (" es crítica" if name in _FEMININE else " es crítico") if index == 0 else ""
+        times = "en todos" if count == total else f"en {count}"
+        parts.append(f"{SIGNAL_NAMES_ES.get(name, name)}{verb} {times}")
+    cause_text = " y ".join([", ".join(parts[:-1]), parts[-1]] if len(parts) > 1 else parts)
+    if high == total:
+        sentence = f"{where} los {total} meses de siembra son de alto riesgo: {cause_text}."
+    elif high:
+        sentence = (
+            f"{where} ninguna ventana queda entre las mejores: {high} de los {total} meses de siembra son de alto riesgo "
+            f"({cause_text}) y {unrated} no tienen señales con datos para calificar."
+        )
+    else:
+        sentence = f"{where} ninguna ventana queda entre las mejores: ningún mes de siembra tiene señales con datos para calificar."
+    if "heat" in causes and period.source_id == "nasa_power":
+        sentence += " El calor de NASA POWER puede salir más alto que el real en tierra caliente: vea las limitaciones."
+    return sentence
+
+
+CLIMATE_ORDER = {name: index for index, name in enumerate(CLIMATE_SIGNALS)}
+# Las señales que se nombran en femenino en `SIGNAL_NAMES_ES` («el agua es crítica», «la helada es crítica»).
+_FEMININE = frozenset({"water", "frost", "supply"})
 
 
 def _value(value: Any) -> float | None:
@@ -155,6 +233,7 @@ def compare_historical_changes(
         "best_windows": {"before": [], "after": []},
         "weights_basis": "default",
         "limitations": limitations,
+        "reasons": list(comparison["reasons"]),
         # Diagnósticos por mes para comprobar el cálculo; la API entrega solo
         # best_windows y months, sin ampliar el contrato.
         "window_evaluations": {"before": [], "after": []},
@@ -244,7 +323,11 @@ def compare_historical_changes(
             for name in ("soil", "supply", "market"):
                 signal = signals[name]
                 fixed_notes.extend((*signal.limitations, *(signal.reasons if signal.status == INSUFFICIENT_DATA else ())))
-        ranked_best = best_windows(order_windows(candidates, config.default_weights))
+        ranked = order_windows(candidates, config.default_weights)
+        ranked_best = best_windows(ranked)
+        if not ranked_best and ranked:
+            # Revisión del PR #142: sin ninguna ventana buena, la respuesta dice por qué (alto riesgo o sin datos).
+            result["reasons"].append(_no_best_windows_reason(ranked, candidates, config.default_weights, period, rain_period))
         for ranked in ranked_best:
             signals = by_month[ranked.sowing_start.month]
             for name in CLIMATE_SIGNALS:
@@ -262,5 +345,6 @@ def compare_historical_changes(
             }
             for ranked in ranked_best
         ]
-    result["limitations"] = list(dict.fromkeys([*limitations, *fixed_notes]))
+    # Los avisos del clima que solo cambian en los meses (uno por cada mejor ventana) van juntos, uno por periodo.
+    result["limitations"] = merge_month_notes([*limitations, *fixed_notes])
     return result

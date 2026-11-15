@@ -118,3 +118,26 @@ def test_hu216_published_data_reaches_motor_and_http_endpoint(monkeypatch):
     # del PR #142: antes salían 42). El nombre del cultivo va en minúscula, como en el diagnóstico.
     assert len(body["limitations"]) == len(set(body["limitations"])) <= 20
     assert not any("la Papa" in text for text in body["limitations"] + body["reasons"])
+    # Revisión del PR #142: los avisos del calor que solo cambian en los meses van en uno por periodo.
+    heat_notes = [text for text in body["limitations"] if "sensible al calor" in text]
+    assert [text.split(":")[0] for text in heat_notes] == ["1981–2000", "2005–2024"]
+
+
+@pytest.mark.skipif(
+    not (ROOT / "data/published/climate_change_month.parquet").exists(), reason="Sin publicación de HU-216 en este checkout"
+)
+def test_periodo_sin_ventanas_buenas_dice_por_que(monkeypatch):
+    """Revisión del PR #142: la cebolla de bulbo en 15212 no deja ninguna ventana buena en 2005–2024 porque el calor
+    es crítico en los 12 meses. La respuesta lo dice en `reasons`, con el periodo y la señal (R5)."""
+    dataset = load(ROOT / "data/published")
+    monkeypatch.setattr(calculations, "require_dataset", lambda: dataset)
+    response = TestClient(app).get("/api/v1/changes", params={"municipality_id": "15212", "crop_id": "cebolla_bulbo", "irrigated": "false"})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["best_windows"]["after"] == []
+    assert body["best_windows"]["before"]
+    assert any(
+        text.startswith("En 2005–2024 los 12 meses de siembra son de alto riesgo: el calor es crítico en todos.")
+        for text in body["reasons"]
+    )
+    assert not any(text.startswith("En 1981–2000") for text in body["reasons"])
