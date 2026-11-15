@@ -58,8 +58,8 @@ def join(items):
 
 
 def sky(time):
-    """El fondo: el pasto llena toda la vista, sin franja de cielo ni cerros (bajo la barra de la web quedaban como un
-    parche). El momento del día lo da el tono de `tint` y, de noche, los faroles y las luciérnagas de la web."""
+    """El fondo: el pasto llena toda la vista, sin franja de cielo ni cerros (bajo la barra de la web quedan como un
+    parche). El momento del día lo dan el tono de `tint` y, de noche, los faroles y las luciérnagas de la web."""
     del time
     return f'<rect width="{W}" height="{H}" fill="{shade(cv.GRASS, -0.15)}"/>', 0
 
@@ -129,8 +129,8 @@ def scenery(farm, layout):
         for _ in range(3):
             front += cv.flower(x + rnd.uniform(-16, 16), y + rnd.uniform(-2, 6), 2.6, rnd.choice(("#FFFFFF", "#F2D23A", "#E8607A")))
 
-    # Estanque con juncos, al frente a la derecha.
-    pa, pb = a1 + 1.4, b1 + 0.1
+    # Estanque con juncos, a la derecha del lote, donde la vista no lo corta.
+    pa, pb = a1 + 0.9, b0 + 0.9
     front.append(farm.quad([(pa, pb), (pa + 1.3, pb), (pa + 1.3, pb + 1.0), (pa, pb + 1.0)], "#6E9A3A"))
     front.append(farm.quad([(pa + 0.1, pb + 0.1), (pa + 1.2, pb + 0.1), (pa + 1.2, pb + 0.9), (pa + 0.1, pb + 0.9)], "#5B8FB8"))
     front.append(farm.quad([(pa + 0.25, pb + 0.25), (pa + 0.7, pb + 0.25), (pa + 0.7, pb + 0.45), (pa + 0.25, pb + 0.45)], "#8EB4D0"))
@@ -139,13 +139,11 @@ def scenery(farm, layout):
         for d in (-3, 0, 3):
             front += cv.blade(x + d, y, 90 + d * 5, rnd.uniform(12, 18), 1.6, "#4E7F35")
 
-    # Pacas de heno y leña cerca de la casa; bebedero junto al potrero de la vaca.
+    # Pacas de heno y leña cerca de la casa; el bebedero, junto al potrero de las vacas.
     for a, b, z in ((a0 - 1.1, b0 - 0.6, 0), (a0 - 0.75, b0 - 0.6, 0), (a0 - 0.93, b0 - 0.6, 12)):
         back += farm.box(a, b, a + 0.32, b + 0.3, z, z + 12, "#E2C068", tone=(0.06, -0.08, -0.2))
     back += farm.box(a0 - 2.5, b1 - 0.1, a0 - 2.0, b1 + 0.15, 0, 9, "#8A6238")
     back += farm.box(a0 - 2.45, b1 - 0.05, a0 - 2.05, b1 + 0.1, 9, 15, "#A07444")
-    back += farm.box(a0 - 1.3, b0 - 1.95, a0 - 0.7, b0 - 1.7, 0, 9, "#8A8A86")
-    back.append(farm.quad([(a0 - 1.27, b0 - 1.92, 9), (a0 - 0.73, b0 - 1.92, 9), (a0 - 0.73, b0 - 1.73, 9), (a0 - 1.27, b0 - 1.73, 9)], "#6F98B9"))
 
     # Piedras.
     for a, b in ((a1 + 0.5, b1 + 1.0), (a0 - 0.6, b1 + 1.4), (a1 + 1.9, b0 - 1.4)):
@@ -158,12 +156,16 @@ def scenery(farm, layout):
     back += farm.fence((pa0 - m, pb0 - m), (pa0 - m, pb1 + m), lantern_ends=False)
     front += farm.fence((pa1 + m, pb0 - m), (pa1 + m, pb1 + m), lantern_ends=False)
     front += farm.fence((pa0 - m, pb1 + m), (pa1 + m, pb1 + m), lantern_ends=False)
+    # El bebedero, pegado por fuera al lado izquierdo del potrero.
+    ta, tb = pa0 - 0.7, pb0 + 0.4
+    back += farm.box(ta, tb, ta + 0.22, tb + 0.55, 0, 8, "#8A8A86")
+    back.append(farm.quad([(ta + 0.03, tb + 0.03, 8), (ta + 0.19, tb + 0.03, 8), (ta + 0.19, tb + 0.52, 8), (ta + 0.03, tb + 0.52, 8)], "#6F98B9"))
     return back, front
 
 
 def tint(time):
     if time == "noche":
-        return f'<rect width="{W}" height="{H}" fill="#0B1A3A" fill-opacity="0.28"/>'
+        return f'<rect width="{W}" height="{H}" fill="#0B1A3A" fill-opacity="0.45"/>'
     if time == "atardecer":
         return f'<rect width="{W}" height="{H}" fill="#F28C4A" fill-opacity="0.1"/>'
     return ""
