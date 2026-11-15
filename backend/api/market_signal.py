@@ -87,7 +87,7 @@ def market_history(dataset: Dataset, choice: MarketChoice | None, crop_id: str, 
         last_year=row["last_year"],
         source_id=row["source_id"],
     )
-    return MarketHistory(history, _product_name(dataset, row["product_id"], choice.market_id), choice.reason)
+    return MarketHistory(history, _product_name(dataset, crop_id, row["product_id"], choice.market_id), choice.reason)
 
 
 def _has_crop(dataset: Dataset, crop_id: str, market_id: str) -> bool:
@@ -95,14 +95,19 @@ def _has_crop(dataset: Dataset, crop_id: str, market_id: str) -> bool:
     return table is not None and not table.filter((pl.col("crop_id") == crop_id) & (pl.col("market_id") == market_id)).is_empty()
 
 
-def _product_name(dataset: Dataset, product_id: str, market_id: str) -> str | None:
-    """El nombre del producto como lo publica SIPSA («Papa negra»), del último precio de la central o, si esa central
-    ya no lo publica, de otra. None si no está: la razón va sin él."""
-    table = dataset.market_latest
-    if table is None:
+def _product_name(dataset: Dataset, crop_id: str, product_id: str, market_id: str) -> str | None:
+    """El producto de SIPSA con el artículo del cultivo, como lo dice la razón: «Papa negra» → «la papa negra». El
+    nombre sale del último precio de la central o, si esa central ya no lo publica, de otra; el artículo, de la ficha
+    (`crops.article`: el producto es el mismo sustantivo que el cultivo). Sin nombre o sin artículo, None: la razón
+    usa el nombre del cultivo."""
+    table, article = dataset.market_latest, (dataset.crops.get(crop_id) or {}).get("article")
+    if table is None or not article:
         return None
     rows = table.filter(pl.col("product_id") == product_id).sort(pl.col("market_id") != market_id, "market_id")
-    return None if rows.is_empty() else rows["product"][0]
+    if rows.is_empty():
+        return None
+    name = rows["product"][0]
+    return f"{article} {name[:1].lower()}{name[1:]}"
 
 
 def market_in(dataset: Dataset, municipality: Municipality, crop_id: str, crop_name: str, month: int | None) -> MarketSignalResult:

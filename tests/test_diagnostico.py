@@ -36,6 +36,7 @@ from backend.config.weights import get_default_weights
 from backend.dataset import get_dataset
 from backend.db.models import Base
 from backend.engine.diagnosis import IRRIGATION_UNKNOWN
+from backend.engine.market_signal import UNRATED_LIMITATION, UNRATED_REASON
 from backend.engine.water_signal import WaterBalanceSummary
 from common import region
 from tests.ejemplos_con_fuente import examples_with_sources
@@ -106,8 +107,16 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
         "available", 100, "favorable", False, ["frost_freq_pct"]
     )  # fmt: skip
     assert (heat["status"], heat["score"], heat["level"], heat["indicators"]) == ("available", 100, "favorable", ["tmax_p90_c"])
-    # Sin central de precios para el departamento en los ejemplos: el texto del contrato (HU-073).
-    assert body["signals"]["market"]["reasons"] == ["Sin datos de mercado para la zona"]
+    # Samacá es de Boyacá: su central (Tunja) no tiene papa en los ejemplos y se usa la de `crop_market_overrides`
+    # (Corabastos). La señal viene sin calificar, con la historia del precio de septiembre (HU-073, decisión 17).
+    market = body["signals"]["market"]
+    assert (market["status"], market["level"], market["score"], market["critical"]) == ("available", None, None, False)
+    assert market["reasons"][0] == UNRATED_REASON
+    assert (market["price_history"]["market_id"], market["price_history"]["market_basis"], market["price_history"]["month"]) == (
+        "1",
+        "crop_override",
+        9,
+    )
     for name, reason in PENDING.items():
         signal = body["signals"][name]
         assert (signal["status"], signal["level"], signal["score"], signal["critical"], signal["reasons"]) == (
@@ -143,7 +152,9 @@ def test_las_limitaciones_dicen_cada_senal_sin_datos_y_el_aviso_de_heladas_sin_r
     body = diagnose(TestClient(app))
     limitations = body["limitations"]
     assert len(limitations) == len(set(limitations))
-    assert "Sin datos para la zona: el mercado no se evaluó." in limitations
+    # El mercado de los ejemplos tiene historia: se dice que va sin calificar, no que falten datos (HU-073).
+    assert "Sin datos para la zona: el mercado no se evaluó." not in limitations
+    assert UNRATED_LIMITATION in limitations
     # Las que no tienen motor dicen lo verdadero: no faltan datos, falta el motor (R5).
     for reason in PENDING.values():
         assert limitations.count(reason) == 1

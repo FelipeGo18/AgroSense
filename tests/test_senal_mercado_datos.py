@@ -119,7 +119,7 @@ def test_la_historia_trae_lo_de_la_tabla(published):
         row["years_below"],
     )
     assert (history.market, history.product_id, history.source_id) == ("Corabastos (Bogotá)", "papa-negra", "dane_sipsa")
-    assert found.product_name == "Papa negra"
+    assert found.product_name == "la papa negra"
 
 
 def test_la_misma_consulta_da_la_misma_senal(published):

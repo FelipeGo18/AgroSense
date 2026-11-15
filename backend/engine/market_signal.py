@@ -81,8 +81,9 @@ def market_signal(
     `history` es la fila de `market_month` del cultivo en su central y en el mes de la cosecha estimada, o None (cultivo
     sin producto en SIPSA, departamento sin central o central sin fila del cultivo): entonces `insufficient_data`, nivel
     y calificación nulos y la razón del contrato, `NO_DATA_REASON` (R1). `crop_name` es el nombre con artículo («la
-    papa»); `product_name`, el nombre del producto en SIPSA («Papa negra»), si se conoce. `override_reason` es el porqué
-    de usar otra central (`crop_market_overrides`): con `market_basis = crop_override` la razón lo dice.
+    papa»); `product_name`, el del producto de SIPSA con el mismo artículo («la papa negra»), si se conoce: la razón usa
+    ese y, sin él, el del cultivo. `override_reason` es el porqué de usar otra central (`crop_market_overrides`): con
+    `market_basis = crop_override` la razón lo dice.
     """
     if history is None:
         return MarketSignalResult(INSUFFICIENT_DATA, None, False, None, (), (NO_DATA_REASON,))
@@ -93,21 +94,24 @@ def market_signal(
 
 
 def _history_reason(history: PriceHistory, crop_name: str, product_name: str | None) -> str:
-    """«En Corabastos, en septiembre (el mes en que saldría su cosecha), el precio de la papa («Papa negra» en SIPSA)
-    estuvo por encima del promedio de su año en 0 de 5 años (2021–2025) y por debajo en 5; en promedio, 23 % por
-    debajo. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE»."""
-    product = f" («{product_name}» en SIPSA)" if product_name else ""
+    """«En Corabastos, en septiembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima
+    del promedio de su año en 0 de 5 años (2021–2025) y por debajo en 5; en promedio, 23 % por debajo. Así fue en la
+    historia: no es un pronóstico del precio. Fuente: DANE»."""
     period = f" ({history.first_year}–{history.last_year})" if history.first_year and history.last_year else ""
     # round(…, 9) quita el ruido de flotante (0,4999999999) para que el half-up sea simétrico en 0,995 y 1,005.
     pct = round_half_up(round(abs(history.seasonal_index - 1.0) * 100, 9))
+    # Un año en que el mes quedó justo en el promedio de su año no cuenta en ninguno de los dos (contrato): se dice,
+    # para que los años cuadren (revisión de Felipe del PR #158).
+    equal = history.years - history.years_above - history.years_below
+    tie = f", y en {equal} quedó igual" if equal > 0 else ""
     if pct == 0:
         average = "en promedio, igual al de su año"
     else:
         average = f"en promedio, {pct} % por {'encima' if history.seasonal_index > 1.0 else 'debajo'}"
     return (
         f"En {_short(history.market)}, en {month_name(history.month)} (el mes en que saldría su cosecha), el precio "
-        f"{of(crop_name)}{product} estuvo por encima del promedio de su año en {history.years_above} de {history.years} "
-        f"años{period} y por debajo en {history.years_below}; {average}. {HISTORY_LABEL}"
+        f"{of(product_name or crop_name)} estuvo por encima del promedio de su año en {history.years_above} de {history.years} "
+        f"años{period} y por debajo en {history.years_below}{tie}; {average}. {HISTORY_LABEL}"
     )
 
 

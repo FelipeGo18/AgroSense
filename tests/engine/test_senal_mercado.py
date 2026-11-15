@@ -47,7 +47,7 @@ def test_sin_historia_es_sin_datos_con_la_razon_del_contrato():
 
 
 def test_con_historia_es_disponible_sin_calificar():
-    result = market_signal(SEPTEMBER, "la papa", "Papa negra")
+    result = market_signal(SEPTEMBER, "la papa", "la papa negra")
     assert (result.status, result.level, result.score, result.critical) == (AVAILABLE, None, None, False)
     assert result.indicators == ("seasonal_index",)
     assert result.limitations == (UNRATED_LIMITATION,)
@@ -55,10 +55,10 @@ def test_con_historia_es_disponible_sin_calificar():
 
 
 def test_la_razon_cuenta_los_anos_de_la_tabla():
-    reasons = market_signal(SEPTEMBER, "la papa", "Papa negra").reasons
+    reasons = market_signal(SEPTEMBER, "la papa", "la papa negra").reasons
     assert reasons == (
         UNRATED_REASON,
-        "En Corabastos, en septiembre (el mes en que saldría su cosecha), el precio de la papa («Papa negra» en SIPSA) "
+        "En Corabastos, en septiembre (el mes en que saldría su cosecha), el precio de la papa negra "
         "estuvo por encima del promedio de su año en 0 de 5 años (2021–2025) y por debajo en 5; en promedio, 23 % por "
         "debajo. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE",
     )
@@ -85,22 +85,32 @@ def test_sin_periodo_no_lo_inventa():
     assert "en 0 de 5 años y por debajo en 5" in reason and "None" not in reason
 
 
+def test_un_ano_igual_al_promedio_se_dice_para_que_los_anos_cuadren():
+    """Un mes justo en el promedio de su año no cuenta en ninguno (contrato); la razón lo dice (revisión del PR #158)."""
+    tie = replace(SEPTEMBER, years_above=3, years_below=1, seasonal_index=1.0)
+    assert (
+        "en 3 de 5 años (2021–2025) y por debajo en 1, y en 1 quedó igual; en promedio, igual al de su año"
+        in (market_signal(tie, "la papa").reasons[1])
+    )
+    assert "quedó igual" not in market_signal(SEPTEMBER, "la papa").reasons[1]
+
+
 def test_sin_nombre_del_producto_va_solo_el_cultivo():
     assert "el precio de la papa estuvo" in market_signal(SEPTEMBER, "la papa").reasons[1]
 
 
 def test_con_la_central_del_cultivo_la_razon_dice_por_que():
     override = replace(SEPTEMBER, market_basis=CROP_OVERRIDE)
-    reasons = market_signal(override, "la papa", "Papa negra", OVERRIDE_REASON).reasons
+    reasons = market_signal(override, "la papa", "la papa negra", OVERRIDE_REASON).reasons
     assert reasons[-1] == f"Se usa Corabastos: {OVERRIDE_REASON}"
     # Con la central del departamento no se dice nada más, aunque llegue un porqué.
-    assert len(market_signal(SEPTEMBER, "la papa", "Papa negra", OVERRIDE_REASON).reasons) == 2
+    assert len(market_signal(SEPTEMBER, "la papa", "la papa negra", OVERRIDE_REASON).reasons) == 2
 
 
 def test_la_historia_no_es_veredicto_ni_pronostico():
     """Nunca «precio bajo» ni «precio alto» como veredicto (R5), nunca un pronóstico (decisión 4)."""
     for index in (0.774, 1.0, 1.259):
-        reason = market_signal(replace(SEPTEMBER, seasonal_index=index), "la papa", "Papa negra").reasons[1]
+        reason = market_signal(replace(SEPTEMBER, seasonal_index=index), "la papa", "la papa negra").reasons[1]
         assert "precio bajo" not in reason and "precio alto" not in reason
         assert not speaks_as_forecast(reason), reason
         assert "HU-" not in reason and ".parquet" not in reason and ".yaml" not in reason
@@ -108,8 +118,8 @@ def test_la_historia_no_es_veredicto_ni_pronostico():
 
 def test_mismo_dato_mismo_resultado():
     """R4."""
-    first = market_signal(SEPTEMBER, "la papa", "Papa negra")
-    assert all(market_signal(SEPTEMBER, "la papa", "Papa negra") == first for _ in range(5))
+    first = market_signal(SEPTEMBER, "la papa", "la papa negra")
+    assert all(market_signal(SEPTEMBER, "la papa", "la papa negra") == first for _ in range(5))
 
 
 def test_el_resultado_es_inmutable():

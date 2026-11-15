@@ -393,7 +393,12 @@ export interface paths {
         put?: never;
         /**
          * Rotations
-         * @description Estrategias de rotación de hasta 3 ciclos, comparadas contra la rotación actual (HU-084, HU-223).
+         * @description Estrategias de rotación de hasta 3 ciclos, comparadas contra la rotación actual (HU-084, HU-223). Es una
+         *     comparación por reglas con la historia de la zona, no un pronóstico ni una predicción de cuánto mejora el suelo.
+         *
+         *     Valida la entrada (422, 401, 404), lee la consulta como `/diagnostics` (`window_query`: con `lot_id`, la altitud,
+         *     el suelo y el riego del lote) y llama al motor por `build_rotations` (`backend/api/rotations.py`). No guarda nada ni
+         *     escribe en la base de datos (R9): el lote solo se lee.
          */
         post: operations["rotations_api_v1_rotations_post"];
         delete?: never;
@@ -959,6 +964,11 @@ export interface components {
             soil: {
                 [key: string]: unknown;
             } | null;
+            /** Terrain */
+            terrain: {
+                [key: string]: unknown;
+            } | null;
+            versions: components["schemas"]["Versions"];
             /** Current Seasons */
             current_seasons: components["schemas"]["CurrentSeason"][];
         };
@@ -1194,6 +1204,42 @@ export interface components {
             avg_cop_kg: number;
             /** Max Cop Kg */
             max_cop_kg: number | null;
+        };
+        /**
+         * PriceHistory
+         * @description De dónde sale la historia del precio de la señal `market` (HU-073, decisión 17): la central (`market_basis`:
+         *     `department` si es la del departamento, `crop_override` si es la de `region.crop_market_overrides`), el producto de
+         *     SIPSA, el mes de la cosecha estimada y, de `market_month`, el índice y los años por encima y por debajo del promedio
+         *     de su año. Es historia, no un pronóstico del precio.
+         */
+        PriceHistory: {
+            /** Market Id */
+            market_id: string;
+            /** Market */
+            market: string;
+            /**
+             * Market Basis
+             * @enum {string}
+             */
+            market_basis: "department" | "crop_override";
+            /** Product Id */
+            product_id: string;
+            /** Month */
+            month: number;
+            /** Seasonal Index */
+            seasonal_index: number;
+            /** Years */
+            years: number;
+            /** Years Above */
+            years_above: number;
+            /** Years Below */
+            years_below: number;
+            /** First Year */
+            first_year: number | null;
+            /** Last Year */
+            last_year: number | null;
+            /** Source Id */
+            source_id: string;
         };
         /** ProductHistory */
         ProductHistory: {
@@ -1527,6 +1573,7 @@ export interface components {
             reasons: string[];
             /** Sources */
             sources?: components["schemas"]["SourceValue"][] | null;
+            price_history?: components["schemas"]["PriceHistory"] | null;
         };
         /**
          * SignalWeights
@@ -3086,8 +3133,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not Implemented */
-            501: {
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3188,8 +3235,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not Implemented */
-            501: {
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
