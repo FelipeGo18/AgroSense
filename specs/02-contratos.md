@@ -203,6 +203,8 @@ Decisión 6 de `docs/decisiones.md` y regla R9. PostgreSQL (en la nube para el e
 
 ### Trazabilidad: `activity_log` (HU-178)
 
+**Solo se agrega (14 de noviembre de 2026, decidido por Felipe; migración 1.4):** un disparador en la base rechaza todo `UPDATE` y `DELETE` en `activity_log`, salvo anonimizar (dejar en nulo de quién eran los datos), borrar los eventos de quien borra su cuenta y la limpieza de lo de más de 180 días; estos dos, solo si se piden en la misma transacción. La forma de la tabla no cambia.
+
 Registro de lo que hace cada persona con una cuenta: el agricultor sobre sus datos y el administrador sobre los datos de otros. Es distinto de los logs de la terminal (HU-177, más abajo en «Logs de la terminal»): aquellos son para operar el servidor y se pierden; este se guarda en PostgreSQL para poder responder «quién hizo qué, cuándo y sobre qué».
 
 | Columna | Qué guarda |
