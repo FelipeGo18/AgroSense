@@ -42,7 +42,7 @@ from common.logging import configure, get_logger
 from pipeline import catalog as crops_catalog
 from pipeline import climate_normals, climate_risk, rotation_rules, schema
 from pipeline.settings import get_settings
-from pipeline.sources import dane, dane_mgn, imerg, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
+from pipeline.sources import dane, dane_mgn, imerg, modis_ndvi, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
@@ -286,6 +286,29 @@ def validate_soil(soil: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.
         raise ValidationError(f"`soil_municipality` cita una fuente que no está en `sources`: {sorted(unknown)}")
 
 
+def validate_ndvi(ndvi: pl.DataFrame, normal: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
+    """`ndvi_municipality` y `ndvi_municipality_normal` (HU-208) solo traen municipios publicados (R7), periodos de 1 a
+    23, un NDVI posible (de -0,2 a 1, el rango válido de MOD13Q1), porcentajes de 0 a 100, al menos un año en la normal
+    y fuentes que existen (R8)."""
+    known = set(municipalities["municipality_id"].to_list())
+    for name, table, value in (("ndvi_municipality", ndvi, "ndvi_median"), ("ndvi_municipality_normal", normal, "ndvi_normal")):
+        extra = set(table["municipality_id"].unique().to_list()) - known
+        if extra:
+            raise ValidationError(f"`{name}` trae municipios que no están en `municipalities`: {sorted(extra)[:5]}")
+        bad = table.filter(~pl.col("period").is_between(1, modis_ndvi.PERIODS) | ~pl.col(value).is_between(-0.2, 1))
+        if not bad.is_empty():
+            raise ValidationError(f"`{name}` con un periodo o un NDVI fuera de lo permitido: {bad.head(3).to_dicts()}")
+        unknown = set(table["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
+        if unknown:
+            raise ValidationError(f"`{name}` cita una fuente que no está en `sources`: {sorted(unknown)}")
+    bad = ndvi.filter(~pl.col("valid_pixels_pct").is_between(0, 100, closed="right"))
+    if not bad.is_empty():
+        raise ValidationError(f"`ndvi_municipality` con un porcentaje de píxeles válidos fuera de lo permitido: {bad.head(3).to_dicts()}")
+    bad = normal.filter(pl.col("years") < 1)
+    if not bad.is_empty():
+        raise ValidationError(f"`ndvi_municipality_normal` con una normal sin años: {bad.head(3).to_dicts()}")
+
+
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`grid_cells` solo trae celdas de municipios publicados (R7), un suelo posible en las celdas que lo tienen (las
     mismas comprobaciones de `soil_municipality`: el suelo del lote, HU-182, lee las celdas) y fuentes que existen (R8)."""
@@ -344,14 +367,16 @@ def publish(
     frost: tuple[pl.DataFrame, pl.DataFrame] | None = None,
     soil: pl.DataFrame | None = None,
     rules: pl.DataFrame | None = None,
+    ndvi: tuple[pl.DataFrame, pl.DataFrame] | None = None,
 ) -> dict[str, Any]:
     """Escribe las tablas y el manifiesto. Las tablas salen ordenadas por su llave: mismos datos, mismos archivos (R4).
 
     `crops` es el catálogo agronómico (versión, `crops` y `crop_stages`). Con `crop_products` (el mapeo de
     `sipsa_crops.yaml`), lo valida contra los precios y publica además `market_month` (HU-051). `climate`
     (`climate_day`), `climate_month` (HU-042), `precip_month` (HU-207), `frost` (`climate_risk_month` y
-    `climate_frost_month`, HU-045), `soil` (`soil_municipality`, HU-181) y `grid` (`grid_cells`, HU-206) solo se
-    escriben si traen filas: una tabla vacía no es un dato (R1). Todo se valida antes de escribir nada.
+    `climate_frost_month`, HU-045), `soil` (`soil_municipality`, HU-181), `ndvi` (`ndvi_municipality` y
+    `ndvi_municipality_normal`, HU-208) y `grid` (`grid_cells`, HU-206) solo se escriben si traen filas: una tabla
+    vacía no es un dato (R1). Todo se valida antes de escribir nada.
     """
     validate(municipalities, sources)
     validate_department_markets(region)
@@ -387,6 +412,9 @@ def publish(
     has_soil = soil is not None and not soil.is_empty()
     if has_soil:
         validate_soil(soil, municipalities, sources)
+    has_ndvi = ndvi is not None and not ndvi[0].is_empty()
+    if has_ndvi:
+        validate_ndvi(ndvi[0], ndvi[1], municipalities, sources)
     # HU-011: cada tabla tiene exactamente la forma del contrato (columnas, tipos, llave y `quality`) antes de escribir.
     # `sources` junta filas de varias fuentes: va con las columnas del contrato, en su orden. Una fuente sin cita (por
     # ejemplo, las del catálogo) queda con `citation` nula, no inventada (R1).
@@ -411,6 +439,8 @@ def publish(
         tables["grid_cells"] = grid
     if has_soil:
         tables["soil_municipality"] = soil
+    if has_ndvi:
+        tables["ndvi_municipality"], tables["ndvi_municipality_normal"] = ndvi
     if prices is not None:
         tables |= {"market_price_day": prices, "market_price_latest": latest, "market_price_season": season}
     if month is not None:
@@ -481,6 +511,20 @@ def publish(
         partial = soil.filter(pl.col("quality") == "partial").height
         coverage = f"{soil.height} municipios, mediana de sus celdas de 0 a 30 cm; {partial} partial"
         manifest["tables"]["soil_municipality"] = {"rows": soil.height, "coverage": coverage}
+    if has_ndvi:
+        by_period, normal_ndvi = ndvi
+        partial = by_period.filter(pl.col("quality") == "partial").height
+        years = f"de {by_period['year'].min()} a {by_period['year'].max()}"
+        coverage = (
+            f"{by_period['municipality_id'].n_unique()} municipios, mediana de los píxeles sin nubes cada 16 días, {years}; "
+            f"{partial} partial"
+        )
+        manifest["tables"]["ndvi_municipality"] = {"rows": by_period.height, "coverage": coverage}
+        config = modis_ndvi.config_from_region(region)
+        period = f" de {config.first_year}-{config.last_year}" if config is not None else ""
+        partial = normal_ndvi.filter(pl.col("quality") == "partial").height
+        coverage = f"{normal_ndvi['municipality_id'].n_unique()} municipios, verdor normal{period} por periodo; {partial} partial"
+        manifest["tables"]["ndvi_municipality_normal"] = {"rows": normal_ndvi.height, "coverage": coverage}
     if prices is not None:
         manifest["tables"]["market_price_day"] = {
             "rows": prices.height,
@@ -674,6 +718,37 @@ def precip_from_cache(region: dict[str, Any], boundaries: pl.DataFrame, cache: P
     return month, [imerg.source(cells, meta)]
 
 
+def ndvi_from_cache(
+    region: dict[str, Any], boundaries: pl.DataFrame, cache: Path
+) -> tuple[tuple[pl.DataFrame, pl.DataFrame] | None, list[dict[str, Any]]]:
+    """El verdor de MODIS por municipio (HU-208): `ndvi_municipality`, `ndvi_municipality_normal` y su fuente.
+
+    Sin el bloque `ndvi` de `region.yaml` o sin la caché de MODIS (pide cuenta de Earthdata) no devuelve nada: lo demás se
+    publica igual y el verdor es `insufficient_data` (R1).
+    """
+    config = modis_ndvi.config_from_region(region)
+    if config is None:
+        log.warning("source_config_missing", source=modis_ndvi.SOURCE_ID, detail="region.yaml no trae ndvi: no hay verdor")
+        return None, []
+    try:
+        table, meta = modis_ndvi.read_cache(boundaries, config, cache)
+    except FileNotFoundError as error:
+        log.warning("source_missing", source=modis_ndvi.SOURCE_ID, detail=f"Se publica sin el verdor de MODIS: {error}")
+        return None, []
+    normal = modis_ndvi.ndvi_normal(table, config)
+    partial = table.filter(pl.col("quality") == "partial").height
+    log.info(
+        "source_read",
+        source=modis_ndvi.SOURCE_ID,
+        rows_read=len(meta["composites"]),
+        rows_kept=table.height,
+        detail=f"MODIS NDVI: {len(meta['composites'])} compuestos; ndvi_municipality con {table.height} filas de "
+        f"{table['municipality_id'].n_unique()} municipios, {partial} partial (menos del {config.min_valid_pct:g} % de "
+        f"píxeles sin nubes); normal con {normal.height} filas (R1)",
+    )
+    return (table, normal), [modis_ndvi.source(table, meta, config)]
+
+
 def frost_tables(region: dict[str, Any], climate: pl.DataFrame | None) -> tuple[pl.DataFrame, pl.DataFrame] | None:
     """Las heladas y la máxima por mes (HU-045): `climate_risk_month` y `climate_frost_month`, desde `climate_day`.
 
@@ -707,6 +782,7 @@ def build(
     dem_cache: Path | None = None,
     rain_cache: Path | None = None,
     soil_cache: Path | None = None,
+    ndvi_cache: Path | None = None,
 ) -> dict[str, Any]:
     # Las cachés de SIPSA, NASA POWER y NASADEM se buscan al correr, no al importar: así las pruebas las apuntan a una
     # carpeta vacía y nunca leen las de quien las corre.
@@ -715,6 +791,7 @@ def build(
     dem_cache = dem_cache or nasadem.CACHE
     soil_cache = soil_cache or soilgrids.CACHE
     rain_cache = rain_cache or imerg.CACHE
+    ndvi_cache = ndvi_cache or modis_ndvi.CACHE
     region = load_region()
     version, name = region["dataset_version"], region["region"]["name"]
     departments = region["region"]["departments"]
@@ -745,17 +822,24 @@ def build(
         nasadem.download(nasadem.tiles(boundaries), dem_cache)
         download_soil(nasadem.tiles(boundaries), soil_cache)
         nasa_power.download(nasa_power.cells(municipalities), power_cache)
-        # IMERG pide una cuenta de NASA Earthdata: sin el token se baja lo demás y se avisa.
+        # IMERG y MODIS piden una cuenta de NASA Earthdata: sin el token se baja lo demás y se avisa.
         token = get_settings().earthdata_token
+        ndvi_config = modis_ndvi.config_from_region(region)
         if token is not None and token.get_secret_value().strip():
             imerg.download(boundaries, rain_cache)
+            if ndvi_config is not None:
+                modis_ndvi.download(boundaries, ndvi_config, ndvi_cache)
         else:
             log.warning("source_skipped", source=imerg.SOURCE_ID, detail="Sin AGROSENSE_EARTHDATA_TOKEN no se baja GPM IMERG (HU-207)")
+            log.warning(
+                "source_skipped", source=modis_ndvi.SOURCE_ID, detail="Sin AGROSENSE_EARTHDATA_TOKEN no se baja MODIS NDVI (HU-208)"
+            )
     # Primero la altitud: el clima se corrige con ella (HU-044).
     municipalities, grid, terrain_sources = terrain_from_cache(municipalities, boundaries, dem_cache)
     grid, soil, soil_sources = soil_from_cache(grid, boundaries, soil_cache)
     municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
     precip_month, rain_sources = precip_from_cache(region, boundaries, rain_cache)
+    ndvi, ndvi_sources = ndvi_from_cache(region, boundaries, ndvi_cache)
     frost = frost_tables(region, climate)
     # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
     normal = climate_normals.Normal.from_region(region)
@@ -805,7 +889,11 @@ def build(
         own.append(sipsa.source(prices, downloaded_at))
         crop_products = load_crops()
     sources = pl.concat(
-        [pl.DataFrame([*own, *terrain_sources, *soil_sources, *climate_sources, *rain_sources]), catalog_sources, rules_sources],
+        [
+            pl.DataFrame([*own, *terrain_sources, *soil_sources, *climate_sources, *rain_sources, *ndvi_sources]),
+            catalog_sources,
+            rules_sources,
+        ],
         how="diagonal_relaxed",
     )
     check_signal_sources(region["region"]["id"], set(sources["source_id"].to_list()))
@@ -826,12 +914,15 @@ def build(
         frost,
         soil,
         rules_table,
+        ndvi=ndvi,
     )
 
 
 SIGNAL_SOURCES_FILE = signal_sources.SIGNAL_SOURCES_FILE
 # Las fuentes que tienen adaptador en el pipeline: si una no se publica, es porque falta su caché, no un error.
-ADAPTERS = frozenset(module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem, imerg, soilgrids))
+ADAPTERS = frozenset(
+    module.SOURCE_ID for module in (dane, dane_mgn, sipsa, sipsa_boletin, nasa_power, nasadem, imerg, modis_ndvi, soilgrids)
+)
 
 
 def check_signal_sources(region_id: str, published: set[str]) -> None:
