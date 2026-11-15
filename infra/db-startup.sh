@@ -26,16 +26,32 @@ RULE="hostssl agrosense agrosense ${SUBNET} scram-sha-256"
 grep -qF "${RULE}" "${CONF}/pg_hba.conf" || echo "${RULE}" >> "${CONF}/pg_hba.conf"
 systemctl restart postgresql
 
-PASSWORD="$(gcloud secrets versions access latest --secret=agrosense-db-password)"
-sudo -u postgres psql -v ON_ERROR_STOP=1 -v pw="${PASSWORD}" <<'SQL'
+# La clave va por el entorno, no por la línea de comandos (`ps` la mostraría): `runuser` sin `-l` conserva el entorno y
+# psql la lee con `\getenv`.
+AGROSENSE_PW="$(gcloud secrets versions access latest --secret=agrosense-db-password)"
+export AGROSENSE_PW
+runuser -u postgres -- psql -v ON_ERROR_STOP=1 <<'SQL'
+\getenv pw AGROSENSE_PW
 SELECT 'CREATE ROLE agrosense LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'agrosense')\gexec
 ALTER ROLE agrosense WITH LOGIN PASSWORD :'pw';
 SELECT 'CREATE DATABASE agrosense OWNER agrosense' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'agrosense')\gexec
 SQL
+unset AGROSENSE_PW
 
-# Copia diaria (HU-234), 7 días, en el disco de la VM.
+# Copia diaria (HU-234): en el disco de la VM y en el bucket de copias, fuera de la VM (si se pierde la VM, se pierde
+# su disco). Las dos duran 7 días: aquí las borra `find`; en el bucket, su regla de ciclo de vida.
+BUCKET="$(curl -fsS -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/attributes/agrosense-backup-bucket)"
 mkdir -p /var/backups/agrosense
 chown postgres /var/backups/agrosense
+cat > /usr/local/bin/agrosense-backup <<SCRIPT
+#!/bin/bash
+set -euo pipefail
+file="/var/backups/agrosense/agrosense-\$(date +%F).dump"
+pg_dump -Fc agrosense > "\${file}"
+gcloud storage cp --quiet "\${file}" "gs://${BUCKET}/diarias/"
+find /var/backups/agrosense -name '*.dump' -mtime +7 -delete
+SCRIPT
+chmod 755 /usr/local/bin/agrosense-backup
 cat > /etc/cron.d/agrosense-backup <<'CRON'
-30 3 * * * postgres pg_dump -Fc agrosense > /var/backups/agrosense/agrosense-$(date +\%F).dump && find /var/backups/agrosense -name '*.dump' -mtime +7 -delete
+30 3 * * * postgres /usr/local/bin/agrosense-backup
 CRON

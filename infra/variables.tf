@@ -22,6 +22,12 @@ variable "github_repository" {
   default     = "FelipeGo18/AgroSense"
 }
 
+variable "github_repository_id" {
+  description = "El identificador numérico del repositorio (`gh api repos/FelipeGo18/AgroSense --jq .id`): no cambia si lo renombran, y uno nuevo con el mismo nombre tiene otro."
+  type        = string
+  default     = "1413323171"
+}
+
 variable "deploy_branch" {
   description = "La única rama que despliega a producción."
   type        = string
@@ -41,9 +47,8 @@ variable "web_origins" {
 }
 
 variable "billing_account" {
-  description = "Cuenta de facturación del proyecto (la de los créditos)."
+  description = "Cuenta de facturación del proyecto (la de los créditos). Va en `terraform.tfvars`, fuera de git: es de una persona y el repositorio es público (`terraform.tfvars.example`)."
   type        = string
-  default     = "01577A-B4ED3F-2B1F67"
 }
 
 variable "budget_cop" {

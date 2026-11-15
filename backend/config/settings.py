@@ -64,10 +64,19 @@ class Settings(BaseSettings):
     # compartida y se migra a mano (backend/README.md, «Base de datos en la nube»).
     auto_migrate: bool | None = Field(None, validation_alias="AGROSENSE_AUTO_MIGRATE")
 
+    # Producción (HU-235): el bucket de Cloud Storage al que sube la copia de antes de migrar, porque el disco del job de
+    # Cloud Run desaparece al terminar. Sin la variable, la copia queda solo en `backups/` (local, Docker, la base del
+    # equipo con GitHub Actions, que la guarda cifrada como archivo de la corrida).
+    backup_bucket: str | None = Field(None, validation_alias="AGROSENSE_BACKUP_BUCKET")
+
     # Orígenes de la web que pueden cambiar datos (protección contra CSRF), separados por coma.
     web_origins: str = "http://localhost:5173"
     # La cookie de sesión solo viaja por HTTPS. Los navegadores tratan `localhost` como seguro, así que sirve en desarrollo.
     session_cookie_secure: bool = True
+    # Detrás del frente de Google (Cloud Run, HU-023): la IP de quien llama, para los límites de intentos, es la
+    # **última** de `X-Forwarded-For`, la que agrega Google. Las anteriores las escribe el propio cliente, y Uvicorn
+    # con `FORWARDED_ALLOW_IPS=*` se queda con la primera. Sin la variable (desarrollo, pruebas), la de la conexión.
+    behind_proxy: bool = Field(False, validation_alias="AGROSENSE_BEHIND_PROXY")
 
     # La documentación de la API (`/api/docs` y `/api/openapi.json`) solo en desarrollo: en producción no se publica el
     # mapa de la API. Docker Compose la enciende; `npm run api:types` la necesita.

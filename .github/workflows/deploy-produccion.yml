@@ -1,11 +1,15 @@
 # Despliegue a producción (HU-235): al fusionar en `produccion` (o a mano), construye la imagen con la web, la sube a
-# Artifact Registry, aplica las migraciones con el job `agrosense-migrate` y despliega en Cloud Run. Si la dirección
-# pública no responde, vuelve a la revisión anterior y termina en rojo. La infraestructura está en `infra/` (Terraform).
+# Artifact Registry, aplica las migraciones con el job `agrosense-migrate` (que antes sube una copia de la base a Cloud
+# Storage y, si no puede, no migra) y despliega en Cloud Run. Si la dirección pública no responde, o no responde la
+# revisión de este commit, vuelve a la revisión anterior y termina en rojo. La infraestructura está en `infra/`.
 #
-# Lo que configura el dueño del repositorio, en el entorno `produccion` de GitHub (con aprobación de Felipe o Haider):
-#   - variable GCP_WIF_PROVIDER: salida `github_wif_provider` de Terraform
-#   - variable GCP_DEPLOY_SA: salida `github_deploy_service_account`
+# Lo que configura el dueño del repositorio (backend/README.md, «Producción en Google Cloud»):
+#   - el entorno `produccion`, con la aprobación de Felipe o Haider antes de desplegar, y en él:
+#     - variable GCP_WIF_PROVIDER: salida `github_wif_provider` de Terraform
+#     - variable GCP_DEPLOY_SA: salida `github_deploy_service_account`
+#   - la regla de la rama `produccion`: los mismos checks obligatorios que `desarrollo`.
 # No hay llaves JSON: GitHub se identifica con Workload Identity Federation, y solo desde `produccion`.
+# Las acciones de terceros van fijadas a un commit exacto, no a una etiqueta que se pueda mover (como en ci.yml).
 name: Desplegar a producción
 
 on:
@@ -35,12 +39,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_DEPLOY_SA }}
 
-      - uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
 
       - name: Construir y subir la imagen (API + web)
         run: |
@@ -48,7 +52,9 @@ jobs:
           docker build --target produccion -t "$IMAGE" .
           docker push "$IMAGE"
 
-      - name: Aplicar las migraciones (con copia antes)
+      # `backend.db.migrate` copia la base y sube la copia al bucket de copias (`AGROSENSE_BACKUP_BUCKET`, 7 días) antes
+      # de migrar; si la copia o la subida fallan, no migra y el job termina en rojo.
+      - name: Aplicar las migraciones (con copia en Cloud Storage antes)
         run: |
           gcloud run jobs update "$JOB" --image "$IMAGE" --region "$REGION" --quiet
           gcloud run jobs execute "$JOB" --region "$REGION" --wait
@@ -68,7 +74,16 @@ jobs:
         env:
           URL: ${{ steps.deploy.outputs.url }}
         run: |
-          for attempt in 1 2 3 4 5; do
+          # La que sirve es la revisión de este commit: la última lista usa esta imagen y tiene todo el tráfico.
+          described="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json)"
+          latest="$(jq -r '.status.latestReadyRevisionName' <<<"$described")"
+          serving="$(jq -r '[.status.traffic[] | select(.percent == 100) | .revisionName][0] // empty' <<<"$described")"
+          latest_image="$(gcloud run revisions describe "$latest" --region "$REGION" --format='value(spec.containers[0].image)')"
+          if [ "$latest_image" != "$IMAGE" ] || [ "$serving" != "$latest" ]; then
+            echo "::error::La revisión que sirve ($serving) no es la de este commit ($latest, con $latest_image)"
+            exit 1
+          fi
+          for _ in 1 2 3 4 5; do
             # La API, la web y las cuentas (la base de producción y sus migraciones al día).
             if curl -fsS --max-time 30 "$URL/api/v1/version" > /dev/null \
               && curl -fsS --max-time 30 "$URL/" > /dev/null \
