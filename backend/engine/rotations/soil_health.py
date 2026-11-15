@@ -1,7 +1,7 @@
 """HU-212, PR B: forma de los cinco criterios de `soil_health` y los cálculos de `nitrogen` y `pest_break` (R3, R8).
 
 Compara estrategias según reglas con fuente: no predice cuánto mejora el suelo (decisión 4). Un dato o una regla que
-falta nunca da un nivel (R1, R8). `organic_carbon`, `soil_cover` y `erosion` los calculan los PR C y D: aquí quedan
+falta nunca da un nivel (R1, R8). `organic_carbon` y `soil_cover` son del PR C; `erosion` es del PR D y aquí queda
 `insufficient_data`. Función pura y determinista (R4, R6).
 """
 
@@ -14,6 +14,7 @@ TEAM_CRITERION = "criterio_equipo_2026"
 TEAM_NOTE = "criterio del equipo, pendiente de validar por un agrónomo"
 
 _RANK = {"favorable": 2, "moderate": 1, "unfavorable": 0}
+DAYS_PER_MONTH = 30.4
 _PENDING = "Este criterio todavía no se calcula en esta versión del motor"
 
 
@@ -39,6 +40,16 @@ class SoilCrop:
     family: str | None
     secondary_families: tuple[str, ...]
     fixes_nitrogen: bool | None
+
+
+@dataclass(frozen=True)
+class SoilCarbon:
+    """Carbono orgánico estimado del suelo (SoilGrids, 250 m) y su rango p05 a p95, en g/kg (R10)."""
+
+    soc_g_kg: float | None
+    soc_p05: float | None
+    soc_p95: float | None
+    source_id: str
 
 
 @dataclass(frozen=True)
@@ -116,12 +127,47 @@ def _pest_break(sequence: Sequence[str], previous: Sequence[str], crops: Mapping
     return _available(level, rule.reason_template.format(family=family, cycles=cycles), rule)
 
 
+def _dec(value: float) -> str:
+    """Un decimal con coma decimal, como se muestran los números de las razones."""
+    return f"{value:.1f}".replace(".", ",")
+
+
+def _organic_carbon(sequence: Sequence[str], crops: Mapping[str, SoilCrop], soil: SoilCarbon | None, rule: HealthRule) -> Criterion:
+    """Ciclos de abono verde o descanso (los residuos no cuentan) contra los cortes del carbono bajo o normal."""
+    if soil is None or soil.soc_g_kg is None:
+        return _no_data("Falta el carbono orgánico del suelo de la zona", rule)
+    count = sum(1 for c in sequence if (crop := crops.get(c)) and crop.kind in ("cover", "fallow"))
+    low = soil.soc_g_kg < rule.params["soc_low_g_kg"]
+    level = level_from_cuts(count, rule.levels["low" if low else "normal"])
+    soc_range = f"{_dec(soil.soc_p05)} a {_dec(soil.soc_p95)}" if soil.soc_p05 is not None and soil.soc_p95 is not None else "sin rango"
+    reason = rule.reason_template.format(count=count, soc_level="bajo" if low else "normal", soc_range=soc_range)
+    return Criterion("available", level, (_text(reason, rule),), (rule.rule_id,), (rule.source_id, soil.source_id))
+
+
+def _soil_cover(
+    sequence: Sequence[str],
+    crops: Mapping[str, SoilCrop],
+    cycle_days: Sequence[int | None] | None,
+    gap_days: Sequence[int | None] | None,
+    rule: HealthRule,
+) -> Criterion:
+    """Porcentaje del tiempo con cultivo o abono verde; el descanso y los huecos son suelo descubierto."""
+    if not cycle_days or len(cycle_days) != len(sequence) or None in cycle_days:
+        return _no_data("Falta la duración de algún ciclo de la estrategia", rule)
+    covered = sum(d for c, d in zip(sequence, cycle_days, strict=True) if (crop := crops.get(c)) and crop.kind in ("crop", "cover"))
+    total = sum(cycle_days) + sum(g or 0 for g in gap_days or ())
+    if total <= 0:
+        return _no_data("La estrategia no tiene días que medir", rule)
+    pct = covered / total * 100  # sin redondear: el nivel no depende de cómo se muestra
+    return _available(level_from_cuts(pct, rule.levels), rule.reason_template.format(pct=_dec(pct)), rule)
+
+
 def soil_health(
     sequence: Sequence[str],
     crops: Mapping[str, SoilCrop],
     previous_crop_ids: Sequence[str],
     rules: Sequence[HealthRule],
-    soil: object | None = None,
+    soil: SoilCarbon | None = None,
     slope: object | None = None,
     cycle_days: Sequence[int | None] | None = None,
     gap_days: Sequence[int | None] | None = None,
@@ -141,6 +187,10 @@ def soil_health(
             result[name] = _nitrogen(sequence, crops, rule)
         elif name == "pest_break":
             result[name] = _pest_break(sequence, previous_crop_ids, crops, rule)
+        elif name == "organic_carbon":
+            result[name] = _organic_carbon(sequence, crops, soil, rule)
+        elif name == "soil_cover":
+            result[name] = _soil_cover(sequence, crops, cycle_days, gap_days, rule)
         else:
             result[name] = _no_data(_PENDING, rule)
     return result
