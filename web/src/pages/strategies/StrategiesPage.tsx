@@ -123,8 +123,8 @@ export function StrategiesPage() {
         lotId: lot.data.lot_id,
         municipalityId: lot.data.municipality_id,
         irrigated: lot.data.irrigated,
-        // Lo de antes: las siembras elegidas; si no eligió ninguna y viene del diagnóstico, el cultivo que consultó.
-        previous: chosen.length ? previousFromSeasons(chosen) : form.previousMode === "crops" ? form.previous.filter(Boolean) : [],
+        // Lo de antes: las siembras elegidas y las de las que vienen; si no eligió ninguna y viene del diagnóstico, el cultivo que consultó.
+        previous: chosen.length ? previousFromSeasons(chosen, seasons.data ?? []) : form.previousMode === "crops" ? form.previous.filter(Boolean) : [],
       }
     : undefined;
   const lotArea = chosen.length ? chosen.reduce((total, s) => total + s.area_ha, 0) : free;
@@ -554,7 +554,8 @@ function summaryRows(
   lotPrevious: string[] | undefined,
 ): SummaryRow[] {
   const previous = lot ? (lotPrevious ?? []) : sent.previousMode === "none" ? [] : sent.previous.filter(Boolean);
-  const before = previous.length ? `antes: ${sequence(previous, names).toLowerCase()}` : "antes: nada, es la primera siembra";
+  // `previous` va de la más reciente a la más antigua; en palabras se dice en el orden en que se sembró (papa → arveja).
+  const before = previous.length ? `antes: ${sequence([...previous].reverse(), names).toLowerCase()}` : "antes: nada, es la primera siembra";
   const area = parseArea(sent.areaText);
   const land = lot
     ? `${lot.name} · ${formatHa(lot.area)} · ${before}`

@@ -177,19 +177,8 @@ export function freeHarvested(seasons: Season[]): Season[] {
   return seasons.filter((s) => s.harvest_date && !seasons.some((n) => n.follows_season_ids.includes(s.season_id)));
 }
 
-/** Lo de antes con cuenta: los cultivos de las siembras elegidas, la más reciente primero, hasta 3 (`previous_crop_ids`). */
-export function previousFromSeasons(chosen: Season[]): string[] {
-  return [...chosen]
-    .sort((a, b) => (b.harvest_date ?? "").localeCompare(a.harvest_date ?? ""))
-    .map((s) => s.crop_id)
-    .slice(0, 3);
-}
-
-/**
- * La rotación que viene haciendo, armada con el historial del terreno (HU-214, HU-223): las siembras elegidas y todas
- * las de las que vienen, del más antiguo al más reciente; las últimas tres. Con menos de dos no hay rotación que armar.
- */
-export function currentFromHistory(chosen: Season[], seasons: Season[]): string[] {
+/** Las siembras elegidas y todas las de las que viene el terreno (`follows_season_ids`, también al dividir y juntar). */
+function terrainHistory(chosen: Season[], seasons: Season[]): Season[] {
   const byId = new Map(seasons.map((s) => [s.season_id, s]));
   const seen = new Map<string, Season>();
   const pending = [...chosen];
@@ -202,7 +191,34 @@ export function currentFromHistory(chosen: Season[], seasons: Season[]): string[
       if (before) pending.push(before);
     }
   }
-  const history = [...seen.values()].sort((a, b) => a.sowing_date.localeCompare(b.sowing_date)).map((s) => s.crop_id);
+  return [...seen.values()];
+}
+
+/**
+ * Lo de antes con cuenta (`previous_crop_ids`, HU-165): los cultivos de las siembras elegidas **y de todas las de las
+ * que viene el terreno**, la más reciente primero, hasta 3. Así el corte de plagas ve también la papa de hace dos
+ * ciclos (decidido por Felipe el 15 nov 2026). En un empate de cosecha, la sembrada después y luego su id (R4).
+ */
+export function previousFromSeasons(chosen: Season[], seasons: Season[] = chosen): string[] {
+  return terrainHistory(chosen, seasons)
+    .sort(
+      (a, b) =>
+        (b.harvest_date ?? "").localeCompare(a.harvest_date ?? "") ||
+        b.sowing_date.localeCompare(a.sowing_date) ||
+        a.season_id.localeCompare(b.season_id),
+    )
+    .map((s) => s.crop_id)
+    .slice(0, 3);
+}
+
+/**
+ * La rotación que viene haciendo, armada con el historial del terreno (HU-214, HU-223): las siembras elegidas y todas
+ * las de las que vienen, del más antiguo al más reciente; las últimas tres. Con menos de dos no hay rotación que armar.
+ */
+export function currentFromHistory(chosen: Season[], seasons: Season[]): string[] {
+  const history = terrainHistory(chosen, seasons)
+    .sort((a, b) => a.sowing_date.localeCompare(b.sowing_date))
+    .map((s) => s.crop_id);
   const last = history.slice(-3);
   return last.length >= 2 ? last : [];
 }
