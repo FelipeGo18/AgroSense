@@ -172,3 +172,37 @@ def test_un_ciclo_repetido_entre_estrategias_se_diagnostica_una_vez(examples, mo
         cycles.cycles(planned)
     assert calls.count(("papa", APRIL)) == 1
     assert calls.count(("arveja", date(2027, 9, 13))) == 1
+
+
+@pytest.mark.parametrize(
+    ("previous", "current", "expected"),
+    [
+        (("arveja",), ("papa", "haba"), (("arveja",), "declared")),
+        ((), ("papa", "haba"), (("haba", "papa", "haba"), "current_rotation")),
+        ((), None, ((), "none")),
+    ],
+)
+def test_el_filtro_y_soil_health_reciben_la_misma_historia_para_todas_las_estrategias(examples, monkeypatch, previous, current, expected):
+    """Criterio de HU-213 (decisión 6): la historia del terreno sale una vez de `terrain_history` y llega igual al filtro
+    (HU-081) y a `soil_health` (HU-212) de las sugeridas y de la actual, con los días y huecos de sus mismos ciclos (R4)."""
+    seen = []
+
+    def fake_filter(candidates, previous_crop_ids, *args, history_basis):
+        seen.append(("filter", tuple(previous_crop_ids), history_basis))
+
+    def fake_soil(sequence, crops, previous_crop_ids, rules, soil, slope, days, gaps, *, history_basis):
+        seen.append(("soil", tuple(previous_crop_ids), history_basis))
+        assert (tuple(days), tuple(gaps)) == expected_days[tuple(sequence)]
+
+    monkeypatch.setattr(strategy_cycles, "filter_strategies", fake_filter)
+    monkeypatch.setattr(strategy_cycles, "soil_health", fake_soil)
+    cycles = StrategyCycles(strategy().query, APRIL, previous, current)
+    # Papa del 1 de abril al 13 de septiembre (165 días, hueco 0), arveja hasta el 1 de enero (110, hueco 2), descanso
+    # 180; la actual, papa y haba (175 días).
+    expected_days = {("papa", "arveja", "descanso"): ((165, 110, 180), (0, 2, None)), ("papa", "haba"): ((165, 175), (0, None))}
+    cycles.filter([("papa", "arveja", "descanso")], {}, [], None, lambda crop, fit: ("", ()))
+    for sequence in expected_days:
+        planned = cycles.plan(sequence)
+        assert planned is not None
+        cycles.soil_health(planned, {}, [])
+    assert seen == [("filter", *expected), ("soil", *expected), ("soil", *expected)]

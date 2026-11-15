@@ -60,7 +60,7 @@ def test_las_reglas_filter_reales_son_familia_seguida_y_papa_seguida():
 
 
 def test_familia_seguida_arveja_haba_da_motivo_en_el_ciclo_2():
-    motivos = rule_motives(("arveja", "haba", "maiz"), [], CULTIVOS, REALES)
+    motivos = rule_motives(("arveja", "haba", "maiz"), [], CULTIVOS, REALES, history_basis="none")
     assert _ids(motivos) == [(2, "familia_seguida")]
     m = motivos[0]
     assert m.kind == "rule"
@@ -69,11 +69,11 @@ def test_familia_seguida_arveja_haba_da_motivo_en_el_ciclo_2():
 
 
 def test_sin_familia_repetida_no_hay_motivos():
-    assert rule_motives(("arveja", "maiz", "papa"), [], CULTIVOS, REALES) == []
+    assert rule_motives(("arveja", "maiz", "papa"), [], CULTIVOS, REALES, history_basis="none") == []
 
 
 def test_papa_tras_papa_anterior_da_familia_seguida_y_papa_seguida_en_el_ciclo_1():
-    motivos = rule_motives(("papa", "maiz", "zanahoria"), ["papa"], CULTIVOS, REALES)
+    motivos = rule_motives(("papa", "maiz", "zanahoria"), ["papa"], CULTIVOS, REALES, history_basis="declared")
     assert _ids(motivos) == [(1, "familia_seguida"), (1, "papa_seguida")]
     assert motivos[0].source_ids == ("psu_rotacion_familias",)
     assert motivos[1].source_ids == ("ica_punta_morada",)
@@ -81,49 +81,49 @@ def test_papa_tras_papa_anterior_da_familia_seguida_y_papa_seguida_en_el_ciclo_1
 
 
 def test_papa_tras_papa_dentro_de_la_estrategia_da_las_dos_reglas_en_el_ciclo_2():
-    motivos = rule_motives(("papa", "papa", "maiz"), [], CULTIVOS, REALES)
+    motivos = rule_motives(("papa", "papa", "maiz"), [], CULTIVOS, REALES, history_basis="none")
     assert _ids(motivos) == [(2, "familia_seguida"), (2, "papa_seguida")]
 
 
 def test_solo_cuenta_el_anterior_mas_reciente_el_primero_de_la_lista():
-    sin_motivo = rule_motives(("papa", "maiz", "haba"), ["maiz", "papa"], CULTIVOS, REALES)
+    sin_motivo = rule_motives(("papa", "maiz", "haba"), ["maiz", "papa"], CULTIVOS, REALES, history_basis="declared")
     assert sin_motivo == []
     # Control: con papa de más reciente, la misma secuencia sí da motivo (el orden de la lista importa).
-    con_motivo = rule_motives(("papa", "maiz", "haba"), ["papa", "maiz"], CULTIVOS, REALES)
+    con_motivo = rule_motives(("papa", "maiz", "haba"), ["papa", "maiz"], CULTIVOS, REALES, history_basis="declared")
     assert _ids(con_motivo) == [(1, "familia_seguida"), (1, "papa_seguida")]
 
 
 def test_papa_seguida_solo_vale_para_solanaceae():
-    motivos = rule_motives(("maiz", "avena_vicia", "papa"), [], CULTIVOS, REALES)
+    motivos = rule_motives(("maiz", "avena_vicia", "papa"), [], CULTIVOS, REALES, history_basis="none")
     assert _ids(motivos) == [(2, "familia_seguida")]
     assert "Gramineae" in motivos[0].reason
 
 
 def test_secondary_families_no_cuenta_en_familia_seguida():
-    assert rule_motives(("avena_vicia", "arveja", "maiz"), [], CULTIVOS, REALES) == []
+    assert rule_motives(("avena_vicia", "arveja", "maiz"), [], CULTIVOS, REALES, history_basis="none") == []
     # La vicia de avena_vicia es Leguminosae, pero `familia_seguida` solo compara `family` (Gramineae): con la arveja no repite.
-    assert rule_motives(("arveja", "avena_vicia", "papa"), [], CULTIVOS, REALES) == []
+    assert rule_motives(("arveja", "avena_vicia", "papa"), [], CULTIVOS, REALES, history_basis="none") == []
 
 
 def test_retorno_antes_de_min_cycles_da_motivo_en_el_ciclo_3():
-    motivos = rule_motives(("arveja", "maiz", "haba"), [], CULTIVOS, [EJEMPLO_RETORNO])
+    motivos = rule_motives(("arveja", "maiz", "haba"), [], CULTIVOS, [EJEMPLO_RETORNO], history_basis="none")
     assert _ids(motivos) == [(3, "ejemplo_retorno")]
     assert motivos[0].source_ids == ("ejemplo",)
     assert motivos[0].reason == EJEMPLO_RETORNO.reason_template.format(family="Leguminosae", cycles=1)  # S1
 
 
 def test_sin_retorno_de_la_familia_no_hay_motivo():
-    assert rule_motives(("arveja", "maiz", "zanahoria"), [], CULTIVOS, [EJEMPLO_RETORNO]) == []
+    assert rule_motives(("arveja", "maiz", "zanahoria"), [], CULTIVOS, [EJEMPLO_RETORNO], history_basis="none") == []
 
 
 def test_el_retorno_cuenta_secondary_families():
-    motivos = rule_motives(("avena_vicia", "maiz", "arveja"), [], CULTIVOS, [EJEMPLO_RETORNO])
+    motivos = rule_motives(("avena_vicia", "maiz", "arveja"), [], CULTIVOS, [EJEMPLO_RETORNO], history_basis="none")
     assert _ids(motivos) == [(3, "ejemplo_retorno")]
 
 
 def test_el_retorno_cuenta_los_cultivos_anteriores_como_ciclos_previos():
     """S2: más reciente primero. Zanahoria (reciente) y arveja (antigua): la arveja vuelve tras 1 ciclo."""
-    motivos = rule_motives(("haba", "maiz", "papa"), ["zanahoria", "arveja"], CULTIVOS, [EJEMPLO_RETORNO])
+    motivos = rule_motives(("haba", "maiz", "papa"), ["zanahoria", "arveja"], CULTIVOS, [EJEMPLO_RETORNO], history_basis="declared")
     assert _ids(motivos) == [(1, "ejemplo_retorno")]
     assert motivos[0].reason == EJEMPLO_RETORNO.reason_template.format(family="Leguminosae", cycles=1)
 
@@ -131,27 +131,27 @@ def test_el_retorno_cuenta_los_cultivos_anteriores_como_ciclos_previos():
 def test_el_retorno_tras_min_cycles_de_otras_familias_no_da_motivo():
     """S2: arveja es la más antigua, con 2 ciclos de otras familias (zanahoria, maiz) antes de la haba."""
     previos = ["maiz", "zanahoria", "arveja"]
-    assert rule_motives(("haba", "papa", "maiz"), previos, CULTIVOS, [EJEMPLO_RETORNO]) == []
+    assert rule_motives(("haba", "papa", "maiz"), previos, CULTIVOS, [EJEMPLO_RETORNO], history_basis="declared") == []
 
 
 def test_el_descanso_no_es_familia_seguida_y_corta_la_sucesion():
-    assert rule_motives(("papa", "descanso", "papa"), [], CULTIVOS, REALES) == []
-    assert rule_motives(("papa", "descanso", "papa"), ["maiz"], CULTIVOS, REALES) == []
+    assert rule_motives(("papa", "descanso", "papa"), [], CULTIVOS, REALES, history_basis="none") == []
+    assert rule_motives(("papa", "descanso", "papa"), ["maiz"], CULTIVOS, REALES, history_basis="declared") == []
 
 
 def test_el_descanso_cuenta_como_un_ciclo_sin_la_familia_en_el_retorno():
     """S3."""
-    motivos = rule_motives(("arveja", "descanso", "haba"), [], CULTIVOS, [EJEMPLO_RETORNO])
+    motivos = rule_motives(("arveja", "descanso", "haba"), [], CULTIVOS, [EJEMPLO_RETORNO], history_basis="none")
     assert _ids(motivos) == [(3, "ejemplo_retorno")]
     assert motivos[0].reason == EJEMPLO_RETORNO.reason_template.format(family="Leguminosae", cycles=1)
 
 
 def test_sin_reglas_no_hay_motivos():
-    assert rule_motives(("papa", "papa", "papa"), ["papa"], CULTIVOS, []) == []
+    assert rule_motives(("papa", "papa", "papa"), ["papa"], CULTIVOS, [], history_basis="declared") == []
 
 
 def test_los_motivos_van_por_ciclo_y_luego_por_rule_id():
-    motivos = rule_motives(("papa", "papa", "papa"), ["papa"], CULTIVOS, list(reversed(REALES)))
+    motivos = rule_motives(("papa", "papa", "papa"), ["papa"], CULTIVOS, list(reversed(REALES)), history_basis="declared")
     assert _ids(motivos) == [
         (1, "familia_seguida"),
         (1, "papa_seguida"),
@@ -164,6 +164,6 @@ def test_los_motivos_van_por_ciclo_y_luego_por_rule_id():
 
 def test_es_determinista():
     args = (("papa", "arveja", "haba"), ["papa"], CULTIVOS, [*REALES, EJEMPLO_RETORNO])
-    primero = rule_motives(*args)
+    primero = rule_motives(*args, history_basis="declared")
     assert primero
-    assert rule_motives(*args) == primero
+    assert rule_motives(*args, history_basis="declared") == primero

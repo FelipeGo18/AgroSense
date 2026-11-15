@@ -3971,10 +3971,10 @@
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
-        "501": {
+        "500": {
           "error": {
-            "code": "not_implemented",
-            "message": "Este cálculo todavía no está disponible.",
+            "code": "internal_error",
+            "message": "Algo falló de nuestro lado. Intente de nuevo en un momento.",
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
@@ -6044,9 +6044,9 @@
       }
     ],
     "version": {
-      "dataset_version": "2026.11.18",
+      "dataset_version": "2026.11.20",
       "rules_version": "0.1.0",
-      "created_at": "2026-11-14T22:17:03Z",
+      "created_at": "2026-11-15T01:48:13Z",
       "region": "Boyacá y Cundinamarca, Colombia",
       "default_weights": {
         "water": 3,
@@ -6223,6 +6223,18 @@
           "notes": "Duración de las 4 etapas (inicial, desarrollo, media y final) y coeficientes de cultivo Kc. El Kc inicial que no aparece en la fila del cultivo es el de su grupo (por ejemplo, raíces y tubérculos 0,5)."
         },
         {
+          "source_id": "fao_56_tabla_22",
+          "name": "FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Capítulo 8, tabla 22 y ecuaciones 82 y 83",
+          "institution": "FAO",
+          "url": "https://www.fao.org/4/x0490e/x0490e0e.htm",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "1998",
+          "coverage": "Mundial",
+          "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
+          "notes": "Tabla 22: profundidad máxima efectiva de la raíz (Zr, m) y fracción del agua disponible que se puede gastar sin estrés (p). Ecuaciones 82 y 83: TAW = 1000 (θFC - θWP) Zr y RAW = p TAW. Las usa el balance hídrico (HU-144)."
+        },
+        {
           "source_id": "fao_66",
           "name": "FAO-66: Crop yield response to water (Steduto, Hsiao, Fereres y Raes, 2012). Sección 3.4, papa, pp. 185-186",
           "institution": "FAO, Irrigation and Drainage Paper 66",
@@ -6293,6 +6305,18 @@
           "license": "Publicación de la FAO, uso con cita",
           "citation": null,
           "notes": "Las legumbres, y las leguminosas en general, fijan nitrógeno del aire y mejoran el suelo."
+        },
+        {
+          "source_id": "fao_manual_riego_3",
+          "name": "Irrigation Water Management: Irrigation Water Needs. Training manual n.º 3 (Brouwer y Heibloem, 1986). Sección 4.2, lluvia efectiva",
+          "institution": "FAO",
+          "url": "https://www.fao.org/4/s2022e/s2022e08.htm",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "1986",
+          "coverage": "Mundial (zonas con pendiente de hasta 4 a 5 %)",
+          "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
+          "notes": "Lluvia efectiva del mes: Pe = 0,8 P - 25 si P > 75 mm/mes; Pe = 0,6 P - 10 si P < 75 mm/mes; nunca negativa. El manual dice que vale para pendientes de hasta 4 a 5 %: en ladera la lluvia efectiva es menor y el déficit se subestima. La usa el balance hídrico (HU-144)."
         },
         {
           "source_id": "fao_papa_2008",
@@ -6437,6 +6461,18 @@
           "license": "Sin dato; se cita",
           "citation": null,
           "notes": "«Seedlings are tolerant of spring frosts in the low 20s… a new shoot will emerge… until approximately seven nodes»; «Field pea is sensitive to heat stress at flowering»."
+        },
+        {
+          "source_id": "nrcs_neh652_cap2",
+          "name": "NRCS, National Engineering Handbook, parte 652 (Irrigation Guide), capítulo 2 (Soils). Tabla 2-1, agua disponible por textura",
+          "institution": "Natural Resources Conservation Service, Departamento de Agricultura de los Estados Unidos (USDA)",
+          "url": "https://mail.irrigationtoolbox.com/NEH/Part652_NationalIrrigationGuide/ch2.pdf",
+          "downloaded_at": "2026-11-14",
+          "period_covered": "Septiembre de 1997 (210-vi-NEH)",
+          "coverage": "Estados Unidos (clases de textura del USDA)",
+          "license": "Publicación del gobierno de los Estados Unidos, dominio público",
+          "citation": null,
+          "notes": "Tabla 2-1, p. 2-5: rango de agua disponible (AWC) de cada clase de textura, en pulgadas por pulgada (lo mismo que m³ de agua por m³ de suelo). Trae las 12 clases del triángulo del USDA; la tabla 19 de FAO-56 no trae franco arcilloso, franco arcillo arenoso ni arcillo arenoso. La usa el balance hídrico (HU-144)."
         },
         {
           "source_id": "psu_rotacion_familias",

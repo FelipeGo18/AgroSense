@@ -1,8 +1,9 @@
 """Endpoints de cálculo: diagnóstico, estrategias, plan de agua, «Qué cambió» y tendencias (HU-012).
 
 Tienen su forma del contrato (`backend/api/calc_models.py`) y sus ejemplos de cada estado en el OpenAPI. Validan la
-entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076) y las tendencias (HU-078, `backend/api/trends.py`)
-ya responden con el motor; los demás, mientras su motor no exista, responden `501` `not_implemented` (decisión 15).
+entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076), las tendencias (HU-078, `backend/api/trends.py`)
+y el plan de agua (HU-146) ya responden con el motor; los demás, mientras su motor no exista, responden `501`
+`not_implemented` (decisión 15).
 Cuando llegue cada HU del motor, la ruta deja de responder 501 y devuelve su modelo: la forma no cambia.
 
 No guardan los datos de la finca ni quién consultó (R9): solo leen el dataset y, con `lot_id`, el lote.
@@ -20,6 +21,7 @@ from sqlalchemy.orm import Session as Db
 
 from backend.accounts.farm_models import Lot
 from backend.api import calc_examples as ex
+from backend.api import monthly_climate
 from backend.api.auth import current_session, require_accounts
 from backend.api.calc_models import (
     ChangesResponse,
@@ -27,20 +29,25 @@ from backend.api.calc_models import (
     DiagnosisRequest,
     DiagnosisRequestEcho,
     DiagnosisResponse,
+    FarmWater,
     MunicipalityId,
     RotationRequest,
     RotationResponse,
+    SoilMoisture,
     SuitabilityResult,
     TrendsResponse,
+    WaterPlanCropResult,
     WaterPlanRequest,
     WaterPlanResponse,
+    WaterSources,
     WindowSummary,
 )
 from backend.api.catalogs import require_dataset
 from backend.api.errors import ApiError, explain
-from backend.api.lot_terrain import zone_temperature
+from backend.api.lot_terrain import zone_temperature, zone_texture
 from backend.api.lots import _own_lot
 from backend.api.trends import trends as build_trends
+from backend.api.water_signals import zone_water
 from backend.api.window_diagnosis import crop_name, diagnose_window, suitability_result, window_query
 from backend.api.window_signals import (
     SignalResult,
@@ -58,10 +65,13 @@ from backend.engine.changes import (
     compare_climate_months,
 )
 from backend.engine.signal_score import signal_scores
-from backend.engine.stages import monthly_sowing_windows
+from backend.engine.stages import crop_window, monthly_sowing_windows
 from backend.engine.suitability import NOT_SUITABLE, crop_suitability
 from backend.engine.traffic_light import DEFAULT, FARMER
+from backend.engine.water_balance import root_zone
+from backend.engine.water_plan import PlanCrop, water_plan
 from backend.engine.window_order import WindowSignals, best_windows, order_windows
+from common import signal_sources as source_config
 from common.dates import add_months
 from common.region import region_today
 from common.signal_sources import get_signal_sources
@@ -69,6 +79,9 @@ from common.signal_sources import get_signal_sources
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
 
 NOT_IMPLEMENTED = "Este cálculo todavía no está disponible."
+# El dataset de ejemplo (`data/examples/`) se publica con esta versión, y la respuesta lo dice (R5).
+EXAMPLE_VERSION = "ejemplo"
+EXAMPLE_DATA = "Datos de ejemplo: no representan observaciones reales."
 # `irrigated` nulo, en la consulta o en el lote: se evalúa como sin riego y se dice (contrato, cuerpo de `/diagnostics`).
 
 
@@ -269,16 +282,58 @@ def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depend
     response_model=WaterPlanResponse,
     responses={
         200: {"content": _examples(plan=("Un ciclo de papa, con un mes sin datos de lluvia", ex.WATER_PLAN))},
-        **ex.responses(422, 501, 503),
+        **ex.responses(422, 500, 503),
     },
 )
 def water_plans(body: WaterPlanRequest, request: Request, dataset: Dataset = Depends(calc_dataset)) -> Any:
-    """Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10)."""
+    """Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10).
+
+    Solo lee el dataset y llama al motor (`backend/engine/water_plan.py`): no recibe `lot_id`, así que el suelo es
+    siempre el del municipio, también con cuenta (contrato). La fecha de siembra no se limita a los próximos doce
+    meses: el tercer ciclo de una estrategia puede caer más lejos. No guarda nada ni escribe en la base de datos (R9).
+    """
     _check_place(dataset, body.municipality_id)
     # Un abono verde también crece y necesita agua: el ciclo de una estrategia puede serlo (HU-215). Como en el
-    # contrato, solo el diagnóstico y «Qué cambió» piden `kind = crop`.
+    # contrato, solo el diagnóstico y «Qué cambió» piden `kind = crop`. Un descanso pasa: el motor dice que no tiene agua.
     _check_crops(dataset, [crop.crop_id for crop in body.crops])
-    _not_implemented(request, "Plan de agua")
+
+    municipality = dataset.municipalities[body.municipality_id]
+    zone = zone_water(dataset, body.municipality_id)
+    texture = zone_texture(dataset, municipality, None)
+    crops = []
+    for item in body.crops:
+        crop = dataset.crops[item.crop_id]
+        crops.append(
+            PlanCrop(
+                crop_id=item.crop_id,
+                name=crop_name(crop),
+                kind=crop.get("kind"),
+                area_pct=item.area_pct,
+                sowing_date=item.sowing_date,
+                window=crop_window(dataset.stages.get(item.crop_id, []), item.sowing_date),
+                root=root_zone(crop),
+            )
+        )
+    plan = water_plan(crops, body.total_area_ha, zone.months(), texture, zone.source, zone.wetness)
+
+    config = monthly_climate.water_sources(dataset)
+    # El suelo se cita solo si su textura entró al cálculo (el agua que guarda); si no, no se usó ninguna fuente de suelo.
+    # Se lee del módulo (`source_config`), no de una función importada: las pruebas la cambian en él (`tests/conftest.py`).
+    soil = source_config.get_signal_sources().for_region(dataset.region["id"])["soil"].used if plan.soil_used else None
+    limitations = [EXAMPLE_DATA] if dataset.version == EXAMPLE_VERSION else []
+    limitations.extend(plan.limitations)
+    # Al log, solo cuántos cultivos tuvieron agua: ni el municipio, ni los cultivos, ni las fechas, ni el área (R9).
+    explain(request, f"Plan de agua calculado: {sum(1 for crop in plan.crops if crop.months)} de {len(plan.crops)} cultivos con agua")
+    return WaterPlanResponse(
+        request=body,
+        crops=[WaterPlanCropResult.model_validate(asdict(crop)) for crop in plan.crops],
+        farm=FarmWater.model_validate(asdict(plan.farm)),
+        soil_moisture=[SoilMoisture.model_validate(asdict(reading)) for reading in plan.soil_moisture],
+        sources=WaterSources(rain=config.used, et0=config.et0, soil=soil),
+        soil_basis="municipality",
+        limitations=list(dict.fromkeys(limitations)),
+        versions={"dataset": dataset.version, "rules": rules_version(dataset.rules_version)},
+    )
 
 
 def _compare_changes(
@@ -445,8 +500,8 @@ def changes(
     if irrigated is None:
         limitations.append("No se indicó si hay riego; se asume sin riego.")
 
-    if dataset.version == "ejemplo":
-        limitations.append("Datos de ejemplo: no representan observaciones reales.")
+    if dataset.version == EXAMPLE_VERSION:
+        limitations.append(EXAMPLE_DATA)
 
     if dataset.climate_change_month is None:
         limitations.append("La tabla de comparación histórica no está publicada; los indicadores se muestran sin datos suficientes.")
