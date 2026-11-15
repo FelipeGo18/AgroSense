@@ -173,7 +173,8 @@ def test_con_prioridades_overall_usa_las_del_agricultor_y_counts_sigue_sus_pesos
 
 def test_caso_de_referencia_helada_critica_da_rojo_y_busca_otra_ventana(examples):
     """HU-077: una helada crítica da rojo y la acción es `other_window`. Trae las mejores ventanas, ninguna de alto riesgo
-    (R2). El agua y la oferta no se pueden poner favorables (no tienen motor): el agua no cuenta y la oferta no tiene datos."""
+    (R2). Usa `NO_WATER` y los datos de ejemplo, sin dobles: el agua no cuenta y la oferta no tiene datos. El caso con el
+    agua y la oferta favorables va más abajo."""
     body = diagnose(TestClient(app), NOVEMBER, priorities=NO_WATER)
     frost = body["signals"]["frost"]
     assert (frost["score"], frost["level"], frost["critical"]) == (7, "unfavorable", True)
@@ -197,7 +198,7 @@ def test_caso_de_referencia_helada_critica_da_rojo_y_busca_otra_ventana(examples
 def with_favorable_water_and_supply(monkeypatch, folder: Path) -> None:
     """El agua y la oferta favorables, para los casos de referencia de HU-077 y HU-190. El agua sale de la lluvia del
     ejemplo rotulada con su fuente y de un balance DE EJEMPLO que cubre toda la necesidad; la oferta, de una señal DE
-    EJEMPLO (R5), porque en el MVP la oferta no se califica (HU-072). Las heladas y el calor son los del dataset."""
+    EJEMPLO (R5), porque la oferta todavía no tiene curva ni motor (HU-072). Las heladas y el calor son los del dataset."""
     use(monkeypatch, folder)
     monkeypatch.setattr(window_signals, "balance_for", lambda *args, **kwargs: NO_DEFICIT)
     favorable_supply = window_signals.PendingSignal("available", "favorable", False, 90, (), ("Oferta DE EJEMPLO, favorable",))
@@ -215,6 +216,7 @@ def test_caso_de_referencia_helada_critica_con_agua_y_oferta_favorables_da_rojo_
     assert (signals["frost"]["level"], signals["frost"]["critical"]) == ("unfavorable", True)
     light = body["overall_default"]
     assert (light["light"], light["action"], light["limiting_signal"], light["high_risk"]) == ("red", "other_window", "frost", True)
+    assert body["best_windows"] and not any(window["high_risk"] for window in body["best_windows"])
 
 
 def test_caso_de_referencia_calor_critico_con_agua_y_oferta_favorables_da_rojo_y_otra_ventana(tmp_path, monkeypatch):
@@ -233,6 +235,8 @@ def test_caso_de_referencia_calor_critico_con_agua_y_oferta_favorables_da_rojo_y
     assert (signals["heat"]["level"], signals["heat"]["critical"]) == ("unfavorable", True)
     light = body["overall_default"]
     assert (light["light"], light["action"], light["limiting_signal"], light["high_risk"]) == ("red", "other_window", "heat", True)
+    # Con 45 °C todo el año, todas las ventanas son de alto riesgo: ninguna entra entre las mejores (R2).
+    assert body["best_windows"] == []
 
 
 def test_una_helada_critica_con_peso_0_sigue_contando(examples):
