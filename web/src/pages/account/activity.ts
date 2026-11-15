@@ -54,9 +54,9 @@ const FIELDS = (): Record<string, string> => ({
   name: t("pages.account.activity.name"),
   geometry: t("pages.account.activity.mapBoundary"),
   area_ha: t("pages.account.activity.area"),
-  irrigated: "riego",
-  municipality_id: "municipio",
-  crop_id: "cultivo",
+  irrigated: t("activity.field.irrigation"),
+  municipality_id: t("activity.field.municipality"),
+  crop_id: t("activity.field.crop"),
   sowing_date: t("pages.account.activity.plantingDate"),
   harvest_date: t("pages.account.activity.harvestDate"),
 });

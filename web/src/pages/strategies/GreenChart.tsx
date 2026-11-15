@@ -6,21 +6,8 @@ import type { Schemas } from "@/api/client";
 
 type NdviPoint = Schemas["NdviPoint"];
 
-const MONTHS = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-const MONTH_NAMES = [
-  "enero",
-  "febrero",
-  "marzo",
-  "abril",
-  "mayo",
-  "junio",
-  "julio",
-  "agosto",
-  "septiembre",
-  "octubre",
-  "noviembre",
-  "diciembre",
-];
+const monthName = (month: number, width: "long" | "narrow") =>
+  new Intl.DateTimeFormat(locale(), { month: width, timeZone: "UTC" }).format(new Date(Date.UTC(2020, month, 1)));
 const NUMBER = () => new Intl.NumberFormat(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // Se dibuja en píxeles, al ancho de la tarjeta (`useWidth`): el texto mide lo mismo en el celular y en el escritorio.
@@ -31,7 +18,7 @@ const Y_MIN = 0;
 const Y_MAX = 1;
 const y = (value: number) => PAD.top + (1 - (value - Y_MIN) / (Y_MAX - Y_MIN)) * PLOT_H;
 /** El periodo de 16 días que empieza ese día del año, para decir en palabras a qué época corresponde. */
-const periodMonth = (period: number) => MONTH_NAMES[Math.min(11, Math.floor(((period - 1) * 16) / 30.5))];
+const periodMonth = (period: number) => monthName(Math.min(11, Math.floor(((period - 1) * 16) / 30.5)), "long");
 
 /**
  * Cuándo suele estar verde el campo de la zona (HU-215): el NDVI normal de MODIS por periodos de 16 días, con la ventana
@@ -85,9 +72,9 @@ export function GreenChart({ points, spans }: { points: NdviPoint[]; spans: [num
               </text>
             </g>
           ))}
-          {MONTHS.map((label, i) => (
+          {Array.from({ length: 12 }, (_, i) => (
             <text key={i} x={x(1 + (i * 22) / 11.5)} y={H - 8} textAnchor="middle" fontSize="13" fill="var(--color-texto-secundario)">
-              {label}
+              {monthName(i, "narrow")}
             </text>
           ))}
           {runs.map((run) => (

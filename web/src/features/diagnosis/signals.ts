@@ -72,7 +72,7 @@ export function supplyNote(semester: SupplySemester | null | undefined): string 
   return t("features.diagnosis.signals.evaDataFromSemester", {
     v0: semester.year,
     v1: semester.semester,
-    v2: semester.preliminary ? ", preliminar" : "",
+    v2: semester.preliminary ? t("diagnosis.supply.preliminarySuffix") : "",
   });
 }
 

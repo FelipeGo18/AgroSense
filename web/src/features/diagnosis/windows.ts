@@ -51,7 +51,7 @@ export function suitabilityFacts(suitability: Suitability): string | null {
   const altitude =
     suitability.altitude_m === null || suitability.altitude_m === undefined
       ? ""
-      : t("features.diagnosis.windows.atMAltitude", { v0: new Intl.NumberFormat("es-CO").format(Math.round(suitability.altitude_m)) });
+      : t("features.diagnosis.windows.atMAltitude", { v0: new Intl.NumberFormat(locale()).format(Math.round(suitability.altitude_m)) });
   const basis =
     suitability.basis === "lot" ? t("features.diagnosis.windows.forYourPlot") : t("features.diagnosis.windows.forTheMunicipality");
   return t("features.diagnosis.windows.meanAnnualTemperatureOfC", {

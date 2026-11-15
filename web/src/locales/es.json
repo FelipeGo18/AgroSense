@@ -1162,5 +1162,9 @@
   "landing.source.altitude": "Altitud",
   "landing.source.nasadem": "La altura y la pendiente de su municipio o de su lote, a 30 m.",
   "changes.indicator.frostHelp": "Porcentaje de años con heladas en cada mes.",
-  "changes.indicator.heatHelp": "En 9 de cada 10 días, la temperatura máxima no superó este valor."
+  "changes.indicator.heatHelp": "En 9 de cada 10 días, la temperatura máxima no superó este valor.",
+  "activity.field.irrigation": "riego",
+  "activity.field.municipality": "municipio",
+  "activity.field.crop": "cultivo",
+  "diagnosis.supply.preliminarySuffix": ", preliminar"
 }

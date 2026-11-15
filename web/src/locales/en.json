@@ -1162,5 +1162,9 @@
   "landing.source.altitude": "Elevation",
   "landing.source.nasadem": "Elevation and slope for your municipality or plot, at 30 m resolution.",
   "changes.indicator.frostHelp": "Percentage of years with frost in each month.",
-  "changes.indicator.heatHelp": "On 9 out of 10 days, the maximum temperature did not exceed this value."
+  "changes.indicator.heatHelp": "On 9 out of 10 days, the maximum temperature did not exceed this value.",
+  "activity.field.irrigation": "irrigation",
+  "activity.field.municipality": "municipality",
+  "activity.field.crop": "crop",
+  "diagnosis.supply.preliminarySuffix": ", preliminary"
 }
