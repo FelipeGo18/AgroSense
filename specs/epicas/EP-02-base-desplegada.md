@@ -91,7 +91,7 @@ estado: pendiente
   - [ ] Se conecta a Google Cloud con **Workload Identity Federation** (sin llaves JSON guardadas en GitHub), con una cuenta de servicio que solo puede subir imágenes y desplegar ese servicio
   - [ ] Después de desplegar, comprueba `/api/v1/version` en la dirección pública y que la versión sea la del commit; si falla, Cloud Run vuelve a la revisión anterior y el workflow termina en rojo
   - [ ] El entorno `produccion` de GitHub pide la aprobación de un responsable (Felipe o Haider) antes de desplegar
-  - [ ] Los checks obligatorios de `produccion` son los mismos de `desarrollo` (`hu`, `python`, `web`, `Revisar migraciones`)
+  - [ ] Los checks obligatorios de `produccion` son los mismos de `desarrollo` (`hu`, `python`, `web`, `Revisar migraciones`). En el PR de `desarrollo` a `produccion`, `hu` no revisa los nombres: los commits ya se revisaron al entrar a `desarrollo` (`docs/registro-de-decisiones.md`, 15 nov)
   - [ ] **Logs en Cloud Logging.** El servicio corre con `AGROSENSE_LOG_FORMAT=json` y `AGROSENSE_LOG_LEVEL=INFO`, y cada línea JSON (`common/logging.py`) trae:
     - `severity` (`DEBUG`, `INFO`, `WARNING`, `ERROR` o `CRITICAL`), además de `level`. Sin ese campo, Cloud Logging marca todo como `DEFAULT` y no se puede filtrar por nivel;
     - `message`, con el evento, para que se lea como el resumen de la línea;

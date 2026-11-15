@@ -15,10 +15,10 @@ Antes de aceptar, se baja la rama, se corre y se hace el recorrido de punta a pu
 ## 1. Alcance, rama y commits
 
 - [ ] Una sola funcionalidad, o máximo tres muy relacionadas, y cada una con su HU.
-- [ ] El PR va a `desarrollo` (nunca a `produccion`) y está al día con `desarrollo`, sin conflictos.
+- [ ] El PR va a `desarrollo` (nunca a `produccion`) y está al día con `desarrollo`, sin conflictos. La única excepción es el paso a producción: un PR de `desarrollo` a `produccion` (HU-235), que no trae cambios propios.
 - [ ] La rama dice su HU: `tipo/hu-xxx-descripcion-corta`, con `tipo` entre `feature`, `fix`, `docs`, `perf`, `test` y `chore` (por ejemplo `fix/hu-076-hoy-en-la-region`). Si el cambio toca varias HU, va la principal. Si de verdad no corresponde a ninguna, `tipo/sin-hu-…`, y se dice por qué en el PR.
 - [ ] Cada commit empieza con su HU: `tipo(HU-xxx): descripción en español`, con `tipo` entre `feat`, `fix`, `docs`, `perf`, `test` y `chore` (por ejemplo `fix(HU-076): «hoy» es el día en la región`). Con varias HU, `tipo(HU-207, HU-208): …`; sin HU, `tipo(sin HU): …`.
-- [ ] El CI lo revisa solo (`scripts/check_names.py`, en el check `hu`): un PR con la rama o un commit sin su HU no se puede mergear. Los commits de antes del 12 de noviembre de 2026 pueden seguir con el formato anterior, `tipo: descripción (HU-xxx)`.
+- [ ] El CI lo revisa solo (`scripts/check_names.py`, en el check `hu`): un PR con la rama o un commit sin su HU no se puede mergear. Los commits de antes del 12 de noviembre de 2026 pueden seguir con el formato anterior, `tipo: descripción (HU-xxx)`. El paso de `desarrollo` a `produccion` no se revisa: sus commits ya pasaron el check al entrar a `desarrollo`, y entre ellos hay de antes de la regla que no la cumplen.
 - [ ] Sin firma de Claude ni de otra herramienta (`Co-Authored-By`, «Generated with …») en los commits ni en la descripción.
 - [ ] La descripción sigue la plantilla y dice lo que de verdad hace el PR: nada que no esté en el diff ni al revés.
 
