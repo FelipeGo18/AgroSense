@@ -81,13 +81,20 @@ def market_history(dataset: Dataset, choice: MarketChoice | None, crop_id: str, 
         month=month,
         seasonal_index=float(row["seasonal_index"]),
         years=int(row["years"]),
-        years_above=int(row["years_above"]),
-        years_below=int(row["years_below"]),
-        first_year=row["first_year"],
-        last_year=row["last_year"],
+        years_above=_int(row, "years_above"),
+        years_below=_int(row, "years_below"),
+        first_year=_int(row, "first_year"),
+        last_year=_int(row, "last_year"),
         source_id=row["source_id"],
     )
     return MarketHistory(history, _product_name(dataset, crop_id, row["product_id"], choice.market_id), choice.reason)
+
+
+def _int(row: dict, column: str) -> int | None:
+    """Una columna entera de `market_month`, o None si falta o es nula: un dataset publicado antes de HU-073 no trae los
+    años contados, y el motor responde `insufficient_data` en vez de un 500 (revisión del PR #170)."""
+    value = row.get(column)
+    return None if value is None else int(value)
 
 
 def _has_crop(dataset: Dataset, crop_id: str, market_id: str) -> bool:

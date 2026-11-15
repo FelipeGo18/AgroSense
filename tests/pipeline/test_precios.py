@@ -3,6 +3,7 @@
 import io
 import json
 from datetime import date
+from pathlib import Path
 
 import polars as pl
 import pytest
@@ -223,6 +224,21 @@ def test_la_region_del_repositorio_cumple_crop_market_overrides():
             }
         }
     }
+
+
+def test_un_cultivo_que_no_esta_en_el_catalogo_hace_fallar_el_build():
+    region = {**MARKET_REGION, "region": {**MARKET_REGION["region"], "crop_market_overrides": {"15": {"papa_criolla": OVERRIDE}}}}
+    with pytest.raises(build.ValidationError, match="no está en `catalog/crops.yaml`"):
+        build.validate_crop_market_overrides(region, {"papa", "arveja"})
+    build.validate_crop_market_overrides(region)  # sin el catálogo no hay contra qué revisar
+
+
+def test_la_region_del_repositorio_nombra_cultivos_del_catalogo():
+    import yaml
+
+    catalog = yaml.safe_load(Path("catalog/crops.yaml").read_text(encoding="utf-8"))
+    crop_ids = {crop["crop_id"] for crop in catalog["crops"]}
+    build.validate_crop_market_overrides(build.load_region(), crop_ids)
 
 
 def test_sin_crop_market_overrides_no_hay_que_validar():

@@ -64,7 +64,7 @@ def test_la_papa_de_boyaca_usa_corabastos_y_dice_por_que(published):
     result = market_in(published, published.municipalities["15001"], "papa", "la papa", 9)
     assert result.status == AVAILABLE and result.level is None and result.score is None
     assert result.price_history.market_basis == CROP_OVERRIDE
-    assert result.reasons[-1] == f"Se usa Corabastos: {OVERRIDE_REASON}"
+    assert result.reasons[1] == f"Se usa Corabastos: {OVERRIDE_REASON}"
 
 
 def test_la_arveja_de_boyaca_usa_tunja(published):

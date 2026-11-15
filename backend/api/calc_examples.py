@@ -102,12 +102,12 @@ SIGNALS_OK = {
         None,
         [
             "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+            "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
             "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra "
             "estuvo por encima del promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por "
             "encima. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE",
-            "Se usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos",
         ],
-        ["seasonal_index"],
+        ["seasonal_index", "years_above", "years_below"],
         price_history={
             "market_id": "1",
             "market": "Corabastos (Bogotá)",

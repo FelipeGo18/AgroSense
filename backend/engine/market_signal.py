@@ -26,11 +26,16 @@ from backend.engine.signal_score import AVAILABLE, INSUFFICIENT_DATA, round_half
 from common.months import month_name
 from common.text import of
 
-INDICATOR = "seasonal_index"
+INDICATORS = ("seasonal_index", "years_above", "years_below")
 NO_DATA_REASON = "Sin datos de mercado para la zona"
 UNRATED_REASON = "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista"
 UNRATED_LIMITATION = "La oferta y el mercado se muestran sin calificar: no cambian la luz"
 HISTORY_LABEL = "Así fue en la historia: no es un pronóstico del precio. Fuente: DANE"
+# Un `market_month` publicado antes de HU-073 no trae los años contados: el motor no los inventa (R1, R5).
+NO_COUNT_REASON = (
+    "Los precios publicados no dicen en cuántos años el mes de la cosecha estuvo por encima o por debajo del promedio "
+    "de su año: el mercado no se muestra hasta que se actualicen los datos"
+)
 
 # De dónde sale la central (`price_history.market_basis`): la del departamento (`region.department_markets`) o la del
 # cultivo cuando la del departamento no lo publica (`region.crop_market_overrides`).
@@ -49,8 +54,9 @@ class PriceHistory:
     month: int
     seasonal_index: float
     years: int
-    years_above: int
-    years_below: int
+    # Nulos en un `market_month` anterior a HU-073: entonces la señal es `insufficient_data` (`NO_COUNT_REASON`).
+    years_above: int | None
+    years_below: int | None
     first_year: int | None
     last_year: int | None
     source_id: str
@@ -83,14 +89,18 @@ def market_signal(
     y calificación nulos y la razón del contrato, `NO_DATA_REASON` (R1). `crop_name` es el nombre con artículo («la
     papa»); `product_name`, el del producto de SIPSA con el mismo artículo («la papa negra»), si se conoce: la razón usa
     ese y, sin él, el del cultivo. `override_reason` es el porqué de usar otra central (`crop_market_overrides`): con
-    `market_basis = crop_override` la razón lo dice.
+    `market_basis = crop_override` la razón lo dice, antes de la historia. Con historia sin los años contados (dataset
+    anterior a HU-073): `insufficient_data` con `NO_COUNT_REASON`, también en las limitaciones.
     """
     if history is None:
         return MarketSignalResult(INSUFFICIENT_DATA, None, False, None, (), (NO_DATA_REASON,))
-    reasons = [UNRATED_REASON, _history_reason(history, crop_name, product_name)]
+    if history.years_above is None or history.years_below is None:
+        return MarketSignalResult(INSUFFICIENT_DATA, None, False, None, (), (NO_COUNT_REASON,), (NO_COUNT_REASON,))
+    reasons = [UNRATED_REASON]
     if history.market_basis == CROP_OVERRIDE and override_reason:
         reasons.append(f"Se usa {_short(history.market)}: {override_reason}")
-    return MarketSignalResult(AVAILABLE, None, False, None, (INDICATOR,), tuple(reasons), (UNRATED_LIMITATION,), history)
+    reasons.append(_history_reason(history, crop_name, product_name))
+    return MarketSignalResult(AVAILABLE, None, False, None, INDICATORS, tuple(reasons), (UNRATED_LIMITATION,), history)
 
 
 def _history_reason(history: PriceHistory, crop_name: str, product_name: str | None) -> str:
@@ -102,7 +112,7 @@ def _history_reason(history: PriceHistory, crop_name: str, product_name: str | N
     pct = round_half_up(round(abs(history.seasonal_index - 1.0) * 100, 9))
     # Un año en que el mes quedó justo en el promedio de su año no cuenta en ninguno de los dos (contrato): se dice,
     # para que los años cuadren (revisión de Felipe del PR #158).
-    equal = history.years - history.years_above - history.years_below
+    equal = history.years - (history.years_above or 0) - (history.years_below or 0)
     tie = f", y en {equal} quedó igual" if equal > 0 else ""
     if pct == 0:
         average = "en promedio, igual al de su año"

@@ -139,11 +139,12 @@ def validate_department_markets(region: dict[str, Any]) -> None:
         raise ValidationError(f"`department_markets` con centrales que no están en `markets`: {unknown_markets}.")
 
 
-def validate_crop_market_overrides(region: dict[str, Any]) -> None:
+def validate_crop_market_overrides(region: dict[str, Any], crop_ids: set[str] | None = None) -> None:
     """`crop_market_overrides` de `region.yaml` (HU-073, decisión 17): por departamento y cultivo, la central que da el
     precio cuando la del departamento no publica ese cultivo, con su porqué. Cada departamento está en `departments`,
     cada central en `markets`, cada cultivo en snake_case y cada `reason` dice algo: una central sin porqué no se usa
-    (R1, R5). Sin el campo no hay qué validar."""
+    (R1, R5). Con `crop_ids` (los de `catalog/crops.yaml`), cada cultivo existe en el catálogo (revisión del PR #170,
+    como en el #169). Sin el campo no hay qué validar."""
     entry = region["region"]
     overrides = entry.get("crop_market_overrides")
     if not overrides:
@@ -158,6 +159,8 @@ def validate_crop_market_overrides(region: dict[str, Any]) -> None:
             where = f"`crop_market_overrides` del departamento {department}, {crop_id!r}"
             if not isinstance(crop_id, str) or not CROP_ID.match(crop_id):
                 raise ValidationError(f"{where}: el `crop_id` va en snake_case y sin tildes.")
+            if crop_ids is not None and crop_id not in crop_ids:
+                raise ValidationError(f"{where}: el cultivo no está en `catalog/crops.yaml`.")
             if not isinstance(override, dict) or set(override) != {"market_id", "reason"}:
                 raise ValidationError(f"{where}: lleva `market_id` y `reason`, y nada más.")
             if override["market_id"] not in markets:
@@ -489,7 +492,7 @@ def publish(
     """
     validate(municipalities, sources)
     validate_department_markets(region)
-    validate_crop_market_overrides(region)
+    validate_crop_market_overrides(region, set(crops[1]["crop_id"].to_list()) if crops is not None else None)
     if boundaries is not None:
         validate_boundaries(boundaries, municipalities, sources)
     season = month = latest = None

@@ -12,6 +12,7 @@ from backend.api.calc_examples import SIGNALS_OK
 from backend.engine.market_signal import (
     CROP_OVERRIDE,
     DEPARTMENT,
+    NO_COUNT_REASON,
     NO_DATA_REASON,
     UNRATED_LIMITATION,
     UNRATED_REASON,
@@ -49,7 +50,7 @@ def test_sin_historia_es_sin_datos_con_la_razon_del_contrato():
 def test_con_historia_es_disponible_sin_calificar():
     result = market_signal(SEPTEMBER, "la papa", "la papa negra")
     assert (result.status, result.level, result.score, result.critical) == (AVAILABLE, None, None, False)
-    assert result.indicators == ("seasonal_index",)
+    assert result.indicators == ("seasonal_index", "years_above", "years_below")  # el ejemplo del contrato
     assert result.limitations == (UNRATED_LIMITATION,)
     assert result.price_history == SEPTEMBER
 
@@ -102,9 +103,19 @@ def test_sin_nombre_del_producto_va_solo_el_cultivo():
 def test_con_la_central_del_cultivo_la_razon_dice_por_que():
     override = replace(SEPTEMBER, market_basis=CROP_OVERRIDE)
     reasons = market_signal(override, "la papa", "la papa negra", OVERRIDE_REASON).reasons
-    assert reasons[-1] == f"Se usa Corabastos: {OVERRIDE_REASON}"
+    # El porqué de la central va antes de la historia (revisión del PR #170, como en el #169).
+    assert reasons[:2] == (UNRATED_REASON, f"Se usa Corabastos: {OVERRIDE_REASON}")
+    assert reasons[2].startswith("En Corabastos, en septiembre")
     # Con la central del departamento no se dice nada más, aunque llegue un porqué.
     assert len(market_signal(SEPTEMBER, "la papa", "la papa negra", OVERRIDE_REASON).reasons) == 2
+
+
+@pytest.mark.parametrize("missing", [{"years_above": None}, {"years_below": None}, {"years_above": None, "years_below": None}])
+def test_sin_los_anos_contados_es_sin_datos_y_no_los_inventa(missing):
+    """Un `market_month` publicado antes de HU-073 no trae los años contados: `insufficient_data`, nunca un 500 ni un
+    conteo inventado (R1, R5; revisión del PR #170)."""
+    result = market_signal(replace(SEPTEMBER, **missing), "la papa", "la papa negra")
+    assert result == MarketSignalResult(INSUFFICIENT_DATA, None, False, None, (), (NO_COUNT_REASON,), (NO_COUNT_REASON,))
 
 
 def test_la_historia_no_es_veredicto_ni_pronostico():
