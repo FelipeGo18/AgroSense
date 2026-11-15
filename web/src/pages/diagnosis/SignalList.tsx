@@ -17,6 +17,7 @@ import {
   sourceName,
   sourceNote,
   supplyNote,
+  type PriceHistory as PriceHistoryData,
   type Signal,
   type SourceValue,
   type SupplySemester,
