@@ -148,11 +148,15 @@ Los cultivos dependen de la región piloto, confirmada el 28 de octubre de 2026:
 ### HU-227 · Valor como forraje en el catálogo
 
 - **Historia:** Como agricultor con ganado, quiero saber qué ciclos de una estrategia me dan forraje, para elegir una rotación que también alimente a mis animales.
-- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** en curso (esperando la aprobación del contrato)
 - **Criterios de aceptación:**
-  - [ ] La ficha de cada cultivo dice si sirve de forraje (`forage`), con fuente (R8); sin fuente, nulo
-  - [ ] Las razones de una estrategia lo dicen cuando un ciclo da forraje (por ejemplo, la avena con vicia)
-  - [ ] No entra a ningún criterio del ranking hasta que se decida cómo (supuesto por confirmar: un peso propio o dentro de `income`)
-- **Reglas que aplican:** R5, R8
-- **Contrato que toca:** `crops`
-- **Notas:** Decisión 14: el enunciado completo nombra el valor como forraje entre las prioridades del agricultor. Agregada el 8 de noviembre de 2026.
+  - [ ] **Contrato (aprobación de Haider o Felipe, pendiente).** `crops.forage` es un booleano o nulo, como `fixes_nitrogen`, en `pipeline/schema.py` y `catalog/crops.yaml` (`forage: {v, s, n}`). El contrato (`specs/02-contratos.md`) se actualiza cuando se aprueba la propuesta, no antes. Sin `s` válido en `sources`, el valor es nulo con su nota (R1, R8); el build rechaza un `forage` con valor y sin fuente. El descanso (`kind = fallow`) no lleva `forage`: nulo sin fuente
+  - [ ] La ficha de cada cultivo y abono verde dice si sirve de forraje, con fuente (R8). Un cultivo sin fuente queda nulo; no se supone `false`
+  - [ ] **Razones.** Por cada ciclo con `forage = true`, la estrategia trae una razón corta de plantilla fija, por ejemplo «El ciclo 2 (avena con vicia) da forraje», que solo cita lo que dice la ficha (R5). Va como razón informativa aparte de las de HU-083: no ocupa uno de sus 2 a 4 lugares ni cambia el orden de las razones ya definidas. No se dice nada de un ciclo con `forage` nulo o `false`, ni cuánto forraje da
+  - [ ] Ninguna razón de forraje cambia un puntaje, un criterio, `total_score` ni `rank`: dos ejecuciones con y sin `forage` dan los mismos números (R4)
+  - [ ] **Borde.** Un descanso y un ciclo con `forage` nulo no generan razón de forraje; una estrategia sin ciclos con forraje no la trae
+  - [ ] No entra a ningún criterio del ranking hasta que se decida cómo (supuesto por confirmar: un peso propio o dentro de `income`). Entrar al ranking sería un cambio de `specs/01-reglas.md` y de las prioridades de la rotación, y se registra en `docs/decisiones.md`
+  - [ ] **Orden de los PR:** A, esta spec con la propuesta en la nota (solo `specs/epicas/` y `specs/BACKLOG.md`); B, catálogo, esquema y dataset, después de la aprobación; C, las razones, después de que se fusione el PR #150 de `backend/engine/rotations/reasons.py`
+- **Reglas que aplican:** R4, R5, R8
+- **Contrato que toca:** `crops` (propuesta de la columna `forage`, pendiente de aprobar)
+- **Notas:** Decisión 14: el enunciado completo nombra el valor como forraje entre las prioridades del agricultor. Agregada el 8 de noviembre de 2026. **Propuesta del 15 nov 2026, pendiente de aprobar por Haider o Felipe** (no es contrato hasta que la aprueben): columna nueva `forage` en `crops`, con la misma forma que `fixes_nitrogen`: booleano (`true` si el cultivo o abono verde sirve de forraje para el ganado) o nulo. Cada valor lleva su fuente (`source_id` en `sources`, R8) y, si no hay fuente, es nulo (R1). Al descanso (`kind = fallow`) no se le pide: queda nulo sin fuente y el motor nunca dice que da forraje. Es informativa: no entra al ranking ni cambia ningún puntaje. La columna se agrega al contrato cuando la aprueben (PR B), y con ella `pipeline/schema.py`, `catalog/crops.yaml` y el dataset. Los valores por cultivo no están escritos: faltan las fuentes (se buscan aparte; no se inventan, R8). Las razones dependen del PR #150 (abierto) y de HU-083.
