@@ -93,6 +93,7 @@ Ninguno cambia la forma de las tablas:
 
 - Si EVA trae el código DIVIPOLA y cómo son sus semestres (HU-001). Se toma A = enero a junio y B = julio a diciembre. El semestre solo existe en `supply_semester`: la decisión se toma sobre ventanas de siembra (ver `specs/01-reglas.md`) y la oferta se lee del semestre en que cae la fecha de siembra. **Si EVA no sirve, la señal `supply` queda en `insufficient_data` (R1) y el diagnóstico sigue: no se calcula sin ella** (regla 1 de la agregación).
 - `planted_change_pct` compara contra el promedio de los tres mismos semestres anteriores; con menos de tres, `quality = partial` y, sin ninguno, la fila no trae el cambio (nulo).
+  **HU-032, aprobado por Felipe el 15 de noviembre de 2026 (PR #159)** (las columnas no cambian): los tres semestres son los del mismo semestre de los tres años anteriores (una ventana fija) y solo cuentan los que tienen área sembrada; con un promedio de 0 ha el cambio también es nulo. `dept_share_pct` es el área sembrada del municipio entre la suma de los municipios de su departamento con fila en ese cultivo y semestre (los que reportan), en %; nula si alguno no trae el área o el total es 0. Definición completa en EP-03, HU-032.
 
 ## Configuración versionada
 
@@ -392,7 +393,7 @@ Endpoints previstos (P1, sin implementar; requieren sesión y el rol indicado, s
 
 - `/diagnostics`, `/rotations`, `/water-plans`, `/changes`, `/calendar` y `/scenarios` **no guardan los datos de la finca ni quién consultó (R9)**, con o sin cuenta. Desde HU-170 (P1) solo suman 1 al contador anónimo `usage_daily`.
 - Con sesión, `/diagnostics` y `/rotations` (y `/calendar`, P1) aceptan `lot_id` solo para leer el lote: usan su suelo, su altitud (para la aptitud) y su verdor (las medianas de las celdas cuyo centro cae dentro de su polígono) y su `irrigated`; el resultado es el mismo que si se enviaran esos datos. `/water-plans` y `/changes` no reciben `lot_id` y usan siempre los datos del municipio, también con cuenta.
-- Para las estrategias de un lote, la web envía en `previous_crop_ids` los cultivos de las temporadas de las que viene el terreno que se va a sembrar (`follows_season_ids`). Sin cuenta, el usuario elige a mano el cultivo anterior, o ninguno.
+- Para las estrategias de un lote, la web envía en `previous_crop_ids` los cultivos de las temporadas de las que viene el terreno que se va a sembrar (`follows_season_ids`) y de todas las anteriores a ellas, la más reciente primero, hasta 3 (aclarado y aprobado por Felipe el 15 de noviembre de 2026, HU-165: así el corte de plagas ve también lo de hace dos ciclos). Sin cuenta, el usuario elige a mano el cultivo anterior, o ninguno.
 - Para el agua de un ciclo de una estrategia, la web llama a `/water-plans` con el cultivo del ciclo, su `sowing_date`, el área de la entrada como `total_area_ha` y `area_pct` 100 (HU-215).
 - Para el plan de agua de una zona (P1, HU-145), la web arma `crops` con las temporadas en curso de los lotes de ese municipio: `total_area_ha` es la suma de las áreas de los lotes y `area_pct` la parte de cada temporada (`seasons.area_ha` / `total_area_ha`).
 
@@ -654,7 +655,7 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - `soil_basis` y `slope_basis`: `lot` o `municipality`, de dónde salen el suelo y la pendiente.
 - Sin estrategias válidas, `strategies` viene vacía y `excluded` dice por qué.
 
-Con cuenta, la web arma `previous_crop_ids` con los cultivos de las temporadas de las que viene el terreno que se va a sembrar (`follows_season_ids`). Con el suelo (del lote o del municipio): un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` excluye la estrategia por regla (R3); el carbono orgánico entra al criterio `organic_carbon` de `soil_health`, con reglas de `rotation_rules` con fuente. Cada estrategia trae de 2 a 4 razones.
+Con cuenta, la web arma `previous_crop_ids` con los cultivos de las temporadas de las que viene el terreno que se va a sembrar (`follows_season_ids`) y de todas las anteriores a ellas, la más reciente primero, hasta 3 (HU-165). Con el suelo (del lote o del municipio): un cultivo cuyo rango de pH tolerado queda fuera de **todo** el intervalo `ph_p05`–`ph_p95` excluye la estrategia por regla (R3); el carbono orgánico entra al criterio `organic_carbon` de `soil_health`, con reglas de `rotation_rules` con fuente. Cada estrategia trae de 2 a 4 razones.
 
 Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 2 ciclos sin `soil_health`, y `previous_crop_ids` pedía al menos un cultivo.
 

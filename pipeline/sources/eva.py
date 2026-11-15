@@ -24,7 +24,11 @@ varios códigos (por ejemplo, el maíz amarillo y el blanco), sus áreas y su pr
 oferta: cuánto se sembró de ese cultivo. Si alguna de las filas sumadas no trae un valor, el total de ese valor queda
 nulo: no se suma una parte como si fuera el todo (R1).
 
-Lo propio de Colombia (DIVIPOLA, la clasificación EVA, los semestres) vive solo en este adaptador (R7).
+**Indicadores (HU-032).** `planted_change_pct` y `dept_share_pct` salen del área sembrada ya sumada; la definición
+está en `indicators()` y en EP-03.
+
+Lo propio de Colombia (DIVIPOLA y su departamento, la clasificación EVA, los semestres) vive solo en este adaptador
+(R7).
 """
 
 import csv
@@ -76,6 +80,9 @@ VALUES = ("planted_ha", "harvested_ha", "production_t", "yield_t_ha")
 SEMESTER = re.compile(r"^(\d{4})([AB])$")
 DIVIPOLA = re.compile(r"^\d{5}$")
 PRELIMINARY_YEARS = 2
+# La variación del área sembrada compara contra el promedio del mismo semestre de estos años anteriores
+# (specs/02-contratos.md, «Lo que depende de verificar una fuente»; HU-032).
+CHANGE_YEARS = 3
 
 # Los motivos para descartar una fila de un cultivo del MVP (HU-031: «filas rechazadas reportadas con motivo»).
 REASONS = ("outside_region", "unknown_municipality", "no_semester", "bad_value", "negative_value", "no_data", "duplicate")
@@ -265,20 +272,52 @@ def normalize(
         **{col: pl.col(col).round(2) for col in ("planted_ha", "harvested_ha", "production_t")},
     )
     complete = pl.all_horizontal(pl.col(col).is_not_null() for col in VALUES)
+    summed = indicators(summed)
     return (
         summed.with_columns(
             source_id=pl.lit(SOURCE_ID),
-            # La variación del área sembrada y la participación del departamento son de HU-032: nulas hasta entonces.
-            planted_change_pct=pl.lit(None, dtype=pl.Float64),
-            dept_share_pct=pl.lit(None, dtype=pl.Float64),
             preliminary=pl.col("year") >= preliminary_from,
-            # `partial` si EVA no trae alguno de los cuatro valores (contrato, «Valores de `quality`»).
-            quality=pl.when(complete).then(pl.lit("ok")).otherwise(pl.lit("partial")),
+            # `partial` si EVA no trae alguno de los cuatro valores (contrato, «Valores de `quality`») o si la variación
+            # tuvo menos de tres semestres anteriores con dato (contrato, HU-032).
+            quality=pl.when(complete & (pl.col("prior_semesters") >= CHANGE_YEARS)).then(pl.lit("ok")).otherwise(pl.lit("partial")),
         )
         .select(list(OUTPUT_SCHEMA))
         .cast(OUTPUT_SCHEMA)
         .sort(key)
     )
+
+
+def indicators(table: pl.DataFrame) -> pl.DataFrame:
+    """Los dos indicadores de HU-032 sobre las filas ya sumadas por municipio, cultivo, año y semestre.
+
+    - **`planted_change_pct`:** cuánto cambió el área sembrada frente al promedio del mismo semestre de los tres años
+      anteriores (para 2025B, 2022B, 2023B y 2024B), en %: (sembrada − promedio) / promedio × 100, con un decimal. Solo
+      cuentan los semestres con dato: un año sin fila es sin dato (R1), no 0 ha. Sin ninguno, o con un promedio de 0 ha
+      (no se puede dividir), es nulo. `prior_semesters` dice cuántos hubo: con menos de tres la fila es `partial`.
+    - **`dept_share_pct`:** qué parte del área sembrada del departamento en ese cultivo y semestre es del municipio, en %,
+      con dos decimales. El departamento son los dos primeros dígitos del DIVIPOLA. El total suma los municipios con
+      fila: es la parte entre los que reportan. Si uno de ellos no trae el área, o el total es 0, es nulo (R1).
+    """
+    crop = ["municipality_id", "crop_id", "semester"]
+    planted = table.select(*crop, prior_year="year", prior_ha="planted_ha").drop_nulls("prior_ha")
+    window = (
+        table.select(*crop, "year")
+        .join(planted, on=crop)
+        .filter((pl.col("prior_year") < pl.col("year")) & (pl.col("prior_year") >= pl.col("year") - CHANGE_YEARS))
+        .group_by(*crop, "year")
+        .agg(prior_semesters=pl.len(), prior_avg=pl.col("prior_ha").mean())
+    )
+    table = table.join(window, on=[*crop, "year"], how="left").with_columns(prior_semesters=pl.col("prior_semesters").fill_null(0))
+    department = ["department", "crop_id", "year", "semester"]
+    table = table.with_columns(department=pl.col("municipality_id").str.slice(0, 2))
+    totals = table.group_by(department).agg(dept_ha=pl.when(pl.col("planted_ha").null_count() == 0).then(pl.col("planted_ha").sum()))
+    table = table.join(totals, on=department, how="left")
+    return table.with_columns(
+        planted_change_pct=pl.when(pl.col("prior_avg") > 0).then(
+            ((pl.col("planted_ha") - pl.col("prior_avg")) / pl.col("prior_avg") * 100).round(1)
+        ),
+        dept_share_pct=pl.when(pl.col("dept_ha") > 0).then((pl.col("planted_ha") / pl.col("dept_ha") * 100).round(2)),
+    ).drop("prior_avg", "department", "dept_ha")
 
 
 def source(meta: dict[str, Any], table: pl.DataFrame) -> dict[str, Any]:
@@ -310,6 +349,9 @@ def source(meta: dict[str, Any], table: pl.DataFrame) -> dict[str, Any]:
             "Área sembrada y cosechada, producción y rendimiento por municipio (DIVIPOLA), cultivo y semestre de siembra "
             "(A = enero a junio, B = julio a diciembre; supuesto por confirmar en HU-001). Desde 2022 el área cosechada, la "
             "producción y el rendimiento son las cosechas efectivas de cada semestre; antes, las de sus siembras. Las cifras "
-            "de los dos últimos años son preliminares. Los cultivos salen de pipeline/eva_crops.yaml (HU-031)."
+            "de los dos últimos años son preliminares. Los cultivos salen de pipeline/eva_crops.yaml (HU-031). La variación "
+            "del área sembrada es contra el promedio del mismo semestre de los tres años anteriores con dato (nula sin "
+            "ninguno o con promedio 0; partial con menos de tres) y la participación es la del municipio entre los que "
+            "reportan en su departamento (HU-032). En muchas filas EVA repite el área del mismo semestre del año anterior."
         ),
     }

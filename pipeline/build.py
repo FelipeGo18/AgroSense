@@ -399,7 +399,7 @@ def validate_ndvi(ndvi: pl.DataFrame, normal: pl.DataFrame, municipalities: pl.D
 
 
 def validate_supply(supply: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame, catalog_ids: set[str] | None) -> None:
-    """`supply_semester` (HU-031) solo trae municipios publicados (R7), cultivos del catálogo, semestres A o B, valores no
+    """`supply_semester` (HU-031, HU-032) solo trae municipios publicados (R7), cultivos del catálogo, semestres A o B, valores no
     negativos y fuentes que existen (R8)."""
     extra = set(supply["municipality_id"].to_list()) - set(municipalities["municipality_id"].to_list())
     if extra:
@@ -415,6 +415,19 @@ def validate_supply(supply: pl.DataFrame, municipalities: pl.DataFrame, sources:
     unknown = set(supply["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
     if unknown:
         raise ValidationError(f"`supply_semester` cita una fuente que no está en `sources`: {sorted(unknown)}")
+    # HU-032: la participación es una parte del total de su departamento (de 0 a 100) y, cuando todos los municipios de
+    # un departamento, cultivo y semestre la traen, suma 100 (con el redondeo a dos decimales). La variación no baja de
+    # -100 %: el área sembrada no es negativa.
+    out = supply.filter((pl.col("dept_share_pct") < 0) | (pl.col("dept_share_pct") > 100) | (pl.col("planted_change_pct") < -100))
+    if not out.is_empty():
+        raise ValidationError(f"`supply_semester` con una variación o una participación imposible: {out.head(3).to_dicts()}")
+    share = (
+        supply.group_by(pl.col("municipality_id").str.slice(0, 2).alias("department"), "crop_id", "year", "semester")
+        .agg(total=pl.col("dept_share_pct").sum(), rows=pl.len(), missing=pl.col("dept_share_pct").null_count())
+        .filter((pl.col("missing") == 0) & ((pl.col("total") - 100).abs() > 0.01 * pl.col("rows")))
+    )
+    if not share.is_empty():
+        raise ValidationError(f"`supply_semester`: la participación de un departamento no suma 100: {share.head(3).to_dicts()}")
 
 
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
@@ -645,7 +658,8 @@ def publish(
         coverage = (
             f"{supply['municipality_id'].n_unique()} municipios; {', '.join(sorted(set(supply['crop_id'].to_list())))}; "
             f"siembras de {first['year']}{first['semester']} a {last['year']}{last['semester']}; "
-            f"preliminares {', '.join(map(str, preliminary)) or 'ninguno'}"
+            f"preliminares {', '.join(map(str, preliminary)) or 'ninguno'}; "
+            f"{supply.filter(pl.col('quality') == 'partial').height} partial"
         )
         manifest["tables"]["supply_semester"] = {"rows": supply.height, "coverage": coverage}
     if has_ndvi:
