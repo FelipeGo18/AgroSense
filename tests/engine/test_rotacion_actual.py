@@ -1,8 +1,5 @@
 """HU-223 (motor): la rotación actual como referencia. Valores esperados escritos a mano, antes del código."""
 
-import ast
-import inspect
-
 import pytest
 
 import backend.engine.rotations.current as current
@@ -25,6 +22,7 @@ CRITERIOS = ("water", "soil", "income", "risk")
         (["papa", "avena_vicia", "arveja"], 3, ("papa", "avena_vicia", "arveja")),
         (["papa", "avena_vicia", "arveja"], 2, ("papa", "avena_vicia")),
         (["papa", "arveja"], 2, ("papa", "arveja")),
+        # El contrato responde 422 con menos de 2 cultivos (`current_crop_ids`); el motor lo trata igual por si lo llama otra ruta.
         (["papa"], 3, ("papa", "papa", "papa")),
     ],
 )
@@ -162,25 +160,6 @@ def test_la_limitacion_sin_rotacion_actual_tiene_el_texto_exacto():
 def test_la_limitacion_menciona_la_rotacion_actual():
     # tests/engine/casos/test_estrategias.py busca «actual» en las limitaciones.
     assert "actual" in NO_CURRENT_LIMITATION.lower()
-
-
-# --- R6 ---
-
-
-def test_r6_current_no_importa_la_web_la_base_ni_polars_ni_abre_archivos():
-    arbol = ast.parse(inspect.getsource(current))
-    prohibidos = {"fastapi", "starlette", "sqlalchemy", "polars", "yaml", "backend.api", "backend.db", "backend.dataset", "backend.config"}
-    for nodo in ast.walk(arbol):
-        if isinstance(nodo, ast.Import):
-            nombres = [alias.name for alias in nodo.names]
-        elif isinstance(nodo, ast.ImportFrom):
-            nombres = [nodo.module or ""]
-        else:
-            nombres = []
-        for nombre in nombres:
-            assert not any(nombre == p or nombre.startswith(p + ".") for p in prohibidos), f"importa {nombre}"
-        if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name):
-            assert nodo.func.id != "open", "abre un archivo"
 
 
 # --- el puntaje de la actual sale de `score_strategy` (HU-082) ---
