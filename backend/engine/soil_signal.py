@@ -49,7 +49,7 @@ from backend.engine.signal_score import (
     UNFAVORABLE,
     score_signal,
 )
-from common.text import format_decimal
+from common.text import format_decimal, of
 
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
@@ -104,7 +104,7 @@ def soil_signal(soil: ZoneSoilPh | None, crop_limits: Mapping[str, Any], thresho
     score = score_signal(SOIL, soil.ph, thresholds, crop_limits)
     if score.status != AVAILABLE or score.score is None:
         return _insufficient(
-            f"La ficha de {crop_name} no trae con fuente su rango de pH (ph_min, ph_opt_min, ph_opt_max y ph_max): el suelo no se califica"
+            f"La ficha {of(crop_name)} no trae con fuente su rango de pH (ph_min, ph_opt_min, ph_opt_max y ph_max): el suelo no se califica"
         )
     ph = float(soil.ph)
     ph_min, ph_opt_min, ph_opt_max, ph_max = (float(crop_limits[k]) for k in ("ph_min", "ph_opt_min", "ph_opt_max", "ph_max"))
@@ -153,10 +153,10 @@ def _relation(ph: float, ph_min: float, ph_opt_min: float, ph_opt_max: float, ph
     if ph > ph_max:
         return f"más alcalino de lo que tolera {crop_name} {tolerated}"
     if ph < ph_opt_min:
-        return f"más ácido que el óptimo de {crop_name} {optimum}"
+        return f"más ácido que el óptimo {of(crop_name)} {optimum}"
     if ph > ph_opt_max:
-        return f"más alcalino que el óptimo de {crop_name} {optimum}"
-    return f"dentro del óptimo de {crop_name} {optimum}"
+        return f"más alcalino que el óptimo {of(crop_name)} {optimum}"
+    return f"dentro del óptimo {of(crop_name)} {optimum}"
 
 
 def _missing(value: float | None) -> bool:

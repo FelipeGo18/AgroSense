@@ -29,3 +29,8 @@ def join(items: Iterable[str]) -> str:
     """«a», «a y b», «a, b y c»."""
     words = list(items)
     return words[0] if len(words) == 1 else f"{', '.join(words[:-1])} y {words[-1]}"
+
+
+def of(name: str) -> str:
+    """«de» delante de un nombre con su artículo, con la contracción del español: «de la papa», «del maíz»."""
+    return f"del {name[3:]}" if name.startswith("el ") else f"de {name}"

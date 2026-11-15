@@ -73,7 +73,7 @@ from backend.engine.window_order import WindowSignals, best_windows, order_windo
 from common.dates import add_months
 from common.region import region_today
 from common.signal_sources import get_signal_sources
-from common.text import format_number
+from common.text import format_number, of
 
 router = APIRouter(prefix="/api/v1", tags=["cálculo"])
 
@@ -211,7 +211,7 @@ def _suitability_reason(
     temperature = _temperature_phrase(zone, municipality)
 
     if result.level == SUITABLE:
-        return f"{temperature} está dentro del rango de {name} ({format_number(tmean_min_c)} a {format_number(tmean_max_c)} °C)"
+        return f"{temperature} está dentro del rango {of(name)} ({format_number(tmean_min_c)} a {format_number(tmean_max_c)} °C)"
     if result.exceeded == ABOVE_MAX:
         return f"{temperature} pasa de la que aguanta {name} (hasta {format_number(tmean_max_c)} °C)"
     return f"{temperature} no alcanza la que necesita {name} (desde {format_number(tmean_min_c)} °C)"
@@ -226,7 +226,7 @@ def _missing_suitability_reason(crop: dict[str, Any], zone: ZoneTemperature) -> 
     la del lote, `zone.limitation` dice además por qué no se pudo estimar."""
     name = _crop_name(crop)
     if any(crop.get(field) is None for field in SUITABILITY_LIMITS):
-        return f"La ficha de {name} no tiene con fuente su rango de temperatura media anual: no se sabe si se da en su zona"
+        return f"La ficha {of(name)} no tiene con fuente su rango de temperatura media anual: no se sabe si se da en su zona"
     place = "de su lote" if zone.basis == "lot" else "del municipio"
     return f"Sin la temperatura media anual {place}: no se sabe si {name} se da en su zona"
 

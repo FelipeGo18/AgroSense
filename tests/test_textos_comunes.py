@@ -4,7 +4,7 @@ la aptitud, la de heladas y los boletines de SIPSA, sin importarse (R6)."""
 import pytest
 
 from common.months import MONTH_NAMES, month_name
-from common.text import format_decimal, format_number, join
+from common.text import format_decimal, format_number, join, of
 
 
 @pytest.mark.parametrize(
@@ -52,3 +52,10 @@ def test_los_meses_estan_en_orden_y_en_minuscula():
 @pytest.mark.parametrize(("month", "expected"), [(1, "enero"), (9, "septiembre"), (12, "diciembre")])
 def test_month_name_cuenta_desde_uno(month, expected):
     assert month_name(month) == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"), [("la papa", "de la papa"), ("el maíz", "del maíz"), ("la cebolla de bulbo", "de la cebolla de bulbo")]
+)
+def test_of_contrae_de_el_en_del(name, expected):
+    assert of(name) == expected
