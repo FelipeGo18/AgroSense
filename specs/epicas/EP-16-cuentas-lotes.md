@@ -278,7 +278,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [x] Si GIBS no responde, el mapa sigue con OpenStreetMap y lo dice; dibujar el lote no depende de la capa
   - [x] La capa es solo para ver: no entra al motor ni cambia un resultado
   - [x] Funciona en el mapa de dibujo (HU-164) y en Mi finca (HU-169)
-  - [ ] Entrada de GIBS en `sources` con sus condiciones de uso verificadas, y su misión, resolución, periodo y acceso (HU-122). `catalog/gibs.json` y `pipeline.build` la traen; falta publicarla con la próxima reconstrucción del dataset
+  - [x] Entrada de GIBS en `sources` con sus condiciones de uso verificadas, y su misión, resolución, periodo y acceso (HU-122). `catalog/gibs.json` y `pipeline.build` la traen; publicada en el dataset 2026.11.28 (reconstruido con la caché compartida de HU-237, 15 de noviembre de 2026), con su fila en `docs/licencias.md`
   - [ ] `npm run test:responsive` pasa con el panel abierto y las dos capas (`web/CLAUDE.md`)
 - **Reglas que aplican:** R5, R8, R10
 - **Verificación (15 nov 2026):** `LotMap` comparte el panel entre crear/editar lote, su detalle y Mi finca. MODIS Terra color real y NDVI móvil de 8 días, fechas individuales de `GetCapabilities`, nivel 9 Web Mercator sin inventar detalle al ampliar. Catálogo con límite de 15 s, teselas con límite de 20 s, error aislado por capa y reintento. Pruebas en `web/src/components/map/gibs.test.tsx`, regresión de finca y `tests/test_procedencia.py`; el CI existente las ejecuta. Chrome con teselas reales sobre Duitama, anchos 320/360/768/1280 y fallos forzados de catálogo y teselas, sin errores de JavaScript. Procedencia en `catalog/gibs.json`, que publica `pipeline.build` (el único camino de publicación, R4). No cambia el contrato ni el motor.
