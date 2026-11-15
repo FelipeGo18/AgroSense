@@ -35,7 +35,10 @@ CRITERION_NAMES = {"water": "agua", "soil": "suelo", "income": "ingreso", "risk"
 CRITERION_RULES = {
     "water": "el promedio de la calificación de agua de sus ciclos",
     "soil": "el promedio de los cinco criterios de salud del suelo",
-    "income": "el promedio de la oferta y el mercado de sus ciclos, con el abono verde y el descanso en 0",
+    "income": (
+        "el porcentaje de años en que el mes de cosecha de sus ciclos tuvo mejor precio que el resto de su año, con el abono "
+        "verde y el descanso en 0"
+    ),
     "risk": "el factor que más limita entre sus ciclos",
 }
 SOIL_CRITERION_NAMES = {

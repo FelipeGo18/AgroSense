@@ -24,15 +24,19 @@ from tests.engine.test_salud_del_suelo_motor import _sh
 EQUAL = {"water": 3, "soil": 3, "income": 3, "risk": 3}
 WEIGHTS = {"water": 3, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
 FALLOW = CycleScores("fallow", None)
+# Un cultivo sin diagnóstico ni historia de precio: no califica en ningún criterio (el descanso vale 0 en el ingreso).
+NO_DATA_CROP = CycleScores("crop", None)
 NO_DATA = SignalScore("insufficient_data", None, None, False)
 
 
 def crop(water=80, frost=90, heat=95, soil=70, supply=60, kind="crop") -> CycleScores:
+    """La calificación de `supply` sigue sirviendo para el riesgo; el ingreso del ciclo (HU-241, el porcentaje de años en
+    que el mes de la cosecha tuvo mejor precio) es el mismo número, para que las cuentas de estas pruebas no cambien."""
     values = {"water": water, "frost": frost, "heat": heat, "soil": soil, "supply": supply, "market": None}
     signals = {
         n: NO_DATA if v is None else SignalScore("available", v, "favorable" if v >= 70 else "moderate", False) for n, v in values.items()
     }
-    return CycleScores(kind, signals)
+    return CycleScores(kind, signals, None if supply is None else float(supply))
 
 
 NITROGEN = Criterion(
@@ -84,7 +88,10 @@ def test_sin_rotacion_actual_no_hay_razon_frente_a_ella():
 
 def test_frente_a_la_actual_sin_ganancia_dice_donde_pierde():
     _, reasons = reasons_for((crop(),), {}, vs_current={"water": 0, "soil": None, "income": -9, "risk": -1, "total": -3})
-    income = "el promedio de la oferta y el mercado de sus ciclos, con el abono verde y el descanso en 0"
+    income = (
+        "el porcentaje de años en que el mes de cosecha de sus ciclos tuvo mejor precio que el resto de su año, con el abono "
+        "verde y el descanso en 0"
+    )
     assert f"Su criterio de ingreso califica 9 puntos menos que el de su rotación actual: ese criterio es {income}" in reasons
 
 
@@ -126,10 +133,11 @@ def test_el_factor_limitante_es_el_del_riesgo_y_el_primer_ciclo_en_un_empate():
 
 
 def test_con_pocos_datos_no_se_rellena_y_se_dice_que_pasa_las_reglas():
-    """Un descanso solo y sin salud del suelo: ningún criterio califica, así que no hay total, ni suelo, ni factor
+    """Un cultivo sin diagnóstico ni historia de precio, y sin salud del suelo: ningún criterio califica, así que no
+    hay total, ni suelo, ni factor
     limitante. Lo único cierto es por qué no tiene total y que pasó las reglas de rotación (R1, R5). Con el suelo
     nulo y prioridad solo en el suelo, los que califican tienen prioridad 0."""
-    _, reasons = reasons_for((FALLOW,), {})
+    _, reasons = reasons_for((NO_DATA_CROP,), {})
     assert reasons == (NO_TOTAL_DATA, PASSES_RULES)
     zero = {"water": 0, "soil": 0, "income": 0, "risk": 0}
     _, reasons = reasons_for((crop(),), {}, priorities={**zero, "soil": 5})
@@ -215,7 +223,7 @@ def test_la_rotacion_actual_empieza_por_decirlo_y_nunca_dice_que_pasa_las_reglas
     assert reasons[0] == CURRENT_REASON
     assert PASSES_RULES not in reasons
     assert 2 <= len(reasons) <= 4
-    reasons = current_reasons((FALLOW,), {})
+    reasons = current_reasons((NO_DATA_CROP,), {})
     assert reasons == (CURRENT_REASON, NO_TOTAL_DATA)
 
 
