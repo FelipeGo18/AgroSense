@@ -191,17 +191,20 @@ def traffic_light(suitability: str, signals: Mapping[str, SignalScore], weights:
     return TrafficLight(light, action, risk, limiting_name, reasons)
 
 
-def missing_data_limitations(signals: Mapping[str, SignalScore]) -> tuple[str, ...]:
+def missing_data_limitations(signals: Mapping[str, SignalScore], texts: Mapping[str, str] | None = None) -> tuple[str, ...]:
     """Una limitación en español por cada señal con `status = insufficient_data` (no por `not_applicable`), en el
     orden de `signal_order` (reglas 1 y 5 de «Agregación del semáforo»: la señal sin datos se dice). Una señal del P0
     ausente del mapa vale lo mismo que sin datos: no desaparece en silencio (R1).
 
     No depende de los pesos: la API la llama una vez por ventana, no una por luz. Por eso el texto no dice si la señal
     cambia la luz (sin el agua, con peso, la luz es `not_evaluable`).
+
+    `texts` es opcional: la frase ya escrita de una señal cuya falta no es de datos de la zona (la API sabe cuáles).
     """
+    texts = texts or {}
     names = sorted(set(P0_SIGNALS) | set(signals), key=signal_order)
     return tuple(
-        f"Sin datos para la zona: {SIGNAL_NAMES_ES.get(name, name)} no se evaluó."
+        texts.get(name) or f"Sin datos para la zona: {SIGNAL_NAMES_ES.get(name, name)} no se evaluó."
         for name in names
         if name not in signals or signals[name].status == INSUFFICIENT_DATA
     )

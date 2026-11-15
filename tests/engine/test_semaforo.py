@@ -692,3 +692,10 @@ def test_integrado_agua_en_su_corte_critico(umbrales, water_pct, score, expected
     assert signals["frost"].score == 100
 
     assert core(luz(signals, DEFAULTS, basis=DEFAULT)) == expected
+
+
+def test_una_frase_ya_escrita_reemplaza_la_de_sin_datos_sin_repetirse():
+    signals = ventana(water=INSUFFICIENT, frost=INSUFFICIENT)
+    phrase = "Esta versión todavía no evalúa el agua."
+    limitations = missing_data_limitations(signals, {"water": phrase})
+    assert limitations == (phrase, "Sin datos para la zona: la helada no se evaluó.")

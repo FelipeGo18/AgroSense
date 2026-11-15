@@ -21,6 +21,16 @@ class CropInfo:
     kind: str
     family: str | None
     secondary_families: tuple[str, ...] = ()
+    # Aptitud y pH (HU-081, fase 1): de la ficha; nulos si la ficha no los trae con fuente (R1, R8).
+    name_es: str | None = None
+    article: str | None = None
+    tmean_min_c: float | None = None
+    tmean_opt_min_c: float | None = None
+    tmean_opt_max_c: float | None = None
+    tmean_max_c: float | None = None
+    ph_min: float | None = None
+    ph_max: float | None = None
+    ph_source_id: str | None = None
 
 
 def candidates(crops: list[CropInfo], cycles: int) -> list[tuple[str, ...]]:
