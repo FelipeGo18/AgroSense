@@ -21,6 +21,10 @@
 # que dura un descanso (`kind = fallow`), un valor fijo de su ficha (decisión 7 del PR #109). Solo lo lleva el descanso: la
 # duración de un cultivo o de un abono verde sale de sus etapas. `criterio_equipo_2026` está también en
 # `catalog/rotation_rules.yaml`, con los mismos datos (una fuente de los dos catálogos es la misma en los dos).
+# Forraje (HU-227, aprobado por Felipe el 15 de noviembre de 2026, PR #155): `forage` es `true` si, en un cultivo, su residuo de
+# cosecha sirve de forraje, o si, en un abono verde, puede cortarse como forraje en vez de incorporarse. Sin fuente, nulo (R1);
+# el descanso no lo lleva. Es informativo: no entra al ranking ni cambia ningún puntaje. De Feedipedia solo se toma el hecho
+# y una cita corta con su atribución (`docs/licencias.md`).
 # Se descartó redactar la frase sin artículo de género ("el cultivo papa") porque suena forzado y cambiaría los
 # ejemplos ya documentados del OpenAPI. Sin este campo, el código antes adivinaba por la terminación del nombre
 # (heurística frágil, nunca llegó a producción); ahora, si falta, la API lanza un error explícito en vez de adivinar.
@@ -280,6 +284,51 @@ sources:
     coverage: "AgroSense, región piloto del altiplano (Colombia)"
     license: "Del proyecto"
     notes: "Criterio del equipo RealE4Life, NO una fuente agronómica externa, decidido el 10 nov 2026 porque ninguna fuente revisada da estos cortes (nota 9 de HU-062). Fija los cortes de las reglas papa_espera (pest_break: favorable desde 3 ciclos de otras familias antes de volver a Solanaceae, como equivalente aproximado de las «rotations of three or more years» de fao_papa_2008 p. 19, que habla de años y no de ciclos; y moderate con 2, que no sale de Agrosavia: se elige porque agrosavia_tibaitata_2022 evaluó en Tibaitatá una rotación con ese intervalo, papa - avena - arveja, y ese estudio mide propiedades químicas y físicas del suelo, no plagas; es una analogía y ninguna fuente da el corte; decidido por Felipe el 11 nov 2026), leguminosa_en_rotacion (nitrogen: favorable desde 1 ciclo con leguminosa, sin franja), materia_organica_ciclos (organic_carbon: con carbono bajo, favorable desde 2 ciclos de abono verde o descanso y moderate con 1; con carbono normal, favorable con 1 y moderate con 0), suelo_cubierto (soil_cover: favorable desde 80 % y moderate desde 60 %) y erosion_pendiente (erosion: favorable hasta 1 mes descubierto y moderate hasta 3). Se apoya en parte en fuentes externas que no dan estos cortes: fao_iyp_2019 (las leguminosas fijan nitrógeno), fao_papa_2008 p. 19 (leguminosas entre los cultivos que alternan con la papa), cevipapa_taller_2005 (tabla 3, p. 35: materia orgánica baja < 5 %, de donde sale soc_low_g_kg = 29 con el factor 1,724; y el diseño abono verde – papa – abono verde de Murcia, p. 51 a 53), fao_glosolan_wb_2019 p. 4 (factor de 1,7 a 2,0) e igac_capacidad_uso_2021 p. 15 (pendiente desde 12 %). Qué se apoya en qué: son datos externos citados el 29 g/kg (CEVIPAPA y FAO GLOSOLAN), el 12 % (IGAC) y «three or more years» (FAO 2008). Los cortes por ciclos, porcentaje y meses son del equipo: nitrógeno 1, carbono 2/1 y 1/0, cobertura 80/60 %, erosión 1/3 meses y papa_espera 3 y 2. Cada uno tiene una referencia externa y se rotula «criterio del equipo». Compara estrategias por reglas; no predice cuánto mejora el suelo. Pendiente de validar por un agrónomo."
+  - source_id: feedipedia_maize_stover
+    name: "Maize stover (Heuzé V., Tran G., Lebas F., 2019). Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
+    institution: "Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
+    url: "https://www.feedipedia.org/node/16072"
+    downloaded_at: "2026-11-15"
+    period_covered: "2019 (actualizada el 6 nov 2019)"
+    coverage: "Mundial (no es una fuente colombiana)"
+    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho y una cita corta, y no reproduce el contenido"
+    notes: "Secciones de la ficha: Datasheet > Description y Datasheet > Utilisation. Rastrojo de maíz cultivado para grano. La ficha lo llama fibroso y de baja digestibilidad. Cita corta: «Maize stover consists of the residues of maize (Zea mays L.) plants grown for grain and left in the field following the harvest.»"
+  - source_id: feedipedia_pea_forage
+    name: "Pea forage (Heuzé V., Tran G., Giger-Reverdin S., 2015). Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
+    institution: "Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
+    url: "https://www.feedipedia.org/node/7047"
+    downloaded_at: "2026-11-15"
+    period_covered: "2015 (actualizada el 29 sep 2015)"
+    coverage: "Mundial (no es una fuente colombiana)"
+    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho y una cita corta, y no reproduce el contenido"
+    notes: "Secciones de la ficha: Datasheet > Description y Nutritional aspects > Ruminants. Residuo de cosecha (paja o tallos y hojas); la paja es de calidad baja. Cita corta: «The crop residues from harvesting field peas, often named pea straw or pea haulms.»"
+  - source_id: feedipedia_oat_forage
+    name: "Oat forage (Heuzé V., Tran G., Boudon A., Lebas F., 2016). Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
+    institution: "Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
+    url: "https://www.feedipedia.org/node/500"
+    downloaded_at: "2026-11-15"
+    period_covered: "2016 (actualizada el 13 abr 2016)"
+    coverage: "Mundial (no es una fuente colombiana)"
+    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho y una cita corta, y no reproduce el contenido"
+    notes: "Secciones de la ficha: Datasheet > Description y Forage management > Oat-legume associations. La planta de avena como forraje y su asociación con leguminosas como la vicia. Cita corta: «Oat forage is mainly used for livestock feeding.»"
+  - source_id: feedipedia_common_vetch
+    name: "Common vetch (Vicia sativa) (Heuzé V., Tran G., Baumont R., 2015). Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
+    institution: "Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
+    url: "https://www.feedipedia.org/node/239"
+    downloaded_at: "2026-11-15"
+    period_covered: "2015 (actualizada el 11 may 2015)"
+    coverage: "Mundial (no es una fuente colombiana)"
+    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho y una cita corta, y no reproduce el contenido"
+    notes: "Secciones de la ficha: Datasheet > Utilisation. La ficha avisa de casos de intoxicación en rumiantes si se deja florecer. Cita corta: «Vicia sativa can be cut for fodder, grazed, fed as hay or ensiled.»"
+  - source_id: agrosavia_altoandina_2020
+    name: "Altoandina: nueva variedad de avena forrajera para la zona Andina en Colombia (Campuzano-Duque L.F., Castro-Rincón E., Castillo-Sierra J., Torres-Cuesta D., Nieto-Sierra D. y Portillo-López P.A., 2020). Agronomía Mesoamericana 31(3), p. 581 (Resumen)"
+    institution: "AGROSAVIA; revista Agronomía Mesoamericana, Universidad de Costa Rica"
+    url: "https://www.redalyc.org/articulo.oa?id=43764233005"
+    downloaded_at: "2026-11-15"
+    period_covered: "Prueba de evaluación agronómica del segundo semestre de 2016"
+    coverage: "Altiplano Cundiboyacense y Altiplano de Nariño (Colombia)"
+    license: "CC BY-NC-ND 4.0 (Creative Commons Atribución-NoComercial-SinDerivar, según el PDF de Redalyc)"
+    notes: "DOI 10.15517/am.v31i3.38999. Página 581 (Resumen, del PDF https://www.redalyc.org/journal/437/43764233005/43764233005.pdf). Cita: «rendimiento de forraje verde de 64,6 y 65,3 t ha-1» de las líneas AV25-S y AV25-T en cuatro localidades del Altiplano Cundiboyacense y cuatro del de Nariño. Apoya que la avena se cultiva como forraje en la región; no habla de la mezcla con vicia."
 
 crops:
   - crop_id: papa
@@ -291,6 +340,7 @@ crops:
     ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=1971"
     family: {v: Solanaceae, s: fao_ecocrop}
     fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Solanaceae)."}
+    forage: {v: null, n: "Sin fuente del residuo de cosecha como forraje (decisión de Felipe, 15 nov 2026, PR #155)."}
     water_need: {v: null, n: "Sin fuente para una categoría de necesidad de agua; el agua de la ventana sale de los Kc de FAO-56."}
     root_type: {v: null, n: "Pendiente de HU-062 (alternar tipo de raíz): falta la fuente de la clasificación."}
     tmean_min_c: {v: 8, s: upra_papa_diacol, n: "Límite inferior de la aptitud baja (A3)."}
@@ -333,6 +383,7 @@ crops:
     ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=1721"
     family: {v: Leguminosae, s: fao_ecocrop}
     fixes_nitrogen: {v: true, s: fao_iyp_2019}
+    forage: {v: true, s: feedipedia_pea_forage, n: "Su residuo de cosecha (paja o rastrojo de arveja) puede servir de forraje. Fuente internacional."}
     water_need: {v: null, n: "Sin fuente para una categoría; el agua sale de los Kc."}
     root_type: {v: null, n: "Pendiente de HU-062."}
     tmean_min_c: {v: 4, s: fao_ecocrop, n: "Sin zonificación de la UPRA: rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
@@ -375,6 +426,7 @@ crops:
     ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=2146"
     family: {v: Leguminosae, s: fao_ecocrop}
     fixes_nitrogen: {v: true, s: fao_iyp_2019}
+    forage: {v: null, n: "Sin fuente del residuo de cosecha como forraje (decisión de Felipe, 15 nov 2026, PR #155)."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
     root_type: {v: null, n: "Pendiente de HU-062."}
     tmean_min_c: {v: 5, s: fao_ecocrop, n: "Rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
@@ -416,6 +468,7 @@ crops:
     ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=2175"
     family: {v: Gramineae, s: fao_ecocrop}
     fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Gramineae)."}
+    forage: {v: true, s: feedipedia_maize_stover, n: "Su rastrojo (residuo del maíz cultivado para grano) puede servir de forraje. Es fibroso y de baja digestibilidad, y a menudo se deja en el campo para devolver materia orgánica al suelo. Fuente internacional."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
     root_type: {v: null, n: "Pendiente de HU-062."}
     tmean_min_c: {v: 10, s: fao_ecocrop, n: "La UPRA tiene zonificación de maíz tradicional, pero solo se encontró su mapa, no sus criterios: se usa EcoCrop (supuesto de la decisión 13). Reemplazar cuando se tengan los criterios de la UPRA."}
@@ -458,6 +511,7 @@ crops:
     ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=871"
     family: {v: Umbelliferae, s: fao_ecocrop}
     fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Umbelliferae)."}
+    forage: {v: null, n: "Sin fuente del residuo de cosecha como forraje (decisión de Felipe, 15 nov 2026, PR #155)."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
     root_type: {v: null, n: "Pendiente de HU-062."}
     tmean_min_c: {v: 3, s: fao_ecocrop, n: "Rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
@@ -500,6 +554,7 @@ crops:
     ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=364"
     family: {v: Alliaceae, s: fao_ecocrop}
     fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Alliaceae)."}
+    forage: {v: null, n: "Sin fuente del residuo de cosecha como forraje (decisión de Felipe, 15 nov 2026, PR #155)."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
     root_type: {v: null, n: "Pendiente de HU-062."}
     tmean_min_c: {v: 10, s: upra_cebolla_bulbo, n: "Por debajo de 10 °C es no apta (N1)."}
@@ -544,6 +599,7 @@ crops:
     family: {v: Gramineae, s: fao_ecocrop, n: "Familia de la avena (Avena sativa), la especie principal de la mezcla. La de la vicia va en `secondary_families`."}
     secondary_families: {v: [Leguminosae], s: fao_ecocrop, n: "La vicia (Vicia sativa) es Leguminosae (FAO EcoCrop, vista cropView id=238003). Cuenta en el corte de plagas, no en el filtro de familia seguida (decisión 16)."}
     fixes_nitrogen: {v: true, s: fao_iyp_2019, n: "Por la vicia, que es leguminosa; la avena no fija."}
+    forage: {v: true, s: feedipedia_oat_forage, n: "Puede cortarse como forraje en vez de incorporarse. Si se corta, no aporta al suelo lo que cuenta la estrategia. También lo apoyan feedipedia_common_vetch (la vicia) y agrosavia_altoandina_2020 (avena forrajera en el Altiplano Cundiboyacense), que el catálogo no cita aquí porque un valor lleva una sola fuente."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
     root_type: {v: null, n: "Pendiente de HU-062."}
     tmean_min_c: {v: 5, s: fao_ecocrop, n: "Avena 5 °C (la vicia aguanta 3 °C)."}

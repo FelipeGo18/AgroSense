@@ -90,6 +90,7 @@ TABLES: dict[str, Table] = {
             "water_need": c(S),
             "root_type": c(S),
             "fixes_nitrogen": c(B),
+            "forage": c(B),
             "tmean_min_c": c(F, "°C"),
             "tmean_opt_min_c": c(F, "°C"),
             "tmean_opt_max_c": c(F, "°C"),

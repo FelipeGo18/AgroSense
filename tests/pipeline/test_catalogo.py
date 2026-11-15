@@ -55,6 +55,33 @@ def test_las_leguminosas_fijan_nitrogeno_y_las_demas_no():
     assert {k for k, v in fixes.items() if v} == {"arveja", "haba", "avena_vicia"}
 
 
+def test_el_forraje_es_true_en_maiz_arveja_y_avena_vicia_y_nulo_en_los_demas():
+    """HU-227 (Felipe, 15 nov 2026, PR #155): `forage` es booleano anulable; `true` con fuente en maíz, arveja y avena con
+    vicia; nulo (sin fuente, R1) en haba, zanahoria, papa, cebolla de bulbo y descanso."""
+    crops, _, sources = build()
+    assert crops.schema["forage"] == pl.Boolean
+    forage = dict(zip(crops["crop_id"].to_list(), crops["forage"].to_list(), strict=True))
+    assert {k for k, v in forage.items() if v} == {"maiz", "arveja", "avena_vicia"}
+    assert {k for k, v in forage.items() if v is None} == {"haba", "zanahoria", "papa", "cebolla_bulbo", "descanso"}
+    cited = dict(zip(crops["crop_id"].to_list(), crops["source_ids"].to_list(), strict=True))
+    for crop_id, source in {
+        "maiz": "feedipedia_maize_stover",
+        "arveja": "feedipedia_pea_forage",
+        "avena_vicia": "feedipedia_oat_forage",
+    }.items():
+        assert source in cited[crop_id]
+        assert source in set(sources["source_id"].to_list())
+    # Las otras dos fuentes de la avena con vicia y la de Agrosavia están registradas, aunque cada valor cita una sola.
+    assert {"feedipedia_common_vetch", "agrosavia_altoandina_2020"} <= set(sources["source_id"].to_list())
+    # No se registran las que no sostienen ningún valor.
+    assert not {"feedipedia_faba_bean", "feedipedia_carrot", "feedipedia_maize_silage"} & set(sources["source_id"].to_list())
+
+
+def test_un_forraje_falso_con_fuente_se_publica_como_falso():
+    crops, _, _ = build(lambda d: crop(d, "papa").update(forage={"v": False, "s": "feedipedia_pea_forage"}))
+    assert crops.filter(pl.col("crop_id") == "papa")["forage"].to_list() == [False]
+
+
 def test_solo_la_avena_con_vicia_tiene_segunda_familia():
     crops, _, _ = build()
     assert crops.schema["secondary_families"] == pl.List(pl.String)
@@ -140,6 +167,13 @@ def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
         (lambda d: crop(d, "descanso").update(fallow_days={"v": 180, "s": "inventada"}), "no cita una fuente"),
         (lambda d: crop(d, "descanso").update(fallow_days={"v": None}), "nulo y no dice por qué"),
         (lambda d: crop(d, "descanso").update(stages=crop(d, "papa")["stages"]), "no lleva etapas"),
+        # HU-227 (R8): un `forage` con valor lleva una fuente que existe; el descanso no lo lleva.
+        (lambda d: crop(d, "maiz").update(forage={"v": True}), "no cita una fuente"),
+        (lambda d: crop(d, "maiz").update(forage={"v": False}), "no cita una fuente"),
+        (lambda d: crop(d, "maiz").update(forage={"v": True, "s": "inventada"}), "no cita una fuente"),
+        (lambda d: crop(d, "papa").update(forage={"v": None}), "nulo y no dice por qué"),
+        (lambda d: crop(d, "papa").update(forage={"v": "sí", "s": "feedipedia_pea_forage"}), "true, false o nulo"),
+        (lambda d: crop(d, "descanso").update(forage={"v": True, "s": "feedipedia_oat_forage"}), "no lleva `forage`"),
     ],
 )
 def test_un_catalogo_que_no_cumple_no_se_publica(change, message):

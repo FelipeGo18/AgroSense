@@ -21,6 +21,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 
 | Fuente | Institución | Licencia o condición de uso |
 |---|---|---|
+| `agrosavia_altoandina_2020` · Altoandina: nueva variedad de avena forrajera para la zona Andina en Colombia (Campuzano-Duque et al.), Agronomía Mesoamericana 31(3), p. 581 | AGROSAVIA; Universidad de Costa Rica | CC BY-NC-ND 4.0 (Atribución-NoComercial-SinDerivar, según el PDF de Redalyc) |
 | `agrosavia_tibaitata_2022` · Efecto del establecimiento de sistemas de rotación para el cultivo de la papa sobre las características químicas y físicas del suelo (Vargas Díaz, Wilches Ortiz y Espitia Malagón) | Agrosavia, Centro de Investigación Tibaitatá; revista Siembra 9(2), e4023, Universidad Central del Ecuador | CC BY-NC (Creative Commons Atribución-NoComercial) |
 | `agrosense_diseno` · Catálogo visual de AgroSense (design/finca/cultivos.py) | Equipo RealE4Life | Del proyecto |
 | `alharbi_2021_faba` · Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925 | MDPI, Plants; doi:10.3390/plants10091925 | Acceso abierto (CC BY 4.0 por confirmar) |
@@ -45,6 +46,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `fao_manual_riego_3` · Irrigation Water Management: Irrigation Water Needs. Training manual n.º 3 (Brouwer y Heibloem, 1986). Sección 4.2, lluvia efectiva | FAO | Publicación de la FAO, uso con cita |
 | `fao_papa_2008` · International Year of the Potato 2008. New light on a hidden treasure (capítulo «The potato») | FAO | Publicación de la FAO, uso con cita |
 | `fao_soils_bulletin_55` · FAO Soils Bulletin 55: Guidelines, land evaluation for irrigated agriculture (1985), formato 5 | FAO | Publicación de la FAO, uso con cita |
+| `feedipedia_*` (`feedipedia_maize_stover`, `feedipedia_pea_forage`, `feedipedia_oat_forage`, `feedipedia_common_vetch`) · Fichas de forraje de Feedipedia (Heuzé, Tran y otros) | Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO | No es una licencia abierta. Se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada; el uso comercial se pide a AFZ (https://www.feedipedia.org/content/copyright). De Feedipedia AgroSense toma solo el hecho (si el residuo o la planta sirve de forraje) y una cita corta con su atribución; no reproduce el contenido ni las tablas |
 | `fews_net_wrsi` · FEWS NET · Water Requirement Satisfaction Index (WRSI) y sus clases | Famine Early Warning Systems Network (FEWS NET) y USGS; clases publicadas por el Banco Mundial | Información pública del USGS; las clases, del catálogo de datos del Banco Mundial (CC BY 4.0) |
 | `ica_punta_morada` · Preguntas frecuentes sobre la punta morada de la papa | Instituto Colombiano Agropecuario (ICA) | Documento público del ICA, uso con cita |
 | `igac_capacidad_uso_2021` · Clasificación de las tierras por su capacidad de uso (instructivo IN-GAG-PC05-02, versión 1) | Instituto Geográfico Agustín Codazzi (IGAC) | Documento público del IGAC, uso con cita (copia no controlada) |
