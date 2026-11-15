@@ -113,11 +113,13 @@ describe("Ajustar mis prioridades al consultar (HU-202)", () => {
     expect(diagnoses(calls)[0].priorities).toEqual(DEFAULTS);
 
     await openPanel(user);
-    // La oferta y el mercado se muestran sin calificar (decisión 17): su peso no tiene efecto y no se dibuja su control.
-    expect(screen.getAllByRole("radiogroup")).toHaveLength(4);
+    // La oferta se muestra sin calificar (decisión 17): su peso no tiene efecto y no se dibuja su control. El mercado sí
+    // (HU-240): con 4 o 5 ordena las ventanas, y su nota dice que no cambia la luz.
+    expect(screen.getAllByRole("radiogroup")).toHaveLength(5);
     expect(screen.queryByRole("radiogroup", { name: /^Oferta:/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("radiogroup", { name: /^Mercado:/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/La oferta y el mercado se muestran sin calificar y no cambian la luz/)).toBeInTheDocument();
+    expect(checked("Mercado")).toBe("1");
+    expect(screen.getByText("Solo ordena las ventanas con 4 o 5; no cambia la luz")).toBeInTheDocument();
+    expect(screen.getByText("La oferta se muestra sin calificar y no tiene prioridad.")).toBeInTheDocument();
     expect(checked("Agua")).toBe("3");
     expect(checked("Suelo")).toBe("2");
     expect(seeds("Agua").getAllByRole("radio")).toHaveLength(6); // el «0» y cinco semillas
@@ -158,14 +160,14 @@ describe("Ajustar mis prioridades al consultar (HU-202)", () => {
     expect(screen.getByText("Criterio de AgroSense · Ajustar")).toBeInTheDocument();
   });
 
-  it("la oferta y el mercado, sin control, se envían con el peso de AgroSense aunque haya otro guardado", async () => {
+  it("la oferta, sin control, se envía con el peso de AgroSense aunque haya otro guardado; el mercado, con el suyo", async () => {
     const stored = { ...DEFAULTS, water: 5, supply: 0, market: 5 };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
     const calls = fakeApi();
     open();
     await screen.findByText("Puede sembrar en esa fecha");
-    // Los seis pesos: los suyos donde hay control y los de AgroSense en la oferta y el mercado.
-    expect(diagnoses(calls)[0].priorities).toEqual({ ...DEFAULTS, water: 5 });
+    // Los seis pesos: los suyos donde hay control (también el mercado, HU-240) y el de AgroSense en la oferta.
+    expect(diagnoses(calls)[0].priorities).toEqual({ ...DEFAULTS, water: 5, market: 5 });
     // Lo guardado no cambia.
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null")).toEqual(stored);
   });

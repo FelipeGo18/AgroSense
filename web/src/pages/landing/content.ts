@@ -68,7 +68,7 @@ export const QUESTIONS: { title: string; text: string; icon: "priority" | "light
 /**
  * El caso de Güicán de la Sierra (15332): papa sembrada el 7 de diciembre de 2026, en un municipio alto. Es un ejemplo y
  * se rotula así (R5). Las cifras son las que respondió el motor con el dataset 2026.11.25 para esa consulta, sin riego y
- * con el criterio de AgroSense; no se inventa ninguna. La oferta sale sin datos (HU-072 todavía no existe) y el mercado sin calificar (decisión 17).
+ * con el criterio de AgroSense; no se inventa ninguna. La oferta (HU-072) y el mercado salen sin calificar (decisión 17).
  */
 type PreviewSignal = { key: SignalKey; name: string; tone: keyof typeof TONE_LABEL; detail: string };
 
@@ -84,7 +84,7 @@ export const PREVIEW = {
     { key: "frost", name: "Heladas", tone: "red", detail: "31/100 · heló 53 de cada 100 años, de 1991 a 2020 · riesgo grave" },
     { key: "heat", name: "Calor", tone: "green", detail: "100/100 · máxima de 19,4 °C; aguanta hasta 30 °C" },
     { key: "soil", name: "Suelo", tone: "green", detail: "100/100 · pH 5,8 (estimado)" },
-    { key: "supply", name: "Oferta", tone: "insufficient_data", detail: "Esta versión de AgroSense todavía no evalúa la oferta" },
+    { key: "supply", name: "Oferta", tone: "unrated", detail: "2025 B (preliminar): 25 ha, 34 % más que los tres semestres B anteriores" },
     { key: "market", name: "Mercado", tone: "unrated", detail: "No cambia la luz" },
   ] as PreviewSignal[],
 };

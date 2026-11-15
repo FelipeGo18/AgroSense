@@ -1747,7 +1747,12 @@ export interface components {
             /** Preliminary */
             preliminary: boolean | null;
         };
-        /** SupplySemester */
+        /**
+         * SupplySemester
+         * @description El semestre de EVA en que cae la siembra (HU-072, decisión 17): el último año con dato de ese semestre, el área
+         *     sembrada, su variación frente al promedio del mismo semestre de los tres años anteriores (HU-032; nula sin ellos) y
+         *     si repite el área del mismo semestre del año anterior (nulo sin ese año).
+         */
         SupplySemester: {
             /** Year */
             year: number;
@@ -1758,6 +1763,12 @@ export interface components {
             semester: "A" | "B";
             /** Preliminary */
             preliminary: boolean;
+            /** Planted Ha */
+            planted_ha?: number | null;
+            /** Planted Change Pct */
+            planted_change_pct?: number | null;
+            /** Same As Previous */
+            same_as_previous?: boolean | null;
         };
         /** SupplySeries */
         SupplySeries: {
