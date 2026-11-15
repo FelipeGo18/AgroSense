@@ -22,7 +22,8 @@ from backend.config.thresholds import load_thresholds
 from backend.engine.sensitive_signal import ClimateSignalResult
 from backend.engine.signal_score import AVAILABLE, FAVORABLE, INSUFFICIENT_DATA, MODERATE, UNFAVORABLE
 from backend.engine.stages import StageSpan, crop_window
-from backend.engine.water_signal import INDICATOR, NO_RETENTION, RainSource, WaterBalanceSummary, missing_data, water_signal
+from backend.engine.water_notes import NO_RETENTION, RainSource, missing_data
+from backend.engine.water_signal import INDICATOR, WaterBalanceSummary, water_signal
 
 CROP = "la papa"
 # Ejemplo (R5): el aviso de la fuente es una frase de prueba, no el `rain_caveat` real de `catalog/sources.yaml`.
