@@ -83,18 +83,17 @@ describe("Inicio (HU-173)", () => {
     expect(within(frost).getByText("Desfavorable").closest("[data-tone]")).toHaveAttribute("data-tone", "red");
   });
 
-  it("la oferta sin datos dice «Sin datos» y el mercado «Sin calificar»; ninguna se pinta como riesgo (R1, decisión 17)", async () => {
+  it("la oferta y el mercado salen «Sin calificar», sin colores del semáforo (R1, decisión 17)", async () => {
     open(PATHS.home);
     const example = (await screen.findByRole("heading", { level: 2, name: "Así se revisa un ciclo" })).closest("section")!;
     const supply = within(example).getByText("Oferta").closest("li")!;
-    const missing = within(supply).getByText("Sin datos").closest("[data-tone]") as HTMLElement;
-    expect(missing).toHaveAttribute("data-tone", "insufficient_data");
-    expect(missing.innerHTML).not.toMatch(/semaforo-rojo/);
-    expect(within(supply).getByText("Esta versión de AgroSense todavía no evalúa la oferta")).toBeInTheDocument();
-    const market = within(example).getByText("Mercado").closest("li")!;
-    const unrated = within(market).getByText("Sin calificar").closest("[data-tone]") as HTMLElement;
-    expect(unrated).toHaveAttribute("data-tone", "unrated");
-    expect(unrated.innerHTML).not.toMatch(/semaforo/);
+    expect(within(supply).getByText("2025 B (preliminar): 25 ha, 34 % más que los tres semestres B anteriores")).toBeInTheDocument();
+    for (const name of ["Oferta", "Mercado"]) {
+      const row = within(example).getByText(name).closest("li")!;
+      const tag = within(row).getByText("Sin calificar").closest("[data-tone]") as HTMLElement;
+      expect(tag).toHaveAttribute("data-tone", "unrated");
+      expect(tag.innerHTML).not.toMatch(/semaforo/);
+    }
   });
 
   it("habla de AgroSense y nombra los datos de la NASA, en la portada y en las fuentes (HU-173)", async () => {
