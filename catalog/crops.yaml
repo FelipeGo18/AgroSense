@@ -1,5 +1,6 @@
 # Catálogo agronómico: fichas de los cultivos del MVP (EP-06: HU-061, HU-199, HU-063; specs/02-contratos.md, `crops` y
-# `crop_stages`). Versión 0.1.0, armada el 16 de octubre de 2026. PENDIENTE: revisión cruzada por otro integrante.
+# `crop_stages`). Versión 0.1.0, armada el 16 de octubre de 2026. Revisión cruzada de HU-061 y HU-199 hecha por Haider
+# el 15 de noviembre de 2026: cada valor, contra su fuente (el resultado está en EP-06).
 #
 # Regla (R8): cada valor tiene su fuente. Un campo sin fuente va nulo y su señal queda en «datos insuficientes» (R1);
 # nunca un valor «típico». Cuando hay una elección entre filas de una fuente, o un supuesto, la nota lo dice.
@@ -292,7 +293,7 @@ crops:
     family: {v: Solanaceae, s: fao_ecocrop}
     fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Solanaceae)."}
     water_need: {v: null, n: "Sin fuente para una categoría de necesidad de agua; el agua de la ventana sale de los Kc de FAO-56."}
-    root_type: {v: null, n: "Pendiente de HU-062 (alternar tipo de raíz): falta la fuente de la clasificación."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
     tmean_min_c: {v: 8, s: upra_papa_diacol, n: "Límite inferior de la aptitud baja (A3)."}
     tmean_max_c: {v: 16, s: upra_papa_diacol, n: "Límite superior de la aptitud media (A2); por encima es no apta."}
     tmean_opt_min_c: {v: 12, s: upra_papa_diacol, n: "Aptitud alta (A1)."}
@@ -334,7 +335,7 @@ crops:
     family: {v: Leguminosae, s: fao_ecocrop}
     fixes_nitrogen: {v: true, s: fao_iyp_2019}
     water_need: {v: null, n: "Sin fuente para una categoría; el agua sale de los Kc."}
-    root_type: {v: null, n: "Pendiente de HU-062."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
     tmean_min_c: {v: 4, s: fao_ecocrop, n: "Sin zonificación de la UPRA: rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
     tmean_max_c: {v: 30, s: fao_ecocrop}
     tmean_opt_min_c: {v: 10, s: fao_ecocrop}
@@ -376,7 +377,7 @@ crops:
     family: {v: Leguminosae, s: fao_ecocrop}
     fixes_nitrogen: {v: true, s: fao_iyp_2019}
     water_need: {v: null, n: "Sin fuente para una categoría."}
-    root_type: {v: null, n: "Pendiente de HU-062."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
     tmean_min_c: {v: 5, s: fao_ecocrop, n: "Rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
     tmean_max_c: {v: 32, s: fao_ecocrop}
     tmean_opt_min_c: {v: 18, s: fao_ecocrop, n: "EcoCrop pone el óptimo de 18 a 28 °C: en el altiplano (unos 13 °C) la haba queda apta con nota baja. Contrastar con una fuente local."}
@@ -417,7 +418,7 @@ crops:
     family: {v: Gramineae, s: fao_ecocrop}
     fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Gramineae)."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
-    root_type: {v: null, n: "Pendiente de HU-062."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
     tmean_min_c: {v: 10, s: fao_ecocrop, n: "La UPRA tiene zonificación de maíz tradicional, pero solo se encontró su mapa, no sus criterios: se usa EcoCrop (supuesto de la decisión 13). Reemplazar cuando se tengan los criterios de la UPRA."}
     tmean_max_c: {v: 47, s: fao_ecocrop}
     tmean_opt_min_c: {v: 18, s: fao_ecocrop}
@@ -459,7 +460,7 @@ crops:
     family: {v: Umbelliferae, s: fao_ecocrop}
     fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Umbelliferae)."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
-    root_type: {v: null, n: "Pendiente de HU-062."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
     tmean_min_c: {v: 3, s: fao_ecocrop, n: "Rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
     tmean_max_c: {v: 30, s: fao_ecocrop}
     tmean_opt_min_c: {v: 15, s: fao_ecocrop}
@@ -501,7 +502,7 @@ crops:
     family: {v: Alliaceae, s: fao_ecocrop}
     fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Alliaceae)."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
-    root_type: {v: null, n: "Pendiente de HU-062."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
     tmean_min_c: {v: 10, s: upra_cebolla_bulbo, n: "Por debajo de 10 °C es no apta (N1)."}
     tmean_max_c: {v: null, s: upra_cebolla_bulbo, n: "La UPRA no pone límite superior de exclusión (de 28 °C en adelante es aptitud baja): sin límite, no se excluye por calor."}
     tmean_opt_min_c: {v: 20, s: upra_cebolla_bulbo, n: "Aptitud alta (A1). En el altiplano (unos 13 °C) queda en aptitud media (A2): apta con nota baja."}
@@ -545,7 +546,7 @@ crops:
     secondary_families: {v: [Leguminosae], s: fao_ecocrop, n: "La vicia (Vicia sativa) es Leguminosae (FAO EcoCrop, vista cropView id=238003). Cuenta en el corte de plagas, no en el filtro de familia seguida (decisión 16)."}
     fixes_nitrogen: {v: true, s: fao_iyp_2019, n: "Por la vicia, que es leguminosa; la avena no fija."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
-    root_type: {v: null, n: "Pendiente de HU-062."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
     tmean_min_c: {v: 5, s: fao_ecocrop, n: "Avena 5 °C (la vicia aguanta 3 °C)."}
     tmean_max_c: {v: 28, s: fao_ecocrop, n: "Vicia 28 °C (la avena aguanta 30 °C)."}
     tmean_opt_min_c: {v: 16, s: fao_ecocrop, n: "Avena 16 °C (vicia 14 °C)."}
