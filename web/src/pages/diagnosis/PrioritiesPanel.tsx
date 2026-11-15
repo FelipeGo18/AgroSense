@@ -4,7 +4,8 @@ import { Alert } from "@/components/ui/Alert";
 import { SeedRow } from "@/components/ui/PriorityControl";
 import {
   PRIORITIES_HINT,
-  RATED_PRIORITY_SIGNALS,
+  PRIORITY_CONTROLS,
+  priorityNote,
   UNRATED_PRIORITIES_NOTE,
   type useSignalPriorities,
 } from "@/features/diagnosis/priorities";
@@ -13,8 +14,8 @@ const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offse
 
 /**
  * «Criterio de AgroSense · Ajustar» (HU-202; `specs/05-frontend.md`, «Dónde se ajustan»): un resumen plegado que abre
- * los controles de cinco semillas de las señales que se califican (la oferta y el mercado no: decisión 17). Al cambiar uno, la consulta se vuelve a pedir con esos pesos. Es un `details`
- * nativo: se abre y se cierra sin animación, igual en modo ligero. Los controles se dibujan solo abierto: son 36 botones
+ * los controles de cinco semillas (la oferta no: decisión 17; el mercado solo ordena, HU-240). Al cambiar uno, la consulta
+ * se vuelve a pedir con esos pesos. Es un `details` nativo: se abre y se cierra sin animación, igual en modo ligero. Los controles se dibujan solo abierto: son 36 botones
  * con su dibujo que la página no necesita mientras nadie los mira.
  */
 export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof useSignalPriorities> }) {
@@ -53,12 +54,12 @@ export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof 
           {/* Las seis casillas miden 44 px (el mínimo táctil): 264 px. A 320 px solo caben si el panel ocupa todo el ancho
               de la tarjeta, por eso en el celular el panel no tiene el margen de la tarjeta (-mx-6). */}
           <div className="flex flex-col gap-4">
-            {RATED_PRIORITY_SIGNALS.map((signal) => (
+            {PRIORITY_CONTROLS.map((signal) => (
               <SeedRow
                 key={signal.key}
                 label={signal.label}
                 hint={signal.hint}
-                note={signal.climate ? "Un riesgo grave cuenta siempre" : undefined}
+                note={priorityNote(signal)}
                 value={value[signal.key]}
                 disabled={false}
                 onChange={(weight) => priorities.set({ ...value, [signal.key]: weight })}
@@ -82,8 +83,7 @@ export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof 
             {priorities.savesInProfile ? "Se guardan en su perfil, como en «Mi cuenta»." : "Se recuerdan en este dispositivo, sin cuenta."}
           </p>
           <p className="border-t-2 border-superficie-borde pt-3 text-[15px] text-texto-secundario">
-            Criterio de AgroSense:{" "}
-            {RATED_PRIORITY_SIGNALS.map((signal) => `${signal.label.toLowerCase()} ${defaults[signal.key]}`).join(" · ")}.
+            Criterio de AgroSense: {PRIORITY_CONTROLS.map((signal) => `${signal.label.toLowerCase()} ${defaults[signal.key]}`).join(" · ")}.
           </p>
           {(isOwn || priorities.allZero) && (
             <button type="button" onClick={priorities.reset} className={`${LINK} min-h-11 self-start`}>
