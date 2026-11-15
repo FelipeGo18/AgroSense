@@ -5,7 +5,7 @@ from dataclasses import replace
 
 import pytest
 
-from backend.api.market_signal import market_for, seasonal_index
+from backend.api.market_signal import crop_market, market_for, price_history, seasonal_index
 from backend.dataset import load
 from pipeline.build import PUBLISHED
 
@@ -82,3 +82,43 @@ def test_un_cultivo_sin_producto_en_sipsa_no_tiene_indice(published, crop_id):
 def test_sin_central_o_sin_market_month_no_hay_indice(published):
     assert seasonal_index(published, "papa", None, 4) == (None, None)
     assert seasonal_index(replace(published, market_month=None), "papa", "1", 4) == (None, None)
+
+
+# ---------- La central por cultivo y la historia del precio (HU-073, decisión 17) ----------
+
+OVERRIDES = {"15": {"papa": {"market_id": "1", "reason": "Tunja no publica papa negra desde el 27 de julio de 2021"}}}
+
+
+def with_overrides(dataset):
+    return replace(dataset, region={**dataset.region, "crop_market_overrides": OVERRIDES})
+
+
+def test_la_papa_de_boyaca_va_a_corabastos_solo_con_la_central_por_cultivo(published):
+    boyaca = published.municipalities["15001"]
+    without = replace(published, region={k: v for k, v in published.region.items() if k != "crop_market_overrides"})
+    assert crop_market(without, boyaca, "papa") is None
+    assert crop_market(with_overrides(published), boyaca, "papa") == ("1", "crop_override", OVERRIDES["15"]["papa"]["reason"])
+
+
+def test_la_arveja_de_boyaca_va_a_tunja(published):
+    assert crop_market(with_overrides(published), published.municipalities["15001"], "arveja") == ("9", "department", None)
+
+
+def test_la_historia_del_precio_sale_de_market_month(published):
+    history = price_history(with_overrides(published), published.municipalities["15001"], "papa", published.crops["papa"], 9)
+    assert (history.market_id, history.market, history.market_basis, history.product_id) == (
+        "1", "Corabastos (Bogotá)", "crop_override", "papa-negra"
+    )  # fmt: skip
+    assert history.seasonal_index == pytest.approx(0.774)
+    assert history.product_name == "la papa negra"
+    if "years_above" in published.market_month.columns:
+        assert (history.years_above, history.years_below, history.years) == (0, 5, 5)
+    else:
+        # El dataset publicado es anterior a HU-073: los años contados llegan nulos y el motor no los inventa (R1).
+        assert (history.years_above, history.years_below) == (None, None)
+
+
+def test_sin_central_no_hay_historia(published):
+    outside = replace(published.municipalities["15001"], department_id="05")
+    assert price_history(published, outside, "papa", published.crops["papa"], 9) is None
+    assert price_history(published, published.municipalities["15001"], "haba", published.crops["haba"], 9) is None

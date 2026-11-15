@@ -106,8 +106,10 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
         "available", 100, "favorable", False, ["frost_freq_pct"]
     )  # fmt: skip
     assert (heat["status"], heat["score"], heat["level"], heat["indicators"]) == ("available", 100, "favorable", ["tmax_p90_c"])
-    # Sin central de precios para el departamento en los ejemplos: el texto del contrato (HU-073).
-    assert body["signals"]["market"]["reasons"] == ["Sin datos de mercado para la zona"]
+    # La papa de Boyacá usa Corabastos (`crop_market_overrides` del manifiesto de ejemplo): sin calificar (HU-073, decisión 17).
+    market = body["signals"]["market"]
+    assert (market["status"], market["level"], market["score"], market["critical"]) == ("available", None, None, False)
+    assert market["price_history"]["market_basis"] == "crop_override"
     for name, reason in PENDING.items():
         signal = body["signals"][name]
         assert (signal["status"], signal["level"], signal["score"], signal["critical"], signal["reasons"]) == (
@@ -118,7 +120,7 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
     water = body["signals"]["water"]
     assert (water["status"], water["level"], water["score"], water["critical"]) == ("insufficient_data", None, None, False)
     assert water["reasons"] != [pending_reason("water")]
-    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.0.0+pesos.1.0.0"}
+    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.1.0"}
 
 
 def test_sin_prioridades_las_dos_luces_coinciden_con_los_pesos_por_defecto(examples):
@@ -143,7 +145,9 @@ def test_las_limitaciones_dicen_cada_senal_sin_datos_y_el_aviso_de_heladas_sin_r
     body = diagnose(TestClient(app))
     limitations = body["limitations"]
     assert len(limitations) == len(set(limitations))
-    assert "Sin datos para la zona: el mercado no se evaluó." in limitations
+    # El mercado tiene historia (sin calificar, HU-073): no es «sin datos», y lo dice su propia limitación.
+    assert "Sin datos para la zona: el mercado no se evaluó." not in limitations
+    assert limitations.count("La oferta y el mercado se muestran sin calificar: no cambian la luz") == 1
     # Las que no tienen motor dicen lo verdadero: no faltan datos, falta el motor (R5).
     for reason in PENDING.values():
         assert limitations.count(reason) == 1

@@ -99,7 +99,33 @@ SIGNALS_OK = {
             }
         ],
     ),
-    "market": _signal("insufficient_data", None, None, ["Sin datos de mercado para la zona"], []),
+    # Sin calificar (decisión 17, HU-073): los valores son los de Corabastos publicados (2021–2025), como el contrato.
+    "market": _signal(
+        "available",
+        None,
+        None,
+        [
+            "Precio sin calificar: ninguna fuente publica qué es un precio bajo en el mercado mayorista",
+            "En Corabastos, en diciembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del "
+            "promedio de su año en 3 de 5 años (2021–2025) y por debajo en 2; en promedio, 7 % por encima. Así fue en la "
+            "historia: no es un pronóstico del precio. Fuente: DANE",
+        ],
+        ["seasonal_index", "years_above", "years_below"],
+        price_history={
+            "market_id": "1",
+            "market": "Corabastos (Bogotá)",
+            "market_basis": "department",
+            "product_id": "papa-negra",
+            "month": 12,
+            "seasonal_index": 1.07,
+            "years": 5,
+            "years_above": 3,
+            "years_below": 2,
+            "first_year": 2021,
+            "last_year": 2025,
+            "source_id": "dane_sipsa",
+        },
+    ),
 }
 
 DIAGNOSIS_OK = {
@@ -123,7 +149,12 @@ DIAGNOSIS_OK = {
     ),
     "weights": WEIGHTS,
     "signals": SIGNALS_OK,
-    "limitations": [EXAMPLE_NOTE, "Datos EVA del último año son preliminares", LOT_SOIL_LIMITATION],
+    "limitations": [
+        EXAMPLE_NOTE,
+        "Datos EVA del último año son preliminares",
+        LOT_SOIL_LIMITATION,
+        "La oferta y el mercado se muestran sin calificar: no cambian la luz",
+    ],
     "versions": EXAMPLE_VERSIONS,
 }
 

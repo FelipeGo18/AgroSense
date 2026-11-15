@@ -100,9 +100,10 @@ def starts_with(result: TrafficLight, prefix: str) -> bool:
 # ------------------------------------------------------------------ configuración que fija los casos
 
 
-def test_los_pesos_por_defecto_son_los_de_weights_yaml_1_0_0():
+def test_los_pesos_por_defecto_son_los_de_weights_yaml_1_1_0():
+    """1.1.0 (decisión 17) solo cambió el porqué de la oferta y el mercado: los pesos son los de 1.0.0."""
     weights = load_weights()
-    assert weights.version == "1.0.0"
+    assert weights.version == "1.1.0"
     assert weights.weights == {"water": 3, "frost": 4, "heat": 2, "soil": 2, "supply": 1, "market": 1}
 
 
@@ -640,9 +641,10 @@ def test_una_base_de_pesos_desconocida_da_value_error(suitability, basis):
 
 @pytest.fixture(scope="module")
 def umbrales():
-    """`thresholds.yaml` 1.0.0, leído con su cargador: los cortes reales, no calificaciones a mano."""
+    """`thresholds.yaml` 1.1.0, leído con su cargador: los cortes reales, no calificaciones a mano (1.1.0 solo cambió la
+    nota del mercado, decisión 17: los cortes son los de 1.0.0)."""
     thresholds = load_thresholds()
-    assert thresholds.version == "1.0.0"
+    assert thresholds.version == "1.1.0"
     return thresholds
 
 

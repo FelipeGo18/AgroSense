@@ -19,7 +19,7 @@ import polars as pl
 
 from pipeline import rotation_rules as rotation
 from pipeline import schema
-from pipeline.build import PUBLISHED
+from pipeline.build import PUBLISHED, load_region
 from pipeline.sources import sipsa
 
 EXAMPLES = Path("data/examples")
@@ -312,12 +312,31 @@ MARKET_PRODUCTS = {
 }
 
 
+MARKET_YEARS = 4
+
+
+def _season_index(month: int, j: int) -> float:
+    return round(1 + 0.15 * math.sin(month + j), 3)
+
+
+def _years_counted(index: float) -> tuple[int, int]:
+    """Años por encima y por debajo del promedio de su año (HU-073), de ejemplo pero coherentes con el índice: un índice
+    alto casi siempre estuvo por encima. Un índice de exactamente 1 deja un año en el promedio (el empate no cuenta)."""
+    if index == 1:
+        return 2, 1
+    strong = abs(index - 1) >= 0.07
+    many, few = (3, 1) if strong else (2, 2)
+    return (many, few) if index > 1 else (few, many)
+
+
 def market_month() -> pl.DataFrame:
     rows = [
         {"crop_id": crop, "market_id": "1", "month": month, "product_id": MARKET_PRODUCTS[crop],
          "price_cop_kg": 1500 + 300 * j + int(400 * math.sin(month + j)), "price_year": 2024, "volume_t": None,
-         "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3), "years": 4, "quality": "ok", "source_id": SOURCE_ID}
+         "seasonal_index": index, "years": MARKET_YEARS, "years_above": above, "years_below": below, "first_year": 2021,
+         "last_year": 2024, "quality": "ok", "source_id": SOURCE_ID}
         for j, crop in enumerate(MARKET_CROPS) for month in range(1, 13)
+        for index in [_season_index(month, j)] for above, below in [_years_counted(index)]
     ]  # fmt: skip
     return _table("market_month", rows)
 
@@ -337,9 +356,10 @@ def market_price_day() -> pl.DataFrame:
 
 def market_price_season() -> pl.DataFrame:
     rows = [
-        {"product_id": product, "market_id": "1", "month": month, "seasonal_index": round(1 + 0.15 * math.sin(month + j), 3),
-         "years": 4, "first_year": 2021, "last_year": 2024, "source_id": SOURCE_ID}
+        {"product_id": product, "market_id": "1", "month": month, "seasonal_index": index, "years": MARKET_YEARS,
+         "years_above": above, "years_below": below, "first_year": 2021, "last_year": 2024, "source_id": SOURCE_ID}
         for j, product in enumerate(MARKET_PRODUCTS.values()) for month in range(1, 13)
+        for index in [_season_index(month, j)] for above, below in [_years_counted(index)]
     ]  # fmt: skip
     return _table("market_price_season", rows)
 
@@ -474,6 +494,8 @@ def write(tables: dict[str, pl.DataFrame], folder: Path = EXAMPLES, published: P
         # periodo que la región (24 de 30 años: 8 de 10).
         "region": {
             **real_manifest["region"],
+            # La central por cultivo (HU-073) sale de `region.yaml`: el manifiesto publicado puede ser anterior a ella.
+            "crop_market_overrides": load_region()["region"].get("crop_market_overrides", {}),
             "name": "Ejemplo: Samacá, Toca y Tunja (Boyacá)",
             "climate_normal": {"first_year": YEARS[0], "last_year": YEARS[-1], "min_years": EXAMPLE_MIN_YEARS},
         },

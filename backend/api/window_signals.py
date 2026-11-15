@@ -27,12 +27,11 @@ from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
 from backend.api.climate_signals import ZoneClimate, frost_in, heat_in, zone_climate
-from backend.api.market_signal import market_for, seasonal_index
+from backend.api.market_signal import market_in
 from backend.api.water_signals import SourceReading, ZoneWater, water_in, zone_water
 from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset, Municipality
 from backend.engine.diagnosis import SignalOutcome
-from backend.engine.market_signal import market_signal
 from backend.engine.signal_score import INSUFFICIENT_DATA
 from backend.engine.soil_signal import soil_without_stages
 from backend.engine.stages import CropWindow
@@ -111,16 +110,17 @@ def balance_for(
 @dataclass(frozen=True)
 class SignalZone:
     """Lo que las señales leen del dataset para un municipio, una vez por consulta: el clima de heladas y calor, el del
-    agua y la central de precios de su departamento."""
+    agua y el municipio, del que sale la central de precios de cada cultivo (HU-073: la de su departamento o la de
+    `crop_market_overrides`)."""
 
     climate: ZoneClimate
-    market_id: str | None
+    municipality: Municipality
     water: ZoneWater
 
 
 def signal_zone(dataset: Dataset, municipality: Municipality) -> SignalZone:
     municipality_id = municipality.municipality_id
-    return SignalZone(zone_climate(dataset, municipality_id), market_for(dataset, municipality), zone_water(dataset, municipality_id))
+    return SignalZone(zone_climate(dataset, municipality_id), municipality, zone_water(dataset, municipality_id))
 
 
 def _balance(zone: ZoneWater, window: CropWindow | None, texture_class: str | None, crop: Mapping[str, Any]) -> WaterBalanceSummary | None:
@@ -147,12 +147,12 @@ def window_signals(
 
     `crop` es la ficha (`dataset.crops[crop_id]`) y `crop_name` su nombre con artículo («la papa»). `window` nula (un
     cultivo sin etapas publicadas) deja sin datos las que la necesitan (R1). El mercado mira el mes de la cosecha
-    estimada (HU-073); sin ventana no hay mes y no hay índice. `irrigated` (nulo: se evalúa como sin riego) y
+    estimada (HU-073), en la central de referencia del cultivo, y se muestra sin calificar (decisión 17); sin ventana no
+    hay mes y no hay historia. `irrigated` (nulo: se evalúa como sin riego) y
     `texture_class` (la del lote o la del municipio, `lot_terrain.zone_texture`; nula: sin retención) son del agua.
     `soil` es la señal de suelo ya calculada para la consulta (`soil_signals.soil_for`): no depende de la fecha, pero sin
     ventana no se usa y el suelo es `insufficient_data`, como las demás (`soil_without_stages`).
     """
-    index, years = seasonal_index(dataset, crop_id, zone.market_id, window.harvest_estimate.month) if window else (None, None)
     balance = _balance(zone.water, window, texture_class, crop)
     return {
         "water": water_in(zone.water, window, balance, irrigated, thresholds, crop_name),
@@ -161,5 +161,5 @@ def window_signals(
         # Sin ventana tampoco se califica el suelo, como las demás (HU-076): no hay ventana que diagnosticar.
         "soil": soil if window is not None else soil_without_stages(crop_name),
         "supply": pending_signal("supply"),
-        "market": market_signal(index, years, thresholds),
+        "market": market_in(dataset, zone.municipality, crop_id, crop, window),
     }

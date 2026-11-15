@@ -4,7 +4,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 
 | Código | Regla | Qué significa en la práctica |
 |---|---|---|
-| R1 | Disponibilidad y nivel son campos distintos | Una señal sin datos tiene `status = insufficient_data` y `level = null`. Nunca se interpreta como riesgo. |
+| R1 | Disponibilidad y nivel son campos distintos | Una señal sin datos tiene `status = insufficient_data` y `level = null`. Nunca se interpreta como riesgo. Una señal `available` con `level` y `score` nulos está **sin calificar** (decisión 17: la oferta y el mercado): el dato existe y se muestra, pero no se califica; nunca se pinta como riesgo ni como favorable, y nunca cambia la luz, la acción ni el orden. |
 | R2 | El semáforo se decide por reglas, no por promedio | Un riesgo desfavorable no se compensa con señales favorables. |
 | R3 | Las restricciones agronómicas filtran | Una rotación inválida se excluye y se registra el motivo. No se castiga con puntos. |
 | R4 | Resultados deterministas y versionados | Mismos datos, reglas y entrada producen el mismo resultado. Cada respuesta lleva la versión del dataset y de las reglas. |
@@ -23,7 +23,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 
 | Regla | Comprobación sugerida |
 |---|---|
-| R1 | Prueba: una señal sin datos devuelve `insufficient_data` y `level` nulo; la web no la pinta como riesgo. |
+| R1 | Prueba: una señal sin datos devuelve `insufficient_data` y `level` nulo; la web no la pinta como riesgo. Prueba (decisión 17): una señal `available` sin calificar no entra a la luz, a la acción, al factor limitante ni al promedio ponderado; la web no la pinta como riesgo ni como favorable. |
 | R2 | Prueba: una señal `unfavorable` crítica nunca da verde, aunque las otras sean `favorable`. Prueba: una helada crítica da rojo con agua y oferta favorables. Prueba: una ventana con una señal crítica queda marcada como de alto riesgo y nunca entra entre las mejores, por alto que sea su balance. Prueba (decisión 17): con oferta y mercado sin calificar, la luz y la acción son las mismas que sin ellas, y el precio nunca saca a una ventana de su decena ni sube una de alto riesgo. |
 | R3 | Prueba: una estrategia que viola un `filter` entre dos ciclos seguidos no aparece en el ranking y su exclusión cita la regla. Prueba: un cultivo que no es apto para la zona no se evalúa por ventanas y la respuesta cita el dato de su ficha que lo excluye. |
 | R4 | Prueba: dos ejecuciones iguales dan salida idéntica; toda respuesta trae `versions.dataset` y `versions.rules`. |
@@ -208,7 +208,7 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 Decisión 15 (antes era un supuesto de HU-082):
 
 - `total_score` es el promedio de los criterios que califican, ponderado por las prioridades de la rotación. Con todas las prioridades de los criterios que califican en 0, la estrategia no tiene total y va al final.
-- Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). En `water` y `risk`, un ciclo sin dato no cuenta y se dice; si ninguno tiene, el criterio no califica. En `income`, un ciclo de cultivo sin historia de precio (sin central de referencia o sin fila de su cultivo y mes) no cuenta y se dice; si ningún ciclo de cultivo tiene, no califica.
+- Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). En `water` y `risk`, un ciclo sin dato no cuenta y se dice; si ninguno tiene, el criterio no califica. En `income`, un ciclo de cultivo sin historia de precio (sin central de referencia o sin fila de su cultivo y mes) no cuenta y se dice; un abono verde o un descanso vale 0 siempre, aunque ningún cultivo tenga historia, porque que no deja cosecha no depende de los precios (decidido por Felipe el 15 de noviembre de 2026); solo una estrategia de cultivos sin ninguna historia no califica.
 - Hasta 10 estrategias. Empate de `total_score`: gana la de `risk` más alto y, si sigue el empate, la de `crop_ids` primero en orden alfabético (R4).
 - El ranking ordena estrategias ya filtradas: nunca rescata una excluida.
 
@@ -253,7 +253,7 @@ Las siembras registradas en AgroSense solo se muestran como totales por municipi
 | Campo | Valores |
 |---|---|
 | `status` | `available`, `insufficient_data`, `not_applicable` |
-| `level` | `favorable`, `moderate`, `unfavorable` o nulo |
+| `level` | `favorable`, `moderate`, `unfavorable` o nulo. Nulo con `insufficient_data` o `not_applicable`; con `available`, la señal está **sin calificar** (decisión 17: `supply` y `market`) y nunca se pinta como riesgo ni como favorable |
 | `light` | `green`, `yellow`, `red`, `not_evaluable` |
 | `action` | `sow`, `other_window`, `rotate`, `review_data` |
 | `suitability` | `suitable`, `not_suitable`, `insufficient_data` |

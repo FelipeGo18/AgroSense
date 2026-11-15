@@ -29,6 +29,14 @@
       "first_year": 2015,
       "last_year": 2024,
       "min_years": 8
+    },
+    "crop_market_overrides": {
+      "15": {
+        "papa": {
+          "market_id": "1",
+          "reason": "Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos"
+        }
+      }
     }
   },
   "periods": [

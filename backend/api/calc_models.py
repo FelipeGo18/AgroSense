@@ -130,7 +130,31 @@ class SourceValue(BaseModel):
     used: bool
 
 
+class PriceHistory(BaseModel):
+    """De dónde sale la historia del precio de la señal `market` (HU-073, decisión 17): la central de referencia
+    (`market_basis`: `department` si es la de `region.department_markets`, `crop_override` si es la de
+    `region.crop_market_overrides`), el producto de SIPSA, el mes de la cosecha estimada y, de `market_month`, el índice
+    estacional y los años completos en que el mes quedó por encima y por debajo del promedio de su año (un mes igual al
+    promedio no cuenta en ninguno: `years_above + years_below <= years`)."""
+
+    market_id: str
+    market: str
+    market_basis: Literal["department", "crop_override"]
+    product_id: str
+    month: int = Field(ge=1, le=12)
+    seasonal_index: float
+    years: int = Field(ge=0)
+    years_above: int = Field(ge=0)
+    years_below: int = Field(ge=0)
+    first_year: int | None
+    last_year: int | None
+    source_id: str
+
+
 class Signal(BaseModel):
+    """Una señal de la ventana. `available` con `level` y `score` nulos es una señal «sin calificar» (decisión 17: la
+    oferta y el mercado): el dato existe, pero no se califica y nunca se pinta como riesgo ni como favorable."""
+
     status: Status
     level: Level | None
     critical: bool
@@ -139,6 +163,8 @@ class Signal(BaseModel):
     indicators: list[str]
     reasons: list[str]
     sources: list[SourceValue] | None = None
+    # Solo en `market` (HU-073): nulo sin historia del precio, y en las demás señales.
+    price_history: PriceHistory | None = None
 
 
 class WindowSummary(BaseModel):

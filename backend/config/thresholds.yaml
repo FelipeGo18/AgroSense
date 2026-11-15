@@ -10,8 +10,11 @@
 # Las fuentes del agua y de las heladas son derivadas: son de otros sistemas (FEWS NET y el ZARC de Brasil) y se dice.
 # Decidido por Felipe el 10 de noviembre de 2026 (docs/registro-de-decisiones.md). Si aparece evidencia mejor, se
 # cambian aquí y sube la versión: el motor no cambia (R4).
+#
+# 1.1.0 (15 de noviembre de 2026, decisión 17, HU-073): solo cambia la nota de `market`, que se muestra sin calificar.
+# Ningún corte cambió; sube la versión porque cambia lo que la señal dice en la respuesta (R4).
 
-version: "1.0.0"
+version: "1.1.0"
 
 # Desde qué calificación una señal es favorable o moderada; por debajo de `moderate`, desfavorable. Son una convención
 # del proyecto, al estilo de EcoCrop: el respaldo más cercano es el ejemplo de clases de la FAO de 1985, que coinciden
@@ -68,11 +71,14 @@ signals:
   market:
     variable: seasonal_index
     unit: ""
-    # Sin fuente: ninguna fuente publicada dice qué índice estacional de precio es «precio bajo». La señal es
-    # `insufficient_data` (R1). Tampoco se usa un criterio del equipo: la regla del equipo del 11 de noviembre de 2026
-    # solo lo permite si es central para el producto y cada número se apoya en un dato externo citado, y el mercado
-    # no es central (decisión 12: valor agregado, no protagonista). La propuesta de curva, con los cuantiles del índice
-    # de SIPSA, está en docs/investigacion-decisiones.md (5e) para el día en que una fuente externa la respalde.
+    # Sin calificar (decisión 17, aprobada por Felipe el 15 de noviembre de 2026; HU-073). Ninguna fuente publicada
+    # dice qué índice estacional de precio es «precio bajo», y tampoco se usa un criterio del equipo: la regla del
+    # equipo del 11 de noviembre de 2026 solo lo permite si es central para el producto y cada número se apoya en un
+    # dato externo citado, y el mercado no es central (decisión 12: valor agregado, no protagonista). Con la historia
+    # del precio del mes de cosecha, la señal es `available` con `level` y `score` nulos: dice en cuántos años ese mes
+    # estuvo por encima y por debajo del promedio de su año, como historia, y nunca cambia la luz, la acción ni el
+    # factor limitante. Sin historia, `insufficient_data` (R1). Con peso 4 o 5 podrá ordenar las ventanas dentro de su
+    # decena (HU-240). La curva propuesta con los cuantiles del índice (docs/investigacion-decisiones.md, 5e) no se usa.
     curve: null
     critical_below: null
     source_id: null

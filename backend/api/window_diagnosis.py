@@ -15,7 +15,7 @@ from datetime import date
 from typing import Any
 
 from backend.accounts.farm_models import Lot
-from backend.api.calc_models import DiagnosisCore, LightResult, Signal, SourceValue, SuitabilityResult, Window
+from backend.api.calc_models import DiagnosisCore, LightResult, PriceHistory, Signal, SourceValue, SuitabilityResult, Window
 from backend.api.errors import ApiError
 from backend.api.lot_terrain import ZoneTemperature, zone_temperature, zone_texture
 from backend.api.soil_signals import soil_for
@@ -24,6 +24,7 @@ from backend.config.thresholds import Thresholds, get_thresholds
 from backend.config.versions import rules_version
 from backend.dataset import Dataset, Municipality
 from backend.engine.diagnosis import Diagnosis, diagnose, evaluates_windows, irrigation_used
+from backend.engine.market_signal import MarketSignalResult
 from backend.engine.signal_score import counts, round_half_up, weight_of
 from backend.engine.stages import CropWindow, crop_window
 from backend.engine.suitability import Suitability, ZoneTemperatureUsed, crop_suitability, suitability_reason
@@ -85,8 +86,10 @@ def light_result(result: TrafficLight, weights_basis: str) -> LightResult:
 def signal_result(name: str, result: SignalResult, weights: Mapping[str, int]) -> Signal:
     """Una señal con la forma del contrato. `counts` es si cuenta para la luz con los pesos de `overall` (contrato,
     «Respuesta de diagnóstico»), con la misma definición que el semáforo y el orden (`counts` del motor). `sources` solo
-    viene en la señal que trae varias fuentes para contrastar (en el MVP, el agua); en las demás es nulo."""
+    viene en la señal que trae varias fuentes para contrastar (en el MVP, el agua); en las demás es nulo.
+    `price_history` solo en el mercado con historia (HU-073); en las demás es nulo."""
     sources = signal_sources(result)
+    history = result.price_history if isinstance(result, MarketSignalResult) else None
     return Signal(
         status=result.status,
         level=result.level,
@@ -96,6 +99,7 @@ def signal_result(name: str, result: SignalResult, weights: Mapping[str, int]) -
         indicators=list(result.indicators),
         reasons=list(result.reasons),
         sources=None if sources is None else [SourceValue.model_validate(source, from_attributes=True) for source in sources],
+        price_history=None if history is None else PriceHistory.model_validate(history, from_attributes=True),
     )
 
 

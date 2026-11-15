@@ -182,6 +182,9 @@ def prices(xml: Path | IO[bytes], markets: dict[str, str], counts: Counter[str] 
 
 # Años completos que se necesitan, como mínimo, para decir en qué meses suele subir o bajar un precio.
 MIN_YEARS = 3
+# Decimales del índice estacional y de cada cociente del mes sobre su año al contar los años por encima y por debajo:
+# un cociente que con esta precisión da exactamente 1 es un empate y no cuenta en ninguno de los dos (HU-073).
+RATIO_DECIMALS = 3
 
 
 def seasonal(prices: pl.DataFrame) -> pl.DataFrame:
@@ -190,6 +193,12 @@ def seasonal(prices: pl.DataFrame) -> pl.DataFrame:
     Para cada año completo (los doce meses con precio), el promedio del mes se divide por el promedio de ese año: así la
     inflación entre años no cuenta. El índice del mes es el promedio de esos cocientes (1,00 = un mes como cualquiera).
     Con menos de `MIN_YEARS` años completos el producto no tiene índice: no se inventa (R1).
+
+    Con los mismos cocientes, `years_above` cuenta los años completos en que el del mes quedó por encima de 1 y
+    `years_below` los años en que quedó por debajo (HU-073, decisión 17): dicen cuánto se repite el patrón, que el
+    promedio solo no dice. El cociente se compara redondeado a `RATIO_DECIMALS` decimales, la misma precisión del
+    índice: un mes que redondeado da exactamente 1 es un empate y no cuenta en ninguno de los dos, así que
+    `years_above + years_below <= years`.
     """
     monthly = (
         prices.with_columns(pl.col("date").dt.year().alias("year"), pl.col("date").dt.month().alias("month"))
@@ -203,13 +212,35 @@ def seasonal(prices: pl.DataFrame) -> pl.DataFrame:
     years = ratios.group_by("product_id", "market_id").agg(
         pl.col("year").n_unique().alias("years"), pl.col("year").min().alias("first_year"), pl.col("year").max().alias("last_year")
     )
+    rounded = pl.col("ratio").round(RATIO_DECIMALS)
     return (
         ratios.group_by("product_id", "market_id", "month")
-        .agg(pl.col("ratio").mean().round(3).alias("seasonal_index"))
+        .agg(
+            pl.col("ratio").mean().round(RATIO_DECIMALS).alias("seasonal_index"),
+            (rounded > 1).sum().alias("years_above"),
+            (rounded < 1).sum().alias("years_below"),
+        )
         .join(years, on=["product_id", "market_id"])
         .filter(pl.col("years") >= MIN_YEARS)
-        .with_columns(pl.col("month").cast(pl.Int8), pl.col("years").cast(pl.Int16), pl.lit(SOURCE_ID).alias("source_id"))
-        .select("product_id", "market_id", "month", "seasonal_index", "years", "first_year", "last_year", "source_id")
+        .with_columns(
+            pl.col("month").cast(pl.Int8),
+            pl.col("years").cast(pl.Int16),
+            pl.col("years_above").cast(pl.Int16),
+            pl.col("years_below").cast(pl.Int16),
+            pl.lit(SOURCE_ID).alias("source_id"),
+        )
+        .select(
+            "product_id",
+            "market_id",
+            "month",
+            "seasonal_index",
+            "years",
+            "years_above",
+            "years_below",
+            "first_year",
+            "last_year",
+            "source_id",
+        )  # fmt: skip
         .sort("product_id", "market_id", "month")
     )
 
@@ -224,6 +255,10 @@ MONTH_SCHEMA = {
     "volume_t": pl.Float64,
     "seasonal_index": pl.Float64,
     "years": pl.Int16,
+    "years_above": pl.Int16,
+    "years_below": pl.Int16,
+    "first_year": pl.Int32,
+    "last_year": pl.Int32,
     "quality": pl.String,
     "source_id": pl.String,
 }
@@ -233,7 +268,8 @@ def monthly(prices: pl.DataFrame, season: pl.DataFrame, crops: dict[str, Any]) -
     """La tabla `market_month` (HU-051): por cultivo, central y mes, el índice estacional y el precio de ese mes.
 
     - El cultivo sale de `crops` (`sipsa_crops.yaml`, HU-003). Un cultivo sin producto no tiene filas (R1).
-    - `seasonal_index` y `years` son los de `market_price_season`: sin 3 años completos no hay filas (R1).
+    - `seasonal_index`, `years`, `years_above`, `years_below`, `first_year` y `last_year` son los de
+      `market_price_season` (HU-073): sin 3 años completos no hay filas (R1).
     - `price_cop_kg` es el precio medio de ese mes en `price_year`, el último año completo del producto en esa central.
       Es lo que se pagó, no un precio estimado: los 12 meses salen del mismo año, así que se comparan sin inflación.
     - `volume_t` va nulo: `promediosSipsaParcial` no trae volumen (R1).

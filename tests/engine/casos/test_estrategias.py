@@ -194,9 +194,9 @@ def test_ejemplo_un_ciclo_con_helada_critica_excluye_la_estrategia(api, datos_co
 
 
 def test_ejemplo_la_oferta_y_el_mercado_no_excluyen_y_sin_ellos_el_ingreso_no_califica(api):
-    # Hoy `supply` y `market` no tienen curva (`thresholds.yaml`, decisión de Felipe del 11 nov 2026): siempre salen
-    # `insufficient_data`. Por eso no se puede escribir «con `supply` crítico»: es imposible con las reglas de hoy. Lo que
-    # sí se comprueba es que, sin oferta ni mercado, `scores.income` no califica (decisión 15) y las limitaciones lo dicen.
+    # `supply` y `market` nunca se califican (decisión 17): no pueden ser críticos, así que no se puede escribir «con
+    # `supply` crítico». Este dataset de ejemplo no publica precios, así que los dos salen `insufficient_data`. Lo que sí
+    # se comprueba es que, sin historia del precio (HU-241), `scores.income` no califica y las limitaciones lo dicen.
     respuesta = rotacion(api, cycles=2, previous_crop_ids=["haba"])
     comprobar_sin_oferta_ni_mercado(respuesta)
     con_cultivo = [s for s in respuesta["strategies"] if set(s["crop_ids"]) - SIN_COSECHA]
@@ -252,7 +252,8 @@ def test_ejemplo_con_prioridad_de_suelo_en_5_el_abono_verde_queda_mejor(api):
     # el peso de `soil` en 5 baste para que la avena con vicia gane. Sin datos de agua en el ejemplo, muchas estrategias
     # empatan arriba y la de cebolla no entra entre las 10: se pide como rotación actual, que se evalúa igual (decisión 14).
     con, sin = ["avena_vicia", "zanahoria"], ["cebolla_bulbo", "zanahoria"]
-    respuesta = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5}, current_crop_ids=sin)
+    # Con el ingreso en 0: el abono verde vale 0 en el ingreso (no deja cosecha) y este caso compara solo el suelo.
+    respuesta = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5, "income": 0}, current_crop_ids=sin)
     assert respuesta["weights"]["soil"] == 5
     por_crop_ids = {tuple(s["crop_ids"]): s for s in respuesta["strategies"]}
     actual = respuesta["current_strategy"]

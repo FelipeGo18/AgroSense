@@ -21,6 +21,7 @@ from datetime import date
 
 from backend.api.calc_models import Cycle
 from backend.api.window_diagnosis import WindowDiagnosis, WindowQuery, diagnose_window
+from backend.engine.market_signal import MarketSignalResult, harvest_years_share
 from backend.engine.rotations.candidates import FALLOW, CropInfo
 from backend.engine.rotations.cycles import PlannedCycle, cycle_days, gap_days, plan_cycles
 from backend.engine.rotations.exclusions import (
@@ -121,14 +122,17 @@ class StrategyCycles:
         return result
 
     def cycle_scores(self, planned: Sequence[PlannedCycle]) -> tuple[CycleScores, ...]:
-        """Lo que el orden de las estrategias (HU-082) lee de cada ciclo: su `kind` del catálogo y las calificaciones de
-        sus señales, las mismas de `cycles`. Nulas en el descanso, que no tiene diagnóstico. El factor que más limita lo
-        calcula el orden con los pesos de quien consulta (`self.query.weights`)."""
+        """Lo que el orden de las estrategias (HU-082) lee de cada ciclo: su `kind` del catálogo, las calificaciones de
+        sus señales, las mismas de `cycles`, y para el ingreso (HU-241) el porcentaje de años en que el mes de su cosecha
+        tuvo mejor precio, de la misma historia de `signals.market.price_history`. Nulas en el descanso, que no tiene
+        diagnóstico. El factor que más limita lo calcula el orden con los pesos de quien consulta (`self.query.weights`)."""
         result = []
         for cycle in planned:
             found = self.diagnosis(cycle)
             signals = None if found is None or found.signals is None else signal_scores(found.signals)
-            result.append(CycleScores(self.query.dataset.crops[cycle.crop_id]["kind"], signals))
+            market = None if found is None or found.signals is None else found.signals.get("market")
+            share = harvest_years_share(market.price_history) if isinstance(market, MarketSignalResult) else None
+            result.append(CycleScores(self.query.dataset.crops[cycle.crop_id]["kind"], signals, share))
         return tuple(result)
 
     def diagnoser(self) -> Diagnoser:

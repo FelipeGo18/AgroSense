@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from backend.api import calculations
 from backend.api.calc_models import ChangesResponse
 from backend.api.main import app
-from backend.api.market_signal import market_for, seasonal_index
+from backend.api.market_signal import market_in
 from backend.api.soil_signals import zone_soil_ph
 from backend.api.window_signals import pending_signal
 from backend.config.thresholds import load_thresholds
@@ -19,7 +19,6 @@ from backend.config.weights import load_weights
 from backend.dataset import load
 from backend.engine.change_windows import ChangeConfig, compare_historical_changes
 from backend.engine.changes import Period, PeriodPair
-from backend.engine.market_signal import market_signal
 from backend.engine.stages import monthly_sowing_windows
 from backend.engine.suitability import ZoneTemperatureUsed
 from common.signal_sources import get_signal_sources
@@ -55,8 +54,8 @@ def test_hu216_published_data_reaches_motor_and_http_endpoint(monkeypatch):
     )
     fixed = {}
     for window in monthly_sowing_windows(dataset.stages[crop_id], date(periods.before.start_year, 1, 1)):
-        index, years = seasonal_index(dataset, crop_id, market_for(dataset, municipality), window.harvest_estimate.month)
-        fixed[window.sowing_date.month] = {"supply": pending_signal("supply"), "market": market_signal(index, years, thresholds)}
+        market = market_in(dataset, municipality, crop_id, crop, window)
+        fixed[window.sowing_date.month] = {"supply": pending_signal("supply"), "market": market}
 
     def rows(table):
         return [] if table is None else table.filter(pl.col("municipality_id") == municipality_id).to_dicts()

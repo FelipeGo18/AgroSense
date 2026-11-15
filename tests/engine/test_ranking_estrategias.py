@@ -28,9 +28,10 @@ def score(value: int, critical: bool = False) -> SignalScore:
     return SignalScore("available", value, level, critical)
 
 
-def crop(water=80, frost=90, heat=95, soil=70, supply=60, market=None, kind="crop") -> CycleScores:
+def crop(water=80, frost=90, heat=95, soil=70, supply=60, market=None, kind="crop", price=None) -> CycleScores:
+    """`price`: el porcentaje de años en que el mes de la cosecha tuvo mejor precio que el resto de su año (HU-241)."""
     values = {"water": water, "frost": frost, "heat": heat, "soil": soil, "supply": supply, "market": market}
-    return CycleScores(kind, {name: NO_DATA if v is None else score(v) for name, v in values.items()})
+    return CycleScores(kind, {name: NO_DATA if v is None else score(v) for name, v in values.items()}, price)
 
 
 FALLOW = CycleScores("fallow", None)
@@ -49,16 +50,17 @@ POOR_SOIL = health("unfavorable", "moderate", "unfavorable", "moderate", None)  
 
 def test_los_cuatro_criterios_de_una_estrategia():
     """Papa, arveja y descanso. Agua: (80 + 71) / 2 = 75,5 → 76. Riesgo: el menor factor limitante, 55 (la oferta de la
-    arveja). Ingreso: papa 60 (sin mercado), arveja (55 + 64) / 2 = 59,5, descanso 0 → 119,5 / 3 = 39,83 → 40."""
-    cycles = (crop(water=80, supply=60), crop(water=71, supply=55, market=64), FALLOW)
+    arveja). Ingreso (HU-241): papa 60 (3 de 5 años), arveja 59,5, descanso 0 → 119,5 / 3 = 39,83 → 40."""
+    cycles = (crop(water=80, supply=60, price=60), crop(water=71, supply=55, market=64, price=59.5), FALLOW)
     found, limitations = criteria(("papa", "arveja", "descanso"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
     assert found == {"water": 76, "soil": 88, "income": 40, "risk": 55}
     assert limitations == ()
 
 
 def test_el_abono_verde_vale_cero_en_el_ingreso_y_cuenta_en_agua_y_riesgo():
-    cycles = (crop(water=90, supply=80), crop(water=60, supply=None, kind="cover"))
+    cycles = (crop(water=90, supply=80, price=80), crop(water=60, supply=None, kind="cover", price=100))
     found, _ = criteria(("papa", "avena_vicia"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
+    # El abono verde vale 0 aunque traiga una historia de precio: no deja cosecha (decisión 15).
     assert found == {"water": 75, "soil": 88, "income": 40, "risk": 60}
 
 
@@ -89,14 +91,50 @@ def test_un_ciclo_sin_ninguna_senal_que_cuente_y_califique_no_cuenta_en_el_riesg
 
 
 def test_un_criterio_sin_datos_es_nulo_no_entra_al_total_y_va_a_las_limitaciones():
-    """Sin oferta ni mercado en ningún cultivo, el ingreso es nulo, aunque el descanso valga 0: nunca se rellena (R1).
+    """Un cultivo sin historia de precio y ningún descanso ni abono verde: el ingreso es nulo, nunca se rellena (R1).
     El total es el promedio de los otros tres: (80 + 88 + 80) / 3 = 82,67 → 83."""
-    cycles = (crop(water=80, frost=90, heat=95, soil=80, supply=None), FALLOW)
-    result = score_strategy(("papa", "descanso"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS, EQUAL)
+    cycles = (crop(water=80, frost=90, heat=95, soil=80, supply=None),)
+    result = score_strategy(("papa",), cycles, GOOD_SOIL, SIGNAL_WEIGHTS, EQUAL)
     assert result.scores == {"water": 80, "soil": 88, "income": None, "risk": 80}
     assert result.total_score == 83
     assert NO_CRITERION["income"] in result.limitations
-    assert "El ciclo 1 no tiene calificación de oferta ni de mercado: no cuenta en ese criterio" in result.limitations
+    assert "El ciclo 1 no tiene historia del precio del mes de su cosecha: no cuenta en ese criterio" in result.limitations
+
+
+def test_el_ingreso_es_la_frecuencia_de_anos_con_mejor_precio_y_el_abono_verde_vale_cero():
+    """HU-241, valores a mano: papa con cosecha en septiembre en Corabastos (0 de 5 años por encima) vale 0 y arveja con
+    cosecha en mayo (5 de 5) vale 100; con un abono verde, (0 + 100 + 0) / 3 = 33,3 → 33. La oferta no entra: aunque
+    traiga calificación, no cambia el ingreso."""
+    cycles = (crop(supply=90, price=0), crop(supply=10, price=100), crop(supply=None, kind="cover"))
+    found, limitations = criteria(("papa", "arveja", "avena_vicia"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
+    assert found["income"] == 33
+    assert not any("precio" in text for text in limitations)
+    assert criteria(("papa", "arveja"), cycles[:2], GOOD_SOIL, SIGNAL_WEIGHTS)[0]["income"] == 50
+
+
+def test_un_cultivo_sin_historia_de_precio_no_cuenta_en_el_ingreso_y_se_dice():
+    cycles = (crop(price=None), crop(price=100), FALLOW)
+    found, limitations = criteria(("haba", "arveja", "descanso"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)
+    assert found["income"] == 50  # (100 + 0) / 2: la haba no cuenta
+    assert "El ciclo 1 no tiene historia del precio del mes de su cosecha: no cuenta en ese criterio" in limitations
+
+
+def test_el_descanso_y_el_abono_verde_valen_cero_aunque_ningun_cultivo_tenga_historia():
+    """Decidido por Felipe el 15 nov 2026: que no dejan cosecha no depende de los precios. Con descanso → haba → descanso
+    (la haba no tiene producto en SIPSA) el ingreso es 0, no nulo: antes salía primera en Duitama sin ingreso."""
+    found, limitations = criteria(("descanso", "haba", "descanso"), (FALLOW, crop(price=None), FALLOW), GOOD_SOIL, SIGNAL_WEIGHTS)
+    assert found["income"] == 0
+    assert "El ciclo 2 no tiene historia del precio del mes de su cosecha: no cuenta en ese criterio" in limitations
+    assert NO_CRITERION["income"] not in limitations
+    cycles = (crop(price=None), crop(price=None, kind="cover"), FALLOW)
+    assert criteria(("haba", "avena_vicia", "descanso"), cycles, GOOD_SOIL, SIGNAL_WEIGHTS)[0]["income"] == 0
+    assert criteria(("descanso", "avena_vicia"), (FALLOW, crop(kind="cover")), GOOD_SOIL, SIGNAL_WEIGHTS)[0]["income"] == 0
+
+
+def test_solo_cultivos_sin_historia_de_precio_el_ingreso_no_califica():
+    found, limitations = criteria(("haba", "maiz", "haba"), (crop(price=None),) * 3, GOOD_SOIL, SIGNAL_WEIGHTS)
+    assert found["income"] is None
+    assert NO_CRITERION["income"] in limitations
 
 
 def test_sin_salud_del_suelo_el_suelo_no_califica():
@@ -121,10 +159,12 @@ def test_un_ciclo_no_apto_no_tiene_diagnostico_y_se_dice():
 
 
 def test_sin_ningun_ciclo_con_diagnostico_agua_y_riesgo_no_califican():
+    """Un descanso solo: sin diagnóstico no hay agua ni riesgo; el ingreso es 0, porque el descanso no deja cosecha
+    (decidido por Felipe el 15 nov 2026). Total: (88 + 0) / 2 = 44."""
     result = score_strategy(("descanso",), (FALLOW,), GOOD_SOIL, SIGNAL_WEIGHTS, EQUAL)
-    assert result.scores == {"water": None, "soil": 88, "income": None, "risk": None}
-    assert result.total_score == 88
-    assert [NO_CRITERION[name] for name in ("water", "income", "risk")] == list(result.limitations)
+    assert result.scores == {"water": None, "soil": 88, "income": 0, "risk": None}
+    assert result.total_score == 44
+    assert [NO_CRITERION[name] for name in ("water", "risk")] == list(result.limitations)
 
 
 def test_el_total_se_pondera_por_las_prioridades():
@@ -155,9 +195,9 @@ def test_subir_el_peso_del_suelo_sube_al_abono_verde():
     Con el suelo en 0 y el ingreso en 5: arveja (240 + 300 + 180) / 11 = 65,45 → 65; abono verde (240 + 200 + 180) / 11
     = 56,36 → 56. Con el suelo en 5: arveja (240 + 125 + 300 + 180) / 16 = 52,81 → 53; abono verde (240 + 440 + 200 +
     180) / 16 = 66,25 → 66."""
-    sowed = (crop(water=80, supply=60), crop(water=80, supply=60))
+    sowed = (crop(water=80, supply=60, price=60), crop(water=80, supply=60, price=60))
     options = (
-        (("papa", "maiz", "arveja"), (*sowed, crop(water=80, supply=60)), POOR_SOIL),
+        (("papa", "maiz", "arveja"), (*sowed, crop(water=80, supply=60, price=60)), POOR_SOIL),
         (("papa", "maiz", "avena_vicia"), (*sowed, crop(water=80, supply=None, kind="cover")), GOOD_SOIL),
     )
 

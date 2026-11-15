@@ -139,6 +139,38 @@ def validate_department_markets(region: dict[str, Any]) -> None:
         raise ValidationError(f"`department_markets` con centrales que no están en `markets`: {unknown_markets}.")
 
 
+def validate_crop_market_overrides(region: dict[str, Any], crop_ids: set[str] | None = None) -> None:
+    """`crop_market_overrides` de `region.yaml` (HU-073, decisión 17): departamento → `crop_id` → `market_id` y `reason`.
+
+    Cada departamento está en `departments`, cada central en `markets` y cada override dice por qué (`reason`): la razón
+    de la señal de mercado lo cita. Con `crop_ids` (los del catálogo), cada cultivo existe. Los códigos van como texto,
+    como en `department_markets`. Un error de tipeo no puede dar otra central, ni `insufficient_data`, en silencio (R1).
+    Sin el campo no hay qué validar."""
+    entry = region["region"]
+    overrides = entry.get("crop_market_overrides")
+    if not overrides:
+        return
+    if not isinstance(overrides, dict):
+        raise ValidationError("`crop_market_overrides` va como departamento → cultivo → `market_id` y `reason`.")
+    unknown_departments = sorted(set(overrides) - set(entry.get("departments") or []), key=str)
+    if unknown_departments:
+        raise ValidationError(f"`crop_market_overrides` con departamentos que no están en `departments`: {unknown_departments}.")
+    markets = set(entry.get("markets") or {})
+    for department, crops in overrides.items():
+        if not isinstance(crops, dict) or not crops:
+            raise ValidationError(f"`crop_market_overrides[{department!r}]` va como cultivo → `market_id` y `reason`.")
+        for crop_id, override in crops.items():
+            where = f"`crop_market_overrides[{department!r}][{crop_id!r}]`"
+            if crop_ids is not None and crop_id not in crop_ids:
+                raise ValidationError(f"{where}: el cultivo no está en `catalog/crops.yaml`.")
+            if not isinstance(override, dict) or set(override) != {"market_id", "reason"}:
+                raise ValidationError(f"{where} lleva solo `market_id` y `reason`.")
+            if not isinstance(override["market_id"], str) or override["market_id"] not in markets:
+                raise ValidationError(f"{where}: la central {override['market_id']!r} no está en `markets`.")
+            if not str(override["reason"] or "").strip():
+                raise ValidationError(f"{where}: sin `reason` no se dice por qué se usa esa central (R1).")
+
+
 def validate_crops(crops: Any, prices: pl.DataFrame, catalog_ids: set[str] | None = None) -> None:
     """El mapeo de `sipsa_crops.yaml` (HU-003): cada cultivo tiene un producto que SIPSA publica en la región, o ninguno y
     el porqué (R1). Un producto no da el precio de dos cultivos: dos productos tampoco se promedian (decisión 11).
@@ -196,6 +228,21 @@ def validate_market_month(month: pl.DataFrame, crops: dict[str, Any], sources: p
     unknown = set(month["source_id"].unique().to_list()) - set(sources["source_id"].to_list())
     if unknown:
         raise ValidationError(f"`market_month` con una fuente que no está en `sources`: {sorted(unknown)}")
+    validate_years_counted("market_month", month)
+
+
+def validate_years_counted(name: str, table: pl.DataFrame) -> None:
+    """Los años por encima y por debajo del promedio de su año (HU-073): ninguno negativo y entre los dos no pasan de
+    `years`. Un mes igual al promedio no cuenta en ninguno, así que la suma puede ser menor."""
+    bad = table.filter(
+        pl.col("years_above").is_null()
+        | pl.col("years_below").is_null()
+        | (pl.col("years_above") < 0)
+        | (pl.col("years_below") < 0)
+        | ((pl.col("years_above") + pl.col("years_below")) > pl.col("years"))
+    )
+    if not bad.is_empty():
+        raise ValidationError(f"`{name}` con años por encima o por debajo que no cuadran con `years`: {bad.head(3).to_dicts()}")
 
 
 def validate_climate(climate: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
@@ -443,12 +490,14 @@ def publish(
     """
     validate(municipalities, sources)
     validate_department_markets(region)
+    validate_crop_market_overrides(region, set(crops[1]["crop_id"].to_list()) if crops is not None else None)
     if boundaries is not None:
         validate_boundaries(boundaries, municipalities, sources)
     season = month = latest = None
     if prices is not None:
         validate_market(prices, sources)
         season = sipsa.seasonal(prices)
+        validate_years_counted("market_price_season", season)
         # El último precio de cada producto, con el de hace una semana y el cambio: la API solo lo filtra (HU-221).
         latest = sipsa.latest(prices)
     if crop_products is not None:

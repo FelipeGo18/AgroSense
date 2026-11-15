@@ -28,6 +28,16 @@ region:
   department_markets:
     "15": "9"   # Boyacá → Tunja
     "25": "1"   # Cundinamarca → Corabastos
+  # La central que da el precio de un cultivo cuando la de su departamento no lo publica (HU-073, decisión 17,
+  # aprobada por Felipe el 15 de noviembre de 2026): departamento DIVIPOLA → `crop_id` → `market_id` y `reason`. Solo
+  # vale lo que está aquí: un cultivo que no está y que la central del departamento no publica es `insufficient_data`,
+  # nunca otra central por defecto (R1). La API lo usa solo si la central del departamento no tiene filas del cultivo, y
+  # la razón de la señal cita `reason`. Pasa tal cual al manifiesto; `pipeline.build` falla si una central no existe.
+  crop_market_overrides:
+    "15":   # Boyacá
+      papa:
+        market_id: "1"   # Corabastos
+        reason: "Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos"
 
 # Periodo normal del clima (HU-044; decidido por Felipe el 10 de noviembre de 2026): uno solo para todo lo que se compara
 # con una normal. 1991-2020 es el periodo de referencia de la OMM y el de las normales del IDEAM, que siguen sus
