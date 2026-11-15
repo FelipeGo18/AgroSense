@@ -121,7 +121,8 @@ Términos que aparecen en las specs, explicados en lenguaje sencillo.
 | Carbono orgánico | La materia orgánica del suelo. Si es baja, conviene rotar con abonos verdes, descanso o leguminosas. |
 | Abono verde | Un cultivo que no se cosecha: se incorpora al suelo para devolverle materia orgánica y nitrógeno. |
 | Corrección por altitud | Ajuste de la temperatura de NASA POWER, que viene de una celda de unos 50 km, a la altura real del municipio. |
-| Sobreoferta | Cuando se siembra tanto de un cultivo en una zona que puede saturar el mercado. |
+| Sin calificar | Una señal con dato pero sin nivel ni calificación, porque ninguna fuente dice cómo calificarla: hoy, la oferta y el mercado (decisión 17). Se muestra, nunca cambia la luz y va a las limitaciones. |
+| Sobreoferta | Cuando se siembra tanto de un cultivo en una zona que puede saturar el mercado. AgroSense no la declara: ninguna fuente dice desde cuánto hay sobreoferta (decisión 17). |
 | Rotación | Secuencia de cultivos en el mismo terreno de un lote a lo largo del tiempo. Si el terreno se dividió o se juntó, sus cultivos anteriores son los de todas las temporadas de las que viene. |
 | Ciclo | Una siembra completa dentro de una estrategia: un cultivo, un abono verde o un descanso, con su ventana de siembra (de la siembra a la cosecha estimada, o lo que dura el descanso según su ficha). El primer ciclo se siembra en la fecha elegida y cada uno siguiente el lunes después de la cosecha estimada del anterior (decisión 15). Una estrategia tiene 2 o 3 ciclos; según el cultivo, cada uno dura de 3 a 6 meses. |
 | Semestre A / B (solo en EVA) | Así publica EVA la oferta: A es enero–junio; B es julio–diciembre (supuesto por confirmar en HU-001). La decisión no se evalúa por semestre: la señal de oferta lee el semestre en que cae la fecha de siembra, y la respuesta lo dice. |

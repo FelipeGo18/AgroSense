@@ -24,7 +24,7 @@ Aplican a todos los sistemas. **Una historia de usuario que viole una regla no s
 | Regla | Comprobación sugerida |
 |---|---|
 | R1 | Prueba: una señal sin datos devuelve `insufficient_data` y `level` nulo; la web no la pinta como riesgo. |
-| R2 | Prueba: una señal `unfavorable` crítica nunca da verde, aunque las otras sean `favorable`. Prueba: una helada crítica da rojo con agua y oferta favorables. Prueba: una ventana con una señal crítica queda marcada como de alto riesgo y nunca entra entre las mejores, por alto que sea su balance. |
+| R2 | Prueba: una señal `unfavorable` crítica nunca da verde, aunque las otras sean `favorable`. Prueba: una helada crítica da rojo con agua y oferta favorables. Prueba: una ventana con una señal crítica queda marcada como de alto riesgo y nunca entra entre las mejores, por alto que sea su balance. Prueba (decisión 17): con oferta y mercado sin calificar, la luz y la acción son las mismas que sin ellas, y el precio nunca saca a una ventana de su decena ni sube una de alto riesgo. |
 | R3 | Prueba: una estrategia que viola un `filter` entre dos ciclos seguidos no aparece en el ranking y su exclusión cita la regla. Prueba: un cultivo que no es apto para la zona no se evalúa por ventanas y la respuesta cita el dato de su ficha que lo excluye. |
 | R4 | Prueba: dos ejecuciones iguales dan salida idéntica; toda respuesta trae `versions.dataset` y `versions.rules`. |
 | R5 | Revisión: ningún dato ficticio sin rótulo; cada razón de M4 mapea a un indicador o regla evaluados. |
@@ -64,8 +64,8 @@ Seis señales independientes en el P0 y tres más en el P1. Ninguna se promedia 
 | `frost` (heladas) | Qué tan frecuentes han sido las heladas en los meses en que el cultivo está en una etapa sensible (por semanas con HU-193, P1) | Sí | P0 |
 | `heat` (calor) | Si en las etapas del cultivo suelen darse temperaturas máximas por encima de lo que aguanta (`heat_max_c` de su ficha) | Sí | P0 |
 | `soil` (suelo) | Si el pH del suelo de la zona, o del lote si se envía, está en el rango del cultivo. La textura entra en la señal de agua; el carbono orgánico alimenta la salud del suelo de las estrategias | **No:** es una estimación de 250 m (R10) | P0 |
-| `supply` (oferta) | Si en la zona se está sembrando mucho o poco del cultivo, según el último dato del semestre en que cae la siembra | Sí | P0 |
-| `market` (mercado) | Si el precio suele estar bajo en el mes en que saldría la cosecha | Sí | P0 la señal; los datos de SIPSA son P1 |
+| `supply` (oferta) | Cuánto se sembró del cultivo en el municipio, según el último dato del semestre en que cae la siembra. **Sin calificar** (decisión 17): se muestra como contexto | No | P0 |
+| `market` (mercado) | En cuántos años el precio del mes en que saldría la cosecha estuvo por encima o por debajo del promedio de su año, en la central de referencia. **Sin calificar** (decisión 17): se muestra como historia y puede ordenar las ventanas (HU-240) | No | P0 |
 | `excess_rain` (exceso de lluvia) | Aguaceros frecuentes que encharcan, lavan el abono o impiden las labores | Sí | P1 |
 | `disease` (enfermedades por clima) | Semanas húmedas y templadas que favorecen una enfermedad con regla publicada, como la gota de la papa. No cubre plagas en general: no hay datos abiertos | No | P1 |
 | `harvest_weather` (cosecha) | Si en las semanas de cosecha suele haber días secos seguidos | No | P1 |
@@ -77,7 +77,11 @@ Seis señales independientes en el P0 y tres más en el P1. Ninguna se promedia 
 - **La lluvia de `water`** sale de la fuente que define `sources.yaml` para la región: GPM IMERG (lluvia por satélite, desde 2000) cuando la región la tiene; si no, NASA POWER (reanálisis, desde 1981). Las dos se muestran juntas para contrastar y nunca se mezclan. «Respaldo» es una elección por región en `sources.yaml`, no un relleno por consulta: si la fuente elegida no tiene dato para un municipio, la señal es `insufficient_data` (R1). En la región piloto la lluvia es la de GPM IMERG, con NASA POWER para contrastar, y la señal lleva siempre el aviso de `rain_caveat`: en los valles del altiplano IMERG la sobrestima, cerca de 1,85 veces la del IDEAM (decidido por Felipe el 11 de noviembre de 2026, PR #44). La ET0 sale de NASA POWER por Penman-Monteith (FAO-56).
 - **La humedad del suelo** de la zona (la que modela NASA POWER y la de SMAP) se muestra junto a `water` para contrastar, cada una en su unidad. En el MVP no cambia la calificación.
 - **El verdor** (MODIS NDVI) no es una señal: muestra en qué épocas suele estar verde el campo de la zona, para contrastar las ventanas con lo que de verdad se siembra. No cambia la luz ni el orden.
-- **La oferta es valor agregado, no protagonista** (decisión 12): sigue siendo una de las seis señales, con su peso y sus reglas; en las estrategias de rotación entra solo por el criterio de ingreso.
+- **La oferta es valor agregado, no protagonista** (decisión 12): sigue siendo una de las seis señales, con su peso. Desde la decisión 17 se muestra sin calificar y no entra a las estrategias: el criterio de ingreso sale solo del mercado.
+- **Oferta y mercado se muestran sin calificar** (decisión 17, propuesta; `docs/investigacion-decisiones.md`, 5f). Ninguna fuente externa dice qué es «precio bajo» en el precio mayorista ni desde cuánto hay «sobreoferta», y la regla del equipo del 11 de noviembre de 2026 (decisión 16) no permite un corte propio en lo que no es central. Con dato, la señal es `available` con `level`, `score` y `critical` nulos (`critical = false`): el dato existe, pero no se califica (R1 separa disponibilidad y nivel). Sin dato, `insufficient_data`. Una señal sin calificar nunca cambia la luz ni la acción, nunca es factor limitante, no entra al promedio ponderado y se agrega a las limitaciones con «sin calificar».
+  - **`market`** dice, de la central de referencia y del mes de la cosecha estimada: en cuántos años el precio de ese mes estuvo por encima y por debajo del promedio de su año, de qué año a qué año, y cuánto por encima o por debajo en promedio (`seasonal_index`). Por ejemplo: «En Corabastos, en septiembre (el mes en que saldría su cosecha), el precio de la papa negra estuvo por encima del promedio de su año en 0 de 5 años (2021–2025) y por debajo en 5; en promedio, 23 % por debajo. Así fue en la historia: no es un pronóstico del precio. Fuente: DANE». Los años se cuentan, no solo se promedian: un año muy caro sube el promedio de un mes que casi siempre estuvo por debajo.
+  - **La central de referencia** es la de `region.department_markets` del departamento. Si esa central no publica el cultivo, se usa la que diga `region.crop_market_overrides` para ese departamento y cultivo (en la región piloto, la papa de Boyacá usa Corabastos: Tunja no publica papa negra desde el 27 de julio de 2021 y su temporada es casi la de Corabastos), y la razón lo dice. Sin las dos, `insufficient_data`: nunca otra central por defecto (R1).
+  - **`supply`** dice el área sembrada del municipio según EVA en el semestre en que cae la siembra (último año con dato), si es preliminar, si es exactamente la del mismo semestre del año anterior, y su variación cuando exista (`planted_change_pct`, HU-032). No dice «mucho» ni «poco».
 
 ## Cómo se califica cada señal
 
@@ -97,8 +101,8 @@ Qué mide cada curva:
 | `frost` | Porcentaje de años con al menos una helada (mínima ≤ 2 °C) en cualquiera de los meses sensibles de la ventana (semanas en P1) | `thresholds.yaml` |
 | `heat` | Temperatura máxima que se supera uno de cada diez días (p90), la más alta entre los meses sensibles con dato (el peor mes, no el promedio) | Ficha (`temp_opt_max_c`, `heat_max_c`: 100 en el óptimo alto, 0 en el máximo; sin límite inferior) |
 | `soil` | pH estimado | Ficha (`ph_*`) |
-| `supply` | Variación del área sembrada | `thresholds.yaml` |
-| `market` | Índice estacional de precio en el mes de cosecha | `thresholds.yaml` |
+| `supply` | Sin calificar (decisión 17): se muestran el área sembrada y su variación | `thresholds.yaml` (`curve: null`) |
+| `market` | Sin calificar (decisión 17): se muestran los años por encima y por debajo del promedio y el índice estacional del mes de cosecha | `thresholds.yaml` (`curve: null`) |
 
 Los `rain_*` de la ficha son la lluvia anual que pide el cultivo: sirven de referencia y de contraste, no entran a la curva de una ventana.
 
@@ -118,6 +122,7 @@ Cada señal tiene un **peso de 0 a 5**. AgroSense propone un peso por defecto pa
 | 1 a 3 | Importancia normal | La señal cuenta como en las reglas de agregación |
 | 4 a 5 | «Me importa mucho» | Un `moderate` en esa señal cuenta como `unfavorable` para la luz |
 
+- **Oferta y mercado sin calificar (decisión 17).** Como no tienen nivel, su peso no cambia la luz. El de `market` solo hace algo con 4 o 5 («me importa mucho»): el precio ordena las ventanas dentro de la misma decena (ver «Orden de las ventanas»). El de `supply` no tiene efecto mientras la oferta no califique: la API lo acepta, para no romper el contrato, y la web no muestra un control sin función.
 - Los pesos por defecto viven en `weights.yaml`, versionados, y la respuesta dice cuáles se usaron (R4).
 - Cuando los pesos del agricultor dan otra luz que los de AgroSense, **se muestran las dos**: «Con el criterio de AgroSense: amarillo · Con sus prioridades: verde». La decisión es del agricultor.
 
@@ -131,7 +136,7 @@ Los umbrales viven en configuración versionada (`backend/config/`). Las reglas 
 3. Si al menos una señal que cuenta califica, ninguna señal que cuenta es `unfavorable` y `water` es `favorable` (o no cuenta), la luz es `green`.
    - Sin ninguna señal que cuente y califique (por ejemplo, con peso solo en la oferta y el mercado, sin datos), la luz es `yellow` y la acción `other_window`, con una razón que lo explica: no hay evidencia de riesgo ni de que la ventana sea buena (R5; HU-074, aprobado por Felipe el 14 de noviembre de 2026, `docs/registro-de-decisiones.md`).
 4. En cualquier otro caso, la luz es `yellow`.
-5. `frost`, `heat`, `soil`, `supply`, `market` y las señales del P1 sin datos **nunca cambian la luz**, pero se agregan a las limitaciones. `not_applicable` tampoco la cambia.
+5. `frost`, `heat`, `soil`, `supply`, `market` y las señales del P1 sin datos **nunca cambian la luz**, pero se agregan a las limitaciones. `not_applicable` tampoco la cambia. `supply` y `market` sin calificar (decisión 17) tampoco: no tienen nivel, así que nunca son desfavorables ni moderadas.
 
 «Señal que cuenta» es la que tiene peso mayor que 0, más los riesgos graves de clima, que cuentan siempre. Con riego, `water` no es `unfavorable` por falta de lluvia: es `favorable` y la razón dice cuánto riego haría falta.
 
@@ -144,8 +149,10 @@ Acción según la luz:
 | `red` | `other_window` si todas las señales desfavorables son de clima (`water`, `frost`, `heat`, `excess_rain`); `rotate` si alguna es `soil`, `supply` o `market`, o si el cultivo no es apto |
 | `not_evaluable` | `review_data` |
 
+> Decisión 17: mientras `supply` y `market` no califiquen, nunca son `unfavorable`, así que hoy solo `soil` y la aptitud llevan a `rotate`. Si algún día el mercado califica, va con las de clima (`other_window`): los datos muestran que correr la siembra uno o dos meses sí cambia el mes de la cosecha y su historia de precio (`docs/investigacion-decisiones.md`, 5f).
+
 - Con `other_window`, la respuesta trae las mejores ventanas de los próximos doce meses, para que el agricultor vea cuándo sí.
-- Con `rotate`, en el MVP la web lleva a las estrategias de rotación. En P1 (HU-197), la respuesta trae además `alternatives`: hasta tres cultivos aptos para la zona que en esa ventana salen bien en clima y tienen mejor oferta, con su razón. Nunca se sugiere un cultivo que no es apto o que sale mal en clima.
+- Con `rotate`, en el MVP la web lleva a las estrategias de rotación. En P1 (HU-197), la respuesta trae además `alternatives`: hasta tres cultivos aptos para la zona que en esa ventana salen bien en clima y tienen mejor oferta, con su razón. Nunca se sugiere un cultivo que no es apto o que sale mal en clima. Con la decisión 17 la oferta no califica y «mejor oferta» no se puede decidir: HU-197 tiene que redefinirlo antes de hacerse (pendiente de su responsable).
 - La tabla de acciones mira solo las señales que cuentan con los pesos de esa luz. Con peso 4 o 5, un `moderate` cuenta como `unfavorable` también para la tabla de acciones: las «desfavorables» de la tabla son las que cuentan como desfavorables para esa luz. Nunca para el factor limitante ni para el alto riesgo (HU-074; aprobado por Felipe el 14 de noviembre de 2026, `docs/registro-de-decisiones.md`).
 - Las alternativas se ordenan igual que las ventanas (factor limitante y después prioridades). Un candidato con aptitud `insufficient_data` puede aparecer, con esa limitación; uno no apto, nunca. Se muestran si cualquiera de las dos luces da `rotate`, también cuando el cultivo consultado no es apto.
 - Las prioridades se recuerdan: en el MVP, en el navegador; con cuenta, en el perfil cuando exista HU-160 (P1).
@@ -160,6 +167,7 @@ Casi nunca hay un mes perfecto. El orden sigue el método de la FAO para aptitud
 2. **Prioridades:** entre ventanas cuyo factor limitante cae en la misma decena (por ejemplo, de 60 a 69), ordena el promedio de las calificaciones ponderado por los pesos.
    - La decena alta es de 90 a 100: un factor limitante de 100 no forma una decena propia.
    - Un peso que falta, o negativo, vale 0. Si las señales que cuentan tienen todas peso 0 (solo cuentan riesgos graves de clima), el promedio ponderado es nulo y la ventana va al final de su decena.
+   - **El precio, si al agricultor le importa mucho** (HU-240, decisión 17). Con peso 4 o 5 en `market`, dentro de la decena va primero la ventana cuyo mes de cosecha estuvo más años por encima del promedio de su año (`years_above` / `years`); en empate, la de mayor `seasonal_index`; después, el promedio ponderado. Con peso de 0 a 3 el precio no ordena. Una ventana sin historia de precio va después de las que la tienen, dentro de su decena (en un mismo cultivo y una misma central, o todas la tienen o ninguna). El precio nunca saca a una ventana de su decena ni sube una de alto riesgo: el clima sigue mandando.
 3. Una señal sin datos o que no aplica no califica: sale del orden y se agrega a las limitaciones (R1).
    - Una ventana sin ninguna señal que cuente y califique no tiene factor limitante ni promedio (nulos) y no es de alto riesgo: no hay evidencia de riesgo, solo falta de datos. Va después de las de alto riesgo, por fecha, y nunca entra en `best_windows` (HU-192, 14 de noviembre de 2026).
 4. Una ventana con alguna señal crítica que cuenta se marca `high_risk`: va después de todas las que tienen calificación y no son de alto riesgo, y nunca entra en `best_windows` (R2).
@@ -177,7 +185,7 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 2. Las reglas de filtro de `rotation_rules` se revisan entre cada par de ciclos seguidos y entre los cultivos anteriores del terreno y el primer ciclo. Los cultivos anteriores son los `previous_crop_ids` si llegan; si llegan vacíos y hay rotación actual (`current_crop_ids`), esa rotación repetida hacia atrás, para todas las estrategias; sin ninguna, no hay cultivos anteriores. Una regla violada **excluye** la estrategia, con su motivo (R3).
 3. Un ciclo con un cultivo que no es apto para la zona excluye la estrategia. Un ciclo cuya ventana es de alto riesgo por clima (`water`, `frost` o `heat` desfavorable y crítica) también: ningún otro criterio lo compensa (R2).
 4. Un cultivo cuyo pH tolerado queda fuera de todo el intervalo estimado del suelo excluye la estrategia.
-5. La oferta y el mercado nunca excluyen: bajan el criterio de ingreso.
+5. La oferta y el mercado nunca excluyen. El mercado entra al criterio de ingreso; la oferta no entra a las estrategias mientras no califique (decisión 17).
 6. Cada ciclo se revisa con el **mismo cálculo del diagnóstico de ventana**: sus seis señales, sus dos luces y su factor limitante. El descanso no tiene diagnóstico.
 
 **La rotación actual (decisión 14).** La rotación que el agricultor viene haciendo (`current_crop_ids`) entra como **estrategia de referencia** (`kind = current`). El reto pide comparar al menos tres estrategias, incluida la actual.
@@ -194,13 +202,13 @@ Es el centro del producto (decisión 12). Una **estrategia** es una secuencia de
 |---|---|
 | `water` (agua) | El promedio de la calificación de la señal `water` de sus ciclos con diagnóstico |
 | `soil` (suelo) | Los cinco criterios de salud del suelo: `favorable` vale 100, `moderate` 50 y `unfavorable` 0; el criterio es su promedio entre los disponibles |
-| `income` (ingreso) | El promedio, ciclo por ciclo, de la calificación de `supply` y de `market` que tengan dato; un abono verde o un descanso no deja cosecha y vale 0. Es el único lugar donde la oferta entra a las estrategias |
+| `income` (ingreso) | El promedio, ciclo por ciclo, del porcentaje de años en que el precio del mes de su cosecha estuvo por encima del promedio de su año, en la central de referencia: 100 × `years_above` / `years` (HU-241, decisión 17). Un abono verde o un descanso no deja cosecha y vale 0. Es una frecuencia, como la de las heladas: no usa ningún corte. No dice cuánto va a ganar. Antes de la decisión 17 era el promedio de la calificación de `supply` y de `market`, que nunca califican |
 | `risk` (riesgo) | El factor que más limita entre todos sus ciclos: el menor `limiting_score` (ley del mínimo). El de cada ciclo es la calificación más baja entre sus señales que cuentan y califican con los pesos de quien consulta, como en el orden de las ventanas, también si su luz es `not_evaluable` por falta del agua: que falte un dato nunca mejora el riesgo (R1). Un ciclo sin ninguna señal que cuente y califique no cuenta, y se dice (aprobado por Haider el 15 de noviembre de 2026, PR #146) |
 
 Decisión 15 (antes era un supuesto de HU-082):
 
 - `total_score` es el promedio de los criterios que califican, ponderado por las prioridades de la rotación. Con todas las prioridades de los criterios que califican en 0, la estrategia no tiene total y va al final.
-- Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). En `water` y `risk`, un ciclo sin dato no cuenta y se dice; si ninguno tiene, el criterio no califica. En `income`, un ciclo de cultivo sin oferta ni mercado no cuenta; si ningún ciclo de cultivo tiene, no califica.
+- Un criterio sin datos no califica, no entra al total y se agrega a las limitaciones (R1). En `water` y `risk`, un ciclo sin dato no cuenta y se dice; si ninguno tiene, el criterio no califica. En `income`, un ciclo de cultivo sin historia de precio (sin central de referencia o sin fila de su cultivo y mes) no cuenta y se dice; si ningún ciclo de cultivo tiene, no califica.
 - Hasta 10 estrategias. Empate de `total_score`: gana la de `risk` más alto y, si sigue el empate, la de `crop_ids` primero en orden alfabético (R4).
 - El ranking ordena estrategias ya filtradas: nunca rescata una excluida.
 

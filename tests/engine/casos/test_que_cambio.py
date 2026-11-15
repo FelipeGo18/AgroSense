@@ -1,24 +1,61 @@
-"""Casos de referencia de «Qué cambió» (HU-121, PR 3). Casos de EJEMPLO (R5): tablas mínimas de pruebas.
+"""Casos de referencia de «Qué cambió» (HU-121): ejemplo del contrato y endpoint real.
 
-Las comprobaciones viven en funciones que corren **hoy, sin marca**, sobre el ejemplo del contrato
-(`backend/api/calc_examples.CHANGES`, que trae un mes sin datos: el `tmax_p90_c` de enero). Así, un campo mal escrito no
-se esconde en el `xfail` (revisión de Haider del PR #86). Las mismas funciones corren sobre `GET /api/v1/changes`, que
-responde 501 hoy: esos casos van con `xfail(strict=True)` y, cuando las HU pasen, la prueba falla hasta quitar la marca.
-
-TODO(HU-216): `pipeline.build.publish()` todavía no escribe `climate_change_month`. El dataset de ejemplo no tiene el
-clima de dos periodos, así que el caso del endpoint con un mes sin datos se completa con esa tabla (sin inventar el
-Parquet).
+Las filas son de EJEMPLO (R5), con enero sin calor en el primer periodo.
+HU-218 ya responde: estos casos no llevan xfail.
 """
 
+from dataclasses import replace
+
+import polars as pl
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.api import calc_examples
+from backend.api import calc_examples, calculations
+from backend.dataset import get_dataset
+from common.signal_sources import SignalSource, SignalSources
 from tests.engine.casos.conftest import EJEMPLO_FRIO
 from tests.textos import speaks_as_forecast
 
-ESPERA = pytest.mark.xfail(strict=True, reason="espera HU-216 y HU-218")
 VARIABLES = ("frost_freq_pct", "precip_normal_mm", "tmax_p90_c")
+
+
+@pytest.fixture
+def api(api, monkeypatch):
+    """Mismo servidor de los casos, con dos periodos y filas de ejemplo explícitas."""
+    dataset = get_dataset()
+    periods = (
+        {"period_id": "old", "start_year": 1981, "end_year": 2000, "source_id": "nasa_power"},
+        {"period_id": "new", "start_year": 2005, "end_year": 2024, "source_id": "nasa_power"},
+        {"period_id": "rain_old", "start_year": 2001, "end_year": 2012, "source_id": "imerg"},
+        {"period_id": "rain_new", "start_year": 2013, "end_year": 2024, "source_id": "imerg"},
+    )
+    rows = [
+        {
+            "municipality_id": EJEMPLO_FRIO,
+            "period_id": p["period_id"],
+            "source_id": p["source_id"],
+            "month": 1,
+            "frost_freq_pct": value if p["source_id"] == "nasa_power" else None,
+            "tmax_p90_c": None if p["period_id"] != "new" else 21.4,
+            "precip_normal_mm": value,
+            "quality": "partial",
+        }
+        for p, value in zip(periods, (30.0, 18.0, 28.0, 35.0), strict=True)
+    ]
+    dataset = replace(dataset, periods=periods, climate_change_month=pl.DataFrame(rows))
+    monkeypatch.setattr(calculations, "require_dataset", lambda: dataset)
+    sources = SignalSources(
+        "ejemplo",
+        {
+            dataset.region["id"]: {
+                "frost": SignalSource("nasa_power"),
+                "heat": SignalSource("nasa_power"),
+                "water": SignalSource("imerg", et0="nasa_power"),
+            }
+        },
+    )
+    monkeypatch.setattr(calculations, "get_signal_sources", lambda: sources)
+    return api
 
 
 def cambios(api: TestClient, **campos) -> dict:
@@ -75,25 +112,21 @@ def test_ejemplo_del_contrato_cumple_las_comprobaciones_y_tiene_un_mes_sin_datos
     comprobar_textos(cuerpo)
 
 
-@ESPERA
 def test_ejemplo_un_mes_sin_datos_en_un_periodo_da_diferencia_insufficient_data(api):
     cuerpo = cambios(api)
     assert len(cuerpo["months"]) == 12
-    # La entrada con un mes en un solo periodo llega con HU-216; sin ella este caso no pasa (y debe ser así).
     assert comprobar_meses(cuerpo) >= 1
+    assert cuerpo["months"][0]["frost_freq_pct"]["change"] == -12
 
 
-@ESPERA
 def test_ejemplo_misma_entrada_misma_salida(api):
     # R4
     assert cambios(api) == cambios(api)
 
 
-@ESPERA
 def test_ejemplo_los_dos_periodos_son_de_la_misma_fuente_y_el_primero_es_anterior(api):
     comprobar_periodos(cambios(api))
 
 
-@ESPERA
 def test_ejemplo_la_respuesta_trae_versiones_y_limitaciones_sin_pronostico(api):
     comprobar_textos(cambios(api))

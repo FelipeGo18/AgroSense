@@ -107,6 +107,8 @@ class WindowQuery:
     dataset: Dataset
     municipality: Municipality
     has_lot: bool
+    # El lote, para el suelo del polígono (HU-182). Nulo sin lote.
+    lot: Lot | None
     zone: ZoneTemperature
     place: SignalZone
     texture: str | None
@@ -133,6 +135,7 @@ def window_query(
         dataset=dataset,
         municipality=municipality,
         has_lot=lot is not None,
+        lot=lot,
         zone=zone_temperature(dataset, municipality, lot),
         place=signal_zone(dataset, municipality),
         texture=zone_texture(dataset, municipality, lot),
@@ -171,7 +174,7 @@ def diagnose_window(query: WindowQuery, crop_id: str, sowing_date: date) -> Wind
     if evaluates_windows(fit.level):
         window = crop_window(dataset.stages.get(crop_id, []), sowing_date)
         # El suelo no cambia con la fecha (HU-183); con un lote sigue siendo el del municipio.
-        soil = soil_for(dataset, query.municipality, query.has_lot, crop, query.thresholds, name)
+        soil = soil_for(dataset, query.municipality, query.lot, crop, query.thresholds, name)
         signals = window_signals(dataset, query.place, crop_id, crop, name, window, query.thresholds, query.irrigated, query.texture, soil)
 
     diagnosis = diagnose(
