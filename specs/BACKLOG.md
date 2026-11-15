@@ -39,7 +39,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Heladas y temperatura máxima por mes | P0 | M | hecha | `climate_risk_month` y `climate_frost_month` con la mínima ≤ 2 °C (ZARC); la helada cae en enero, pero POWER cuenta muchas menos de las que mide el IDEAM |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-193 | Riesgo climático por semana | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-043 | Verdor por lote con HLS (30 m) | P1 | L | pendiente | Antes «Humedad del suelo y NDVI» |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-046 | Aguaceros, ventanas secas y gota por mes | P1 | M | en curso | Aguaceros en `climate_risk_month` (lluvia de POWER ≥ 20 mm, R20mm de ETCCDI; 15 nov). Ventanas secas sin fuente para «3 días de menos de 5 mm» y gota a la espera de POWER por hora (SimCast): nulas. La tabla semanal, con HU-193 |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-046 | Aguaceros, ventanas secas y gota por mes | P1 | M | en curso | Aguaceros en `climate_risk_month` (lluvia de POWER ≥ 20 mm, R20mm de ETCCDI; 15 nov). Ventanas secas sin definición con fuente (se quitó «3 días de menos de 5 mm» del contrato) y gota a la espera de POWER por hora (SimCast), después de la entrega: nulas. La tabla semanal, con HU-193 |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-188 | Riesgos que cubre un seguro, por municipio | P1 | S | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-189 | Lluvia en años de El Niño y La Niña | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-225 | Tendencia del agua almacenada con GRACE-FO | P1 | M | pendiente | Nueva (8 nov, decisión 14) |

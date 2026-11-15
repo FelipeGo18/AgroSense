@@ -64,16 +64,30 @@ def test_un_dia_sin_lluvia_no_cuenta_ni_como_seco_ni_como_aguacero():
         return 30.0 if day.month == 5 and day.day == 1 else 0.0
 
     may = month_of(risk(rain_day(FIRST, LAST, rain)), 5)
-    # Cuentan los otros 29 años, cada uno con un aguacero; el 2000 (27 aguaceros con dato) no entra.
-    assert (may["heavy_rain_days_mean"], may["years"], may["quality"]) == (1.0, 29, "ok")
+    # Cuentan los otros 29 años, cada uno con un aguacero; el 2000 (27 aguaceros con dato) no entra. `years` es el de las
+    # heladas y la máxima: 30.
+    assert (may["heavy_rain_days_mean"], may["years"], may["quality"]) == (1.0, 30, "ok")
 
 
-def test_con_menos_anos_de_lluvia_que_los_que_pide_la_normal_la_fila_es_partial():
-    """`years` es el menor entre heladas, máxima y lluvia: con lluvia solo de 2001 a 2020 (20 años), `partial`."""
+def test_con_menos_anos_de_lluvia_que_los_que_pide_la_normal_no_hay_aguaceros_y_la_fila_sigue_ok():
+    """Con lluvia solo de 2001 a 2020 (20 de los 24 años que pide la normal), los aguaceros quedan nulos. `years` y
+    `quality` siguen siendo los de las heladas y la máxima (revisión de Haider del PR #182)."""
     table = risk(rain_day(date(2001, 1, 1), LAST, lambda day: 0.0))
     january = month_of(table, 1)
-    assert (january["heavy_rain_days_mean"], january["years"], january["quality"]) == (0.0, 20, "partial")
+    assert (january["heavy_rain_days_mean"], january["years"], january["quality"]) == (None, 30, "ok")
     assert january["frost_freq_pct"] == 0.0
+
+
+def test_un_municipio_sin_lluvia_no_pierde_su_maxima():
+    """Lo que reprodujo Haider en el PR #182: dos municipios con 30 años de temperatura y lluvia solo en el primero. El
+    segundo sigue con 30 años, `ok` y su máxima, que es lo que lee la señal de calor (HeatMonth.usable): un dato que falta
+    no tapa otro (R1). Solo sus aguaceros quedan nulos."""
+    temps = pl.concat([climate_day(FIRST, LAST, lambda day: 6.0), climate_day(FIRST, LAST, lambda day: 6.0, municipality_id="15002")])
+    table = risk(rain_day(FIRST, LAST, lambda day: 0.0), temps=temps)
+    with_rain, without = month_of(table, 7), month_of(table, 7, "15002")
+    assert (with_rain["heavy_rain_days_mean"], with_rain["years"], with_rain["quality"]) == (0.0, 30, "ok")
+    assert (without["heavy_rain_days_mean"], without["years"], without["quality"]) == (None, 30, "ok")
+    assert without["tmax_p90_c"] == with_rain["tmax_p90_c"] == 18.0
 
 
 def test_fuera_del_periodo_normal_no_cuenta():

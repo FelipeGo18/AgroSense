@@ -17,9 +17,10 @@ Sale de `climate_day`: la mínima y la máxima diarias de cada municipio, ya cor
   - `heavy_rain_days_mean` (HU-046): los días de aguacero de ese mes, en promedio por año. Aguacero es un día con lluvia
     de NASA POWER (la de la celda del municipio, sin corregir por altitud) mayor o igual al umbral de `region.yaml`
     (`heavy_rain`: 20 mm, el índice R20mm de ETCCDI, `etccdi_indices`). Un año cuenta si tiene el 90 % de los días del
-    mes con lluvia.
+    mes con lluvia; con menos años de lluvia de los que pide el periodo normal (24), es nula. No cambia `years` ni
+    `quality`.
   - `dry_window_freq_pct` y `blight_days_mean` (HU-046) van nulas hasta tener una regla con fuente (R8).
-  - `years`: los años que cuentan (con aguaceros, el menor entre heladas, máxima y lluvia). Con menos de los que pide el
+  - `years`: los años que cuentan para las heladas y la máxima (el menor de los dos). Con menos de los que pide el
     periodo normal (24), `quality = partial`. Sin ninguno, la fila no se publica.
 
 Es historia del clima de la zona, nunca un pronóstico. La mínima de NASA POWER en los valles sale más caliente que la de
@@ -162,7 +163,8 @@ def climate_risk_month(
     municipio (`rain_day`: `municipality_id`, `date`, `precip_mm`) con el umbral de `region.yaml`.
 
     Sin la lluvia o sin el umbral, `heavy_rain_days_mean` queda nula. Las ventanas secas y la gota van nulas hasta tener
-    una regla con fuente: no se inventan (R1, R8). Con aguaceros, `years` también cuenta los años con lluvia."""
+    una regla con fuente: no se inventan (R1, R8). Los aguaceros son nulos si la lluvia tiene menos años de los que pide
+    el periodo normal, y no cambian `years` ni `quality`: la señal de calor los lee (R1)."""
     if climate_day.is_empty():
         return pl.DataFrame(schema=RISK_SCHEMA)
     in_normal = pl.col("date").dt.year().is_between(normal.first_year, normal.last_year)
@@ -191,15 +193,17 @@ def climate_risk_month(
         )
     )
     table = frost.join(heat, on=["municipality_id", "month"], how="full", coalesce=True)
-    counted = [pl.col("frost_years").fill_null(0), pl.col("heat_years").fill_null(0)]
     if rain_day is not None and heavy_rain_mm is not None:
-        # Solo los municipios y meses que ya tienen heladas o calor: la tabla no gana filas por la lluvia.
+        # Solo los municipios y meses que ya tienen heladas o calor: la tabla no gana filas por la lluvia. Los aguaceros
+        # son nulos si la lluvia tiene menos años de los que pide el periodo normal; no tocan `years` ni `quality`, que
+        # lee la señal de calor: un dato que falta no tapa otro (R1; revisión de Haider del PR #182).
         heavy = heavy_rain_month(rain_day, heavy_rain_mm, normal)
-        table = table.join(heavy, on=["municipality_id", "month"], how="left")
-        counted.append(pl.col("rain_years").fill_null(0))
+        table = table.join(heavy, on=["municipality_id", "month"], how="left").with_columns(
+            pl.when(pl.col("rain_years") >= normal.min_years).then(pl.col("heavy_rain_days_mean")).alias("heavy_rain_days_mean")
+        )
     else:
         table = table.with_columns(pl.lit(None, dtype=pl.Float64).alias("heavy_rain_days_mean"))
-    years = pl.min_horizontal(*counted)
+    years = pl.min_horizontal(pl.col("frost_years").fill_null(0), pl.col("heat_years").fill_null(0))
     return (
         table.select(
             "municipality_id",
