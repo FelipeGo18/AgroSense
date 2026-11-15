@@ -78,7 +78,7 @@ def test_ejemplo_helada_critica_con_peso_cero_sigue_en_rojo_y_cuenta(cliente):
     assert cuerpo["overall"]["weights_basis"] == "farmer" and cuerpo["weights"]["frost"] == 0
 
 
-@pendiente(*SENALES, extra="sin tablas de lluvia el ejemplo ya deja `water` sin datos")
+# Pasa desde el endpoint de diagnóstico (HU-076, PR #102): se quitó la marca de pendiente.
 def test_ejemplo_agua_sin_datos_es_no_evaluable_y_con_peso_cero_no(cliente):
     # `dataset_con_clima` no publica lluvia: `water` es `insufficient_data` (R1). Regla 1: si `water` cuenta, la luz es
     # `not_evaluable` con `review_data`; con peso 0 no cuenta y esa regla no aplica (las demás sin datos no cambian la luz).
