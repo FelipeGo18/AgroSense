@@ -1,8 +1,8 @@
 """Casos de referencia de estrategias de rotación (HU-121, PR 1). Casos de EJEMPLO (R5): tablas mínimas de pruebas.
 
-Todos esperan el motor (`/rotations` responde 501 hoy) y van con `xfail(strict=True)`: cuando la HU pase, la prueba falla
-hasta quitar la marca. Los resultados salen de la HU-121, del contrato y de «Estrategias de rotación»; lo que la spec no
-deja deducir queda como «supuesto por confirmar».
+Esperaban el motor con `xfail(strict=True)`; desde HU-084 `/rotations` responde y corren sin marca. Los resultados
+salen de la HU-121, del contrato y de «Estrategias de rotación»; lo que la spec no deja deducir queda como «supuesto
+por confirmar».
 
 TODO(HU-121): casos reales sobre `data/published` con la `dataset_version` 2026.11.11 (llega con el PR #62).
 """
@@ -13,17 +13,12 @@ from backend.api import calc_examples
 from common.region import region_today
 from tests.engine.casos.conftest import EJEMPLO_CALIDO, EJEMPLO_FRIO, EJEMPLO_PRIORIDADES, rotacion
 
-ESPERA_REGLA = pytest.mark.xfail(strict=True, reason="espera HU-213, HU-082 y HU-084 (el endpoint responde 501)")
-ESPERA_ESTRATEGIAS = pytest.mark.xfail(strict=True, reason="espera HU-213, HU-082 y HU-084 (el endpoint responde 501)")
-ESPERA_CICLOS = pytest.mark.xfail(strict=True, reason="espera HU-213, HU-082 y HU-084 (el endpoint responde 501)")
-ESPERA_HELADA = pytest.mark.xfail(strict=True, reason="espera HU-213, HU-082 y HU-084 (el endpoint responde 501)")
 # Sin sensibilidad a la helada en ninguna etapa de la ficha (catalog/crops.yaml): un ciclo con ellos no es de alto riesgo.
 SIN_HELADA = {"zanahoria", "descanso"}
 # Abono verde y descanso: no dejan cosecha, así que no cuentan como «cultivo» en `income`.
 SIN_COSECHA = {"avena_vicia", "descanso"}
 
 
-@ESPERA_REGLA
 def test_ejemplo_repetir_familia_en_ciclos_seguidos_se_excluye_por_regla(api, familias):
     # Arveja y haba son Leguminosae: seguidas violan `same_family_consecutive` (`familia_seguida`). Con `haba` antes en el
     # terreno, el primer ciclo tampoco puede ser de esa familia.
@@ -47,7 +42,6 @@ def test_ejemplo_repetir_familia_en_ciclos_seguidos_se_excluye_por_regla(api, fa
         assert item["reason"]
 
 
-@ESPERA_REGLA
 def test_ejemplo_toda_exclusion_y_todo_issue_cita_fuentes_que_existen(api, fuentes):
     respuesta = rotacion(api, previous_crop_ids=["haba"], current_crop_ids=["arveja", "haba"])
     elementos = [*respuesta["excluded"], *respuesta["current_strategy"]["issues"]]
@@ -57,20 +51,19 @@ def test_ejemplo_toda_exclusion_y_todo_issue_cita_fuentes_que_existen(api, fuent
         assert set(elemento["source_ids"]) <= fuentes, elemento
 
 
-@ESPERA_REGLA
 def test_ejemplo_rotacion_actual_que_viola_regla_sale_con_issues_y_sin_rank(api):
     respuesta = rotacion(api, current_crop_ids=["arveja", "haba"])
     actual = respuesta["current_strategy"]
     assert actual["kind"] == "current"
     assert actual["rank"] is None
-    assert actual["crop_ids"] == ["arveja", "haba"]
+    # Con 3 ciclos (por defecto) la actual se completa repitiendo desde el primero (contrato, `current_crop_ids`).
+    assert actual["crop_ids"] == ["arveja", "haba", "arveja"]
     reglas = [i for i in actual["issues"] if i["kind"] == "rule" and i["rule_id"] == "familia_seguida"]
     assert reglas and all(i["source_ids"] for i in reglas)
     # Nunca se excluye en silencio: no aparece en `excluded`.
-    assert all(e["crop_ids"] != ["arveja", "haba"] for e in respuesta["excluded"])
+    assert all(e["crop_ids"] != ["arveja", "haba", "arveja"] for e in respuesta["excluded"])
 
 
-@ESPERA_ESTRATEGIAS
 def test_ejemplo_sin_rotacion_actual_no_hay_referencia_y_las_limitaciones_lo_dicen(api):
     respuesta = rotacion(api)
     assert respuesta["current_strategy"] is None
@@ -79,7 +72,6 @@ def test_ejemplo_sin_rotacion_actual_no_hay_referencia_y_las_limitaciones_lo_dic
     assert all(s["kind"] == "suggested" for s in respuesta["strategies"])
 
 
-@ESPERA_ESTRATEGIAS
 def test_ejemplo_cultivo_no_apto_no_entra_a_ninguna_estrategia(api):
     # Papa en un municipio cálido de ejemplo (28,4 °C, sobre el máximo de su ficha) no es apta: ninguna estrategia la usa.
     respuesta = rotacion(api, municipality_id=EJEMPLO_CALIDO)
@@ -190,7 +182,6 @@ def test_ejemplo_del_contrato_cumple_las_comprobaciones_de_estrategias():
         )
 
 
-@ESPERA_HELADA
 def test_ejemplo_un_ciclo_con_helada_critica_excluye_la_estrategia(api, datos_con_heladas, fuentes):
     # Samacá con heladas del 80 % de los años en cada mes (ver `datos_con_heladas`): `frost` califica 13 y es crítica.
     # Con `cycles = 2` no hay tantas estrategias por regla y las excluidas por helada caben entre las 10 de `excluded`
@@ -202,7 +193,6 @@ def test_ejemplo_un_ciclo_con_helada_critica_excluye_la_estrategia(api, datos_co
     assert not any(e["kind"] == "high_risk" and set(e["crop_ids"]) <= SIN_HELADA for e in respuesta["excluded"])
 
 
-@ESPERA_CICLOS
 def test_ejemplo_la_oferta_y_el_mercado_no_excluyen_y_sin_ellos_el_ingreso_no_califica(api):
     # Hoy `supply` y `market` no tienen curva (`thresholds.yaml`, decisión de Felipe del 11 nov 2026): siempre salen
     # `insufficient_data`. Por eso no se puede escribir «con `supply` crítico»: es imposible con las reglas de hoy. Lo que
@@ -217,17 +207,22 @@ def test_ejemplo_la_oferta_y_el_mercado_no_excluyen_y_sin_ellos_el_ingreso_no_ca
                 assert ciclo["diagnosis"]["signals"]["supply"]["status"] == "insufficient_data"
                 assert ciclo["diagnosis"]["signals"]["market"]["status"] == "insufficient_data"
         assert estrategia["scores"]["income"] is None
-    # Supuesto por confirmar: la limitación nombra el ingreso, la oferta o el mercado; el texto exacto no está fijado.
-    assert any(palabra in t.lower() for t in respuesta["limitations"] for palabra in ("ingreso", "oferta", "mercado"))
+    # La limitación nombra el ingreso, la oferta o el mercado. Va en las de cada estrategia, que es donde el criterio no
+    # califica (HU-082, `NO_CRITERION`), no en las generales de la respuesta (HU-084).
+    assert all(
+        any(palabra in t.lower() for t in estrategia["limitations"] for palabra in ("ingreso", "oferta", "mercado"))
+        for estrategia in con_cultivo
+    )
 
 
-@ESPERA_CICLOS
 def test_ejemplo_el_primer_ciclo_coincide_con_el_diagnostico(api):
     hoy = region_today().isoformat()
     prioridades = {"water": 2, "frost": 4, "heat": 1, "soil": 5, "supply": 0, "market": 1}
-    respuesta = rotacion(api, irrigated=True, signal_priorities=prioridades)
+    # La rotación actual (papa y maíz) entra con el mismo diagnóstico por ciclo: así se compara más de un cultivo aunque
+    # las 10 sugeridas empiecen todas con el mismo.
+    respuesta = rotacion(api, irrigated=True, signal_priorities=prioridades, current_crop_ids=["papa", "maiz"])
     comparadas, cultivos = 0, set()
-    for estrategia in respuesta["strategies"]:
+    for estrategia in [*respuesta["strategies"], respuesta["current_strategy"]]:
         primero = estrategia["cycles"][0]
         if primero["diagnosis"] is None:  # descanso: sin diagnóstico
             continue
@@ -249,17 +244,20 @@ def test_ejemplo_el_primer_ciclo_coincide_con_el_diagnostico(api):
     assert comparadas and len(cultivos) >= 2  # más de un cultivo comparado
 
 
-@ESPERA_CICLOS
 def test_ejemplo_con_prioridad_de_suelo_en_5_el_abono_verde_queda_mejor(api):
     # Dos estrategias de 2 ciclos que solo difieren en el primero: avena con vicia (abono verde, fija nitrógeno) o cebolla,
     # que dura lo mismo (150 días), así que el segundo ciclo cae en la misma fecha. Con la regla `leguminosa_en_rotacion`
     # (favorable desde 1 ciclo con leguminosa), `nitrogen` es favorable con la avena con vicia y unfavorable con la cebolla.
     # Supuestos por confirmar: el agua y el riesgo de la avena y de la cebolla en Samacá no se comparan aquí; se espera que
-    # el peso de `soil` en 5 baste para que la avena con vicia gane, y que las dos queden entre las 10 de `strategies`.
+    # el peso de `soil` en 5 baste para que la avena con vicia gane. Sin datos de agua en el ejemplo, muchas estrategias
+    # empatan arriba y la de cebolla no entra entre las 10: se pide como rotación actual, que se evalúa igual (decisión 14).
     con, sin = ["avena_vicia", "zanahoria"], ["cebolla_bulbo", "zanahoria"]
-    respuesta = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5})
+    respuesta = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5}, current_crop_ids=sin)
     assert respuesta["weights"]["soil"] == 5
     por_crop_ids = {tuple(s["crop_ids"]): s for s in respuesta["strategies"]}
+    actual = respuesta["current_strategy"]
+    assert actual["crop_ids"] == sin
     assert por_crop_ids[tuple(con)]["soil_health"]["nitrogen"]["level"] == "favorable"
-    assert por_crop_ids[tuple(sin)]["soil_health"]["nitrogen"]["level"] == "unfavorable"
-    comprobar_abono_verde_gana(respuesta, con, sin)
+    assert actual["soil_health"]["nitrogen"]["level"] == "unfavorable"
+    assert por_crop_ids[tuple(con)]["total_score"] > actual["total_score"]
+    assert por_crop_ids[tuple(con)]["vs_current"]["soil"] > 0

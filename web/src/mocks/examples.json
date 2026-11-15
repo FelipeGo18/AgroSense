@@ -3576,7 +3576,7 @@
           "slope_basis": "municipality",
           "limitations": [
             "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
-            "Sin rotación actual: no hay con qué comparar"
+            "Sin rotación actual: no hay una referencia para comparar las estrategias"
           ],
           "versions": {
             "dataset": "ejemplo",
@@ -3632,7 +3632,7 @@
           "slope_basis": "municipality",
           "limitations": [
             "Respuesta de ejemplo con cifras inventadas: el motor todavía no está construido.",
-            "Sin rotación actual: no hay con qué comparar"
+            "Sin rotación actual: no hay una referencia para comparar las estrategias"
           ],
           "versions": {
             "dataset": "ejemplo",

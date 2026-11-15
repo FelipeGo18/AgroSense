@@ -1,6 +1,7 @@
 """HU-012: los endpoints de cálculo ya tienen su forma del contrato, sus ejemplos y sus validaciones; los que todavía no
-tienen motor responden 501. El diagnóstico (HU-076), las tendencias (HU-078) y el plan de agua (HU-146) ya responden: sus
-pruebas están en `tests/test_diagnostico.py`, `tests/test_tendencias.py` y `tests/test_endpoint_plan_de_agua.py`."""
+tienen motor responden 501. El diagnóstico (HU-076), las estrategias (HU-084), las tendencias (HU-078) y el plan de agua
+(HU-146) ya responden: sus pruebas están en `tests/test_diagnostico.py`, `tests/test_endpoint_rotaciones.py`,
+`tests/test_tendencias.py` y `tests/test_endpoint_plan_de_agua.py`."""
 
 from datetime import date, timedelta
 from pathlib import Path
@@ -76,7 +77,8 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
     paths = app.openapi()["paths"]
     for path, method, codes in [
         ("/api/v1/diagnostics", "post", {"200", "401", "404", "422", "503"}),
-        ("/api/v1/rotations", "post", {"200", "401", "404", "422", "501", "503"}),
+        # Ya responde (HU-084): no anuncia 501.
+        ("/api/v1/rotations", "post", {"200", "401", "404", "422", "500", "503"}),
         # Ya responde (HU-146): no anuncia 501.
         ("/api/v1/water-plans", "post", {"200", "422", "500", "503"}),
         ("/api/v1/changes", "get", {"200", "422", "500", "503"}),
@@ -89,19 +91,6 @@ def test_el_openapi_trae_los_endpoints_de_calculo_con_sus_ejemplos():
         assert ("501" in responses) == ("501" in codes), path
         content = responses["200"]["content"]["application/json"]
         assert "examples" in content or "example" in content, path
-
-
-@pytest.mark.parametrize(
-    ("method", "path", "body"),
-    [
-        ("post", "/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["papa"], "current_crop_ids": ["papa", "arveja"]}),
-    ],
-)
-def test_una_entrada_valida_responde_501_con_la_forma_de_los_errores(dataset, method, path, body):
-    response = getattr(TestClient(app), method)(path, **({"json": body} if body else {}))
-    assert response.status_code == 501
-    assert response.json()["error"]["code"] == "not_implemented"
-    assert response.json()["error"]["request_id"]
 
 
 @pytest.mark.parametrize(
@@ -118,6 +107,17 @@ def test_una_entrada_valida_responde_501_con_la_forma_de_los_errores(dataset, me
         ("/api/v1/rotations", {**ROTATION, "current_crop_ids": ["papa"]}),
         ("/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["papa", "arveja", "haba", "maiz"]}),
         ("/api/v1/rotations", {**ROTATION, "priorities": {"water": 0, "soil": 0, "income": 0, "risk": 0}}),
+        ("/api/v1/rotations", {**ROTATION, "current_crop_ids": ["papa", "arveja", "haba", "maiz"]}),
+        ("/api/v1/rotations", {**ROTATION, "current_crop_ids": ["papa", "yuca"]}),
+        ("/api/v1/rotations", {**ROTATION, "previous_crop_ids": ["yuca"]}),
+        ("/api/v1/rotations", {**ROTATION, "cycles": 1}),
+        ("/api/v1/rotations", {**ROTATION, "priorities": {"water": 6, "soil": 0, "income": 0, "risk": 0}}),
+        ("/api/v1/rotations", {**ROTATION, "signal_priorities": {s: 0 for s in ("water", "frost", "heat", "soil", "supply", "market")}}),
+        ("/api/v1/rotations", {**ROTATION, "signal_priorities": {"water": 9, "frost": 1, "heat": 1, "soil": 1, "supply": 1, "market": 1}}),
+        ("/api/v1/rotations", {**ROTATION, "sowing_date": "2027-13-01"}),
+        ("/api/v1/rotations", {**ROTATION, "sowing_date": (date.today() - timedelta(days=40)).isoformat()}),
+        ("/api/v1/rotations", {**ROTATION, "sowing_date": (date.today() + timedelta(days=420)).isoformat()}),
+        ("/api/v1/rotations", {**ROTATION, "municipality_id": "05001"}),
         (
             "/api/v1/water-plans",
             {
