@@ -23,7 +23,8 @@ from pipeline import build, schema
 from pipeline import catalog as crops_catalog
 from tests.pipeline.test_reconstruir import REGION, caches, rebuild  # noqa: F401  (`caches` es un fixture)
 
-FUENTES = ("catalogo", "municipios", "relieve", "suelo", "clima", "lluvia", "ndvi", "oferta", "precios")
+FUENTES = ("catalogo",)  # lo válido hoy
+FUENTES_FUTURAS = ("municipios", "relieve", "suelo", "clima", "lluvia", "ndvi", "oferta", "precios")
 ERRORES_DE_CATALOGO = (build.ValidationError, crops_catalog.CatalogError)
 VERSION_NUEVA = "0.0.1-pruebas"
 REGLAS_NUEVAS = "9.9.9-pruebas"
@@ -301,6 +302,35 @@ def test_si_nada_cambio_no_escribe(publicado):
     assert fechas_de(publicado) == fechas  # ni siquiera tocó los archivos
 
 
+def test_lo_publicado_con_otra_compresion_y_los_mismos_datos_no_es_un_cambio(publicado):
+    """Se compara por datos, no por bytes: otro escritor de Parquet no pide subir `dataset_version` (R4)."""
+    ruta = publicado / "crops.parquet"
+    bytes_antes = ruta.read_bytes()
+    pl.read_parquet(ruta).write_parquet(ruta, compression="uncompressed")
+    assert ruta.read_bytes() != bytes_antes  # los datos son los mismos; los bytes no
+    antes = sha_de_todo(publicado)
+
+    with capture_logs() as logs:
+        build.publish_one("catalogo", published=publicado)
+
+    assert any(line["event"] == "dataset_unchanged" for line in logs)
+    assert sha_de_todo(publicado) == antes
+
+
+def test_los_mismos_valores_con_otro_tipo_de_columna_cuentan_como_cambio(publicado):
+    """`crops.parquet` publicado con `tmean_max_c` como entero: mismos valores, otro tipo; con la misma versión, falla."""
+    tabla = pl.read_parquet(publicado / "crops.parquet")
+    columna = next(c for c, t in tabla.schema.items() if t == pl.Float64 and (tabla[c].drop_nulls() % 1 == 0).all())
+    tabla.with_columns(pl.col(columna).cast(pl.Int64)).write_parquet(publicado / "crops.parquet")
+
+    antes = sha_de_todo(publicado)
+
+    with pytest.raises(build.ValidationError, match="dataset_version"):  # cambió `crops` y la versión es la misma
+        build.publish_one("catalogo", published=publicado)
+
+    assert sha_de_todo(publicado) == antes
+
+
 def test_si_nada_cambio_pero_la_version_es_otra_no_escribe(publicado, monkeypatch):
     """Sin cambios en los bytes de las tablas no hay nada que publicar, aunque `region.yaml` diga otra versión."""
     antes = sha_de_todo(publicado)
@@ -309,6 +339,16 @@ def test_si_nada_cambio_pero_la_version_es_otra_no_escribe(publicado, monkeypatc
     build.publish_one("catalogo", published=publicado)
 
     assert sha_de_todo(publicado) == antes
+
+
+def test_la_ayuda_de_solo_ofrece_solo_lo_que_funciona(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["pipeline.build", "--help"])
+    with pytest.raises(SystemExit):
+        build.main()
+    ayuda = capsys.readouterr().out
+    assert "catalogo" in ayuda
+    assert not any(fuente in ayuda for fuente in FUENTES_FUTURAS)
+    assert build.SOLO_SOURCES == FUENTES and build.FUTURE_SOLO_SOURCES == FUENTES_FUTURAS
 
 
 # 5 y 6. Valores de `<fuente>`
@@ -325,7 +365,7 @@ def test_un_valor_desconocido_falla_con_la_lista_de_valores_validos(publicado):
     assert sha_de_todo(publicado) == antes
 
 
-@pytest.mark.parametrize("fuente", [f for f in FUENTES if f != "catalogo"])
+@pytest.mark.parametrize("fuente", FUENTES_FUTURAS)
 def test_una_fuente_sin_implementar_falla_y_no_escribe(publicado, fuente):
     antes = sha_de_todo(publicado)
 
@@ -345,6 +385,7 @@ def test_por_la_linea_de_comandos_un_valor_desconocido_sale_con_error_y_dice_los
     # El mensaje puede salir por el log (nuestro error) o por argparse (`choices`, en stderr): en los dos dice los valores.
     mensaje = " ".join([line.get("detail", "") for line in logs] + [capsys.readouterr().err])
     assert all(fuente in mensaje for fuente in FUENTES)
+    assert not any(fuente in mensaje for fuente in FUENTES_FUTURAS)  # la ayuda no ofrece lo que todavía no funciona
 
 
 def test_por_la_linea_de_comandos_solo_catalogo_publica_y_revisa(publicado, monkeypatch):

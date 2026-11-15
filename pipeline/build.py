@@ -28,7 +28,6 @@ misma configuración de logs que la API (`common/logging.py`, que no depende del
 """
 
 import argparse
-import io
 import json
 import re
 import shutil
@@ -1202,7 +1201,9 @@ def check_signal_sources(region_id: str, published: set[str]) -> None:
     )
 
 
-SOLO_SOURCES = ("catalogo", "municipios", "relieve", "suelo", "clima", "lluvia", "ndvi", "oferta", "precios")
+SOLO_SOURCES = ("catalogo",)
+# Las que vendrán en las otras partes de HU-238 (la lista completa está en su spec); todavía no se ofrecen en `--solo`.
+FUTURE_SOLO_SOURCES = ("municipios", "relieve", "suelo", "clima", "lluvia", "ndvi", "oferta", "precios")
 # Las tablas que reconstruye `--solo catalogo` (HU-238); `sources` solo en las filas del catálogo y de las reglas.
 CATALOG_TABLES = ("crops", "crop_stages", "rotation_rules", "sources")
 
@@ -1300,13 +1301,14 @@ def publish_one(source: str, *, published: Path = PUBLISHED) -> dict[str, Any]:
     en `published`. Por ahora solo `catalogo`. Devuelve el manifiesto de lo publicado (el nuevo, o el de antes si nada cambió).
 
     Arma las tablas con las mismas funciones que `build` (`catalog_tables`) y corre las mismas validaciones sobre el
-    conjunto completo (`validate_dataset`, el esquema de cada tabla y `check_signal_sources`). Compara los bytes de lo
-    armado con lo publicado: sin cambios no escribe nada; con cambios y la misma `dataset_version`, falla; con cambios y
+    conjunto completo (`validate_dataset`, el esquema de cada tabla y `check_signal_sources`). Compara los datos de lo
+    armado con lo publicado (mismo esquema tipado y mismas filas en el mismo orden, no los bytes: otro escritor de Parquet
+    no es un cambio): sin cambios no escribe nada; con cambios y la misma `dataset_version`, falla; con cambios y
     una versión nueva, reescribe solo las tablas que cambiaron y el manifiesto (R4)."""
-    if source not in SOLO_SOURCES:
-        raise ValidationError(f"`--solo {source}` no existe; las fuentes son: {', '.join(SOLO_SOURCES)}.")
-    if source != "catalogo":
+    if source in FUTURE_SOLO_SOURCES:
         raise ValidationError(f"`--solo {source}`: no implementado en este PR; por ahora solo `catalogo`.")
+    if source not in SOLO_SOURCES:
+        raise ValidationError(f"`--solo {source}` no existe; lo válido hoy es: {', '.join(SOLO_SOURCES)}.")
     manifest, tables = read_published(published)
     region = load_region()
     try:
@@ -1341,13 +1343,12 @@ def publish_one(source: str, *, published: Path = PUBLISHED) -> dict[str, Any]:
         except schema.SchemaError as error:
             raise ValidationError(str(error)) from error
     check_signal_sources(region["region"]["id"], set(full["sources"]["source_id"].to_list()))
-    # Qué cambió, en bytes: se escribe cada tabla armada a un temporal y se compara con el archivo publicado.
+    # Qué cambió, en datos: mismo esquema (nombres y tipos, en orden) y mismas filas en el mismo orden (R4).
     changed: dict[str, pl.DataFrame] = {}
     for name, table in built.items():
         table = schema.typed(name, table)
-        buffer = io.BytesIO()
-        table.write_parquet(buffer)
-        if buffer.getvalue() != (published / f"{name}.parquet").read_bytes():
+        before = tables[name]
+        if before.schema != table.schema or not table.equals(before):
             changed[name] = table
     if not changed:
         log.info("dataset_unchanged", source=source, detail=f"`--solo {source}`: nada cambió en {published}; no se escribe nada")
