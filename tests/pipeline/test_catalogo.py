@@ -71,10 +71,17 @@ def test_el_forraje_es_true_en_maiz_arveja_y_avena_vicia_y_nulo_en_los_demas():
     }.items():
         assert source in cited[crop_id]
         assert source in set(sources["source_id"].to_list())
-    # Las otras dos fuentes de la avena con vicia y la de Agrosavia están registradas, aunque cada valor cita una sola.
-    assert {"feedipedia_common_vetch", "agrosavia_altoandina_2020"} <= set(sources["source_id"].to_list())
+    # Las tres de forraje están registradas.
+    assert {"feedipedia_maize_stover", "feedipedia_pea_forage", "feedipedia_oat_forage"} <= set(sources["source_id"].to_list())
     # No se registran las que no sostienen ningún valor.
-    assert not {"feedipedia_faba_bean", "feedipedia_carrot", "feedipedia_maize_silage"} & set(sources["source_id"].to_list())
+    no_registradas = {
+        "feedipedia_faba_bean",
+        "feedipedia_carrot",
+        "feedipedia_maize_silage",
+        "feedipedia_common_vetch",
+        "agrosavia_altoandina_2020",
+    }
+    assert not no_registradas & set(sources["source_id"].to_list())
 
 
 def test_un_forraje_falso_con_fuente_se_publica_como_falso():

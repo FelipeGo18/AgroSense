@@ -172,13 +172,15 @@ Los cultivos dependen de la región piloto, confirmada el 28 de octubre de 2026:
   | `maiz` | `true` | `feedipedia_maize_stover` (Heuzé, Tran, Lebas, 2019, https://www.feedipedia.org/node/16072) | Datasheet > Description (y Utilisation) | Residuo del maíz cultivado para grano, que es el caso del catálogo. Retira el ensilaje: es de planta entera y no aplica. La ficha avisa que es fibroso y de baja digestibilidad |
   | `arveja` | `true` | `feedipedia_pea_forage` (Heuzé, Tran, Giger-Reverdin, 2015, https://www.feedipedia.org/node/7047) | Datasheet > Description; Nutritional aspects > Ruminants | Paja o rastrojo de arveja; la de la región (vaina verde o grano seco) cae en los dos casos de la ficha |
   | `haba` | nulo | (ninguna; `feedipedia_faba_bean` no se registra) | no aplica | Decisión de Felipe: la fuente habla de la planta entera, no del residuo de cosecha, que es lo que se aprobó |
-  | `avena_vicia` (`kind = cover`) | `true` | `feedipedia_oat_forage` (Heuzé, Tran, Boudon, Lebas, 2016, https://www.feedipedia.org/node/500) y `feedipedia_common_vetch` (https://www.feedipedia.org/node/239), más `agrosavia_altoandina_2020` | Avena: Description y Forage management > Oat-legume associations; vicia: Datasheet. Agrosavia: Agronomía Mesoamericana 31(3), 2020, DOI 10.15517/am.v31i3.38999, resumen, p. 581 (CC BY-NC-ND 4.0) | La planta puede cortarse como forraje; la ficha de la avena dice en sentido contrario que sirve de cobertura del suelo, de ahí la disyuntiva de la razón. Agrosavia es regional (Altiplano Cundiboyacense) y es de avena, no de la mezcla |
+  | `avena_vicia` (`kind = cover`) | `true` | `feedipedia_oat_forage` (Heuzé, Tran, Boudon, Lebas, 2016, https://www.feedipedia.org/node/500) | Description y Forage management > Oat-legume associations | La planta puede cortarse como forraje; la ficha de la avena dice en sentido contrario que sirve de cobertura del suelo, de ahí la disyuntiva de la razón. La mezcla con una leguminosa como la vicia está en la ficha de la avena |
   | `zanahoria` | nulo | (ninguna; `feedipedia_carrot` no se registra) | no aplica | Decisión de Felipe: que las hojas se den al ganado «occasionally» no alcanza |
   | `papa` | nulo | (ninguna) | no aplica | Sin fuente del residuo |
   | `cebolla_bulbo` | nulo | (ninguna) | no aplica | Sin fuente del residuo |
   | `descanso` | nulo | (ninguna) | no aplica | No es cultivo ni abono verde |
 
-  Las fuentes que se registran en el PR B son `feedipedia_maize_stover`, `feedipedia_pea_forage`, `feedipedia_oat_forage`, `feedipedia_common_vetch` y `agrosavia_altoandina_2020`.
+  Las fuentes que se registran en el PR B son `feedipedia_maize_stover`, `feedipedia_pea_forage` y `feedipedia_oat_forage`.
+
+  **Nota del 15 de noviembre de 2026.** El PR C queda para después (decisión de Juan). `feedipedia_common_vetch` y su aviso sobre la intoxicación de rumiantes vuelven con `crops.forage_caution` si se aprueba, y `agrosavia_altoandina_2020` no se registra hasta que un valor la cite (R8; revisión de Haider del #161).
   **Feedipedia** (https://www.feedipedia.org/content/copyright; regla aprobada por Felipe el 15 de noviembre de 2026). Su licencia no es abierta. AgroSense toma solo el hecho (sí o no), con la sección de la ficha, el enlace y la atribución (INRA, CIRAD, AFZ y FAO) en `sources`; la razón que ve el agricultor va en palabras del equipo; la fila va en `docs/licencias.md` (PR B). No se reproduce su contenido.
 
   **Pregunta abierta.**

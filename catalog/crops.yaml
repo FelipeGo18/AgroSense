@@ -311,24 +311,6 @@ sources:
     coverage: "Mundial (no es una fuente colombiana)"
     license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho, con la sección de la ficha y el enlace, y no reproduce texto de la ficha"
     notes: "Secciones de la ficha: Datasheet > Description y Forage management > Oat-legume associations. La planta de avena como forraje y su asociación con leguminosas como la vicia."
-  - source_id: feedipedia_common_vetch
-    name: "Common vetch (Vicia sativa) (Heuzé V., Tran G., Baumont R., 2015). Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
-    institution: "Feedipedia, un programa de INRAE, CIRAD, AFZ y FAO"
-    url: "https://www.feedipedia.org/node/239"
-    downloaded_at: "2026-11-15"
-    period_covered: "2015 (actualizada el 11 may 2015)"
-    coverage: "Mundial (no es una fuente colombiana)"
-    license: "Derechos reservados por INRAE (INRA), CIRAD, AFZ y FAO: se permiten extractos con reconocimiento de la fuente para estudio, investigación y docencia, o para documentos no comerciales de circulación limitada (https://www.feedipedia.org/content/copyright). AgroSense toma solo el hecho, con la sección de la ficha y el enlace, y no reproduce texto de la ficha"
-    notes: "Secciones de la ficha: Datasheet > Utilisation y Potential constraints > Forage. La ficha dice que el forraje de vicia no suele tener factores antinutricionales si se pastorea o corta con la frecuencia suficiente para evitar la floración y la formación de semillas, y que se han reportado casos de intoxicación de rumiantes con forraje de vicia."
-  - source_id: agrosavia_altoandina_2020
-    name: "Altoandina: nueva variedad de avena forrajera para la zona Andina en Colombia (Campuzano-Duque L.F., Castro-Rincón E., Castillo-Sierra J., Torres-Cuesta D., Nieto-Sierra D. y Portillo-López P.A., 2020). Agronomía Mesoamericana 31(3), p. 581 (Resumen)"
-    institution: "AGROSAVIA; revista Agronomía Mesoamericana, Universidad de Costa Rica"
-    url: "https://www.redalyc.org/articulo.oa?id=43764233005"
-    downloaded_at: "2026-11-15"
-    period_covered: "Prueba de evaluación agronómica del segundo semestre de 2016"
-    coverage: "Altiplano Cundiboyacense y Altiplano de Nariño (Colombia)"
-    license: "CC BY-NC-ND 4.0 (Creative Commons Atribución-NoComercial-SinDerivar, según el PDF de Redalyc)"
-    notes: "DOI 10.15517/am.v31i3.38999. Página 581 (Resumen, del PDF https://www.redalyc.org/journal/437/43764233005/43764233005.pdf). Cita: «rendimiento de forraje verde de 64,6 y 65,3 t ha-1» de las líneas AV25-S y AV25-T en cuatro localidades del Altiplano Cundiboyacense y cuatro del de Nariño. Apoya que la avena se cultiva como forraje en la región; no habla de la mezcla con vicia."
 
 crops:
   - crop_id: papa
@@ -599,7 +581,7 @@ crops:
     family: {v: Gramineae, s: fao_ecocrop, n: "Familia de la avena (Avena sativa), la especie principal de la mezcla. La de la vicia va en `secondary_families`."}
     secondary_families: {v: [Leguminosae], s: fao_ecocrop, n: "La vicia (Vicia sativa) es Leguminosae (FAO EcoCrop, vista cropView id=238003). Cuenta en el corte de plagas, no en el filtro de familia seguida (decisión 16)."}
     fixes_nitrogen: {v: true, s: fao_iyp_2019, n: "Por la vicia, que es leguminosa; la avena no fija."}
-    forage: {v: true, s: feedipedia_oat_forage, n: "Puede cortarse como forraje en vez de incorporarse. Si se corta, no aporta al suelo lo que cuenta la estrategia. También lo apoyan feedipedia_common_vetch (la vicia) y agrosavia_altoandina_2020 (avena forrajera en el Altiplano Cundiboyacense), que el catálogo no cita aquí porque un valor lleva una sola fuente. La ficha dice que el forraje de vicia no suele tener factores antinutricionales si se pastorea o corta con la frecuencia suficiente para evitar la floración y la formación de semillas, y que se han reportado casos de intoxicación de rumiantes con forraje de vicia. (feedipedia_common_vetch)"}
+    forage: {v: true, s: feedipedia_oat_forage, n: "Puede cortarse como forraje en vez de incorporarse. Si se corta, no aporta al suelo lo que cuenta la estrategia. La ficha de la avena forrajera la describe como planta forrajera y trae la mezcla con una leguminosa como la vicia (sección Forage management > Oat-legume associations)."}
     water_need: {v: null, n: "Sin fuente para una categoría."}
     root_type: {v: null, n: "Pendiente de HU-062."}
     tmean_min_c: {v: 5, s: fao_ecocrop, n: "Avena 5 °C (la vicia aguanta 3 °C)."}
