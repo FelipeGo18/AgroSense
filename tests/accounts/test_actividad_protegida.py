@@ -1,6 +1,9 @@
 """HU-178: `activity_log` solo se agrega (migración 1.4) y los cálculos nunca escriben en él (R9)."""
 
+import re
+import uuid
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 from sqlalchemy import delete, func, select, text, update
@@ -32,12 +35,29 @@ def test_un_evento_no_se_modifica(client, db):
     with pytest.raises(DBAPIError, match="no se modifica"):
         db.execute(update(ActivityEvent).values(action="auth.login"))
     db.rollback()
-    # Tampoco se puede poner otra persona como dueña de los datos: solo anonimizar (dejar en nulo).
-    other = db.scalar(select(ActivityEvent.actor_user_id))
+    # Tampoco se puede poner a otra persona como quien lo hizo o como dueña de los datos: solo anonimizar (en nulo).
+    for column in ("actor_user_id", "subject_user_id"):
+        with pytest.raises(DBAPIError, match="no se modifica"):
+            db.execute(update(ActivityEvent).values({column: uuid.uuid4()}))
+        db.rollback()
+    # Ni cambiar cuándo pasó.
     with pytest.raises(DBAPIError, match="no se modifica"):
         db.execute(update(ActivityEvent).values(occurred_at=datetime.now(UTC) - timedelta(days=200)))
     db.rollback()
-    assert other is not None
+
+
+def test_el_disparador_revisa_todas_las_columnas_de_la_tabla():
+    """Una columna nueva en `activity_log` quedaría modificable sin aviso: la función de la migración 1.4 tiene que
+    nombrarlas todas. Si esta prueba falla, agregue la columna al disparador en una migración nueva."""
+    source = (
+        Path(__file__)
+        .resolve()
+        .parents[2]
+        .joinpath("backend/db/migrations/versions/1/1.4_actividad_protegida.py")
+        .read_text(encoding="utf-8")
+    )
+    guarded = set(re.findall(r"NEW\.(\w+) IS", source))
+    assert guarded == {column.name for column in ActivityEvent.__table__.columns}
 
 
 def test_un_evento_no_se_borra_sin_pedir_la_limpieza_o_el_olvido(client, db):
