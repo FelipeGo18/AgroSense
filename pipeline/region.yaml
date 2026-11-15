@@ -1,0 +1,143 @@
+# Región del dataset publicado y versión del dataset (HU-044; specs/02-contratos.md, «Tablas publicadas»).
+#
+# Región piloto confirmada el 28 de octubre de 2026 con la sede de Duitama (HU-002): altiplano de Boyacá y
+# Cundinamarca, en Colombia. Lo propio de Colombia vive en esta configuración y en los adaptadores; el modelo no (R7).
+#
+# `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
+
+dataset_version: "2026.11.27"
+region:
+  id: co-boyaca-cundinamarca
+  name: "Boyacá y Cundinamarca, Colombia"
+  country: CO
+  # Zona horaria de la región (IANA). «Hoy» es el día en la región donde está la finca, no el de quien consulta: así la
+  # misma consulta da lo mismo desde cualquier país (R4) y el mes de siembra es el del campo (decidido por Felipe el 11
+  # de noviembre de 2026). La lee la API (`common/region.py`); la web usa la misma en `REGION_TIME_ZONE` (`web/src/app/config.ts`).
+  timezone: America/Bogota
+  # Códigos DIVIPOLA de departamento (2 dígitos).
+  departments: ["15", "25"]
+  # Centrales de abastos de SIPSA cuyos precios se publican (HU-221): código de la central en SIPSA (`fuenId`) y el
+  # nombre que se muestra («Nombre corto (detalle)»: la web usa el nombre corto en los botones). Corabastos es el
+  # mercado de referencia del altiplano; Tunja, el de Boyacá.
+  markets:
+    "1": "Corabastos (Bogotá)"
+    "9": "Tunja (Complejo de Servicios del Sur)"
+  # Qué central da el precio de la señal `market` en cada departamento (HU-073), por `department_id` de DIVIPOLA:
+  # Boyacá vende en Tunja y Cundinamarca en Corabastos. Un departamento que no está aquí no tiene central: su señal
+  # de mercado es `insufficient_data`, nunca la de otra central por defecto (R1). Pasa tal cual al manifiesto.
+  department_markets:
+    "15": "9"   # Boyacá → Tunja
+    "25": "1"   # Cundinamarca → Corabastos
+  # La central de un cultivo cuando la del departamento no lo publica (HU-073, decisión 17), con su porqué: la API la usa
+  # solo si la central del departamento no tiene fila del cultivo, y la razón lo dice. Nunca otra central por defecto
+  # (R1). Tunja publicó papa negra solo del 4 de febrero de 2020 al 27 de julio de 2021; de 2013 a 2020 su temporada y
+  # la de Corabastos se parecen casi del todo (r = 0,979, microdatos de SIPSA; docs/investigacion-decisiones.md, 5f).
+  crop_market_overrides:
+    "15":
+      papa:
+        market_id: "1"
+        reason: "Tunja no publica papa negra desde el 27 de julio de 2021; su temporada es casi la de Corabastos"
+
+# Periodo normal del clima (HU-044; decidido por Felipe el 10 de noviembre de 2026): uno solo para todo lo que se compara
+# con una normal. 1991-2020 es el periodo de referencia de la OMM y el de las normales del IDEAM, que siguen sus
+# «Directrices sobre el cálculo de las normales climáticas» (OMM-N.º 1203, 2017); 24 años son el 80 % del periodo. Un
+# año, o un mes, cuenta si tiene al menos el 90 % de sus días con dato: los que faltan no se rellenan (R1).
+climate_normal:
+  first_year: 1991
+  last_year: 2020
+  min_years: 24
+  min_day_share: 0.9
+  # El año seco (HU-143): la lluvia de cada mes que se supera en 4 de cada 5 años del periodo (el percentil 20), la
+  # lluvia confiable con que la FAO planea el riego. Decidido por Felipe el 10 de noviembre de 2026.
+  dry_quantile: 0.2
+
+# La normal de GPM IMERG (HU-207): IMERG no tiene 1991-2020, así que su normal es otra y `precip_month` dice cuál
+# (`normal_period`). 2001-2024 son los años completos de la corrida final (llega a septiembre de 2025) y los mismos de los
+# dos periodos de «Qué cambió» con IMERG (2001-2012 y 2013-2024, specs/01-reglas.md). 20 años son el 80 % del periodo,
+# la misma proporción que 24 de 30. Nunca se completa con años de NASA POWER (R1). Aprobado por Felipe el 11 de
+# noviembre de 2026 (PR #44).
+# El mes `partial` y el año seco usan los cortes de `climate_normal`.
+imerg_normal:
+  first_year: 2001
+  last_year: 2024
+  min_years: 20
+
+
+# Verdor de MODIS NDVI por municipio (HU-208, pipeline/sources/modis_ndvi.py). OPeNDAP de la NASA solo sirve completos los
+# compuestos de MOD13Q1 desde 2023 (antes de 2023 responden 130 de 484; el resto da 404), así que se baja desde
+# `normal.first_year` y `ndvi_municipality_normal` es el promedio 2023-2025, los años completos. Se llama «promedio» y
+# no normal (revisión de Haider del PR #126, R5): muestra en qué épocas suele estar verde la zona, no un clima de 30
+# años, y el manifiesto y `sources` lo dicen. Decidido por el equipo el 14 de
+# noviembre de 2026 (HU-208), por aprobar por Felipe.
+# - `sample_step`: un píxel de 250 m de cada 4 en filas y columnas (uno por km); la mediana del municipio casi no cambia.
+# - `min_valid_pct`: con menos del 30 % de píxeles sin nubes, el periodo es `partial` (supuesto del equipo: en 2023-2026,
+#   el 83 % de los periodos lo pasa; julio y agosto son los más nublados). Sin ningún píxel válido, no hay fila (R1).
+# - `normal.min_years`: el promedio es `ok` con los 3 años; con menos, `partial`. Solo cuentan los periodos `ok`.
+# - `normal.min_publish_years`: con menos de 2 años `ok` no se publica: un solo año no es un promedio (propuesta de
+#   Haider en el PR #126; quitaba 537 filas de un año).
+ndvi:
+  sample_step: 4
+  min_valid_pct: 30
+  normal:
+    first_year: 2023
+    last_year: 2025
+    min_years: 3
+    min_publish_years: 2
+
+# Heladas (HU-045): un día de helada es uno con la mínima a 2 m, corregida por altitud, menor o igual a 2 °C. Es el
+# criterio del ZARC de Brasil (`mapa_zarc_2025`, punto 1.9.a.1: «temperaturas mínimas menores ou igual a 2°C»), el mismo
+# de los cortes de la señal de heladas en backend/config/thresholds.yaml. Su fila en `sources` sale del catálogo
+# (catalog/crops.yaml). Decidido por Felipe el 10 de noviembre de 2026. Los años y el 90 % de los días por mes son los de
+# `climate_normal`.
+frost:
+  threshold_c: 2.0
+  source_id: mapa_zarc_2025
+
+# Aguaceros (HU-046): un día de aguacero es uno con lluvia de NASA POWER (PRECTOTCORR, la de la celda del municipio)
+# mayor o igual a 20 mm: el índice R20mm de ETCCDI («días de lluvia muy fuerte»). Los años y el 90 % de los días por
+# mes son los de `climate_normal`. Sin este bloque, `heavy_rain_days_mean` queda nula (R1, R8).
+heavy_rain:
+  threshold_mm: 20.0
+  source:
+    source_id: etccdi_indices
+    name: "ETCCDI · Definitions of the 27 core indices (R20mm: very heavy precipitation days)"
+    institution: "Expert Team on Climate Change Detection and Indices (ETCCDI), CCl/CLIVAR/JCOMM de la OMM"
+    url: "https://etccdi.pacificclimate.org/list_27_indices.shtml"
+    downloaded_at: "2026-11-15"
+    period_covered: null
+    coverage: "Mundial: definición de índices de extremos a partir de la lluvia diaria"
+    license: "Definiciones públicas de un grupo de expertos de la OMM: se usa el método con su cita"
+    citation: "Zhang, X., Alexander, L., Hegerl, G. C., Jones, P., Klein Tank, A., Peterson, T. C., Trewin, B. y Zwiers, F. W. (2011). Indices for monitoring changes in extremes based on daily temperature and precipitation data. WIREs Climate Change, 2(6), 851-870."
+    notes: "R20mm: «Annual count of days when PRCP ≥ 20mm». AgroSense cuenta esos días por mes y los promedia entre los años del periodo normal (heavy_rain_days_mean, HU-046). Es un índice climático, no un umbral agronómico: no dice cuánta lluvia lava el abono. Con NASA POWER (un reanálisis de celdas de unos 50 km) la lluvia de los valles del altiplano sale casi el doble que la de las estaciones del IDEAM (PR #44): el conteo es una orientación de la zona."
+
+# «Qué cambió» (HU-216; specs/01-reglas.md): dos periodos de la misma fuente, nunca uno de cada una (decisión 11).
+# Con NASA POWER (desde 1981), 1981-2000 y 2005-2024; con GPM IMERG (desde 2001 en su normal), 2001-2012 y 2013-2024.
+# Un indicador cuenta con al menos el 80 % de los años del periodo (16 de 20 con POWER, 10 de 12 con IMERG): la misma
+# proporción que la normal (24 de 30). Con menos, queda nulo (R1). El manifiesto lista los periodos (R4).
+change_periods:
+  min_year_share: 0.8
+  nasa_power:
+    - {period_id: p1981_2000, start_year: 1981, end_year: 2000}
+    - {period_id: p2005_2024, start_year: 2005, end_year: 2024}
+  imerg:
+    - {period_id: p2001_2012, start_year: 2001, end_year: 2012}
+    - {period_id: p2013_2024, start_year: 2013, end_year: 2024}
+
+# Gradiente térmico (HU-044): cuántos °C baja la temperatura por cada metro que se sube. Corrige las temperaturas de
+# NASA POWER, cuya celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio.
+# Es propio de la región (R7): región Andina de Colombia, tabla 3 de Chaves y Jaramillo (1999), con 133 estaciones
+# entre 100 y 4482 m: Tmax = 33,97 − 0,0058·A (R² 0,86) y Tmin = 23,97 − 0,0059·A (R² 0,92), con A en metros.
+temperature_lapse_rate:
+  temp_max_c_per_m: 0.0058
+  temp_min_c_per_m: 0.0059
+  source:
+    source_id: cenicafe_lapse_rate
+    name: "Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3"
+    institution: "Centro Nacional de Investigaciones de Café (Cenicafé)"
+    url: "https://revistas.unal.edu.co/index.php/arh/article/view/92185"
+    downloaded_at: "2026-11-09"
+    period_covered: null
+    coverage: "Región Andina de Colombia, de 100 a 4482 m"
+    license: "Artículo de acceso abierto con derechos de autor reservados (revista Avances en Recursos Hidráulicos, Universidad Nacional): se usan dos cifras con su cita"
+    citation: "Chaves Córdoba, B. y Jaramillo Robledo, A. (1999). Regionalización de la temperatura del aire en Colombia. Avances en Recursos Hidráulicos, 6, 37-42."
+    notes: "Avances en Recursos Hidráulicos, n.º 6 (septiembre de 1999), pp. 37-42. Pendiente de la temperatura máxima media (0,0058 °C/m) y de la mínima media (0,0059 °C/m) con la altitud en la región Andina. Se usa para corregir por altitud las temperaturas de NASA POWER."

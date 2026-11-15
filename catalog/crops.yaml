@@ -1,0 +1,587 @@
+# Catálogo agronómico: fichas de los cultivos del MVP (EP-06: HU-061, HU-199, HU-063; specs/02-contratos.md, `crops` y
+# `crop_stages`). Versión 0.1.0, armada el 16 de octubre de 2026. Revisión cruzada de HU-061 y HU-199 hecha por Haider
+# el 15 de noviembre de 2026: cada valor, contra su fuente (el resultado está en EP-06).
+#
+# Regla (R8): cada valor tiene su fuente. Un campo sin fuente va nulo y su señal queda en «datos insuficientes» (R1);
+# nunca un valor «típico». Cuando hay una elección entre filas de una fuente, o un supuesto, la nota lo dice.
+#
+# Formato de cada valor: `campo: {v: valor, s: id de la fuente, n: nota opcional}`.
+# Los identificadores (`crop_id`) son los del diseño (design/finca/cultivos.py), decididos el 16 de octubre de 2026.
+#
+# Aptitud (decisión 13): la temperatura media anual del municipio contra `tmean_*`. Con la UPRA, el óptimo es la
+# aptitud alta (A1) y el absoluto va de A3 a A1. Con EcoCrop se usa su rango de temperatura del ciclo, con el supuesto de
+# que en el trópico alto la temperatura media del ciclo es casi la media anual (varía poco entre meses).
+#
+# `article` (HU-191, aprobado por Felipe el 12 de noviembre de 2026 para `specs/02-contratos.md`): el "el"/"la" de cada
+# cultivo, para el texto que explica por qué no es apto («la papa», «el maíz»). Es presentación, no un dato agronómico:
+# no necesita fuente (R8 no aplica), mismo tipo de campo que `archetype` (aprobado el 16 de oct. para "cómo se dibuja").
+# Raíz (HU-144, aprobado por Felipe el 14 de noviembre de 2026): `root_depth_min_m`, `root_depth_max_m` y `depletion_p` son la
+# profundidad máxima efectiva de la raíz y la fracción del agua que se puede gastar sin estrés, de la tabla 22 de
+# FAO-56. Las usa el balance hídrico para saber cuánta agua del suelo alcanza la raíz.
+# Descanso (HU-063, aprobado por Haider el 15 de noviembre de 2026 para `specs/02-contratos.md`): `fallow_days` son los días
+# que dura un descanso (`kind = fallow`), un valor fijo de su ficha (decisión 7 del PR #109). Solo lo lleva el descanso: la
+# duración de un cultivo o de un abono verde sale de sus etapas. `criterio_equipo_2026` está también en
+# `catalog/rotation_rules.yaml`, con los mismos datos (una fuente de los dos catálogos es la misma en los dos).
+# Se descartó redactar la frase sin artículo de género ("el cultivo papa") porque suena forzado y cambiaría los
+# ejemplos ya documentados del OpenAPI. Sin este campo, el código antes adivinaba por la terminación del nombre
+# (heurística frágil, nunca llegó a producción); ahora, si falta, la API lanza un error explícito en vez de adivinar.
+
+version: "0.1.0"
+
+sources:
+  - source_id: fao_ecocrop
+    name: "FAO EcoCrop · fichas de datos por especie"
+    institution: "Organización de las Naciones Unidas para la Alimentación y la Agricultura (FAO)"
+    url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/home"
+    downloaded_at: "2026-10-16"
+    period_covered: "Base descontinuada hacia 2015; se consulta por la plataforma GAEZ"
+    coverage: "Mundial"
+    license: "CC BY 4.0 (catálogo de datos de la FAO)"
+    notes: "Rangos óptimos y absolutos de temperatura, lluvia anual y pH; temperaturas que matan la planta; duración del ciclo; familia. La propia FAO advierte que son opinión experta. Cada ficha se cita con su URL."
+  - source_id: fao_56_tabla_22
+    name: "FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Capítulo 8, tabla 22 y ecuaciones 82 y 83"
+    institution: "FAO"
+    url: "https://www.fao.org/4/x0490e/x0490e0e.htm"
+    downloaded_at: "2026-11-14"
+    period_covered: "1998"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Tabla 22: profundidad máxima efectiva de la raíz (Zr, m) y fracción del agua disponible que se puede gastar sin estrés (p). Ecuaciones 82 y 83: TAW = 1000 (θFC - θWP) Zr y RAW = p TAW. Las usa el balance hídrico (HU-144)."
+  - source_id: nrcs_neh652_cap2
+    name: "NRCS, National Engineering Handbook, parte 652 (Irrigation Guide), capítulo 2 (Soils). Tabla 2-1, agua disponible por textura"
+    institution: "Natural Resources Conservation Service, Departamento de Agricultura de los Estados Unidos (USDA)"
+    url: "https://mail.irrigationtoolbox.com/NEH/Part652_NationalIrrigationGuide/ch2.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "Septiembre de 1997 (210-vi-NEH)"
+    coverage: "Estados Unidos (clases de textura del USDA)"
+    license: "Publicación del gobierno de los Estados Unidos, dominio público"
+    notes: "Tabla 2-1, p. 2-5: rango de agua disponible (AWC) de cada clase de textura, en pulgadas por pulgada (lo mismo que m³ de agua por m³ de suelo). Trae las 12 clases del triángulo del USDA; la tabla 19 de FAO-56 no trae franco arcilloso, franco arcillo arenoso ni arcillo arenoso. La usa el balance hídrico (HU-144)."
+  - source_id: fao_manual_riego_3
+    name: "Irrigation Water Management: Irrigation Water Needs. Training manual n.º 3 (Brouwer y Heibloem, 1986). Sección 4.2, lluvia efectiva"
+    institution: "FAO"
+    url: "https://www.fao.org/4/s2022e/s2022e08.htm"
+    downloaded_at: "2026-11-14"
+    period_covered: "1986"
+    coverage: "Mundial (zonas con pendiente de hasta 4 a 5 %)"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Lluvia efectiva del mes: Pe = 0,8 P - 25 si P > 75 mm/mes; Pe = 0,6 P - 10 si P < 75 mm/mes; nunca negativa. El manual dice que vale para pendientes de hasta 4 a 5 %: en ladera la lluvia efectiva es menor y el déficit se subestima. La usa el balance hídrico (HU-144)."
+  - source_id: fao_56
+    name: "FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Tablas 11 y 12"
+    institution: "FAO"
+    url: "https://www.fao.org/4/x0490e/x0490e0b.htm"
+    downloaded_at: "2026-10-16"
+    period_covered: "1998"
+    coverage: "Mundial (cada fila de la tabla 11 dice su región)"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Duración de las 4 etapas (inicial, desarrollo, media y final) y coeficientes de cultivo Kc. El Kc inicial que no aparece en la fila del cultivo es el de su grupo (por ejemplo, raíces y tubérculos 0,5)."
+  - source_id: upra_papa_diacol
+    name: "UPRA: Cultivo de papa Diacol Capiro para uso industrial, identificación de zonas aptas en Colombia, escala 1:100.000"
+    institution: "Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura"
+    url: "https://upra.gov.co/sites/default/files/2025-07/Zonas_aptas_papa_Diacol.pdf"
+    downloaded_at: "2026-10-16"
+    period_covered: "Temperatura del Ideam, promedio 1981-2010"
+    coverage: "Colombia"
+    license: "Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita"
+    notes: "Anexo 1.1.1, temperatura media anual (p. 127): alta 12-15 °C, media 10-12 y 15-16 °C, baja 8-10 °C, no apta < 8 y > 16 °C."
+  - source_id: upra_cebolla_bulbo
+    name: "UPRA: Cultivo comercial de cebolla de bulbo, identificación de zonas aptas en Colombia, escala 1:100.000"
+    institution: "Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura"
+    url: "https://upra.gov.co/sites/default/files/2025-07/Zonas_aptas_cebollabulbo.pdf"
+    downloaded_at: "2026-10-16"
+    period_covered: "Temperatura del Ideam, promedio 1981-2010"
+    coverage: "Colombia"
+    license: "Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita"
+    notes: "Anexo 1.1.1.1, temperatura media anual (p. 145): alta > 20 y < 28 °C, media de 10 a 20 °C, baja ≥ 28 °C, no apta < 10 °C. No pone límite superior de exclusión."
+  - source_id: fao_iyp_2019
+    name: "FAO: The International Year of Pulses, final report (2019)"
+    institution: "FAO"
+    url: "https://openknowledge.fao.org/items/a5ba05a4-314c-4d73-a47e-1dd8c6021258"
+    downloaded_at: "2026-10-16"
+    period_covered: "2016-2019"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Las legumbres, y las leguminosas en general, fijan nitrógeno del aire y mejoran el suelo."
+  - source_id: fews_net_wrsi
+    name: "FEWS NET · Water Requirement Satisfaction Index (WRSI) y sus clases"
+    institution: "Famine Early Warning Systems Network (FEWS NET) y USGS; clases publicadas por el Banco Mundial"
+    url: "https://earlywarning.usgs.gov/fews/product/890"
+    downloaded_at: "2026-11-10"
+    period_covered: null
+    coverage: "Mundial (pensado para cultivos de secano en África)"
+    license: "Información pública del USGS; las clases, del catálogo de datos del Banco Mundial (CC BY 4.0)"
+    notes: "Para los cortes de la señal de agua en backend/config/thresholds.yaml (HU-075). El WRSI es la evapotranspiración real de la temporada sobre la que pide el cultivo, por 100: «A case of 'no deficit' will result in a WRSI value of 100» y «A seasonal WRSI value less than 50 is regarded as a crop failure condition (Smith, 1992)» (USGS). Clases del Banco Mundial (https://datacatalog.worldbank.org/search/dataset/0066866/gridded-dekadal-water-requirement-satisfaction-index-wrsi-for-africa): < 50 Failure; 50-60 Poor; 60-80 Mediocre; 80-95 Average; 95-99 Good; 99-100 Very Good. Es una fuente derivada: solo vale si la cobertura de agua de AgroSense se calcula igual (HU-144)."
+  - source_id: mapa_zarc_2025
+    name: "Zoneamento Agrícola de Risco Climático (ZARC): Portaria SPA/MAPA n.º 388, del 21 de agosto de 2025"
+    institution: "Ministério da Agricultura e Pecuária (MAPA), Brasil"
+    url: "https://www.gov.br/agricultura/pt-br/assuntos/riscos-seguro/programa-nacional-de-zoneamento-agricola-de-risco-climatico/portarias/2025-2026/minas-gerais-mg/POF5FF1.PDF"
+    downloaded_at: "2026-11-10"
+    period_covered: "Ciclo 2025-2026"
+    coverage: "Brasil (Minas Gerais, maíz de segunda cosecha)"
+    license: "Acto oficial del gobierno de Brasil, publicado en el Diário Oficial"
+    notes: "Para los cortes de la señal de heladas en backend/config/thresholds.yaml (HU-075). Punto 1.6: tres niveles de riesgo, «20%, 30%, 40%». Punto 1.9.a.1: la helada es la probabilidad de «temperaturas mínimas menores ou igual a 2°C». El ZARC acepta pérdidas en hasta 2 de cada 10 años (Santos y Martins, 2016, Revista de Política Agrícola XXV(3), https://rpa.sede.embrapa.br/RPA/article/download/1157/pdf/2423). Es una fuente derivada y de otro país: el 20/30/40 es el riesgo de todas las amenazas juntas, no solo de la helada. Respaldo cercano: Le Tacon (IRD), «Los riesgos de helada en el altiplano boliviano», planea la papa con un riesgo de helada del 25 % (https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers09-11/38556.pdf)."
+  - source_id: fao_soils_bulletin_55
+    name: "FAO Soils Bulletin 55: Guidelines, land evaluation for irrigated agriculture (1985), formato 5"
+    institution: "FAO"
+    url: "https://www.fao.org/4/x5648e/x5648e05.htm"
+    downloaded_at: "2026-11-10"
+    period_covered: "1985"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Para los cortes de nivel 70 y 40 de backend/config/thresholds.yaml (HU-075). Rendimiento relativo por clase de aptitud: S1 de 1,0 a 0,9; S2 de 0,9 a 0,7; S3 de 0,7 a 0,6; N1 de 0,6 a 0,4; N2 menos de 0,4. La nota 3 dice: «Relative yields indicated are examples only». Es un respaldo débil: en AgroSense los cortes 70 y 40 son una convención."
+  - source_id: agrosense_diseno
+    name: "Catálogo visual de AgroSense (design/finca/cultivos.py)"
+    institution: "Equipo RealE4Life"
+    url: "https://github.com/FelipeGo18/AgroSense/blob/desarrollo/design/finca/cultivos.py"
+    downloaded_at: "2026-10-16"
+    period_covered: null
+    coverage: "AgroSense"
+    license: "Del proyecto"
+    notes: "Solo para cómo se dibuja cada cultivo (`archetype`) y su nombre en la web. No es un dato agronómico."
+  - source_id: fao_crop_info_potato
+    name: "FAO Land & Water: Crop Information, Potato"
+    institution: "FAO, Land and Water Division"
+    url: "https://web.archive.org/web/2017/http://www.fao.org/land-water/databases-and-software/crop-information/potato/en/"
+    downloaded_at: "2026-11-14"
+    period_covered: "Sin fecha (la ficha ya no está en el sitio de la FAO; se lee en el Internet Archive)"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "«Tuber growth is sharply inhibited when below 10°C and above 30°C». Contraste de Luisa en la revisión cruzada de HU-142 (PR #69)."
+  - source_id: senamhi_atlas_heladas_2010
+    name: "SENAMHI y FAO: Atlas de heladas del Perú (2010). Tablas 2.2 y 2.3"
+    institution: "Servicio Nacional de Meteorología e Hidrología del Perú (SENAMHI) y FAO"
+    url: "https://web2.senamhi.gob.pe/load/file/01404SENA-1.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "2010 (la tabla 2.2 es de Ventskevich, 1958)"
+    coverage: "Perú (Andes)"
+    license: "Publicación pública, sin licencia explícita; se cita"
+    notes: "Tabla 2.2 (p. 10 del PDF): temperatura de daño de la hoja y de la caseta por etapa (germinación, floración, fructificación) de avena, maíz y otros; la caseta va unos 4 °C por encima de la hoja."
+  - source_id: ciren_1989_chacras
+    name: "CIREN-CORFO: Requerimientos de clima y suelo. Chacras y hortalizas, publicación n.º 85 (1989)"
+    institution: "Centro de Información de Recursos Naturales (CIREN), Chile"
+    url: "https://research.csiro.au/gestionrapel/wp-content/uploads/sites/79/2016/11/Requerimientos-de-clima-y-suelo.-Chacras-y-horatalizas-1989c.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "1989"
+    coverage: "Chile"
+    license: "Sin dato; se cita"
+    notes: "Fichas con la etapa o parte más sensible a la helada y su temperatura crítica: cebolla (hojas, -1 °C, p. 30), haba (floración, -1 °C, p. 34), maíz (4.ª hoja, p. 20), arveja (floración, -2 °C, p. 12); y límites máximos de crecimiento de todo el ciclo (maíz 40 °C, arveja y haba 28 °C, papa 30 °C, cebolla 35 °C)."
+  - source_id: fairlie_ortega_1995
+    name: "Fairlie y Ortega (1995): Efecto de la presencia de heladas simuladas en diferentes estados fenológicos de la papa cv. Ccompis. Revista Latinoamericana de la Papa 7/8:86-93"
+    institution: "Asociación Latinoamericana de la Papa (ALAP); PISA/INIAA, Puno"
+    url: "https://dialnet.unirioja.es/descarga/articulo/5512072.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "1995"
+    coverage: "Altiplano de Puno (Perú)"
+    license: "Acceso abierto; licencia por confirmar"
+    notes: "«Los estados fenológicos más susceptibles resultaron ser la emergencia y el inicio de la formación de estolones»; en floración la reducción fue de 15 a 55 %. Daño simulado al follaje, sin temperatura."
+  - source_id: barrales_2002
+    name: "Barrales Domínguez et al. (2002): Relaciones térmicas en el sistema suelo-planta-atmósfera durante la incidencia de una helada. Revista Fitotecnia Mexicana 25(3):289-297"
+    institution: "Sociedad Mexicana de Fitogenética; Universidad Autónoma Chapingo"
+    url: "https://www.redalyc.org/pdf/610/61025309.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "2002"
+    coverage: "Valles altos de México"
+    license: "Acceso abierto (Redalyc); licencia por confirmar"
+    notes: "«Con temperaturas foliares de –0.4 y –0.7 °C ocurrió muerte total de plantas de maíz»; en el haba la helada «afectó sólo a las flores»."
+  - source_id: unlu_horticultura
+    name: "Universidad Nacional de Luján: Producción Vegetal III (Horticultura), fichas de cebolla, arveja y zanahoria (sin año)"
+    institution: "Universidad Nacional de Luján (UNLu), Argentina"
+    url: "https://www.hort.unlu.edu.ar/sites/www.hort.unlu.edu.ar/files/site/Cebolla.pdf"
+    downloaded_at: "2026-11-14"
+    period_covered: "Sin año (material de curso)"
+    coverage: "Argentina"
+    license: "Sin dato; se cita"
+    notes: "Cebolla, p. 3: «Durante su crecimiento la cebolla tolera heladas, pero los bulbos resultan sensibles»; en el crecimiento herbáceo la tasa de crecimiento disminuye con más de 30 °C. Material de curso: rango bajo, se usa solo donde no hay otra fuente."
+  - source_id: fao_frost_2005
+    name: "FAO: Frost protection: fundamentals, practice and economics, vol. 1 (Snyder y de Melo-Abreu, 2005). Cap. 4, tabla 4.5; cap. 5"
+    institution: "FAO, Environment and Natural Resources Series 10"
+    url: "https://www.fao.org/4/y7223e/y7223e0a.htm"
+    downloaded_at: "2026-11-13"
+    period_covered: "2005 (la tabla 4.5 es «after Ventskevich, 1958»)"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Tabla 4.5: temperaturas críticas de daño (°C) en germinación, floración y fructificación de papa, arveja, maíz, avena, vicia, zanahoria. Cap. 5 (https://www.fao.org/4/y7223e/y7223e0b.htm): la hoja se enfría más que el aire de la caseta."
+  - source_id: fao_66
+    name: "FAO-66: Crop yield response to water (Steduto, Hsiao, Fereres y Raes, 2012). Sección 3.4, papa, pp. 185-186"
+    institution: "FAO, Irrigation and Drainage Paper 66"
+    url: "https://www.fao.org/4/i2800e/i2800e07.pdf"
+    downloaded_at: "2026-11-13"
+    period_covered: "2012"
+    coverage: "Mundial"
+    license: "Publicación de la FAO, uso con cita"
+    notes: "Papa: «The temperature for frost or cold stress for potato is considered 1 oC and less, whereas that of heat stress is 35 oC or higher» (p. 186); el calor frena el inicio y el crecimiento de los tubérculos."
+  - source_id: ndsu_a1166_pea
+    name: "NDSU Extension: Field Pea Production, A1166 (revisión de diciembre de 2021)"
+    institution: "North Dakota State University Extension"
+    url: "https://www.ndsu.edu/agriculture/sites/default/files/2021-12/a1166.pdf"
+    downloaded_at: "2026-11-13"
+    period_covered: "2021"
+    coverage: "Norte de las Grandes Llanuras (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«Seedlings are tolerant of spring frosts in the low 20s… a new shoot will emerge… until approximately seven nodes»; «Field pea is sensitive to heat stress at flowering»."
+  - source_id: saskpulse_stress_2023
+    name: "Saskatchewan Pulse Growers: Environmental Stresses in Pulses (mayo de 2023)"
+    institution: "Saskatchewan Pulse Growers"
+    url: "https://saskpulse.com/resources/environmental-stresses-in-pulses"
+    downloaded_at: "2026-11-13"
+    period_covered: "2023"
+    coverage: "Saskatchewan (Canadá)"
+    license: "Sin dato; se cita"
+    notes: "«Hot temperatures during flowering may cause plants to abort flowers, resulting in lower pod set» (leguminosas de grano en general)."
+  - source_id: alharbi_2021_faba
+    name: "Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925"
+    institution: "MDPI, Plants; doi:10.3390/plants10091925"
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC8467580/"
+    downloaded_at: "2026-11-13"
+    period_covered: "2021"
+    coverage: "Ensayos de campo en Australia"
+    license: "Acceso abierto (CC BY 4.0 por confirmar)"
+    notes: "«Flowering is the most sensitive time for frost in crops, including faba bean»; la tolerancia vegetativa no predice la reproductiva."
+  - source_id: purdue_corn07
+    name: "Nielsen, R. L.: Drought and Heat Stress Effects on Corn Pollination (Corny News, Purdue, sin fecha)"
+    institution: "Purdue University, Agronomy"
+    url: "https://www.agry.purdue.edu/ext/corn/pubs/corn-07.htm"
+    downloaded_at: "2026-11-13"
+    period_covered: "Sin fecha"
+    coverage: "Cinturón maicero (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«pollen is likely damaged by mid-90's or greater temperatures»; «Temperatures over 100 degrees may literally kill pollen». Sobre Purdue también: Grain Fill Stages in Corn (2021; en R6 el grano está a salvo de la helada) y Assessing Corn Recovery From Early-Season Damage (2003; punto de crecimiento bajo tierra hasta V5-V6)."
+  - source_id: ucanr_7226_carrot
+    name: "Nuñez, Hartz, Suslow et al.: Carrot Production in California, UC ANR Publication 7226 (2008)"
+    institution: "University of California, Agriculture and Natural Resources; doi:10.3733/ucanr.7226"
+    url: "https://escholarship.org/uc/item/5pf563b3"
+    downloaded_at: "2026-11-13"
+    period_covered: "2008"
+    coverage: "California (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«Above 86°F (30°C), the growth of foliage is reduced and strong flavors develop in the roots»."
+  - source_id: msu_e1437_carrot
+    name: "Zandstra y Baker: Commercial Vegetable Recommendations: Carrots, MSU Extension Bulletin E-1437 (1980)"
+    institution: "Michigan State University Extension"
+    url: "https://sanweb.lib.msu.edu/DMC/Ag.%20Ext.%202007-Chelsie/PDF/e1437-1980.pdf"
+    downloaded_at: "2026-11-13"
+    period_covered: "1980 (copia de archivo)"
+    coverage: "Michigan (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«Young carrot seedlings can withstand slight frosts»; «Mature carrot leaves tolerate several nights of frosts in the mid 20's»; «Young seedlings are burned off easily by high temperatures… before the plants are 1 inch high»."
+  - source_id: msu_e1307_onion
+    name: "Zandstra, Grafius, Lacy y Warncke: Commercial Vegetable Recommendations: Onions, MSU E1307 (revisión de 1996)"
+    institution: "Michigan State University Extension"
+    url: "https://archive.lib.msu.edu/DMC/extension_publications/e1307/E1307-1996.PDF"
+    downloaded_at: "2026-11-13"
+    period_covered: "1996 (copia de archivo; dice «do not use for current recommendations»)"
+    coverage: "Michigan (EE. UU.)"
+    license: "Sin dato; se cita"
+    notes: "«Onion seedlings can tolerate light frosts (28 degrees F) but may be killed by colder temperatures»; «Growth rate declines when temperatures exceed 90 degrees F for several days. High temperature hastens maturity… smaller bulbs»."
+  - source_id: criterio_equipo_2026
+    name: "Cortes de salud del suelo de AgroSense: criterio propio del equipo (HU-062)"
+    institution: "Equipo RealE4Life (AgroSense)"
+    url: "https://github.com/FelipeGo18/AgroSense/blob/24c645f/docs/registro-de-decisiones.md"
+    downloaded_at: "2026-11-10"
+    period_covered: "Decidido el 10 de noviembre de 2026 (propuesta de producto-agro; números aprobados por Juan Cárdenas el mismo día)"
+    coverage: "AgroSense, región piloto del altiplano (Colombia)"
+    license: "Del proyecto"
+    notes: "Criterio del equipo RealE4Life, NO una fuente agronómica externa, decidido el 10 nov 2026 porque ninguna fuente revisada da estos cortes (nota 9 de HU-062). Fija los cortes de las reglas papa_espera (pest_break: favorable desde 3 ciclos de otras familias antes de volver a Solanaceae, como equivalente aproximado de las «rotations of three or more years» de fao_papa_2008 p. 19, que habla de años y no de ciclos; y moderate con 2, que no sale de Agrosavia: se elige porque agrosavia_tibaitata_2022 evaluó en Tibaitatá una rotación con ese intervalo, papa - avena - arveja, y ese estudio mide propiedades químicas y físicas del suelo, no plagas; es una analogía y ninguna fuente da el corte; decidido por Felipe el 11 nov 2026), leguminosa_en_rotacion (nitrogen: favorable desde 1 ciclo con leguminosa, sin franja), materia_organica_ciclos (organic_carbon: con carbono bajo, favorable desde 2 ciclos de abono verde o descanso y moderate con 1; con carbono normal, favorable con 1 y moderate con 0), suelo_cubierto (soil_cover: favorable desde 80 % y moderate desde 60 %) y erosion_pendiente (erosion: favorable hasta 1 mes descubierto y moderate hasta 3). Se apoya en parte en fuentes externas que no dan estos cortes: fao_iyp_2019 (las leguminosas fijan nitrógeno), fao_papa_2008 p. 19 (leguminosas entre los cultivos que alternan con la papa), cevipapa_taller_2005 (tabla 3, p. 35: materia orgánica baja < 5 %, de donde sale soc_low_g_kg = 29 con el factor 1,724; y el diseño abono verde – papa – abono verde de Murcia, p. 51 a 53), fao_glosolan_wb_2019 p. 4 (factor de 1,7 a 2,0) e igac_capacidad_uso_2021 p. 15 (pendiente desde 12 %). Qué se apoya en qué: son datos externos citados el 29 g/kg (CEVIPAPA y FAO GLOSOLAN), el 12 % (IGAC) y «three or more years» (FAO 2008). Los cortes por ciclos, porcentaje y meses son del equipo: nitrógeno 1, carbono 2/1 y 1/0, cobertura 80/60 %, erosión 1/3 meses y papa_espera 3 y 2. Cada uno tiene una referencia externa y se rotula «criterio del equipo». Compara estrategias por reglas; no predice cuánto mejora el suelo. Pendiente de validar por un agrónomo."
+
+crops:
+  - crop_id: papa
+    name_es: {v: "Papa", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
+    kind: {v: crop, s: agrosense_diseno}
+    archetype: {v: tuber, s: agrosense_diseno}
+    species: "Solanum tuberosum"
+    ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=1971"
+    family: {v: Solanaceae, s: fao_ecocrop}
+    fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Solanaceae)."}
+    water_need: {v: null, n: "Sin fuente para una categoría de necesidad de agua; el agua de la ventana sale de los Kc de FAO-56."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
+    tmean_min_c: {v: 8, s: upra_papa_diacol, n: "Límite inferior de la aptitud baja (A3)."}
+    tmean_max_c: {v: 16, s: upra_papa_diacol, n: "Límite superior de la aptitud media (A2); por encima es no apta."}
+    tmean_opt_min_c: {v: 12, s: upra_papa_diacol, n: "Aptitud alta (A1)."}
+    tmean_opt_max_c: {v: 15, s: upra_papa_diacol, n: "Aptitud alta (A1). La zonificación es de Diacol Capiro; se usa para la papa en general hasta tener la de otras variedades."}
+    temp_min_c: {v: 7, s: fao_ecocrop}
+    temp_opt_min_c: {v: 15, s: fao_ecocrop}
+    temp_opt_max_c: {v: 25, s: fao_ecocrop}
+    heat_max_c: {v: 30, s: fao_crop_info_potato, n: "Sobre 30 °C el crecimiento del tubérculo se frena en seco («Tuber growth is sharply inhibited when below 10°C and above 30°C», FAO Crop Information). Coincide con el máximo absoluto de EcoCrop. Más prudente que el estrés por calor de 35 °C de FAO-66: se deja en 30 °C (decidido por Felipe el 14 nov 2026, PR #69). Se compara con la máxima que se supera uno de cada diez días."}
+    rain_min_mm: {v: 250, s: fao_ecocrop}
+    rain_opt_min_mm: {v: 500, s: fao_ecocrop}
+    rain_opt_max_mm: {v: 800, s: fao_ecocrop}
+    rain_max_mm: {v: 2000, s: fao_ecocrop}
+    ph_min: {v: 4.2, s: fao_ecocrop}
+    ph_opt_min: {v: 5.0, s: fao_ecocrop}
+    ph_opt_max: {v: 6.2, s: fao_ecocrop}
+    ph_max: {v: 8.5, s: fao_ecocrop}
+    base_temp_c: {v: null, n: "Sin fuente de temperatura base; los grados-día son P1 (HU-150)."}
+    frost_killing_c: {v: 0, s: fao_ecocrop, n: "Temperatura que mata la planta en crecimiento temprano (-1 °C en reposo)."}
+    root_depth_min_m: {v: 0.4, s: fao_56_tabla_22, n: "Tabla 22, fila «Potato»: profundidad máxima efectiva de la raíz, de 0.4 a 0.6 m."}
+    root_depth_max_m: {v: 0.6, s: fao_56_tabla_22}
+    depletion_p: {v: 0.35, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
+    stages:
+      source_row: "FAO-56, tabla 11, papa, fila «Idaho, USA» (siembra abril/mayo): la más larga de la tabla, la más cercana a los ciclos largos del clima frío. Por confirmar con una fuente local de la papa del altiplano."
+      kc_source_row: "FAO-56, tabla 12: papa (Kc media 1,15 y final 0,75); Kc inicial del grupo raíces y tubérculos (0,5)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
+      list:
+        - {stage: initial, days: 45, kc: 0.5, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en germinación de -2 a -3 °C. Refuerza Fairlie y Ortega 1995 (Puno): la emergencia es de los estados más susceptibles"}}
+        - {stage: development, days: 30, kc: null, s: fao_56, frost_sensitive: {v: true, s: fao_66, n: "p. 186: estrés por frío desde 1 °C"}, heat_sensitive: {v: true, s: fao_66, n: "pp. 185-186: la tuberización empieza aquí y el calor la frena; estrés desde 35 °C"}, n: "En FAO-56 el Kc sube en línea recta de la inicial a la media."}
+        - {stage: mid, days: 70, kc: 1.15, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en floración de -1 a -2 °C"}, heat_sensitive: {v: true, s: fao_66, n: "p. 186: el calor frena el inicio y el crecimiento de los tubérculos"}}
+        - {stage: late, days: 20, kc: 0.75, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en fructificación de -1 a -2 °C"}, n: "Kc al final de la etapa; en FAO-56 baja en línea recta desde la media."}
+
+  - crop_id: arveja
+    name_es: {v: "Arveja", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
+    kind: {v: crop, s: agrosense_diseno}
+    archetype: {v: climbing_legume, s: agrosense_diseno}
+    species: "Pisum sativum"
+    ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=1721"
+    family: {v: Leguminosae, s: fao_ecocrop}
+    fixes_nitrogen: {v: true, s: fao_iyp_2019}
+    water_need: {v: null, n: "Sin fuente para una categoría; el agua sale de los Kc."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
+    tmean_min_c: {v: 4, s: fao_ecocrop, n: "Sin zonificación de la UPRA: rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
+    tmean_max_c: {v: 30, s: fao_ecocrop}
+    tmean_opt_min_c: {v: 10, s: fao_ecocrop}
+    tmean_opt_max_c: {v: 24, s: fao_ecocrop}
+    temp_min_c: {v: 4, s: fao_ecocrop}
+    temp_opt_min_c: {v: 10, s: fao_ecocrop}
+    temp_opt_max_c: {v: 24, s: fao_ecocrop}
+    heat_max_c: {v: 30, s: fao_ecocrop, n: "Supuesto por confirmar en HU-190, como en la papa."}
+    rain_min_mm: {v: 350, s: fao_ecocrop}
+    rain_opt_min_mm: {v: 800, s: fao_ecocrop}
+    rain_opt_max_mm: {v: 1200, s: fao_ecocrop}
+    rain_max_mm: {v: 2500, s: fao_ecocrop}
+    ph_min: {v: 4.5, s: fao_ecocrop}
+    ph_opt_min: {v: 5.5, s: fao_ecocrop}
+    ph_opt_max: {v: 7.0, s: fao_ecocrop}
+    ph_max: {v: 8.3, s: fao_ecocrop}
+    base_temp_c: {v: null, n: "Sin fuente."}
+    frost_killing_c: {v: 0, s: fao_ecocrop, n: "Crecimiento temprano (-2 °C en reposo)."}
+    root_depth_min_m: {v: 0.6, s: fao_56_tabla_22, n: "Tabla 22, fila «Peas, fresh (la arveja del altiplano se cosecha en verde, como su Kc)»: profundidad máxima efectiva de la raíz, de 0.6 a 1.0 m."}
+    root_depth_max_m: {v: 1.0, s: fao_56_tabla_22}
+    depletion_p: {v: 0.35, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
+    stages:
+      source_row: "FAO-56, tabla 11, arveja, fila «Idaho, USA» (siembra en abril): la más larga. Por confirmar con una fuente local (la arveja del altiplano se cosecha en verde)."
+      kc_source_row: "FAO-56, tabla 12: arveja fresca (0,5; 1,15; 1,10), porque en el altiplano se cosecha sobre todo en verde."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
+      list:
+        - {stage: initial, days: 35, kc: 0.5, s: fao_56, frost_sensitive: {v: false, s: ndsu_a1166_pea, n: "Las plántulas aguantan heladas de unos -6 °C y rebrotan; Tabla 4.5 de la FAO: germinación -7 a -8 °C. EcoCrop da 0 °C: manda la fuente por etapa"}}
+        - {stage: development, days: 25, kc: null, s: fao_56, frost_sensitive: {v: false, s: ndsu_a1166_pea, n: "Rebrota desde debajo del suelo hasta unos 7 nudos. EcoCrop da 0 °C: manda la fuente por etapa"}}
+        - {stage: mid, days: 30, kc: 1.15, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en floración de -2 a -3 °C"}, heat_sensitive: {v: true, s: ndsu_a1166_pea, n: "Sensible al calor en la floración: baja el cuajado de vainas"}}
+        - {stage: late, days: 20, kc: 1.10, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en fructificación de -3 a -4 °C"}}
+
+  - crop_id: haba
+    name_es: {v: "Haba", s: agrosense_diseno}
+    article: {v: "el", s: agrosense_diseno, n: "Excepción fonética: femenino con «a» tónica inicial, como «el agua»."}
+    kind: {v: crop, s: agrosense_diseno}
+    archetype: {v: bush_legume, s: agrosense_diseno}
+    species: "Vicia faba"
+    ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=2146"
+    family: {v: Leguminosae, s: fao_ecocrop}
+    fixes_nitrogen: {v: true, s: fao_iyp_2019}
+    water_need: {v: null, n: "Sin fuente para una categoría."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
+    tmean_min_c: {v: 5, s: fao_ecocrop, n: "Rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
+    tmean_max_c: {v: 32, s: fao_ecocrop}
+    tmean_opt_min_c: {v: 18, s: fao_ecocrop, n: "EcoCrop pone el óptimo de 18 a 28 °C: en el altiplano (unos 13 °C) la haba queda apta con nota baja. Contrastar con una fuente local."}
+    tmean_opt_max_c: {v: 28, s: fao_ecocrop}
+    temp_min_c: {v: 5, s: fao_ecocrop}
+    temp_opt_min_c: {v: 18, s: fao_ecocrop}
+    temp_opt_max_c: {v: 28, s: fao_ecocrop}
+    heat_max_c: {v: 32, s: fao_ecocrop, n: "Supuesto por confirmar en HU-190."}
+    rain_min_mm: {v: 250, s: fao_ecocrop}
+    rain_opt_min_mm: {v: 650, s: fao_ecocrop}
+    rain_opt_max_mm: {v: 1000, s: fao_ecocrop}
+    rain_max_mm: {v: 2600, s: fao_ecocrop}
+    ph_min: {v: 4.5, s: fao_ecocrop}
+    ph_opt_min: {v: 6.0, s: fao_ecocrop}
+    ph_opt_max: {v: 7.0, s: fao_ecocrop}
+    ph_max: {v: 8.6, s: fao_ecocrop}
+    base_temp_c: {v: null, n: "Sin fuente."}
+    frost_killing_c: {v: null, n: "EcoCrop no da temperatura que la mate: la sensibilidad a la helada queda en «datos insuficientes»."}
+    root_depth_min_m: {v: 0.5, s: fao_56_tabla_22, n: "Tabla 22, fila «Broad bean, fresh (cosecha en verde, como su Kc)»: profundidad máxima efectiva de la raíz, de 0.5 a 0.7 m."}
+    root_depth_max_m: {v: 0.7, s: fao_56_tabla_22}
+    depletion_p: {v: 0.45, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
+    stages:
+      source_row: "FAO-56, tabla 11, haba, fila «Europe (- green)» (siembra en noviembre): cosecha en verde, como en el altiplano; no tiene etapa final (0 días)."
+      kc_source_row: "FAO-56, tabla 12: haba fresca (0,5; 1,15; 1,10)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
+      list:
+        - {stage: initial, days: 90, kc: 0.5, s: fao_56}
+        - {stage: development, days: 45, kc: null, s: fao_56}
+        - {stage: mid, days: 40, kc: 1.15, s: fao_56, frost_sensitive: {v: true, s: alharbi_2021_faba, n: "La floración es la etapa más sensible a la helada en el haba. Refuerzan: CIREN 1989 (floración, -1 °C) y Barrales et al. 2002 (a -0,7 °C en la hoja solo se dañaron las flores)"}, heat_sensitive: {v: true, s: saskpulse_stress_2023, n: "El calor en la floración hace abortar flores (leguminosas de grano)"}}
+
+  - crop_id: maiz
+    name_es: {v: "Maíz", s: agrosense_diseno}
+    article: {v: "el", s: agrosense_diseno}
+    kind: {v: crop, s: agrosense_diseno}
+    archetype: {v: cereal, s: agrosense_diseno}
+    species: "Zea mays"
+    ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=2175"
+    family: {v: Gramineae, s: fao_ecocrop}
+    fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Gramineae)."}
+    water_need: {v: null, n: "Sin fuente para una categoría."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
+    tmean_min_c: {v: 10, s: fao_ecocrop, n: "La UPRA tiene zonificación de maíz tradicional, pero solo se encontró su mapa, no sus criterios: se usa EcoCrop (supuesto de la decisión 13). Reemplazar cuando se tengan los criterios de la UPRA."}
+    tmean_max_c: {v: 47, s: fao_ecocrop}
+    tmean_opt_min_c: {v: 18, s: fao_ecocrop}
+    tmean_opt_max_c: {v: 33, s: fao_ecocrop}
+    temp_min_c: {v: 10, s: fao_ecocrop}
+    temp_opt_min_c: {v: 18, s: fao_ecocrop}
+    temp_opt_max_c: {v: 33, s: fao_ecocrop}
+    heat_max_c: {v: 35, s: purdue_corn07, n: "Desde unos 35 °C (mid-90s °F) se daña el polen en la floración; sobre 38 °C muere. Antes 47 °C, el máximo absoluto de EcoCrop, que no es la temperatura de daño (aprobado por Felipe el 13 nov 2026)."}
+    rain_min_mm: {v: 400, s: fao_ecocrop}
+    rain_opt_min_mm: {v: 600, s: fao_ecocrop}
+    rain_opt_max_mm: {v: 1200, s: fao_ecocrop}
+    rain_max_mm: {v: 1800, s: fao_ecocrop}
+    ph_min: {v: 4.5, s: fao_ecocrop}
+    ph_opt_min: {v: 5.0, s: fao_ecocrop}
+    ph_opt_max: {v: 7.0, s: fao_ecocrop}
+    ph_max: {v: 8.5, s: fao_ecocrop}
+    base_temp_c: {v: null, n: "Sin fuente."}
+    frost_killing_c: {v: null, n: "EcoCrop no da temperatura que lo mate: «datos insuficientes»."}
+    root_depth_min_m: {v: 1.0, s: fao_56_tabla_22, n: "Tabla 22, fila «Maize, field (grain)»: profundidad máxima efectiva de la raíz, de 1.0 a 1.7 m."}
+    root_depth_max_m: {v: 1.7, s: fao_56_tabla_22}
+    depletion_p: {v: 0.55, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
+    stages:
+      source_row: "FAO-56, tabla 11, maíz en grano, fila «East Africa (alt.)» (siembra en abril): la de altura, la más cercana al altiplano."
+      kc_source_row: "FAO-56, tabla 12: maíz de campo (media 1,20; final 0,60 a 0,35: se toma 0,35, cosecha en seco); Kc inicial del grupo cereales (0,3)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
+      list:
+        - {stage: initial, days: 30, kc: 0.3, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en germinación de -2 a -3 °C; el punto de crecimiento sigue bajo tierra hasta V5-V6 (Purdue 2003) y suele recuperarse"}}
+        - {stage: development, days: 50, kc: null, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño de -1 a -3 °C. Refuerzan: Barrales et al. 2002 (muerte total con la hoja a -0,7 °C) y CIREN 1989 (lo más sensible es la 4.ª hoja)"}}
+        - {stage: mid, days: 60, kc: 1.20, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en floración de -1 a -2 °C. Refuerza SENAMHI-FAO 2010, tabla 2.2: hoja a -2 °C"}, heat_sensitive: {v: true, s: purdue_corn07, n: "El polen se daña desde unos 35 °C y muere sobre 38 °C"}}
+        - {stage: late, days: 40, kc: 0.35, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en fructificación de -2 a -3 °C; solo en R6 el grano está a salvo (Purdue 2021)"}}
+
+  - crop_id: zanahoria
+    name_es: {v: "Zanahoria", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
+    kind: {v: crop, s: agrosense_diseno}
+    archetype: {v: root, s: agrosense_diseno}
+    species: "Daucus carota"
+    ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=871"
+    family: {v: Umbelliferae, s: fao_ecocrop}
+    fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Umbelliferae)."}
+    water_need: {v: null, n: "Sin fuente para una categoría."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
+    tmean_min_c: {v: 3, s: fao_ecocrop, n: "Rango de temperatura del ciclo de EcoCrop (supuesto de la decisión 13)."}
+    tmean_max_c: {v: 30, s: fao_ecocrop}
+    tmean_opt_min_c: {v: 15, s: fao_ecocrop}
+    tmean_opt_max_c: {v: 24, s: fao_ecocrop}
+    temp_min_c: {v: 3, s: fao_ecocrop}
+    temp_opt_min_c: {v: 15, s: fao_ecocrop}
+    temp_opt_max_c: {v: 24, s: fao_ecocrop}
+    heat_max_c: {v: 30, s: fao_ecocrop, n: "Supuesto por confirmar en HU-190."}
+    rain_min_mm: {v: 400, s: fao_ecocrop}
+    rain_opt_min_mm: {v: 600, s: fao_ecocrop}
+    rain_opt_max_mm: {v: 1200, s: fao_ecocrop}
+    rain_max_mm: {v: 4000, s: fao_ecocrop}
+    ph_min: {v: 4.2, s: fao_ecocrop}
+    ph_opt_min: {v: 5.8, s: fao_ecocrop}
+    ph_opt_max: {v: 6.8, s: fao_ecocrop}
+    ph_max: {v: 8.7, s: fao_ecocrop}
+    base_temp_c: {v: null, n: "Sin fuente."}
+    frost_killing_c: {v: 0, s: fao_ecocrop, n: "Crecimiento temprano (-1 °C en reposo; EcoCrop: las hojas no aguantan -1,5 °C)."}
+    root_depth_min_m: {v: 0.5, s: fao_56_tabla_22, n: "Tabla 22, fila «Carrots»: profundidad máxima efectiva de la raíz, de 0.5 a 1.0 m."}
+    root_depth_max_m: {v: 1.0, s: fao_56_tabla_22}
+    depletion_p: {v: 0.35, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
+    stages:
+      source_row: "FAO-56, tabla 11, zanahoria, fila «Mediterranean» (siembra febrero/marzo)."
+      kc_source_row: "FAO-56, tabla 12: zanahoria (media 1,05; final 0,95); Kc inicial del grupo hortalizas pequeñas (0,7)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
+      list:
+        - {stage: initial, days: 30, kc: 0.7, s: fao_56, frost_sensitive: {v: false, s: msu_e1437_carrot, n: "Las plántulas aguantan heladas leves; Tabla 4.5 de la FAO: germinación -6 a -7 °C. EcoCrop da 0 °C: manda la fuente por etapa"}, heat_sensitive: {v: true, s: msu_e1437_carrot, n: "Las plántulas se queman con calor antes de 2,5 cm de alto"}}
+        - {stage: development, days: 40, kc: null, s: fao_56, heat_sensitive: {v: true, s: ucanr_7226_carrot, n: "Sobre 30 °C se reduce el follaje"}}
+        - {stage: mid, days: 60, kc: 1.05, s: fao_56, frost_sensitive: {v: false, s: msu_e1437_carrot, n: "Las hojas maduras aguantan varias noches de unos -4 °C"}, heat_sensitive: {v: true, s: ucanr_7226_carrot, n: "Sobre 30 °C se reduce el follaje y la raíz toma sabores fuertes"}}
+        - {stage: late, days: 20, kc: 0.95, s: fao_56, frost_sensitive: {v: false, s: msu_e1437_carrot, n: "Las hojas maduras aguantan varias noches de unos -4 °C"}, heat_sensitive: {v: true, s: ucanr_7226_carrot, n: "Sobre 30 °C la raíz toma sabores fuertes; el color se forma en las últimas semanas"}}
+
+  - crop_id: cebolla_bulbo
+    name_es: {v: "Cebolla de bulbo", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
+    kind: {v: crop, s: agrosense_diseno}
+    archetype: {v: bulb, s: agrosense_diseno}
+    species: "Allium cepa"
+    ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=364"
+    family: {v: Alliaceae, s: fao_ecocrop}
+    fixes_nitrogen: {v: false, s: fao_ecocrop, n: "No es leguminosa (familia Alliaceae)."}
+    water_need: {v: null, n: "Sin fuente para una categoría."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
+    tmean_min_c: {v: 10, s: upra_cebolla_bulbo, n: "Por debajo de 10 °C es no apta (N1)."}
+    tmean_max_c: {v: null, s: upra_cebolla_bulbo, n: "La UPRA no pone límite superior de exclusión (de 28 °C en adelante es aptitud baja): sin límite, no se excluye por calor."}
+    tmean_opt_min_c: {v: 20, s: upra_cebolla_bulbo, n: "Aptitud alta (A1). En el altiplano (unos 13 °C) queda en aptitud media (A2): apta con nota baja."}
+    tmean_opt_max_c: {v: 28, s: upra_cebolla_bulbo}
+    temp_min_c: {v: 4, s: fao_ecocrop}
+    temp_opt_min_c: {v: 12, s: fao_ecocrop}
+    temp_opt_max_c: {v: 25, s: fao_ecocrop}
+    heat_max_c: {v: 30, s: fao_ecocrop, n: "Supuesto por confirmar en HU-190."}
+    rain_min_mm: {v: 300, s: fao_ecocrop}
+    rain_opt_min_mm: {v: 350, s: fao_ecocrop}
+    rain_opt_max_mm: {v: 600, s: fao_ecocrop}
+    rain_max_mm: {v: 2800, s: fao_ecocrop}
+    ph_min: {v: 4.3, s: fao_ecocrop}
+    ph_opt_min: {v: 6.0, s: fao_ecocrop}
+    ph_opt_max: {v: 7.0, s: fao_ecocrop}
+    ph_max: {v: 8.3, s: fao_ecocrop}
+    base_temp_c: {v: null, n: "Sin fuente."}
+    frost_killing_c: {v: null, n: "EcoCrop no da temperatura que la mate: «datos insuficientes»."}
+    root_depth_min_m: {v: 0.3, s: fao_56_tabla_22, n: "Tabla 22, fila «Onions, dry»: profundidad máxima efectiva de la raíz, de 0.3 a 0.6 m."}
+    root_depth_max_m: {v: 0.6, s: fao_56_tabla_22}
+    depletion_p: {v: 0.3, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
+    stages:
+      source_row: "FAO-56, tabla 11, cebolla seca, fila «Mediterranean» (siembra en abril)."
+      kc_source_row: "FAO-56, tabla 12: cebolla seca (media 1,05; final 0,75); Kc inicial del grupo hortalizas pequeñas (0,7)."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
+      list:
+        - {stage: initial, days: 15, kc: 0.7, s: fao_56, frost_sensitive: {v: true, s: msu_e1307_onion, n: "Las plántulas aguantan -2 °C pero mueren con más frío"}}
+        - {stage: development, days: 25, kc: null, s: fao_56, frost_sensitive: {v: true, s: ciren_1989_chacras, n: "CIREN: la parte más sensible son las hojas, con temperatura crítica de -1 °C. Choca con UNLu («durante su crecimiento la cebolla tolera heladas»): manda la cifra"}, heat_sensitive: {v: true, s: unlu_horticultura, n: "UNLu, ficha Cebolla, p. 3: en el crecimiento herbáceo la tasa de crecimiento disminuye con más de 30 °C"}}
+        - {stage: mid, days: 70, kc: 1.05, s: fao_56, frost_sensitive: {v: true, s: ciren_1989_chacras, n: "CIREN: hojas a -1 °C, presentes durante el bulbo; UNLu: «los bulbos resultan sensibles»"}, heat_sensitive: {v: true, s: msu_e1307_onion, n: "Sobre 32 °C varios días baja el crecimiento"}}
+        - {stage: late, days: 40, kc: 0.75, s: fao_56, frost_sensitive: {v: true, s: unlu_horticultura, n: "UNLu, ficha Cebolla, p. 3: «los bulbos resultan sensibles» (sin cifra)"}, heat_sensitive: {v: true, s: msu_e1307_onion, n: "El calor al final del ciclo adelanta la madurez y da bulbos más pequeños"}}
+
+  - crop_id: avena_vicia
+    name_es: {v: "Avena con vicia (abono verde)", s: agrosense_diseno}
+    article: {v: "la", s: agrosense_diseno}
+    kind: {v: cover, s: agrosense_diseno}
+    archetype: {v: cover, s: agrosense_diseno, n: "El diseño lo dibuja como mezcla de avena y vicia (design/finca/cultivos.py)."}
+    species: "Avena sativa + Vicia sativa ssp. sativa"
+    ecocrop_url: "https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=481 y https://ecocrop.apps.fao.org/ecocrop/srv/en/dataSheet?id=238003"
+    mixture_rule: "Mezcla de dos especies: los rangos son la intersección (lo que toleran las dos). Cada nota dice de qué especie sale cada límite."
+    family: {v: Gramineae, s: fao_ecocrop, n: "Familia de la avena (Avena sativa), la especie principal de la mezcla. La de la vicia va en `secondary_families`."}
+    secondary_families: {v: [Leguminosae], s: fao_ecocrop, n: "La vicia (Vicia sativa) es Leguminosae (FAO EcoCrop, vista cropView id=238003). Cuenta en el corte de plagas, no en el filtro de familia seguida (decisión 16)."}
+    fixes_nitrogen: {v: true, s: fao_iyp_2019, n: "Por la vicia, que es leguminosa; la avena no fija."}
+    water_need: {v: null, n: "Sin fuente para una categoría."}
+    root_type: {v: null, n: "Fuera del MVP (HU-062, 11 nov 2026): ninguna regla de rotación lo usa y no hay fuente de la clasificación."}
+    tmean_min_c: {v: 5, s: fao_ecocrop, n: "Avena 5 °C (la vicia aguanta 3 °C)."}
+    tmean_max_c: {v: 28, s: fao_ecocrop, n: "Vicia 28 °C (la avena aguanta 30 °C)."}
+    tmean_opt_min_c: {v: 16, s: fao_ecocrop, n: "Avena 16 °C (vicia 14 °C)."}
+    tmean_opt_max_c: {v: 20, s: fao_ecocrop, n: "Avena 20 °C (vicia 23 °C)."}
+    temp_min_c: {v: 5, s: fao_ecocrop}
+    temp_opt_min_c: {v: 16, s: fao_ecocrop}
+    temp_opt_max_c: {v: 20, s: fao_ecocrop}
+    heat_max_c: {v: 28, s: fao_ecocrop, n: "Supuesto por confirmar en HU-190."}
+    rain_min_mm: {v: 350, s: fao_ecocrop, n: "Vicia 350 mm (avena 250)."}
+    rain_opt_min_mm: {v: 700, s: fao_ecocrop, n: "Vicia 700 mm (avena 600)."}
+    rain_opt_max_mm: {v: 900, s: fao_ecocrop, n: "Vicia 900 mm (avena 1000)."}
+    rain_max_mm: {v: 1500, s: fao_ecocrop, n: "Avena 1500 mm (vicia 1600)."}
+    ph_min: {v: 4.5, s: fao_ecocrop, n: "Las dos 4,5."}
+    ph_opt_min: {v: 6.0, s: fao_ecocrop, n: "Vicia 6,0; el óptimo de la avena es de 5,0 a 6,0: la intersección es un solo punto, 6,0."}
+    ph_opt_max: {v: 6.0, s: fao_ecocrop, n: "Avena 6,0 (vicia 7,0)."}
+    ph_max: {v: 7.5, s: fao_ecocrop, n: "Avena 7,5 (vicia 8,2)."}
+    base_temp_c: {v: null, n: "Sin fuente."}
+    frost_killing_c: {v: -1, s: fao_ecocrop, n: "Las dos: -1 °C en crecimiento temprano."}
+    root_depth_min_m: {v: 1.0, s: fao_56_tabla_22, n: "Tabla 22, fila «Oats (la vicia no tiene fila)»: profundidad máxima efectiva de la raíz, de 1.0 a 1.5 m."}
+    root_depth_max_m: {v: 1.5, s: fao_56_tabla_22}
+    depletion_p: {v: 0.55, s: fao_56_tabla_22, n: "Sin el ajuste por la ET del día (nota de la tabla 22)."}
+    stages:
+      source_row: "FAO-56, tabla 11, fila «Barley/Oats/Wheat · East Africa» (siembra en julio): la de altura del grupo. Supuesto por confirmar: como abono verde se corta e incorpora antes de terminar, así que la etapa final podría no cumplirse."
+      kc_source_row: "FAO-56, tabla 12: avena (media 1,15; final 0,25); Kc inicial del grupo cereales (0,3). La vicia no tiene fila."
+      sensitivity_note: "Sensibilidad por etapa (HU-142, aprobado por Felipe el 13 nov 2026): la helada de AgroSense es una mínima ≤ 2 °C en caseta y la hoja se enfría más que el aire de la caseta (FAO, Frost protection 2005, cap. 5). Criterio del equipo, con los números de la tabla 4.5 de la FAO: sensible si una fuente da daño en la etapa con el tejido a -3 °C o más, o dice que es sensible; no sensible si aguanta -4 °C o menos, o ya no se daña; nula en lo demás. Si choca con EcoCrop, manda la fuente por etapa. Etapas de FAO-56: initial y development son la fase vegetativa, mid va de la floración al llenado y late es la maduración (FAO-56, cap. 6). Una etapa sin fuente queda nula (R1). La tabla 2.2 del Atlas de heladas del Perú (SENAMHI-FAO 2010) pone la temperatura de la hoja junto a la de la caseta: la caseta va unos 4 °C por encima, así que una mínima de 2 °C en caseta es cerca de -2 °C en la hoja. Se buscó en Agrosavia, ICA, Fedepapa, UPRA y Fenalce (14 nov 2026): ninguna publica la temperatura de daño por etapa."
+      list:
+        - {stage: initial, days: 15, kc: 0.3, s: fao_56, frost_sensitive: {v: false, s: fao_frost_2005, n: "Tabla 4.5: germinación de la avena -8 a -9 °C y de la vicia -6 a -7 °C. EcoCrop da -1 °C: manda la fuente por etapa"}}
+        - {stage: development, days: 30, kc: null, s: fao_56, frost_sensitive: {v: false, s: fao_frost_2005, n: "Cap. 4: las plántulas de cereales se recuperan si no se daña el nudo de macollamiento"}}
+        - {stage: mid, days: 65, kc: 1.15, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: daño en floración de la avena de -1 a -2 °C"}}
+        - {stage: late, days: 40, kc: 0.25, s: fao_56, frost_sensitive: {v: true, s: fao_frost_2005, n: "Tabla 4.5: fructificación de la avena y la vicia de -2 a -4 °C. SENAMHI-FAO 2010 da -4 °C en la hoja para la avena, justo en el límite de no sensible: se deja sensible, lo más prudente, porque la FAO da daño desde -2 °C"}}
+
+  - crop_id: descanso
+    name_es: {v: "Descanso", s: agrosense_diseno}
+    article: {v: "el", s: agrosense_diseno}
+    kind: {v: fallow, s: agrosense_diseno}
+    archetype: {v: fallow, s: agrosense_diseno, n: "El diseño lo dibuja como suelo en descanso con cobertura natural."}
+    fallow_days: {v: 180, s: criterio_equipo_2026, n: "Una temporada de siembra sin sembrar: en el altiplano hay dos temporadas al año (lluvias bimodales), las mismas que los semestres A y B de EVA. Criterio del equipo, pendiente de validar por un agrónomo (R8, decisión 16): ninguna fuente revisada da la duración de un descanso corto; Agrosavia recomienda descansos «prolongados» sin número y los agricultores de Boyacá hablan de 1 a 3 años (López Estupiñán 2015). Queda lejos de los cortes de erosion_pendiente (3 meses) y suelo_cubierto, así que el nivel no depende del hueco hasta el lunes. Decidido por Haider el 15 de noviembre de 2026 (PR #109, decisión 7)."}
+    notes: "El descanso no tiene rangos ni etapas: no se evalúa por ventanas ni tiene diagnóstico (specs/01-reglas.md). Su duración es fija, `fallow_days` (decisión 7 del PR #109): no la elige quien arma la estrategia."

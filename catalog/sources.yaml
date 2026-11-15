@@ -1,0 +1,44 @@
+# Qué fuente calcula cada señal en cada región (HU-122; specs/02-contratos.md, «`catalog/sources.yaml`»; decisión 11).
+#
+# `used`: la fuente que calcula la señal. `contrast`: las que se muestran a su lado para contrastar, nunca mezcladas (R1).
+# Si la fuente usada no tiene dato para un municipio, la señal es `insufficient_data`: nunca se cambia a la de contraste.
+# Cada `source_id` está en `sources` (R8) o en `planned`, con la HU que lo trae; el pipeline falla si no.
+#
+# La región es la de `pipeline/region.yaml` (`region.id`). Cambia una fuente: cambia aquí y sube la versión (R4).
+
+version: "1.5.0"
+
+regions:
+  co-boyaca-cundinamarca:
+    water:
+      # Decidido por Felipe el 11 de noviembre de 2026 (revisión del PR #44, HU-207): la lluvia sale de GPM IMERG
+      # (`precip_month`), que sigue mejor los meses del año que NASA POWER en todos los pisos (correlación de los 12
+      # meses con el IDEAM 0,87 frente a 0,81 en el altiplano), y la señal mira mes por mes. POWER (`climate_month`) se
+      # muestra para contrastar. Frente a 169 estaciones del IDEAM del altiplano, IMERG da una mediana de 1,85 veces su
+      # lluvia: por eso la señal lleva siempre el aviso de `rain_caveat`. El motor no cambia (R6).
+      rain: imerg
+      rain_contrast: [nasa_power]
+      rain_caveat: >-
+        La lluvia sale de GPM IMERG (satélite), que en los valles del altiplano la sobrestima: cerca de 1,85 veces la
+        que miden las estaciones del IDEAM. El agua puede salir mejor de lo que es: verifíquela en campo.
+      et0: nasa_power
+      soil_moisture_contrast: [nasa_power, smap]
+    frost:
+      used: nasa_power
+      # Aprobado por Felipe el 13 de noviembre de 2026 (revisión del PR #61, HU-045): con NASA POWER solo 24 de los 239
+      # municipios tienen alguna helada en 1991-2020, y en Tibaitatá el IDEAM midió 26 días de helada de 2024 a 2026 donde
+      # POWER cuenta 0. Sin aviso, la señal casi siempre saldría verde.
+      frost_caveat: >-
+        Las heladas salen de NASA POWER (reanálisis). En los valles del altiplano su temperatura mínima sale más
+        caliente que la de las estaciones del IDEAM, así que cuenta menos heladas de las que hay: revise la
+        experiencia de su zona.
+    heat: { used: nasa_power }
+    soil: { used: soilgrids }
+    # EVA de la UPRA (`supply_semester`, HU-031). La variación del área sembrada que califica la señal llega con HU-032.
+    supply: { used: eva, contrast: [] }
+    market: { used: dane_sipsa }
+
+# Fuentes que todavía no tienen adaptador, con la HU que las trae. Mientras estén aquí, lo que las usa es
+# `insufficient_data` (R1) y el contraste no se muestra. Cuando la HU publique la fuente, sale de esta lista.
+planned:
+  smap: HU-210

@@ -1,0 +1,40 @@
+# HU-022: al mergear un PR a `desarrollo`, borra su rama del repo.
+#
+# Solo actúa si el PR se mergeó (no si se cerró sin mergear) y si la rama es de este repo (no de un fork).
+# Nunca borra `desarrollo`, `produccion` ni `pruebas`, ni una rama que todavía es la base de otro PR abierto.
+# La rama local de cada uno no se toca: `git fetch --prune` y `git branch -d <rama>` la limpian.
+
+name: Borrar rama mergeada
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [desarrollo]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  borrar:
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Borrar la rama del PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RAMA: ${{ github.event.pull_request.head.ref }}
+        run: |
+          case "$RAMA" in
+            desarrollo|produccion|pruebas) echo "La rama $RAMA no se borra."; exit 0 ;;
+          esac
+          if [ -n "$(gh pr list --repo "$REPO" --base "$RAMA" --state open --json number --jq '.[].number')" ]; then
+            echo "La rama $RAMA es la base de otro PR abierto: no se borra."
+            exit 0
+          fi
+          if gh api -X DELETE "repos/$REPO/git/refs/heads/$RAMA"; then
+            echo "Rama $RAMA borrada."
+          else
+            echo "La rama $RAMA ya no existe o no se pudo borrar."
+          fi

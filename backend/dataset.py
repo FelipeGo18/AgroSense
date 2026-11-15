@@ -1,0 +1,325 @@
+"""El dataset publicado (`data/published/`): lo lee la API, nunca el motor (R6). Solo se lee: la API no lo cambia.
+
+Se carga una vez y queda en memoria. Si falta o no se puede leer, los endpoints que lo necesitan responden 503
+`dataset_unavailable` y el log dice por qué; los demás siguen (como las cuentas con la base de datos apagada).
+"""
+
+import json
+from dataclasses import dataclass, field
+from datetime import date, datetime
+from functools import lru_cache
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import polars as pl
+import shapely
+from shapely.geometry.base import BaseGeometry
+
+from backend.config.settings import get_settings
+from backend.engine.stages import StageSpan
+from common.grid import GRID_COLUMNS
+
+SOIL_COLUMNS = (
+    "ph",
+    "ph_p05",
+    "ph_p95",
+    "soc_g_kg",
+    "soc_p05",
+    "soc_p95",
+    "nitrogen_g_kg",
+    "clay_pct",
+    "sand_pct",
+    "silt_pct",
+)
+
+
+class DatasetUnavailable(RuntimeError):
+    """No hay dataset publicado que leer. El mensaje dice por qué, para el log."""
+
+
+@dataclass(frozen=True)
+class Municipality:
+    municipality_id: str
+    name: str
+    department_id: str
+    department: str
+    lat: float | None
+    lon: float | None
+    # Mediana de la pendiente de sus celdas de `grid_cells` (decisión 14); nula hasta HU-206.
+    slope_pct: float | None = None
+    # Temperatura media anual del municipio (NASA POWER corregida con NASADEM, HU-044); nula si el dataset no la trae (R1).
+    tmean_annual_c: float | None = None
+    # Altitud del municipio (NASADEM, HU-044); nula si el dataset no la trae (R1).
+    altitude_m: float | None = None
+
+
+@dataclass(frozen=True, eq=False)
+class Grid:
+    """La altitud y la textura del suelo de la rejilla de 250 m (`grid_cells`), compactas: `keys` es la llave entera de
+    cada celda (`common.grid.cell_key`), ordenada, y `altitude_m` su altitud, con NaN donde la celda no tiene dato (R1).
+
+    La textura (`texture_class`, HU-181) va como códigos: `texture_code` es, por celda y en el mismo orden, la posición
+    de su clase en `texture_classes` (en orden alfabético), o -1 sin dato (R1). Sin la columna, `texture_code` es nulo.
+    Así 600.000 celdas no son 600.000 textos en memoria. La usa el agua del lote (HU-071)."""
+
+    keys: np.ndarray
+    altitude_m: np.ndarray
+    texture_code: np.ndarray | None = None
+    texture_classes: tuple[str, ...] = ()
+    # Propiedades del suelo y la pendiente (float32) y de qué fuentes de suelo es cada celda (`soil_sources`, separadas
+    # por comas), en el mismo orden que `keys` (HU-182).
+    properties: pl.DataFrame | None = None
+    # Cuántas celdas tiene cada municipio, para el terreno de un lote sin dibujo.
+    cells_by_municipality: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class Dataset:
+    version: str
+    rules_version: str | None
+    created_at: datetime
+    region: dict[str, Any]
+    # Por `municipality_id`, en el orden de la tabla (por código).
+    municipalities: dict[str, Municipality]
+    sources: list[dict[str, Any]]
+    # El límite de cada municipio (WGS84), preparado para preguntar rápido si un lote cae dentro. Vacío si el dataset
+    # no trae `municipality_boundaries`: entonces no se puede dibujar ni validar un lote (R1).
+    boundaries: dict[str, BaseGeometry]
+    # Las fichas del catálogo agronómico (`crops`), por `crop_id`, en orden. Vacío si el dataset no las trae (R1).
+    crops: dict[str, dict[str, Any]]
+    # Las etapas de cada cultivo en orden (`crop_stages`), para la etapa por calendario (HU-220). Vacío sin catálogo.
+    stages: dict[str, list[StageSpan]]
+    # El suelo estimado de cada municipio (`soil_municipality`, HU-181), por `municipality_id`. Vacío si el dataset no
+    # lo trae: entonces el suelo es `insufficient_data` (R1).
+    soil: dict[str, dict[str, Any]]
+    # Precios mayoristas de SIPSA (HU-221). Nulos si el dataset publicado no los trae: no se inventan.
+    market_prices: pl.DataFrame | None = None
+    market_season: pl.DataFrame | None = None
+    # El último precio de cada producto en cada central (`market_price_latest`), ya calculado por el pipeline.
+    market_latest: pl.DataFrame | None = None
+    # El precio y la temporada por cultivo y central (`market_month`, HU-051); de aquí sale la señal `market` (HU-073).
+    # Nulo si el dataset no lo trae (R1).
+    market_month: pl.DataFrame | None = None
+    # El último día con precios, para compararlo con las versiones de las actualizaciones (HU-222). Nulo sin precios.
+    market_last_date: date | None = None
+    # Las centrales de la región: (código de SIPSA, nombre), de `region.yaml` o, si no las dice, de los precios.
+    markets: tuple[tuple[str, str], ...] = ()
+    # La rejilla de 250 m con altitud (HU-191). Nula si el dataset no la trae (R1).
+    grid: Grid | None = None
+    # El clima mensual de NASA POWER (`climate_month`, HU-042: lluvia y ET0) y la lluvia mensual por fuente
+    # (`precip_month`, HU-207: GPM IMERG). Nulos si el dataset no los trae (R1). Los usan las tendencias (HU-078) y la
+    # señal de agua (HU-071), con las mismas lecturas (`backend/api/monthly_climate.py`).
+    climate_month: pl.DataFrame | None = None
+    precip_month: pl.DataFrame | None = None
+    # El área sembrada por semestre (`supply_semester`, HU-031 y HU-032) y el verdor normal del municipio
+    # (`ndvi_municipality_normal`, HU-208). Nulos mientras el pipeline no los publique (R1).
+    supply_semester: pl.DataFrame | None = None
+    ndvi_normal: pl.DataFrame | None = None
+    # Los días con helada de cada mes de cada año (`climate_frost_month`, HU-045), para la señal de heladas (HU-077), y
+    # la máxima p90 de cada mes del año (`climate_risk_month`), para la de calor (HU-190). Nulas si el dataset no las
+    # trae: entonces esas señales son `insufficient_data` (R1).
+    climate_frost_month: pl.DataFrame | None = None
+    climate_risk_month: pl.DataFrame | None = None
+    # Comparación histórica de HU-217/HU-218.
+    # None indica que la tabla todavía no está publicada.
+    climate_change_month: pl.DataFrame | None = None
+    # Periodos definidos por el manifiesto del dataset.
+    periods: tuple[dict[str, Any], ...] = ()
+    # Las reglas de rotación (`rotation_rules`, HU-062), con `params` y `levels` ya leídos del JSON, en orden de
+    # `rule_id`. Vacías si el dataset no las trae: entonces ninguna regla filtra ni califica, y se dice (R1, R8).
+    rotation_rules: tuple[dict[str, Any], ...] = ()
+
+
+def load(folder: Path) -> Dataset:
+    manifest_path = folder / "manifest.json"
+    if not manifest_path.exists():
+        raise DatasetUnavailable(f"no existe {manifest_path} (se publica con: uv run python -m pipeline.build)")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        municipalities = pl.read_parquet(folder / "municipalities.parquet")
+        sources = pl.read_parquet(folder / "sources.parquet")
+        boundaries_path = folder / "municipality_boundaries.parquet"
+        boundaries = pl.read_parquet(boundaries_path) if boundaries_path.exists() else None
+        crops_path = folder / "crops.parquet"
+        crops = pl.read_parquet(crops_path).to_dicts() if crops_path.exists() else []
+        stages_path = folder / "crop_stages.parquet"
+        stage_rows = pl.read_parquet(stages_path).to_dicts() if stages_path.exists() else []
+        soil_path = folder / "soil_municipality.parquet"
+        soil = pl.read_parquet(soil_path).to_dicts() if soil_path.exists() else []
+        prices_path, season_path = folder / "market_price_day.parquet", folder / "market_price_season.parquet"
+        market_prices = pl.read_parquet(prices_path) if prices_path.exists() else None
+        market_season = pl.read_parquet(season_path) if season_path.exists() else None
+        latest_path = folder / "market_price_latest.parquet"
+        market_latest = pl.read_parquet(latest_path) if latest_path.exists() else None
+        month_path = folder / "market_month.parquet"
+        market_month = pl.read_parquet(month_path) if month_path.exists() else None
+        grid_path = folder / "grid_cells.parquet"
+        grid = _grid(grid_path) if grid_path.exists() else None
+        climate_month, precip_month, supply_semester, ndvi_normal = (
+            _optional(folder / f"{name}.parquet")
+            for name in ("climate_month", "precip_month", "supply_semester", "ndvi_municipality_normal")
+        )
+        frost_path, risk_path = folder / "climate_frost_month.parquet", folder / "climate_risk_month.parquet"
+        climate_frost_month = pl.read_parquet(frost_path) if frost_path.exists() else None
+        climate_risk_month = pl.read_parquet(risk_path) if risk_path.exists() else None
+        changes_path = folder / "climate_change_month.parquet"
+        climate_change_month = pl.read_parquet(changes_path) if changes_path.exists() else None
+        periods = tuple(manifest.get("periods", []))
+        rules_path = folder / "rotation_rules.parquet"
+        rotation_rules = _rotation_rules(pl.read_parquet(rules_path)) if rules_path.exists() else ()
+    except (OSError, ValueError, pl.exceptions.PolarsError) as error:
+        raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
+    return Dataset(
+        version=manifest["dataset_version"],
+        rules_version=manifest.get("rules_version"),
+        created_at=datetime.fromisoformat(manifest["created_at"]),
+        region=manifest["region"],
+        municipalities={
+            row["municipality_id"]: Municipality(
+                municipality_id=row["municipality_id"],
+                name=row["name"],
+                department_id=row["department_id"],
+                department=row["department"],
+                lat=row["lat"],
+                lon=row["lon"],
+                slope_pct=row.get("slope_pct"),
+                tmean_annual_c=row.get("tmean_annual_c"),
+                altitude_m=row.get("altitude_m"),
+            )
+            for row in municipalities.iter_rows(named=True)
+        },
+        sources=sources.to_dicts(),
+        boundaries={} if boundaries is None else _geometries(boundaries),
+        crops={crop["crop_id"]: crop for crop in crops},
+        stages=_stages(stage_rows),
+        soil={row["municipality_id"]: row for row in soil},
+        market_prices=market_prices,
+        market_season=market_season,
+        market_latest=market_latest,
+        market_month=market_month,
+        market_last_date=market_latest["market_date"].max() if market_latest is not None and market_latest.height else None,
+        markets=_markets(manifest["region"], market_latest),
+        climate_change_month=climate_change_month,
+        periods=periods,
+        rotation_rules=rotation_rules,
+        grid=grid,
+        climate_month=climate_month,
+        precip_month=precip_month,
+        supply_semester=supply_semester,
+        ndvi_normal=ndvi_normal,
+        climate_frost_month=climate_frost_month,
+        climate_risk_month=climate_risk_month,
+    )
+
+
+def _rotation_rules(table: pl.DataFrame) -> tuple[dict[str, Any], ...]:
+    """Las filas de `rotation_rules` con `params` y `levels` como objetos (en el Parquet van como JSON)."""
+    rows = []
+    for row in table.sort("rule_id").iter_rows(named=True):
+        params = row.get("params")
+        levels = row.get("levels")
+        rows.append({**row, "params": json.loads(params) if params else {}, "levels": json.loads(levels) if levels else None})
+    return tuple(rows)
+
+
+def _optional(path: Path) -> pl.DataFrame | None:
+    """Una tabla que el dataset puede no traer todavía: nula si no está (R1)."""
+    return pl.read_parquet(path) if path.exists() else None
+
+
+# La fuente de la altitud y la pendiente en `grid_cells.source_ids`: no es una fuente del suelo.
+NON_SOIL_SOURCE = "nasadem"
+
+
+def _grid(path: Path) -> Grid:
+    """Carga altitud, textura y propiedades de suelo y pendiente (HU-182), alineadas por llave.
+    Las columnas opcionales ausentes permanecen sin dato; admite datasets anteriores.
+
+    Para no cargar más de lo que se usa (revisión del PR #143): las propiedades van en float32, las fuentes de suelo de cada celda
+    como texto categórico (`soil_sources`) y el municipio solo como un conteo de celdas. Unos 40 MB por proceso de la API, frente a
+    unos 19 sin el suelo del lote."""
+    columns = pl.read_parquet_schema(path)
+    with_texture = "texture_class" in columns
+    numeric = [name for name in (*SOIL_COLUMNS, "slope_pct") if name in columns]
+    optional = [name for name in ("source_ids", "municipality_id") if name in columns]
+    table = pl.read_parquet(path, columns=["cell_id", "altitude_m", *(["texture_class"] if with_texture else []), *numeric, *optional])
+    cells_by_municipality = dict(table.group_by("municipality_id").len().iter_rows()) if "municipality_id" in table.columns else {}
+    flags = []
+    if "source_ids" in table.columns:
+        # Sin `nasadem`, que es de la altitud y la pendiente y no del suelo (R8); como texto categórico, porque casi
+        # todas las celdas comparten la misma lista.
+        flags = [
+            pl.col("source_ids")
+            .list.filter(pl.element() != NON_SOIL_SOURCE)
+            .list.sort()
+            .list.join(",")
+            .cast(pl.Categorical)
+            .alias("soil_sources")
+        ]
+    table = table.with_columns([pl.col(name).cast(pl.Float32) for name in numeric] + flags)
+    extra = [*numeric, *(["soil_sources"] if flags else [])]
+    parts = table["cell_id"].str.split_exact("_", 1)
+    keys = (parts.struct.field("field_0").cast(pl.Int64) * GRID_COLUMNS + parts.struct.field("field_1").cast(pl.Int64)).to_numpy()
+    order = np.argsort(keys)
+    altitudes = table["altitude_m"].cast(pl.Float64).fill_null(float("nan")).to_numpy()
+    if not with_texture:
+        return Grid(
+            keys=keys[order],
+            altitude_m=altitudes[order],
+            properties=table[order.tolist()].select(extra) if extra else None,
+            cells_by_municipality=cells_by_municipality,
+        )
+    classes = tuple(sorted(table["texture_class"].drop_nulls().unique().to_list()))
+    codes = table["texture_class"].replace_strict(list(classes), list(range(len(classes))), default=-1, return_dtype=pl.Int16).to_numpy()
+    return Grid(
+        keys=keys[order],
+        altitude_m=altitudes[order],
+        texture_code=codes[order],
+        texture_classes=classes,
+        properties=table[order.tolist()].select(extra) if extra else None,
+        cells_by_municipality=cells_by_municipality,
+    )
+
+
+def _markets(region: dict[str, Any], latest: pl.DataFrame | None) -> tuple[tuple[str, str], ...]:
+    """Las centrales de la región en orden de código: las de `region.yaml` o, si no las dice, las que tienen precios."""
+    if region.get("markets"):
+        return tuple(sorted(region["markets"].items()))
+    if latest is None:
+        return ()
+    return tuple(latest.select("market_id", "market").unique().sort("market_id").iter_rows())
+
+
+def _stages(rows: list[dict[str, Any]]) -> dict[str, list[StageSpan]]:
+    """Las filas ya vienen en el orden de las etapas (el pipeline las ordena)."""
+    stages: dict[str, list[StageSpan]] = {}
+    for row in rows:
+        span = StageSpan(
+            row["stage"],
+            row["days"],
+            kc=row.get("kc"),
+            frost_sensitive=row.get("frost_sensitive"),
+            heat_sensitive=row.get("heat_sensitive"),
+        )
+        stages.setdefault(row["crop_id"], []).append(span)
+    return stages
+
+
+def _geometries(table: pl.DataFrame) -> dict[str, BaseGeometry]:
+    geometries = {}
+    for municipality_id, wkb in table.select("municipality_id", "geometry").iter_rows():
+        geometry = shapely.from_wkb(wkb)
+        shapely.prepare(geometry)
+        geometries[municipality_id] = geometry
+    return geometries
+
+
+@lru_cache
+def _cached(folder: Path) -> Dataset:
+    return load(folder)
+
+
+def get_dataset() -> Dataset:
+    """El dataset de `AGROSENSE_DATA_DIR`. Un fallo no se recuerda: en cuanto se publique, se lee."""
+    return _cached(get_settings().data_dir.resolve())

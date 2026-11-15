@@ -1,0 +1,50 @@
+# Pesos por defecto de las señales: el «criterio de AgroSense» (HU-198, HU-075).
+#
+# Cada señal tiene un peso entero de 0 a 5. El agricultor puede cambiarlos; estos son los que se usan cuando no lo
+# hace, y los que se le muestran para que pueda volver a ellos. Ningún peso por defecto es 0: el criterio de AgroSense
+# mira las seis señales.
+#
+# Son un criterio del equipo, no un dato agronómico: no hay evidencia que fije cuánto pesa cada señal
+# (docs/riesgos.md). Cada porqué se apoya en una decisión del proyecto, no en una fuente. Si aparece evidencia (por
+# ejemplo, con agricultores), se cambian aquí y sube la versión.
+#
+# Propuestos por Producto y agro y aprobados por Felipe el 14 de noviembre de 2026 (docs/registro-de-decisiones.md).
+# Reemplazan a los provisionales del 13 de octubre (agua 3, heladas 3, calor 3, suelo 2, oferta 3, mercado 2).
+# 1.1.0 (HU-073, decisión 17): ningún peso cambia; el porqué del mercado dice que se muestra sin calificar.
+# 1.2.0 (HU-072, decisión 17): ningún peso cambia; el porqué de la oferta dice que se muestra sin calificar.
+# 1.3.0 (HU-240, decisión 17): ningún peso cambia; el porqué del mercado dice que con 4 o 5 ordena las ventanas.
+
+version: "1.3.0"
+status: approved
+
+weights:
+  water:
+    weight: 3
+    why: "Importancia normal. La señal ya es prudente: se califica con la lluvia del año seco, la que se supera en 4 de cada 5 años. Un riesgo grave de agua cuenta siempre."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
+  frost:
+    weight: 4
+    why: "Importa mucho, por prudencia: la helada es el riesgo principal del altiplano. Una helada moderada ya cuenta como desfavorable para la luz."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
+  heat:
+    weight: 2
+    why: "Pesa menos: en el altiplano la temperatura máxima rara vez pasa de lo que aguantan estos cultivos. Un calor crítico cuenta siempre."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
+  soil:
+    weight: 2
+    why: "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición de su lote."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
+  supply:
+    weight: 1
+    why: "Pesa poco: la oferta es un dato que suma. Se muestra sin calificar, con el área que registra EVA en su municipio, y su peso no cambia nada: ninguna fuente dice desde cuánto hay sobreoferta."
+    set_by: "Felipe"
+    set_on: "2026-11-14"
+  market:
+    weight: 1
+    why: "Pesa poco: el precio es un dato que suma. Se muestra sin calificar, con la historia del precio de su mes de cosecha, y no cambia la luz: ninguna fuente dice qué es un precio bajo. Con 4 o 5, entre las ventanas igual de seguras en clima va primero la que cosecha en el mes que más años tuvo mejor precio."
+    set_by: "Felipe"
+    set_on: "2026-11-14"

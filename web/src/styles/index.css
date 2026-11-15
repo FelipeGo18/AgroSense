@@ -1,0 +1,550 @@
+@import "tailwindcss";
+/* Tokens de HU-152, generados por design/tokens/build_tokens.py */
+@import "../../../design/tokens/tailwind-theme.css";
+
+/* Colores de la portada y del pie que aún no están en tokens.json (design/pantallas/ui.py e inicio.py). */
+@theme {
+  --color-pie-tierra: #3b2a20;
+  --color-pie-tinta: #f6eedf;
+  --color-pie-suave: #cdbba3;
+  --color-seccion-ejemplo: #e9f0e1;
+  --color-fila-senal: #f5f8f2;
+  /* Fondo oliva claro de lo elegido o lo hecho (diseños de precios, actividad y calendario en design/pantallas). */
+  --color-oliva-claro: #e9f2d8;
+}
+
+/*
+ * Modo ligero (HU-158, `src/lib/lightMode.ts`): <html data-light> lo marca. Variantes de Tailwind para lo nuevo:
+ *   animated:  solo con movimiento   →  animated:animate-bounce  animated:transition-transform
+ *   light:     solo en modo ligero   →  light:hidden (por ejemplo, un adorno que solo tiene sentido animado)
+ * Una animación o transición que se escriba fuera de `animated:` igual se apaga con la regla de más abajo.
+ */
+@custom-variant light (&:where([data-light], [data-light] *));
+@custom-variant animated (&:where(:root:not([data-light]) *));
+
+/*
+ * Márgenes laterales de toda página o sección. Mismo ancho máximo y mismas guardas en todas las pantallas:
+ * una vista nueva usa esto y no repite `px-5 md:px-12 lg:px-24`.
+ */
+@utility container-page {
+  margin-inline: auto;
+  max-width: 1440px;
+  padding-inline: 1.25rem;
+  @media (min-width: 48rem) {
+    padding-inline: 3rem;
+  }
+  @media (min-width: 64rem) {
+    padding-inline: 6rem;
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-superficie-fondo);
+    color: var(--color-texto-principal);
+    font-family: var(--font-texto);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    -webkit-text-size-adjust: 100%;
+  }
+  /*
+   * En escritorio (desde 1024 px) la escala de letra baja un paso: con 18 px de base todo se veía muy grande en una
+   * pantalla ancha (decidido por Felipe el 14 de noviembre de 2026). En el celular sigue la de los tokens, con 18 px,
+   * por legibilidad al sol. Como `html` toma `--text-base`, también baja el `rem`, y con él los espacios y los altos
+   * que se miden en `rem`; los botones siguen midiendo 44 px como mínimo (HU-096).
+   */
+  @media (min-width: 1024px) {
+    :root {
+      --text-sm: 15px;
+      --text-base: 16px;
+      --text-lg: 20px;
+      --text-xl: 25px;
+      --text-2xl: 32px;
+      --text-3xl: 42px;
+    }
+  }
+  /* Ninguna palabra larga ensancha la página: se parte antes de salirse del ancho. */
+  body {
+    overflow-wrap: break-word;
+  }
+  :where(input, select, textarea, button) {
+    max-width: 100%;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-titulos);
+    font-weight: var(--font-weight-titulo);
+    line-height: var(--leading-ajustado);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accion-foco);
+    outline-offset: 3px;
+  }
+}
+
+/* Piezas del diorama (Plate.tsx): contorno de foco y hundimiento al presionar. */
+@layer components {
+  .plate-ring {
+    opacity: 0;
+  }
+  :focus-visible > .plate .plate-ring {
+    opacity: 1;
+  }
+  .plate-button .plate-face,
+  .plate-button .plate-content {
+    transition: transform 70ms ease-out;
+  }
+  .plate-button:active:not(:disabled) .plate-face {
+    transform: translateY(5px);
+  }
+  .plate-button:active:not(:disabled) .plate-content {
+    transform: translateY(5px);
+  }
+}
+
+/* Mascota (Mascot.tsx): flota en reposo. Se detiene con «reducir movimiento». */
+@keyframes mascot-float {
+  from {
+    transform: translateY(-4px) rotate(-1.5deg);
+  }
+  to {
+    transform: translateY(5px) rotate(1.5deg);
+  }
+}
+.mascot-float {
+  animation: mascot-float 2.6s ease-in-out infinite alternate;
+}
+/* Parpadea: los ojos se cierran un instante cada pocos segundos. Los ojos vacíos de «sin datos» no parpadean. */
+@keyframes mascot-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+.mascot:not([data-mood="no_data"]) .mascot-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mascot-blink 4.6s ease-in-out infinite;
+}
+/* Saluda: de vez en cuando levanta el brazo que tiene abajo y mueve la mano. El hombro es el punto de giro. */
+@keyframes mascot-wave {
+  0%,
+  72%,
+  100% {
+    transform: rotate(0deg);
+  }
+  77%,
+  85%,
+  93% {
+    transform: rotate(128deg);
+  }
+  81%,
+  89% {
+    transform: rotate(102deg);
+  }
+}
+.mascot-lively:is([data-mood="idle"], [data-mood="guide"]) .mascot-arm-left {
+  transform-box: view-box;
+  transform-origin: 108px 138px;
+  animation: mascot-wave 9s ease-in-out 2.5s infinite;
+}
+
+/*
+ * Modo ligero: nada se anima ni se desliza. Es la red de seguridad de todo el CSS, para lo que ya existe y para lo
+ * que se escriba mañana. «Auto» también entra aquí: `prefers-reduced-motion` y el ahorro de datos encienden
+ * `data-light` (lightMode.ts), así que no hace falta una consulta de medios aparte en cada regla.
+ * El botón sigue hundiéndose al presionar (:active), pero al instante.
+ */
+:root[data-light] *,
+:root[data-light] *::before,
+:root[data-light] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+/* Lo mismo con el modo ligero prendido (lib/lightMode.ts). */
+.modo-ligero .mascot-float,
+.modo-ligero .mascot .mascot-eyes,
+.modo-ligero .mascot-lively .mascot-arm-left {
+  animation: none;
+}
+
+/*
+ * Movimiento corto de la interfaz hecho con CSS. Todo se apaga con «reducir movimiento» y con el modo ligero.
+ */
+/* Cada página entra con un fundido (app/routes.tsx). */
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+}
+.page-fade {
+  animation: page-fade 180ms ease-out;
+}
+/* Interruptor (Toggle.tsx): la semilla se desliza y el riel cambia de color. */
+.toggle-part {
+  transition:
+    transform 180ms cubic-bezier(0.3, 1.4, 0.6, 1),
+    fill 180ms ease-out,
+    stroke 180ms ease-out;
+}
+/* Diálogo de confirmar (ConfirmDialog.tsx): el fondo se oscurece y la tarjeta crece. */
+@keyframes dialog-grow {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+.dialog-overlay[data-state="open"] {
+  animation: page-fade 200ms ease-out;
+}
+.dialog-card[data-state="open"] {
+  animation: dialog-grow 220ms cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+/* Menú de pantallas angostas (TopBar.tsx): baja como una cortina y sus enlaces entran uno tras otro. */
+@keyframes menu-drop {
+  from {
+    transform: translateY(-100%);
+  }
+}
+@keyframes menu-lift {
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes menu-item {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+.menu-curtain[data-state="open"] {
+  animation: menu-drop 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.menu-curtain[data-state="closed"] {
+  animation: menu-lift 180ms ease-in;
+}
+.menu-curtain[data-state="open"] .menu-item {
+  animation: menu-item 260ms ease-out backwards;
+  animation-delay: calc(140ms + var(--i, 0) * 45ms);
+}
+/* Barra (TopBar.tsx): la raya naranja se desliza de un enlace al otro. */
+.nav-mark {
+  transition:
+    left 280ms cubic-bezier(0.3, 1.2, 0.5, 1),
+    width 280ms cubic-bezier(0.3, 1.2, 0.5, 1),
+    opacity 160ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-fade,
+  .dialog-overlay,
+  .dialog-card,
+  .menu-curtain,
+  .menu-curtain .menu-item {
+    animation: none !important;
+  }
+  .toggle-part,
+  .nav-mark {
+    transition: none;
+  }
+}
+.modo-ligero :is(.page-fade, .dialog-overlay, .dialog-card, .menu-curtain, .menu-curtain .menu-item) {
+  animation: none !important;
+}
+.modo-ligero :is(.toggle-part, .nav-mark) {
+  transition: none;
+}
+
+/*
+ * Ambiente del paisaje de los formularios (SceneAmbient.tsx). Lo que se mueve solo se dibuja con movimiento permitido.
+ */
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-50vw);
+  }
+  to {
+    transform: translateX(115vw);
+  }
+}
+.cloud-shadow {
+  animation: cloud-drift 80s linear infinite;
+}
+@keyframes star-twinkle {
+  50% {
+    opacity: 0.25;
+  }
+}
+.star-twinkle {
+  animation: star-twinkle 3.4s ease-in-out infinite;
+}
+@keyframes firefly {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  30%,
+  60% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(14px, -18px);
+  }
+}
+.firefly {
+  animation: firefly 5.5s ease-in-out infinite;
+}
+@keyframes drizzle-fall {
+  to {
+    background-position: 0 64px;
+  }
+}
+.drizzle {
+  background-image: linear-gradient(100deg, transparent 47%, rgb(255 255 255 / 0.55) 50%, transparent 53%);
+  background-size: 28px 64px;
+  animation: drizzle-fall 0.5s linear infinite;
+}
+/* La mascota dormida respira despacio. */
+@keyframes mascot-zzz {
+  from {
+    opacity: 0.2;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+.mascot-zzz {
+  animation: mascot-zzz 1.8s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cloud-shadow,
+  .star-twinkle,
+  .firefly,
+  .drizzle,
+  .mascot-zzz {
+    animation: none;
+  }
+}
+.modo-ligero :is(.cloud-shadow, .star-twinkle, .firefly, .drizzle, .mascot-zzz) {
+  animation: none;
+}
+
+/* Etiquetas sobre el mapa del lote (MapCanvas). El área no recibe el puntero: no estorba al mover los puntos. */
+.map-label {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 2px solid var(--color-paleta-noche);
+  background: var(--color-superficie-panel);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  clip-path: polygon(
+    6px 0,
+    calc(100% - 6px) 0,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    0 calc(100% - 6px),
+    0 6px
+  );
+}
+.map-area {
+  pointer-events: none;
+  padding: 4px 12px;
+  background: var(--color-paleta-noche);
+  color: var(--color-texto-sobre-oscuro);
+  font-weight: 700;
+  font-size: 15px;
+  clip-path: polygon(
+    6px 0,
+    calc(100% - 6px) 0,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    0 calc(100% - 6px),
+    0 6px
+  );
+}
+.map-area-outside {
+  background: var(--color-oscuro-rojo);
+}
+
+/* Objetivos táctiles del mapa (HU-096): los enlaces de la atribución y el nombre de cada lote se pueden tocar. */
+.maplibregl-ctrl-attrib a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+@media (max-width: 1023px) {
+  .maplibregl-ctrl-attrib a,
+  .map-label {
+    min-height: 44px;
+  }
+}
+
+/* Lote vivo (LiveLot.tsx y FarmLife.tsx). Todo va con movimiento: en modo ligero la vida de la finca no se dibuja y la
+   regla global de arriba apaga cualquier animación. `farm-paused` la detiene con la pestaña oculta. */
+@keyframes live-sway {
+  0%,
+  50%,
+  100% {
+    transform: skewX(0deg);
+  }
+  25% {
+    transform: skewX(-1.5deg);
+  }
+  /* la ráfaga, entre el 55 % y el 75 % del ciclo: las hojas de FarmLifeSky cruzan a la vez */
+  62% {
+    transform: skewX(-7deg);
+  }
+  68% {
+    transform: skewX(2deg);
+  }
+  74% {
+    transform: skewX(-1deg);
+  }
+}
+@keyframes farm-smoke {
+  from {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate(18px, -70px) scale(1.6);
+    opacity: 0;
+  }
+}
+@keyframes farm-peck {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0deg);
+  }
+  70%,
+  85% {
+    transform: rotate(38deg);
+  }
+}
+@keyframes farm-flap {
+  50% {
+    transform: scaleY(0.25);
+  }
+}
+@keyframes farm-swing {
+  50% {
+    transform: rotate(-24deg);
+  }
+}
+@keyframes farm-glow {
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes farm-twinkle {
+  50% {
+    opacity: 0.2;
+  }
+}
+@keyframes farm-firefly {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  40%,
+  60% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(10px, -14px);
+  }
+}
+@keyframes farm-legs {
+  50% {
+    transform: translateY(-2px) skewX(20deg);
+  }
+}
+@keyframes farm-graze {
+  0%,
+  40%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50%,
+  85% {
+    transform: rotate(22deg);
+  }
+}
+@keyframes farm-hover {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+:root:not([data-light]) .live-sway {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: live-sway 9s ease-in-out infinite;
+}
+:root:not([data-light]) .farm-smoke {
+  animation: farm-smoke 4.2s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+:root:not([data-light]) .farm-peck {
+  animation: farm-peck 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+}
+:root:not([data-light]) .farm-flap {
+  animation: farm-flap 0.3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+:root:not([data-light]) .farm-buzz {
+  animation: farm-flap 0.08s linear infinite;
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+:root:not([data-light]) :is(.farm-tail, .farm-cat-tail) {
+  animation: farm-swing 1.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+}
+:root:not([data-light]) .farm-glow {
+  animation: farm-glow 3.6s ease-in-out infinite;
+  opacity: 0.55;
+}
+:root:not([data-light]) .farm-twinkle {
+  animation: farm-twinkle 2.8s ease-in-out infinite;
+}
+:root:not([data-light]) .farm-firefly {
+  animation: farm-firefly 5s ease-in-out infinite;
+}
+:root:not([data-light]) .farm-legs {
+  animation: farm-legs 0.28s linear infinite;
+  transform-box: fill-box;
+  transform-origin: top;
+}
+:root:not([data-light]) .farm-legs-alt {
+  animation-delay: -0.14s;
+}
+:root:not([data-light]) .farm-graze {
+  animation: farm-graze 7s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 0% 0%;
+}
+:root:not([data-light]) .farm-hover {
+  animation: farm-hover 0.9s ease-in-out infinite;
+}
+.farm-paused * {
+  animation-play-state: paused !important;
+}

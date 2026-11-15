@@ -1,0 +1,3 @@
+# Los cambios de la base de datos son cambios de contrato (specs/02-contratos.md): los revisan Haider o Felipe (HU-229).
+/backend/db/migrations/ @FelipeGo18 @Haider2231
+/backend/accounts/*models.py @FelipeGo18 @Haider2231

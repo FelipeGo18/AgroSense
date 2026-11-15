@@ -1,0 +1,540 @@
+import { act, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { RouterProvider, createMemoryRouter } from "react-router";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PATHS } from "@/app/paths";
+import { routes } from "@/app/routes";
+import type { ActivityItem } from "@/features/auth/session";
+import { describe as describeEvent, keptSince, when, who } from "./activity";
+
+const ROSA = {
+  user_id: "1",
+  username: "rosa.samaca",
+  display_name: "Rosa",
+  role: "farmer",
+  consent_version: 3,
+  consent_at: "2026-08-02T13:40:00Z",
+  priorities: null,
+  created_at: "2026-08-02T13:40:00Z",
+};
+
+type Reply = { status: number; body?: unknown };
+
+/** Una API de mentira: responde lo que la prueba diga por cada «MÉTODO ruta» y anota lo que se le envió. */
+function fakeApi(replies: Record<string, Reply>) {
+  const calls: { key: string; body: unknown }[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
+    const key = `${init.method ?? "GET"} ${url}`;
+    calls.push({ key, body: init.body ? JSON.parse(String(init.body)) : undefined });
+    const reply = replies[key] ?? { status: 401, body: { error: { code: "unauthorized", message: "Inicie sesión para continuar." } } };
+    return new Response(reply.body === undefined ? null : JSON.stringify(reply.body), { status: reply.status });
+  });
+  return calls;
+}
+
+const DEFAULT_WEIGHTS = { water: 3, frost: 3, heat: 3, soil: 2, supply: 3, market: 2 };
+const VERSION = {
+  "GET /api/v1/version": {
+    status: 200,
+    body: {
+      dataset_version: null,
+      rules_version: null,
+      created_at: null,
+      region: null,
+      default_weights: DEFAULT_WEIGHTS,
+      weights_version: "0.1.0",
+      weights_reasons: {},
+      sources: [],
+    },
+  },
+};
+const ME = { "GET /api/v1/me": { status: 200, body: ROSA }, ...VERSION };
+const open = (path: string) => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />);
+const card = (title: string) =>
+  screen.getByRole("heading", { level: 2, name: title }).closest("div.relative")!.parentElement as HTMLElement;
+
+// Al salir de la cuenta se llega al inicio: se prueba como lo ve quien pide «reducir movimiento» (sin recorrido ni lienzo).
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query.includes("prefers-reduced-motion"),
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  localStorage.clear();
+});
+
+describe("Mi cuenta (HU-160, HU-163)", () => {
+  it("sin sesión lleva a entrar", async () => {
+    fakeApi({});
+    open(PATHS.account);
+    // Lleva a «Entrar», otra página que se carga aparte: con toda la suite en paralelo tarda más del segundo que espera
+    // `findBy` por defecto, y la prueba fallaba sin que nada estuviera mal.
+    expect(await screen.findByRole("heading", { level: 1, name: "Vuelva a su finca" }, { timeout: 10_000 })).toBeInTheDocument();
+  });
+
+  it("muestra sus datos, lo que se guarda y cuándo aceptó el consentimiento", async () => {
+    fakeApi(ME);
+    open(PATHS.account);
+    expect(await screen.findByRole("heading", { level: 1, name: "Mi cuenta" })).toBeInTheDocument();
+    const data = card("Sus datos");
+    expect(within(data).getByText("rosa.samaca")).toBeInTheDocument();
+    expect(within(data).getByText("2 de agosto de 2026")).toBeInTheDocument();
+    expect(screen.getByText(/Aceptó el tratamiento de datos \(versión 3\) el 2 de agosto de 2026/)).toBeInTheDocument();
+    expect(screen.getByText("No guardamos correo, celular, documento ni dirección.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver mi actividad" })).toHaveAttribute("href", PATHS.activity);
+    expect(screen.getByRole("link", { name: "Cambiar contraseña" })).toHaveAttribute("href", PATHS.password);
+  });
+
+  it("edita el nombre y el usuario y vuelve a mostrarlos", async () => {
+    const calls = fakeApi({
+      ...ME,
+      "PATCH /api/v1/me": { status: 200, body: { ...ROSA, display_name: "Rosa Elvira", username: "rosa.elvira" } },
+    });
+    open(PATHS.account);
+    await userEvent.click(await screen.findByRole("button", { name: /Editar/ }));
+    const name = screen.getByLabelText("Nombre");
+    await userEvent.clear(name);
+    await userEvent.type(name, "Rosa Elvira");
+    const username = screen.getByLabelText("Usuario");
+    await userEvent.clear(username);
+    await userEvent.type(username, "Rosa.Elvira");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(await within(card("Sus datos")).findByText("rosa.elvira")).toBeInTheDocument();
+    expect(calls.find((call) => call.key.startsWith("PATCH"))?.body).toEqual({ display_name: "Rosa Elvira", username: "rosa.elvira" });
+  });
+
+  it("si el usuario ya existe lo dice junto al campo y no cierra la edición", async () => {
+    fakeApi({ ...ME, "PATCH /api/v1/me": { status: 409, body: { error: { code: "username_taken", message: "x" } } } });
+    open(PATHS.account);
+    await userEvent.click(await screen.findByRole("button", { name: /Editar/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    expect(await screen.findByText("Ese usuario ya existe. Pruebe con otro.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Usuario")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("cancelar deja los datos como estaban", async () => {
+    const calls = fakeApi(ME);
+    open(PATHS.account);
+    await userEvent.click(await screen.findByRole("button", { name: /Editar/ }));
+    await userEvent.type(screen.getByLabelText("Nombre"), " cambiado");
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(within(card("Sus datos")).getByText("Rosa")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("PATCH"))).toBe(false);
+  });
+
+  it("el modo ligero se prende y se apaga, se recuerda en el navegador y quita el movimiento", async () => {
+    // Un equipo que no pide reducir movimiento: sin el modo ligero, el inicio tendría su recorrido.
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    fakeApi(ME);
+    open(PATHS.account);
+    const light = await screen.findByRole("switch", { name: "Modo ligero" });
+    expect(light).toHaveAttribute("aria-checked", "false");
+    await userEvent.click(light);
+    expect(light).toHaveAttribute("aria-checked", "true");
+    expect(localStorage.getItem("agrosense:modo-ligero")).toBe("on");
+    expect(document.documentElement).toHaveClass("modo-ligero");
+    await userEvent.click(light);
+    expect(light).toHaveAttribute("aria-checked", "false");
+    expect(localStorage.getItem("agrosense:modo-ligero")).toBe("off");
+    expect(document.documentElement).not.toHaveClass("modo-ligero");
+  });
+
+  it("el sonido se prende y se apaga desde Mi cuenta, igual que con el botón de la barra", async () => {
+    fakeApi(ME);
+    open(PATHS.account);
+    const sound = await screen.findByRole("switch", { name: "Sonido" });
+    expect(sound).toHaveAttribute("aria-checked", "false");
+    await userEvent.click(sound);
+    expect(sound).toHaveAttribute("aria-checked", "true");
+    // Los dos controles dicen lo mismo.
+    expect(screen.getByRole("button", { name: "Sonido" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(sound);
+    expect(sound).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("borrar la cuenta pide confirmar, dice qué se pierde y solo entonces borra", async () => {
+    const calls = fakeApi({ ...ME, "DELETE /api/v1/me": { status: 204 } });
+    open(PATHS.account);
+    await userEvent.click(await screen.findByRole("button", { name: "Borrar mi cuenta" }));
+    const dialog = await screen.findByRole("dialog", { name: "¿Borrar su cuenta?" });
+    expect(within(dialog).getByText("Su usuario «rosa.samaca» y su nombre.")).toBeInTheDocument();
+    expect(within(dialog).getByText("No se puede deshacer.")).toBeInTheDocument();
+    // «No, volver» cierra sin borrar nada.
+    await userEvent.click(within(dialog).getByRole("button", { name: "No, volver" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(calls.some((call) => call.key.startsWith("DELETE"))).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "Borrar mi cuenta" }));
+    const again = await screen.findByRole("dialog");
+    // Sin la contraseña no se envía nada.
+    await userEvent.click(within(again).getByRole("button", { name: "Sí, borrar todo" }));
+    expect(within(again).getByText("Escriba su contraseña para borrar la cuenta.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("DELETE"))).toBe(false);
+    await userEvent.type(within(again).getByLabelText("Su contraseña, para confirmar"), "papa-criolla-2026");
+    await userEvent.click(within(again).getByRole("button", { name: "Sí, borrar todo" }));
+    // La navegación posterior al borrado importa el inicio antes de mostrar su encabezado.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+    expect(await screen.findByRole("heading", { level: 1, name: "AgroSense" })).toBeInTheDocument();
+    expect(calls.find((call) => call.key === "DELETE /api/v1/me")?.body).toEqual({ password: "papa-criolla-2026" });
+  });
+
+  it("con una contraseña que no coincide dice por qué y la cuenta sigue", async () => {
+    fakeApi({
+      ...ME,
+      "DELETE /api/v1/me": {
+        status: 403,
+        body: { error: { code: "wrong_password", message: "La contraseña no coincide.", request_id: "" } },
+      },
+    });
+    open(PATHS.account);
+    await userEvent.click(await screen.findByRole("button", { name: "Borrar mi cuenta" }));
+    const dialog = await screen.findByRole("dialog", { name: "¿Borrar su cuenta?" });
+    await userEvent.type(within(dialog).getByLabelText("Su contraseña, para confirmar"), "no-es-esta");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Sí, borrar todo" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("La contraseña no coincide.");
+    // Al cerrar y volver a abrir, no queda la contraseña escrita ni el error.
+    await userEvent.click(within(dialog).getByRole("button", { name: "No, volver" }));
+    await userEvent.click(screen.getByRole("button", { name: "Borrar mi cuenta" }));
+    const reopened = await screen.findByRole("dialog");
+    expect(within(reopened).getByLabelText("Su contraseña, para confirmar")).toHaveValue("");
+    expect(within(reopened).queryByRole("alert")).toBeNull();
+  });
+
+  it("cerrar sesión desde la barra lleva al inicio y no deja nada de la cuenta en pantalla", async () => {
+    // El caso que falló: la barra pasaba a «Entrar», pero la página seguía mostrando los datos de quien salió.
+    const calls = fakeApi({ ...ME, "POST /api/v1/auth/logout": { status: 204 } });
+    open(PATHS.account);
+    await screen.findByRole("heading", { level: 1, name: "Mi cuenta" });
+    expect(screen.getAllByText("rosa.samaca").length).toBeGreaterThan(0);
+    await userEvent.click(within(screen.getByRole("banner")).getByRole("button", { name: "Cerrar sesión" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "AgroSense" })).toBeInTheDocument();
+    expect(screen.queryByText("rosa.samaca")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Mi cuenta" })).toBeNull();
+    expect(within(screen.getByRole("banner")).getByRole("link", { name: "Entrar" })).toBeInTheDocument();
+    expect(calls.some((call) => call.key === "POST /api/v1/auth/logout")).toBe(true);
+  });
+
+  it("cerrar sesión lleva al inicio", async () => {
+    const calls = fakeApi({ ...ME, "POST /api/v1/auth/logout": { status: 204 } });
+    open(PATHS.account);
+    await screen.findByRole("heading", { level: 1, name: "Mi cuenta" });
+    await userEvent.click(within(screen.getByRole("main")).getByRole("button", { name: "Cerrar sesión" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "AgroSense" })).toBeInTheDocument();
+    expect(calls.some((call) => call.key === "POST /api/v1/auth/logout")).toBe(true);
+  });
+});
+
+describe("Cambiar contraseña (HU-160)", () => {
+  const fill = async (current: string, next: string, repeat: string) => {
+    await userEvent.type(await screen.findByLabelText("Contraseña actual"), current);
+    await userEvent.type(screen.getByLabelText("Contraseña nueva"), next);
+    await userEvent.type(screen.getByLabelText("Repita la contraseña nueva"), repeat);
+    await userEvent.click(screen.getByRole("button", { name: "Guardar contraseña" }));
+  };
+
+  it("avisa antes de enviar si es corta, igual a la actual o no coincide", async () => {
+    const calls = fakeApi(ME);
+    open(PATHS.password);
+    await fill("papa-criolla-2026", "corta", "otra");
+    expect(screen.getByText("La contraseña debe tener al menos 8 caracteres.")).toBeInTheDocument();
+    expect(screen.getByText("Las dos contraseñas nuevas no son iguales.")).toBeInTheDocument();
+    await userEvent.clear(screen.getByLabelText("Contraseña nueva"));
+    await userEvent.type(screen.getByLabelText("Contraseña nueva"), "papa-criolla-2026");
+    expect(screen.getByText("La contraseña nueva debe ser distinta de la actual.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("POST"))).toBe(false);
+  });
+
+  it("si la actual no es correcta lo dice y aclara que la sesión sigue abierta", async () => {
+    fakeApi({ ...ME, "POST /api/v1/me/password": { status: 403, body: { error: { code: "wrong_password", message: "x" } } } });
+    open(PATHS.password);
+    await fill("no-es-esta", "arveja-verde-2027", "arveja-verde-2027");
+    expect(await screen.findByRole("alert")).toHaveTextContent("La contraseña actual no es correcta. Su sesión sigue abierta.");
+  });
+
+  it("al cambiarla vuelve a Mi cuenta y lo confirma; no envía la repetición", async () => {
+    const calls = fakeApi({ ...ME, "POST /api/v1/me/password": { status: 204 } });
+    open(PATHS.password);
+    await fill("papa-criolla-2026", "arveja-verde-2027", "arveja-verde-2027");
+    expect(await screen.findByRole("heading", { level: 1, name: "Mi cuenta" })).toBeInTheDocument();
+    expect(screen.getByText("Su contraseña quedó cambiada. Las demás sesiones se cerraron.")).toHaveAttribute("role", "status");
+    expect(calls.find((call) => call.key.startsWith("POST"))?.body).toEqual({
+      current_password: "papa-criolla-2026",
+      new_password: "arveja-verde-2027",
+    });
+  });
+});
+
+const event = (changes: Partial<ActivityItem>): ActivityItem => ({
+  event_id: crypto.randomUUID(),
+  occurred_at: "2026-10-12T15:42:00Z",
+  action: "auth.login",
+  actor_role: "farmer",
+  object_type: "session",
+  object_id: null,
+  outcome: "ok",
+  ticket_id: null,
+  details: null,
+  ...changes,
+});
+
+describe("Sus prioridades (HU-160, HU-202)", () => {
+  const level = (signal: string, value: number) =>
+    within(screen.getByRole("radiogroup", { name: new RegExp("^" + signal + ":") })).getAllByRole("radio")[value];
+  const ready = () => screen.findByRole("radiogroup", { name: /^Agua:/ });
+
+  it("sin prioridades propias muestra el criterio de AgroSense y lo dice", async () => {
+    fakeApi(ME);
+    open(PATHS.account);
+    await ready();
+    const prio = within(card("Sus prioridades"));
+    expect(prio.getByText("Está usando el criterio de AgroSense.")).toBeInTheDocument();
+    expect(level("Agua", 3)).toHaveAttribute("aria-checked", "true");
+    expect(level("Suelo", 2)).toHaveAttribute("aria-checked", "true");
+    expect(prio.getByText(/Criterio de AgroSense: agua 3 · heladas 3 · calor 3 · suelo 2 · mercado 2\./)).toBeInTheDocument();
+    // La oferta se muestra sin calificar (decisión 17): sin control, con la línea que lo dice. El mercado tiene control
+    // (HU-240) con su nota: solo ordena las ventanas con 4 o 5.
+    expect(prio.getAllByRole("radiogroup")).toHaveLength(5);
+    expect(prio.queryByRole("radiogroup", { name: /^Oferta:/ })).toBeNull();
+    expect(level("Mercado", 2)).toHaveAttribute("aria-checked", "true");
+    expect(prio.getByText("Solo ordena las ventanas con 4 o 5; no cambia la luz")).toBeInTheDocument();
+    expect(prio.getByText("La oferta se muestra sin calificar y no tiene prioridad.")).toBeInTheDocument();
+    // Agua, heladas y calor dicen que un riesgo grave cuenta siempre.
+    expect(prio.getAllByText("Un riesgo grave cuenta siempre")).toHaveLength(3);
+    expect(prio.queryByRole("button", { name: "Volver al criterio de AgroSense" })).toBeNull();
+  });
+
+  it("al tocar una semilla guarda las seis prioridades en el perfil", async () => {
+    // Las seis: la oferta y el mercado van con su peso por defecto, aunque no tengan control (decisión 17).
+    const mine = { ...DEFAULT_WEIGHTS, frost: 0 };
+    const calls = fakeApi({ ...ME, "PATCH /api/v1/me": { status: 200, body: { ...ROSA, priorities: mine } } });
+    open(PATHS.account);
+    await ready();
+    await userEvent.click(level("Heladas", 0));
+    expect(calls.find((call) => call.key.startsWith("PATCH"))?.body).toEqual({ priorities: mine });
+    const prio = within(card("Sus prioridades"));
+    expect(await prio.findByText("Está usando sus prioridades.")).toBeInTheDocument();
+    expect(prio.getByRole("status")).toHaveTextContent("Guardado.");
+    expect(level("Heladas", 0)).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("«Volver al criterio de AgroSense» borra las propias", async () => {
+    const mine = { ...DEFAULT_WEIGHTS, water: 5 };
+    const calls = fakeApi({
+      ...VERSION,
+      "GET /api/v1/me": { status: 200, body: { ...ROSA, priorities: mine } },
+      "PATCH /api/v1/me": { status: 200, body: ROSA },
+    });
+    open(PATHS.account);
+    await ready();
+    expect(level("Agua", 5)).toHaveAttribute("aria-checked", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Volver al criterio de AgroSense" }));
+    expect(calls.find((call) => call.key.startsWith("PATCH"))?.body).toEqual({ priorities: null });
+    expect(await within(card("Sus prioridades")).findByText("Está usando el criterio de AgroSense.")).toBeInTheDocument();
+    expect(level("Agua", 3)).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("con todas en 0 no envía nada y pide subir al menos una", async () => {
+    const one = { water: 1, frost: 0, heat: 0, soil: 0, supply: 0, market: 0 };
+    const calls = fakeApi({ ...VERSION, "GET /api/v1/me": { status: 200, body: { ...ROSA, priorities: one } } });
+    open(PATHS.account);
+    await ready();
+    await userEvent.click(level("Agua", 0));
+    expect(within(card("Sus prioridades")).getByRole("alert")).toHaveTextContent("Suba al menos una prioridad");
+    expect(calls.some((call) => call.key.startsWith("PATCH"))).toBe(false);
+  });
+
+  it("si no se puede cargar el criterio de AgroSense lo dice y no inventa pesos", async () => {
+    fakeApi({
+      "GET /api/v1/me": { status: 200, body: ROSA },
+      "GET /api/v1/version": { status: 500, body: { error: { code: "internal", message: "x" } } },
+    });
+    open(PATHS.account);
+    await screen.findByRole("button", { name: "Volver a intentar" });
+    const prio = within(card("Sus prioridades"));
+    expect(prio.getByRole("alert")).toHaveTextContent("No pudimos cargar el criterio de AgroSense");
+    expect(prio.queryByRole("radiogroup")).toBeNull();
+  });
+});
+
+describe("Mi actividad (HU-178)", () => {
+  it("cuenta cada evento en palabras, con quién lo hizo y su resultado", async () => {
+    const items = [
+      event({ action: "profile.updated", details: { fields: ["display_name", "username"] } }),
+      event({ action: "auth.password_changed", outcome: "failed" }),
+      event({ action: "admin.lot_deleted", actor_role: "admin", object_type: "lot" }),
+      event({ action: "auth.login" }),
+    ];
+    fakeApi({ ...ME, "GET /api/v1/me/activity?limit=50": { status: 200, body: { items, next_before: null } } });
+    open(PATHS.activity);
+    const rows = within(await screen.findByRole("list", { name: /Actividad/ })).getAllByRole("listitem");
+    expect(rows).toHaveLength(4);
+    expect(rows[0]).toHaveTextContent("Editó sus datos");
+    expect(rows[0]).toHaveTextContent("Cambió: nombre, usuario");
+    expect(rows[1]).toHaveTextContent("Intentó cambiar la contraseña");
+    expect(rows[1]).toHaveTextContent("La contraseña actual no era correcta");
+    expect(rows[1]).toHaveTextContent("Falló");
+    expect(rows[2]).toHaveTextContent("Soporte");
+    expect(rows[3]).toHaveTextContent("Entró a su cuenta");
+    expect(rows[3]).toHaveTextContent("Hecho");
+    expect(screen.queryByRole("button", { name: "Ver más antiguos" })).toBeNull();
+  });
+
+  it("«Ver más antiguos» pide la página anterior", async () => {
+    const before = "2026-10-01T10:00:00Z";
+    const calls = fakeApi({
+      ...ME,
+      "GET /api/v1/me/activity?limit=50": { status: 200, body: { items: [event({})], next_before: before } },
+      [`GET /api/v1/me/activity?limit=50&before=${encodeURIComponent(before)}`]: {
+        status: 200,
+        body: { items: [event({ action: "auth.registered" })], next_before: null },
+      },
+    });
+    open(PATHS.activity);
+    await userEvent.click(await screen.findByRole("button", { name: "Ver más antiguos" }));
+    expect(await screen.findByText("Creó su cuenta")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ver más antiguos" })).toBeNull();
+    expect(calls.filter((call) => call.key.includes("/me/activity"))).toHaveLength(2);
+  });
+
+  it("sin eventos lo dice, y siempre ofrece cambiar la contraseña si algo no cuadra", async () => {
+    fakeApi({ ...ME, "GET /api/v1/me/activity?limit=50": { status: 200, body: { items: [], next_before: null } } });
+    open(PATHS.activity);
+    expect(await screen.findByText("Todavía no hay actividad en su cuenta.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Cambie su contraseña" })).toHaveAttribute("href", PATHS.password);
+  });
+
+  it("pasa cada evento a palabras sin mostrar nunca valores", () => {
+    expect(describeEvent(event({ action: "auth.login_failed", outcome: "failed" }))).toEqual({
+      what: "Intento de entrar a su cuenta",
+      detail: "La contraseña no era correcta",
+    });
+    expect(describeEvent(event({ action: "algo.nuevo" })).what).toBe("Hubo actividad en su cuenta");
+    expect(describeEvent(event({ action: "lot.updated", details: { fields: ["irrigated", "geometry"] } })).detail).toBe(
+      "Cambió: riego, contorno en el mapa",
+    );
+    expect(who(event({ actor_role: "admin" }))).toBe("Soporte");
+    expect(who(event({}))).toBe("Usted");
+  });
+
+  it("dice «Hoy», «Ayer» o la fecha, y desde cuándo se conserva", () => {
+    const now = new Date(2026, 9, 12, 18, 0);
+    expect(when(new Date(2026, 9, 12, 10, 42).toISOString(), now)).toBe("Hoy, 10:42");
+    expect(when(new Date(2026, 9, 11, 17, 50).toISOString(), now)).toBe("Ayer, 17:50");
+    expect(when(new Date(2026, 9, 3, 9, 5).toISOString(), now)).toBe("3 oct, 09:05");
+    expect(when(new Date(2025, 11, 24, 8, 0).toISOString(), now)).toBe("24 dic 2025, 08:00");
+    expect(keptSince(now)).toBe("15 de abril de 2026");
+  });
+});
+
+describe("Escribir al responsable (HU-163)", () => {
+  const TICKET = {
+    ticket_id: "t1",
+    lot_id: "a1",
+    message: "¿Qué guardan de mi lote?",
+    status: "open",
+    created_at: "2026-11-14T10:00:00Z",
+    closed_at: null,
+    reply: null,
+    replied_at: null,
+  };
+  const LOTS = [
+    {
+      lot_id: "a1",
+      municipality_id: "15646",
+      name: "El Alto",
+      geometry: null,
+      area_ha: 2.5,
+      irrigated: false,
+      current_crop_ids: [],
+      created_at: "2026-10-15T10:00:00Z",
+      updated_at: "2026-10-15T10:00:00Z",
+    },
+  ];
+
+  it("Mi cuenta lleva a escribir al responsable", async () => {
+    fakeApi(ME);
+    open(PATHS.account);
+    expect(await screen.findByRole("link", { name: "Escribir un mensaje" })).toHaveAttribute("href", PATHS.messages);
+  });
+
+  it("envía el mensaje, opcionalmente sobre un lote, y muestra los enviados con su estado", async () => {
+    const calls = fakeApi({
+      ...ME,
+      "GET /api/v1/lots": { status: 200, body: LOTS },
+      "GET /api/v1/me/tickets": { status: 200, body: [TICKET] },
+      "POST /api/v1/me/tickets": { status: 201, body: TICKET },
+    });
+    open(PATHS.messages);
+    expect(await screen.findByRole("heading", { level: 1, name: "Escribir al responsable" })).toBeInTheDocument();
+    const sent = within(await screen.findByRole("region", { name: "Mis mensajes" }));
+    expect(await sent.findByText("¿Qué guardan de mi lote?")).toBeInTheDocument();
+    expect(sent.getByText(/Recibido · El Alto/)).toBeInTheDocument();
+    // Sin texto no envía nada.
+    await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    expect(screen.getByText("Escriba su mensaje.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("POST"))).toBe(false);
+    await userEvent.type(screen.getByLabelText("Su mensaje"), "¿Qué guardan de mi lote?");
+    await userEvent.selectOptions(await screen.findByLabelText("¿Es sobre un lote?"), "a1");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    expect(await screen.findByText("Recibimos su mensaje. Abajo puede ver cómo va.")).toBeInTheDocument();
+    const post = calls.find((call) => call.key === "POST /api/v1/me/tickets");
+    expect(post?.body).toEqual({ message: "¿Qué guardan de mi lote?", lot_id: "a1" });
+  });
+
+  it("muestra la respuesta del responsable y dice en cuánto tiempo se contesta", async () => {
+    const answered = {
+      ...TICKET,
+      status: "closed",
+      closed_at: "2026-11-15T10:00:00Z",
+      reply: "Guardamos su usuario, su nombre y sus lotes.",
+      replied_at: "2026-11-15T10:00:00Z",
+    };
+    fakeApi({ ...ME, "GET /api/v1/lots": { status: 200, body: LOTS }, "GET /api/v1/me/tickets": { status: 200, body: [answered] } });
+    open(PATHS.messages);
+    expect(await screen.findByText(/máximo 10 días hábiles/)).toBeInTheDocument();
+    const sent = within(await screen.findByRole("region", { name: "Mis mensajes" }));
+    expect(await sent.findByText("Guardamos su usuario, su nombre y sus lotes.")).toBeInTheDocument();
+    expect(sent.getByText(/Respondido · El Alto/)).toBeInTheDocument();
+  });
+
+  it("si ya escribió 5 mensajes hoy, lo dice", async () => {
+    fakeApi({
+      ...ME,
+      "GET /api/v1/lots": { status: 200, body: [] },
+      "GET /api/v1/me/tickets": { status: 200, body: [] },
+      "POST /api/v1/me/tickets": {
+        status: 429,
+        body: {
+          error: {
+            code: "too_many_requests",
+            message: "Ya nos escribió 5 mensajes hoy. Espere nuestra respuesta o vuelva a escribir mañana.",
+          },
+        },
+      },
+    });
+    open(PATHS.messages);
+    await userEvent.type(await screen.findByLabelText("Su mensaje"), "Otro más");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    expect(await screen.findByText(/Ya nos escribió 5 mensajes hoy/)).toBeInTheDocument();
+  });
+
+  it("la política nombra el canal de contacto", async () => {
+    fakeApi(ME);
+    open(PATHS.dataPolicy);
+    expect(await screen.findByText(/en «Escribir al responsable»/)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Escribir al responsable" })).toHaveAttribute("href", PATHS.messages);
+  });
+});

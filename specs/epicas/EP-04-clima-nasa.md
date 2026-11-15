@@ -1,0 +1,307 @@
+---
+id: EP-04
+titulo: "Datos de la NASA publicados para el núcleo"
+prioridad: P0
+fase: [Fase 0, Evento]
+rol: "Datos"
+agentes: [datos]
+subsistemas: [D1, D2, D3, D4]
+depende_de: [HU-002, HU-011]
+reglas: [R1, R5, R7, R8, R10]
+estado: pendiente
+---
+
+# EP-04 · Datos de la NASA publicados para el núcleo
+
+**Resultado esperado:** Las tablas de la región con lo que da la NASA: el clima de NASA POWER (lluvia, temperatura corregida por altitud, humedad del suelo modelada y la ET0 por Penman-Monteith), la altitud de NASADEM, la lluvia por satélite de GPM IMERG, el verdor de MODIS NDVI por municipio y por lote, la humedad del suelo de SMAP y el clima de dos periodos para «Qué cambió». Con ellas el motor evalúa cualquier ventana de siembra y cualquier estrategia de rotación.
+
+**La NASA es el núcleo (decisión 12).** Cada producto entra por su propio adaptador (`nasa_power`, `nasadem`, `imerg`, `modis_ndvi`, `smap`) y publica tablas versionadas. `sources.yaml` dice qué producto calcula cada señal en cada región. Si un producto falta, la señal o el indicador es `insufficient_data` (R1). Ningún producto cambia el motor (R6). Lo que recomiende el enunciado del 28 de octubre (HU-002) entra por el mismo mecanismo.
+
+**Orden de recorte (decisión 12):** primero SMAP (HU-210), luego la capa GIBS de la web (HU-211, EP-16), luego el NDVI por lote (HU-209; queda el del municipio). POWER, NASADEM e IMERG no se recortan.
+
+Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de EVA (EP-03).
+
+**Región piloto (decisión 11):** confirmada el 28 de octubre de 2026: Boyacá y Cundinamarca, con sede en Duitama (HU-002). Los productos NASA cubren todo el mundo, pero varias piezas de esta épica son de Colombia: los municipios y sus límites del DANE, el criterio de helada de la UPRA con datos del IDEAM, la comprobación contra estaciones del IDEAM y contra la Gobernación de Boyacá. Esas piezas viven en los adaptadores y en la configuración del pipeline, no en el motor (R7). Si la región cambia, se reemplazan con su fuente.
+
+**Acceso:** IMERG, NASADEM, MODIS y SMAP piden una cuenta de NASA Earthdata (por verificar para cada producto). Las credenciales van en variables de entorno, nunca en el repositorio. Con la caché, el dataset se reconstruye sin volver a descargar (HU-123).
+
+## Historias de usuario
+
+### HU-041 · Series diarias de lluvia y temperatura
+
+- **Historia:** Como motor, quiero series diarias de lluvia y temperatura por municipio, para evaluar el clima de cada ventana de siembra.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] Descarga con caché y reintentos
+  - [x] Fuente y fecha registradas
+  - [x] Días faltantes o incompletos marcados en `quality` (`climate_day`); nunca se rellenan (R1)
+  - [x] Publica `climate_day` (mínima y máxima diarias corregidas por altitud), de la que salen las heladas, el calor y «Qué cambió» (HU-045, HU-216). Publicada con la altitud de NASADEM (HU-206, 10 de noviembre de 2026)
+- **Notas:** La etapa por temperatura acumulada que también la usa (HU-150) pasó a P1 el 11 de octubre de 2026. **9 de noviembre de 2026:** el adaptador `pipeline/sources/nasa_power.py` baja de la API diaria por punto de POWER (comunidad AG, sin cuenta) la mínima, la máxima y la lluvia (`T2M_MIN`, `T2M_MAX`, `PRECTOTCORR`) desde 1981, una vez por celda de 0,5° × 0,625° y no por municipio: los 239 municipios caen en 20 celdas (unos 22 MB de caché, menos de un minuto). Se comprobó contra la API que todos los puntos de una celda reciben la misma serie. Reintenta 3 veces y corta por tiempo total y por tamaño (`AGROSENSE_POWER_TIMEOUT_S`, `AGROSENSE_POWER_MAX_MB`), con la misma descarga con límites que SIPSA (`pipeline/sources/fetch.py`, 10 de noviembre de 2026). Un `-999` queda nulo; un día con solo una de las dos temperaturas es `partial`, y uno sin ninguna no se publica (así tampoco salen los últimos días, que POWER aún no tiene). `climate_day` ya se arma con la corrección por altitud, pero **no se publica hasta que exista la altitud de los municipios (HU-206)**: sin ella la temperatura no se puede corregir y no se publica sin corregir (R1). Con la altitud serán unos 4 millones de filas y unos 15 MB de Parquet en `data/published/`. La lluvia diaria queda en la caché para HU-042. Pruebas: `tests/pipeline/test_clima_diario.py`.
+
+### HU-042 · Lluvia mensual y su normal
+
+- **Historia:** Como motor, quiero la lluvia de cada mes de cada año y su normal por municipio, para saber cuánta agua suele caer en los meses de una ventana de siembra.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] `climate_month` con `precip_mm` por `municipality_id`, `year` y `month`, y `precip_normal_mm`, con `quality` y `source_id` (10 de noviembre de 2026)
+  - [x] Periodo base de la normal documentado: 1991–2020, el de la OMM y el de las normales del IDEAM, con 24 de los 30 años completos
+  - [x] Comprobación manual en 2 municipios (en 4, contra el IDEAM: ver las notas)
+  - [x] Calidad `partial` bajo un mínimo de días válidos; un mes sin días válidos no se publica con un valor rellenado (R1): `partial` sin todos los días o sin normal; sin el 90 % de los días, el mes no tiene total
+- **Reglas que aplican:** R1, R7, R8
+- **Contrato que toca:** `climate_month`
+- **Notas:** Antes publicaba el total y la anomalía de un periodo fijo de seis meses, en una tabla que ya no existe: cambió el 11 de octubre de 2026. El año seco (`precip_dry_mm`) y la ET0 de la misma tabla los agrega HU-143. Es la lluvia de NASA POWER, la serie larga desde 1981; la lluvia por satélite es HU-207 y va en otra tabla (`precip_month`). La señal de agua (HU-071) y la serie `water` de `/trends` leen la fuente que dice `sources.yaml`. **10 de noviembre de 2026:** `nasa_power.climate_month` suma la lluvia diaria de la celda de POWER de cada municipio en cada mes completo (de enero de 1981 al último mes terminado), sin corregirla por altitud: no hay un gradiente con fuente. Son 131 450 filas de los 239 municipios. El mes en curso no se publica. **Comprobación:** Normales 1991–2020 de lluvia del IDEAM (datos.gov.co, `nsz2-kzcq`) frente a la normal de NASA POWER en la celda de cada estación: UPTC, Tunja, 656 mm al año frente a 1750 mm (2,7 veces); Tibaitatá, Mosquera, 704 frente a 1719 (2,4); Surbata Bonza, Duitama, 895 frente a 1628 (1,8); Villa de Leyva, 1049 frente a 1755 (1,7). POWER acierta en que hay dos temporadas de lluvia (abril-mayo y octubre-noviembre), pero en el altiplano da mucha más lluvia, sobre todo a mitad de año: en agosto, en Tunja, 143 mm frente a 37. No se corrige, porque no hay una corrección con fuente (R1, R8). Es un riesgo serio para la señal de agua (`docs/riesgos.md`): con esta lluvia sobraría el agua donde falta. Hay que comparar también la de IMERG (HU-207) contra el IDEAM antes de elegir en `sources.yaml` cuál calcula `water`. **Revisión de Felipe del PR #24 (10 de noviembre de 2026):** la normal 1991–2020 con 24 de 30 años y el mes `partial` con el 90 % de sus días, aprobados; viven en `pipeline/region.yaml` (`climate_normal`). La lluvia de POWER no calcula la señal de agua por ahora: `climate_month` se publica, pero ninguna señal la usa sin decir que en el altiplano está sobrestimada (HU-207).
+
+### HU-205 · NASA POWER ampliado: humedad, radiación y viento
+
+- **Historia:** Como motor, quiero la humedad del suelo modelada, la radiación, el viento y la humedad relativa de NASA POWER por municipio, para calcular la ET0 por Penman-Monteith y mostrar la humedad del suelo junto a la señal de agua.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] El adaptador `nasa_power` descarga, además de la lluvia y la temperatura, la humedad del suelo superficial y de la zona de raíces (`GWETTOP`, `GWETROOT`), la radiación solar, el viento a 2 m y la humedad relativa (`RH2M`), con caché y reintentos. Los nombres exactos de la radiación y del viento se verifican en la documentación de POWER antes de usarlos: `ALLSKY_SFC_SW_DWN` (MJ/m²/día) y `WS2M` (m/s), verificados en la API de parámetros de POWER el 10 de noviembre de 2026
+  - [x] Desde qué año hay datos de cada variable queda verificado y documentado (la serie de lluvia y temperatura empieza en 1981; la de radiación puede empezar después): todas desde el 1 de enero de 1981, menos la radiación, desde el 1 de enero de 1984 y con unos días más de retraso
+  - [x] `climate_month` gana `soil_wetness_top` y `soil_wetness_root` (fracción de 0 a 1, promedio del mes), con `quality`
+  - [x] La entrada de NASA POWER en `sources` dice que es un **reanálisis** (un modelo con observaciones asimiladas), no una observación directa, y que su celda mide unos 50 km
+  - [x] Días faltantes marcados en `quality`; nunca se rellenan (R1)
+  - [x] Comprobación manual en 2 municipios (ver las notas)
+- **Reglas que aplican:** R1, R7, R8, R10
+- **Contrato que toca:** `climate_month` (`soil_wetness_top`, `soil_wetness_root`), `sources`
+- **Notas:** Decisión 12. La ET0 por Penman-Monteith con estas variables es HU-143. En el MVP la humedad no cambia la calificación de `water`: se muestra para contrastar (HU-071), junto a la de SMAP (HU-210). Es la serie larga para «Qué cambió» (HU-216). Agregada el 11 de octubre de 2026. **10 de noviembre de 2026:** el adaptador baja las ocho variables en la misma consulta por celda (unos 2,2 MB por celda, 48 MB en total). La radiación, el viento y la humedad relativa quedan en la caché para la ET0 (HU-143). La humedad del suelo de un mes es el promedio de sus días, con el 90 % de ellos; si le falta un día, el mes es `partial`. Una caché bajada antes de esta HU no trae las variables nuevas: el pipeline pide bajarla otra vez en vez de publicar nulos. **Comprobación:** la humedad del suelo queda entre 0,21 y 1 y sigue el ciclo de la lluvia (en Tunja y Duitama, lo más seco en febrero y marzo; lo más húmedo en junio y noviembre); no hay humedad del suelo del IDEAM con qué compararla, y SMAP llega con HU-210. La humedad relativa de POWER frente a las normales 1991–2020 del IDEAM: UPTC, Tunja, 87 % frente a 77 %; Surbata Bonza, Duitama, 83 % frente a 77 %; Tibaitatá, Mosquera, 78 % frente a 82 %. Como la lluvia (HU-042), en Boyacá POWER es más húmedo que las estaciones.
+
+### HU-206 · Altitud de municipios y lotes con NASADEM
+
+- **Historia:** Como motor, quiero la altitud de cada municipio y de cada lote desde NASADEM, para decidir si un cultivo se da en la zona y corregir la temperatura.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] Adaptador `nasadem` con caché: descarga los mosaicos de NASADEM (30 m) que cubren la región
+  - [x] `municipalities.altitude_m` sale de NASADEM con un método documentado (supuesto por confirmar: la mediana de las celdas dentro del polígono municipal o la altitud de la cabecera). **Decidido por Felipe el 10 de noviembre de 2026:** la altitud es la de la celda de `grid_cells` que contiene el punto de DIVIPOLA (la cabecera), y la pendiente (`slope_pct`), la mediana de las celdas del municipio
+  - [x] Publica la altitud (promedio de los píxeles de 30 m) en `grid_cells`, la rejilla común de 250 m (decisión 15), para que la API calcule la altitud de un lote como la mediana de las celdas de su polígono, igual que el suelo (HU-182)
+  - [x] Entrada de NASADEM en `sources` con producto, versión, resolución, acceso y licencia
+  - [x] Comprobación manual en 2 municipios contra la altitud oficial de la cabecera (10 de noviembre de 2026, en 3: ver las notas)
+  - [x] **Pendiente (decisión 14):** la pendiente se calcula a 30 m y `grid_cells.slope_pct` guarda la mediana de cada celda; `municipalities.slope_pct`, la del municipio. La de un lote la calcula la API al vuelo, como la altitud. La usa el criterio `erosion` (HU-224)
+  - [x] Sin celdas válidas, `altitude_m` queda nulo y la aptitud es `insufficient_data` (R1). La aptitud la decide el motor (HU-191)
+- **Reglas que aplican:** R1, R7, R8, R9
+- **Contrato que toca:** `municipalities.altitude_m`, `municipalities.slope_pct`, `grid_cells`
+- **Notas:** Decisión 12. Reemplaza al «modelo de elevación por elegir» de HU-044. La altitud del lote no se guarda: la API la calcula al vuelo (R9). Con un lote dibujado, la aptitud usa la temperatura media corregida a la altitud del lote (`specs/01-reglas.md`, «Aptitud del cultivo en la zona», decisión 13). Resuelto con la decisión (B) de Felipe del 10 de noviembre de 2026 (abajo): en el MVP la altitud del lote solo corrige la aptitud; los indicadores de clima, precalculados por municipio, siguen con la altitud del municipio. No se recorta. Agregada el 11 de octubre de 2026. **10 de noviembre de 2026:** `pipeline/sources/nasadem.py` baja los 13 mosaicos de 1° que tocan la región (unos 224 MB en `data/raw/nasadem/`, menos de 2 minutos) de la copia en GeoTIFF de Microsoft Planetary Computer, que no pide cuenta; el distribuidor oficial es el LP DAAC, con cuenta de Earthdata, y `sources` cita su DOI. Cada celda de 0,0025° son exactamente 9 × 9 píxeles: la altitud es su promedio y la pendiente, la mediana de la de sus píxeles, con diferencias centrales a 30 m. `grid_cells` publica 593 648 celdas de los 239 municipios, todas `partial` hasta que llegue el suelo (HU-181). **Comprobación** en la celda de la cabecera (punto de DIVIPOLA), contra la altitud que dan las enciclopedias (no se encontró la del IGAC): Villa de Leyva 2147 m (2149), Chiquinquirá 2552 m (2556), Girardot 281 m (290). **El método importa:** en Duitama la cabecera está a 2527 m y la mediana del municipio a 3110 m, porque incluye el páramo; son unos 3,4 °C en la temperatura corregida. Por eso un municipio con varios pisos térmicos no se resume bien en un número, y la propuesta (por decidir con Felipe, ver `docs/registro-de-decisiones.md`) es que con un lote dibujado el motor corrija la temperatura a la altitud del lote, que sale de `grid_cells`. **Decisiones de Felipe (10 de noviembre de 2026, revisión del PR #23):** (A) la altitud del municipio, la que corrige la temperatura, es la de la celda de la cabecera: ahí están el pueblo, las fincas del valle y la estación (Villa de Leyva 2147 m frente a 2149 m); con la mediana, Duitama quedaba a 3110 m, con el clima del páramo. La pendiente sigue siendo la mediana de todo el municipio, porque para la erosión importa todo el terreno. El contrato dejaba el método abierto y no cambia. (B) La altitud del lote solo corrige la aptitud (decisión 13); las heladas y el calor se quedan con la del municipio en el MVP (ver HU-045). (C) NASADEM desde Planetary Computer, aprobado.
+
+### HU-207 · Lluvia por satélite con GPM IMERG
+
+- **Historia:** Como motor, quiero la lluvia observada por satélite en cada municipio, para calcular la señal de agua con una observación y contrastarla con la serie larga de NASA POWER.
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] Adaptador `imerg` con caché: lluvia de la corrida final (Final Run) de GPM IMERG, celdas de unos 10 km (0,1°), desde junio de 2000. El producto exacto (diario o mensual) y su versión se verifican antes de usarlo
+  - [x] Descarga solo el recuadro de la región (subconjunto espacial); el tamaño de la descarga queda medido y documentado
+  - [x] `precip_month` por `municipality_id`, `year`, `month` y `source_id`, con `precip_mm` (promedio de las celdas que tocan el polígono del municipio, ponderado por área), `precip_normal_mm`, `precip_dry_mm`, `normal_period` y `quality`
+  - [x] La normal de IMERG dice su periodo (desde 2001); nunca se completa con años de POWER (R1, decisión 11)
+  - [x] `sources.yaml` dice para la región qué fuente de lluvia calcula `water`: IMERG si cubre la región; si no, POWER. La otra se muestra para contrastar
+  - [x] Comprobación manual en 2 municipios: lluvia mensual de IMERG frente a POWER y, si la hay, frente a una estación de la región. Las diferencias se anotan; no se corrigen
+  - [x] Un mes con pocos datos válidos queda `partial`; sin datos, la fila no se publica (R1)
+- **Reglas que aplican:** R1, R7, R8
+- **Contrato que toca:** `precip_month`, `sources`
+- **Notas:** Decisión 12. No se recorta. Antes estaba descartado del P0 por el trabajo con mallas (`specs/04-stack.md`); ese costo se aceptó el 11 de octubre de 2026. El método de calibración de la versión que se use se cita de su documentación. Riesgo: el tamaño de la descarga (`docs/riesgos.md`). Agregada el 11 de octubre de 2026. **10 de noviembre de 2026 (comprobación de HU-042):** la lluvia de NASA POWER en el altiplano es de 1,7 a 2,7 veces la de las normales del IDEAM (Tunja, Duitama, Villa de Leyva y Mosquera). La de IMERG se compara contra las mismas estaciones antes de decidir en `sources.yaml` cuál calcula la señal de agua. **Decidido por Felipe el 10 de noviembre de 2026 (PR #24):** HU-207 sube de prioridad. La lluvia de IMERG se compara contra las mismas 4 estaciones del IDEAM que la de POWER (Tunja, Duitama, Villa de Leyva y Mosquera), y en `sources.yaml` `water` usa IMERG si da mejor, con POWER de respaldo, como dicen las reglas. Mientras tanto, ninguna señal usa la lluvia de POWER sin decir que en el altiplano está sobrestimada. **11 de noviembre de 2026 (hecho):** `pipeline/sources/imerg.py` baja el producto mensual de la corrida final, versión 07 (`GPM_3IMERGM`, V07B; DOI 10.5067/GPM/IMERG/3B-MONTH/07), calibrado cada mes con los pluviómetros del GPCC. La versión 07 empieza en enero de 1998 y su corrida final llega a septiembre de 2025 (consultado en el CMR de la NASA). Se elige el mensual y no el diario porque `precip_month` es mensual y el mensual es el que lleva la calibración con pluviómetros. Por OPeNDAP de Earthdata, con el token de la cuenta (`AGROSENSE_EARTHDATA_TOKEN`; la cuenta debe aprobar la app «NASA GESDISC DATA ARCHIVE»), se baja solo el recuadro de la región: 34 × 30 celdas por mes, unos 8 KB; los 333 meses son 2,7 MB en `data/raw/imerg/` y bajan en unos 2 minutos y medio (cada mes completo del mundo pesa unos 18 MB). La lluvia viene en mm/h promedio del mes y se pasa a mm del mes. Cada municipio toca de 1 a 24 celdas (6 en promedio); el peso de cada una es el área que cae dentro del polígono. La normal es 2001–2024 con al menos 20 años completos (`imerg_normal` en `region.yaml`, aprobada por Felipe), y el mes `partial` y el año seco usan los cortes de `climate_normal`. Dataset `2026.11.10`: `precip_month` con 79 587 filas (239 municipios, de enero de 1998 a septiembre de 2025), todas `ok`. **Comprobación:** Frente a las normales 1991–2020 del IDEAM en 259 estaciones de Boyacá y Cundinamarca (la celda que contiene cada estación), IMERG también sobrestima la lluvia del altiplano: en 169 estaciones a 2000 m o más da una mediana de 1,85 veces la del IDEAM, y POWER 1,80. IMERG sigue mejor el ciclo del año (correlación mediana de los 12 meses 0,87 frente a 0,81) y es claramente mejor entre 1000 y 2000 m (1,10 veces frente a 0,93, con menos error en el 64 % de las estaciones). En las 4 estaciones de la comprobación de HU-042: UPTC (Tunja) 656 mm al año en el IDEAM, 1386 en IMERG y 1750 en POWER; Tibaitatá (Mosquera) 704, 1912 y 1719; Surbata Bonza (Duitama) 895, 1650 y 1628; Villa de Leyva 1049, 1468 y 1755. En agosto, en Tunja: 37 mm en el IDEAM, 113 en IMERG y 143 en POWER. Los periodos no son iguales (IDEAM 1991–2020, IMERG 2001–2024), pero la diferencia es de casi el doble y no se explica por el periodo. Las diferencias se anotan; no se corrigen (R1). **Decisiones de Felipe (11 de noviembre de 2026, revisión del PR #44):** `water` usa la lluvia de IMERG, porque sigue mejor los meses del año en todos los pisos y la señal mira mes por mes; POWER queda para contrastar y el aviso de `rain_caveat` sigue, ahora sobre IMERG (`catalog/sources.yaml` 1.2.0). La señal se califica con la lluvia del año seco (`precip_dry_mm`) y no con la normal (PR #45, HU-071 y HU-144). La normal de IMERG, 2001–2024 con al menos 20 años, queda aprobada.
+
+### HU-208 · Verdor del campo por municipio con MODIS NDVI
+
+- **Historia:** Como motor, quiero el NDVI de cada municipio cada 16 días y su normal, para mostrar en qué épocas suele estar verde el campo de la zona y estimar la cobertura del suelo de las estrategias.
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
+- **Criterios de aceptación:**
+  - [ ] Adaptador `modis_ndvi` con caché: MOD13Q1 (satélite Terra, 250 m, compuesto de 16 días, desde febrero de 2000), recortado a la región. La versión se verifica antes de usarlo. **Abierto (revisión de Haider del PR #126):** el adaptador, la caché, el recorte y la versión están, pero lo publicado va desde 2023, porque OPeNDAP no sirve los compuestos anteriores; la serie desde 2000 necesita AppEEARS con usuario y contraseña de Earthdata. Reescribir el criterio a «desde 2023» necesita el visto bueno de Felipe
+  - [x] Usa la capa de calidad del producto para descartar los píxeles con nubes; el porcentaje de píxeles válidos queda en `valid_pixels_pct`
+  - [x] `ndvi_municipality` por `municipality_id`, `year` y `period` (1 a 23, el compuesto de 16 días del año), con `ndvi_median`, `valid_pixels_pct`, `quality` y `source_id`
+  - [x] `ndvi_municipality_normal` por `municipality_id` y `period`, con `ndvi_normal`, `years`, `quality` y `source_id`
+  - [x] Entrada de MODIS NDVI en `sources` con misión, resolución, periodo, acceso y licencia (HU-122)
+  - [ ] Si se usa una máscara de áreas de cultivo, lleva su fuente (por elegir). Sin máscara, el valor es de todo el municipio y la respuesta lo dice
+  - [x] Con menos píxeles válidos que el mínimo de la configuración del pipeline, el periodo queda `partial` o no se publica; nunca se interpola en silencio (R1)
+  - [ ] `/trends` suma la serie `ndvi` con la normal del municipio (HU-078)
+  - [x] Comprobación manual en 2 municipios: los picos de verdor caen en épocas coherentes con las temporadas de siembra de la región
+- **Reglas que aplican:** R1, R5, R7, R8, R10
+- **Contrato que toca:** `ndvi_municipality`, `ndvi_municipality_normal`, serie `ndvi` de `GET /api/v1/trends`
+- **Notas:** Decisión 12. El NDVI es contraste, no señal: no cambia la luz ni el orden de las ventanas. La cobertura del suelo de las estrategias (`soil_cover`, HU-212) lo usa cuando existe. Las nubes del altiplano dejan huecos (`docs/riesgos.md`). Agregada el 11 de octubre de 2026. **14 de noviembre de 2026 (datos publicados, dataset `2026.11.22`):** `pipeline/sources/modis_ndvi.py` baja por OPeNDAP el recuadro de la región de cada compuesto de MOD13Q1 V061 (tesela `h10v08`, un píxel de cada 4); el CMR da los compuestos y uno de otra versión hace fallar la descarga. OPeNDAP solo sirve completos los compuestos desde 2023 (de los 484 anteriores responden 130), así que `ndvi_municipality` va desde 2023 (20 559 filas, 239 municipios) y `ndvi_municipality_normal` es el promedio 2023–2025: se publica con al menos 2 años `ok` y es `ok` con los 3 (4666 filas). Se llama «promedio» y no normal porque son 3 años (revisión de Haider del PR #126; registro de decisiones, por aprobar por Felipe). Un píxel es válido con confiabilidad 0 o 1; con menos del 30 % válidos, `partial`. Sin máscara de cultivos: es el verdor de todo el municipio, y `sources` lo dice. **Comprobación:** en Tunja, Zipaquirá y Duitama el verdor más bajo cae a principios de febrero y marzo (periodos 3 a 5, al final de la temporada seca de diciembre a febrero; Tunja 0,45) y sube después de cada temporada de lluvias: de junio a julio (periodos 11 a 13; Tunja 0,63) y en noviembre y diciembre (periodos 20 a 23), las dos temporadas de siembra de la región. **Falta:** la serie `ndvi` de `/trends` necesita que `catalog/sources.yaml` le asigne una fuente al verdor (hoy solo acepta las seis señales), un cambio de contrato para Felipe o Haider; con él, la respuesta dirá también que el verdor es de todo el municipio.
+
+### HU-209 · Verdor por lote con MODIS NDVI
+
+- **Historia:** Como motor, quiero el verdor normal de las celdas de 250 m que toca un lote, para estimar en qué meses ha tenido el suelo cubierto.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] `ndvi_grid` por `cell_id` (el de `grid_cells`) y `period`, con `ndvi_normal`, `years`, `valid_pct`, `quality` y `source_id`, desde los mismos datos de HU-208, solo para las celdas de los municipios con lotes
+  - [ ] La API calcula el verdor del lote como la mediana de las celdas que toca su polígono, igual que el suelo (HU-182); sin polígono usa el del municipio y lo dice en `basis`
+  - [ ] Se dice siempre que una celda mide 250 m por 250 m (6,25 ha), más que muchos lotes, y que puede mezclar el lote con sus vecinos (R10)
+  - [ ] El verdor del lote no se guarda en la base de datos (R9)
+  - [ ] Prueba: un lote más chico que una celda usa la celda que lo contiene y lo dice
+- **Reglas que aplican:** R6, R9, R10
+- **Contrato que toca:** `ndvi_grid`
+- **Notas:** Decisión 12. **Pasó a P1 el 8 de noviembre de 2026 (decisión 15):** a 250 m y con 23 periodos, toda la región serían unos 14 millones de filas; en el P0 el verdor es el del municipio (HU-208). El verdor por lote a 30 m es HU-043 (P1). Agregada el 11 de octubre de 2026.
+
+### HU-210 · Humedad del suelo por satélite con SMAP
+
+- **Historia:** Como agricultor, quiero ver la humedad del suelo que estima el satélite en mi zona junto a la que modela NASA POWER, para contrastar el agua de mi ventana y de mi plan.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `smap` con caché: humedad superficial y de la zona de raíces de SMAP nivel 4 (celdas de 9 km, desde marzo de 2015). Producto, versión y profundidades se verifican antes de usarlo
+  - [ ] `soil_moisture_month` por `municipality_id`, `year`, `month` y `source_id`, con `sm_surface_m3_m3`, `sm_rootzone_m3_m3` y `quality`
+  - [ ] Sus unidades (m³/m³) son distintas de las de POWER (fracción de 0 a 1): nunca se convierten una en otra ni se promedian; se muestran lado a lado (decisión 11)
+  - [ ] Entrada de SMAP en `sources` con misión, resolución, periodo, acceso y licencia (HU-122)
+  - [ ] Aparece en `signals.water.sources` y en el plan de agua como contraste (`used = false`); no cambia la calificación (R1, R2)
+  - [ ] Sin datos para un municipio o un mes, no aparece; nunca se rellena (R1)
+  - [ ] Comprobación manual en un municipio
+- **Reglas que aplican:** R1, R8, R10
+- **Contrato que toca:** `soil_moisture_month`, `signals.water.sources`
+- **Notas:** Decisión 12. **Desde el 8 de noviembre de 2026 (decisión 14) ya no es lo primero que se recorta:** el enunciado completo lo nombra primero entre los datos sugeridos, así que va al final de lo recortable de la NASA. La serie es corta (desde 2015): no sirve para normales largas ni para «Qué cambió». Agregada el 11 de octubre de 2026.
+
+### HU-216 · Clima de dos periodos para «Qué cambió»
+
+- **Historia:** Como motor, quiero los indicadores de clima de dos periodos de la misma fuente, para comparar cómo cambió la zona.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] Los periodos viven en la configuración versionada del pipeline, cada uno con `period_id`, año inicial y año final. Por defecto, con POWER, `p1981_2000` (1981–2000) y `p2005_2024` (2005–2024); con IMERG, dos periodos desde 2001 (por defecto 2001–2012 y 2013–2024), y la respuesta lo dice. `manifest.json` los lista (R4)
+  - [x] `climate_change_month` por `municipality_id`, `period_id`, `month` y `source_id`, con `frost_freq_pct` y `tmax_p90_c` (de POWER), `precip_normal_mm` (de cada fuente de lluvia), `years` y `quality`
+  - [x] Mismo umbral de helada y misma corrección por altitud que HU-045
+  - [x] Los dos periodos de una comparación son de la misma fuente; nunca se mezclan fuentes entre periodos (decisión 11)
+  - [x] Un mes de un periodo con menos años válidos que el mínimo de la configuración no se publica; la comparación de ese mes queda `insufficient_data` (R1)
+  - [x] Comprobación manual en 2 municipios
+- **Reglas que aplican:** R1, R4, R7, R8
+- **Contrato que toca:** `climate_change_month`, `manifest.json`
+- **Notas:** Decisión 12. Es historia comparada, nunca pronóstico. La lluvia por año de cada periodo ya está en `climate_month` y `precip_month`: el motor filtra los años del periodo para recalcular el agua de las ventanas (HU-217). Agregada el 11 de octubre de 2026. **14 de noviembre de 2026 (hecho):** `pipeline/climate_change.py` publica `climate_change_month`. Los periodos están en `pipeline/region.yaml` (`change_periods`): con NASA POWER, `p1981_2000` y `p2005_2024`; con GPM IMERG, `p2001_2012` y `p2013_2024`; el manifiesto los lista en `periods`. Las filas de POWER traen la frecuencia de heladas y la máxima p90 con el mismo cálculo de `climate_risk_month` (HU-045: mínima ≤ 2 °C, temperatura corregida por altitud) y la lluvia normal de `climate_month`; las de IMERG, solo la lluvia normal de `precip_month`, con las heladas y el calor nulos. Un indicador cuenta con al menos el 80 % de los años del periodo (16 de 20 con POWER, 10 de 12 con IMERG), la misma proporción que la normal; con menos queda nulo, y una fila sin ningún indicador no se publica (R1). Dataset `2026.11.20`: 11 472 filas (239 municipios × 12 meses × 4 periodos), todas `ok`. **Comprobación en 2 municipios:** en Tunja y en Güicán de la Sierra la máxima p90 sube de 0,6 a 1,6 °C de 1981–2000 a 2005–2024; en Güicán las heladas bajan (enero, del 50 % al 30 % de los años; diciembre, del 45 % al 15 %), y en Tunja casi no hay en ningún periodo (POWER cuenta menos heladas de las que hay, HU-045). **La lluvia no coincide entre fuentes:** en Tunja, en julio, POWER da más en el segundo periodo (111 a 176 mm) e IMERG menos (147 a 88 mm), con periodos distintos; por eso se muestran por separado y nunca se mezclan (decisión 11). **Revisión del PR #79 (Haider, 14 de noviembre de 2026):** la lluvia de NASA POWER de mayo a agosto de 2021 está rota en la fuente (casi 0 mm en toda la región, con IMERG normal esos meses) y queda sin dato (`RAIN_GAPS` en `pipeline/sources/nasa_power.py`, R1): la lluvia de 2005–2024 cuenta 19 de 20 años. `validate_change` revisa además que la máxima p90 vaya de -10 a 50 °C y que `years` quepa en su periodo. El mínimo del 80 % de los años quedó aprobado por Haider. Para HU-217 quedan en `docs/riesgos.md` la lluvia mes a mes que no coincide entre fuentes y el calor inverosímil de tierra caliente.
+
+### HU-044 · Municipios, límites, altitud y corrección de la temperatura
+
+- **Historia:** Como motor, quiero la altitud de cada municipio y la de su celda de NASA POWER, para corregir la temperatura y filtrar cultivos por piso térmico.
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] `altitude_m` desde NASADEM (HU-206), con fuente (10 de noviembre de 2026)
+  - [x] `climate_cell_elevation_m` desde la respuesta de NASA POWER (9 de noviembre de 2026, con HU-041)
+  - [x] Todas las temperaturas publicadas se corrigen con un gradiente térmico con fuente; el gradiente vive en la configuración del pipeline (10 de noviembre de 2026)
+  - [x] `tmean_annual_c` de cada municipio: el promedio de la mínima y la máxima corregidas en el periodo normal de `region.yaml` (1991–2020, con 24 años y el 90 % de los días); sin años suficientes, nula (R1). La usa el filtro de aptitud (`specs/01-reglas.md`). Pedido por Felipe en el PR #23 (`pipeline/climate_normals.py`)
+  - [x] Comprobación manual en 2 municipios contra una estación del IDEAM, si la hay (10 de noviembre de 2026, en 4: ver las notas)
+- **Reglas que aplican:** R7, R8
+- **Notas:** También publica `municipalities` (con `source_ids`) y `municipality_boundaries` desde el Marco Geoestadístico Nacional del DANE, que usan HU-164, HU-181 y HU-078. Pasa a P0 el 10 de octubre de 2026 porque las heladas dependen de la temperatura mínima, y la celda de unos 50 km puede estar cientos de metros más arriba o más abajo que el municipio. Desde el 11 de octubre de 2026 la altitud sale de NASADEM (HU-206, decisión 12). **15 de octubre de 2026:** adelantada la parte de municipios (decisión de Felipe, para los lotes): `pipeline/sources/dane.py` publica `municipalities` desde DIVIPOLA del DANE (datos.gov.co, CC BY-SA 4.0) para Boyacá y Cundinamarca (`pipeline/region.yaml`, supuesto hasta el 28 de octubre), con `sources` y `manifest.json`; 239 municipios. `altitude_m` y `climate_cell_elevation_m` van nulas hasta NASADEM y NASA POWER. El 15 de octubre de 2026 se publicaron los límites (`municipality_boundaries`) desde el servicio MGN 2025 del geoportal del DANE (`pipeline/sources/dane_mgn.py`), simplificados a unos 10 m; los 239 puntos de DIVIPOLA caen dentro de su límite. Faltan la altitud y la corrección de la temperatura. Pruebas en `tests/pipeline/test_municipios.py`. **9 de noviembre de 2026 (con HU-041):** `climate_cell_elevation_m` sale de la altura de la celda que da NASA POWER (de 532 a 2898 m en la región) y la fila suma la fuente `nasa_power`. El gradiente vive en `pipeline/region.yaml` con su fuente (`cenicafe_lapse_rate`): región Andina de Colombia, Chaves y Jaramillo (1999), tabla 3, con 133 estaciones de 100 a 4482 m. Es de 0,0058 °C/m para la máxima y de 0,0059 °C/m para la mínima. `climate_day` ya lo aplica; el criterio se marca cuando haya altitud y se publique la primera temperatura corregida. **10 de noviembre de 2026, comprobación contra el IDEAM:** las normales 1991–2020 de las «Normales Climatológicas de Colombia» del IDEAM (datos.gov.co, `nsz2-kzcq`, CC BY-SA 4.0) frente al promedio 1991–2020 de NASA POWER en la celda de cada estación, corregido a la altitud de la estación. Diferencia POWER − IDEAM en la mínima y la máxima medias: Tibaitatá, Mosquera (2543 m; celda a 1790 m): sin corregir +7,2 y +3,9 °C, corregida +2,8 y −0,4 °C. UPTC, Tunja (2690 m; celda a 2557 m): +0,7 y −1,0 °C sin corregir, −0,1 y −1,8 °C corregida. Surbata Bonza, Duitama (2485 m): +2,8 y −2,4 °C. Villa de Leyva (2215 m): +0,6 y −3,3 °C. **La corrección por altitud quita el error grande** (cuando la celda está cientos de metros más abajo o más arriba), **pero queda un sesgo que la altitud no arregla:** POWER achica la diferencia entre el día y la noche, con mínimas hasta 2,8 °C más calientes y máximas hasta 3,3 °C más frías en los valles. No se corrige: no hay una corrección con fuente para la región (R1, R8). Queda en `docs/riesgos.md` y en HU-045, porque con mínimas más calientes POWER cuenta menos heladas de las que hay. Corregida a la altitud del municipio (la mediana, HU-206) en vez de la de la estación, la máxima de Duitama queda 6,1 °C por debajo: la altitud del municipio no representa un valle.
+
+### HU-045 · Heladas y temperatura máxima por mes
+
+- **Historia:** Como motor, quiero saber en qué meses suele helar y qué tan alta suele ser la temperatura máxima en cada municipio, para evaluar las heladas y el calor de cada ventana de siembra.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] `climate_risk_month` con `frost_freq_pct`, `frost_days_mean`, `tmax_p90_c`, `years` y `quality`, desde la mínima y la máxima diarias corregidas por altitud (`pipeline/climate_risk.py`)
+  - [x] Umbral de helada: mínima **menor o igual a 2 °C** a 2 m, con fuente, en la configuración del pipeline (decidido por Felipe el 10 de noviembre de 2026: es el criterio del ZARC de Brasil, `mapa_zarc_2025`, el mismo de `docs/investigacion-decisiones.md`; el boletín de la UPRA de enero de 2024 ya no está en su enlace)
+  - [x] `tmax_p90_c` es la temperatura máxima que se supera uno de cada diez días de ese mes; el método queda documentado
+  - [x] `climate_frost_month`: los días con helada de cada mes de cada año (`frost_days`, `valid_days`, `quality`), para que la señal de heladas cuente los años con helada de una ventana (HU-077). Agregado el 10 de noviembre de 2026, aprobado por Felipe el 10 de noviembre de 2026
+  - [x] Comprobación: los meses con más heladas en el altiplano caen entre diciembre y marzo, como dicen la Gobernación de Boyacá y el IDEAM
+  - [x] Con pocos años o pocos días válidos, `quality = partial`; sin datos, la fila no se publica (R1)
+- **Reglas que aplican:** R1, R8
+- **Contrato que toca:** `climate_risk_month`, `climate_frost_month`
+- **Notas:** Antes se llamaba «Frecuencia de heladas por mes»; sumó `tmax_p90_c` el 11 de octubre de 2026 para la señal de calor (HU-190). En el MVP las señales de heladas y calor leen esta tabla por mes; la versión por semana (HU-193) pasó a P1. **10 de noviembre de 2026 (comprobación de HU-044):** frente a las normales del IDEAM, la mínima de NASA POWER corregida por altitud sale hasta 2,8 °C más caliente en los valles (Surbata Bonza en Duitama, Tibaitatá en Mosquera): con ella se cuentan menos heladas de las que hay. Al calcular `frost_freq_pct` hay que comprobarlo contra una estación y decirlo en la respuesta; no se corrige sin una fuente (R1). **Decidido por Felipe el 10 de noviembre de 2026 (revisión del PR #23):** con un lote dibujado, la altitud del lote solo corrige la aptitud (la temperatura media se corrige con una resta y la calcula el motor). Las heladas y el calor se quedan con la altitud del municipio en el MVP: la frecuencia de heladas no se corrige restando grados, habría que recontar la serie día por día en cada consulta. La respuesta dice que el riesgo es el de la zona y a qué altitud. **13 de noviembre de 2026 (hecho):** `pipeline/climate_risk.py` publica las dos tablas desde `climate_day`, ya corregida por altitud. El umbral está en `pipeline/region.yaml` (`frost`: 2 °C, fuente `mapa_zarc_2025`, la misma de los cortes de la señal), y una mínima de 2 °C justos es helada. `climate_risk_month` usa los años de la normal (1991–2020): un año cuenta en un mes con el 90 % de sus días, y con menos de 24 años la fila es `partial`. `tmax_p90_c` es el percentil 90 (interpolación lineal) de las máximas diarias de ese mes en todos los años que cuentan. `climate_frost_month` trae todos los años (1981 a 2026): `ok` con todos los días del mes, `partial` si falta alguno (hoy, solo noviembre de 2026, que está en curso) y sin fila si no hay ningún día con mínima. Dataset `2026.11.11`: 2868 filas de `climate_risk_month` (239 municipios × 12 meses, todas `ok`) y 131 689 de `climate_frost_month`. **Comprobación:** en los 86 municipios a 2500 m o más, el mes con más heladas es enero (3,7 % de los años), seguido de febrero (1,3 %) y diciembre (0,7 %): cae entre diciembre y marzo, como dicen la Gobernación de Boyacá y el IDEAM. **Pero POWER cuenta muchas menos heladas de las que hay:** solo 24 de los 239 municipios tienen alguna en 1991–2020 (las más, Güicán de la Sierra, 43 %, y Jericó, 40 %, en enero), y Tunja, Duitama y Mosquera ninguna. En Tibaitatá (Mosquera) el IDEAM midió 26 días de helada de 2024 a 2026 y POWER cuenta 0. Es el sesgo de la mínima de POWER en los valles (HU-044): no se corrige sin una fuente (R1) y queda en `docs/riesgos.md`.
+
+### HU-193 · Riesgo climático por semana
+
+- **Historia:** Como motor, quiero el riesgo de helada, la temperatura máxima, la lluvia y la ET0 normales por semana del año en cada municipio, para comparar ventanas de siembra dentro de un mismo mes.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] `climate_risk_week` por `municipality_id` y `week` (1 a 52; los días 365 y 366 van a la semana 52) con `frost_freq_pct`, `tmax_p90_c`, `precip_normal_mm`, `precip_dry_mm`, `et0_normal_mm`, `years`, `quality` y `source_id`, según el contrato
+  - [ ] Cada valor se suaviza con las semanas vecinas; el método y el ancho del suavizado quedan documentados y viven en la configuración del pipeline
+  - [ ] Mismas temperaturas corregidas por altitud y mismo umbral de helada que HU-045
+  - [ ] Unicidad de la llave: 52 filas por municipio (R7)
+  - [ ] Comprobación manual en 2 municipios: las semanas de un mes son coherentes con el valor de ese mes en `climate_risk_month`
+  - [ ] Con pocos años válidos, `quality = partial`; nunca se rellena una semana sin datos (R1)
+- **Reglas que aplican:** R1, R7, R8
+- **Contrato que toca:** `climate_risk_week`
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP (en el MVP las ventanas se comparan por mes). El dato semanal es más ruidoso que el mensual: por eso se suaviza y se presenta como orientación (`docs/riesgos.md`). Supuesto por confirmar: qué es exactamente «un año con helada» en una semana suavizada. Depende de HU-041 y HU-044; la ET0 usa el método de HU-143. Cuando exista, la usan HU-077, HU-190 y HU-192. Las columnas del P1 las agrega HU-046. Agregada el 11 de octubre de 2026.
+
+### HU-043 · Verdor por lote con HLS (30 m)
+
+- **Historia:** Como agricultor, quiero ver el verdor de mi lote con más detalle que el de MODIS, para seguir mi cultivo y la cobertura de mi suelo.
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] NDVI de HLS (Harmonized Landsat Sentinel-2, de la NASA, 30 m) por polígono de lote, con su fecha
+  - [ ] Mismas reglas de calidad que HU-208: píxeles con nubes fuera, porcentaje válido visible, nunca se interpola en silencio (R1)
+- **Reglas que aplican:** R1, R8, R10
+- **Notas:** El 11 de octubre de 2026 cambió de «Humedad del suelo y NDVI»: la humedad del suelo y el NDVI de MODIS pasaron al P0 (HU-205, HU-208, HU-209 y HU-210, decisión 12). Queda HLS, más fino que MODIS: un lote de 1,5 ha cubre unos 16 píxeles de 30 m. Las nubes del altiplano dejan huecos.
+
+### HU-046 · Aguaceros, ventanas secas y gota por mes
+
+- **Historia:** Como agricultor, quiero saber en qué meses suelen caer aguaceros, cuándo hay días secos seguidos y cuándo el clima favorece la gota, para decidir cuándo abonar, cuándo hacer labores y cosechar, y cuándo vigilar mi papa.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** en curso
+- **Criterios de aceptación:**
+  - [x] `heavy_rain_days_mean` en `climate_risk_month`, con umbral con fuente: días con lluvia de NASA POWER ≥ 20 mm (R20mm de ETCCDI, `etccdi_indices`), en promedio por año en 1991–2020 (15 de noviembre de 2026; por aprobar por Haider o Felipe)
+  - [ ] `dry_window_freq_pct` en `climate_risk_month`, con umbral con fuente
+  - [ ] `blight_days_mean` en `climate_risk_month`: la gota usa humedad relativa (`RH2M`) y temperatura de NASA POWER con una regla publicada
+  - [ ] Las tres columnas en `climate_risk_week`, cuando exista (HU-193)
+- **Notas:** Ver `docs/investigacion-decisiones.md`. **15 de noviembre de 2026 (spec corregida):** `climate_risk_week` es de HU-193, que sigue pendiente: las columnas semanales se llenan cuando exista. **Aguaceros:** un día de aguacero es uno con lluvia ≥ 20 mm (`heavy_rain` en `pipeline/region.yaml`, con la fila `etccdi_indices` en `sources`); es un índice climático, no un umbral agronómico de lavado del abono. La lluvia es la de NASA POWER (`PRECTOTCORR`) de la celda del municipio: IMERG solo está en la caché por mes. En los valles del altiplano POWER da casi el doble de lluvia que el IDEAM (PR #44): el conteo es una orientación de la zona. Un año cuenta en un mes con el 90 % de sus días con lluvia (R1). Con menos años de lluvia de los que pide el periodo normal, los aguaceros son nulos; `years` y `quality` siguen siendo los de las heladas y la máxima, porque los lee la señal de calor y un dato que falta no tapa otro (revisión de Haider del PR #182). Comprobado a mano en Duitama, octubre: 42 aguaceros en 30 años, 1,4 por año. **Ventanas secas:** el contrato decía «3 días seguidos de menos de 5 mm», pero ninguna fuente revisada da esos números (ETCCDI define el día seco como < 1 mm, sin largo de racha para labores); por la decisión 16 no puede ser criterio del equipo (no es central). Se quitó del contrato y queda nula hasta tener una definición con fuente (R1, R8; revisión de Haider del PR #182). **Gota:** el artículo de Uniandes (Luengas et al., 2021, *Naturaleza y Sociedad* n.º 1, https://doi.org/10.53010/nys1.01) usa SimCast (Fry et al., 1983; Grünwald et al., 2002, *Plant Disease* 86(10):1163-1168, validado en el valle de Toluca), que cuenta horas seguidas con humedad ≥ 90 % y su temperatura. La humedad diaria de POWER no alcanza: hace falta POWER por hora (`RH2M`, `T2M`) y la tabla de Grünwald et al. Queda nula: según la revisión de Haider del PR #182, esa descarga va después de la entrega, con la caché compartida de HU-237. La humedad de NASA POWER es de celda de unos 50 km: se presenta como orientación. Con estos datos el motor arma las señales `excess_rain`, `disease` y `harvest_weather` (HU-195).
+
+### HU-188 · Riesgos que cubre un seguro, por municipio
+
+- **Historia:** Como agricultor, quiero saber qué tan seguido han ocurrido en mi zona los riesgos que cubre un seguro agropecuario, para decidir si aseguro la cosecha.
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Frecuencia histórica por municipio y mes de helada, sequía y exceso de lluvia, con umbrales con fuente
+  - [ ] La web la muestra en «Próxima siembra» con el enlace oficial al Incentivo al Seguro Agropecuario
+  - [ ] No recomienda un seguro, una aseguradora ni un producto; es frecuencia histórica, no pronóstico
+- **Reglas que aplican:** R5, R8
+- **Notas:** Ver `docs/investigacion-decisiones.md`, decisión 9. Agregada el 11 de octubre de 2026.
+
+### HU-189 · Lluvia en años de El Niño y La Niña
+
+- **Historia:** Como agricultor, quiero ver cómo fue la lluvia de los meses de mi ventana de siembra en los años de El Niño y de La Niña del pasado, para saber qué tanto cambia mi zona en esos años.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Lluvia de cada mes por municipio en años El Niño, La Niña y neutros, frente al promedio de los neutros, con el índice y su fuente; la web suma los meses de la ventana
+  - [ ] La web la muestra en «Próxima siembra» con el enlace al boletín oficial
+  - [ ] No dice en qué fase estamos ni la presenta como pronóstico propio: la fase actual solo se cita del boletín oficial
+- **Reglas que aplican:** R5, R8
+- **Notas:** Ver `docs/investigacion-decisiones.md`, decisión 10. Cómo mostrar la fase actual sigue por decidir. Agregada el 11 de octubre de 2026.
+
+### HU-225 · Tendencia del agua almacenada con GRACE-FO
+
+- **Historia:** Como agricultor, quiero ver si el agua almacenada de mi región viene bajando o subiendo, para entender si el agua que tengo hoy es la que tendré.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `grace` con caché: anomalía mensual del agua almacenada (TWS) de GRACE y GRACE-FO, producto y versión verificados (candidato: las soluciones mascon del JPL), desde 2002, con el hueco de 2017–2018 entre las dos misiones dicho, no rellenado (R1)
+  - [ ] Publica una tabla por municipio con la celda que lo contiene, el mes y la anomalía, y la tendencia de largo plazo con su periodo
+  - [ ] Se muestra en «Qué cambió» (HU-219) como **tendencia de la región**, con su resolución (celdas de cientos de kilómetros) y el rótulo de que no es del lote (R10)
+  - [ ] Es historia comparada, nunca pronóstico (decisión 4); no cambia ninguna señal ni ningún resultado
+  - [ ] Entrada en `sources` con producto, versión, resolución, acceso y licencia (R8)
+- **Reglas que aplican:** R1, R4, R8, R10
+- **Contrato que toca:** tabla nueva, por definir en esta HU; `GET /api/v1/changes`
+- **Notas:** Decisión 14: el enunciado completo sugiere GRACE y GRACE-FO para las tendencias del agua de largo plazo. Agregada el 8 de noviembre de 2026.
+
+### HU-226 · Temperatura de la superficie y evapotranspiración con ECOSTRESS
+
+- **Historia:** Como agricultor, quiero ver el estrés por calor y el agua que pierde el campo de mi zona según ECOSTRESS, para contrastarlos con la señal de calor y el agua del plan.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `ecostress` con caché: temperatura de la superficie y evapotranspiración (70 m), producto y versión verificados, con las fechas de cada pasada (son irregulares)
+  - [ ] Publica agregados por municipio y mes con cuántas pasadas tiene cada mes; un mes sin pasadas no aparece (R1)
+  - [ ] Se muestra junto a la señal de calor y al agua del plan como contraste, con su fuente y su resolución, nunca mezclada con POWER (decisión 11) y sin cambiar la calificación
+  - [ ] Entrada en `sources` (R8)
+- **Reglas que aplican:** R1, R8, R10
+- **Contrato que toca:** tabla nueva, por definir en esta HU
+- **Notas:** Decisión 14: el enunciado completo sugiere ECOSTRESS para el estrés por calor y la evaporación. La serie empieza en 2018 y las pasadas no son regulares: sirve de contraste, no para normales. Agregada el 8 de noviembre de 2026.
+
+### HU-231 · Heladas de ERA5-Land para contrastar las de NASA POWER
+
+- **Historia:** Como agricultor, quiero ver junto a la señal de heladas lo que cuenta otro reanálisis, para no confiar en una sola fuente donde POWER cuenta menos heladas de las que hay.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `era5_land` con caché: la temperatura mínima diaria de ERA5-Land (unos 9 km, desde 1950), producto, versión, licencia y acceso (Copernicus Climate Data Store) verificados
+  - [ ] Publica por municipio, año y mes los días con la mínima ≤ al umbral de `region.yaml` (`frost`), con la misma forma que `climate_frost_month` y su `source_id`; corregida por altitud con el mismo gradiente, y se dice
+  - [ ] Se muestra junto a la señal de heladas como contraste, con su fuente y su resolución; **nunca** se mezcla ni se promedia con POWER y no cambia la calificación (decisión 11, R1)
+  - [ ] Comprobación contra el IDEAM en Tibaitatá (Mosquera) y en un municipio de Boyacá: cuántas heladas cuenta cada fuente; el resultado queda en `docs/riesgos.md`
+  - [ ] Entrada en `sources` (R8). ERA5 es un reanálisis del ECMWF, no de la NASA: se dice
+- **Reglas que aplican:** R1, R4, R8
+- **Contrato que toca:** `signals.frost.sources` (contraste) y una tabla nueva, por definir en esta HU
+- **Notas:** Viene de la pestaña de recursos del reto (13 nov de 2026, HU-002), que nombra ERA5 entre los recursos de agencias socias. Motivo: en el #61 (HU-045) POWER cuenta 0 heladas en Tibaitatá entre 2024 y 2026, donde el IDEAM midió 26. Si ERA5-Land las ve mejor, se puede proponer usarla para la señal con `sources.yaml` (decisión aparte, con el contraste hecho). Agregada el 13 de noviembre de 2026.
+  - **El producto (verificado el 13 de noviembre de 2026 en el Climate Data Store):** «ERA5-Land post-processed daily statistics from 1950 to present» (`derived-era5-land-daily-statistics`, versión 1.0, DOI 10.24381/cds.e9c9c792). Da la mínima diaria de la temperatura a 2 m (`2m_temperature` con la estadística «daily minimum»), a 0,1° (9 km nativos), desde enero de 1950, con unos 6 días de retraso. La estadística se calcula al pedirla desde los datos por hora: se pide con la hora local de la región. Licencia CC-BY. Se baja con una cuenta gratuita del Climate Data Store (su API). No se usa el ERA5 de niveles simples que enlaza el reto: tiene 0,25° (unos 25 km).
+  - **El formato:** la temperatura viene en kelvin (el adaptador la pasa a °C) y el archivo solo sale en **NetCDF dentro de un zip**. Es el único producto que el pipeline no puede leer hoy: IMERG se pide por OPeNDAP en CSV y NASADEM en GeoTIFF. Hace falta una dependencia nueva para leer NetCDF (por ejemplo `h5netcdf`), que se justifica en esta HU (`specs/04-stack.md`).
+
+### HU-232 · Humedad del suelo de GLDAS para contrastar
+
+- **Historia:** Como agricultor, quiero ver otra estimación de la humedad del suelo de mi zona, para contrastar la de SMAP y la de NASA POWER.
+- **Prioridad:** P1 · **Tamaño:** S · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Adaptador `gldas` con caché: la humedad del suelo de la zona de raíces de GLDAS Noah (0,25°, mensual), producto, versión y acceso (Earthdata) verificados
+  - [ ] Publica por municipio y mes, con su unidad y su `source_id`; un mes sin dato no aparece (R1)
+  - [ ] Se muestra junto a la señal de agua, con SMAP y POWER, cada una en su unidad; nunca se mezclan y no cambia la calificación (decisión 11)
+  - [ ] Dice que es un modelo de la zona, de celdas de unos 25 km, no una medición del lote (R10)
+  - [ ] Entrada en `sources` (R8)
+- **Reglas que aplican:** R1, R8, R10
+- **Contrato que toca:** `signals.water.sources` (contraste) y una tabla nueva, por definir en esta HU
+- **Notas:** Viene de la pestaña de recursos del reto (13 nov de 2026, HU-002), que nombra NLDAS y GLDAS. NLDAS solo cubre Norteamérica: en la región piloto aplica GLDAS. Agregada el 13 de noviembre de 2026.
+  - **El producto (verificado el 13 de noviembre de 2026 en el catálogo CMR de la NASA):** «GLDAS Noah Land Surface Model L4 monthly 0.25 x 0.25 degree V2.1» (`GLDAS_NOAH025_M`, versión 2.1), en GES DISC, desde enero de 2000; el último mes publicado era julio de 2026 (unos 4 meses de retraso). La versión 2.0 cubre de 1948 a 2014, con otro forzante: nunca se unen las dos (R4). Se baja con la cuenta de Earthdata, la misma de SMAP. **Por confirmar en esta HU:** qué capas de humedad trae y si la de la zona de raíces es una variable propia.
+  - **El formato:** NetCDF, que GES DISC también entrega por OPeNDAP en CSV, como IMERG: no hace falta una dependencia nueva. La humedad viene en kg/m² (la de SMAP en m³/m³ y la de POWER es un índice de 0 a 1): cada una se muestra en su unidad (decisión 11).

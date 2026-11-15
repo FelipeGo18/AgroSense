@@ -1,0 +1,179 @@
+---
+id: EP-15
+titulo: "Identidad visual y prototipo del frontend"
+prioridad: P0
+fase: [Fase 0]
+rol: "Web"
+agentes: [web]
+subsistemas: [W1, W2, W3, W4, W6, W7, W8, W9]
+depende_de: []
+reglas: [R1, R5, R9, R10]
+estado: en curso
+---
+
+# EP-15 · Identidad visual y prototipo del frontend
+
+**Resultado esperado:** El equipo llega al evento con la identidad visual, el sistema de animación, los assets y un prototipo navegable decididos y probados, para construir la demo sin improvisar el diseño.
+
+Guía de estilo, stack y método: `specs/05-frontend.md`. El prototipo vive en `web/` de este repositorio.
+
+**Recorte del MVP (11 de octubre de 2026):** quedan en P0 el kit visual y los tokens (HU-151 a HU-153, hechos) y el modo ligero 2D (HU-158), que es el modo por defecto de la web del MVP. La escena 3D, el descenso de cámara, el sistema de motion y el prototipo navegable (HU-154, HU-155, HU-156 y HU-159) pasaron a P1.
+
+## Historias de usuario
+
+### HU-151 · Moodboard y dirección visual
+
+- **Historia:** Como equipo, quiero un moodboard con la dirección visual, para acordar el estilo antes de construir.
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] Página de Figma con referencias, paleta tentativa y ejemplos de paisaje
+  - [x] Cada referencia dice qué se toma y qué no (inspiración, no copia)
+  - [x] Dirección aprobada por el equipo
+- **Notas:** Concepto inicial «del satélite al lote» en `specs/05-frontend.md`. Moodboard en el frame «HU-151 · Moodboard AgroSense» de Figma; imágenes y créditos en `design/moodboard/FUENTES.md`. Dirección aprobada el 10 de octubre de 2026.
+
+### HU-152 · Tokens de diseño
+
+- **Historia:** Como desarrollador web, quiero tokens de color, tipografía, espaciado, radios y sombras, para que Figma y el código usen los mismos valores.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] Tokens definidos en Figma (frame de muestras con el nombre de cada token) y exportados a CSS y Tailwind
+  - [x] Colores del semáforo con su forma e icono; contraste de texto ≥ 4,5:1 comprobado
+  - [x] «No evaluable» y «datos insuficientes» tienen estilo propio, distinto de rojo (R1)
+- **Reglas que aplican:** R1
+- **Notas:** Fuente de verdad en `design/tokens/tokens.json`; `python design/tokens/build_tokens.py` comprueba el contraste y genera `tokens.css`, `tailwind-theme.css` y `tokens-studio.json` (`--check` para CI). Lámina visual en `design/tokens/tokens.svg` (la genera `design/kit/tokens_sheet.py`) y en el frame «HU-152 · Tokens de diseño» de Figma. Con HU-153 los tokens pasaron de radios y sombras a bisel, canto, facetas y trazos. Sin variables de Figma: Tokens Studio exige plan de pago para crearlas y el MCP de Figma no puede; `tokens-studio.json` queda listo por si se retoma.
+
+### HU-153 · Kit de componentes con estilo de juego
+
+- **Historia:** Como desarrollador web, quiero componentes base con estilo de juego y accesibles, para armar pantallas rápido.
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] Botón, selector con autocompletado, control de prioridad, tarjeta de señal, insignia de semáforo, rótulo de ejemplo y rótulo de estimación
+  - [x] Cada componente en Figma y en código, con estados de foco, deshabilitado y carga
+  - [x] Objetivos táctiles ≥ 44 px y navegación por teclado
+- **Reglas que aplican:** R1, R5, R10
+- **Notas:** Estilo «diorama low-poly»: esquinas biseladas, caras trianguladas con luz desde la izquierda y canto inferior en lugar de sombra; el semáforo y las tarjetas son letreros clavados con estaca; la prioridad se elige tocando semillas (0 a 5), no con un deslizador. Diseño primero en Figma (frame «HU-153 · Kit de componentes»), generado desde `design/kit/` (`build_kit_svg.py`, `sheet.py`). Código en `web/src/components/` sobre la pieza base `Plate.tsx`; muestra en `npm --prefix web run dev`, ruta `/kit`; pruebas con `npm --prefix web test`. La insignia de semáforo y los rótulos no son interactivos: no tienen foco ni estado deshabilitado.
+
+### HU-154 · Escena 3D del paisaje andino
+
+- **Historia:** Como agricultor, quiero reconocer un paisaje como el mío, para sentir que la herramienta habla de mi zona.
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Terreno low-poly continuo con montañas, niebla y mosaico de parcelas; nada flota
+  - [ ] Cultivos con etapas de crecimiento a partir de assets CC0 o propios
+  - [ ] Todos los assets listados en `web/public/assets/CREDITS.md` con licencia
+  - [ ] Cumple el presupuesto de la escena de `specs/05-frontend.md`
+  - [ ] Sin WebGL o con fps bajos (menos de 30 en un Android de gama media, `specs/05-frontend.md`), la escena pasa sola a la versión 2D con la misma información, y el botón «Modo ligero» sirve de interruptor manual. Lo mismo en el recorrido 3D de HU-155, que ya pasa a 2D sin WebGL pero no mide los fps. Viene de HU-158 el 15 de noviembre de 2026
+- **Reglas que aplican:** R5
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP.
+
+### HU-155 · Descenso de cámara del satélite al lote
+
+- **Historia:** Como jurado, quiero recorrer del satélite a la finca, para entender en segundos cómo los datos de NASA llegan a una decisión.
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** hecha
+- **Criterios de aceptación:**
+  - [x] Cuatro niveles (satélite, región, municipio, finca) navegables con scroll y con toques. **Hecho (14 nov 2026):** página propia `/del-satelite-a-su-finca` (`web/src/pages/journey/`), con los botones «1. Satélite» a «4. Finca» y «Bajar a…» en cada nivel; al llegar, el foco queda en el título
+  - [x] Storyboard escrito antes de animar: el guion del recorrido A en Figma («HU-155 · Recorrido A») y, para la versión 3D, los cuatro niveles con su encuadre de cámara en `KEYS` de `JourneyCanvas.tsx` (órbita, región desde lo alto, municipio con su contorno, finca de cerca) y el paso por las nubes entre la órbita y la región
+  - [x] La mascota satélite guía el recorrido (HU-172): con movimiento, la mascota 3D (HU-171) vuela al lado de la cámara; en modo ligero, la 2D quieta; lo que dice va escrito al lado
+  - [x] Con `prefers-reduced-motion`, los niveles cambian sin recorrido de cámara. **Hecho:** en modo ligero (que incluye reducir movimiento) no se descarga three.js ni hay cámara: cada nivel muestra su ilustración 2D quieta del guion (`design/paisaje/`), con los mismos textos (prueba en `journey.test.tsx`)
+- **Cierre (14 nov 2026, decidido por Felipe):** se elige el recorrido A, en una página propia, enlazada desde el pie de página, y **con 3D**: una escena low-poly con three.js y React Three Fiber (la Tierra, el relieve de la región, el contorno del municipio y la finca) que sigue el scroll con la cámara. Se descarga aparte (unos 245 kB comprimidos) y solo con movimiento. Para celulares de gama media: resolución hasta 1,5×, `powerPreference: low-power`, pocas caras y sin dibujar con la pestaña oculta; revisado a 390 px con capturas, falta probarlo en un teléfono real. El relieve y la finca son ilustración, y la página lo dice (R5). Los prototipos B y C siguen en el laboratorio (`/recorrido/2` y `/recorrido/3`).
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP, la NASA se ve en pantalla con la capa satelital GIBS del mapa del lote (HU-211) y con las fuentes nombradas en cada resultado. Guion en Figma («HU-155 · Recorrido A» y «Recorridos B y C»), generado desde `design/paisaje/`. Recorrido A aprobado: del satélite al lote en siete paradas, cuatro con interfaz y tres de tránsito. Dos alternativas en evaluación: B, el año del cultivo (el scroll avanza en el tiempo), y C, la travesía por la cordillera (el scroll avanza de lado). Los fondos son capas SVG generadas por código (`build_paisaje.py`), no imágenes ni video. Prototipos para probarlos: `npm --prefix web run dev` y abrir `/recorrido/1`, `/recorrido/2` y `/recorrido/3` (GSAP ScrollTrigger con scroll suave de Lenis; con «reducir movimiento» las paradas aparecen colocadas, sin viaje). El índice está en `/` y el kit en `/kit`. El recorrido 1 tiene diez escenas: entre versiones del mismo lugar la cámara se acerca y se funden; donde cambia el lugar se atraviesa una capa de nubes o niebla que tapa el corte. Falta elegir recorrido, la versión 3D y la prueba en móvil de gama media.
+
+### HU-156 · Sistema de motion
+
+- **Historia:** Como equipo, quiero un sistema de animación con duraciones, curvas y patrones definidos, para que todo se mueva con el mismo ritmo.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Tokens de duración y curva documentados y usados en código
+  - [ ] Patrones de entrada, salida, respuesta al toque y cambio de estado
+  - [ ] Animaciones deterministas (función del tiempo de la línea de tiempo)
+  - [ ] Revisión por un crítico distinto de quien construyó
+  - [ ] Skill del proyecto `agrosense-motion` creada con este método
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. En el MVP, las transiciones de la web 2D usan solo cambios de estado simples.
+
+### HU-157 · Audio de ambiente e interfaz
+
+- **Historia:** Como usuario, quiero sonidos suaves de ambiente y de interfaz, para que la experiencia se sienta viva.
+- **Prioridad:** P1 · **Tamaño:** M · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Apagado por defecto, con control visible y volumen
+  - [ ] La app se entiende igual sin sonido
+  - [ ] Licencia de cada sonido registrada
+
+### HU-158 · Modo ligero y movimiento reducido
+
+- **Historia:** Como agricultor con un celular sencillo o poca señal, quiero que la app funcione rápido aunque no muestre el paisaje 3D ni se mueva, para usarla en el campo.
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha (15 nov 2026)
+- **Criterios de aceptación:**
+  - [x] **En el MVP la web es 2D por defecto:** todas las pantallas del flujo (inicio, entrada, estrategias, ciclo, qué cambió, lote y cuenta) funcionan completas sin WebGL
+  - Pasó a HU-154 (P1) el 15 de noviembre de 2026, para no dejar abierta una HU de P0 por un criterio de P1 (`docs/registro-de-decisiones.md`). Texto original: «Cuando exista la escena 3D (P1), sin WebGL o con fps bajo pasa sola a la versión 2D con la misma información, y hay un interruptor manual». Ya se cumple en parte con el recorrido 3D de HU-155 (`web/src/pages/journey/JourneyPage.tsx`): si la escena falla (sin WebGL, si se pierde el contexto o si no baja el paquete), la página pasa a las ilustraciones 2D, y el botón «Modo ligero» es el interruptor manual. Falta el paso a 2D con fps bajos: no hay nada que los mida
+  - [x] **Un solo interruptor de movimiento** (`web/src/lib/lightMode.ts`): «activado», «desactivado» o «automático»; se guarda en el navegador. En automático sigue a «reducir movimiento» y al ahorro de datos del equipo. Marca `<html data-light>`
+  - [x] **Botón «Modo ligero» en la barra superior**, visible en todas las pantallas. Al pasar el cursor, enfocarlo con el teclado o tocarlo, un aviso corto (título, una frase y qué pasa al tocar) dice qué hace y cambia según el estado (Escape lo cierra). El estado se dice con forma y texto, no solo con color
+  - [x] En el menú del celular, interruptor de «Modo ligero» (y de «Sonido», que no cabe en la barra por debajo de 400 px) con su explicación a la vista
+  - [x] **Modo ligero = scroll normal:** sin scroll suave (Lenis), sin GSAP en ejecución, sin animaciones ni transiciones de CSS, con la Tierra y la mascota quietas. La información, los textos y los botones son los mismos. Se puede cambiar sin recargar
+  - [x] **Regla para lo nuevo:** toda vista o componente animado se escribe compatible con el modo ligero (`useAnimated()`, la variante `animated:`); queda en `web/CLAUDE.md` y en `specs/05-frontend.md`. El CSS apaga cualquier animación o transición que se escriba fuera de ella
+  - [x] **Reglas globales de diseño adaptable** (`container-page`, cuadrículas con columnas explícitas, anchos fijos con su versión angosta, alturas mínimas) y verificación automática con `npm run test:responsive`
+  - [x] GSAP y Lenis no se descargan en modo ligero (carga diferida)
+  - [x] Un solo «Modo ligero» en el diseño: salió «Reducir movimiento» de Mi cuenta y del menú del celular, y la barra superior lleva el botón (`design/pantallas/ui.py`, lámina `transversal-06-modo-ligero-*`)
+  - Ya no aplica (decidido por Haider el 15 de noviembre de 2026, `docs/registro-de-decisiones.md`): el botón está en el código y en las láminas del generador (`design/pantallas/svg/transversal-06-modo-ligero-*`, al día desde el PR #165), que son la referencia del diseño; no se suben a Figma ni esperan aprobación. Texto original: «El botón y la lámina `transversal-06-modo-ligero-*` están en Figma y Felipe los aprobó»
+  - [x] Respeta «reducir movimiento»: verificado en las pantallas del MVP
+  - [x] Cumple el JS inicial y el LCP de `specs/05-frontend.md`
+- **Notas:** Desde el 11 de octubre de 2026 el modo ligero 2D es el modo por defecto de la web del MVP (decisión 12). El botón de la barra superior no estaba en Figma: se resolvió con el kit (placa biselada, pluma llena = activo) y quedó dibujado en los generadores, que son su referencia: no se sube a Figma (decidido por Haider el 15 de noviembre de 2026). La lámina `inicio` no se regeneró (necesita la imagen Blue Marble, `design/globo/`) y todavía no muestra el botón. Por defecto el modo es «automático»: con movimiento salvo que el equipo pida lo contrario; para que arranque en ligero en todos los equipos, se cambia el valor por defecto en `lightMode.ts`.
+- **Hecho (12 nov): el movimiento se carga aparte.**
+  - **Cómo:**
+    - GSAP, ScrollTrigger y Lenis viven en `web/src/lib/motionEngine.ts` y se piden con `import()` desde `web/src/lib/motion.ts`, solo con movimiento. Pesan unos 48 kB comprimidos.
+    - Con movimiento llegan junto con la aplicación, y cada página los espera antes de montarse (`app/routes.tsx`): la entrada no parpadea. Si la persona apaga el modo ligero sin recargar, se piden en ese momento.
+    - `useAnimated()` no se enciende hasta que llegan.
+    - Los efectos usan `useMotionEffect` en lugar de `useGSAP`, que metía GSAP en el paquete inicial. El lint prohíbe importar `gsap`, `lenis` o `@gsap/react` directo, salvo en el laboratorio.
+  - **Un caso que se encontró y se arregló:** el primer dibujo sobre el HTML del build (Inicio, Entrar, la política) se hace como con movimiento. Con «Modo ligero» elegido y sin el motor, la Tierra, la mascota que vuela y el scroll suave rompían la portada. Ahora esos tres efectos preguntan `motionLoaded()`.
+  - **Cómo se comprueba:**
+    - `npm run test:motion` (nuevo, `web/e2e/motion-check.mjs`), sobre el build:
+      - sin movimiento no se descarga, ni al abrir cinco páginas ni al navegar entre ellas;
+      - con movimiento llega, el scroll suave se activa y la portada se mueve;
+      - al apagar el modo ligero sin recargar se pide;
+      - ninguna página se rompe ni deja errores en la consola.
+      Se comprobó que detecta la caída de arriba si se quitan los arreglos.
+    - Pruebas en `web/src/lib/motion.test.ts`.
+- **Medido (12 nov, `npm run perf`, mediana de 3 pasadas):**
+  - **JS inicial:** sin movimiento, 149 kB en Inicio y 148 kB en Entrar (antes 197 y 195); con movimiento, 198 y 196 kB. Todo bajo el tope de 200 kB.
+  - **LCP:** 1,5 s en el celular simulado y 0,4 s en escritorio (meta: 2,5 s).
+  - **Inicio en el celular sin movimiento:** pasó de nota 87 y 461 ms de bloqueo a 97 y 155 ms.
+  - **Sigue debajo de la meta de Lighthouse (95, bloqueo de 200 ms), que no es criterio de esta HU:** Inicio en el celular con movimiento (94 y 245 ms; antes 92 y 317). El bloqueo que queda es el estilo y el diseño del HTML de la portada y el arranque de React, no GSAP.
+  - **El bloqueo varía mucho entre pasadas en este equipo:** Entrar sin movimiento dio de 209 a 428 ms en cinco pasadas, con mediana de 252; sin el cambio, de 262 a 294, con mediana de 291.
+- **«Reducir movimiento» verificado (12 nov):** `npm run test:responsive` prende ahora el modo ligero como un teléfono que pide reducir movimiento (preferencia en automático), no con el botón. Revisadas las 25 pantallas en 11 tamaños, con movimiento y sin él (también las de cuenta, con una cuenta de prueba de la base local): 550 de 550 sin problemas, nada animado ni escondido.
+- **Sin WebGL verificado (12 nov):** Chrome con WebGL apagado, con y sin movimiento, en 13 pantallas: inicio, entrada, estrategias, ciclo, diagnóstico, qué cambió, Mi finca, agregar, el lote, editar, sembrar, estrategias desde el lote y Mi cuenta.
+  - Todas se ven completas y sin errores. El único WebGL es el mapa de los lotes, que avisa «Su navegador no puede mostrar el mapa» y ofrece «Escribir el área a mano».
+  - Se arregló que el panel tapara el comienzo de ese aviso en escritorio.
+  - Se usó una cuenta de prueba de la base local, borrada al terminar.
+- **Cerrada (15 nov):** sin Figma, por decisión de Haider (el botón vive en el código y en las láminas del generador). El paso automático a 2D con fps bajos pasó a HU-154 (P1) el 15 de noviembre de 2026.
+
+### HU-159 · Prototipo navegable con datos de ejemplo
+
+- **Historia:** Como equipo, quiero un prototipo navegable de diagnóstico, rotaciones y finca, para probar el estilo con el flujo real.
+- **Prioridad:** P1 · **Tamaño:** L · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Recorre inicio, descenso, consulta y Mi finca con respuestas simuladas del contrato (modo simulación, HU-014)
+  - [ ] Funciona como invitado y como usuario simulado con varios lotes
+  - [ ] Muestra los cuatro estados del semáforo, «datos insuficientes» y error
+  - [ ] Muestra «cultivo no apto para la zona», la acción `other_window` con sus mejores ventanas y una ventana de alto riesgo en el calendario
+  - [ ] Datos de ejemplo rotulados en pantalla; rótulo de estimación en el riego; sin cuenta, la finca no se guarda en el servidor
+  - [ ] Usable a 360 px
+- **Reglas que aplican:** R1, R5, R9, R10
+- **Contrato que toca:** respuestas de ejemplo de `specs/02-contratos.md` (sin cambiarlo)
+- **Notas:** Pasó a P1 el 11 de octubre de 2026: recorte del MVP. Las pantallas del MVP se diseñan y aprueban en Figma (`specs/05-frontend.md`, «Pantallas por diseñar del MVP»).
+
+### HU-233 · La web en español y en inglés
+
+- **Historia:** Como jurado de NASA Space Apps, o como agricultor que lee inglés, quiero usar AgroSense en inglés, para entender el proyecto sin traducirlo; y como agricultor de la región piloto, quiero seguir usándolo en español.
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Criterios de aceptación:**
+  - [ ] Un selector **Español / English** en la barra superior, también en el menú del celular, con objetivo táctil de 44 px. El idioma se recuerda en el navegador (`localStorage`), sin cuenta y sin enviarse al servidor (R9)
+  - [ ] Español por defecto. `?lang=en` en la dirección abre la web en inglés, para que el enlace de la entrega llegue al jurado en inglés sin tocar nada; el selector y los enlaces internos conservan el idioma
+  - [ ] Todos los textos de interfaz, en los dos idiomas, de: inicio, entrar y crear cuenta, Mi cuenta, Mi finca y sus formularios, la consulta, las estrategias y el ciclo, el diagnóstico, precios, política de datos, el pie de página, las tarjetas de estado (HU-094) y las páginas de pendiente y 404. Ningún texto queda escrito a mano dentro de un componente: todos salen de los diccionarios de idioma
+  - [ ] Los rótulos obligatorios también se traducen: «Ejemplo» (R5), «estimación» (R10), «Es la historia de su zona, no un pronóstico» y los de NASA POWER como reanálisis
+  - [ ] `<html lang>` y el `<title>` de cada página cambian con el idioma; las fechas, los meses y los números usan el formato del idioma (`Intl`), sin cambiar los valores
+  - [ ] Los valores del contrato (`municipality_id`, `crop_id`, `light`, `action`…) no se traducen; la web traduce cómo los muestra
+  - [ ] Modo ligero (HU-158) y diseño adaptable (HU-096) en los dos idiomas: `npm run test:responsive` pasa también con `?lang=en`, porque los textos en inglés cambian de largo
+  - [ ] Pruebas: el selector cambia el idioma y lo recuerda; `?lang=en` abre en inglés; una pantalla del flujo muestra sus textos en inglés; ninguna clave de un diccionario le falta al otro (prueba que compara los dos)
+- **Reglas que aplican:** R5, R9, R10
+- **Contrato que toca:** ninguno en el P0: las razones, limitaciones y errores que manda la API siguen en español (ver la nota)
+- **Notas:** La guía de entrega de NASA Space Apps 2026 (13 de noviembre) pide que la página del proyecto **y todo lo enlazado** estén en inglés. La web es para agricultores colombianos y sigue en español por defecto; el modo inglés es para el jurado y para quien lo necesite. Decidido por Felipe el 14 de noviembre de 2026, asignada a Juan Ortiz. **Por decidir (Felipe y Haider, es contrato):** que la API mande las razones, limitaciones y errores en inglés con `Accept-Language: en`; mientras tanto, en modo inglés esos textos se muestran en español con un aviso («Calculation details are in Spanish»), sin traducirlos en la web, porque una traducción automática de una razón podría cambiar lo que dice (R5). Biblioteca sugerida: `i18next` con `react-i18next`; si se elige otra, se justifica en `specs/05-frontend.md`.

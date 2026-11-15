@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+  <meta charset="utf-8" />
+  <title>Pantallas</title>
+  <!-- Vista previa de las pantallas con las fuentes reales. Servir esta carpeta y abrir, por ejemplo:
+       ver.html?z=0.6&f=cuenta-01-iniciar-sesion-escritorio,cuenta-01-iniciar-sesion-movil -->
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@600&display=swap"
+  />
+  <style>
+    body { margin: 0; background: #1e2a3a; display: flex; gap: 24px; padding: 24px; align-items: flex-start; }
+    div { flex: none; }
+    svg { display: block; }
+  </style>
+  <script type="module">
+    const query = new URLSearchParams(location.search);
+    const zoom = +(query.get("z") || 0.5);
+    (query.get("f") || "").split(",").filter(Boolean).forEach(async (name) => {
+      const box = document.createElement("div");
+      document.body.append(box);
+      box.innerHTML = await (await fetch(`svg/${name}.svg`)).text();
+      const svg = box.querySelector("svg");
+      svg.style.width = svg.getAttribute("width") * zoom + "px";
+      svg.style.height = "auto";
+    });
+  </script>
+</html>

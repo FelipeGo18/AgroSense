@@ -1,0 +1,99 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
+import { Outlet, ScrollRestoration, createBrowserRouter, useLocation, type RouteObject } from "react-router";
+import { SimulationStrip } from "@/components/layout/SimulationStrip";
+import { motionReady } from "@/lib/motion";
+import { SIMULATION } from "./config";
+import { PATHS } from "./paths";
+
+function Root() {
+  // Un cliente por aplicación montada: guarda en memoria lo que responde la API (por ejemplo, quién tiene la sesión).
+  const [client] = useState(() => new QueryClient());
+  const { pathname } = useLocation();
+  const [start] = useState(pathname);
+  const [moved, setMoved] = useState(false);
+  if (!moved && pathname !== start) setMoved(true);
+  return (
+    <QueryClientProvider client={client}>
+      {/* Cada página entra con un fundido corto (styles/index.css), salvo la primera: esa ya viene pintada. */}
+      <div key={pathname} className={moved ? "page-fade" : undefined}>
+        <Outlet />
+      </div>
+      <ScrollRestoration />
+      {SIMULATION && <SimulationStrip />}
+    </QueryClientProvider>
+  );
+}
+
+function Loading() {
+  return (
+    <p role="status" className="p-8">
+      Cargando…
+    </p>
+  );
+}
+
+const pages: RouteObject[] = [
+  {
+    element: <Root />,
+    HydrateFallback: Loading,
+    children: [
+      // Cada página se carga aparte, también el inicio: quien abre «Entrar» no descarga el recorrido de la portada.
+      { path: PATHS.home, lazy: async () => ({ Component: (await import("@/pages/landing/LandingPage")).LandingPage }) },
+      { path: PATHS.login, lazy: async () => ({ Component: (await import("@/pages/auth/LoginPage")).LoginPage }) },
+      { path: PATHS.signup, lazy: async () => ({ Component: (await import("@/pages/auth/SignupPage")).SignupPage }) },
+      { path: PATHS.account, lazy: async () => ({ Component: (await import("@/pages/account/AccountPage")).AccountPage }) },
+      { path: PATHS.password, lazy: async () => ({ Component: (await import("@/pages/account/PasswordPage")).PasswordPage }) },
+      { path: PATHS.activity, lazy: async () => ({ Component: (await import("@/pages/account/ActivityPage")).ActivityPage }) },
+      { path: PATHS.messages, lazy: async () => ({ Component: (await import("@/pages/account/MessagesPage")).MessagesPage }) },
+      { path: PATHS.farm, lazy: async () => ({ Component: (await import("@/pages/farm/FarmPage")).FarmPage }) },
+      { path: PATHS.addLot, lazy: async () => ({ Component: (await import("@/pages/farm/AddLotPage")).AddLotPage }) },
+      { path: PATHS.lot(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/LotPage")).LotPage }) },
+      { path: PATHS.editLot(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/EditLotPage")).EditLotPage }) },
+      { path: PATHS.sow(":lotId"), lazy: async () => ({ Component: (await import("@/pages/farm/SeasonFormPage")).SowPage }) },
+      {
+        path: PATHS.editSeason(":lotId", ":seasonId"),
+        lazy: async () => ({ Component: (await import("@/pages/farm/SeasonFormPage")).EditSeasonPage }),
+      },
+      {
+        path: PATHS.harvest(":lotId", ":seasonId"),
+        lazy: async () => ({ Component: (await import("@/pages/farm/HarvestPage")).HarvestPage }),
+      },
+      { path: PATHS.howItWorks, lazy: async () => ({ Component: (await import("@/pages/how/HowItWorksPage")).HowItWorksPage }) },
+      { path: PATHS.journeyTour, lazy: async () => ({ Component: (await import("@/pages/journey/JourneyPage")).JourneyPage }) },
+      { path: PATHS.dataPolicy, lazy: async () => ({ Component: (await import("@/pages/policy/PolicyPage")).PolicyPage }) },
+      { path: PATHS.prices, lazy: async () => ({ Component: (await import("@/pages/prices/PricesPage")).PricesPage }) },
+      // «Consultar» es la entrada a las estrategias de rotación (HU-214, decisión 12).
+      { path: PATHS.consult, lazy: async () => ({ Component: (await import("@/pages/strategies/StrategiesPage")).StrategiesPage }) },
+      { path: PATHS.diagnosis, lazy: async () => ({ Component: (await import("@/pages/diagnosis/DiagnosisPage")).DiagnosisPage }) },
+      { path: PATHS.changes, lazy: async () => ({ Component: (await import("@/pages/changes/ChangesPage")).ChangesPage }) },
+      // Pruebas de la fase 0. Cada recorrido se carga aparte: trae sus propias escenas.
+      { path: PATHS.lab, lazy: async () => ({ Component: (await import("@/pages/lab/LabIndexPage")).LabIndexPage }) },
+      { path: PATHS.kit, lazy: async () => ({ Component: (await import("@/pages/lab/KitPage")).KitPage }) },
+      { path: PATHS.journey(1), lazy: async () => ({ Component: (await import("@/pages/lab/journeys/Journey1")).Journey1 }) },
+      { path: PATHS.journey(2), lazy: async () => ({ Component: (await import("@/pages/lab/journeys/Journey2")).Journey2 }) },
+      { path: PATHS.journey(3), lazy: async () => ({ Component: (await import("@/pages/lab/journeys/Journey3")).Journey3 }) },
+      {
+        path: "*",
+        lazy: async () => ({ Component: (await import("@/pages/pending/NotFoundPage")).NotFoundPage }),
+      },
+    ],
+  },
+];
+
+/**
+ * Con movimiento, cada página espera al motor del movimiento antes de montarse (`lib/motion.ts`): lo encuentra listo y su
+ * entrada no parpadea. En modo ligero no espera nada, y el motor no se descarga (HU-158).
+ */
+const awaitMotion = (route: RouteObject): RouteObject => {
+  const { lazy, children } = route;
+  return {
+    ...route,
+    ...(typeof lazy === "function" ? { lazy: async () => (await Promise.all([lazy(), motionReady()]))[0] } : {}),
+    ...(children ? { children: children.map(awaitMotion) } : {}),
+  } as RouteObject;
+};
+
+export const routes: RouteObject[] = pages.map(awaitMotion);
+
+export const createRouter = () => createBrowserRouter(routes);

@@ -1,0 +1,11 @@
+# Finales de línea iguales en todos los sistemas: LF. Sin esto, en Windows git entrega los archivos con CRLF y
+# `npm run format:check` (Prettier) falla en un clon recién hecho.
+* text=auto eol=lf
+
+# Binarios: no se tocan.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.woff binary
+*.woff2 binary

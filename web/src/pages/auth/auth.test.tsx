@@ -1,0 +1,311 @@
+import { EMPTY_STRATEGY, writeGuestConsult } from "@/features/strategies/entry";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { RouterProvider, createMemoryRouter } from "react-router";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { PATHS } from "@/app/paths";
+import { routes } from "@/app/routes";
+
+const ROSA = { user_id: "1", username: "rosa.samaca", display_name: "Rosa", role: "farmer", consent_version: 3, priorities: null };
+
+type Reply = { status: number; body?: unknown };
+
+/** Una API de mentira: responde lo que la prueba diga por cada «MÉTODO ruta» y anota lo que se le envió. */
+function fakeApi(replies: Record<string, Reply>) {
+  const calls: { key: string; body: unknown }[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
+    const key = `${init.method ?? "GET"} ${url}`;
+    calls.push({ key, body: init.body ? JSON.parse(String(init.body)) : undefined });
+    const reply = replies[key] ?? { status: 401, body: { error: { code: "unauthorized", message: "Inicie sesión para continuar." } } };
+    return new Response(reply.body === undefined ? null : JSON.stringify(reply.body), {
+      status: reply.status,
+      headers: { "X-Request-ID": "0b0e4f6e-58a5-4c0e-9d7a-2f1f3a5b7c9d" },
+    });
+  });
+  return calls;
+}
+
+const open = (path: string) => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />);
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  sessionStorage.clear();
+});
+
+describe("Entrar (HU-162)", () => {
+  // Cruza dos páginas que se cargan aparte (entrar y Mi finca), la primera en frío: sola tardaba unos 4,9 s y en la
+  // suite completa, con todo en paralelo, se pasaba del límite de 5 s. Por eso tiene 15 s, y el texto se pega en vez de
+  // teclearse letra por letra (cada letra hace reaccionar a la mascota; el tecleo lo prueban las demás pruebas de aquí).
+  it("entra con usuario y contraseña y lleva a la finca", { timeout: 15_000 }, async () => {
+    const calls = fakeApi({ "POST /api/v1/auth/login": { status: 200, body: ROSA } });
+    open(PATHS.login);
+    await userEvent.click(await screen.findByLabelText("Usuario"));
+    await userEvent.paste("rosa.samaca");
+    await userEvent.click(screen.getByLabelText("Contraseña"));
+    await userEvent.paste("papa-criolla-2026");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
+    expect(calls.find((call) => call.key.startsWith("POST"))?.body).toEqual({ username: "rosa.samaca", password: "papa-criolla-2026" });
+    // Con la sesión abierta, la barra dice quién entró y deja salir.
+    expect(screen.getByText("Rosa")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Cerrar sesión" }).length).toBeGreaterThan(0);
+  });
+
+  it("con datos incorrectos lo dice con texto, sin decir cuál de los dos falló", async () => {
+    fakeApi({ "POST /api/v1/auth/login": { status: 401, body: { error: { code: "invalid_credentials", message: "x" } } } });
+    open(PATHS.login);
+    await userEvent.type(await screen.findByLabelText("Usuario"), "rosa.samaca");
+    await userEvent.type(screen.getByLabelText("Contraseña"), "no-es-esta");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Usuario o contraseña incorrectos. Revíselos y vuelva a intentar.");
+    expect(screen.getByRole("heading", { level: 1, name: "Vuelva a su finca" })).toBeInTheDocument();
+  });
+
+  it("tras demasiados intentos muestra lo que dice la API", async () => {
+    const message = "Demasiados intentos. Espere 15 minutos y vuelva a intentar.";
+    fakeApi({ "POST /api/v1/auth/login": { status: 429, body: { error: { code: "too_many_attempts", message } } } });
+    open(PATHS.login);
+    await userEvent.type(await screen.findByLabelText("Usuario"), "rosa.samaca");
+    await userEvent.type(screen.getByLabelText("Contraseña"), "no-es-esta");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+  });
+
+  it("sin usuario o sin contraseña el botón no se puede usar; la contraseña se puede mostrar", async () => {
+    fakeApi({});
+    open(PATHS.login);
+    const button = await screen.findByRole("button", { name: "Entrar" });
+    expect(button).toBeDisabled();
+    const password = screen.getByLabelText("Contraseña");
+    await userEvent.type(password, "secreto-largo");
+    expect(password).toHaveAttribute("type", "password");
+    await userEvent.click(screen.getByRole("button", { name: /Mostrar/ }));
+    expect(password).toHaveAttribute("type", "text");
+  });
+
+  it("ofrece crear cuenta y seguir sin cuenta, y avisa que la contraseña no se recupera", async () => {
+    fakeApi({});
+    open(PATHS.login);
+    expect(await screen.findByRole("link", { name: "Crear cuenta" })).toHaveAttribute("href", PATHS.signup);
+    expect(screen.getByRole("link", { name: "Seguir sin cuenta" })).toHaveAttribute("href", PATHS.consult);
+    expect(screen.getByText(/No guardamos su correo ni su celular/)).toBeInTheDocument();
+  });
+});
+
+describe("Crear cuenta (HU-162, HU-163)", () => {
+  const fill = async () => {
+    await userEvent.type(await screen.findByLabelText("¿Cómo quiere que lo llamemos?"), "Rosa");
+    await userEvent.type(screen.getByLabelText("Usuario"), "Rosa.Samaca");
+    await userEvent.type(screen.getByLabelText("Contraseña"), "papa-criolla-2026");
+  };
+
+  it("sin aceptar el consentimiento no se envía nada (R9)", async () => {
+    const calls = fakeApi({});
+    open(PATHS.signup);
+    await fill();
+    await userEvent.click(screen.getByRole("button", { name: "Crear cuenta" }));
+    expect(await screen.findByText("Para crear la cuenta hay que aceptar.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("POST"))).toBe(false);
+  });
+
+  it("el consentimiento dice qué se guarda y qué no, y enlaza la política", async () => {
+    fakeApi({});
+    open(PATHS.signup);
+    const consent = await screen.findByRole("checkbox");
+    expect(consent).not.toBeChecked();
+    expect(consent).toHaveAccessibleName(/Acepto que AgroSense guarde mi usuario, mi nombre y mis prioridades, mis lotes/);
+    expect(screen.getByText(/se registra la actividad de mi cuenta durante 180 días/)).toBeInTheDocument();
+    expect(screen.getByText(/solo si hay al menos 5 cuentas/)).toBeInTheDocument();
+    expect(screen.getByText(/No se guarda correo, celular, documento ni dirección/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Leer la política de tratamiento de datos" })).toHaveAttribute("href", PATHS.dataPolicy);
+  });
+
+  it("crea la cuenta con la versión vigente del consentimiento y el usuario en minúsculas", async () => {
+    const calls = fakeApi({ "POST /api/v1/auth/register": { status: 201, body: ROSA } });
+    open(PATHS.signup);
+    await fill();
+    await userEvent.click(screen.getByRole("checkbox"));
+    await userEvent.click(screen.getByRole("button", { name: "Crear cuenta" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
+    expect(calls.find((call) => call.key.startsWith("POST"))?.body).toEqual({
+      display_name: "Rosa",
+      username: "rosa.samaca",
+      password: "papa-criolla-2026",
+      consent_version: 3,
+      consent_accepted: true,
+    });
+  });
+
+  it("avisa cada dato que falta antes de enviar", async () => {
+    const calls = fakeApi({});
+    open(PATHS.signup);
+    await userEvent.type(await screen.findByLabelText("Usuario"), "ro");
+    await userEvent.type(screen.getByLabelText("Contraseña"), "corta");
+    await userEvent.click(screen.getByRole("button", { name: "Crear cuenta" }));
+    expect(await screen.findByText("Escriba cómo quiere que lo llamemos.")).toBeInTheDocument();
+    expect(screen.getByText(/De 3 a 30: minúsculas/)).toBeInTheDocument();
+    expect(screen.getByText("La contraseña debe tener al menos 8 caracteres.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Usuario")).toHaveAttribute("aria-invalid", "true");
+    expect(calls.some((call) => call.key.startsWith("POST"))).toBe(false);
+  });
+
+  it("si el usuario ya existe lo dice junto al campo", async () => {
+    fakeApi({ "POST /api/v1/auth/register": { status: 409, body: { error: { code: "username_taken", message: "x" } } } });
+    open(PATHS.signup);
+    await fill();
+    await userEvent.click(screen.getByRole("checkbox"));
+    await userEvent.click(screen.getByRole("button", { name: "Crear cuenta" }));
+    expect(await screen.findByText("Ese nombre de usuario ya está en uso. Pruebe con otro.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Usuario")).toHaveAttribute("aria-invalid", "true");
+  });
+});
+
+describe("Vida alrededor de la mascota", () => {
+  it("sin movimiento no hay mariposa ni viento", async () => {
+    fakeApi({});
+    const { container } = open(PATHS.login);
+    await screen.findByLabelText("Usuario");
+    expect(container.querySelector("[data-butterfly]")).toBeNull();
+    expect(container.querySelector("[data-streak]")).toBeNull();
+  });
+
+  it("con movimiento, la mariposa y el viento son decoración: no se leen ni reciben el puntero", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    fakeApi({});
+    const { container } = open(PATHS.login);
+    await screen.findByLabelText("Usuario");
+    const butterflies = container.querySelectorAll("[data-butterfly]");
+    expect(butterflies.length).toBeGreaterThan(0);
+    for (const butterfly of butterflies) {
+      const layer = butterfly.parentElement!;
+      expect(layer).toHaveAttribute("aria-hidden", "true");
+      expect(layer).toHaveClass("pointer-events-none");
+    }
+    // La mirada se mueve aparte del parpadeo.
+    expect(container.querySelector(".mascot-gaze .mascot-eyes")).not.toBeNull();
+  });
+});
+
+describe("La mascota reacciona (HU-172)", () => {
+  const moods = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll<SVGElement>("main .mascot")).map((mascot) => mascot.dataset.mood);
+  const withMotion = () =>
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+
+  it("mira el campo de texto, se tapa los ojos en la contraseña y espía cuando está a la vista", async () => {
+    withMotion();
+    fakeApi({});
+    const { container } = open(PATHS.login);
+    const username = await screen.findByLabelText("Usuario");
+    expect(moods(container)).toEqual(["guide", "guide"]);
+    // Se espera a que termine la entrada: en jsdom GSAP saca y vuelve a meter los elementos al medirlos, y eso quita el foco.
+    await new Promise((done) => setTimeout(done, 1200));
+    username.focus();
+    await waitFor(() => expect(moods(container)).toEqual(["watch", "watch"]));
+    screen.getByLabelText("Contraseña").focus();
+    await waitFor(() => expect(moods(container)).toEqual(["shy", "shy"]));
+    fireEvent.click(container.querySelector("[data-field] button[aria-pressed]")!);
+    await waitFor(() => expect(moods(container)).toEqual(["peek", "peek"]));
+  });
+
+  it("sin movimiento no reacciona: se queda con su gesto", async () => {
+    fakeApi({});
+    const { container } = open(PATHS.login);
+    (await screen.findByLabelText("Contraseña")).focus();
+    await new Promise((done) => setTimeout(done, 60));
+    expect(moods(container)).toEqual(["guide", "guide"]);
+  });
+});
+
+describe("Crear cuenta en pantallas angostas", () => {
+  // En un teléfono va en dos pasos, para que cada uno quepa en la pantalla sin hacer scroll.
+  const narrow = () =>
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      // Angosta y, como el resto de las pruebas, sin movimiento.
+      matches: query.includes("max-width: 767px") || query.includes("prefers-reduced-motion"),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+
+  it("primero pide los datos y después el consentimiento", async () => {
+    const calls = fakeApi({ "POST /api/v1/auth/register": { status: 201, body: ROSA } });
+    narrow();
+    open(PATHS.signup);
+    expect(await screen.findByText(/paso 1 de 2/)).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(screen.getByText("Escriba cómo quiere que lo llamemos.")).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("¿Cómo quiere que lo llamemos?"), "Rosa");
+    await userEvent.type(screen.getByLabelText("Usuario"), "rosa.samaca");
+    await userEvent.type(screen.getByLabelText("Contraseña"), "papa-criolla-2026");
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(screen.getByText(/paso 2 de 2/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Usuario")).toBeNull();
+    // Se puede volver sin perder lo escrito.
+    await userEvent.click(screen.getByRole("button", { name: /Volver a mis datos/ }));
+    expect(screen.getByLabelText("Usuario")).toHaveValue("rosa.samaca");
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await userEvent.click(screen.getByRole("button", { name: "Crear cuenta" }));
+    expect(screen.getByText("Para crear la cuenta hay que aceptar.")).toBeInTheDocument();
+    expect(calls.some((call) => call.key.startsWith("POST"))).toBe(false);
+    await userEvent.click(screen.getByRole("checkbox"));
+    await userEvent.click(screen.getByRole("button", { name: "Crear cuenta" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
+  });
+});
+
+describe("Pie de página", () => {
+  it("entrar y crear cuenta llevan el pie de página", async () => {
+    fakeApi({});
+    open(PATHS.login);
+    expect(await screen.findByText(/Todos los derechos reservados/)).toBeInTheDocument();
+  });
+});
+
+describe("Sesión", () => {
+  it("quien ya entró no vuelve a ver la pantalla de entrar", async () => {
+    fakeApi({ "GET /api/v1/me": { status: 200, body: ROSA } });
+    open(PATHS.login);
+    expect(await screen.findByRole("heading", { level: 1, name: "Sus lotes" })).toBeInTheDocument();
+  });
+
+  it("cerrar sesión vuelve a ofrecer «Entrar»", async () => {
+    const calls = fakeApi({ "GET /api/v1/me": { status: 200, body: ROSA }, "POST /api/v1/auth/logout": { status: 204 } });
+    // Una página pública con la barra (Mi finca ahora pide sesión y, al salir, lleva al inicio).
+    open(PATHS.consult);
+    await userEvent.click((await screen.findAllByRole("button", { name: "Cerrar sesión" }))[0]);
+    expect(await screen.findByRole("link", { name: "Entrar" })).toHaveAttribute("href", PATHS.login);
+    expect(calls.some((call) => call.key === "POST /api/v1/auth/logout")).toBe(true);
+  });
+});
+
+describe("Destino después de autenticar (HU-168, R9)", () => {
+  it.each([PATHS.login, PATHS.signup])("con consulta va a agregar lote desde %s sin área en la URL", { timeout: 15000 }, async (path) => {
+    writeGuestConsult({ ...EMPTY_STRATEGY, municipalityId: "15646", areaText: "2,73", irrigation: "no" });
+    fakeApi({ [path === PATHS.login ? "POST /api/v1/auth/login" : "POST /api/v1/auth/register"]: { status: 200, body: ROSA } });
+    const router = createMemoryRouter(routes, { initialEntries: [path] });
+    const addresses: string[] = [];
+    const unsubscribe = router.subscribe((state) => addresses.push(state.location.pathname + state.location.search));
+    render(<RouterProvider router={router} />);
+    if (path === PATHS.signup)
+      fireEvent.change(await screen.findByLabelText("¿Cómo quiere que lo llamemos?"), { target: { value: "Rosa" } });
+    fireEvent.change(await screen.findByLabelText("Usuario"), { target: { value: "rosa.samaca" } });
+    fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: "papa-criolla-2026" } });
+    if (path === PATHS.signup) await userEvent.click(screen.getByRole("checkbox"));
+    await userEvent.click(screen.getByRole("button", { name: path === PATHS.login ? "Entrar" : "Crear cuenta" }));
+    await waitFor(() => expect(addresses).toContain(PATHS.addLot + "?desde=consulta"));
+    expect(addresses.every((url) => !url.includes("area") && !url.includes("2,73") && !url.includes("2.73"))).toBe(true);
+    unsubscribe();
+  });
+});
