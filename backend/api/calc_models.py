@@ -174,8 +174,10 @@ class DiagnosisRequestEcho(BaseModel):
 
 class DiagnosisResponse(DiagnosisCore):
     request: DiagnosisRequestEcho
-    # Solo cuando alguna acción es `other_window`: hasta tres, nunca de alto riesgo.
-    best_windows: list[WindowSummary] | None = None
+    # Solo cuando alguna acción es `other_window`: hasta tres, nunca de alto riesgo. Si no aplica, no viene (como en
+    # `DIAGNOSIS_OK`): nulo se omite al serializar. Vacío sí viene: no siempre hay un buen mes. Los demás nulos del
+    # contrato (`level`, `score`, `window`, …) se mantienen.
+    best_windows: list[WindowSummary] | None = Field(None, exclude_if=lambda value: value is None)
 
 
 # ------------------------------------------------------------------ estrategias de rotación
@@ -246,6 +248,8 @@ class Issue(BaseModel):
     kind: ExclusionKind
     rule_id: str | None = None
     signal: SignalName | None = None
+    # En `not_suitable` y `soil_ph`: el cultivo que causa el descarte; `cycle` es el primero donde aparece (14 nov 2026).
+    crop_id: str | None = None
     reason: str
     # De dónde sale el motivo (R8): la fuente de la regla, de la ficha del cultivo, del suelo o del clima de la señal.
     source_ids: list[str]
@@ -492,6 +496,7 @@ class TrendsResponse(BaseModel):
     water: WaterSeries
     supply: SupplySeries
     ndvi: NdviSeries
+    limitations: list[str]
     versions: Versions
 
 
