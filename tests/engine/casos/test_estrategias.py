@@ -16,7 +16,8 @@ import pytest
 from backend.api import calc_examples
 from backend.engine.rotations.ranking import NO_CRITERION
 from common.region import region_today
-from tests.engine.casos.conftest import EJEMPLO_CALIDO, EJEMPLO_FRIO, EJEMPLO_PRIORIDADES, rotacion
+from tests.engine.casos.conftest import CONTORNO_LOTE, EJEMPLO_CALIDO, EJEMPLO_FRIO, EJEMPLO_PRIORIDADES, rotacion
+from tests.test_diagnostico import create_lot, register
 
 # Sin sensibilidad a la helada en ninguna etapa de la ficha (catalog/crops.yaml): un ciclo con ellos no es de alto riesgo.
 SIN_HELADA = {"zanahoria", "descanso"}
@@ -286,17 +287,71 @@ def test_ejemplo_el_primer_ciclo_coincide_con_el_diagnostico(api):
     assert comparadas and len(cultivos) >= 2  # más de un cultivo comparado
 
 
+def comparar_primeros_ciclos(cliente, respuesta: dict, prioridades: dict, **extra) -> tuple[int, set[str]]:
+    """Cada primer ciclo con diagnóstico (sugeridas y actual) contra `/diagnostics` con la misma entrada: mismas señales,
+    calificaciones y luces, y la señal `soil` califica en los dos lados. Devuelve cuántos ciclos y qué cultivos comparó."""
+    hoy = region_today().isoformat()
+    comparados, cultivos = 0, set()
+    for estrategia in [*respuesta["strategies"], respuesta["current_strategy"]]:
+        primero = estrategia["cycles"][0]
+        if primero["diagnosis"] is None:  # descanso: sin diagnóstico
+            continue
+        diagnostico = cliente.post(
+            "/api/v1/diagnostics",
+            json={
+                "municipality_id": EJEMPLO_FRIO,
+                "crop_id": primero["crop_id"],
+                "sowing_date": hoy,
+                "irrigated": True,
+                "priorities": prioridades,
+                **extra,
+            },
+        )
+        assert diagnostico.status_code == 200, diagnostico.text
+        cuerpo = diagnostico.json()
+        comprobar_primer_ciclo(primero, cuerpo)
+        assert primero["light_default"] == cuerpo["overall_default"]["light"]
+        # El suelo entra: `soil` califica (pH de ejemplo dentro del rango del cultivo); `comprobar_primer_ciclo` la compara.
+        assert cuerpo["signals"]["soil"]["status"] == "available" and cuerpo["signals"]["soil"]["score"] is not None
+        comparados += 1
+        cultivos.add(primero["crop_id"])
+    return comparados, cultivos
+
+
+def test_ejemplo_el_primer_ciclo_coincide_con_el_diagnostico_con_el_suelo_del_municipio(datos_con_suelo, api):
+    # El suelo del municipio (pH 6,0; `datos_con_suelo`, EJEMPLO) sale del dataset en las dos rutas. Con `irrigated` y los pesos
+    # del agricultor, las dos luces y las seis señales coinciden, y `soil` califica.
+    prioridades = {"water": 2, "frost": 4, "heat": 1, "soil": 5, "supply": 0, "market": 1}
+    respuesta = rotacion(api, irrigated=True, signal_priorities=prioridades, current_crop_ids=["papa", "maiz"])
+    assert respuesta["soil_basis"] == "municipality"
+    comparados, cultivos = comparar_primeros_ciclos(api, respuesta, prioridades)
+    assert comparados >= 2 and len(cultivos) >= 2
+
+
+def test_ejemplo_el_primer_ciclo_coincide_con_el_diagnostico_con_el_suelo_del_lote(datos_con_suelo, client):
+    # El mismo `lot_id` en las dos rutas (exige sesión): el suelo es el de las celdas bajo el contorno (pH de mediana 6,3), no el
+    # del municipio (6,0). La rejilla es de EJEMPLO y el lote es riego (`irrigated` del lote, HU-164).
+    prioridades = {"water": 2, "frost": 4, "heat": 1, "soil": 5, "supply": 0, "market": 1}
+    register(client, "rosa.coherencia")
+    lote = create_lot(client, geometry=CONTORNO_LOTE, irrigated=True)
+    respuesta = rotacion(client, lot_id=lote, signal_priorities=prioridades, current_crop_ids=["papa", "maiz"])
+    assert (respuesta["soil_basis"], respuesta["slope_basis"]) == ("lot", "lot")
+    comparados, cultivos = comparar_primeros_ciclos(client, respuesta, prioridades, lot_id=lote)
+    assert comparados >= 2 and len(cultivos) >= 2
+
+
 def test_ejemplo_con_prioridad_de_suelo_en_5_el_abono_verde_queda_mejor(api):
     # Dos estrategias de 2 ciclos que solo difieren en el primero: avena con vicia (abono verde, fija nitrógeno) o cebolla,
     # que dura lo mismo (150 días), así que el segundo ciclo cae en la misma fecha. Con la regla `leguminosa_en_rotacion`
     # (favorable desde 1 ciclo con leguminosa), `nitrogen` es favorable con la avena con vicia y unfavorable con la cebolla.
     # Supuestos por confirmar: el agua y el riesgo de la avena y de la cebolla en Samacá no se comparan aquí; se espera que
-    # el peso de `soil` en 5 baste para que la avena con vicia gane. Sin datos de agua en el ejemplo, muchas estrategias
+    # el peso de `soil` en 5 baste para que la avena con vicia gane. `income` va en 0: con HU-241 el abono verde vale 0 en ingreso
+    # y con peso 3 perdería por eso; con 0 el caso vale antes y después de esa regla. Sin datos de agua en el ejemplo, muchas estrategias
     # empatan arriba y la de cebolla no entra entre las 10: se pide como rotación actual, que se evalúa igual (decisión 14).
     # Con el ingreso en 0 (HU-241): el abono verde vale 0 en el ingreso siempre, porque no deja cosecha (decidido por
     # Felipe el 15 nov 2026), y la cebolla sin historia de precio no cuenta; este caso compara solo el suelo.
     con, sin = ["avena_vicia", "zanahoria"], ["cebolla_bulbo", "zanahoria"]
-    respuesta = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5, "income": 0}, current_crop_ids=sin)
+    respuesta = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "income": 0, "soil": 5}, current_crop_ids=sin)
     assert respuesta["weights"]["soil"] == 5
     por_crop_ids = {tuple(s["crop_ids"]): s for s in respuesta["strategies"]}
     actual = respuesta["current_strategy"]
@@ -313,18 +368,23 @@ def test_ejemplo_el_peso_del_suelo_cambia_el_orden_de_las_estrategias(api, datos
     # con el ingreso en prioridad 0 (el descanso vale 0 en el ingreso desde HU-241, así que se aparta para que solo cambie el
     # peso del suelo), `total_score` es el promedio de `soil` y `risk` ponderado (decisión 15):
     #   A = arveja y zanahoria: soil 100 (leguminosa), risk 59.   B = descanso y zanahoria: soil 33, risk 100.
+    # `income` va en 0 en las dos corridas a propósito: con HU-241 el descanso y el abono verde valen 0 en `income` siempre y, con
+    # peso 3, B (con descanso) perdería por ingreso frente a A. Con peso 0 el ingreso no cuenta y el caso vale antes y después de
+    # esa regla: lo único que cambia entre las dos corridas es el peso de `soil`.
     # Los números exactos son del 16 de noviembre de 2026 (`hoy_fijo`), no de otra fecha: con la siembra a mediados de
     # noviembre la etapa media y la final de la arveja (110 días) caen de enero a marzo del año siguiente, así que la serie por
     # año de siembra pierde el último año (8 de 29 años = 28 %, `frost` 59). Sembrando desde enero la ventana cabe en un solo año
     # (9 de 30 = 30 %, `frost` 55) y `risk` baja a 55. Las relaciones valen en cualquier fecha;
     # los números y el primer puesto de A, solo en esta.
-    # Con `soil` en 5 (y las demás en 3): A = (100*5 + 59*3) / 8 = 85 y B = (33*5 + 100*3) / 8 = 58. Con `soil` en 0, B = 100 y A = 59.
+    # Con `soil` en 5 (agua y riesgo en 3, ingreso en 0): A = (100*5 + 59*3) / 8 = 85 y B = (33*5 + 100*3) / 8 = 58.
+    # Con `soil` en 0, B = 100 y A = 59.
     assert hoy_fijo.isoformat() == "2026-11-16"
     a, b = ["arveja", "zanahoria"], ["descanso", "zanahoria"]
-    con_peso = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 5, "income": 0})
-    sin_peso = rotacion(api, cycles=2, priorities={**EJEMPLO_PRIORIDADES, "soil": 0, "income": 0})
-    assert con_peso["weights"] == {**EJEMPLO_PRIORIDADES, "soil": 5, "income": 0}
-    assert sin_peso["weights"] == {**EJEMPLO_PRIORIDADES, "soil": 0, "income": 0}
+    base = {**EJEMPLO_PRIORIDADES, "income": 0}
+    con_peso = rotacion(api, cycles=2, priorities={**base, "soil": 5})
+    sin_peso = rotacion(api, cycles=2, priorities={**base, "soil": 0})
+    assert con_peso["weights"] == {**base, "soil": 5}
+    assert sin_peso["weights"] == {**base, "soil": 0}
     assert con_peso["excluded_counts"] == sin_peso["excluded_counts"]  # lo único que cambia es el peso
     # Relaciones, que valen en cualquier fecha (comprobadas con el «hoy» simulado en 2026-11-16, 2027-01-01, 2027-03-15,
     # 2027-05-10 y 2027-12-31). Con el suelo en 5 la de suelo flojo no entra entre las 10 y la de mejor suelo sí, y sube
@@ -368,3 +428,38 @@ def test_ejemplo_un_suelo_que_toca_el_borde_del_ph_de_un_cultivo_no_lo_excluye(a
     en_estrategias = {c for e in respuesta["strategies"] for c in e["crop_ids"]}
     assert {"papa", "maiz"} <= en_estrategias
     assert not {"arveja", "cebolla_bulbo", "avena_vicia"} & en_estrategias
+
+
+def test_ejemplo_con_prioridad_de_suelo_en_5_una_estrategia_con_abono_verde_queda_mejor_que_la_misma_sin_el(datos_con_suelo, api, hoy_fijo):
+    # Suelo de EJEMPLO (R5, `datos_con_suelo`): pH 6,0 (el óptimo de la avena con vicia) y carbono orgánico bajo (20 g/kg, bajo los
+    # 29 de `materia_organica_ciclos`), que es donde el abono verde cuenta en `organic_carbon`: 1 ciclo = `moderate` y sin él
+    # `unfavorable`. Sin datos de heladas ni de agua, `risk` vale 100 en todas y no decide.
+    # Par: con = avena con vicia (abono verde, `kind = cover`) y zanahoria; sin = arveja y zanahoria. (Con papa no sirve: como rotación
+    # actual haría de la papa un cultivo anterior y `papa_seguida` la sacaría de las sugeridas.) Las dos fijan nitrógeno (`nitrogen`
+    # favorable) y cubren el suelo, así que solo difieren en el abono verde:
+    #   con: soil 88 (75 + el carbono `moderate`) y sin: soil 75 (carbono `unfavorable`).
+    # `income` va en 0 (con HU-241 el abono verde vale 0 en `income`; con peso 0 no cuenta y la comparación es solo de suelo).
+    # Con `soil` en 5 (water y risk en 3): con = (88*5 + 100*3) / 8 = 93 y sin = (75*5 + 100*3) / 8 = 84. Con `soil` en 0 las dos
+    # valen 100 y el desempate es `crop_ids`: arveja va antes que avena_vicia. Los puestos son del 16 de nov de 2026 (`hoy_fijo`).
+    assert hoy_fijo.isoformat() == "2026-11-16"
+    con, sin = ["avena_vicia", "zanahoria"], ["arveja", "zanahoria"]
+    base = {**EJEMPLO_PRIORIDADES, "income": 0}
+    con_peso = rotacion(api, cycles=2, priorities={**base, "soil": 5}, current_crop_ids=sin)
+    # Con `soil` en 0 no se pide la actual: así la igual sin abono verde también se sugiere y tiene `rank`.
+    sin_peso = rotacion(api, cycles=2, priorities={**base, "soil": 0})
+    assert con_peso["weights"]["soil"] == 5 and sin_peso["weights"]["soil"] == 0
+    por_con = next(s for s in con_peso["strategies"] if s["crop_ids"] == con)
+    # La misma sin abono verde se evalúa como rotación actual (decisión 14): no entra entre las 10 pero se compara con ella.
+    actual = con_peso["current_strategy"]
+    assert actual["crop_ids"] == sin and actual["rank"] is None
+    assert por_con["soil_health"]["organic_carbon"]["level"] == "moderate"
+    assert actual["soil_health"]["organic_carbon"]["level"] == "unfavorable"
+    assert por_con["soil_health"]["nitrogen"]["level"] == actual["soil_health"]["nitrogen"]["level"] == "favorable"
+    assert (por_con["scores"]["soil"], por_con["scores"]["risk"], por_con["total_score"]) == (88, 100, 93)
+    assert (actual["scores"]["soil"], actual["scores"]["risk"], actual["total_score"]) == (75, 100, 84)
+    # Con `soil` en 5 el que tiene abono verde queda 6.º y el igual sin él no entra entre las 10 (aquí es la
+    # actual); con `soil` en 0 se invierte: la igual sin él queda 6.ª y la que tiene abono verde no entra entre las 10.
+    assert rank_de(con_peso, con) == 6
+    assert rank_de(con_peso, sin) is None  # es la rotación actual: no se repite entre las sugeridas
+    assert rank_de(sin_peso, sin) == 6
+    assert rank_de(sin_peso, con) is None
