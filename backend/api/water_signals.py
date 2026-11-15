@@ -1,7 +1,7 @@
 """Los datos de la señal de agua (HU-071): lee del dataset publicado el clima del agua de un municipio una sola vez por
 consulta (`zone_water`), arma `signals.water.sources` de cada ventana y llama al motor con todo ya leído (R6). Solo lee:
 sin errores HTTP, sin base de datos y sin guardar nada (R9). El balance hídrico lo pide `window_signals.balance_for`, el
-único punto que cambia cuando entre el de HU-144 (PR #96).
+balance de HU-144 (`backend/engine/water_balance.py`).
 
 **Qué se lee.** Qué fuente calcula cada cosa lo dice `catalog/sources.yaml` (`water`, con
 `monthly_climate.water_sources`), y las filas de cada fuente salen de `monthly_climate.rain_rows` y `climate_rows`, las
@@ -66,7 +66,7 @@ PERIOD = re.compile(r"^(\d{4})-(\d{4})$")
 
 @dataclass(frozen=True)
 class WaterMonth:
-    """El clima normal de la zona en un mes del año, con la forma de `MonthClimate` del balance de HU-144 (PR #96): la
+    """El clima normal de la zona en un mes del año, con la forma de `MonthClimate` del balance de HU-144: la
     ET0 normal y la lluvia del año normal y del año seco de la fuente que calcula la señal. Nulo: sin dato (R1)."""
 
     et0_mm: float | None

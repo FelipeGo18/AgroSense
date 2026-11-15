@@ -8,7 +8,7 @@ from datetime import date
 import pytest
 
 from backend.engine.stages import StageSpan, crop_window
-from backend.engine.water_need import daily_kc, window_deficit_mm, window_etc_mm, window_rain_mm
+from backend.engine.water_need import daily_kc, window_etc_mm, window_rain_mm
 
 PAPA = [
     StageSpan("initial", 45, kc=0.5),
@@ -131,40 +131,3 @@ def test_mismos_datos_mismo_resultado():
     window = crop_window(PAPA, date(2027, 8, 2))
     et0 = {(2027, m): 90.0 + m for m in range(8, 13)} | {(2028, 1): 95.0}
     assert window_etc_mm(window, et0) == window_etc_mm(window, dict(reversed(list(et0.items()))))
-
-
-# ---------- el déficit mes a mes, sin el agua guardada (HU-071, hasta el balance de HU-144) ----------
-
-
-def test_sin_lluvia_el_deficit_es_toda_la_necesidad():
-    window = crop_window(PAPA, date(2027, 8, 2))
-    keys = [(2027, m) for m in range(8, 13)] + [(2028, 1)]
-    et0 = {key: 90.0 for key in keys}
-    rain = {key: 0.0 for key in keys}
-    assert window_deficit_mm(window, rain, et0) == pytest.approx(window_etc_mm(window, et0))
-
-
-def test_con_lluvia_de_sobra_no_hay_deficit():
-    window = crop_window(PAPA, date(2027, 8, 2))
-    keys = [(2027, m) for m in range(8, 13)] + [(2028, 1)]
-    assert window_deficit_mm(window, {key: 500.0 for key in keys}, {key: 90.0 for key in keys}) == 0.0
-
-
-def test_lo_que_sobra_un_mes_no_tapa_lo_que_falta_en_otro():
-    """Sin el agua guardada, un mes lluvioso no compensa uno seco: el déficit es el de los meses secos, aunque la lluvia
-    de toda la ventana alcance para la necesidad de toda la ventana."""
-    window = crop_window([StageSpan("initial", 31, kc=1.0), StageSpan("mid", 30, kc=1.0)], date(2027, 3, 1))
-    et0 = {(2027, 3): 100.0, (2027, 4): 100.0}
-    rain = {(2027, 3): 200.0, (2027, 4): 0.0}
-    assert window_rain_mm(window, rain) >= window_etc_mm(window, et0)
-    assert window_deficit_mm(window, rain, et0) == pytest.approx(100.0)
-
-
-def test_sin_un_mes_de_lluvia_o_de_et0_no_hay_deficit():
-    window = crop_window(PAPA, date(2027, 8, 2))
-    full = {(2027, m): 100.0 for m in range(8, 13)} | {(2028, 1): 100.0}
-    partial = full | {(2027, 10): None}
-    assert window_deficit_mm(window, partial, full) is None
-    assert window_deficit_mm(window, full, partial) is None
-    no_kc = crop_window([StageSpan("initial", 10), StageSpan("mid", 10, kc=1.0)], date(2027, 3, 1))
-    assert window_deficit_mm(no_kc, {(2027, 3): 0.0}, {(2027, 3): 100.0}) is None

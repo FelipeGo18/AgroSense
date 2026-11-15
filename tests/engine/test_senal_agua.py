@@ -64,7 +64,7 @@ def test_la_ventana_de_las_pruebas_va_de_agosto_a_noviembre():
     assert [(month.year, month.month) for month in WINDOW.months()] == [(2026, 8), (2026, 9), (2026, 10), (2026, 11)]
 
 
-# ---------- la cobertura del balance (la misma fórmula que `WaterBalance.covered_pct`, PR #96) ----------
+# ---------- la cobertura del balance (la misma fórmula que `WaterBalance.covered_pct` de HU-144) ----------
 
 
 @pytest.mark.parametrize(

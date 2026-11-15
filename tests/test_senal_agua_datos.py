@@ -6,10 +6,10 @@ de ejemplo en `precip_month` (la tabla de GPM IMERG) y en `climate_month` (la de
 con la fuente de su tabla (`tests/ejemplos_con_fuente.py`): la señal solo lee las filas de la fuente que dice
 `catalog/sources.yaml`, como `/trends`. «Hoy» queda fijo en el 14 de noviembre de 2026 en la región (R4).
 
-La API pide el balance en un solo punto, `backend.api.window_signals.balance_for`. Hoy sale de
-`backend/engine/water_need.py`, sin el agua que guarda el suelo (el balance de HU-144, PR #96, la sumará), y la señal
-lo dice. Para probar casos puntuales, algunas pruebas cambian ese punto por uno que devuelve un balance **de ejemplo**
-(`EXAMPLE_*`), igual para todas las ventanas: no son datos de ninguna zona (R5).
+La API pide el balance en un solo punto, `backend.api.window_signals.balance_for`: el de HU-144
+(`backend/engine/water_balance.py`), con el agua que guarda el suelo. Para probar casos puntuales, algunas pruebas
+cambian ese punto por uno que devuelve un balance **de ejemplo** (`EXAMPLE_*`), igual para todas las ventanas: no son
+datos de ninguna zona (R5).
 """
 
 from datetime import UTC, datetime
@@ -21,7 +21,7 @@ from backend.api import calc_models as m
 from backend.api import window_signals as window_signals_module
 from backend.api.main import app
 from backend.api.water_signals import SourceReading, WaterSignal
-from backend.api.window_signals import pending_reason, pending_signal, signal_sources
+from backend.api.window_signals import pending_signal, signal_sources
 from backend.config.settings import get_settings
 from backend.dataset import get_dataset
 from backend.engine.sensitive_signal import ClimateSignalResult
@@ -81,17 +81,17 @@ def rain_caveat() -> str:
 # ---------- el balance de hoy: con lo nuestro, sin el agua guardada y dicho (R1, R5) ----------
 
 
-def test_el_agua_se_califica_con_la_lluvia_del_anio_seco_y_dice_que_va_sin_el_agua_guardada():
-    """Con la lluvia del año seco y la ET0 de la zona, el agua se califica: nivel, calificación y el déficit como
-    indicador. Va sin el agua que guarda el suelo hasta el balance de HU-144, y las limitaciones lo dicen una vez."""
+def test_el_agua_se_califica_con_el_balance_de_hu144_y_el_agua_que_guarda_el_suelo():
+    """Con la lluvia del año seco, la ET0, la textura del municipio y la raíz de la ficha, el balance de HU-144 califica
+    el agua: nivel, calificación y el déficit como indicador, contando el agua que guarda el suelo."""
     body = diagnose()
     water = body["signals"]["water"]
     assert water["status"] == "available"
     assert water["level"] in ("favorable", "moderate", "unfavorable")
     assert isinstance(water["score"], int) and 0 <= water["score"] <= 100
     assert water["indicators"] == ["water_deficit_mm"]
-    assert pending_reason("water") not in water["reasons"]
-    assert body["limitations"].count(NO_RETENTION) == 1
+    assert "la lluvia y el agua que guarda el suelo cubren" in water["reasons"][0]
+    assert NO_RETENTION not in body["limitations"]
     # Con el agua calificada, la luz de AgroSense ya no es `not_evaluable` por falta de agua (regla 1).
     assert body["overall_default"]["light"] != "not_evaluable"
 

@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
 WATER = "water"
 INDICATOR = "water_deficit_mm"
-# Sin la textura del suelo, o hasta el balance de HU-144 (PR #96), el balance va sin el agua que guarda el suelo
+# Sin la textura del suelo o la raíz del cultivo, el balance de HU-144 va sin el agua que guarda el suelo
 # (specs/01-reglas.md, «Cómo se califica cada señal»): la señal se califica igual y se dice. Sin el agua guardada, el
 # déficit no es menor que con ella (el suelo solo guarda lo que sobra de un mes para los siguientes), así que el error
 # va del lado prudente.
@@ -62,10 +62,8 @@ class WaterBalanceSummary:
     ETc de FAO-56), el déficit del año seco como rango [mínimo, máximo] (`dry_deficit_mm`) y si se tuvo en cuenta el
     agua que guarda el suelo (`retention`). Nulo: sin dato (R1).
 
-    `covered_pct` es la misma fórmula que `WaterBalance.covered_pct` del PR #96 (HU-144, todavía sin integrar). Hoy el
-    resumen sale de `window_signals.balance_for` con `water_need.py`, sin agua guardada; cuando
-    entre, este resumen sale de su `WaterBalance` (`WaterBalanceSummary(b.need_mm, b.deficit_mm.get("dry"),
-    b.retention)`) y la cuenta no se duplica.
+    Sale del `WaterBalance` de HU-144 en `window_signals.balance_for`; `covered_pct` es la misma fórmula que
+    `WaterBalance.covered_pct`, así que la cuenta no se duplica.
     """
 
     need_mm: float | None
@@ -147,8 +145,10 @@ def water_signal(
         # Una curva de `water` nula en `thresholds.yaml` (sin fuente para sus cortes): no se califica (R1, R8).
         return insufficient(f"Sin una curva con fuente para calificar el agua de {crop_name}: el agua no se evalúa", limitations)
     when = in_months(window.months())
+    # El año seco de cada mes, sumado: un poco más seco que el año seco de la ventana (va del lado prudente, PR #115).
     dry_year = (
-        f"En un año seco (de los que llueve menos que en 4 de cada 5), con la lluvia de {rain.name} de {rain.first_year} a {rain.last_year}"
+        "En un año seco (si cada mes llueve como en sus años secos, menos que en 4 de cada 5), "
+        f"con la lluvia de {rain.name} de {rain.first_year} a {rain.last_year}"
     )
     covers = "la lluvia y el agua que guarda el suelo cubren" if balance.retention else "la lluvia cubre"
     estimate = "Es una estimación con el clima de la zona, no una medición de su lote: verifique la humedad del suelo en campo"

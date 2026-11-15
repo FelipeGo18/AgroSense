@@ -174,7 +174,7 @@ def test_el_dataset_carga_la_textura_de_la_rejilla(examples):
 
 
 def test_el_balance_recibe_la_ventana_el_clima_de_la_fuente_usada_la_textura_y_la_ficha(examples, monkeypatch):
-    """Lo que necesitará `water_balance` de HU-144 (PR #96): el clima normal por mes con la lluvia de GPM IMERG (la de
+    """Lo que recibe `water_balance` de HU-144: el clima normal por mes con la lluvia de GPM IMERG (la de
     `water.rain` en `catalog/sources.yaml`), nunca la de NASA POWER, la ET0 de NASA POWER, la textura del municipio
     (sin lote) y la ficha del cultivo."""
     calls = record_balance(monkeypatch)
