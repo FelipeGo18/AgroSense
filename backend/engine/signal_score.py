@@ -158,6 +158,11 @@ def limiting(rated: Sequence[RatedSignal]) -> tuple[str, SignalScore] | None:
     return name, signal
 
 
+def is_grave(score: SignalScore) -> bool:
+    """Si una señal es `unfavorable` **y** crítica (R2): la única definición de «riesgo grave» de una señal."""
+    return score.critical and score.level == UNFAVORABLE
+
+
 def high_risk(rated: Sequence[RatedSignal]) -> bool:
     """Si alguna señal de `rated` es `unfavorable` **y** crítica (R2: «desfavorable y crítica»). La única definición
     de alto riesgo del motor: la usan el orden de las ventanas y el semáforo.
@@ -166,7 +171,7 @@ def high_risk(rated: Sequence[RatedSignal]) -> bool:
     cada señal no pasa del corte de `moderate`), así que exigir las dos condiciones no cambia ningún resultado de
     hoy; lo hace explícito por si un umbral se mueve.
     """
-    return any(signal.critical and signal.level == UNFAVORABLE for _, signal, _ in rated)
+    return any(is_grave(signal) for _, signal, _ in rated)
 
 
 def score_signal(

@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from backend.api import calc_examples
 from backend.api.calc_models import ErrorBody, MunicipalitySoil, SoilRange, Versions
 from backend.api.errors import ApiError, explain
+from backend.config.versions import rules_version
 from backend.dataset import Dataset, DatasetUnavailable, get_dataset
 from common.logging import get_logger
 
@@ -133,5 +134,5 @@ def soil(municipality_id: str, request: Request, dataset: Dataset = Depends(requ
         cells=row["cells"],
         quality=row["quality"],
         source_id=row["source_id"],
-        versions=Versions(dataset=dataset.version, rules=dataset.rules_version),
+        versions=Versions(dataset=dataset.version, rules=rules_version(dataset.rules_version)),
     )
