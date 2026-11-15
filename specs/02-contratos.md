@@ -568,7 +568,7 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - `cycles`: 2 o 3; sin él, 3. Otro valor responde 422.
 - `sowing_date`: la fecha en que se sembraría el primer ciclo. Anterior a hoy o a más de doce meses responde 422. Los ciclos siguientes pueden caer después de esos doce meses.
 - `previous_crop_ids`: de 0 a 3 cultivos del catálogo (de cualquier `kind`), el más reciente primero. Vacía es la primera siembra del terreno.
-- `current_crop_ids` (decisión 14, aprobado por Felipe el 8 de noviembre de 2026): opcional; la rotación que el agricultor viene haciendo, de 2 a 3 cultivos del catálogo en el orden en que los siembra. Se evalúa como la estrategia de referencia (`current_strategy`); si tiene menos cultivos que `cycles`, se repite desde el primero. Sin ella no hay referencia y `limitations` lo dice. Con menos de 2 o más de 3 cultivos, o alguno fuera del catálogo, responde 422.
+- `current_crop_ids` (decisión 14, aprobado por Felipe el 8 de noviembre de 2026): opcional; la rotación que el agricultor viene haciendo, de 2 a 3 cultivos del catálogo en el orden en que los siembra. Se evalúa como la estrategia de referencia (`current_strategy`); si tiene menos cultivos que `cycles`, se repite desde el primero; si tiene más, se toman los primeros `cycles` y `limitations` lo dice nombrando los cultivos comparados («Su rotación tiene 3 cultivos; con 2 ciclos se compararon papa y avena»; aprobado por Felipe el 15 de noviembre de 2026, PR #153). Sin ella no hay referencia y `limitations` lo dice. Con menos de 2 o más de 3 cultivos, o alguno fuera del catálogo, responde 422.
 - `priorities`: las cuatro prioridades de la rotación (`water`, `soil`, `income`, `risk`), un entero de 0 a 5 cada una.
 - `signal_priorities`: opcional; los pesos de 0 a 5 por señal para el diagnóstico de cada ciclo, igual que `priorities` de `/diagnostics`. Sin él, los de `weights.yaml`.
 - `irrigated`: igual que en el diagnóstico. `lot_id` es opcional y exige sesión: con él, el suelo, la altitud, el verdor e `irrigated` salen del lote.
@@ -662,6 +662,8 @@ Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 
 > **14 de noviembre de 2026 (HU-081, aprobado por Felipe en la revisión del PR #90):** varios motivos de una estrategia descartada: se muestra el primero en un orden fijo y `excluded_counts` la cuenta una vez. No agrega campos.
 
 > **8 de noviembre de 2026 (decisión 14, aprobado por Felipe):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta.
+
+> **15 de noviembre de 2026 (HU-223, aprobado por Felipe en el PR #153):** con más cultivos en `current_crop_ids` que `cycles`, se comparan los primeros `cycles` y `limitations` lo dice. No cambia la forma.
 
 > **11 de noviembre de 2026 (HU-102, aprobado por Haider; decisión 15 de `docs/decisiones.md`):** `source_ids` en cada criterio de `soil_health`, en cada `issues` y en cada `excluded`. Es un campo nuevo; los demás no cambian.
 
