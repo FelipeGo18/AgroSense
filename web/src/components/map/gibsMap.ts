@@ -38,15 +38,21 @@ export function mountGibsColor(
         if (available) {
           // Si las teselas fallan, la capa se quita sola: se olvida para volver a montarla en la próxima vista.
           if (!dispose) {
+            // `remove` se declara antes de montar: un fallo síncrono llama a la callback antes de que exista (revisión
+            // del #186). Al fallar, se quitan también los oyentes de la capa, no solo la capa.
+            let remove: (() => void) | undefined;
             let failed = false;
-            const remove = mountGibsLayer(map, "color", date, (layer, value) => {
+            remove = mountGibsLayer(map, "color", date, (layer, value) => {
               if (value === "error") {
                 failed = true;
-                if (dispose === remove) dispose = undefined;
+                const cleanup = remove;
+                if (cleanup && dispose === cleanup) dispose = undefined;
+                if (cleanup) queueMicrotask(cleanup);
               }
               onStatus(layer, value);
             });
-            if (!failed) dispose = remove;
+            if (failed) remove();
+            else dispose = remove;
           }
         } else {
           unmount();

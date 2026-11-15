@@ -15,10 +15,9 @@ from backend.dataset import load
 
 PUBLISHED = Path(__file__).resolve().parents[1] / "data" / "published"
 CONTRACT_SOURCE_FIELDS = {"source_id", "name", "institution", "url", "coverage", "license"}
-# Los productos de la NASA que ya tienen adaptador y entran al núcleo (decisión 12). MODIS NDVI desde HU-208; SMAP se suma
-# con HU-210. GIBS (HU-211) entra en `sources` con la próxima reconstrucción del dataset: hasta entonces se comprueba su
-# entrada en `catalog/gibs.json`, que es la que publica `pipeline.build`.
-NASA_IN_USE = ("nasa_power", "nasadem", "imerg", "modis_ndvi")
+# Los productos de la NASA que ya tienen adaptador y entran al núcleo (decisión 12). MODIS NDVI desde HU-208; GIBS desde
+# HU-211 (publicada en la 2026.11.28, desde `catalog/gibs.json`); SMAP se suma con HU-210.
+NASA_IN_USE = ("nasa_power", "nasadem", "imerg", "modis_ndvi", "nasa_gibs")
 
 
 def test_version_con_dataset_responde_lo_que_pide_el_contrato(dataset):
