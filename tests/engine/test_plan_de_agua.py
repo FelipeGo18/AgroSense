@@ -51,8 +51,8 @@ def crop(crop_id: str = "papa", sowing: date = APRIL, area: float = 1.0, stages=
     return wp.PlanCrop(crop_id, f"la {crop_id}", "crop", area * 100, sowing, crop_window(stages, sowing), root)
 
 
-def plan(*crops: wp.PlanCrop, texture: str | None = "franco", weather=None, moisture=()) -> wp.WaterPlan:
-    return wp.water_plan(list(crops), FARM_HA, weather or climate(), texture, RAIN, moisture)
+def plan(*crops: wp.PlanCrop, texture: str | None = "franco", weather=None, moisture=(), farm_ha: float = FARM_HA) -> wp.WaterPlan:
+    return wp.water_plan(list(crops), farm_ha, weather or climate(), texture, RAIN, moisture)
 
 
 @dataclass(frozen=True)
@@ -104,6 +104,17 @@ def test_el_volumen_es_el_deficit_por_10_por_el_area():
         low, high = balance.deficit_mm[year]
         assert result.total_volume_m3[year] == pytest.approx((low * 25, high * 25), abs=0.06)
         assert result.total_volume_m3[year][0] <= result.total_volume_m3[year][1]
+
+
+def test_los_meses_dan_exacto_el_total_del_cultivo_y_de_la_finca():
+    """Revisión del PR #135: el total era el déficit total del balance, redondeado aparte, y con una finca grande no
+    daba la suma de sus meses. Con 10 ha, 0,1 mm son 1 m³, y una siembra a mitad de mes parte los meses: con el total
+    viejo, la papa sembrada el 17 de abril (6 ha) descuadraba 6 m³."""
+    result = plan(crop("papa", date(2027, 4, 17), 0.6), crop("arveja", MAY, 0.4), farm_ha=10.0)
+    for year in YEARS:
+        for one in result.crops:
+            assert one.total_volume_m3[year] == wp._sum([month.volume_m3[year] for month in one.months])
+        assert result.farm.total_volume_m3[year] == wp._sum([month.volume_m3[year] for month in result.farm.months])
 
 
 def test_un_mes_sin_la_lluvia_de_la_fuente_es_sin_datos_con_nulos_y_el_total_es_nulo():

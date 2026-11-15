@@ -8,7 +8,7 @@ encima la etapa del mes, el volumen, la suma de la finca, la humedad del suelo p
 
 - **La etapa del mes** es la que ocupa la mayor parte del mes (`WindowMonth.main_stage`); si empatan, la primera.
 - **Un mes sin la lluvia de la fuente usada** es `insufficient_data`, con la lluvia, el déficit y el volumen nulos; sin
-  la ET0, también sin lo que pide el cultivo. El total del cultivo es nulo si le falta algún mes (R1).
+  la ET0, también sin lo que pide el cultivo. El total del cultivo es la suma de sus meses, nulo si le falta alguno (R1).
 - **La finca** suma, por cada mes que toca algún cultivo, el volumen de los cultivos que lo tocan: el mínimo con los
   mínimos y el máximo con los máximos. Si a un cultivo le falta ese mes, el volumen de la finca de ese mes es nulo; y el
   total, si le falta el total a algún cultivo. Nunca se suma con huecos (R1). Un cultivo sin etapas no dice qué meses
@@ -296,7 +296,8 @@ def water_plan(
             )
             for balanced, month in zip(balance.months, window_months, strict=True)
         )
-        total = {year: volume_m3(balance.deficit_mm[year], area_ha) for year in YEARS}
+        # La suma de sus meses, no el déficit total del balance (redondeado aparte): así los meses dan el total.
+        total = {year: _sum([month.volume_m3[year] for month in months]) for year in YEARS}
         parts.append(_FarmPart(keys, {(month.year, month.month): month.volume_m3 for month in months}, total))
         results.append(CropPlan(crop.crop_id, area_ha, crop.sowing_date, window.harvest_estimate, window.harvest_basis, months, total))
 

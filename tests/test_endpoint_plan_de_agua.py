@@ -74,10 +74,12 @@ def test_responde_200_con_la_forma_del_contrato(examples):
     (papa,) = body["crops"]
     assert (papa["crop_id"], papa["area_ha"], papa["sowing_date"], papa["harvest_basis"]) == ("papa", 1.26, APRIL, "calendar")
     assert papa["harvest_estimate"] > APRIL
-    assert papa["months"], "sin meses"
+    # La etapa que ocupa la mayor parte del mes: en mayo, 16 días de desarrollo contra 15 de inicial; en junio, 16 de
+    # media contra 14 de desarrollo; en agosto, 23 de media contra 8 finales.
+    stages = [(4, "initial"), (5, "development"), (6, "mid"), (7, "mid"), (8, "mid"), (9, "late")]
+    assert [(month["month"], month["stage"]) for month in papa["months"]] == stages
     for month in papa["months"]:
         assert month["status"] == "available"
-        assert month["stage"] in {"initial", "development", "mid", "late"}
         for year in ("normal", "dry"):
             low, high = month["deficit_mm"][year]
             assert 0 <= low <= high
@@ -248,3 +250,17 @@ def test_papa_con_el_dataset_publicado(published, municipality_id):
     assert all(month["status"] == "available" for month in papa["months"])
     assert papa["total_volume_m3"]["dry"] is not None
     assert body["farm"]["total_volume_m3"] == papa["total_volume_m3"]
+
+
+def test_con_el_dataset_publicado_los_meses_dan_exacto_el_total(published):
+    """Revisión del PR #135: papa en Samacá, 2 ha, sembrada el 4 ene 2027. En el año seco los meses sumaban 3936 m³ y
+    el total decía 3934, porque salía del déficit total del balance, redondeado aparte."""
+    papa = {"crop_id": "papa", "area_pct": 100, "sowing_date": "2027-01-04"}
+    body = plan_of({"municipality_id": SAMACA, "total_area_ha": 2.0, "crops": [papa]})
+    (papa,) = body["crops"]
+    for year in ("normal", "dry"):
+        volumes = [month["volume_m3"][year] for month in papa["months"]]
+        assert all(volumes), "algún mes sin volumen"
+        months_sum = [round(sum(volume[0] for volume in volumes), 1), round(sum(volume[1] for volume in volumes), 1)]
+        assert papa["total_volume_m3"][year] == months_sum
+        assert body["farm"]["total_volume_m3"][year] == months_sum
