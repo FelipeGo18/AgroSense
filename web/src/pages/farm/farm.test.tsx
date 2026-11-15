@@ -708,7 +708,8 @@ describe("Siembras y cosechas (HU-165, HU-220)", () => {
       "GET /api/v1/lots/a1/seasons": { status: 200, body: [SEASON, harvested] },
     });
     open(PATHS.lot("a1"));
-    expect(await screen.findByText("Papa")).toBeInTheDocument();
+    const currentSeasons = await screen.findByRole("region", { name: "Siembras en curso" });
+    expect(await within(currentSeasons).findByText("Papa")).toBeInTheDocument();
     expect(screen.getByText(/Desarrollo · día 60/)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Desarrollo: lleva el 50 % de la etapa" })).toBeInTheDocument();
     expect(screen.getByText(/Cosecha estimada: .* Sale de la duración de las etapas del cultivo/)).toBeInTheDocument();

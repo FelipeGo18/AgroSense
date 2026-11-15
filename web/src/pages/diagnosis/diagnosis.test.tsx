@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -98,6 +98,39 @@ afterEach(() => {
 });
 
 describe("La consulta (HU-091)", () => {
+  it("ofrece qué cambió aunque el diagnóstico todavía responda 501 (HU-219)", async () => {
+    fakeApi({
+      ...CATALOGS,
+      "POST /api/v1/diagnostics": {
+        status: 501,
+        body: { error: { code: "not_implemented", message: "Cálculo pendiente." } },
+      },
+    });
+    open(`${PATHS.diagnosis}?municipio=15646&cultivo=papa&siembra=${MONTHS[2].value}&riego=no`);
+    // La primera visita carga la página lazy: esperar el import antes de buscar su contenido.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
+    expect(await screen.findByRole("link", { name: "Ver qué cambió en su zona" })).toHaveAttribute(
+      "href",
+      "/que-cambio?municipio=15646&cultivo=papa&riego=no",
+    );
+    expect(await screen.findByText("Este cálculo todavía no está disponible")).toBeInTheDocument();
+  });
+  it("enlaza a la historia con el municipio, el cultivo y el riego evaluados (HU-219)", async () => {
+    fakeApi({
+      ...CATALOGS,
+      "POST /api/v1/diagnostics": {
+        status: 200,
+        body: { ...RESPONSE, request: { municipality_id: "15646", crop_id: "papa", irrigated: true } },
+      },
+    });
+    open(`${PATHS.diagnosis}?municipio=15646&cultivo=papa&siembra=${MONTHS[2].value}&riego=si`);
+    expect(await screen.findByRole("link", { name: "Ver qué cambió en su zona" })).toHaveAttribute(
+      "href",
+      "/que-cambio?municipio=15646&cultivo=papa&riego=si",
+    );
+  });
   it("se elige entre los próximos doce meses, empezando por el mes en curso, y se envía su día 1", () => {
     const months = sowingMonths(new Date(2026, 10, 25)); // 25 de noviembre de 2026
     expect(months).toHaveLength(12);

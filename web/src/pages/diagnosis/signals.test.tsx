@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PATHS } from "@/app/paths";
@@ -179,6 +179,10 @@ describe("Resultado del diagnóstico (HU-092)", () => {
   it("la acción sugerida es lo primero que se lee, antes de la luz y de sus razones", async () => {
     fakeApi(replies());
     open();
+    // La página se importa al navegar; esa carga no es una espera por los datos de la API.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     const action = await screen.findByText("Mejor siembre otro cultivo");
     const light = screen.getByText("Luz roja");
     expect(action.compareDocumentPosition(light) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
