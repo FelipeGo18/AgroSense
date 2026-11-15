@@ -42,13 +42,14 @@ El guion se escribe desde la hora 0; el video y la entrega se cierran a partir d
 ### HU-132 · Video y descripción de la entrega
 
 - **Historia:** Como jurado, quiero el video y la descripción según la guía de entrega, para evaluar el proyecto.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en curso
 - **Criterios de aceptación:**
   - [ ] Cumple la guía publicada el 13 de noviembre
   - [ ] Cita todas las fuentes de datos, con cada producto NASA por su nombre
   - [ ] La descripción incluye la tabla de cómo cubre el MVP cada parte del enunciado (`specs/00-vision.md`)
-  - [ ] Explica por qué AgroSense usa reglas con fuente y no aprendizaje automático (decisión 4 y 14): el reto sugiere la IA como opción, y las reglas dan lo que pide para cada estrategia (por qué, evidencia, beneficios, vacíos y riesgos a revisar)
-  - [ ] Muestra la comparación contra la rotación actual, que el reto pide de forma explícita (HU-223)
+  - [x] Explica por qué AgroSense usa reglas con fuente y no aprendizaje automático (decisión 4 y 14): el reto sugiere la IA como opción, y las reglas dan lo que pide para cada estrategia (por qué, evidencia, beneficios, vacíos y riesgos a revisar)
+  - [x] Muestra la comparación contra la rotación actual, que el reto pide de forma explícita (HU-223)
+- **En curso (14 nov):** el borrador está en `docs/entrega.md`, según la *Project Submission Guide* (<https://www.spaceappschallenge.org/resources/project-submission-guide/>): plazo hasta el domingo 15 de noviembre a las 11:59 p. m. del evento local, todo en inglés (un video en español necesita subtítulos en inglés), demo de 30 segundos o menos o de hasta 7 diapositivas, y los campos de la página con su texto en inglés, más el guion del video. El campo de uso de IA lo responde Haider directamente en el formulario (decidido el 14 de noviembre de 2026). **Faltan:** ajustar los textos a lo que funcione al enviar y sumar la tabla de cobertura con esas filas; volver a generar `docs/licencias.md` (39 fuentes frente a 41 en el dataset); decidir el inglés de lo que se enlace del repositorio, que está en español; grabar y subir el video, y enviar.
 
 ### HU-133 · Impacto económico, social y ambiental
 
