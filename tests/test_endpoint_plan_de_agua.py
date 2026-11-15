@@ -244,6 +244,7 @@ def test_papa_con_el_dataset_publicado(published, municipality_id):
     assert papa["months"] and all(month["stage"] for month in papa["months"])
     assert {reading["source_id"] for reading in body["soil_moisture"]} == {"nasa_power"}
     assert any(reading["value"] is not None for reading in body["soil_moisture"])
-    if all(month["status"] == "available" for month in papa["months"]):
-        assert papa["total_volume_m3"]["dry"] is not None
-        assert body["farm"]["total_volume_m3"] == papa["total_volume_m3"]
+    # Con el dataset publicado todos los meses vienen completos: el total y la finca tienen dato (PR #135).
+    assert all(month["status"] == "available" for month in papa["months"])
+    assert papa["total_volume_m3"]["dry"] is not None
+    assert body["farm"]["total_volume_m3"] == papa["total_volume_m3"]

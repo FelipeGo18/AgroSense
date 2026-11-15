@@ -14,7 +14,7 @@ encima la etapa del mes, el volumen, la suma de la finca, la humedad del suelo p
   total, si le falta el total a algún cultivo. Nunca se suma con huecos (R1). Un cultivo sin etapas no dice qué meses
   toca: ningún mes de la finca se puede sumar.
 - **Un descanso** (`fallow`) no es un cultivo: no tiene etapas ni Kc, no se le inventa agua (R5) y no es un dato que
-  falta, así que no cambia la finca. Pendiente de aprobar (docs/registro-de-decisiones.md, 14 de noviembre de 2026).
+  falta, así que no cambia la finca. Aprobado por Haider (docs/registro-de-decisiones.md, PR #135).
 - **La humedad del suelo** de la zona (NASA POWER y, cuando exista, SMAP) se muestra para contrastar: la normal de cada
   mes del año que toca alguna ventana, por fuente. No entra al déficit (decisión 11).
 
@@ -74,7 +74,7 @@ FALLOW = "fallow"
 @dataclass(frozen=True)
 class PlanCrop:
     """Un cultivo del plan, tal como llega en la consulta y en su ficha. `name` lleva su artículo («la papa»), para las
-    limitaciones; `kind` es el de la ficha (`crop`, `green_manure` o `fallow`); `area_pct`, su parte del área de la
+    limitaciones; `kind` es el de la ficha (`crop`, `cover` o `fallow`); `area_pct`, su parte del área de la
     finca. `window` es su ventana por calendario (`stages.crop_window`; nula sin etapas) y `root`, la raíz de su ficha
     (`water_balance.root_zone`; nula si falta)."""
 
