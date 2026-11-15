@@ -101,19 +101,19 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
 ### HU-208 · Verdor del campo por municipio con MODIS NDVI
 
 - **Historia:** Como motor, quiero el NDVI de cada municipio cada 16 días y su normal, para mostrar en qué épocas suele estar verde el campo de la zona y estimar la cobertura del suelo de las estrategias.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
 - **Criterios de aceptación:**
-  - [ ] Adaptador `modis_ndvi` con caché: MOD13Q1 (satélite Terra, 250 m, compuesto de 16 días, desde febrero de 2000), recortado a la región. La versión se verifica antes de usarlo
-  - [ ] Usa la capa de calidad del producto para descartar los píxeles con nubes; el porcentaje de píxeles válidos queda en `valid_pixels_pct`
-  - [ ] `ndvi_municipality` por `municipality_id`, `year` y `period` (1 a 23, el compuesto de 16 días del año), con `ndvi_median`, `valid_pixels_pct`, `quality` y `source_id`
-  - [ ] `ndvi_municipality_normal` por `municipality_id` y `period`, con `ndvi_normal`, `years`, `quality` y `source_id`
+  - [x] Adaptador `modis_ndvi` con caché: MOD13Q1 (satélite Terra, 250 m, compuesto de 16 días, desde febrero de 2000), recortado a la región. La versión se verifica antes de usarlo
+  - [x] Usa la capa de calidad del producto para descartar los píxeles con nubes; el porcentaje de píxeles válidos queda en `valid_pixels_pct`
+  - [x] `ndvi_municipality` por `municipality_id`, `year` y `period` (1 a 23, el compuesto de 16 días del año), con `ndvi_median`, `valid_pixels_pct`, `quality` y `source_id`
+  - [x] `ndvi_municipality_normal` por `municipality_id` y `period`, con `ndvi_normal`, `years`, `quality` y `source_id`
   - [ ] Si se usa una máscara de áreas de cultivo, lleva su fuente (por elegir). Sin máscara, el valor es de todo el municipio y la respuesta lo dice
-  - [ ] Con menos píxeles válidos que el mínimo de la configuración del pipeline, el periodo queda `partial` o no se publica; nunca se interpola en silencio (R1)
+  - [x] Con menos píxeles válidos que el mínimo de la configuración del pipeline, el periodo queda `partial` o no se publica; nunca se interpola en silencio (R1)
   - [ ] `/trends` suma la serie `ndvi` con la normal del municipio (HU-078)
-  - [ ] Comprobación manual en 2 municipios: los picos de verdor caen en épocas coherentes con las temporadas de siembra de la región
+  - [x] Comprobación manual en 2 municipios: los picos de verdor caen en épocas coherentes con las temporadas de siembra de la región
 - **Reglas que aplican:** R1, R5, R7, R8, R10
 - **Contrato que toca:** `ndvi_municipality`, `ndvi_municipality_normal`, serie `ndvi` de `GET /api/v1/trends`
-- **Notas:** Decisión 12. El NDVI es contraste, no señal: no cambia la luz ni el orden de las ventanas. La cobertura del suelo de las estrategias (`soil_cover`, HU-212) lo usa cuando existe. Las nubes del altiplano dejan huecos (`docs/riesgos.md`). Agregada el 11 de octubre de 2026.
+- **Notas:** Decisión 12. El NDVI es contraste, no señal: no cambia la luz ni el orden de las ventanas. La cobertura del suelo de las estrategias (`soil_cover`, HU-212) lo usa cuando existe. Las nubes del altiplano dejan huecos (`docs/riesgos.md`). Agregada el 11 de octubre de 2026. **14 de noviembre de 2026 (datos publicados, dataset `2026.11.22`):** `pipeline/sources/modis_ndvi.py` baja por OPeNDAP el recuadro de la región de cada compuesto de MOD13Q1 V061 (tesela `h10v08`, un píxel de cada 4); el CMR da los compuestos y uno de otra versión hace fallar la descarga. OPeNDAP solo sirve completos los compuestos desde 2023 (de los 484 anteriores responden 130), así que `ndvi_municipality` va desde 2023 (20 559 filas, 239 municipios) y la normal es 2023–2025, `ok` con los 3 años (5203 filas; registro de decisiones, por aprobar por Felipe). Un píxel es válido con confiabilidad 0 o 1; con menos del 30 % válidos, `partial`. Sin máscara de cultivos: es el verdor de todo el municipio, y `sources` lo dice. **Comprobación:** en Tunja, Zipaquirá y Duitama el verdor más bajo cae a principios de febrero y marzo (periodos 3 a 5, al final de la temporada seca de diciembre a febrero; Tunja 0,45) y sube después de cada temporada de lluvias: de junio a julio (periodos 11 a 13; Tunja 0,63) y en noviembre y diciembre (periodos 20 a 23), las dos temporadas de siembra de la región. **Falta:** la serie `ndvi` de `/trends` necesita que `catalog/sources.yaml` le asigne una fuente al verdor (hoy solo acepta las seis señales), un cambio de contrato para Felipe o Haider; con él, la respuesta dirá también que el verdor es de todo el municipio.
 
 ### HU-209 · Verdor por lote con MODIS NDVI
 
