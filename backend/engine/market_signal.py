@@ -37,7 +37,9 @@ HISTORY_LABEL = "Es historia de precios, no un pronóstico"
 
 @dataclass(frozen=True)
 class MarketSignalResult:
-    """La señal `market` de una ventana, con los nombres de campo del contrato (specs/02-contratos.md)."""
+    """La señal `market` de una ventana, con los nombres de campo del contrato (specs/02-contratos.md). `limitations`
+    está para que tenga la misma forma que las demás señales de la ventana (`ClimateSignalResult`); hoy el mercado no
+    agrega ninguna: su falta de datos la dice el diagnóstico con las de todas las señales (HU-076)."""
 
     status: str
     level: str | None
@@ -45,6 +47,7 @@ class MarketSignalResult:
     score: int | None
     indicators: tuple[str, ...]
     reasons: tuple[str, ...]
+    limitations: tuple[str, ...] = ()
 
 
 def market_signal(seasonal_index: float | None, years: int | None, thresholds: Thresholds) -> MarketSignalResult:

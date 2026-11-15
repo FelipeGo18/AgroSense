@@ -39,7 +39,7 @@ El esquema en código está en `pipeline/schema.py` (HU-011): el pipeline no pub
 | `grid_cells` | `cell_id` (ver «La rejilla de 250 m») | `lat`, `lon` (centro de la celda), `municipality_id` (el municipio que contiene el centro), `altitude_m` (promedio de los píxeles de NASADEM de 30 m dentro de la celda), `slope_pct` (mediana de la pendiente de esos píxeles, en %), `ph`, `ph_p05`, `ph_p95`, `soc_g_kg` (carbono orgánico), `soc_p05`, `soc_p95`, `nitrogen_g_kg`, `clay_pct`, `sand_pct`, `silt_pct`, `texture_class` (clase USDA); el suelo es el promedio ponderado de 0 a 30 cm; `quality`, `source_ids`. Unas 600.000 celdas en la región | NASADEM (HU-206) y SoilGrids de ISRIC (HU-181); para la altitud, la pendiente y el suelo de un lote |
 | `soil_municipality` | `municipality_id` | Las propiedades de suelo de `grid_cells` (`ph`, `ph_p05`, `ph_p95`, `soc_g_kg`, `soc_p05`, `soc_p95`, `nitrogen_g_kg`, `clay_pct`, `sand_pct`, `silt_pct`, `texture_class`), como mediana de las celdas del municipio (los percentiles 5 y 95 también, como mediana de los de cada celda; la textura, la clase más frecuente), más `cells`, `quality` y `source_id` | SoilGrids (HU-181) |
 | `sources` | `source_id` | `name`, `institution`, `url`, `downloaded_at`, `period_covered`, `coverage` (país o región que cubre), `license`, `citation` (la cita textual que pide la fuente a quien use sus datos, como la del DANE; nula si no pide una. La API y la web la muestran tal cual y sirve para las citas de la entrega, R8. Agregada el 9 de noviembre de 2026 por la revisión de Felipe del PR #12, aprobado por Felipe el 10 de noviembre de 2026), `notes` | Todas. Un indicador puede tener varias fuentes; `sources.yaml` dice cuál usa cada señal en cada región y las demás se muestran para contrastar |
-| `manifest.json` | — | `dataset_version`, `rules_version`, `created_at`, `region` (con `id`, `name`, `country`, `departments`, `markets`, `department_markets` (departamento DIVIPOLA → `market_id` de la central SIPSA de referencia para la señal `market`; agregado el 14 de noviembre de 2026 en HU-073, aprobado por Felipe el 14 de noviembre de 2026: un departamento que no está en el mapa no tiene central y la señal es `insufficient_data`, R1) y `temperature_lapse_rate`: las tasas `temp_max_c_per_m` y `temp_min_c_per_m` del gradiente térmico con que se calculó `tmean_annual_c` y su `source_id`; agregado el 13 de noviembre de 2026 en HU-191, aprobado por Felipe el 13 de noviembre de 2026: la API corrige la temperatura a la altitud de un lote con estas tasas y nunca con otras, R4; y `climate_normal`: `first_year`, `last_year` y `min_years` del periodo normal de `pipeline/region.yaml`, con que la señal de heladas cuenta los años; **aprobado por Felipe el 14 de noviembre de 2026 en HU-077**: la API nunca usa otro periodo, R4, y un dataset publicado sin él, o con un periodo que no cubre, deja la señal de heladas en `insufficient_data`, R1), `periods` (los periodos de «Qué cambió»: `period_id`, `start_year`, `end_year`, `source_id`), filas y cobertura por tabla | Pipeline |
+| `manifest.json` | — | `dataset_version`, `rules_version`, `created_at`, `region` (con `id`, `name`, `country`, `departments`, `markets`, `department_markets` (departamento DIVIPOLA → `market_id` de la central SIPSA de referencia para la señal `market`; agregado el 14 de noviembre de 2026 en HU-073, aprobado por Felipe el 14 de noviembre de 2026: un departamento que no está en el mapa no tiene central y la señal es `insufficient_data`, R1) y `temperature_lapse_rate`: las tasas `temp_max_c_per_m` y `temp_min_c_per_m` del gradiente térmico con que se calculó `tmean_annual_c` y su `source_id`; agregado el 13 de noviembre de 2026 en HU-191, aprobado por Felipe el 13 de noviembre de 2026: la API corrige la temperatura a la altitud de un lote con estas tasas y nunca con otras, R4; y `climate_normal`: `first_year`, `last_year` y `min_years` del periodo normal de `pipeline/region.yaml`, con que la señal de heladas cuenta los años y que la razón del calor nombra; **aprobado por Felipe el 14 de noviembre de 2026 en HU-077**: la API nunca usa otro periodo, R4, y un dataset publicado sin él, o con un periodo que no cubre, deja las dos señales en `insufficient_data`, R1), `periods` (los periodos de «Qué cambió»: `period_id`, `start_year`, `end_year`, `source_id`), filas y cobertura por tabla | Pipeline |
 
 ### La rejilla de 250 m (`grid_cells`)
 
@@ -265,7 +265,7 @@ Respuesta de `GET /api/v1/me/activity` (la de `GET /api/v1/admin/activity` es ig
 No son parte de la API ni se consultan desde la web; se documentan aquí porque fijan qué se puede escribir y qué no. Los escribe `structlog` a la salida estándar: con color en desarrollo y una línea JSON por evento en producción. En la consola cada parte tiene su color: el nivel (gris `debug`, verde `info`, amarillo `warning`, rojo `error`), el mensaje (blanco), el código de la respuesta (verde, amarillo o rojo), el endpoint (azul claro) y lo demás atenuado.
 
 ```json
-{"ts": "2026-11-14T15:02:11.204Z", "level": "info", "event": "request", "request_id": "9b1e…", "method": "POST", "route": "/api/v1/lots/{lot_id}/restore", "status": 200, "duration_ms": 18, "user_id": "3c7a…", "role": "farmer", "dataset": "2026.11.1", "rules": "1.4.0"}
+{"ts": "2026-11-14T15:02:11.204Z", "level": "info", "event": "request", "request_id": "9b1e…", "method": "POST", "route": "/api/v1/lots/{lot_id}/restore", "status": 200, "duration_ms": 18, "user_id": "3c7a…", "role": "farmer"}
 ```
 
 | Campo | Siempre | Notas |
@@ -274,7 +274,7 @@ No son parte de la API ni se consultan desde la web; se documentan aquí porque 
 | `detail` | Sí | Qué pasó, en español y en palabras: «Inicio de sesión rechazado: usuario no registrado», «Perfil actualizado: display_name». Puede decir más que la respuesta (por ejemplo, si falló el usuario o la contraseña), porque solo se ve en la terminal del servidor. Nunca repite lo que escribió la persona |
 | `endpoint` | En peticiones que llegan a una ruta | La función que atendió, como `auth.login`. Solo en el log: la respuesta no lo lleva |
 | `method`, `route`, `status`, `duration_ms` | En peticiones | `route` es la plantilla de la ruta, no la URL con sus parámetros de consulta. Una dirección que no existe en la API se escribe `[sin ruta]`: nunca lo que llegó |
-| `user_id`, `role` | Si hay sesión | Nunca el `username` ni el nombre |
+| `user_id`, `role` | Si hay sesión, salvo en los endpoints de cálculo (R9) | Nunca el `username` ni el nombre. Los endpoints de cálculo no guardan quién consultó, tampoco en el log (decidido por Felipe el 14 de noviembre de 2026, PR #102) |
 | `dataset`, `rules` | En endpoints de cálculo | Versiones usadas (R4) |
 
 Cuando las cuentas están apagadas, cada intento de usarlas deja un evento `accounts_unavailable` de nivel `warning` con `reason` (`database_down` o `migration_pending`), `current_migration`, `expected_migration` y `detail` («Cuentas no disponibles (503) porque la migración 2.1 no se completó; la base de datos está en la 1.9»). Al arrancar, la API registra `migration_applied`, `migration_up_to_date`, `migration_skipped` (la base no responde) o `migration_failed` (nivel `error`, con las dos versiones y la traza).
@@ -443,10 +443,12 @@ Evalúa **una ventana de siembra**: de `sowing_date` a la cosecha estimada de es
 Tres series separadas, cada una con su unidad, para no mezclar unidades en un eje (W3):
 
 - `water`: por año, la lluvia que cayó en los meses de la ventana (`precip_mm`) y lo que el cultivo habría necesitado (`need_mm`), en mm, con el `source_id` de la lluvia (la fuente que calcula la señal).
+  - `need_mm` es la ETc de FAO-56: Kc × ET0 sumado día por día, con la curva de Kc de FAO-56 (constante en la etapa inicial y en la media, en rampa en el desarrollo y en la final; Allen et al. 1998, cap. 6, ec. 66 y fig. 25). Un mes que la ventana toca en parte aporta la fracción de su total igual a los días de la ventana en ese mes sobre los días del mes en el año histórico; la misma fracción vale para `precip_mm` y para `need_mm`. Aprobado por Felipe el 14 de noviembre de 2026 (PR #104) como precisión del contrato.
 - `supply`: por año, `planted_ha` (ha) y `preliminary` del semestre en que cae la fecha de siembra.
-- `ndvi`: por `period` (1 a 23), `ndvi_normal` del municipio, con `source_id` y `quality` (HU-208). Sirve para ver cuándo suele estar verde el campo junto a la ventana.
+- `ndvi`: por `period` (1 a 23), `ndvi_normal` del municipio, con `source_id` y `quality` (HU-208). Sirve para ver cuándo suele estar verde el campo junto a la ventana. Mientras `sources.yaml` no le asigne una fuente al verdor, viene vacía con `insufficient_data` (R1, R8; 14 nov 2026, PR #104).
+- `limitations`: una frase por cada serie vacía.
 
-Sin datos para una serie, la serie viene vacía con `status = insufficient_data`. No guarda nada (R9).
+Sin datos para una serie, la serie viene vacía con `status = insufficient_data` y `limitations` lo dice. No guarda nada (R9).
 
 ```json
 {
@@ -456,6 +458,7 @@ Sin datos para una serie, la serie viene vacía con `status = insufficient_data`
   "supply": { "status": "insufficient_data", "source_id": "eva", "unit": "ha", "semester": "B", "points": [] },
   "ndvi": { "status": "available", "source_id": "modis_ndvi", "quality": "ok",
             "points": [ { "period": 1, "ndvi_normal": 0.52 } ] },
+  "limitations": ["Sin el área sembrada de eva del semestre B en la zona: la serie de oferta viene vacía"],
   "versions": { "dataset": "2026.11.0", "rules": "1.0.0" }
 }
 ```
@@ -617,7 +620,13 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
     { "crop_ids": ["papa", "arveja", "haba"], "cycle": 1, "kind": "rule", "rule_id": "REGLA_ID",
       "reason": "Repite la familia de la papa, que había antes en el terreno", "source_ids": ["FUENTE_ID"] },
     { "crop_ids": ["arveja", "papa", "maiz"], "cycle": 2, "kind": "high_risk", "signal": "frost",
-      "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa", "source_ids": ["nasa_power"] }
+      "reason": "Alto riesgo en el ciclo 2: heladas frecuentes en el llenado de la papa", "source_ids": ["nasa_power"] },
+    { "crop_ids": ["arveja", "papa", "haba"], "cycle": 2, "kind": "not_suitable", "crop_id": "papa",
+      "reason": "La temperatura media anual del municipio (28,4 °C) pasa de la que aguanta la papa (hasta 16 °C)",
+      "source_ids": ["upra_papa_diacol", "nasa_power", "cenicafe_lapse_rate"] },
+    { "crop_ids": ["papa", "arveja", "zanahoria"], "cycle": 3, "kind": "soil_ph", "crop_id": "zanahoria",
+      "reason": "El pH del suelo de la zona (3,6 a 4,0) queda fuera del que tolera la zanahoria (4,2 a 8,7)",
+      "source_ids": ["fao_ecocrop", "soilgrids"] }
   ],
   "weights": { "water": 3, "soil": 5, "income": 2, "risk": 4 },
   "soil_basis": "municipality",
@@ -632,6 +641,7 @@ Responde **estrategias de rotación** de hasta 3 ciclos (ver «Estrategias de ro
 - `current_strategy` (decisión 14, aprobado por Felipe el 8 de noviembre de 2026): la rotación actual evaluada con la misma forma de una estrategia (el ejemplo omite sus ciclos y su salud del suelo por brevedad), con `rank` nulo. **Nunca se excluye:** si viola una regla, tiene un cultivo no apto, un pH fuera de rango o un ciclo de alto riesgo, `issues` lo dice con la misma forma de `excluded` (sin `crop_ids`). Nula sin `current_crop_ids`. Una estrategia sugerida igual a la actual no se repite en `strategies`.
 - `soil_health`: los cinco criterios de salud del suelo (`erosion` desde la decisión 14), cada uno con `status`, `level` (nulo con `insufficient_data`), `reasons`, `rule_ids` (reglas de `rotation_rules`, con fuente) y `source_ids` (las fuentes de esas reglas y de los datos que usan, para que la web las cite; vacía sin regla con fuente). **No es una predicción de cuánto mejora el suelo.**
 - `excluded`: las estrategias descartadas, con el ciclo y el motivo. **Trae hasta 10** (decisión 15): primero las que quedaron fuera por un solo motivo, y entre ellas, en el orden en que se habrían ordenado. `excluded_counts` cuenta todas las descartadas por `kind` (por ejemplo `{"rule": 212, "high_risk": 48, "not_suitable": 30, "soil_ph": 0}`), para que la web diga cuántas son sin traerlas todas. `kind` es `rule` (viola una regla de filtro; trae `rule_id`), `not_suitable` (un cultivo no se da en la zona), `soil_ph` (el pH queda fuera de todo el intervalo) o `high_risk` (un ciclo con `water`, `frost` o `heat` desfavorable y crítica; trae `signal`).
+  - `not_suitable` y `soil_ph` (aprobado por Felipe el 14 de noviembre de 2026) traen `cycle`, el **primer** ciclo (desde 1) donde aparece el cultivo que causa el descarte, y `crop_id`, ese cultivo. En `not_suitable`, `reason` es **la misma frase** que da `/diagnostics` en `suitability.reasons`, para que el agricultor lea lo mismo en las dos pantallas, y `source_ids` son los mismos que `suitability` de `/diagnostics` (la fuente del rango de la ficha y las de la temperatura de la zona), para que no se desalineen si cambia cómo se corrige la temperatura. En `soil_ph`, `reason` da el intervalo de pH del suelo y el rango que tolera el cultivo, y `source_ids` trae la fuente del rango de pH de la ficha y la del suelo (SoilGrids, HU-181). Los valores de los dos ejemplos son de ejemplo.
 - Cada descartada y cada `issues` trae `source_ids`: la fuente de su regla, de la ficha del cultivo, del suelo o del clima de la señal (R8).
 - La oferta y el mercado no excluyen estrategias: entran solo por `income`.
 - **Varios motivos** (HU-081, aprobado por Felipe el 14 de noviembre de 2026): una estrategia se descarta una sola vez. Sus motivos son los de la fase en que quedó fuera: los de la fase 1 (`rule`, `not_suitable`, `soil_ph`, que no necesitan fechas) o solo `high_risk` (fase 2), porque a una descartada en la fase 1 nunca se le evalúa el alto riesgo. `excluded` muestra el primero en el orden `rule` → `not_suitable` → `soil_ph` → `high_risk`; `excluded_counts` cuenta cada estrategia una sola vez, por ese primer motivo, así que su suma es el total de descartadas. «Primero las que quedaron fuera por un solo motivo» se ordena por número de motivos, de menos a más; el desempate es el orden del ranking (HU-082) o, mientras no exista, `crop_ids` en orden alfabético (R4).
@@ -647,6 +657,8 @@ Cambió el 11 de octubre de 2026 (decisión 12): antes respondía secuencias de 
 > **8 de noviembre de 2026 (decisión 14, aprobado por Felipe):** `current_crop_ids` en el cuerpo; `kind`, `vs_current`, `current_strategy` con `issues` y el criterio `erosion` de `soil_health` en la respuesta.
 
 > **11 de noviembre de 2026 (HU-102, aprobado por Haider; decisión 15 de `docs/decisiones.md`):** `source_ids` en cada criterio de `soil_health`, en cada `issues` y en cada `excluded`. Es un campo nuevo; los demás no cambian.
+
+> **14 de noviembre de 2026 (HU-081, aprobado por Felipe en la revisión del PR #70):** `excluded` con `kind = not_suitable` o `soil_ph` trae `cycle` (el primer ciclo con el cultivo que causa el descarte) y `crop_id`; la `reason` de `not_suitable` es la misma de `/diagnostics`. Es un campo nuevo (`crop_id`) y una precisión de `cycle`; los demás no cambian.
 
 ### Cuerpo de `POST /api/v1/water-plans`
 
@@ -835,7 +847,7 @@ Más `harvest_estimate` y `harvest_basis`. El cruce entre el riesgo y la etapa l
       "score": 94,
       "counts": true,
       "indicators": ["tmax_p90_c"],
-      "reasons": ["De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 28 °C"]
+      "reasons": ["De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"]
     },
     "soil": {
       "status": "available",
