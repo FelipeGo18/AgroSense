@@ -154,7 +154,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 ### HU-165 · Temporadas e historial del lote
 
 - **Historia:** Como agricultor, quiero registrar qué sembré, en qué parte del lote, qué había antes en ese terreno y cuándo coseché, dividiendo y juntando partes como yo trabajo, para que las recomendaciones usen mi historial real.
-- **Prioridad:** P0 · **Tamaño:** L · **Estado:** en curso
+- **Prioridad:** P0 · **Tamaño:** L · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Endpoints de `seasons` del contrato
   - [x] Un lote puede tener varios cultivos a la vez, cada uno en una parte de su área (`area_ha`); la suma de las temporadas en curso no pasa del área del lote (422)
@@ -164,7 +164,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
   - [x] Validaciones (422): cada temporada de `follows_season_ids` es del mismo lote, está cosechada y su `harvest_date` es igual o anterior a la `sowing_date` de la nueva; el área de una temporada no pasa de la suma de las áreas de las que viene más el área libre del lote, y la suma de las temporadas en curso nunca pasa del área del lote
   - [x] Cada temporada guarda el diagnóstico visto al sembrar (`diagnosis_light`, `diagnosis_light_default`, `diagnosis_action`, `diagnosis_weights`, `diagnosis_irrigated`) con `dataset_version` y `rules_version`: es el diagnóstico de la ventana que empieza en su `sowing_date`
   - [x] `diagnosis_action` acepta solo `sow`, `other_window`, `rotate` y `review_data`; si el agricultor no consultó el diagnóstico, esos campos van nulos
-  - [ ] Las estrategias de rotación de un terreno reciben los cultivos de todas las temporadas de las que viene
+  - [x] Las estrategias de rotación de un terreno reciben los cultivos de todas las temporadas de las que viene. **Hecho (15 nov 2026):** con lote, la web manda en `previous_crop_ids` los cultivos de las siembras elegidas y de todas las anteriores por `follows_season_ids` (también al dividir y juntar), la más reciente primero, hasta 3, y en `current_crop_ids` la rotación armada con el mismo historial (HU-214); `/rotations` los usa desde HU-084. Prueba en `web/src/pages/strategies/strategies.test.tsx`
   - [x] La etapa de cada temporada en curso sale de las etapas por calendario (HU-220, `stage_method = calendar`)
   - [x] Borrar una temporada marca `deleted_at` y deja de verse; listarla y restaurarla es HU-204 (P1)
   - [x] Web (Figma: «Registrar la siembra», «Registrar la cosecha», «Siembra / Editar»): el lote muestra cada siembra en curso con cultivo, etapa, día, la barra de etapas y la cosecha estimada (rotulada como salida de la duración de las etapas, no del lote); «Registrar siembra» si queda área libre; «Registrar cosecha», «Corregir» y lo ya cosechado. «Cómo queda el lote» muestra las partes como una barra de área. Mi finca dice los cultivos en curso de cada lote

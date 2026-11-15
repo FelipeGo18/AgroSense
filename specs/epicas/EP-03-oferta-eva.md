@@ -48,12 +48,12 @@ estado: pendiente
 ### HU-032 · Variación del área sembrada y participación departamental
 
 - **Historia:** Como motor, quiero la variación del área sembrada y la participación departamental, para detectar sobreoferta.
-- **Prioridad:** P0 · **Tamaño:** M · **Estado:** en revisión
+- **Prioridad:** P0 · **Tamaño:** M · **Estado:** hecha
 - **Criterios de aceptación:**
   - [x] Definición escrita de cada indicador (abajo, en `pipeline/sources/eva.py`, `indicators()`, y en `specs/02-contratos.md`)
   - [x] Valores comprobados a mano en 2 municipios (Villapinzón y Duitama, abajo)
   - [x] Calidad `partial` cuando faltan semestres previos (menos de tres semestres anteriores con dato)
-- **Definiciones (HU-032; propuestas de Datos, pendientes de aprobar por Haider o Felipe en el PR):**
+- **Definiciones (HU-032; propuestas de Datos, aprobadas por Felipe el 15 de noviembre de 2026 en el PR #159):**
   - **`planted_change_pct`:** cuánto cambió el área sembrada del municipio, cultivo y semestre frente al promedio del **mismo semestre de los tres años anteriores** (para 2025B, 2022B, 2023B y 2024B; una ventana fija, no «los últimos tres con dato»), en %: (sembrada − promedio) / promedio × 100, con un decimal. Solo cuentan los semestres con dato: un año sin fila es sin dato (R1), no 0 ha, y una fila sin área sembrada (por ejemplo, un maíz con un código sin área) tampoco cuenta. Sin ningún semestre anterior con dato, o con un promedio de 0 ha (no se puede dividir), es nulo. Con menos de tres semestres anteriores, la fila es `partial` (contrato).
   - **`dept_share_pct`:** qué parte del área sembrada del departamento en ese cultivo y semestre es del municipio, en %, con dos decimales. El departamento son los dos primeros dígitos del DIVIPOLA (Boyacá 15, Cundinamarca 25; la región tiene los dos departamentos completos). El total suma los municipios con fila: es la parte **entre los que reportan**, porque un municipio sin fila es sin dato. Si uno de ellos no trae el área sembrada, o el total es 0, es nulo (R1). En un departamento, cultivo y semestre con todas las participaciones, suman 100 (el build lo revisa).
   - **Cómo leerlos:** EVA repite el área del mismo semestre del año anterior en muchas filas (el 27 %; `docs/investigacion-decisiones.md`, 5f): ahí la variación contra ese año es 0 aunque nadie la haya medido. Una variación grande sobre un promedio pequeño (de 1 a 33 ha es +3200 %) es real, pero dice poco. La oferta se muestra sin calificar (decisión 17): ninguno de los dos indicadores tiene un corte de «mucho» o «poco».
