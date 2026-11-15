@@ -102,7 +102,7 @@ export function PolicyPage() {
                 {t("pages.policy.PolicyPage.goToMyAccount")}
               </Link>
               <Link to={PATHS.messages} className={`${LINK} inline-flex min-h-11 items-center`}>
-                Escribir al responsable
+                {t("pages.policy.PolicyPage.writeToController")}
               </Link>
             </>
           ) : (

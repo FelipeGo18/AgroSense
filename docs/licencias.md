@@ -13,7 +13,6 @@ Apache 2.0 (`LICENSE`, en la raíz del repositorio; aprobado por Felipe el 10 de
 - **Las fuentes sin licencia explícita** («Sin dato; se cita», «por confirmar» o «derechos reservados»): de esas publicaciones AgroSense solo toma cifras y hechos (temperaturas de daño, días por etapa, rangos de cultivo), con su cita. Los hechos no tienen derechos de autor, y no se reproduce el texto ni las figuras de ninguna.
 - **Las fichas de la UPRA** permiten la «reproducción parcial sin fines comerciales con cita»: AgroSense solo toma sus rangos de temperatura media, con la cita, y no es comercial.
 - **Lo que sale de DIVIPOLA del DANE** (CC BY-SA 4.0), como la tabla `municipalities`, se publica con esa misma licencia.
-- **Lo que sale de EVA de la UPRA** (CC BY-SA 4.0, «compartir igual»), la tabla `supply_semester`, se publica con esa misma licencia (HU-031, HU-004).
 
 ## Datos y fuentes (tabla `sources` del dataset publicado)
 
@@ -145,7 +144,7 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | pytest | 9.1.1 | MIT |
 | ruff | 0.17.0 | MIT |
 
-## Librerías de la web que van en la aplicación (82, de `web/package-lock.json`)
+## Librerías de la web que van en la aplicación (86, de `web/package-lock.json`)
 
 | Paquete | Versión | Licencia |
 |---|---|---|
@@ -236,14 +235,14 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | world-atlas | 2.0.2 | ISC |
 | zustand | 5.1.0 | MIT |
 
-## Herramientas de desarrollo de la web (513 paquetes; no van en la aplicación)
+## Herramientas de desarrollo de la web (518 paquetes; no van en la aplicación)
 
 Solo se usan para construir y probar la web (Vite, TypeScript, Vitest, ESLint, Playwright…). Por licencia:
 
 | Licencia | Paquetes |
 |---|---|
 | MIT | 357 |
-| Apache-2.0 | 77 |
+| Apache-2.0 | 76 |
 | ISC | 29 |
 | MPL-2.0 | 25 |
 | BSD-2-Clause | 13 |

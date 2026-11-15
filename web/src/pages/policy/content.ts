@@ -64,21 +64,12 @@ export const SECTIONS = (): { title: string; items: { mark: Mark; text: string }
     ],
   },
   {
-    title: "Cómo escribirnos",
+    title: t("pages.policy.content.howToWriteToUs"),
     items: [
-      {
-        mark: "note",
-        text: "Para preguntar qué datos suyos guardamos, pedir que los corrijamos o reportar un problema, escríbanos desde «Mi cuenta», en «Escribir al responsable». Ahí ve cómo va su mensaje.",
-      },
-      {
-        mark: "note",
-        text: "Le respondemos ahí mismo, en máximo 10 días hábiles si es una consulta y 15 si es un reclamo (Ley 1581 de 2012).",
-      },
-      { mark: "note", text: "Si nunca tuvo cuenta, no guardamos nada suyo: no hay datos suyos que pedir." },
-      {
-        mark: "note",
-        text: "El responsable de sus datos es el equipo RealE4Life. Un correo de contacto para quien no puede entrar a su cuenta o ya la borró está por definirse con la revisión legal.",
-      },
+      { mark: "note", text: t("pages.policy.content.toAskWriteFromMyAccount") },
+      { mark: "note", text: t("pages.policy.content.weAnswerWithinDeadlines") },
+      { mark: "note", text: t("pages.policy.content.noAccountNothingKept") },
+      { mark: "note", text: t("pages.policy.content.controllerAndPendingEmail") },
     ],
   },
   {

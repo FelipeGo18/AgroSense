@@ -612,7 +612,7 @@
   "pages.policy.content.itIsStoredInACloudDatabase": "It is stored in a cloud database and encrypted in transit between AgroSense and that database.",
   "pages.policy.content.supportCanViewYourPlotsToHelp": "Support can view your plots to help you. Each access is recorded in “My activity”, where you can see it.",
   "pages.policy.content.howLongItIsKeptAndHow": "How long it is kept and how to delete it",
-  "pages.policy.content.dataIsKeptWhileYouHaveAn": "Data is kept while you have an account. Activity is automatically deleted after 180 days.",
+  "pages.policy.content.dataIsKeptWhileYouHaveAn": "Data is kept while you have an account, including your messages and our answers. Activity is automatically deleted after 180 days.",
   "pages.policy.content.inMyAccountYouCanViewWhat": "In “My account” you can view what we store, change your name and username, and delete your account.",
   "pages.policy.content.deletingTheAccountDeletesEverythingUsernameSessions": "Deleting the account deletes everything: username, sessions, plots, plantings, reports and activity. This cannot be undone.",
   "pages.policy.content.inYourBrowser": "In your browser",
@@ -1166,5 +1166,12 @@
   "activity.field.irrigation": "irrigation",
   "activity.field.municipality": "municipality",
   "activity.field.crop": "crop",
-  "diagnosis.supply.preliminarySuffix": ", preliminary"
+  "diagnosis.supply.preliminarySuffix": ", preliminary",
+  "footer.journeyTour": "From the satellite to your farm",
+  "pages.policy.PolicyPage.writeToController": "Write to the data controller",
+  "pages.policy.content.howToWriteToUs": "How to write to us",
+  "pages.policy.content.toAskWriteFromMyAccount": "To ask what data of yours we keep, ask us to correct it or report a problem, write to us from «My account», in «Write to the data controller». There you can see how your message is going.",
+  "pages.policy.content.weAnswerWithinDeadlines": "We answer you right there, within 10 business days for a question and 15 for a complaint (Colombian Law 1581 of 2012).",
+  "pages.policy.content.noAccountNothingKept": "If you never had an account, we keep nothing of yours: there is no data of yours to request.",
+  "pages.policy.content.controllerAndPendingEmail": "The controller of your data is the RealE4Life team. A contact email for people who cannot sign in or already deleted their account is still to be defined with the legal review."
 }
