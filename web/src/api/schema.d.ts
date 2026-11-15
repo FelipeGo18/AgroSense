@@ -389,6 +389,10 @@ export interface paths {
         /**
          * Water Plans
          * @description Plan de agua de una finca o de un ciclo de una estrategia (HU-146). Es una estimación (R10).
+         *
+         *     Solo lee el dataset y llama al motor (`backend/engine/water_plan.py`): no recibe `lot_id`, así que el suelo es
+         *     siempre el del municipio, también con cuenta (contrato). La fecha de siembra no se limita a los próximos doce
+         *     meses: el tercer ciclo de una estrategia puede caer más lejos. No guarda nada ni escribe en la base de datos (R9).
          */
         post: operations["water_plans_api_v1_water_plans_post"];
         delete?: never;
@@ -2978,8 +2982,8 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not Implemented */
-            501: {
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

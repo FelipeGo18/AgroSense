@@ -86,15 +86,15 @@ HU-142 (etapas y Kc de los 7 cultivos) se hace en la fase 0; el resto, en el eve
 ### HU-146 · Endpoint del plan de agua
 
 - **Historia:** Como desarrollador web, quiero el endpoint del plan de agua, para mostrar el agua de cada ciclo de una estrategia.
-- **Prioridad:** P0 · **Tamaño:** S · **Estado:** pendiente
+- **Prioridad:** P0 · **Tamaño:** S · **Estado:** hecha
 - **Criterios de aceptación:**
-  - [ ] Responde con la forma del contrato: por cultivo y por finca, el déficit y el volumen por mes en rangos, en año normal y año seco, con `sources`, `soil_basis` y `versions`
-  - [ ] 422 si los porcentajes pasan de 100 o el cultivo no existe
-  - [ ] Trae, por mes, la humedad del suelo de la zona (POWER y, si existe, SMAP) como contraste, cada una en su unidad y con su fuente; no cambia el déficit (decisión 11)
-  - [ ] No persiste los datos de la finca (R9)
+  - [x] Responde con la forma del contrato: por cultivo y por finca, el déficit y el volumen por mes en rangos, en año normal y año seco, con `sources`, `soil_basis` y `versions`
+  - [x] 422 si los porcentajes pasan de 100 o el cultivo no existe
+  - [x] Trae, por mes, la humedad del suelo de la zona (POWER y, si existe, SMAP) como contraste, cada una en su unidad y con su fuente; no cambia el déficit (decisión 11)
+  - [x] No persiste los datos de la finca (R9)
 - **Reglas que aplican:** R1, R9, R10
 - **Contrato que toca:** `POST /api/v1/water-plans`
-- **Notas:** En el MVP la web lo llama desde el ciclo de una estrategia (HU-215) con un solo cultivo y `area_pct` 100. La humedad del suelo se sumó el 11 de octubre de 2026 (decisión 12).
+- **Notas:** En el MVP la web lo llama desde el ciclo de una estrategia (HU-215) con un solo cultivo y `area_pct` 100. La humedad del suelo se sumó el 11 de octubre de 2026 (decisión 12). **14 de noviembre de 2026 (hecha):** el motor es `backend/engine/water_plan.py`, sobre el balance de HU-144 sin otra cuenta del agua: por cultivo y por mes, la etapa que ocupa la mayor parte del mes, lo que pide el cultivo, la lluvia de los días de la ventana en ese mes (normal y del año seco de GPM IMERG, la fuente de `catalog/sources.yaml`), el déficit y el volumen (déficit × 10 × área) como rangos; la finca suma por mes y en total, y queda nula donde falta el dato de algún cultivo (R1). El suelo es siempre la textura del municipio (`soil_basis = municipality`). La humedad es la de NASA POWER; SMAP no se muestra mientras esté en `planned` (HU-210). La fecha de siembra no se limita a doce meses: el tercer ciclo de una estrategia puede caer más lejos. Un descanso no tiene agua y lo dice. La humedad va en el orden de los meses de las ventanas, como el ejemplo del contrato. Todo el cálculo, también el área de cada cultivo, está en el motor; el endpoint solo valida, lee y arma la respuesta. El endpoint no escribe en la base de datos ni pone la consulta en el log. Las decisiones que la spec no responde (la etapa del mes, `sources.soil` sin textura y el descanso) están en `docs/registro-de-decisiones.md`, pendientes de aprobar por Haider o Felipe. Pruebas en `tests/engine/test_plan_de_agua.py` y `tests/test_endpoint_plan_de_agua.py` (con el dataset publicado, papa en Samacá y en Duitama).
 
 ### HU-141 · Registrar la finca
 

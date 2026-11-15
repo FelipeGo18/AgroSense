@@ -107,7 +107,7 @@
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-220 | Etapas de una ventana por calendario | P0 | S | hecha | `crop_window`: etapas, meses y meses sensibles de una ventana (10 nov). La helada y el calor por etapa están en el catálogo desde HU-142 (14 nov), con nulos donde no hay fuente |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-143 | Lluvia y ET0 mensuales por municipio | P0 | M | hecha | ET0 por Penman-Monteith de FAO-56 (`pipeline/et0.py`), su normal y el año seco (percentil 20, decidido por Felipe) en `climate_month` |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-144 | Déficit de agua por cultivo y etapa | P0 | M | en curso | El balance del motor está hecho (lluvia efectiva de la FAO, agua por textura del NRCS, raíz de FAO-56); falta conectarlo en HU-146 y HU-071 (14 nov) |
-| [EP-14](epicas/EP-14-finca-agua.md) | HU-146 | Endpoint del plan de agua | P0 | S | pendiente | |
+| [EP-14](epicas/EP-14-finca-agua.md) | HU-146 | Endpoint del plan de agua | P0 | S | hecha | 14 nov: `/water-plans` responde con el balance de HU-144 (`backend/engine/water_plan.py`): por cultivo y finca, déficit y volumen por mes en rangos, año normal y seco, lluvia de IMERG, humedad de POWER para contrastar y sin escribir en la base (R9) |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-141 | Registrar la finca | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-145 | Calendario de riego de la finca | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-14](epicas/EP-14-finca-agua.md) | HU-150 | Etapa del cultivo por temperatura acumulada | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |

@@ -17,8 +17,8 @@ etapas) no se califica, como las demás señales (HU-076).
 **El balance hídrico del agua** se pide en un solo punto, `balance_for`, que se busca como global de este módulo en
 cada llamada (las pruebas lo cambian con `monkeypatch`). Es el de HU-144 (`backend/engine/water_balance.py`), que usa la
 necesidad de `backend/engine/water_need.py`: una sola cuenta del agua. Recibe la ventana, el clima normal de cada mes de
-la fuente que calcula la señal (`WaterMonth`, con la forma de `MonthClimate`), la textura y la ficha del cultivo, de la
-que sale `root_zone`. Si a algún mes de la ventana le falta la lluvia del año seco de la fuente que calcula la señal o
+la fuente que calcula la señal (`ZoneWater.months`, ya con el tipo del motor, `MonthClimate`), la textura y la ficha del
+cultivo, de la que sale `root_zone`. Si a algún mes de la ventana le falta la lluvia del año seco de la fuente que calcula la señal o
 la ET0, `balance_for` no se llama: sin esos datos no hay balance y nunca se usa la fuente de contraste en su lugar (R1).
 """
 
@@ -28,7 +28,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from backend.api.climate_signals import ZoneClimate, frost_in, heat_in, zone_climate
 from backend.api.market_signal import market_for, seasonal_index
-from backend.api.water_signals import SourceReading, WaterMonth, ZoneWater, water_in, zone_water
+from backend.api.water_signals import SourceReading, ZoneWater, water_in, zone_water
 from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset, Municipality
 from backend.engine.diagnosis import SignalOutcome
@@ -97,13 +97,12 @@ def pending_signal(name: str) -> PendingSignal:
 
 
 def balance_for(
-    window: CropWindow, climate: Mapping[int, WaterMonth], texture_class: str | None, crop: Mapping[str, Any]
+    window: CropWindow, climate: Mapping[int, MonthClimate], texture_class: str | None, crop: Mapping[str, Any]
 ) -> WaterBalanceSummary | None:
     """El balance hídrico de la ventana (HU-144, `backend/engine/water_balance.py`): lo que pide el cultivo y el déficit
     del año seco como rango, con el agua que guarda el suelo según su textura y la raíz del cultivo. Sin textura o sin
     raíz va sin el agua guardada (`retention` falso) y la señal lo dice. None si el balance no se pudo armar (R1)."""
-    months = {month: MonthClimate(c.et0_mm, c.rain_normal_mm, c.rain_dry_mm) for month, c in climate.items()}
-    balance = water_balance(window, months, texture_class, root_zone(dict(crop)))
+    balance = water_balance(window, dict(climate), texture_class, root_zone(dict(crop)))
     if balance.need_mm is None or balance.deficit_mm.get(DRY) is None:
         return None
     return WaterBalanceSummary(balance.need_mm, balance.deficit_mm[DRY], balance.retention)
