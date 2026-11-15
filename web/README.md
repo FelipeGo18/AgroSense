@@ -27,6 +27,10 @@ los parámetros y los fragmentos. No traduzca valores del contrato ni las razone
 Las pantallas de cuenta, finca y formularios, consulta, estrategias y ciclos, diagnóstico, cambios históricos, precios,
 Cómo funciona, política de datos y estados usan los diccionarios, además de la portada y la navegación.
 Los helpers sin React usan `t` y `locale()` de `src/lib/i18n.ts`; sus componentes se suscriben con `useTranslation()`.
+En código nuevo de React use `const { t } = useTranslation()`: el `t` global se reserva para funciones fuera de React
+y no suscribe al componente a los cambios de idioma. Nunca traduzca constantes al cargar un módulo;
+obtenga las etiquetas dentro de una función al usarlas (por ejemplo, `SIGNAL_NAME()`). Para claves nuevas prefiera
+el propósito del texto, como `how.step1.body`, en lugar de copiar la frase en inglés.
 Las listas de etiquetas y los formatos se obtienen al usarlos (por ejemplo, `SIGNAL_NAME()`), para actualizarse al cambiar
 de idioma. Los nombres visibles de cultivos se resuelven con `cropName()`, conservando `crop_id` y el catálogo original.
 Las razones, limitaciones y errores recibidos de la API se conservan en español, con el aviso de `ApiLanguageNotice`.

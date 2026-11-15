@@ -8,7 +8,7 @@ import { TopBar } from "@/components/layout/TopBar";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StateCard } from "@/components/ui/StateCard";
-import { ExampleLabel } from "@/components/ui/Labels";
+
 import { useVersion } from "@/features/version";
 import { useChanges, type ChangesResponse } from "@/features/changes/changes";
 import { SIGNAL_NAME, sourceName } from "@/features/diagnosis/signals";
@@ -166,8 +166,8 @@ function Comparison({
             {t("pages.strategies.StrategyCard.source")} {sourceName(periods.before.source_id, version.data)}
             {t("pages.changes.ChangesPage.units")} {unit}.
           </p>
-          {indicator === "frost_freq_pct" && <p className="text-sm">Porcentaje de años con heladas en cada mes.</p>}
-          {indicator === "tmax_p90_c" && <p className="text-sm">En 9 de cada 10 días, la temperatura máxima no superó este valor.</p>}
+          {indicator === "frost_freq_pct" && <p className="text-sm">{t("changes.indicator.frostHelp")}</p>}
+          {indicator === "tmax_p90_c" && <p className="text-sm">{t("changes.indicator.heatHelp")}</p>}
 
           {power && <p className="text-sm">{t("pages.changes.ChangesPage.nasaPowerIsAReanalysisAModel")}</p>}
 
@@ -325,19 +325,7 @@ export function ChangesPage() {
 
         {complete && query.isPending && <p role="status">{t("pages.changes.ChangesPage.loadingTheHistoricalComparison")}</p>}
 
-        {complete && query.isError && (
-          <Card>
-            <p role="alert">
-              {query.error instanceof ApiError && query.error.status === 501
-                ? t("pages.changes.ChangesPage.theHistoricalComparisonIsNotAvailableFor")
-                : query.error.message}
-            </p>
-
-            <Button onClick={() => void query.refetch()} className="self-start">
-              {t("pages.account.PrioritiesCard.tryAgain")}
-            </Button>
-          </Card>
-        )}
+        {complete && query.isError && <ChangesError error={query.error} onRetry={() => void query.refetch()} />}
 
         {complete && data && (
           <>
@@ -425,32 +413,29 @@ export function ChangesPage() {
 }
 
 function ChangesError({ error, onRetry }: { error: Error; onRetry: () => void }) {
+  const { t } = useTranslation();
   const status = error instanceof ApiError ? error.status : null;
+  const actions = [{ label: t("pages.diagnosis.DiagnosisPage.tryAgain"), onClick: onRetry }];
   if (status === 501)
     return (
-      <StateCard
-        title="Este cálculo todavía no está disponible"
-        description="Esta versión de AgroSense todavía no calcula esta comparación."
-      />
+      <StateCard title={t("pages.diagnosis.DiagnosisPage.thisCalculationIsNotAvailableYet")} description={t("changes.error.unavailable")} />
     );
-  const actions = [{ label: "Reintentar", onClick: onRetry }];
-  if (status === 0)
-    return <StateCard title="Sin conexión" description="Revise la señal e intente de nuevo. Lo que eligió sigue aquí." actions={actions} />;
   if (status === 422)
-    return (
-      <StateCard
-        title="Revise lo que eligió"
-        description="No pudimos comparar con esas opciones. Revise el municipio, el cultivo y el riego en el formulario."
-      />
-    );
+    return <StateCard title={t("pages.diagnosis.DiagnosisPage.reviewYourChoices")} description={t("changes.error.invalid")} />;
+  if (status === 0) return <StateCard title={t("changes.error.offlineTitle")} description={t("changes.error.offline")} actions={actions} />;
   if (status === 503)
     return (
-      <StateCard title="Los datos no están disponibles en este momento" description="Intente más tarde." mood="no_data" actions={actions} />
+      <StateCard
+        title={t("pages.diagnosis.DiagnosisPage.dataIsNotAvailableRightNow")}
+        description={t("pages.diagnosis.DiagnosisPage.tryAgainLater")}
+        mood="no_data"
+        actions={actions}
+      />
     );
   return (
     <StateCard
-      title="Algo falló de nuestro lado"
-      description="No pudimos comparar la historia de su zona. Lo que eligió sigue aquí. Intente de nuevo en un momento."
+      title={t("pages.diagnosis.DiagnosisPage.somethingWentWrongOnOurSide")}
+      description={t("changes.error.server")}
       code={error instanceof ApiError ? error.requestId : null}
       actions={actions}
     />

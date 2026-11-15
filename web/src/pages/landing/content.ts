@@ -85,16 +85,14 @@ export const PREVIEW = {
  * (`catalog/sources.yaml`); NASA POWER es un reanálisis y se dice así (R8).
  */
 export const SOURCES = [
-  { kind: "landing.source.climate", name: "NASA POWER", text: "landing.source.power" },
-  { kind: "landing.signal.soil", name: "SoilGrids · ISRIC", text: "landing.source.soil" },
-  { kind: "Lluvia", name: "GPM IMERG · NASA", text: "La lluvia de su municipio vista por satélite, desde 2000." },
+  { kind: "landing.source.rain", name: "GPM IMERG · NASA", text: "landing.source.imerg" },
   {
-    kind: "Clima",
+    kind: "landing.source.climate",
     name: "NASA POWER",
-    text: "Temperatura, heladas, calor y evaporación. Es un reanálisis (un modelo con observaciones), no una foto del satélite.",
+    text: "landing.source.power",
   },
-  { kind: "Altitud", name: "NASADEM · NASA", text: "La altura y la pendiente de su municipio o de su lote, a 30 m." },
-  { kind: "Suelo", name: "SoilGrids · ISRIC", text: "pH, carbono orgánico y textura, estimados en celdas de 250 m." },
+  { kind: "landing.source.altitude", name: "NASADEM · NASA", text: "landing.source.nasadem" },
+  { kind: "landing.signal.soil", name: "SoilGrids · ISRIC", text: "landing.source.soil" },
   {
     kind: "landing.signal.supply",
     name: "EVA",

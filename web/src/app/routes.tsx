@@ -44,17 +44,6 @@ function Loading() {
   );
 }
 
-/** Pantallas ya diseñadas en Figma que todavía no están programadas: cada enlace lleva a un lugar que lo dice. */
-const PENDING: { path: string; title: string }[] = [{ path: PATHS.howItWorks, title: "pages.how.HowItWorksPage.howDoesItWork" }];
-
-const pending = ({ path, title }: (typeof PENDING)[number]): RouteObject => ({
-  path,
-  lazy: async () => {
-    const { PendingPage } = await import("@/pages/pending/PendingPage");
-    return { element: <PendingPage title={title} /> };
-  },
-});
-
 const pages: RouteObject[] = [
   {
     element: <Root />,
