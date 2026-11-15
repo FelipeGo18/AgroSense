@@ -86,14 +86,19 @@ def _data_reason(semester: SupplySemester, crop_label: str) -> str:
     tres semestres B anteriores». Con `same_as_previous`, suma «EVA trae el mismo valor que en 2024 B»."""
     label = "último dato, preliminar" if semester.preliminary else "último dato"
     text = (
-        f"En {semester.year} {semester.semester} ({label}) EVA registra {format_number(round_half_up(semester.planted_ha))} ha "
-        f"de {crop_label} en su municipio"
+        f"En {semester.year} {semester.semester} ({label}) EVA registra {_hectares(semester.planted_ha)} ha de {crop_label} en su municipio"
     )
     if semester.planted_change_pct is not None:
         text += f", {_change(semester)}"
     if semester.same_as_previous:
         text += f". EVA trae el mismo valor que en {semester.year - 1} {semester.semester}"
     return text
+
+
+def _hectares(planted_ha: float) -> str:
+    """El área con un decimal si no es entera: «420», «0,4». A entero, de 0,1 a 0,4 ha diría «0 ha» cuando sí hubo
+    siembra (R5; revisión del PR #174). `round(…, 9)` quita el ruido de flotante antes del half-up."""
+    return format_number(round_half_up(round(planted_ha * 10, 9)) / 10)
 
 
 def _change(semester: SupplySemester) -> str:

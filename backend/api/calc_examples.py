@@ -93,6 +93,17 @@ SIGNALS_OK = {
         ],
         ["planted_ha", "planted_change_pct"],
         counts=False,
+        sources=[
+            {
+                "source_id": "eva",
+                "indicator": "planted_ha",
+                "value": 420,
+                "unit": "ha",
+                "period": "2025 B",
+                "preliminary": True,
+                "used": True,
+            }
+        ],
     ),
     # Sin calificar (HU-073, decisión 17). Los valores son los publicados de Corabastos en diciembre (2021–2025): Samacá es
     # de Boyacá, y Tunja no publica papa negra desde 2021, así que se usa la central de `crop_market_overrides`.

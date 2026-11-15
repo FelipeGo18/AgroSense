@@ -7,6 +7,7 @@ es `insufficient_data` y ninguna otra la reemplaza (R1).
 """
 
 from collections.abc import Mapping
+from dataclasses import dataclass, fields
 from datetime import date
 from typing import Any
 
@@ -18,6 +19,29 @@ from common.signal_sources import get_signal_sources
 
 # Los años anteriores con que HU-032 calcula `planted_change_pct` (el mismo semestre de los tres años anteriores).
 BASELINE_YEARS = 3
+
+
+@dataclass(frozen=True)
+class SupplySource:
+    """Una entrada de `signals.supply.sources`, con los nombres de campo de `SourceValue` del contrato: el área de EVA
+    que respalda la señal, para que la web cite la fuente (R8; revisión del PR #174). Una sola hoy; las demás fuentes de
+    la oferta llegan con HU-200 (P1)."""
+
+    source_id: str
+    indicator: str
+    value: float | None
+    unit: str
+    period: str | None
+    preliminary: bool | None
+    used: bool
+
+
+@dataclass(frozen=True)
+class SupplySignal(SupplySignalResult):
+    """La señal `supply` del motor con su fuente para contrastar (`ContrastedSignal`). El motor no la conoce: es un
+    campo de la API, como en el agua."""
+
+    sources: tuple[SupplySource, ...] = ()
 
 
 def semester_of(day: date) -> str:
@@ -62,8 +86,20 @@ def supply_in(dataset: Dataset, municipality_id: str, crop_id: str, crop: Mappin
     fuente de `sources.yaml` para la región. La usan `/diagnostics`, los ciclos de `/rotations` y `/changes`, para que
     digan lo mismo."""
     # Sin tabla o sin fecha no hay qué leer, y no se pide la fuente: como el agua, solo se busca cuando hay datos.
-    semester = None
+    semester, source_id = None, None
     if sowing is not None and dataset.supply_semester is not None:
         source_id = get_signal_sources().for_region(dataset.region["id"])["supply"].used
         semester = supply_semester(dataset, municipality_id, crop_id, sowing, source_id)
-    return supply_signal(semester, str(crop.get("name_es") or crop_id).lower())
+    result = supply_signal(semester, str(crop.get("name_es") or crop_id).lower())
+    if semester is None or source_id is None:
+        return result
+    source = SupplySource(
+        source_id=source_id,
+        indicator="planted_ha",
+        value=semester.planted_ha,
+        unit="ha",
+        period=f"{semester.year} {semester.semester}",
+        preliminary=semester.preliminary,
+        used=True,
+    )
+    return SupplySignal(*(getattr(result, field.name) for field in fields(result)), sources=(source,))

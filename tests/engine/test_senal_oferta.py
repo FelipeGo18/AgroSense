@@ -43,6 +43,17 @@ def test_la_variacion_dice_mas_menos_o_igual(change, text):
     assert text in supply_signal(replace(B_2025, planted_change_pct=change), "papa").reasons[1]
 
 
+@pytest.mark.parametrize(
+    "hectares,text",
+    [(420.0, "420 ha"), (0.4, "0,4 ha"), (0.1, "0,1 ha"), (0.0, "0 ha"), (12.25, "12,3 ha"), (2.5, "2,5 ha"), (419.96, "420 ha")],
+)
+def test_el_area_lleva_un_decimal_si_no_es_entera(hectares, text):
+    """De 0,1 a 0,4 ha, a entero diría «0 ha» cuando sí hubo siembra (R5; revisión del PR #174). El decimal redondea
+    desde la mitad hacia arriba."""
+    reason = supply_signal(replace(B_2025, planted_ha=hectares), "papa").reasons[1]
+    assert f"EVA registra {text} de papa" in reason
+
+
 def test_sin_variacion_no_la_nombra():
     result = supply_signal(replace(B_2025, planted_change_pct=None), "papa")
     assert result.reasons[1] == "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio"

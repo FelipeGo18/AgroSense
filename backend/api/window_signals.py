@@ -57,7 +57,7 @@ class SignalResult(SignalOutcome, Protocol):
 @runtime_checkable
 class ContrastedSignal(SignalResult, Protocol):
     """Una señal que además trae `sources`, las fuentes del indicador para contrastar (contrato, «Respuesta de
-    diagnóstico»): en el MVP, solo el agua (`WaterSignal`); la oferta, cuando las tenga (HU-072)."""
+    diagnóstico»): el agua (`WaterSignal`) y la oferta con dato (`SupplySignal`, el área de EVA; HU-072)."""
 
     sources: tuple[SourceReading, ...]
 

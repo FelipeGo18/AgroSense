@@ -87,7 +87,7 @@ def light_result(result: TrafficLight, weights_basis: str) -> LightResult:
 def signal_result(name: str, result: SignalResult, weights: Mapping[str, int]) -> Signal:
     """Una señal con la forma del contrato. `counts` es si cuenta para la luz con los pesos de `overall` (contrato,
     «Respuesta de diagnóstico»), con la misma definición que el semáforo y el orden (`counts` del motor). `sources` solo
-    viene en la señal que trae varias fuentes para contrastar (en el MVP, el agua); en las demás es nulo."""
+    viene en la señal que trae sus fuentes para contrastar (el agua y la oferta con dato); en las demás es nulo."""
     sources = signal_sources(result)
     return Signal(
         status=result.status,
