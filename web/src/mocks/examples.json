@@ -66,7 +66,10 @@
             "supply_semester": {
               "year": 2025,
               "semester": "B",
-              "preliminary": true
+              "preliminary": true,
+              "planted_ha": 420,
+              "planted_change_pct": 35,
+              "same_as_previous": false
             }
           },
           "overall": {
@@ -76,19 +79,29 @@
             "weights_basis": "farmer",
             "limiting_signal": "frost",
             "reasons": [
-              "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+              "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
             ]
           },
           "overall_default": {
-            "light": "red",
-            "action": "rotate",
+            "light": "yellow",
+            "action": "other_window",
             "high_risk": false,
             "weights_basis": "default",
-            "limiting_signal": "supply",
+            "limiting_signal": "frost",
             "reasons": [
-              "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+              "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
             ]
           },
+          "best_windows": [
+            {
+              "sowing_start": "2027-10-04",
+              "harvest_estimate": "2028-02-28",
+              "limiting_signal": "frost",
+              "limiting_score": 72,
+              "weighted_score": 84,
+              "high_risk": false
+            }
+          ],
           "weights": {
             "water": 5,
             "frost": 3,
@@ -177,26 +190,15 @@
             },
             "supply": {
               "status": "available",
-              "level": "unfavorable",
               "critical": false,
-              "score": 30,
               "counts": false,
               "indicators": [
+                "planted_ha",
                 "planted_change_pct"
               ],
               "reasons": [
-                "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-              ],
-              "sources": [
-                {
-                  "source_id": "eva",
-                  "indicator": "planted_change_pct",
-                  "value": 35,
-                  "unit": "%",
-                  "period": "2025-B",
-                  "preliminary": true,
-                  "used": true
-                }
+                "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
               ]
             },
             "market": {
@@ -313,7 +315,10 @@
             "supply_semester": {
               "year": 2025,
               "semester": "B",
-              "preliminary": true
+              "preliminary": true,
+              "planted_ha": 420,
+              "planted_change_pct": 35,
+              "same_as_previous": false
             }
           },
           "overall": {
@@ -334,6 +339,16 @@
               "No hay datos de lluvia para esta zona: no se puede evaluar el agua"
             ]
           },
+          "best_windows": [
+            {
+              "sowing_start": "2027-10-04",
+              "harvest_estimate": "2028-02-28",
+              "limiting_signal": "frost",
+              "limiting_score": 72,
+              "weighted_score": 84,
+              "high_risk": false
+            }
+          ],
           "weights": {
             "water": 3,
             "frost": 4,
@@ -389,26 +404,15 @@
             },
             "supply": {
               "status": "available",
-              "level": "unfavorable",
               "critical": false,
-              "score": 30,
               "counts": false,
               "indicators": [
+                "planted_ha",
                 "planted_change_pct"
               ],
               "reasons": [
-                "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-              ],
-              "sources": [
-                {
-                  "source_id": "eva",
-                  "indicator": "planted_change_pct",
-                  "value": 35,
-                  "unit": "%",
-                  "period": "2025-B",
-                  "preliminary": true,
-                  "used": true
-                }
+                "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
               ]
             },
             "market": {
@@ -473,7 +477,10 @@
             "supply_semester": {
               "year": 2025,
               "semester": "B",
-              "preliminary": true
+              "preliminary": true,
+              "planted_ha": 420,
+              "planted_change_pct": 35,
+              "same_as_previous": false
             }
           },
           "overall": {
@@ -483,19 +490,29 @@
             "weights_basis": "farmer",
             "limiting_signal": "frost",
             "reasons": [
-              "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+              "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
             ]
           },
           "overall_default": {
-            "light": "red",
-            "action": "rotate",
+            "light": "yellow",
+            "action": "other_window",
             "high_risk": false,
             "weights_basis": "default",
-            "limiting_signal": "supply",
+            "limiting_signal": "frost",
             "reasons": [
-              "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+              "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
             ]
           },
+          "best_windows": [
+            {
+              "sowing_start": "2027-10-04",
+              "harvest_estimate": "2028-02-28",
+              "limiting_signal": "frost",
+              "limiting_score": 72,
+              "weighted_score": 84,
+              "high_risk": false
+            }
+          ],
           "weights": {
             "water": 5,
             "frost": 3,
@@ -580,26 +597,15 @@
             },
             "supply": {
               "status": "available",
-              "level": "unfavorable",
               "critical": false,
-              "score": 30,
               "counts": false,
               "indicators": [
+                "planted_ha",
                 "planted_change_pct"
               ],
               "reasons": [
-                "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-              ],
-              "sources": [
-                {
-                  "source_id": "eva",
-                  "indicator": "planted_change_pct",
-                  "value": 35,
-                  "unit": "%",
-                  "period": "2025-B",
-                  "preliminary": true,
-                  "used": true
-                }
+                "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
               ]
             },
             "market": {
@@ -733,7 +739,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -743,17 +752,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -844,26 +853,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -934,7 +932,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -944,17 +945,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -1045,26 +1046,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -1135,7 +1125,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -1145,17 +1138,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -1246,26 +1239,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -1440,7 +1422,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -1450,17 +1435,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -1551,26 +1536,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -1640,7 +1614,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -1650,17 +1627,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -1751,26 +1728,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -1930,7 +1896,10 @@
                     "supply_semester": {
                       "year": 2025,
                       "semester": "B",
-                      "preliminary": true
+                      "preliminary": true,
+                      "planted_ha": 420,
+                      "planted_change_pct": 35,
+                      "same_as_previous": false
                     }
                   },
                   "overall": {
@@ -1940,17 +1909,17 @@
                     "weights_basis": "farmer",
                     "limiting_signal": "frost",
                     "reasons": [
-                      "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                     ]
                   },
                   "overall_default": {
-                    "light": "red",
-                    "action": "rotate",
+                    "light": "yellow",
+                    "action": "other_window",
                     "high_risk": false,
                     "weights_basis": "default",
-                    "limiting_signal": "supply",
+                    "limiting_signal": "frost",
                     "reasons": [
-                      "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                      "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                     ]
                   },
                   "weights": {
@@ -2041,26 +2010,15 @@
                     },
                     "supply": {
                       "status": "available",
-                      "level": "unfavorable",
                       "critical": false,
-                      "score": 30,
                       "counts": false,
                       "indicators": [
+                        "planted_ha",
                         "planted_change_pct"
                       ],
                       "reasons": [
-                        "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                      ],
-                      "sources": [
-                        {
-                          "source_id": "eva",
-                          "indicator": "planted_change_pct",
-                          "value": 35,
-                          "unit": "%",
-                          "period": "2025-B",
-                          "preliminary": true,
-                          "used": true
-                        }
+                        "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                        "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                       ]
                     },
                     "market": {
@@ -2131,7 +2089,10 @@
                     "supply_semester": {
                       "year": 2025,
                       "semester": "B",
-                      "preliminary": true
+                      "preliminary": true,
+                      "planted_ha": 420,
+                      "planted_change_pct": 35,
+                      "same_as_previous": false
                     }
                   },
                   "overall": {
@@ -2141,17 +2102,17 @@
                     "weights_basis": "farmer",
                     "limiting_signal": "frost",
                     "reasons": [
-                      "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                     ]
                   },
                   "overall_default": {
-                    "light": "red",
-                    "action": "rotate",
+                    "light": "yellow",
+                    "action": "other_window",
                     "high_risk": false,
                     "weights_basis": "default",
-                    "limiting_signal": "supply",
+                    "limiting_signal": "frost",
                     "reasons": [
-                      "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                      "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                     ]
                   },
                   "weights": {
@@ -2242,26 +2203,15 @@
                     },
                     "supply": {
                       "status": "available",
-                      "level": "unfavorable",
                       "critical": false,
-                      "score": 30,
                       "counts": false,
                       "indicators": [
+                        "planted_ha",
                         "planted_change_pct"
                       ],
                       "reasons": [
-                        "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                      ],
-                      "sources": [
-                        {
-                          "source_id": "eva",
-                          "indicator": "planted_change_pct",
-                          "value": 35,
-                          "unit": "%",
-                          "period": "2025-B",
-                          "preliminary": true,
-                          "used": true
-                        }
+                        "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                        "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                       ]
                     },
                     "market": {
@@ -2332,7 +2282,10 @@
                     "supply_semester": {
                       "year": 2025,
                       "semester": "B",
-                      "preliminary": true
+                      "preliminary": true,
+                      "planted_ha": 420,
+                      "planted_change_pct": 35,
+                      "same_as_previous": false
                     }
                   },
                   "overall": {
@@ -2342,17 +2295,17 @@
                     "weights_basis": "farmer",
                     "limiting_signal": "frost",
                     "reasons": [
-                      "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                      "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                     ]
                   },
                   "overall_default": {
-                    "light": "red",
-                    "action": "rotate",
+                    "light": "yellow",
+                    "action": "other_window",
                     "high_risk": false,
                     "weights_basis": "default",
-                    "limiting_signal": "supply",
+                    "limiting_signal": "frost",
                     "reasons": [
-                      "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                      "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                     ]
                   },
                   "weights": {
@@ -2443,26 +2396,15 @@
                     },
                     "supply": {
                       "status": "available",
-                      "level": "unfavorable",
                       "critical": false,
-                      "score": 30,
                       "counts": false,
                       "indicators": [
+                        "planted_ha",
                         "planted_change_pct"
                       ],
                       "reasons": [
-                        "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                      ],
-                      "sources": [
-                        {
-                          "source_id": "eva",
-                          "indicator": "planted_change_pct",
-                          "value": 35,
-                          "unit": "%",
-                          "period": "2025-B",
-                          "preliminary": true,
-                          "used": true
-                        }
+                        "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                        "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                       ]
                     },
                     "market": {
@@ -2685,7 +2627,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -2695,17 +2640,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -2796,26 +2741,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -2886,7 +2820,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -2896,17 +2833,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -2997,26 +2934,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -3087,7 +3013,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -3097,17 +3026,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -3198,26 +3127,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -3385,7 +3303,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -3395,17 +3316,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -3496,26 +3417,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -3585,7 +3495,10 @@
                       "supply_semester": {
                         "year": 2025,
                         "semester": "B",
-                        "preliminary": true
+                        "preliminary": true,
+                        "planted_ha": 420,
+                        "planted_change_pct": 35,
+                        "same_as_previous": false
                       }
                     },
                     "overall": {
@@ -3595,17 +3508,17 @@
                       "weights_basis": "farmer",
                       "limiting_signal": "frost",
                       "reasons": [
-                        "Con sus prioridades, la oferta no cuenta para la luz y ninguna otra señal es desfavorable"
+                        "Con sus prioridades, ninguna señal que cuenta es desfavorable y el agua es favorable"
                       ]
                     },
                     "overall_default": {
-                      "light": "red",
-                      "action": "rotate",
+                      "light": "yellow",
+                      "action": "other_window",
                       "high_risk": false,
                       "weights_basis": "default",
-                      "limiting_signal": "supply",
+                      "limiting_signal": "frost",
                       "reasons": [
-                        "Con el criterio de AgroSense, la helada moderada (pesa 4) y la oferta desfavorable ponen la luz en rojo"
+                        "Con el criterio de AgroSense, la helada moderada (pesa 4) cuenta como desfavorable: la luz es amarilla"
                       ]
                     },
                     "weights": {
@@ -3696,26 +3609,15 @@
                       },
                       "supply": {
                         "status": "available",
-                        "level": "unfavorable",
                         "critical": false,
-                        "score": 30,
                         "counts": false,
                         "indicators": [
+                          "planted_ha",
                           "planted_change_pct"
                         ],
                         "reasons": [
-                          "En 2025 B (último dato, preliminar) se sembró 35 % más papa que en los tres semestres B anteriores"
-                        ],
-                        "sources": [
-                          {
-                            "source_id": "eva",
-                            "indicator": "planted_change_pct",
-                            "value": 35,
-                            "unit": "%",
-                            "period": "2025-B",
-                            "preliminary": true,
-                            "used": true
-                          }
+                          "Oferta sin calificar: ninguna fuente publica desde qué aumento del área sembrada hay sobreoferta",
+                          "En 2025 B (último dato, preliminar) EVA registra 420 ha de papa en su municipio, 35 % más que el promedio de los tres semestres B anteriores"
                         ]
                       },
                       "market": {
@@ -6589,13 +6491,13 @@
         "supply": 1,
         "market": 1
       },
-      "weights_version": "1.1.0",
+      "weights_version": "1.2.0",
       "weights_reasons": {
         "water": "Importancia normal. La señal ya es prudente: se califica con la lluvia del año seco, la que se supera en 4 de cada 5 años. Un riesgo grave de agua cuenta siempre.",
         "frost": "Importa mucho, por prudencia: la helada es el riesgo principal del altiplano. Una helada moderada ya cuenta como desfavorable para la luz.",
         "heat": "Pesa menos: en el altiplano la temperatura máxima rara vez pasa de lo que aguantan estos cultivos. Un calor crítico cuenta siempre.",
         "soil": "Pesa menos: el suelo es una estimación de un mapa de 250 m, no una medición de su lote.",
-        "supply": "Pesa poco en el orden de las ventanas: la oferta es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Si a usted le importa más, súbala; si no le importa, póngala en 0.",
+        "supply": "Pesa poco: la oferta es un dato que suma. Se muestra sin calificar, con el área que registra EVA en su municipio, y su peso no cambia nada: ninguna fuente dice desde cuánto hay sobreoferta.",
         "market": "Pesa poco: el precio es un dato que suma. Se muestra sin calificar, con la historia del precio de su mes de cosecha, y no cambia la luz: ninguna fuente dice qué es un precio bajo."
       },
       "sources": [

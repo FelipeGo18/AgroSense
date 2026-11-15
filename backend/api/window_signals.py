@@ -5,10 +5,9 @@ y calificaciones»), y después para cada ciclo de `/rotations` (HU-213).
 Es la capa delgada de la API (R6): lee del dataset lo de la zona una sola vez (`signal_zone`) y, por ventana, llama al
 motor con todo ya leído. No escribe nada ni guarda la consulta (R9).
 
-Hoy hay cinco señales con motor (`water`, HU-071; `frost`, HU-077; `heat`, HU-190; `soil`, HU-183; `market`, HU-073)
-y una sin él (`supply`, HU-072). La que falta sale de `pending_signal`: `insufficient_data`, con nivel y calificación
-nulos, sin críticas, y una razón que dice que todavía no se evalúa (R1, R5). Pasa por el mismo camino que las demás: el
-semáforo, el orden y las limitaciones no saben que es provisional.
+Las seis señales tienen motor (`water`, HU-071; `frost`, HU-077; `heat`, HU-190; `soil`, HU-183; `supply`, HU-072;
+`market`, HU-073). La oferta y el mercado se muestran sin calificar (decisión 17). `pending_signal` queda para una señal
+del P0 que se sume sin motor: `insufficient_data`, con una razón que dice que todavía no se evalúa (R1, R5).
 
 **El suelo** no cambia con la fecha: quien llama calcula la señal una vez por consulta (`soil_signals.soil_for`, con el
 suelo del municipio) y la pasa ya hecha (`soil`); todas las ventanas llevan la misma. Sin ventana (un cultivo sin
@@ -28,6 +27,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from backend.api.climate_signals import ZoneClimate, frost_in, heat_in, zone_climate
 from backend.api.market_signal import market_in
+from backend.api.supply_signal import supply_in
 from backend.api.water_signals import SourceReading, ZoneWater, water_in, zone_water
 from backend.config.thresholds import Thresholds
 from backend.dataset import Dataset, Municipality
@@ -80,7 +80,8 @@ class PendingSignal:
     limitations: tuple[str, ...] = ()
 
 
-PENDING_SIGNALS = ("supply",)
+# Las señales del P0 sin motor: ninguna desde HU-072. `pending_signal` queda para la que se sume sin motor.
+PENDING_SIGNALS: tuple[str, ...] = ()
 
 
 def pending_reason(name: str) -> str:
@@ -158,6 +159,6 @@ def window_signals(
         "heat": heat_in(zone.climate, window, crop, thresholds, crop_name),
         # Sin ventana tampoco se califica el suelo, como las demás (HU-076): no hay ventana que diagnosticar.
         "soil": soil if window is not None else soil_without_stages(crop_name),
-        "supply": pending_signal("supply"),
+        "supply": supply_in(dataset, zone.municipality.municipality_id, crop_id, crop, window.sowing_date if window else None),
         "market": market_in(dataset, zone.municipality, crop_id, crop_name, window.harvest_estimate.month if window else None),
     }

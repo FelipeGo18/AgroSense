@@ -51,8 +51,8 @@ NOVEMBER, APRIL = "2026-11-01", "2027-04-01"
 NO_WATER = {"water": 0, "frost": 3, "heat": 3, "soil": 3, "supply": 3, "market": 3}
 # Un balance hídrico DE EJEMPLO (R5): el cultivo pide 400 mm y la lluvia del año seco los cubre.
 NO_DEFICIT = WaterBalanceSummary(need_mm=400.0, dry_deficit_mm=(0.0, 0.0), retention=True)
-# Las señales que todavía no tienen motor (el agua ya lo tiene desde HU-071 y el suelo desde HU-183).
-PENDING = {name: pending_reason(name) for name in ("supply",)}
+# Las señales que todavía no tienen motor: ninguna desde HU-072 (la oferta sale sin calificar, decisión 17).
+PENDING: dict[str, str] = {}
 
 
 @pytest.fixture(autouse=True)
@@ -127,7 +127,7 @@ def test_un_diagnostico_con_datos_trae_la_forma_completa(examples):
     water = body["signals"]["water"]
     assert (water["status"], water["level"], water["score"], water["critical"]) == ("insufficient_data", None, None, False)
     assert water["reasons"] != [pending_reason("water")]
-    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.1.0"}
+    assert body["versions"] == {"dataset": "ejemplo", "rules": "0.1.0+umbrales.1.1.0+pesos.1.2.0"}
 
 
 def test_sin_prioridades_las_dos_luces_coinciden_con_los_pesos_por_defecto(examples):
@@ -210,15 +210,15 @@ def with_favorable_water_and_supply(monkeypatch, folder: Path) -> None:
     """El agua y la oferta favorables, para los casos de referencia de HU-077 y HU-190. El agua pasa por el motor real
     (el balance hídrico de HU-144 y la señal de HU-071): en Samacá la lluvia del ejemplo se cambia a 200 mm al mes, en
     el año normal y en el seco (cifras DE EJEMPLO, R5), y la lluvia efectiva cubre lo que pide el cultivo. La oferta sale
-    de una señal DE EJEMPLO, porque todavía no tiene curva ni motor (HU-072). Las heladas y el calor son los del dataset."""
+    de una señal DE EJEMPLO calificada a mano: desde la decisión 17 la oferta real sale sin calificar (HU-072), y este caso
+    prueba que ni una oferta favorable compensa un riesgo grave (R2). Las heladas y el calor son los del dataset."""
     table = folder / "precip_month.parquet"
     rows = pl.read_parquet(table)
     rainy = pl.when(pl.col("municipality_id") == SAMACA).then(pl.lit(200.0))
     rows.with_columns(rainy.otherwise(pl.col(name)).alias(name) for name in ("precip_normal_mm", "precip_dry_mm")).write_parquet(table)
     use(monkeypatch, folder)
     favorable_supply = window_signals.PendingSignal("available", "favorable", False, 90, (), ("Oferta DE EJEMPLO, favorable",))
-    real = window_signals.pending_signal
-    monkeypatch.setattr(window_signals, "pending_signal", lambda name: favorable_supply if name == "supply" else real(name))
+    monkeypatch.setattr(window_signals, "supply_in", lambda *args, **kwargs: favorable_supply)
 
 
 def test_caso_de_referencia_helada_critica_con_agua_y_oferta_favorables_da_rojo_y_otra_ventana(tmp_path, monkeypatch):
