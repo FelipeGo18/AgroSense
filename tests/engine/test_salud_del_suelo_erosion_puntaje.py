@@ -69,7 +69,9 @@ CON_DESCANSO = ("papa", "descanso", "maiz")
 def _crit(slope, dias_descanso=30, secuencia=CON_DESCANSO, gaps=(0, 0)):
     """`erosion` de (papa, descanso, maiz) con papa 165 y maíz 180 días; el descanso dura `dias_descanso` (EJEMPLO)."""
     dias = [165, dias_descanso, 180]
-    return soil_health(secuencia, CULTIVOS, [], REGLAS, slope=slope, cycle_days=dias, gap_days=[*gaps, None])["erosion"]
+    return soil_health(secuencia, CULTIVOS, [], REGLAS, slope=slope, cycle_days=dias, gap_days=[*gaps, None], history_basis="none")[
+        "erosion"
+    ]
 
 
 def _c(level):
@@ -93,7 +95,9 @@ def test_con_pendiente_menor_que_12_es_favorable_aunque_el_suelo_quede_descubier
 
 
 def test_con_pendiente_menor_que_12_no_necesita_duraciones():
-    c = soil_health(CON_DESCANSO, CULTIVOS, [], REGLAS, slope=SlopeInfo(11.9, "nasadem", "lot"), cycle_days=None)["erosion"]
+    c = soil_health(CON_DESCANSO, CULTIVOS, [], REGLAS, slope=SlopeInfo(11.9, "nasadem", "lot"), cycle_days=None, history_basis="none")[
+        "erosion"
+    ]
     assert (c.status, c.level) == ("available", "favorable")
 
 
@@ -156,9 +160,11 @@ def test_sin_pendiente_es_insufficient_data_con_la_regla(slope):
 
 
 def test_con_pendiente_de_12_o_mas_y_un_ciclo_sin_duracion_es_insufficient_data():
-    c = soil_health(CON_DESCANSO, CULTIVOS, [], REGLAS, slope=EMPINADO, cycle_days=[165, None, 180], gap_days=[0, 0, None])["erosion"]
+    c = soil_health(
+        CON_DESCANSO, CULTIVOS, [], REGLAS, slope=EMPINADO, cycle_days=[165, None, 180], gap_days=[0, 0, None], history_basis="none"
+    )["erosion"]
     assert (c.status, c.level, c.rule_ids) == ("insufficient_data", None, ("erosion_pendiente",))
-    sin = soil_health(CON_DESCANSO, CULTIVOS, [], REGLAS, slope=EMPINADO)["erosion"]  # cycle_days=None
+    sin = soil_health(CON_DESCANSO, CULTIVOS, [], REGLAS, slope=EMPINADO, history_basis="none")["erosion"]  # cycle_days=None
     assert (sin.status, sin.level) == ("insufficient_data", None)
 
 
@@ -190,8 +196,8 @@ def test_erosion_real_de_un_municipio_decide_el_nivel_comparando_su_pendiente_co
 def test_con_slope_los_otros_cuatro_criterios_no_cambian():
     dias = [165, 120, 180]
     kw = {"soil": BAJO, "cycle_days": dias, "gap_days": [3, 4, None]}
-    sin = soil_health(CON_DESCANSO, CULTIVOS, ["papa"], REGLAS, **kw)
-    con = soil_health(CON_DESCANSO, CULTIVOS, ["papa"], REGLAS, slope=EMPINADO, **kw)
+    sin = soil_health(CON_DESCANSO, CULTIVOS, ["papa"], REGLAS, **kw, history_basis="declared")
+    con = soil_health(CON_DESCANSO, CULTIVOS, ["papa"], REGLAS, slope=EMPINADO, **kw, history_basis="declared")
     otros = ("nitrogen", "organic_carbon", "soil_cover", "pest_break")
     assert all(con[n] == sin[n] for n in otros) and all(sin[n].status == "available" for n in otros)
     assert sin["erosion"].status == "insufficient_data" and con["erosion"].status == "available"
@@ -201,7 +207,9 @@ def test_misma_entrada_misma_salida_aunque_las_reglas_lleguen_en_otro_orden():
     base = _crit(EMPINADO, 100)
     assert base == _crit(EMPINADO, 100)
     invertidas = list(reversed(REGLAS))
-    otro = soil_health(CON_DESCANSO, CULTIVOS, [], invertidas, slope=EMPINADO, cycle_days=[165, 100, 180], gap_days=[0, 0, None])["erosion"]
+    otro = soil_health(
+        CON_DESCANSO, CULTIVOS, [], invertidas, slope=EMPINADO, cycle_days=[165, 100, 180], gap_days=[0, 0, None], history_basis="none"
+    )["erosion"]
     assert base == otro and base.level == "unfavorable"
 
 
@@ -252,7 +260,7 @@ TEXTO_HUECO = "Falta el hueco entre algún par de ciclos de la estrategia"
 
 
 def _con(dias, gaps, secuencia=CON_DESCANSO, slope=EMPINADO):
-    return soil_health(secuencia, CULTIVOS, [], REGLAS, slope=slope, cycle_days=dias, gap_days=gaps)["erosion"]
+    return soil_health(secuencia, CULTIVOS, [], REGLAS, slope=slope, cycle_days=dias, gap_days=gaps, history_basis="none")["erosion"]
 
 
 @pytest.mark.parametrize("gaps", [None, [0, None, None], [None, 0, None], [0, 0], [0, 0, 0], [0, 7, None], [0, -1, None]])
@@ -302,7 +310,17 @@ def test_hu224_descanso_de_180_dias_es_unfavorable_con_cualquier_hueco_de_0_a_6(
 
 def test_hu212_las_razones_de_los_cinco_criterios_usan_coma_decimal_y_terminan_con_el_sufijo_del_equipo():
     # EJEMPLO (R5): una estrategia con los cinco criterios evaluados.
-    cr = soil_health(CON_DESCANSO, CULTIVOS, ["papa"], REGLAS, soil=BAJO, slope=EMPINADO, cycle_days=[165, 120, 180], gap_days=[3, 4, None])
+    cr = soil_health(
+        CON_DESCANSO,
+        CULTIVOS,
+        ["papa"],
+        REGLAS,
+        soil=BAJO,
+        slope=EMPINADO,
+        cycle_days=[165, 120, 180],
+        gap_days=[3, 4, None],
+        history_basis="declared",
+    )
     assert all(c.status == "available" for c in cr.values())
     for nombre, c in cr.items():
         assert all(r.endswith(f". {TEAM_NOTE}") for r in c.reasons), nombre
