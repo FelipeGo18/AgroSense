@@ -120,14 +120,12 @@ describe("Inicio (HU-173)", () => {
 });
 
 describe("rutas", () => {
-  it("una pantalla que aún no está programada lo dice y deja volver al inicio", async () => {
-    // «Consultar» ya es la entrada a las estrategias (HU-214) y «¿Cómo funciona?» ya existe (HU-122, #103); «Qué cambió en
-    // su zona» sigue pendiente (HU-219).
-    // Cuando HU-219 la saque de PENDING (app/routes.tsx), esta prueba y la del pie (pending.test.tsx) se reescriben.
+  it("qué cambió abre la pantalla implementada y permite ir al diagnóstico (HU-219)", async () => {
     open(PATHS.changes);
-    expect(await screen.findByRole("heading", { level: 1, name: "Qué cambió en su zona" })).toBeInTheDocument();
-    expect(screen.getByText(/todavía no está programada/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", PATHS.home);
+    expect(await screen.findByRole("heading", { level: 1, name: "¿Qué cambió en su zona?" })).toBeInTheDocument();
+    expect(screen.getByText("Así fue en la historia de su zona. No es un pronóstico")).toBeInTheDocument();
+    expect(screen.queryByText(/todavía no está programada/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ir al diagnóstico de una siembra" })).toHaveAttribute("href", PATHS.diagnosis);
   });
 
   it("las páginas de prueba siguen existiendo, pero solo por su dirección", async () => {
