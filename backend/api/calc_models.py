@@ -496,6 +496,7 @@ class TrendsResponse(BaseModel):
     water: WaterSeries
     supply: SupplySeries
     ndvi: NdviSeries
+    limitations: list[str]
     versions: Versions
 
 

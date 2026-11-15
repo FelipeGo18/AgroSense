@@ -1,10 +1,12 @@
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { Link, useLocation, useParams } from "react-router";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
 import { MapScene, PANEL_WIDTH } from "@/components/layout/MapScene";
 import { LotMap } from "@/components/map/LotMap";
+import { LiveLot } from "@/components/farm/LiveLot";
+import { useAnimated } from "@/hooks/useLightMode";
 import { Alert } from "@/components/ui/Alert";
 import { ButtonLink } from "@/components/ui/Button";
 import type { LotPolygon } from "@/features/farm/geo";
@@ -12,13 +14,16 @@ import { byId, formatHa, useBoundary, useLot, useMunicipalities, type LotDetail 
 import { STAGE_NAMES, STAGE_ORDER, cropNames, formatDate, formatShortDate, useCrops, useSeasons } from "@/features/farm/seasons";
 import { LINK, RequireSession } from "@/pages/account/AccountShell";
 import { Eyebrow } from "@/components/ui/Eyebrow";
+import { SoilFacts } from "@/components/soil/SoilFacts";
+import { useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { WithoutDrawing, irrigationText, placeName } from "./common";
 
 /**
  * El lote (HU-164, HU-169): su contorno en el mapa, lo que se sabe de él, sus siembras en curso y su suelo. Editar y
  * borrar van en «Editar lote» (Figma: «D1 · Editar lote»). Un lote sin dibujar muestra su municipio y se puede
- * dibujar. Las siembras se registran, cosechan y corrigen en sus pantallas (HU-165). El lote vivo (HU-187) y «Ver
- * estrategias de rotación» (HU-214) llegan después.
+ * dibujar. Las siembras se registran, cosechan y corrigen en sus pantallas (HU-165). «Ver estrategias de rotación» lleva
+ * a las estrategias con este lote (HU-214). El suelo es el estimado de su municipio (HU-185); el del polígono del lote es
+ * HU-182 (P1). El lote vivo es HU-187 (P1).
  */
 export function LotPage() {
   return <RequireSession>{() => <LotView />}</RequireSession>;
@@ -28,6 +33,12 @@ function LotView() {
   const { lotId = "" } = useParams();
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
   const lot = useLot(lotId);
+  const animated = useAnimated();
+  const crops = useCrops();
+  // El lote vivo (HU-187) es la vista de entrada; el mapa sigue a un toque.
+  const [view, setView] = useState<"finca" | "mapa">("finca");
+  // En escritorio, el panel se oculta para recorrer la finca o el mapa a pantalla completa.
+  const [panelOpen, setPanelOpen] = useState(true);
   const municipalities = useMunicipalities();
   const boundary = useBoundary(lot.data?.municipality_id);
   const municipality = lot.data ? byId(municipalities.data).get(lot.data.municipality_id) : undefined;
@@ -58,13 +69,63 @@ function LotView() {
   const town = municipality?.name ?? "su municipio";
   return (
     <MapScene
+      panelOpen={panelOpen}
+      onTogglePanel={() => setPanelOpen((open) => !open)}
       map={
-        <LotMap
-          boundary={boundary.data?.geometry ?? null}
-          focus={geometry}
-          lots={geometry ? [{ id: lot.data.lot_id, name: lot.data.name, geometry, selected: true }] : []}
-          panelWidth={PANEL_WIDTH}
-        />
+        <>
+          {view === "finca" ? (
+            <div className={`size-full ${panelOpen ? "md:pl-[440px]" : ""}`}>
+              <LiveLot
+                seasons={lot.data.current_seasons.map((season) => ({
+                  seasonId: season.season_id,
+                  cropId: season.crop_id,
+                  areaHa: season.area_ha,
+                  stage: season.stage ?? null,
+                }))}
+                lotAreaHa={lot.data.area_ha}
+                cropName={(id: string) => cropNames(crops.data).get(id) ?? id}
+                animated={animated}
+              />
+            </div>
+          ) : (
+            <LotMap
+              boundary={boundary.data?.geometry ?? null}
+              focus={geometry}
+              lots={geometry ? [{ id: lot.data.lot_id, name: lot.data.name, geometry, selected: true }] : []}
+              panelWidth={panelOpen ? PANEL_WIDTH : 0}
+            />
+          )}
+          <div
+            role="group"
+            aria-label="Cómo ver el lote"
+            className="absolute right-3 bottom-6 z-10 flex gap-1 rounded-md bg-superficie-panel p-1 shadow-md md:top-[104px] md:right-8 md:bottom-auto"
+          >
+            {(["finca", "mapa"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={view === option}
+                onClick={() => setView(option)}
+                className={`min-h-11 min-w-11 rounded-sm px-4 font-bold ${
+                  view === option ? "bg-accion-primaria text-texto-sobre-oscuro" : "text-texto-principal"
+                }`}
+              >
+                {option === "finca" ? "Su finca" : "Mapa"}
+              </button>
+            ))}
+          </div>
+          {view === "finca" && (
+            <p
+              className={`absolute top-[88px] left-3 z-10 max-w-[calc(100%-1.5rem)] rounded-md bg-superficie-panel/95 px-3 py-2 text-[13px] md:top-auto md:bottom-6 md:max-w-[26rem] ${panelOpen ? "md:left-[488px]" : "md:left-8"}`}
+            >
+              <span className="md:hidden">Ilustración de su lote, no una imagen de él.</span>
+              <span className="hidden md:inline">
+                Ilustración de su lote: cada siembra ocupa su parte del área y se dibuja en su etapa por calendario. No es una imagen del
+                lote.
+              </span>
+            </p>
+          )}
+        </>
       }
     >
       <title>{`${lot.data.name} · Mi finca · AgroSense`}</title>
@@ -102,7 +163,7 @@ function LotView() {
         )}
       </Section>
       <Seasons lot={lot.data} />
-      <Soil town={town} />
+      <Soil municipalityId={lot.data.municipality_id} town={town} />
     </MapScene>
   );
 }
@@ -229,14 +290,26 @@ function StageBar({ stage, progress }: { stage: string; progress: number }) {
   );
 }
 
-/** El suelo (HU-185): sin el suelo publicado no se inventa nada (R1, R10). */
-function Soil({ town }: { town: string }) {
+/**
+ * El suelo (HU-185): el estimado del municipio del lote (`GET /catalogs/municipalities/{id}/soil`), con su rango y qué
+ * significa cada dato. Sin el suelo publicado no se inventa nada (R1); siempre dice que es de la zona (R10).
+ */
+function Soil({ municipalityId, town }: { municipalityId: string; town: string }) {
+  const soil = useMunicipalitySoil(municipalityId);
   return (
-    <Section title="Suelo">
-      <p className="font-bold">Sin datos del suelo todavía.</p>
-      <p className="text-[14px] text-texto-secundario">
-        Será el estimado de {town} (mapa global de 250 m), con su rango. Para conocer el de su lote, haga un análisis de suelo.
-      </p>
+    <Section title="Suelo de la zona">
+      {soil.isPending ? (
+        <p role="status" className="text-texto-secundario">
+          Cargando el suelo de {town}…
+        </p>
+      ) : soil.data ? (
+        <SoilFacts soil={soil.data} place={town} />
+      ) : (
+        <>
+          <p className="font-bold">Sin datos del suelo de {town}.</p>
+          <p className="text-[14px] text-texto-secundario">Para conocer el suelo de su lote, haga un análisis de suelo.</p>
+        </>
+      )}
     </Section>
   );
 }
