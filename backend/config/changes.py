@@ -10,6 +10,10 @@ import yaml
 from common.region import REGION_FILE
 
 
+class ChangeParametersError(ValueError):
+    """Los cortes de «Qué cambió» en `pipeline/region.yaml` faltan o no sirven: la API responde 503."""
+
+
 @dataclass(frozen=True)
 class ChangeParameters:
     min_year_share: float
@@ -26,7 +30,7 @@ def load_change_parameters(path: Path = REGION_FILE) -> ChangeParameters:
         if not 0 < share <= 1 or not 0 <= quantile <= 1:
             raise ValueError("Los cortes están fuera de rango")
     except (OSError, KeyError, TypeError, ValueError, yaml.YAMLError) as error:
-        raise ValueError(f"Configuración de comparación histórica inválida en {path.name}") from error
+        raise ChangeParametersError(f"Configuración de comparación histórica inválida en {path.name}") from error
     return ChangeParameters(float(share), float(quantile))
 
 

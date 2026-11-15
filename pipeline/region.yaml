@@ -5,7 +5,7 @@
 #
 # `dataset_version` sube a mano cada vez que cambia lo publicado (R4): mismos datos y misma versión dan lo mismo.
 
-dataset_version: "2026.11.21"
+dataset_version: "2026.11.24"
 region:
   id: co-boyaca-cundinamarca
   name: "Boyacá y Cundinamarca, Colombia"
@@ -52,6 +52,28 @@ imerg_normal:
   first_year: 2001
   last_year: 2024
   min_years: 20
+
+
+# Verdor de MODIS NDVI por municipio (HU-208, pipeline/sources/modis_ndvi.py). OPeNDAP de la NASA solo sirve completos los
+# compuestos de MOD13Q1 desde 2023 (antes de 2023 responden 130 de 484; el resto da 404), así que se baja desde
+# `normal.first_year` y `ndvi_municipality_normal` es el promedio 2023-2025, los años completos. Se llama «promedio» y
+# no normal (revisión de Haider del PR #126, R5): muestra en qué épocas suele estar verde la zona, no un clima de 30
+# años, y el manifiesto y `sources` lo dicen. Decidido por el equipo el 14 de
+# noviembre de 2026 (HU-208), por aprobar por Felipe.
+# - `sample_step`: un píxel de 250 m de cada 4 en filas y columnas (uno por km); la mediana del municipio casi no cambia.
+# - `min_valid_pct`: con menos del 30 % de píxeles sin nubes, el periodo es `partial` (supuesto del equipo: en 2023-2026,
+#   el 83 % de los periodos lo pasa; julio y agosto son los más nublados). Sin ningún píxel válido, no hay fila (R1).
+# - `normal.min_years`: el promedio es `ok` con los 3 años; con menos, `partial`. Solo cuentan los periodos `ok`.
+# - `normal.min_publish_years`: con menos de 2 años `ok` no se publica: un solo año no es un promedio (propuesta de
+#   Haider en el PR #126; quitaba 537 filas de un año).
+ndvi:
+  sample_step: 4
+  min_valid_pct: 30
+  normal:
+    first_year: 2023
+    last_year: 2025
+    min_years: 3
+    min_publish_years: 2
 
 # Heladas (HU-045): un día de helada es uno con la mínima a 2 m, corregida por altitud, menor o igual a 2 °C. Es el
 # criterio del ZARC de Brasil (`mapa_zarc_2025`, punto 1.9.a.1: «temperaturas mínimas menores ou igual a 2°C»), el mismo

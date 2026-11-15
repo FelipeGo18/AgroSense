@@ -83,6 +83,7 @@ def test_hu216_published_data_reaches_motor_and_http_endpoint(monkeypatch):
         texture_class=dataset.soil[municipality_id].get("texture_class"),
         fixed_signals=fixed,
         config=config,
+        crop_name="la papa",
         irrigated=False,
     )
     assert dataset.version != "ejemplo"
@@ -104,3 +105,16 @@ def test_hu216_published_data_reaches_motor_and_http_endpoint(monkeypatch):
     assert body["suitability"]["level"] == "suitable"
     assert body["versions"]["dataset"] == dataset.version
     assert "window_evaluations" not in body
+    # Con el dataset publicado el resultado es fijo (papa en Duitama, sin riego). Si un dataset nuevo lo cambia, la
+    # prueba lo dice: hay que revisar el cambio, no solo actualizar los números.
+    months = {
+        side: [(w["month"], w["limiting_signal"], w["limiting_score"]) for w in body["best_windows"][side]] for side in ("before", "after")
+    }
+    assert months == {
+        "before": [(3, "water", 100), (4, "water", 100), (5, "water", 100)],
+        "after": [(2, "water", 66), (3, "water", 63), (7, "water", 58)],
+    }
+    # Cada aviso una sola vez: los generales los pone la API; los del clima, solo de las mejores ventanas (revisión
+    # del PR #142: antes salían 42). El nombre del cultivo va en minúscula, como en el diagnóstico.
+    assert len(body["limitations"]) == len(set(body["limitations"])) <= 20
+    assert not any("la Papa" in text for text in body["limitations"] + body["reasons"])

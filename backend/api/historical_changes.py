@@ -8,6 +8,7 @@ import polars as pl
 
 from backend.api.market_signal import market_for, seasonal_index
 from backend.api.soil_signals import zone_soil_ph
+from backend.api.window_diagnosis import crop_name
 from backend.api.window_signals import pending_signal
 from backend.config.changes import get_change_parameters
 from backend.config.thresholds import get_thresholds
@@ -79,5 +80,6 @@ def historical_changes(
         texture_class=dataset.soil.get(municipality_id, {}).get("texture_class"),
         fixed_signals=fixed,
         config=config,
+        crop_name=crop_name(crop),
         irrigated=irrigated,
     )

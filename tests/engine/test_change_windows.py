@@ -82,6 +82,7 @@ def inputs():
         texture_class=None,
         fixed_signals={},
         config=ChangeConfig(0.8, 0.2, "nasa_power", "nasa_power", load_thresholds(), load_weights().weights),
+        crop_name="la papa",
         irrigated=False,
     )
 
@@ -210,7 +211,8 @@ def test_offer_market_and_soil_are_identical_in_both_periods(inputs):
         assert before["signals"]["supply"] is after["signals"]["supply"] is offer
         assert before["signals"]["market"] is after["signals"]["market"] is market
         assert before["signals"]["soil"] is after["signals"]["soil"]
-    assert any("solo cambia el clima" in text for text in result["limitations"])
+    # Los avisos generales (historia comparada, lo que no cambia) los pone la API una sola vez, no el motor.
+    assert not any("solo cambia el clima" in text or "pronóstico" in text for text in result["limitations"])
 
 
 def test_heat_uses_period_rows_even_if_another_indicator_is_missing(inputs):

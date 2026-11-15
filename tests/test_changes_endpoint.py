@@ -484,9 +484,10 @@ def test_suitable_without_any_climate_still_returns_200(complete_api):
 
 def test_invalid_calculation_configuration_returns_503(changes_api, monkeypatch):
     from backend.api import historical_changes
+    from backend.config.changes import ChangeParametersError
 
     def invalid():
-        raise ValueError("Configuración incompleta")
+        raise ChangeParametersError("Configuración incompleta")
 
     monkeypatch.setattr(historical_changes, "get_change_parameters", invalid)
     client, _ = changes_api

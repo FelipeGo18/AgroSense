@@ -25,7 +25,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `agrosense_diseno` · Catálogo visual de AgroSense (design/finca/cultivos.py) | Equipo RealE4Life | Del proyecto |
 | `alharbi_2021_faba` · Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925 | MDPI, Plants; doi:10.3390/plants10091925 | Acceso abierto (CC BY 4.0 por confirmar) |
 | `barrales_2002` · Barrales Domínguez et al. (2002): Relaciones térmicas en el sistema suelo-planta-atmósfera durante la incidencia de una helada. Revista Fitotecnia Mexicana 25(3):289-297 | Sociedad Mexicana de Fitogenética; Universidad Autónoma Chapingo | Acceso abierto (Redalyc); licencia por confirmar |
-| `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Sin licencia explícita: se usan cifras con su cita |
+| `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Artículo de acceso abierto con derechos de autor reservados (revista Avances en Recursos Hidráulicos, Universidad Nacional): se usan dos cifras con su cita |
 | `cevipapa_taller_2005` · Memorias del I Taller Nacional sobre suelos, fisiología y nutrición vegetal en el cultivo de la papa (capítulos de Hugo E. Castro Franco y de Gilberto A. Murcia Contreras) | CEVIPAPA y Consejo Nacional de la Papa, con el MADR; capítulo de Murcia: Corpoica; copia en el repositorio de Agrosavia | Sin licencia declarada; uso con cita |
 | `ciren_1989_chacras` · CIREN-CORFO: Requerimientos de clima y suelo. Chacras y hortalizas, publicación n.º 85 (1989) | Centro de Información de Recursos Naturales (CIREN), Chile | Sin dato; se cita |
 | `criterio_equipo_2026` · Cortes de salud del suelo de AgroSense: criterio propio del equipo (HU-062) | Equipo RealE4Life (AgroSense) | Del proyecto |
@@ -35,12 +35,14 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `eva` · Evaluaciones Agropecuarias Municipales – EVA. 2019 - 2025. Base Agrícola (datos.gov.co, `uejq-wxrr`) | Unidad de Planificación de Tierras Rurales, Adecuación de Tierras y Usos Agropecuarios (UPRA) | Creative Commons Attribution \| Share Alike 4.0 International (CC BY-SA 4.0): `supply_semester` sigue con esa licencia |
 | `fairlie_ortega_1995` · Fairlie y Ortega (1995): Efecto de la presencia de heladas simuladas en diferentes estados fenológicos de la papa cv. Ccompis. Revista Latinoamericana de la Papa 7/8:86-93 | Asociación Latinoamericana de la Papa (ALAP); PISA/INIAA, Puno | Acceso abierto; licencia por confirmar |
 | `fao_56` · FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Tablas 11 y 12 | FAO | Publicación de la FAO, uso con cita |
+| `fao_56_tabla_22` · FAO-56: Crop evapotranspiration (Allen, Pereira, Raes y Smith, 1998). Capítulo 8, tabla 22 y ecuaciones 82 y 83 | FAO | Publicación de la FAO, uso con cita |
 | `fao_66` · FAO-66: Crop yield response to water (Steduto, Hsiao, Fereres y Raes, 2012). Sección 3.4, papa, pp. 185-186 | FAO, Irrigation and Drainage Paper 66 | Publicación de la FAO, uso con cita |
 | `fao_crop_info_potato` · FAO Land & Water: Crop Information, Potato | FAO, Land and Water Division | Publicación de la FAO, uso con cita |
 | `fao_ecocrop` · FAO EcoCrop · fichas de datos por especie | Organización de las Naciones Unidas para la Alimentación y la Agricultura (FAO) | CC BY 4.0 (catálogo de datos de la FAO) |
 | `fao_frost_2005` · FAO: Frost protection: fundamentals, practice and economics, vol. 1 (Snyder y de Melo-Abreu, 2005). Cap. 4, tabla 4.5; cap. 5 | FAO, Environment and Natural Resources Series 10 | Publicación de la FAO, uso con cita |
 | `fao_glosolan_wb_2019` · Procedimiento operativo estándar para el análisis de carbono orgánico del suelo, Walkley-Black (GLOSOLAN-SOP-02, versión 2) | FAO, Red mundial de laboratorios de suelos (GLOSOLAN) | Publicación de la FAO, uso con cita (licencia por confirmar en la ficha del repositorio) |
 | `fao_iyp_2019` · FAO: The International Year of Pulses, final report (2019) | FAO | Publicación de la FAO, uso con cita |
+| `fao_manual_riego_3` · Irrigation Water Management: Irrigation Water Needs. Training manual n.º 3 (Brouwer y Heibloem, 1986). Sección 4.2, lluvia efectiva | FAO | Publicación de la FAO, uso con cita |
 | `fao_papa_2008` · International Year of the Potato 2008. New light on a hidden treasure (capítulo «The potato») | FAO | Publicación de la FAO, uso con cita |
 | `fao_soils_bulletin_55` · FAO Soils Bulletin 55: Guidelines, land evaluation for irrigated agriculture (1985), formato 5 | FAO | Publicación de la FAO, uso con cita |
 | `fews_net_wrsi` · FEWS NET · Water Requirement Satisfaction Index (WRSI) y sus clases | Famine Early Warning Systems Network (FEWS NET) y USGS; clases publicadas por el Banco Mundial | Información pública del USGS; las clases, del catálogo de datos del Banco Mundial (CC BY 4.0) |
@@ -48,20 +50,23 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `igac_capacidad_uso_2021` · Clasificación de las tierras por su capacidad de uso (instructivo IN-GAG-PC05-02, versión 1) | Instituto Geográfico Agustín Codazzi (IGAC) | Documento público del IGAC, uso con cita (copia no controlada) |
 | `imerg` · GPM IMERG Final Run V07 · Lluvia mensual por satélite (GPM_3IMERGM) | NASA y JAXA, misión GPM (Global Precipitation Measurement); distribuido por GES DISC de la NASA | Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita (https://disc.gsfc.nasa.gov/data-guidelines) |
 | `mapa_zarc_2025` · Zoneamento Agrícola de Risco Climático (ZARC): Portaria SPA/MAPA n.º 388, del 21 de agosto de 2025 | Ministério da Agricultura e Pecuária (MAPA), Brasil | Acto oficial del gobierno de Brasil, publicado en el Diário Oficial |
+| `modis_ndvi` · MODIS Terra · Índice de vegetación NDVI de 250 m cada 16 días (MOD13Q1 V061) | NASA, sensor MODIS del satélite Terra; distribuido por LP DAAC de la NASA y el USGS | Datos abiertos de la NASA (EOSDIS), sin restricciones de uso; se cita con su DOI |
 | `msu_e1307_onion` · Zandstra, Grafius, Lacy y Warncke: Commercial Vegetable Recommendations: Onions, MSU E1307 (revisión de 1996) | Michigan State University Extension | Sin dato; se cita |
 | `msu_e1437_carrot` · Zandstra y Baker: Commercial Vegetable Recommendations: Carrots, MSU Extension Bulletin E-1437 (1980) | Michigan State University Extension | Sin dato; se cita |
 | `nasa_power` · NASA POWER · Datos diarios por punto (comunidad AG) | NASA Langley Research Center, proyecto POWER (Prediction Of Worldwide Energy Resources) | La página de POWER no da una licencia; pide citar la fuente (https://power.larc.nasa.gov/docs/referencing/) |
 | `nasadem` · NASADEM HGT v001: modelo de elevación de 1 segundo de arco (unos 30 m) | NASA Jet Propulsion Laboratory (JPL); distribuido por el LP DAAC de la NASA y el USGS | Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita |
 | `ndsu_a1166_pea` · NDSU Extension: Field Pea Production, A1166 (revisión de diciembre de 2021) | North Dakota State University Extension | Sin dato; se cita |
+| `nrcs_neh652_cap2` · NRCS, National Engineering Handbook, parte 652 (Irrigation Guide), capítulo 2 (Soils). Tabla 2-1, agua disponible por textura | Natural Resources Conservation Service, Departamento de Agricultura de los Estados Unidos (USDA) | Publicación del gobierno de los Estados Unidos, dominio público |
 | `psu_rotacion_familias` · Plant Rotation in the Garden Based on Plant Families (Elsa Sánchez y Kathleen Demchak) | Penn State Extension, The Pennsylvania State University | Derechos de Penn State; uso con cita |
 | `purdue_corn07` · Nielsen, R. L.: Drought and Heat Stress Effects on Corn Pollination (Corny News, Purdue, sin fecha) | Purdue University, Agronomy | Sin dato; se cita |
 | `saskpulse_stress_2023` · Saskatchewan Pulse Growers: Environmental Stresses in Pulses (mayo de 2023) | Saskatchewan Pulse Growers | Sin dato; se cita |
 | `senamhi_atlas_heladas_2010` · SENAMHI y FAO: Atlas de heladas del Perú (2010). Tablas 2.2 y 2.3 | Servicio Nacional de Meteorología e Hidrología del Perú (SENAMHI) y FAO | Publicación pública, sin licencia explícita; se cita |
-| `soilgrids` · SoilGrids 2.0: propiedades del suelo de 0 a 30 cm en celdas de 250 m (WCS de ISRIC) | ISRIC – World Soil Information | CC BY 4.0 (https://www.isric.org/explore/soilgrids/faq-soilgrids): uso libre, también la redistribución, con la cita |
+| `soilgrids` · SoilGrids 2.0: pH, carbono orgánico, nitrógeno y textura de 0 a 30 cm (250 m) | ISRIC - World Soil Information | CC BY 4.0 (https://www.isric.org/explore/soilgrids/faq-soilgrids) |
 | `ucanr_7226_carrot` · Nuñez, Hartz, Suslow et al.: Carrot Production in California, UC ANR Publication 7226 (2008) | University of California, Agriculture and Natural Resources; doi:10.3733/ucanr.7226 | Sin dato; se cita |
 | `unlu_horticultura` · Universidad Nacional de Luján: Producción Vegetal III (Horticultura), fichas de cebolla, arveja y zanahoria (sin año) | Universidad Nacional de Luján (UNLu), Argentina | Sin dato; se cita |
 | `upra_cebolla_bulbo` · UPRA: Cultivo comercial de cebolla de bulbo, identificación de zonas aptas en Colombia, escala 1:100.000 | Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura | Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita |
 | `upra_papa_diacol` · UPRA: Cultivo de papa Diacol Capiro para uso industrial, identificación de zonas aptas en Colombia, escala 1:100.000 | Unidad de Planificación Rural Agropecuaria (UPRA), Ministerio de Agricultura | Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita |
+| `usda_textura` · Triángulo de texturas del USDA (calculadora de texturas del NRCS) | USDA Natural Resources Conservation Service | Obra del gobierno de los Estados Unidos, de dominio público |
 
 ## Otros materiales de terceros en la web
 
@@ -139,10 +144,11 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | pytest | 9.1.1 | MIT |
 | ruff | 0.17.0 | MIT |
 
-## Librerías de la web que van en la aplicación (69, de `web/package-lock.json`)
+## Librerías de la web que van en la aplicación (82, de `web/package-lock.json`)
 
 | Paquete | Versión | Licencia |
 |---|---|---|
+| @babel/runtime | 7.29.10 | MIT |
 | @fontsource/atkinson-hyperlegible | 5.3.0 | OFL-1.1 |
 | @fontsource/fredoka | 5.3.0 | OFL-1.1 |
 | @gsap/react | 2.1.2 | SEE LICENSE AT https://gsap.com/standard-license |
@@ -171,14 +177,19 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | @radix-ui/react-use-controllable-state | 1.3.0 | MIT |
 | @radix-ui/react-use-effect-event | 0.0.5 | MIT |
 | @radix-ui/react-use-layout-effect | 1.1.4 | MIT |
+| @react-three/fiber | 9.8.2 | MIT |
 | @remix-run/route-pattern | 0.22.1 | MIT |
 | @tanstack/query-core | 5.104.2 | MIT |
 | @tanstack/react-query | 5.104.2 | MIT |
 | @types/geojson | 7946.0.16 | MIT |
 | @types/react | 19.3.0 | MIT |
 | @types/react-dom | 19.3.0 | MIT |
+| @types/react-reconciler | 0.28.9 | MIT |
+| @types/webxr | 0.5.24 | MIT |
 | aria-hidden | 1.2.6 | MIT |
+| base64-js | 1.5.1 | MIT |
 | bidi-js | 1.1.0 | MIT |
+| buffer | 6.0.3 | MIT |
 | cookie-es | 3.1.1 | MIT |
 | csstype | 3.2.3 | MIT |
 | detect-node-es | 1.1.0 | MIT |
@@ -186,6 +197,8 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | get-nonce | 1.0.1 | MIT |
 | gl-matrix | 3.4.4 | MIT |
 | gsap | 3.15.0 | Standard 'no charge' license: https://gsap.com/standard-license. |
+| ieee754 | 1.2.1 | BSD-3-Clause |
+| its-fine | 2.1.1 | MIT |
 | json-stringify-pretty-compact | 4.0.0 | MIT |
 | kdbush | 4.1.0 | ISC |
 | lenis | 1.3.26 | MIT |
@@ -202,25 +215,30 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | react-remove-scroll-bar | 2.3.8 | MIT |
 | react-router | 8.4.0 | MIT |
 | react-style-singleton | 2.2.3 | MIT |
+| react-use-measure | 2.1.7 | MIT |
 | require-from-string | 2.0.2 | MIT |
 | resolve-protobuf-schema | 2.1.0 | MIT |
 | scheduler | 0.28.0 | MIT |
+| suspend-react | 0.1.3 | MIT |
 | terra-draw | 1.35.0 | MIT |
 | terra-draw-maplibre-gl-adapter | 1.4.1 | MIT |
+| three | 0.186.1 | MIT |
 | tinyqueue | 3.0.0 | ISC |
 | tslib | 2.8.1 | 0BSD |
 | use-callback-ref | 1.3.3 | MIT |
 | use-sidecar | 1.1.3 | MIT |
+| use-sync-external-store | 1.7.0 | MIT |
 | world-atlas | 2.0.2 | ISC |
+| zustand | 5.1.0 | MIT |
 
-## Herramientas de desarrollo de la web (514 paquetes; no van en la aplicación)
+## Herramientas de desarrollo de la web (519 paquetes; no van en la aplicación)
 
 Solo se usan para construir y probar la web (Vite, TypeScript, Vitest, ESLint, Playwright…). Por licencia:
 
 | Licencia | Paquetes |
 |---|---|
-| MIT | 353 |
-| Apache-2.0 | 76 |
+| MIT | 357 |
+| Apache-2.0 | 77 |
 | ISC | 29 |
 | MPL-2.0 | 25 |
 | BSD-2-Clause | 13 |

@@ -31,6 +31,15 @@ if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
 
 
+class HistoricalChangesError(ValueError):
+    """Datos históricos o configuración que no sirven para comparar (periodos, fuentes o filas repetidas). La API lo
+    responde como 503; cualquier otro error es de programación y sale como 500."""
+
+
+# Las señales que dependen del clima del periodo. Las demás (oferta, mercado y suelo) son las mismas en los dos.
+CLIMATE_SIGNALS = ("water", "frost", "heat")
+
+
 @dataclass(frozen=True)
 class ChangeConfig:
     """Valores de configuración versionada; quien llama los lee, nunca el motor.
@@ -52,11 +61,11 @@ class ChangeConfig:
 
     def __post_init__(self) -> None:
         if not 0 < self.min_year_share <= 1 or not 0 <= self.dry_quantile <= 1:
-            raise ValueError("Proporción mínima de años o percentil seco inválidos")
+            raise HistoricalChangesError("Proporción mínima de años o percentil seco inválidos")
         if not self.et0_source_id or not self.frost_source_id:
-            raise ValueError("Se necesitan las fuentes de ET0 y heladas")
+            raise HistoricalChangesError("Se necesitan las fuentes de ET0 y heladas")
         if self.rain_table not in {"climate_month", "precip_month"}:
-            raise ValueError("Tabla de lluvia inválida")
+            raise HistoricalChangesError("Tabla de lluvia inválida")
 
 
 def _value(value: Any) -> float | None:
@@ -78,7 +87,7 @@ def _annual(
             continue
         key = (year, month)
         if key in result:
-            raise ValueError(f"Fila anual duplicada: {key}")
+            raise HistoricalChangesError(f"Fila anual duplicada: {key}")
         result[key] = row
     return result
 
@@ -114,6 +123,7 @@ def compare_historical_changes(
     texture_class: str | None,
     fixed_signals: Mapping[int, Mapping[str, SignalOutcome]],
     config: ChangeConfig,
+    crop_name: str,
     irrigated: bool | None = None,
 ) -> dict[str, Any]:
     """Comparación completa del motor; no abre archivos ni conoce Dataset/FastAPI.
@@ -125,20 +135,19 @@ def compare_historical_changes(
     en ambos lados: no se consulta el reloj ni se comparan fechas futuras.
     Las heladas usan años completos de su periodo; las ventanas que cruzan
     diciembre no leen heladas del año posterior al final del periodo.
+    `crop_name` llega de quien llama, con su artículo («la papa»), igual que en el diagnóstico.
+
+    Los avisos generales (historia comparada, reanálisis, periodos de cada fuente) los pone la API una sola vez. Aquí
+    solo van los de las señales: los del clima, de las ventanas que salen en `best_windows`, con su periodo delante;
+    los de oferta, mercado y suelo, una vez y sin periodo, porque son los mismos en los dos.
     """
     change_rows = tuple(change_rows)
     comparison = compare_climate_months(municipality_id=municipality_id, rows=change_rows, periods=periods, precip_periods=precip_periods)
     aptitude = crop_suitability(crop, zone.tmean_annual_c)
-    crop_name = f"{crop.get('article', '')} {crop.get('name_es', 'cultivo')}".strip()
     reason = suitability_reason(aptitude, crop, crop_name, zone)
-    limitations = [
-        "La oferta, el mercado y el suelo son los mismos en los dos periodos; solo cambia el clima.",
-        "Es historia comparada, no es un pronóstico.",
-    ]
-    if periods.before.source_id == "nasa_power":
-        limitations.append("NASA POWER es un reanálisis, no una observación directa.")
-    if precip_periods is not None:
-        limitations.append("La lluvia usa los periodos de su propia fuente, que pueden ser más cortos que los de heladas y calor.")
+    limitations: list[str] = []
+    fixed_notes: list[str] = []
+    caveats = {note for note in (config.rain_caveat, config.frost_caveat) if note}
     result = {
         **comparison,
         "suitability": aptitude,
@@ -178,6 +187,8 @@ def compare_historical_changes(
             if (value := _value(row.get("frost_days"))) is not None
         }
         heat = {
+            # La `quality` de la fila es de toda la fila: sale `partial` si falta otro indicador (por ejemplo, las
+            # heladas). El calor del mes vale si su p90 está; si no, la fila no entra.
             row["month"]: HeatMonth(value, "ok")
             for row in change_rows
             if row["municipality_id"] == municipality_id
@@ -205,6 +216,7 @@ def compare_historical_changes(
             SOURCE_NAMES.get(rain_period.source_id, rain_period.source_id), rain_period.start_year, rain_period.end_year, config.rain_caveat
         )
         candidates = []
+        by_month: dict[int, Mapping[str, SignalOutcome]] = {}
         for window in windows:
             touched = window.months()
             missing = missing_data(
@@ -228,10 +240,19 @@ def compare_historical_changes(
             }
             candidates.append(WindowSignals(window.sowing_date, window.harvest_estimate, signal_scores(signals)))
             result["window_evaluations"][side].append({"month": window.sowing_date.month, "signals": signals, "water_balance": balance})
-            for name, signal in signals.items():
-                notes = (*signal.limitations, *(signal.reasons if signal.status == INSUFFICIENT_DATA else ()))
+            by_month[window.sowing_date.month] = signals
+            for name in ("soil", "supply", "market"):
+                signal = signals[name]
+                fixed_notes.extend((*signal.limitations, *(signal.reasons if signal.status == INSUFFICIENT_DATA else ())))
+        ranked_best = best_windows(order_windows(candidates, config.default_weights))
+        for ranked in ranked_best:
+            signals = by_month[ranked.sowing_start.month]
+            for name in CLIMATE_SIGNALS:
+                signal = signals[name]
                 signal_period = rain_period if name == "water" else period
-                limitations.extend(f"{signal_period.start_year}–{signal_period.end_year}: {note}" for note in notes)
+                for note in (*signal.limitations, *(signal.reasons if signal.status == INSUFFICIENT_DATA else ())):
+                    # El aviso fijo de una fuente no depende del periodo: va una vez y sin él.
+                    limitations.append(note if note in caveats else f"{signal_period.start_year}–{signal_period.end_year}: {note}")
         result["best_windows"][side] = [
             {
                 "month": ranked.sowing_start.month,
@@ -239,7 +260,7 @@ def compare_historical_changes(
                 "limiting_score": ranked.limiting_score,
                 "high_risk": ranked.high_risk,
             }
-            for ranked in best_windows(order_windows(candidates, config.default_weights))
+            for ranked in ranked_best
         ]
-    result["limitations"] = list(dict.fromkeys(limitations))
+    result["limitations"] = list(dict.fromkeys([*limitations, *fixed_notes]))
     return result
