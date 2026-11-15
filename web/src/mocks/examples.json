@@ -159,7 +159,7 @@
                 "tmax_p90_c"
               ],
               "reasons": [
-                "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
               ]
             },
             "soil": {
@@ -352,7 +352,7 @@
                 "tmax_p90_c"
               ],
               "reasons": [
-                "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
               ]
             },
             "soil": {
@@ -525,7 +525,7 @@
                 "tmax_p90_c"
               ],
               "reasons": [
-                "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
               ]
             },
             "soil": {
@@ -611,13 +611,6 @@
           "error": {
             "code": "internal_error",
             "message": "Algo falló de nuestro lado. Intente de nuevo en un momento.",
-            "request_id": "00000000-0000-4000-8000-000000000000"
-          }
-        },
-        "501": {
-          "error": {
-            "code": "not_implemented",
-            "message": "Este cálculo todavía no está disponible.",
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
@@ -778,7 +771,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -960,7 +953,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -1142,7 +1135,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -1428,7 +1421,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -1609,7 +1602,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -1880,7 +1873,7 @@
                         "tmax_p90_c"
                       ],
                       "reasons": [
-                        "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                       ]
                     },
                     "soil": {
@@ -2062,7 +2055,7 @@
                         "tmax_p90_c"
                       ],
                       "reasons": [
-                        "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                       ]
                     },
                     "soil": {
@@ -2244,7 +2237,7 @@
                         "tmax_p90_c"
                       ],
                       "reasons": [
-                        "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                        "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                       ]
                     },
                     "soil": {
@@ -2578,7 +2571,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -2760,7 +2753,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -2942,7 +2935,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -3221,7 +3214,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -3402,7 +3395,7 @@
                           "tmax_p90_c"
                         ],
                         "reasons": [
-                          "De agosto a diciembre, la máxima rara vez pasa de 22 °C; la papa aguanta hasta 30 °C"
+                          "De agosto a diciembre, la máxima pasó de 22 °C uno de cada diez días; la papa aguanta hasta 30 °C"
                         ]
                       },
                       "soil": {
@@ -3615,6 +3608,7 @@
               ],
               "cycle": 1,
               "kind": "soil_ph",
+              "crop_id": "cebolla_bulbo",
               "reason": "La cebolla tolera pH de 6,0 a 7,5 y el suelo estimado va de 5,2 a 5,8",
               "source_ids": [
                 "upra_cebolla_bulbo",
@@ -4273,6 +4267,9 @@
               }
             ]
           },
+          "limitations": [
+            "Sin el área sembrada de eva del semestre B en la zona: la serie de oferta viene vacía"
+          ],
           "versions": {
             "dataset": "ejemplo",
             "rules": "ejemplo"
@@ -4287,10 +4284,10 @@
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
-        "501": {
+        "500": {
           "error": {
-            "code": "not_implemented",
-            "message": "Este cálculo todavía no está disponible.",
+            "code": "internal_error",
+            "message": "Algo falló de nuestro lado. Intente de nuevo en un momento.",
             "request_id": "00000000-0000-4000-8000-000000000000"
           }
         },
@@ -6047,9 +6044,9 @@
       }
     ],
     "version": {
-      "dataset_version": "2026.11.14",
+      "dataset_version": "2026.11.18",
       "rules_version": "0.1.0",
-      "created_at": "2026-11-14T16:34:49Z",
+      "created_at": "2026-11-14T22:17:03Z",
       "region": "Boyacá y Cundinamarca, Colombia",
       "default_weights": {
         "water": 3,
@@ -6069,6 +6066,18 @@
         "market": "Pesa poco en el orden de las ventanas: el precio es un dato que suma. Si sale desfavorable, igual cuenta para la luz. Todavía no tiene cortes con fuente."
       },
       "sources": [
+        {
+          "source_id": "agrosavia_tibaitata_2022",
+          "name": "Efecto del establecimiento de sistemas de rotación para el cultivo de la papa sobre las características químicas y físicas del suelo (Vargas Díaz, Wilches Ortiz y Espitia Malagón)",
+          "institution": "Agrosavia, Centro de Investigación Tibaitatá; revista Siembra 9(2), e4023, Universidad Central del Ecuador",
+          "url": "https://www.redalyc.org/journal/6538/653871546014/653871546014.pdf",
+          "downloaded_at": "2026-11-09",
+          "period_covered": "Ensayo de noviembre de 2016 a julio de 2017",
+          "coverage": "Mosquera, Cundinamarca (Colombia), 2.560 m s. n. m.",
+          "license": "CC BY-NC (Creative Commons Atribución-NoComercial)",
+          "citation": null,
+          "notes": "Rotación de referencia del catálogo. Tabla 1 (p. 3): T1 papa-papa-avena, T2 papa-avena-arveja, T3 papa-arveja-papa. La avena fue sola: Avena sativa, variedad forrajera Cayuse, al voleo a 88 kg/ha (p. 3-4); no se sembró vicia. La arveja, Pisum sativum tipo Santa Isabel. T2 dio el pH más alto al final (5,32 a 6,04; tablas 2 y 3). No da cortes para ninguna regla."
+        },
         {
           "source_id": "agrosense_diseno",
           "name": "Catálogo visual de AgroSense (design/finca/cultivos.py)",
@@ -6113,9 +6122,21 @@
           "downloaded_at": "2026-11-09",
           "period_covered": null,
           "coverage": "Región Andina de Colombia, de 100 a 4482 m",
-          "license": null,
+          "license": "Artículo de acceso abierto con derechos de autor reservados (revista Avances en Recursos Hidráulicos, Universidad Nacional): se usan dos cifras con su cita",
           "citation": "Chaves Córdoba, B. y Jaramillo Robledo, A. (1999). Regionalización de la temperatura del aire en Colombia. Avances en Recursos Hidráulicos, 6, 37-42.",
           "notes": "Avances en Recursos Hidráulicos, n.º 6 (septiembre de 1999), pp. 37-42. Pendiente de la temperatura máxima media (0,0058 °C/m) y de la mínima media (0,0059 °C/m) con la altitud en la región Andina. Se usa para corregir por altitud las temperaturas de NASA POWER."
+        },
+        {
+          "source_id": "cevipapa_taller_2005",
+          "name": "Memorias del I Taller Nacional sobre suelos, fisiología y nutrición vegetal en el cultivo de la papa (capítulos de Hugo E. Castro Franco y de Gilberto A. Murcia Contreras)",
+          "institution": "CEVIPAPA y Consejo Nacional de la Papa, con el MADR; capítulo de Murcia: Corpoica; copia en el repositorio de Agrosavia",
+          "url": "https://repository.agrosavia.co/server/api/core/bitstreams/f3004e2f-1756-45ed-840b-760a9c1b4235/content",
+          "downloaded_at": "2026-11-09",
+          "period_covered": "Taller del 9 y 10 de febrero de 2005; tablas con datos del ICA de 1970 a 1994",
+          "coverage": "Suelos paperos del altiplano cundiboyacense (Colombia)",
+          "license": "Sin licencia declarada; uso con cita",
+          "citation": null,
+          "notes": "Castro Franco, Tabla 3 (p. 35), «Niveles críticos aplicables a suelos paperos del Altiplano Cundiboyacense»: «M.O. (%) Bajo <5, Medio 5 – 10, Alto >10». La Tabla 1 (p. 34) usa los mismos cortes. Murcia (Corpoica, p. 51 a 53): rotación «abono verde inicial – papa – abono verde final» a 2.840 y 2.970 m; abonos verdes depuestos «aproximadamente a los 3,5 meses»; «en ningún caso hubo un importante mejoramiento de la materia orgánica» en 18 meses. No da cortes por número de ciclos. Ninguna regla la cita como `source_id`: su umbral y el diseño de Murcia los usa `materia_organica_ciclos`, que cita `criterio_equipo_2026` (nota 9 de HU-062)."
         },
         {
           "source_id": "ciren_1989_chacras",
@@ -6130,11 +6151,23 @@
           "notes": "Fichas con la etapa o parte más sensible a la helada y su temperatura crítica: cebolla (hojas, -1 °C, p. 30), haba (floración, -1 °C, p. 34), maíz (4.ª hoja, p. 20), arveja (floración, -2 °C, p. 12); y límites máximos de crecimiento de todo el ciclo (maíz 40 °C, arveja y haba 28 °C, papa 30 °C, cebolla 35 °C)."
         },
         {
+          "source_id": "criterio_equipo_2026",
+          "name": "Cortes de salud del suelo de AgroSense: criterio propio del equipo (HU-062)",
+          "institution": "Equipo RealE4Life (AgroSense)",
+          "url": "https://github.com/FelipeGo18/AgroSense/blob/24c645f/docs/registro-de-decisiones.md",
+          "downloaded_at": "2026-11-10",
+          "period_covered": "Decidido el 10 de noviembre de 2026 (propuesta de producto-agro; números aprobados por Juan Cárdenas el mismo día)",
+          "coverage": "AgroSense, región piloto del altiplano (Colombia)",
+          "license": "Del proyecto",
+          "citation": null,
+          "notes": "Criterio del equipo RealE4Life, NO una fuente agronómica externa, decidido el 10 nov 2026 porque ninguna fuente revisada da estos cortes (nota 9 de HU-062). Fija los cortes de las reglas papa_espera (pest_break: favorable desde 3 ciclos de otras familias antes de volver a Solanaceae, como equivalente aproximado de las «rotations of three or more years» de fao_papa_2008 p. 19, que habla de años y no de ciclos; y moderate con 2, que no sale de Agrosavia: se elige porque agrosavia_tibaitata_2022 evaluó en Tibaitatá una rotación con ese intervalo, papa - avena - arveja, y ese estudio mide propiedades químicas y físicas del suelo, no plagas; es una analogía y ninguna fuente da el corte; decidido por Felipe el 11 nov 2026), leguminosa_en_rotacion (nitrogen: favorable desde 1 ciclo con leguminosa, sin franja), materia_organica_ciclos (organic_carbon: con carbono bajo, favorable desde 2 ciclos de abono verde o descanso y moderate con 1; con carbono normal, favorable con 1 y moderate con 0), suelo_cubierto (soil_cover: favorable desde 80 % y moderate desde 60 %) y erosion_pendiente (erosion: favorable hasta 1 mes descubierto y moderate hasta 3). Se apoya en parte en fuentes externas que no dan estos cortes: fao_iyp_2019 (las leguminosas fijan nitrógeno), fao_papa_2008 p. 19 (leguminosas entre los cultivos que alternan con la papa), cevipapa_taller_2005 (tabla 3, p. 35: materia orgánica baja < 5 %, de donde sale soc_low_g_kg = 29 con el factor 1,724; y el diseño abono verde – papa – abono verde de Murcia, p. 51 a 53), fao_glosolan_wb_2019 p. 4 (factor de 1,7 a 2,0) e igac_capacidad_uso_2021 p. 15 (pendiente desde 12 %). Qué se apoya en qué: son datos externos citados el 29 g/kg (CEVIPAPA y FAO GLOSOLAN), el 12 % (IGAC) y «three or more years» (FAO 2008). Los cortes por ciclos, porcentaje y meses son del equipo: nitrógeno 1, carbono 2/1 y 1/0, cobertura 80/60 %, erosión 1/3 meses y papa_espera 3 y 2. Cada uno tiene una referencia externa y se rotula «criterio del equipo». Compara estrategias por reglas; no predice cuánto mejora el suelo. Pendiente de validar por un agrónomo."
+        },
+        {
           "source_id": "dane_divipola",
           "name": "DIVIPOLA- Códigos municipios",
           "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
           "url": "https://www.datos.gov.co/d/gdxc-w37w",
-          "downloaded_at": "2026-10-20T16:08:37+00:00",
+          "downloaded_at": "2026-11-11T16:33:52+00:00",
           "period_covered": "Actualizada por el DANE el 2025-01-24",
           "coverage": "Colombia",
           "license": "Creative Commons Attribution | Share Alike 4.0 International",
@@ -6146,7 +6179,7 @@
           "name": "Marco Geoestadístico Nacional 2025 · Municipios",
           "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
           "url": "https://geoportal.dane.gov.co/mparcgis/rest/services/Divipola/Serv_DIVIPOLA_MGN_2025/FeatureServer/317",
-          "downloaded_at": "2026-11-09T15:18:40+00:00",
+          "downloaded_at": "2026-11-11T16:34:03+00:00",
           "period_covered": "Versión 2025 del Marco Geoestadístico Nacional",
           "coverage": "Colombia",
           "license": "Datos abiertos del DANE, con cita de la fuente (por confirmar en HU-122)",
@@ -6158,8 +6191,8 @@
           "name": "SIPSA · Precios mayoristas diarios (servicio web)",
           "institution": "Departamento Administrativo Nacional de Estadística (DANE)",
           "url": "https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa/servicio-web-para-consulta-de-la-base-de-datos-de-sipsa",
-          "downloaded_at": "2026-10-20T15:34:00+00:00",
-          "period_covered": "Del 2020-02-01 al 2026-10-19",
+          "downloaded_at": "2026-11-11T16:35:24+00:00",
+          "period_covered": "Del 2020-02-01 al 2026-11-10",
           "coverage": "Colombia; publicadas: Corabastos (Bogotá) · Tunja (Complejo de Servicios del Sur)",
           "license": "Términos y condiciones del DANE (https://www.dane.gov.co/index.php/terminos-y-condiciones): se autoriza el uso, aprovechamiento, transformación y análisis de la información citando «Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co». Se rigen por la ley colombiana y el DANE puede cambiarlos sin aviso.",
           "citation": "Fuente: Departamento Administrativo Nacional de Estadística: www.dane.gov.co",
@@ -6238,6 +6271,18 @@
           "notes": "Tabla 4.5: temperaturas críticas de daño (°C) en germinación, floración y fructificación de papa, arveja, maíz, avena, vicia, zanahoria. Cap. 5 (https://www.fao.org/4/y7223e/y7223e0b.htm): la hoja se enfría más que el aire de la caseta."
         },
         {
+          "source_id": "fao_glosolan_wb_2019",
+          "name": "Procedimiento operativo estándar para el análisis de carbono orgánico del suelo, Walkley-Black (GLOSOLAN-SOP-02, versión 2)",
+          "institution": "FAO, Red mundial de laboratorios de suelos (GLOSOLAN)",
+          "url": "https://openknowledge.fao.org/server/api/core/bitstreams/3e255ff1-5a67-4d60-af9d-a3a37cb16a1f/content",
+          "downloaded_at": "2026-11-09",
+          "period_covered": "Vigente desde el 28 de octubre de 2019",
+          "coverage": "Mundial",
+          "license": "Publicación de la FAO, uso con cita (licencia por confirmar en la ficha del repositorio)",
+          "citation": null,
+          "notes": "p. 4 de 20: «La relación de carbono orgánico a materia orgánica es de 1:1.7–2.0 aproximadamente». Es un rango, no un factor único: 5 % de materia orgánica equivale a entre 25,0 y 29,4 g/kg de carbono orgánico. Ninguna regla la cita como `source_id`: el factor 1,724 que usa `materia_organica_ciclos` cae en este rango (nota 9 de HU-062)."
+        },
+        {
           "source_id": "fao_iyp_2019",
           "name": "FAO: The International Year of Pulses, final report (2019)",
           "institution": "FAO",
@@ -6248,6 +6293,18 @@
           "license": "Publicación de la FAO, uso con cita",
           "citation": null,
           "notes": "Las legumbres, y las leguminosas en general, fijan nitrógeno del aire y mejoran el suelo."
+        },
+        {
+          "source_id": "fao_papa_2008",
+          "name": "International Year of the Potato 2008. New light on a hidden treasure (capítulo «The potato»)",
+          "institution": "FAO",
+          "url": "https://www.fao.org/4/i0500e/i0500e02b.pdf",
+          "downloaded_at": "2026-11-09",
+          "period_covered": "2008",
+          "coverage": "Mundial",
+          "license": "Publicación de la FAO, uso con cita",
+          "citation": null,
+          "notes": "p. 19 (sección «Cultivation»): «To prevent the build-up of pathogens in the soil, farmers avoid growing potatoes on the same land from year to year. Instead, they grow potatoes in rotations of three or more years, alternating with other, dissimilar crops, such as maize, beans and alfalfa. Crops susceptible to the same pathogens as the potato (e.g. tomato) are avoided». Habla de años, no de ciclos. La regla `papa_espera` toma sus 3 ciclos como equivalente aproximado de esa rotación de 3 o más años (una analogía: la FAO no da el corte en ciclos) y cita `criterio_equipo_2026`, decisión de Felipe del 11 nov 2026."
         },
         {
           "source_id": "fao_soils_bulletin_55",
@@ -6274,15 +6331,39 @@
           "notes": "Para los cortes de la señal de agua en backend/config/thresholds.yaml (HU-075). El WRSI es la evapotranspiración real de la temporada sobre la que pide el cultivo, por 100: «A case of 'no deficit' will result in a WRSI value of 100» y «A seasonal WRSI value less than 50 is regarded as a crop failure condition (Smith, 1992)» (USGS). Clases del Banco Mundial (https://datacatalog.worldbank.org/search/dataset/0066866/gridded-dekadal-water-requirement-satisfaction-index-wrsi-for-africa): < 50 Failure; 50-60 Poor; 60-80 Mediocre; 80-95 Average; 95-99 Good; 99-100 Very Good. Es una fuente derivada: solo vale si la cobertura de agua de AgroSense se calcula igual (HU-144)."
         },
         {
+          "source_id": "ica_punta_morada",
+          "name": "Preguntas frecuentes sobre la punta morada de la papa",
+          "institution": "Instituto Colombiano Agropecuario (ICA)",
+          "url": "https://www.ica.gov.co/getattachment/ICAComunica/PYP/puntamorada/Preguntas-frecuentes.pdf.aspx?lang=es-CO",
+          "downloaded_at": "2026-11-09",
+          "period_covered": null,
+          "coverage": "Colombia (zonas paperas)",
+          "license": "Documento público del ICA, uso con cita",
+          "citation": null,
+          "notes": "Preguntas 16 y 23 (p. 4 y 8): «se deben evitar las siembras sucesivas de papa en el mismo lugar de producción», rotando «con especies que no pertenezcan a la familia Solanaceae». Es la fuente del filtro `papa_seguida`. No da un número de ciclos de espera."
+        },
+        {
+          "source_id": "igac_capacidad_uso_2021",
+          "name": "Clasificación de las tierras por su capacidad de uso (instructivo IN-GAG-PC05-02, versión 1)",
+          "institution": "Instituto Geográfico Agustín Codazzi (IGAC)",
+          "url": "https://www.igac.gov.co/sites/default/files/listadomaestro/in-gag-pc05-02_clasificacion_de_las_tierras_por_su_capacidad_de_uso.pdf",
+          "downloaded_at": "2026-11-09",
+          "period_covered": "Vigente desde el 11 de mayo de 2021",
+          "coverage": "Colombia",
+          "license": "Documento público del IGAC, uso con cita (copia no controlada)",
+          "citation": null,
+          "notes": "p. 15: «el valor 12% del gradiente de la pendiente es el punto crítico … a partir de ese valor se incrementa la susceptibilidad de los suelos a la erosión». Tabla 9 (p. 15): clases de pendiente. Da la pendiente desde la que aplica (`slope_pct_from: 12`), no los meses descubiertos. Ninguna regla la cita como `source_id`: el 12 % lo usa `erosion_pendiente`, que cita `criterio_equipo_2026` porque los meses descubiertos son del equipo (nota 9 de HU-062)."
+        },
+        {
           "source_id": "imerg",
           "name": "GPM IMERG Final Run V07 · Lluvia mensual por satélite (GPM_3IMERGM)",
           "institution": "NASA y JAXA, misión GPM (Global Precipitation Measurement); distribuido por GES DISC de la NASA",
           "url": "https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
-          "downloaded_at": "2026-11-11T15:23:13+00:00",
+          "downloaded_at": "2026-11-12T21:23:27+00:00",
           "period_covered": "De 1998 a 2025, mensual",
           "coverage": "333 meses en celdas de 0,1° (unos 11 km) del recuadro que cubre la región",
           "license": "Datos abiertos de la NASA (política de datos de ESDS): sin restricciones de uso, con cita (https://disc.gsfc.nasa.gov/data-guidelines)",
-          "citation": "Huffman, G.J., Stocker, E.F., Bolvin, D.T., Nelkin, E.J. y Tan, J. (2023). GPM IMERG Final Precipitation L3 1 month 0.1 degree x 0.1 degree V07. Greenbelt, MD, Goddard Earth Sciences Data and Information Services Center (GES DISC). Consultado el 2026-11-11. https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
+          "citation": "Huffman, G.J., Stocker, E.F., Bolvin, D.T., Nelkin, E.J. y Tan, J. (2023). GPM IMERG Final Precipitation L3 1 month 0.1 degree x 0.1 degree V07. Greenbelt, MD, Goddard Earth Sciences Data and Information Services Center (GES DISC). Consultado el 2026-11-12. https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07",
           "notes": "Lluvia estimada por satélite (sensores de microondas e infrarrojo) y calibrada cada mes con los pluviómetros del GPCC: no es una medición del lote. Celda de 0,1°: un dato de la zona. La lluvia del municipio es el promedio de las celdas que tocan su polígono, ponderado por área. Un dato que falta (-9999,9) queda nulo, nunca relleno. Se bajó solo el recuadro de la región por OPeNDAP de Earthdata, con cuenta."
         },
         {
@@ -6326,11 +6407,11 @@
           "name": "NASA POWER · Datos diarios por punto (comunidad AG)",
           "institution": "NASA Langley Research Center, proyecto POWER (Prediction Of Worldwide Energy Resources)",
           "url": "https://power.larc.nasa.gov/",
-          "downloaded_at": "2026-11-10T14:10:09+00:00",
-          "period_covered": "Del 1981-01-01 al 2026-11-07",
+          "downloaded_at": "2026-11-11T16:38:05+00:00",
+          "period_covered": "Del 1981-01-01 al 2026-11-08",
           "coverage": "20 celdas de 0,5° × 0,625° que cubren la región",
           "license": "La página de POWER no da una licencia; pide citar la fuente (https://power.larc.nasa.gov/docs/referencing/)",
-          "citation": "The data was obtained from National Aeronautics and Space Administration (NASA) Langley Research Center's Prediction Of Worldwide Energy Resources (POWER) project funded through the NASA Earth Science Division. The data was obtained from the POWER Project's Daily 2.10.3 version on 2026/11/10.",
+          "citation": "The data was obtained from National Aeronautics and Space Administration (NASA) Langley Research Center's Prediction Of Worldwide Energy Resources (POWER) project funded through the NASA Earth Science Division. The data was obtained from the POWER Project's Daily 2.10.3 version on 2026/11/11.",
           "notes": "Es un reanálisis (MERRA-2 y GEOS-IT): un modelo con observaciones asimiladas, no una observación directa. Celda de 0,5° de latitud por 0,625° de longitud (unos 55 × 70 km): es un dato de la zona, no del lote. Temperatura mínima y máxima a 2 m (T2M_MIN, T2M_MAX), lluvia corregida (PRECTOTCORR), humedad del suelo de los primeros 5 cm y de la zona de raíces (GWETTOP, GWETROOT, de 0 a 1, de un modelo), radiación solar (ALLSKY_SFC_SW_DWN, desde 1984), viento a 2 m (WS2M) y humedad relativa a 2 m (RH2M). Las temperaturas se corrigen por altitud con la altura de la celda que da POWER, la altitud del municipio y el gradiente térmico de pipeline/region.yaml. La ET0 de climate_month se calcula con estas variables por Penman-Monteith de FAO-56 (fuente fao_56). Los días sin dato (-999) quedan nulos, nunca rellenos."
         },
         {
@@ -6356,6 +6437,18 @@
           "license": "Sin dato; se cita",
           "citation": null,
           "notes": "«Seedlings are tolerant of spring frosts in the low 20s… a new shoot will emerge… until approximately seven nodes»; «Field pea is sensitive to heat stress at flowering»."
+        },
+        {
+          "source_id": "psu_rotacion_familias",
+          "name": "Plant Rotation in the Garden Based on Plant Families (Elsa Sánchez y Kathleen Demchak)",
+          "institution": "Penn State Extension, The Pennsylvania State University",
+          "url": "https://extension.psu.edu/plant-rotation-in-the-garden-based-on-plant-families",
+          "downloaded_at": "2026-11-09",
+          "period_covered": "Página actualizada el 9 de marzo de 2026",
+          "coverage": "Estados Unidos (huerta, clima templado)",
+          "license": "Derechos de Penn State; uso con cita",
+          "citation": null,
+          "notes": "Cita: «it is not recommended that an area be planted with plants of the same family in succession», «to avoid the buildup of shared pests». Su tabla de familias pone papa en Solanaceae, arveja y haba en Fabaceae (= Leguminosae), maíz y avena en Poaceae (= Gramineae), cebolla en Liliaceae (el grupo Allium; la ficha usa Alliaceae) y zanahoria en Apiaceae (= Umbelliferae). No dice cuántos años esperar. Es una guía de huerta de clima templado: se pide una fuente local."
         },
         {
           "source_id": "purdue_corn07",
@@ -6392,6 +6485,18 @@
           "license": "Publicación pública, sin licencia explícita; se cita",
           "citation": null,
           "notes": "Tabla 2.2 (p. 10 del PDF): temperatura de daño de la hoja y de la caseta por etapa (germinación, floración, fructificación) de avena, maíz y otros; la caseta va unos 4 °C por encima de la hoja."
+        },
+        {
+          "source_id": "soilgrids",
+          "name": "SoilGrids 2.0: pH, carbono orgánico, nitrógeno y textura de 0 a 30 cm (250 m)",
+          "institution": "ISRIC - World Soil Information",
+          "url": "https://doi.org/10.5194/soil-7-217-2021",
+          "downloaded_at": "2026-11-13T15:15:44+00:00",
+          "period_covered": null,
+          "coverage": "Mundial; bajados los mosaicos de 1° n03w075, n04w075, n04w074, n04w073, n05w075, n05w074, n05w073, n06w075, n06w074, n06w073, n06w072, n07w073, n07w072",
+          "license": "CC BY 4.0 (https://www.isric.org/explore/soilgrids/faq-soilgrids)",
+          "citation": "Poggio, L., de Sousa, L. M., Batjes, N. H., Heuvelink, G. B. M., Kempen, B., Ribeiro, E. y Rossiter, D. (2021). SoilGrids 2.0: producing soil information for the globe with quantified spatial uncertainty. SOIL, 7, 217-240. https://doi.org/10.5194/soil-7-217-2021",
+          "notes": "Es un modelo de 250 m, no una medición del lote (R10): se recomienda un análisis de suelo. Se baja por WCS (maps.isric.org) en la rejilla común de 0,0025°, con el valor del píxel que contiene el centro de cada celda. De 0 a 30 cm: promedio de las capas 0-5, 5-15 y 15-30 cm ponderado por su grosor. Los percentiles 5 y 95 del pH y del carbono orgánico se promedian igual, capa por capa: es una aproximación del intervalo de 0 a 30 cm. Un píxel en 0 es «sin dato» y queda nulo."
         },
         {
           "source_id": "ucanr_7226_carrot",
@@ -6440,6 +6545,18 @@
           "license": "Propiedad de la UPRA; reproducción parcial sin fines comerciales con cita",
           "citation": null,
           "notes": "Anexo 1.1.1, temperatura media anual (p. 127): alta 12-15 °C, media 10-12 y 15-16 °C, baja 8-10 °C, no apta < 8 y > 16 °C."
+        },
+        {
+          "source_id": "usda_textura",
+          "name": "Triángulo de texturas del USDA (calculadora de texturas del NRCS)",
+          "institution": "USDA Natural Resources Conservation Service",
+          "url": "https://www.nrcs.usda.gov/resources/education-and-teaching-materials/soil-texture-calculator",
+          "downloaded_at": "2026-11-13",
+          "period_covered": null,
+          "coverage": "Mundial",
+          "license": "Obra del gobierno de los Estados Unidos, de dominio público",
+          "citation": null,
+          "notes": "Las 12 clases de textura del USDA desde la arcilla, la arena y el limo de SoilGrids (`texture_class` de grid_cells y soil_municipality), con los nombres en español que usa el IGAC (por ejemplo, «franco arcilloso» es clay loam)."
         }
       ]
     }

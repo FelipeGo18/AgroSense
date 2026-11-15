@@ -131,7 +131,7 @@ const DIAGNOSIS = {
   signals: {
     water: signal("favorable", 82, "En 8 de los últimos 10 años la lluvia cubrió lo que necesita"),
     frost: signal("favorable", 72, "Heló en la floración 4 de cada 100 años"),
-    heat: signal("favorable", 95, "La máxima rara vez pasa de 22 °C"),
+    heat: signal("favorable", 95, "La máxima pasó de 22 °C uno de cada diez días"),
     soil: signal("favorable", 78, "pH estimado en el rango del cultivo"),
     supply: signal("favorable", 76, "Se sembró menos que antes"),
     market: signal(null, null, "Sin datos de precios"),
@@ -415,6 +415,30 @@ describe("La entrada (HU-214): reglas", () => {
 });
 
 describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
+  it("con sesión abierta, consultar sin lote no guarda una consulta de invitado (HU-168)", async () => {
+    const calls = fakeApi({
+      "GET /api/v1/me": { status: 200, body: ROSA },
+      "GET /api/v1/lots": { status: 200, body: [] },
+    });
+    open();
+    const user = userEvent.setup();
+    await screen.findByRole("button", { name: "Cerrar sesión" });
+    expect(sessionStorage.getItem("agrosense.guest-consult")).toBeNull();
+
+    await user.type(screen.getByRole("combobox", { name: "Municipio" }), "sama");
+    await user.click(await screen.findByRole("option", { name: /Samacá/ }));
+    await user.type(screen.getByLabelText("Área del terreno, en hectáreas"), "2,5");
+    await user.click(group("¿Qué había antes en el terreno?").getByRole("radio", { name: "Uno o más cultivos" }));
+    await user.selectOptions(screen.getByLabelText("Lo último que sembró"), "papa");
+    await user.selectOptions(screen.getByLabelText("¿Cuándo sembraría el primer ciclo?"), MONTH);
+    await user.click(group("¿Tiene riego?").getByRole("radio", { name: "No" }));
+    await user.click(screen.getByRole("button", { name: "Ver estrategias" }));
+
+    await results();
+    expect(rotationCalls(calls)).toHaveLength(1);
+    expect(rotationCalls(calls)[0]).toMatchObject({ lot_id: null, municipality_id: "15646" });
+    expect(sessionStorage.getItem("agrosense.guest-consult")).toBeNull();
+  });
   it("explica qué es un ciclo, con cuánto dura y un ejemplo", async () => {
     fakeApi();
     open();

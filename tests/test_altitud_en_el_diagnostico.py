@@ -84,7 +84,7 @@ def diagnose(client, place: dict, lot_id: str | None, crop: str = "papa"):
 def test_lote_en_el_paramo_de_un_municipio_apto_da_no_apto_con_la_temperatura_del_lote(dataset_con_clima, farmer):
     """Samacá es apto para la papa (12,8 °C). Un lote a 3500 m queda 840 m más arriba: 12,8 - 4,914 = 7,9 °C, por debajo de 8."""
     write_grid(dataset_con_clima, [(SAMACA, 3500.0)])
-    assert diagnose(farmer, SAMACA, None).status_code == 501
+    assert diagnose(farmer, SAMACA, None).json()["suitability"]["level"] == "suitable"
     response = diagnose(farmer, SAMACA, create_lot(farmer, SAMACA, square(SAMACA)))
     assert response.status_code == 200, response.json()
     body = response.json()
@@ -105,17 +105,19 @@ def test_lote_en_el_paramo_de_un_municipio_apto_da_no_apto_con_la_temperatura_de
 
 
 def test_lote_en_un_valle_de_un_municipio_frio_pasa_a_apto(dataset_con_clima, farmer):
-    """Villa de Leyva (6,0 °C) no es apta para la papa; un lote a 2400 m queda 500 m más abajo: 6,0 + 2,925 = 8,9 °C. Apta
-    sigue en 501 (todavía no hay señales), donde sin lote da 200."""
+    """Villa de Leyva (6,0 °C) no es apta para la papa; un lote a 2400 m queda 500 m más abajo: 6,0 + 2,925 = 8,9 °C."""
     write_grid(dataset_con_clima, [(LEYVA, 2400.0)])
-    assert diagnose(farmer, LEYVA, None).status_code == 200
-    assert diagnose(farmer, LEYVA, create_lot(farmer, LEYVA, square(LEYVA))).status_code == 501
+    assert diagnose(farmer, LEYVA, None).json()["suitability"]["level"] == "not_suitable"
+    body = diagnose(farmer, LEYVA, create_lot(farmer, LEYVA, square(LEYVA))).json()
+    assert body["suitability"]["level"] == "suitable" and body["suitability"]["basis"] == "lot"
+    assert body["window"] is not None and body["signals"] is not None
 
 
 def test_el_limite_exacto_del_rango_es_apto(dataset_con_clima, farmer):
     """3480 m: 12,8 - 0,00585 × 820 = 8,003, que redondeado a 1 decimal es 8,0, el mínimo de la papa (incluido)."""
     write_grid(dataset_con_clima, [(SAMACA, 3480.0)])
-    assert diagnose(farmer, SAMACA, create_lot(farmer, SAMACA, square(SAMACA))).status_code == 501
+    body = diagnose(farmer, SAMACA, create_lot(farmer, SAMACA, square(SAMACA))).json()
+    assert (body["suitability"]["level"], body["suitability"]["tmean_annual_c"]) == ("suitable", 8.0)
 
 
 def test_lote_sin_contorno_usa_el_municipio_con_su_altitud_y_lo_dice(dataset_con_clima, farmer):
@@ -145,10 +147,27 @@ def test_lote_mas_chico_que_una_celda_usa_la_celda_de_su_centro_y_lo_dice(datase
 
 
 def test_lote_con_contorno_y_dataset_sin_rejilla_no_se_puede_decidir(dataset_con_clima, farmer):
-    """R1: sin la altitud del lote no se usa la del municipio. Aptitud `insufficient_data`: no bloquea, y sin señales sigue en 501."""
+    """R1: sin la altitud del lote no se usa la del municipio. Aptitud `insufficient_data`: no bloquea (se evalúa la
+    ventana) y va a las limitaciones, con el porqué del lote."""
     lot_id = create_lot(farmer, SAMACA, square(SAMACA))
     assert not (dataset_con_clima / "grid_cells.parquet").exists()
-    assert diagnose(farmer, SAMACA, lot_id).status_code == 501
+    response = diagnose(farmer, SAMACA, lot_id)
+    assert response.status_code == 200, response.json()
+    body = response.json()
+    assert body["suitability"] | {"reasons": None} == {
+        "level": "insufficient_data",
+        "score": None,
+        "basis": "lot",
+        "tmean_annual_c": None,
+        "altitude_m": None,
+        "reasons": None,
+    }
+    assert body["suitability"]["reasons"] == ["Sin la temperatura media anual de su lote: no se sabe si la papa se da en su zona"]
+    assert body["limitations"][:2] == [
+        "La altitud de los lotes no está publicada en esta versión del dataset.",
+        "Sin la temperatura media anual de su lote: no se sabe si la papa se da en su zona",
+    ]
+    assert body["window"] is not None and body["signals"] is not None
 
 
 def zone_of(folder, municipality_id: str, geometry: dict | None):

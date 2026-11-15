@@ -1,3 +1,4 @@
+import { EMPTY_STRATEGY, readGuestConsult, writeGuestConsult } from "@/features/strategies/entry";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
@@ -170,6 +171,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   setLightMode(false);
   DRAWN.value = null;
+  sessionStorage.clear();
 });
 
 describe("Mi finca (HU-169)", () => {
@@ -409,7 +411,8 @@ describe("El lote (HU-164)", () => {
     expect(screen.getByText("2,50 ha · escrita a mano")).toBeInTheDocument();
     expect(screen.getByText("Sin riego")).toBeInTheDocument();
     expect(screen.getByText("Sin siembra en curso.")).toBeInTheDocument();
-    expect(screen.getByText("Sin datos del suelo todavía.")).toBeInTheDocument();
+    // Sin el suelo publicado de su municipio no se inventa nada (R1).
+    expect(await screen.findByText("Sin datos del suelo de Samacá.")).toBeInTheDocument();
     expect(screen.getByText("No sale en el mapa de su finca.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Dibujar en el mapa" })).toHaveAttribute("href", PATHS.drawLot("a1"));
     expect(screen.getByRole("link", { name: "Editar lote" })).toHaveAttribute("href", PATHS.editLot("a1"));
@@ -423,6 +426,48 @@ describe("El lote (HU-164)", () => {
     expect(await screen.findByRole("button", { name: "En el mapa: La Vega" })).toBeInTheDocument();
     expect(screen.getByText("0,99 ha · calculada con su dibujo")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Dibujar en el mapa" })).toBeNull();
+  });
+
+  it("muestra el suelo de su municipio explicado, con su rango y que no es una medición del lote (HU-185)", async () => {
+    // Suelo DE EJEMPLO (R5): la forma de GET /catalogs/municipalities/{id}/soil.
+    const soil = {
+      municipality_id: "15646",
+      ph: { value: 5.7, p05: 4.13, p95: 7.88 },
+      soc_g_kg: { value: 52.37, p05: 4.67, p95: 172.03 },
+      nitrogen_g_kg: 4.11,
+      clay_pct: 31.6,
+      sand_pct: 37.1,
+      silt_pct: 31.6,
+      texture_class: "franco arcilloso",
+      slope_pct: 19.8,
+      cells: 2041,
+      quality: "partial",
+      source_id: "soilgrids",
+      versions: { dataset: "ejemplo", rules: "ejemplo" },
+    };
+    fakeApi({
+      ...BASE,
+      "GET /api/v1/lots/a1": { status: 200, body: DETAIL },
+      "GET /api/v1/catalogs/municipalities/15646/soil": { status: 200, body: soil },
+    });
+    open(PATHS.lot("a1"));
+    const section = await screen.findByRole("region", { name: "Suelo de la zona" });
+    // De un vistazo: el valor y lo que significa; el rango, en letra chica.
+    expect(await within(section).findByText("52,4 g/kg")).toBeInTheDocument();
+    expect(within(section).getByText("Medio")).toBeInTheDocument();
+    expect(within(section).getByText("rango probable de 4,7 a 172 g/kg")).toBeInTheDocument();
+    expect(within(section).getByText("franco arcilloso")).toBeInTheDocument();
+    expect(within(section).getByText("Guarda bien el agua")).toBeInTheDocument();
+    expect(within(section).getByText("5,7")).toBeInTheDocument();
+    expect(within(section).getByText("rango probable de 4,1 a 7,9")).toBeInTheDocument();
+    // La explicación va a pedido, en «¿Qué es esto?».
+    expect(within(section).getAllByText("¿Qué es esto?")).toHaveLength(3);
+    expect(within(section).getByText(/por eso entra en la señal de agua/)).toBeInTheDocument();
+    // R10: siempre dice que es de la zona y que un análisis del lote es más preciso.
+    expect(within(section).getByText(/Es el suelo de Samacá, no una medición de su lote/)).toHaveTextContent(
+      "Un análisis de suelo de su lote es más preciso",
+    );
+    expect(within(section).getByText(/la estimación es menos segura/)).toBeInTheDocument();
   });
 
   it("un lote ajeno o que no existe lo dice", async () => {
@@ -690,5 +735,49 @@ describe("El área escrita a mano", () => {
       null,
       null,
     ]);
+  });
+});
+
+describe("Consulta al crear lote (HU-168)", () => {
+  it.each(["Guardar lote", "Cancelar", "No, empezar de cero"])("precarga desde la pestaña y limpia con %s", async (action) => {
+    setLightMode(true);
+    writeGuestConsult({
+      ...EMPTY_STRATEGY,
+      municipalityId: "15646",
+      areaText: "2,73",
+      irrigation: "si",
+      previousMode: "crops",
+      previous: ["papa", "", ""],
+    });
+    const calls = fakeApi({
+      ...BASE,
+      "GET /api/v1/lots": { status: 200, body: [] },
+      "POST /api/v1/lots": { status: 201, body: LOT },
+      "GET /api/v1/lots/a1": { status: 200, body: DETAIL },
+    });
+    const router = createMemoryRouter(routes, { initialEntries: [PATHS.addLot + "?desde=consulta"] });
+    const addresses: string[] = [];
+    const unsubscribe = router.subscribe((state) => addresses.push(state.location.pathname + state.location.search));
+    render(<RouterProvider router={router} />);
+    expect(await screen.findByRole("heading", { name: "Su lote, sin dibujar" })).toBeInTheDocument();
+    expect(screen.getByText("Paso 2 de 2")).toBeInTheDocument();
+    expect(screen.getByLabelText("Área del lote (ha)")).toHaveValue("2,73");
+    expect(await screen.findByText(/Ya consultó para Samacá/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cultivos anteriores: Papa/)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Sí$/ })).toBeChecked();
+    if (action === "Guardar lote") {
+      await userEvent.type(screen.getByLabelText("Nombre del lote"), "Mi lote");
+      await userEvent.click(screen.getByRole("button", { name: action }));
+      await screen.findByText("Lote guardado.");
+      expect(calls.find((c) => c.key === "POST /api/v1/lots")?.body).toEqual({
+        name: "Mi lote",
+        municipality_id: "15646",
+        area_ha: 2.73,
+        irrigated: true,
+      });
+    } else await userEvent.click(screen.getByRole(action === "Cancelar" ? "link" : "button", { name: action }));
+    expect(readGuestConsult()).toBeNull();
+    expect(addresses.every((url) => !url.includes("area") && !url.includes("2,73") && !url.includes("2.73"))).toBe(true);
+    unsubscribe();
   });
 });
