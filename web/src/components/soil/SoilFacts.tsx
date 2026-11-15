@@ -2,9 +2,10 @@ import type { components } from "@/api/schema";
 import { SOIL_ESTIMATE } from "@/features/diagnosis/signals";
 
 type MunicipalitySoil = components["schemas"]["MunicipalitySoil"];
+export type SoilProperties = Pick<MunicipalitySoil, "ph" | "soc_g_kg" | "texture_class" | "quality">;
 type SoilRange = components["schemas"]["SoilRange"];
 
-const NUMBER = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
+const NUMBER = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
 
 /**
  * Niveles del carbono orgánico, en g/kg: los de la tabla 3 de Castro Franco (`cevipapa_taller_2005`, p. 35, «Niveles
@@ -56,7 +57,7 @@ export interface SoilFact {
 }
 
 /** Los tres datos del suelo, cada uno con su nivel y su rango (HU-185). Sin dato, «Sin dato»: no se inventa (R1). */
-export function soilFacts(soil: MunicipalitySoil): SoilFact[] {
+export function soilFacts(soil: SoilProperties): SoilFact[] {
   const soc = soil.soc_g_kg.value;
   const water = soil.texture_class ? WATER_BY_TEXTURE[soil.texture_class] : undefined;
   return [
@@ -87,11 +88,11 @@ export function soilFacts(soil: MunicipalitySoil): SoilFact[] {
 
 /**
  * El suelo estimado de la zona, explicado (HU-185): de un vistazo, cada dato con su valor y lo que significa para el
- * agricultor («Normal», «Guarda bien el agua»); el rango probable en letra chica, y la explicación a pedido. Siempre dice
- * que es una estimación de 250 m, no una medición del lote (R10). Lo usan el detalle del lote (HU-169) y, después, la
- * señal de suelo y la salud del suelo de las estrategias.
+ * agricultor («Medio», «Guarda bien el agua»); el rango probable en letra chica, y la explicación a pedido. Siempre dice
+ * que es una estimación de 250 m, no una medición del lote (R10). Lo usan el detalle del lote (HU-169), la señal de suelo
+ * y la salud del suelo de las estrategias, con el origen que publicó la API.
  */
-export function SoilFacts({ soil, place }: { soil: MunicipalitySoil; place: string }) {
+export function SoilFacts({ soil, place }: { soil: SoilProperties; place: string }) {
   return (
     <div className="flex flex-col gap-3">
       <dl className="flex flex-col divide-y-2 divide-paleta-niebla">
