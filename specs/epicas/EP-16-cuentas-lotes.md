@@ -250,7 +250,7 @@ El diseño y las pantallas se prototipan en la fase 0 (EP-15); el código de cue
 - **Criterios de aceptación:**
   - [ ] Los lotes del usuario en el mapa real con sus polígonos (HU-164) y la capa de la NASA (HU-211), cada uno con sus cultivos y etapas; los lotes sin dibujar se ven en una lista (hecho sin la capa de la NASA, que es HU-211, y sin las etapas, que esperan a HU-165)
   - [ ] **Una sola zona:** Mi finca muestra los lotes de un municipio, sin selector de zonas. Si el usuario tiene lotes en otro municipio, se ven en la lista con su municipio y abrirlos centra el mapa allí
-  - [x] Detalle de lote en 2D con su suelo (HU-185), sus temporadas en curso y cosechadas, y «Ver estrategias de rotación» (HU-214). El suelo es el estimado de su municipio («Suelo de la zona», con su rango y el rótulo de R10); el del polígono del lote es HU-182 (P1) (14 nov 2026)
+  - [x] Detalle de lote en 2D con su suelo (HU-185), sus temporadas en curso y cosechadas, y «Ver estrategias de rotación» (HU-214). El suelo es el estimado de su municipio («Suelo de la zona», con su rango y el rótulo de R10); el del polígono del lote es HU-182 (P0) (14 nov 2026)
   - [ ] En la próxima siembra, la pregunta «¿Qué había antes en este terreno?» permite elegir una o varias temporadas cosechadas (HU-165)
   - [x] «Agregar lote» abre el mapa del municipio para dibujar (HU-164), sin descenso
   - [ ] Cada botón tiene una acción o una navegación definida
