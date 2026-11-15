@@ -107,6 +107,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Usa la capa de calidad del producto para descartar los píxeles con nubes; el porcentaje de píxeles válidos queda en `valid_pixels_pct`
   - [ ] `ndvi_municipality` por `municipality_id`, `year` y `period` (1 a 23, el compuesto de 16 días del año), con `ndvi_median`, `valid_pixels_pct`, `quality` y `source_id`
   - [ ] `ndvi_municipality_normal` por `municipality_id` y `period`, con `ndvi_normal`, `years`, `quality` y `source_id`
+  - [ ] Entrada de MODIS NDVI en `sources` con misión, resolución, periodo, acceso y licencia (HU-122)
   - [ ] Si se usa una máscara de áreas de cultivo, lleva su fuente (por elegir). Sin máscara, el valor es de todo el municipio y la respuesta lo dice
   - [ ] Con menos píxeles válidos que el mínimo de la configuración del pipeline, el periodo queda `partial` o no se publica; nunca se interpola en silencio (R1)
   - [ ] `/trends` suma la serie `ndvi` con la normal del municipio (HU-078)
@@ -137,6 +138,7 @@ Ninguna tabla de clima va por semestre: el semestre solo existe en la oferta de 
   - [ ] Adaptador `smap` con caché: humedad superficial y de la zona de raíces de SMAP nivel 4 (celdas de 9 km, desde marzo de 2015). Producto, versión y profundidades se verifican antes de usarlo
   - [ ] `soil_moisture_month` por `municipality_id`, `year`, `month` y `source_id`, con `sm_surface_m3_m3`, `sm_rootzone_m3_m3` y `quality`
   - [ ] Sus unidades (m³/m³) son distintas de las de POWER (fracción de 0 a 1): nunca se convierten una en otra ni se promedian; se muestran lado a lado (decisión 11)
+  - [ ] Entrada de SMAP en `sources` con misión, resolución, periodo, acceso y licencia (HU-122)
   - [ ] Aparece en `signals.water.sources` y en el plan de agua como contraste (`used = false`); no cambia la calificación (R1, R2)
   - [ ] Sin datos para un municipio o un mes, no aparece; nunca se rellena (R1)
   - [ ] Comprobación manual en un municipio
