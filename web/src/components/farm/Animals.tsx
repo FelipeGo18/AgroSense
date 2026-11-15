@@ -71,6 +71,13 @@ function wander(w: Walker, zone: Zone, speed: number, restMin: number, restMax: 
   if (step(w, speed, dt)) w.rest = restMin + Math.random() * (restMax - restMin);
 }
 
+/**
+ * Cada cuánto se repinta el dibujo de los animales: en el celular, a unos 30 cuadros por segundo (uno de cada dos a 60);
+ * si no, en cada cuadro. El margen de 2 ms evita saltarse un cuadro por los decimales del reloj.
+ */
+export const paintEvery = (few: boolean) => (few ? 1000 / 30 - 2 : 0);
+export const shouldPaint = (now: number, painted: number, few: boolean) => now - painted >= paintEvery(few);
+
 const COW_START: [number, number][] = [
   [0.25, 0.3],
   [0.7, 0.55],
@@ -83,7 +90,18 @@ const HEN_START: [number, number][] = [
   [0.8, 0.75],
 ];
 
-export function FarmAnimals({ anchors, dogMarkup, animated }: { anchors: FarmAnchors; dogMarkup: string; animated: boolean }) {
+export function FarmAnimals({
+  anchors,
+  dogMarkup,
+  animated,
+  few = false,
+}: {
+  anchors: FarmAnchors;
+  dogMarkup: string;
+  animated: boolean;
+  /** En el celular, el dibujo se repinta a unos 30 cuadros por segundo en vez de 60: el movimiento es el mismo. */
+  few?: boolean;
+}) {
   const pasture = anchors.pasture as Zone;
   const yard = anchors.yard as Zone;
   const cows = useRef(COW_START.map(([u, v]) => walker(pasture, u, v)));
@@ -104,6 +122,7 @@ export function FarmAnimals({ anchors, dogMarkup, animated }: { anchors: FarmAnc
   useEffect(() => {
     if (!animated) return;
     let last = performance.now();
+    let painted = 0;
     let id = requestAnimationFrame(function tick(now) {
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
@@ -142,12 +161,15 @@ export function FarmAnimals({ anchors, dogMarkup, animated }: { anchors: FarmAnc
           d.face = 1;
           d.timer = 20 + Math.random() * 20;
         }
-        setFrame((n) => (n + 1) % 1_000_000);
+        if (shouldPaint(now, painted, few)) {
+          painted = now;
+          setFrame((n) => (n + 1) % 1_000_000);
+        }
       }
       id = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(id);
-  }, [animated, pasture, yard, anchors.dog]);
+  }, [animated, few, pasture, yard, anchors.dog]);
 
   const d = dog.current;
   // De atrás hacia adelante: el que está más abajo en la pantalla tapa al de atrás.

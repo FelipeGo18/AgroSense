@@ -10,8 +10,10 @@ from dataclasses import dataclass
 from backend.engine.rotations.candidates import FALLOW, CropInfo
 from backend.engine.rotations.rules import FilterRule, Motive, rule_motives
 from backend.engine.signal_score import CLIMATE_CRITICAL_SIGNALS, SignalScore, is_grave
+from backend.engine.soil_signal import outside_tolerated
 from backend.engine.suitability import INSUFFICIENT_DATA, NOT_SUITABLE, Suitability, suitability
 from common.signals import P0_SIGNALS
+from common.text import format_decimal
 
 # Lo arma la API para que la razón y las fuentes sean las de `/diagnostics`; el motor no arma ese texto.
 SuitabilityExplainer = Callable[[CropInfo, Suitability], tuple[str, tuple[str, ...]]]
@@ -73,28 +75,26 @@ def suitability_motives(
     return motives, limitations
 
 
-def _ph(value: float) -> str:
-    return f"{value:.1f}".replace(".", ",")
-
-
 def ph_motives(
     sequence: Sequence[str],
     crops: Mapping[str, CropInfo],
     soil: SoilPh | None,
 ) -> tuple[list[Motive], list[str]]:
     """Un motivo `soil_ph` por cultivo, en su primer ciclo, si el pH que tolera queda fuera de todo el intervalo
-    estimado del suelo (`ph_max < p05` o `ph_min > p95`; tocar un borde no excluye). Sin suelo o sin el rango de la
-    ficha con fuente, no excluye: una limitación por cultivo (R1, R8). El descanso no se revisa."""
+    estimado del suelo (`outside_tolerated`: `ph_max < p05` o `ph_min > p95`; tocar un borde no excluye). Es la misma
+    condición con que la señal de suelo del diagnóstico da `unfavorable` (HU-183, `backend/engine/soil_signal.py`).
+    Sin suelo o sin el rango de la ficha con fuente, no excluye: una limitación por cultivo (R1, R8). El descanso no se
+    revisa."""
     motives: list[Motive] = []
     limitations: list[str] = []
     for cycle, crop_id, crop in _first_cycles(sequence, crops):
         if soil is None or crop.ph_min is None or crop.ph_max is None or not crop.ph_source_id:
             limitations.append(f"No se pudo comprobar el pH del suelo para {_name(crop)}: falta el pH del suelo o su rango en la ficha")
-        elif crop.ph_max < soil.p05 or crop.ph_min > soil.p95:
+        elif outside_tolerated(crop.ph_min, crop.ph_max, soil.p05, soil.p95):
             who = f"{crop.article} {_name(crop)}" if crop.article else _name(crop)
             reason = (
-                f"El pH del suelo de la zona ({_ph(soil.p05)} a {_ph(soil.p95)}) queda fuera del que tolera "
-                f"{who} ({_ph(crop.ph_min)} a {_ph(crop.ph_max)})"
+                f"El pH del suelo de la zona ({format_decimal(soil.p05)} a {format_decimal(soil.p95)}) queda fuera del que tolera "
+                f"{who} ({format_decimal(crop.ph_min)} a {format_decimal(crop.ph_max)})"
             )
             motives.append(Motive("soil_ph", cycle, reason, (crop.ph_source_id, soil.source_id), crop_id=crop_id))
     return motives, limitations

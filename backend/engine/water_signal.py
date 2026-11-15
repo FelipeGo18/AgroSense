@@ -37,6 +37,7 @@ from typing import TYPE_CHECKING
 from backend.engine.sensitive_signal import ClimateSignalResult, insufficient, months_phrase, scored
 from backend.engine.signal_score import AVAILABLE, round_half_up, score_signal
 from backend.engine.stages import CropWindow, WindowMonth
+from common.text import of
 
 if TYPE_CHECKING:
     from backend.config.thresholds import Thresholds
@@ -133,7 +134,7 @@ def water_signal(
         return insufficient(missing[0], (*missing[1:], *notices))
     covered = None if balance is None else balance.covered_pct()
     if covered is None or window is None:
-        return insufficient(f"Sin el balance hídrico de {crop_name} en esta ventana: el agua no se evalúa", notices)
+        return insufficient(f"Sin el balance hídrico {of(crop_name)} en esta ventana: el agua no se evalúa", notices)
     if rain.first_year is None or rain.last_year is None:
         # Sin el periodo no se puede decir de qué años es la lluvia del año seco (R5): no se califica.
         return insufficient(f"Sin el periodo de la lluvia de {rain.name}: el agua no se evalúa", notices)
@@ -143,7 +144,7 @@ def water_signal(
     score = score_signal(WATER, IRRIGATED_COVERAGE if irrigated else covered[0], thresholds)
     if score.status != AVAILABLE:
         # Una curva de `water` nula en `thresholds.yaml` (sin fuente para sus cortes): no se califica (R1, R8).
-        return insufficient(f"Sin una curva con fuente para calificar el agua de {crop_name}: el agua no se evalúa", limitations)
+        return insufficient(f"Sin una curva con fuente para calificar el agua {of(crop_name)}: el agua no se evalúa", limitations)
     when = in_months(window.months())
     # El año seco de cada mes, sumado: un poco más seco que el año seco de la ventana (va del lado prudente, PR #115).
     dry_year = (

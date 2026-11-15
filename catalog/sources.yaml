@@ -6,7 +6,7 @@
 #
 # La región es la de `pipeline/region.yaml` (`region.id`). Cambia una fuente: cambia aquí y sube la versión (R4).
 
-version: "1.4.0"
+version: "1.5.0"
 
 regions:
   co-boyaca-cundinamarca:
@@ -34,11 +34,11 @@ regions:
         experiencia de su zona.
     heat: { used: nasa_power }
     soil: { used: soilgrids }
+    # EVA de la UPRA (`supply_semester`, HU-031). La variación del área sembrada que califica la señal llega con HU-032.
     supply: { used: eva, contrast: [] }
     market: { used: dane_sipsa }
 
 # Fuentes que todavía no tienen adaptador, con la HU que las trae. Mientras estén aquí, lo que las usa es
 # `insufficient_data` (R1) y el contraste no se muestra. Cuando la HU publique la fuente, sale de esta lista.
 planned:
-  eva: HU-031
   smap: HU-210
