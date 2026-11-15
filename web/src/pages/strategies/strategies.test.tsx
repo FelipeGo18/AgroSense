@@ -384,7 +384,17 @@ describe("La entrada (HU-214): reglas", () => {
 
   it("con cuenta, lo de antes y la rotación actual salen del historial del terreno", () => {
     expect(freeHarvested(SEASONS).map((s) => s.season_id)).toEqual(["s2"]); // la papa ya tiene la arveja encima
-    expect(previousFromSeasons([SEASONS[1]])).toEqual(["arveja"]);
+    // Lo de antes es toda la cadena del terreno, la más reciente primero (HU-165): la arveja y la papa de antes.
+    expect(previousFromSeasons([SEASONS[1]], SEASONS)).toEqual(["arveja", "papa"]);
+    expect(previousFromSeasons([SEASONS[1]])).toEqual(["arveja"]); // sin el historial, solo las elegidas
+    // Juntar y dividir: la arveja viene de la fresa y el ajo, que vienen de la misma papa; hasta 3 y sin repetir siembras.
+    const joined = [
+      season("p", "papa", "2024-02-01", "2024-07-01"),
+      season("f", "fresa", "2024-08-01", "2025-01-10", ["p"], 0.5),
+      season("a", "ajo", "2024-08-01", "2025-01-20", ["p"], 0.5),
+      season("v", "arveja", "2025-02-01", "2025-06-30", ["f", "a"]),
+    ];
+    expect(previousFromSeasons([joined[3]], joined)).toEqual(["arveja", "ajo", "fresa"]);
     expect(currentFromHistory([SEASONS[1]], SEASONS)).toEqual(["papa", "arveja"]);
     expect(currentFromHistory([SEASONS[0]], SEASONS)).toEqual([]); // con un solo cultivo no hay rotación
   });
@@ -755,13 +765,13 @@ describe("Entrada a las estrategias desde el lote (HU-214)", () => {
     await results();
     expect(rotationCalls(calls)[0]).toMatchObject({
       municipality_id: "25899",
-      previous_crop_ids: ["arveja"],
+      previous_crop_ids: ["arveja", "papa"],
       current_crop_ids: ["papa", "arveja"],
       irrigated: true,
       lot_id: "a1",
     });
     expect(screen.getByText("Estrategias · Zipaquirá, Cundinamarca")).toBeInTheDocument();
-    expect(screen.getByText("El Alto · 1,00 ha · antes: arveja")).toBeInTheDocument();
+    expect(screen.getByText("El Alto · 1,00 ha · antes: papa → arveja")).toBeInTheDocument();
     expect(screen.getByText(`${monthName(MONTH)} · con riego`)).toBeInTheDocument();
   });
 

@@ -1,9 +1,10 @@
 """Endpoints de cálculo: diagnóstico, estrategias, plan de agua, «Qué cambió» y tendencias (HU-012).
 
 Tienen su forma del contrato (`backend/api/calc_models.py`) y sus ejemplos de cada estado en el OpenAPI. Validan la
-entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076), «Qué cambió» (HU-218)
-y las tendencias (HU-078, `backend/api/trends.py`)
-ya responden con el motor; los demás, mientras su motor no exista, responden `501` `not_implemented` (decisión 15).
+entrada como dice el contrato (422, 401 y 404). El diagnóstico (HU-076), las estrategias (HU-084,
+`backend/api/rotations.py`), el plan de agua (HU-146), «Qué cambió» (HU-218) y las tendencias (HU-078,
+`backend/api/trends.py`) ya responden con el motor; un endpoint nuevo, mientras su motor no exista, responde `501`
+`not_implemented` (decisión 15).
 Cuando llegue cada HU del motor, la ruta deja de responder 501 y devuelve su modelo: la forma no cambia.
 
 No guardan los datos de la finca ni quién consultó (R9): solo leen el dataset y, con `lot_id`, el lote.
@@ -45,6 +46,7 @@ from backend.api.errors import ApiError, explain
 from backend.api.historical_changes import historical_changes
 from backend.api.lot_terrain import zone_temperature, zone_texture
 from backend.api.lots import _own_lot
+from backend.api.rotations import build_rotations
 from backend.api.trends import trends as build_trends
 from backend.api.water_signals import zone_water
 from backend.api.window_diagnosis import crop_name, diagnose_window, suitability_result, window_query
@@ -265,16 +267,46 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
                 sin_opciones=("Ninguna estrategia cumple: todas descartadas", ex.ROTATIONS_EMPTY),
             )
         },
-        **ex.responses(401, 404, 422, 501, 503),
+        **ex.responses(401, 404, 422, 500, 503),
     },
 )
 def rotations(body: RotationRequest, request: Request, dataset: Dataset = Depends(calc_dataset), db: Db = Depends(get_db)) -> Any:
-    """Estrategias de rotación de hasta 3 ciclos, comparadas contra la rotación actual (HU-084, HU-223)."""
+    """Estrategias de rotación de hasta 3 ciclos, comparadas contra la rotación actual (HU-084, HU-223). Es una
+    comparación por reglas con la historia de la zona, no un pronóstico ni una predicción de cuánto mejora el suelo.
+
+    Valida la entrada (422, 401, 404), lee la consulta como `/diagnostics` (`window_query`: con `lot_id`, la altitud,
+    el suelo y el riego del lote) y llama al motor por `build_rotations` (`backend/api/rotations.py`). No guarda nada ni
+    escribe en la base de datos (R9): el lote solo se lee.
+    """
     _check_place(dataset, body.municipality_id)
     _check_crops(dataset, [*body.previous_crop_ids, *(body.current_crop_ids or [])])
     _check_sowing_date(body.sowing_date)
-    _check_lot(request, db, body.lot_id, body.municipality_id)
-    _not_implemented(request, "Estrategias de rotación")
+    lot = _check_lot(request, db, body.lot_id, body.municipality_id)
+
+    # Los pesos de las señales de cada ciclo: `signal_priorities` o, sin ellos, los de AgroSense (HU-213). Ni ellos ni
+    # las prioridades de la rotación van al log (R9).
+    defaults = get_default_weights().weights
+    signal_priorities = body.signal_priorities
+    weights, basis = (signal_priorities.model_dump(), FARMER) if signal_priorities is not None else (defaults, DEFAULT)
+    municipality = dataset.municipalities[body.municipality_id]
+    query = window_query(dataset, municipality, lot, weights, basis, defaults, body.irrigated)
+    result = build_rotations(
+        dataset,
+        query,
+        body.sowing_date,
+        body.previous_crop_ids,
+        body.current_crop_ids,
+        body.cycles,
+        body.priorities.model_dump(),
+        [EXAMPLE_DATA] if dataset.version == EXAMPLE_VERSION else [],
+    )
+    # Al log, solo cuántas: ni el municipio, ni los cultivos, ni las fechas, ni las prioridades, ni el lote (R9).
+    explain(
+        request,
+        f"Estrategias calculadas: {len(result.strategies)} sugeridas, {sum(result.excluded_counts.values())} descartadas, "
+        f"{'con' if result.current_strategy is not None else 'sin'} rotación actual",
+    )
+    return result
 
 
 @router.post(

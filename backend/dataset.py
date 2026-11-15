@@ -126,6 +126,9 @@ class Dataset:
     climate_change_month: pl.DataFrame | None = None
     # Periodos definidos por el manifiesto del dataset.
     periods: tuple[dict[str, Any], ...] = ()
+    # Las reglas de rotación (`rotation_rules`, HU-062), con `params` y `levels` ya leídos del JSON, en orden de
+    # `rule_id`. Vacías si el dataset no las trae: entonces ninguna regla filtra ni califica, y se dice (R1, R8).
+    rotation_rules: tuple[dict[str, Any], ...] = ()
 
 
 def load(folder: Path) -> Dataset:
@@ -163,6 +166,8 @@ def load(folder: Path) -> Dataset:
         changes_path = folder / "climate_change_month.parquet"
         climate_change_month = pl.read_parquet(changes_path) if changes_path.exists() else None
         periods = tuple(manifest.get("periods", []))
+        rules_path = folder / "rotation_rules.parquet"
+        rotation_rules = _rotation_rules(pl.read_parquet(rules_path)) if rules_path.exists() else ()
     except (OSError, ValueError, pl.exceptions.PolarsError) as error:
         raise DatasetUnavailable(f"no se pudo leer el dataset de {folder}: {type(error).__name__}") from error
     return Dataset(
@@ -197,6 +202,7 @@ def load(folder: Path) -> Dataset:
         markets=_markets(manifest["region"], market_latest),
         climate_change_month=climate_change_month,
         periods=periods,
+        rotation_rules=rotation_rules,
         grid=grid,
         climate_month=climate_month,
         precip_month=precip_month,
@@ -205,6 +211,16 @@ def load(folder: Path) -> Dataset:
         climate_frost_month=climate_frost_month,
         climate_risk_month=climate_risk_month,
     )
+
+
+def _rotation_rules(table: pl.DataFrame) -> tuple[dict[str, Any], ...]:
+    """Las filas de `rotation_rules` con `params` y `levels` como objetos (en el Parquet van como JSON)."""
+    rows = []
+    for row in table.sort("rule_id").iter_rows(named=True):
+        params = row.get("params")
+        levels = row.get("levels")
+        rows.append({**row, "params": json.loads(params) if params else {}, "levels": json.loads(levels) if levels else None})
+    return tuple(rows)
 
 
 def _optional(path: Path) -> pl.DataFrame | None:
