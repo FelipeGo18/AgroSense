@@ -120,7 +120,7 @@
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-152 | Tokens de diseño | P0 | M | hecha | |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-153 | Kit de componentes con estilo de juego | P0 | L | hecha | |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-154 | Escena 3D del paisaje andino | P1 | L | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
-| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-155 | Descenso de cámara del satélite al lote | P1 | L | en curso | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
+| [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-155 | Descenso de cámara del satélite al lote | P1 | L | hecha | Pasó a P1 el 11 de octubre de 2026: recorte del MVP; hecho el 14 nov: recorrido A en `/del-satelite-a-su-finca`, 3D con React Three Fiber y 2D quieto en modo ligero |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-156 | Sistema de motion | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-157 | Audio de ambiente e interfaz | P1 | M | pendiente | |
 | [EP-15](epicas/EP-15-identidad-prototipo.md) | HU-158 | Modo ligero y movimiento reducido | P0 | M | en curso | GSAP y Lenis se cargan aparte: en modo ligero el JS inicial baja de 197 a 149 kB; verificados sin WebGL y con «reducir movimiento» (12 nov). Falta el Figma y el paso a 2D de la escena 3D (P1) |
@@ -142,7 +142,7 @@
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-169 | Mi finca con varios lotes y zonas | P0 | M | hecha | Entrega 2: Mi finca con el mapa; la capa de la NASA va en HU-211; los cultivos en curso ya se ven (HU-165); una sola zona con «En otro municipio» (14 nov) |
 | [EP-16](epicas/EP-16-cuentas-lotes.md) | HU-211 | Capa satelital de la NASA en el mapa del lote | P0 | M | pendiente | Nueva |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-173 | Pantalla de inicio | P0 | M | hecha | Sin 3D; recorrido con la mascota guía y la Tierra girando; nombra los datos de la NASA en la portada y en «Los datos» (14 nov) |
-| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-171 | Diseño de la mascota satélite | P1 | M | en curso | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
+| [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-171 | Diseño de la mascota satélite | P1 | M | hecha | Pasó a P1 el 11 de octubre de 2026: recorte del MVP; hecho el 14 nov: 2D por capas y 3D low-poly en el código (`design/mascota/README.md`) |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-172 | Expresiones y animaciones de la mascota | P1 | M | en curso | Reacciones en los formularios y en Mi cuenta hechas; faltan las expresiones de los resultados |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-174 | Día y noche en la escena | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-17](epicas/EP-17-inicio-ambiente.md) | HU-175 | Endpoint de condiciones actuales | P1 | S | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
