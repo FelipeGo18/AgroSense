@@ -53,7 +53,9 @@ const ROUTES = (
       (state) => `/diagnostico?municipio=15646&cultivo=papa&siembra=${THIS_MONTH}&riego=no&estado=${state}`,
     ),
     "/ruta-que-no-existe",
-    ...(process.env.SESSION ? ["/mi-finca/agregar", "/mi-cuenta", "/mi-cuenta/contrasena", "/mi-cuenta/actividad", "/mi-cuenta/escribirnos"] : []),
+    ...(process.env.SESSION
+      ? ["/mi-finca/agregar", "/mi-cuenta", "/mi-cuenta/contrasena", "/mi-cuenta/actividad", "/mi-cuenta/escribirnos"]
+      : []),
     ...(process.env.SESSION && LOT
       ? [`/mi-finca/lotes/${LOT}`, `/mi-finca/lotes/${LOT}/editar`, `/mi-finca/lotes/${LOT}/sembrar`, `/consultar?lote=${LOT}`]
       : []),

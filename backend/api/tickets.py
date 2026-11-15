@@ -12,7 +12,7 @@ respuesta (`reply`, `replied_at`) se ve en «Mis mensajes». Hasta 5 mensajes po
 """
 
 import uuid
-from datetime import datetime, time
+from datetime import UTC, datetime, time, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -80,6 +80,8 @@ def open_ticket(body: TicketCreate, request: Request, user: User = Depends(curre
             "too_many_requests",
             f"Ya nos escribió {DAILY_LIMIT} mensajes hoy. Espere nuestra respuesta o vuelva a escribir mañana.",
             log="Mensaje rechazado: llegó al límite de mensajes del día",
+            # Lo que falta para la medianoche de la región, cuando se puede volver a escribir (contrato: todo 429 lo dice).
+            headers={"Retry-After": str(max(1, int((midnight + timedelta(days=1) - datetime.now(UTC)).total_seconds())))},
         )
     if body.lot_id is not None:
         lot = db.scalar(select(Lot).where(Lot.lot_id == body.lot_id, Lot.user_id == user.user_id, Lot.deleted_at.is_(None)))

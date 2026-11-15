@@ -75,6 +75,7 @@ def test_hasta_5_mensajes_por_dia(client, dataset, db):
         assert client.post("/api/v1/me/tickets", json={"message": f"Mensaje {n}"}).status_code == 201
     response = client.post("/api/v1/me/tickets", json={"message": "El sexto"})
     assert response.status_code == 429 and "mañana" in response.json()["error"]["message"]
+    assert 0 < int(response.headers["Retry-After"]) <= 24 * 3600
     assert db.scalar(select(func.count()).select_from(SupportTicket)) == 5
 
 
