@@ -15,9 +15,10 @@ uv run python -m pipeline.build --traer-cache # antes de publicar, trae la cach�
 Para que todos construyan el dataset desde la misma caché, cada carpeta de `data/raw/` se guarda como un archivo en la
 *release* `cache-datos` del repositorio, y `pipeline/raw_cache.json` (en git) dice cuál usa cada fuente.
 
-**Todavía no hay caché compartida** (15 nov 2026): `raw_cache.json` y la *release* los crea la primera subida, que
-hace quien tenga la caché de cada fuente (HU-237). Mientras tanto, `traer` sin carpetas no baja nada, y
-`pipeline.build --traer-cache` construye con la caché local de quien lo corre.
+**La caché compartida ya está** (primera subida el 15 de noviembre de 2026, PR #187): las 8 carpetas de `FOLDERS`
+(dane, eva, imerg, modis_ndvi, nasa_power, nasadem, sipsa y soilgrids) están en la *release* `cache-datos`, y con
+ellas `pipeline.build` da el dataset publicado. `traer` no pide token. Quien baje fuentes nuevas las vuelve a subir
+con `subir` y lleva el `raw_cache.json` nuevo en su PR.
 
 ```bash
 uv run python -m pipeline.raw_cache estado            # qué carpetas de data/raw/ están al día con raw_cache.json
