@@ -47,6 +47,7 @@ import polars as pl
 from pipeline.sources.fetch import fetch
 
 SOURCE_ID = "eva"
+SOURCE_IDS = (SOURCE_ID,)  # todas las fuentes que este adaptador escribe en `sources`
 DATASET = "uejq-wxrr"
 ROWS_URL = f"https://www.datos.gov.co/resource/{DATASET}.csv"
 META_URL = f"https://www.datos.gov.co/api/views/{DATASET}.json"

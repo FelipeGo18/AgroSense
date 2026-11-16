@@ -7,6 +7,7 @@ Validaciones (si una falla, no se publica nada):
 - Decisión 16: `secondary_families` es una lista de textos con fuente (vacía si falta), sin repetidos, sin la `family` de la
   propia ficha y con valores que son la `family` de alguna ficha del catálogo.
 - HU-199: cada óptimo cae dentro de su rango absoluto (un límite nulo con fuente es un rango abierto).
+- HU-227: `forage` es verdadero o falso con su fuente (R8), o nulo; el descanso no lleva valor.
 - HU-063: `fallow_days` es solo del descanso, un entero de días mayor que cero (o nulo con nota), y el descanso no lleva
   etapas. Su `cycle_months` sale de esos días.
 """
@@ -35,7 +36,7 @@ RANGES = {
 }
 # Las columnas de `crops` del contrato que salen de un valor con fuente.
 FIELDS = (
-    "name_es", "article", "kind", "archetype", "family", "water_need", "root_type", "fixes_nitrogen",
+    "name_es", "article", "kind", "archetype", "family", "water_need", "root_type", "fixes_nitrogen", "forage",
     *RANGES["tmean"], "base_temp_c", "temp_min_c", "temp_opt_min_c", "temp_opt_max_c", "heat_max_c",
     *RANGES["rain"], *RANGES["ph"], "frost_killing_c", "root_depth_min_m", "root_depth_max_m", "depletion_p",
     "fallow_days",
@@ -67,7 +68,7 @@ def _value(crop_id: str, field: str, entry: Any, known: set[str]) -> Any:
         raise CatalogError(f"{crop_id}.{field}: debe ser {{v: valor, s: fuente}}.")
     value, source = entry["v"], entry.get("s")
     if value is not None and source not in known:
-        raise CatalogError(f"{crop_id}.{field}: el valor {value!r} no cita una fuente de `sources` (R8).")
+        raise CatalogError(f"{crop_id}.{field}: el valor {value!r} no cita una fuente de `sources` (R8): {source!r}.")
     if value is None and not (entry.get("n") or source):
         raise CatalogError(f"{crop_id}.{field}: está nulo y no dice por qué.")
     return value
@@ -101,7 +102,7 @@ def _sensitivity(crop_id: str, stage: str, entry: dict[str, Any], field: str, kn
     if not isinstance(value["v"], bool):
         raise CatalogError(f"{crop_id}.{stage}: `{field}` debe ser true o false, no {value['v']!r}.")
     if value.get("s") not in known:
-        raise CatalogError(f"{crop_id}.{stage}: `{field}` no cita una fuente de `sources` (R8).")
+        raise CatalogError(f"{crop_id}.{stage}: `{field}` no cita una fuente de `sources` (R8): {value.get('s')!r}.")
     return value["v"], value["s"]
 
 
@@ -130,6 +131,22 @@ def _check_fallow(crop_id: str, row: dict[str, Any], has_stages: bool) -> None:
         raise CatalogError(f"{crop_id}: un descanso no lleva etapas; su duración es `fallow_days`.")
     if days is not None and (isinstance(days, bool) or not isinstance(days, int) or days <= 0):
         raise CatalogError(f"{crop_id}: `fallow_days` {days!r} debe ser un entero de días mayor que cero.")
+
+
+def _check_forage(crop_id: str, row: dict[str, Any], crop: dict[str, Any]) -> None:
+    """`forage` (HU-227, aprobado por Felipe el 15 de noviembre de 2026): `true` o `false` con su fuente (`_value` ya exige que
+    exista, R8), o nulo si no hay fuente (R1). Un descanso (`kind = fallow`) no lleva valor: no es un cultivo ni un abono verde.
+    Un cultivo o un abono verde lleva siempre la clave `forage` (con `v: null` y su porqué si no hay fuente): una ficha que
+    la omite no se publica en silencio (revisión de Haider del #161)."""
+    if row["kind"] != "fallow" and "forage" not in crop:
+        raise CatalogError(f"{crop_id}: falta la clave `forage` (use `v: null` con `n` si no hay fuente, R1).")
+    value = row.get("forage")
+    if value is None:
+        return
+    if not isinstance(value, bool):
+        raise CatalogError(f"{crop_id}: `forage` debe ser true, false o nulo, no {value!r}.")
+    if row["kind"] == "fallow":
+        raise CatalogError(f"{crop_id}: un descanso no lleva `forage`: no es un cultivo ni un abono verde.")
 
 
 def _check_ranges(crop_id: str, row: dict[str, Any]) -> None:
@@ -172,6 +189,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             raise CatalogError(f"{crop_id}: `archetype` {row['archetype']!r} no es uno de los del contrato.")
         if row["article"] not in ARTICLES:
             raise CatalogError(f"{crop_id}: `article` {row['article']!r} debe ser uno de {sorted(ARTICLES)}.")
+        _check_forage(crop_id, row, crop)
         _check_ranges(crop_id, row)
         _check_root(crop_id, row)
         _check_fallow(crop_id, row, bool((crop.get("stages") or {}).get("list")))
@@ -183,7 +201,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
             if not isinstance(stage.get("days"), int) or stage["days"] <= 0:
                 raise CatalogError(f"{crop_id}.{name}: `days` debe ser un entero mayor que cero.")
             if stage.get("s") not in known:
-                raise CatalogError(f"{crop_id}.{name}: la etapa no cita una fuente de `sources` (R8).")
+                raise CatalogError(f"{crop_id}.{name}: la etapa no cita una fuente de `sources` (R8): {stage.get('s')!r}.")
             kc = stage.get("kc")
             if kc is not None and not 0 < kc <= 2:
                 raise CatalogError(f"{crop_id}.{name}: `kc` {kc} fuera de 0 a 2.")
@@ -235,7 +253,7 @@ def build(catalog: dict[str, Any]) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataF
         .with_columns(
             pl.col(numeric).cast(pl.Float64),
             pl.col(text).cast(pl.String),
-            pl.col("fixes_nitrogen").cast(pl.Boolean),
+            pl.col(["fixes_nitrogen", "forage"]).cast(pl.Boolean),
             pl.col("fallow_days").cast(pl.Int32),
             pl.col("secondary_families").cast(pl.List(pl.String)),
         )

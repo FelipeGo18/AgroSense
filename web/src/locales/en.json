@@ -745,6 +745,7 @@
   "pages.diagnosis.WaterChart.yearsWithInsufficientRainfall": "Years with insufficient rainfall:",
   "pages.diagnosis.WaterChart.years": "Years",
   "pages.diagnosis.WaterChart.thisIsTheAreasHistoryNotA": ". This is the area's history, not a forecast.",
+  "pages.diagnosis.WaterChart.lightUsesDryYear": "The water light does not come from these bars. The bars are all the rain of each year; the light uses a dry year (for each month, the rainfall exceeded in 4 out of 5 years) and only the part of the rain the crop can use. That is why it can be red even when total rainfall was enough in almost every year.",
   "pages.diagnosis.WaterChart.viewTheDataInATable": "View the data in a table",
   "pages.diagnosis.WaterChart.year": "Year",
   "pages.diagnosis.WaterChart.needs": "Needs",

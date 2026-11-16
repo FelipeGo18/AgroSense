@@ -21,6 +21,7 @@ from shapely.geometry import shape
 from pipeline.sources import dane
 
 SOURCE_ID = "dane_mgn_2025"
+SOURCE_IDS = (SOURCE_ID,)  # todas las fuentes que este adaptador escribe en `sources`
 SERVICE = "https://geoportal.dane.gov.co/mparcgis/rest/services/Divipola/Serv_DIVIPOLA_MGN_2025/FeatureServer/317"
 CACHE = Path("data/raw/dane")
 # Unos 10 m en el ecuador. La validación del lote deja el mismo margen (backend/api/lots.py).

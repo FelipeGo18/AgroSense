@@ -39,6 +39,7 @@ from pipeline.sources.fetch import DownloadError, fetch
 log = get_logger("agrosense.pipeline.nasadem")
 
 SOURCE_ID = "nasadem"
+SOURCE_IDS = (SOURCE_ID,)  # todas las fuentes que este adaptador escribe en `sources`
 PRODUCT = "NASADEM HGT v001"
 DOI_URL = "https://doi.org/10.5067/MEaSUREs/NASADEM/NASADEM_HGT.001"
 TILE_URL = "https://nasademeuwest.blob.core.windows.net/nasadem-cog/v001/NASADEM_HGT_{name}.tif"

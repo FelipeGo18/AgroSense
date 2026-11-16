@@ -37,6 +37,7 @@ log = get_logger("agrosense.pipeline.soilgrids")
 
 SOURCE_ID = "soilgrids"
 TEXTURE_SOURCE_ID = "usda_textura"
+SOURCE_IDS = (SOURCE_ID, TEXTURE_SOURCE_ID)  # todas las fuentes que este adaptador escribe en `sources`
 WCS_URL = "https://maps.isric.org/mapserv"
 CRS = "http://www.opengis.net/def/crs/EPSG/0/4326"
 CACHE = Path("data/raw/soilgrids")

@@ -33,6 +33,7 @@ from pipeline.sources.fetch import DownloadError, fetch
 log = get_logger("agrosense.pipeline.imerg")
 
 SOURCE_ID = "imerg"
+SOURCE_IDS = (SOURCE_ID,)  # todas las fuentes que este adaptador escribe en `sources`
 COLLECTION_ID = "C2723754851-GES_DISC"
 PRODUCT = "GPM IMERG Final Precipitation L3 1 month 0.1 degree x 0.1 degree V07 (GPM_3IMERGM)"
 DOI_URL = "https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07"

@@ -1,11 +1,13 @@
 """El catálogo agronómico: fichas con fuente por valor y sus validaciones (EP-06: HU-061, HU-199, HU-063; R8)."""
 
 import copy
+import json
 
 import polars as pl
 import pytest
 
-from pipeline import catalog
+from pipeline import build as pipeline_build
+from pipeline import catalog, rotation_rules, schema
 
 REAL = catalog.load()
 
@@ -53,6 +55,40 @@ def test_las_leguminosas_fijan_nitrogeno_y_las_demas_no():
     crops, _, _ = build()
     fixes = dict(zip(crops["crop_id"].to_list(), crops["fixes_nitrogen"].to_list(), strict=True))
     assert {k for k, v in fixes.items() if v} == {"arveja", "haba", "avena_vicia"}
+
+
+def test_el_forraje_es_true_en_maiz_arveja_y_avena_vicia_y_nulo_en_los_demas():
+    """HU-227 (Felipe, 15 nov 2026, PR #155): `forage` es booleano anulable; `true` con fuente en maíz, arveja y avena con
+    vicia; nulo (sin fuente, R1) en haba, zanahoria, papa, cebolla de bulbo y descanso."""
+    crops, _, sources = build()
+    assert crops.schema["forage"] == pl.Boolean
+    forage = dict(zip(crops["crop_id"].to_list(), crops["forage"].to_list(), strict=True))
+    assert {k for k, v in forage.items() if v} == {"maiz", "arveja", "avena_vicia"}
+    assert {k for k, v in forage.items() if v is None} == {"haba", "zanahoria", "papa", "cebolla_bulbo", "descanso"}
+    cited = dict(zip(crops["crop_id"].to_list(), crops["source_ids"].to_list(), strict=True))
+    for crop_id, source in {
+        "maiz": "feedipedia_maize_stover",
+        "arveja": "feedipedia_pea_forage",
+        "avena_vicia": "feedipedia_oat_forage",
+    }.items():
+        assert source in cited[crop_id]
+        assert source in set(sources["source_id"].to_list())
+    # Las tres de forraje están registradas.
+    assert {"feedipedia_maize_stover", "feedipedia_pea_forage", "feedipedia_oat_forage"} <= set(sources["source_id"].to_list())
+    # No se registran las que no sostienen ningún valor.
+    no_registradas = {
+        "feedipedia_faba_bean",
+        "feedipedia_carrot",
+        "feedipedia_maize_silage",
+        "feedipedia_common_vetch",
+        "agrosavia_altoandina_2020",
+    }
+    assert not no_registradas & set(sources["source_id"].to_list())
+
+
+def test_un_forraje_falso_con_fuente_se_publica_como_falso():
+    crops, _, _ = build(lambda d: crop(d, "papa").update(forage={"v": False, "s": "feedipedia_pea_forage"}))
+    assert crops.filter(pl.col("crop_id") == "papa")["forage"].to_list() == [False]
 
 
 def test_solo_la_avena_con_vicia_tiene_segunda_familia():
@@ -140,6 +176,16 @@ def test_un_dato_sin_fuente_va_nulo_y_dice_por_que():
         (lambda d: crop(d, "descanso").update(fallow_days={"v": 180, "s": "inventada"}), "no cita una fuente"),
         (lambda d: crop(d, "descanso").update(fallow_days={"v": None}), "nulo y no dice por qué"),
         (lambda d: crop(d, "descanso").update(stages=crop(d, "papa")["stages"]), "no lleva etapas"),
+        # HU-227 (R8): un `forage` con valor lleva una fuente que existe; el descanso no lo lleva.
+        (lambda d: crop(d, "maiz").update(forage={"v": True}), "no cita una fuente"),
+        (lambda d: crop(d, "maiz").update(forage={"v": False}), "no cita una fuente"),
+        (lambda d: crop(d, "maiz").update(forage={"v": True, "s": "inventada"}), "no cita una fuente"),
+        (lambda d: crop(d, "papa").update(forage={"v": None}), "nulo y no dice por qué"),
+        (lambda d: crop(d, "papa").update(forage={"v": "sí", "s": "feedipedia_pea_forage"}), "true, false o nulo"),
+        (lambda d: crop(d, "descanso").update(forage={"v": True, "s": "feedipedia_oat_forage"}), "no lleva `forage`"),
+        # Una ficha de cultivo o de abono verde sin la clave `forage` no pasa en silencio.
+        (lambda d: crop(d, "papa").pop("forage"), "falta la clave `forage`"),
+        (lambda d: crop(d, "avena_vicia").pop("forage"), "falta la clave `forage`"),
     ],
 )
 def test_un_catalogo_que_no_cumple_no_se_publica(change, message):
@@ -182,3 +228,55 @@ def test_secondary_families_se_publica_ordenada_sin_depender_del_orden_del_yaml(
         return crops.filter(pl.col("crop_id") == "avena_vicia")["secondary_families"].to_list()[0]
 
     assert published(["Solanaceae", "Leguminosae"]) == published(["Leguminosae", "Solanaceae"]) == ["Leguminosae", "Solanaceae"]
+
+
+def test_las_fuentes_publicadas_son_las_del_catalogo():
+    """Las fuentes que salen de `catalog/crops.yaml` y de `catalog/rotation_rules.yaml` (las que `pipeline.build` publica
+    desde el catálogo) coinciden con `data/published/sources.parquet`: mismos `source_id` y, en cada una, las mismas
+    columnas del contrato. Un catálogo cambiado sin reconstruir contradice lo publicado (R5, R8)."""
+    folder = pipeline_build.PUBLISHED
+    if not (folder / "sources.parquet").exists():
+        pytest.skip("data/published no está en esta imagen")
+    data = catalog.load()
+    _, _, catalog_sources = catalog.build(data)
+    _, rules_sources = rotation_rules.build(
+        rotation_rules.load(),
+        crop_sources=data.get("sources") or [],
+        known_families=set(catalog.build(data)[0]["family"].drop_nulls().to_list()),
+        expected_version=data["version"],
+    )
+    columns = list(schema.TABLES["sources"].columns)
+
+    def rows(table):
+        return {r["source_id"]: {c: (None if r.get(c) is None else str(r[c])) for c in columns} for r in table.to_dicts()}
+
+    expected = {**rows(catalog_sources), **rows(rules_sources)}
+    published = rows(pl.read_parquet(folder / "sources.parquet"))
+    fix = "Reconstruya el dataset con `uv run python -m pipeline.build`."
+    missing = sorted(set(expected) - set(published))
+    assert not missing, f"El catálogo trae fuentes que no están en data/published/sources.parquet: {missing}. {fix}"
+    # Lo que ya no está en el catálogo: una fuente publicada que ni el catálogo ni las reglas dan y que ninguna tabla
+    # publicada cita (las de los adaptadores sí las citan sus tablas) es una fila vieja que sobró (R5, R8).
+    cited = set()
+    for path in folder.glob("*.parquet"):
+        if path.stem == "sources":
+            continue
+        table = pl.read_parquet(path)
+        for name, dtype in table.schema.items():
+            if name.endswith("source_id") and dtype == pl.String:
+                cited |= set(table[name].drop_nulls().to_list())
+            elif name.endswith("source_ids"):
+                cited |= set(table[name].explode().drop_nulls().to_list())
+    # Las que cita `pipeline/region.yaml` (por ejemplo, el gradiente térmico) tampoco son del catálogo.
+    region = str(pipeline_build.load_region())
+    # Ni la de las capas de NASA GIBS que consume la web (`catalog/gibs.json`, HU-211): `pipeline.build` la publica aparte.
+    gibs = json.loads(pipeline_build.GIBS_FILE.read_text(encoding="utf-8"))["source_id"]
+    stale = sorted(source_id for source_id in set(published) - set(expected) - cited - {gibs} if source_id not in region)
+    assert not stale, f"data/published/sources.parquet trae fuentes que el catálogo ya no tiene y nadie cita: {stale}. {fix}"
+    differences = [
+        f"{source_id}.{column}: catálogo={expected[source_id][column]!r}, publicado={published[source_id][column]!r}"
+        for source_id in sorted(expected)
+        for column in columns
+        if expected[source_id][column] != published[source_id][column]
+    ]
+    assert not differences, "Lo publicado contradice el catálogo:\n" + "\n".join(differences) + f"\n{fix}"

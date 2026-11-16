@@ -126,6 +126,7 @@ Arranca contra las respuestas simuladas (HU-013) y se integra con EP-07.
     - un año sin dato no tiene barra y no cuenta (R1); la necesidad se corta donde falta.
   - **El título:** dice los meses, el cultivo y la unidad: «Lluvia de ago a dic frente a lo que necesita el cultivo (papa), en mm».
   - **Al pie:** los años, la fuente de la lluvia con su nota (la que calculó la señal, R8) y que es historia, no pronóstico.
+  - **Por qué la luz no sale de las barras (15 nov 2026):** las barras son toda la lluvia de cada año; la luz del agua usa la lluvia efectiva de un año seco, mes por mes (`precip_dry_mm`, «Cómo se califica cada señal» en `specs/01-reglas.md`). Por eso el agua puede salir roja con casi todas las barras por encima de la necesidad (en la prueba de la demo, papa en Duitama sembrada en octubre: 19 de 100 y «no alcanzó» en 2 de 27 años), y parecía un error. Una línea bajo la gráfica lo explica (`pages.diagnosis.WaterChart.lightUsesDryYear`). No cambia el cálculo ni el contrato (R5).
   - **Para leerla:** cada año dice sus cifras al pasar o tocar, y hay una tabla.
   - **Estados:** mientras carga, si falla o sin datos, lo dice; nunca una gráfica en cero. Un valor que no viene en la respuesta también es «sin dato».
   - **El tamaño:** la gráfica se dibuja al ancho real de la tarjeta (`web/src/hooks/useWidth.ts`), así que el texto mide lo mismo en el celular y en el escritorio. La gráfica del verdor (HU-215) pasó a dibujarse igual.

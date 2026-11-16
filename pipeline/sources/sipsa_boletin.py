@@ -31,6 +31,7 @@ from pipeline.sources import sipsa
 from pipeline.sources.fetch import fetch
 
 SOURCE_ID = "dane_sipsa_boletin"
+SOURCE_IDS = (SOURCE_ID,)  # todas las fuentes que este adaptador escribe en `sources`
 FILES_URL = "https://www.dane.gov.co/files/operaciones/SIPSA"
 PAGE_URL = (
     "https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa/"
