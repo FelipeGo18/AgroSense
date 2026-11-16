@@ -1,10 +1,11 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Map as MapLibreMap } from "maplibre-gl";
+import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GibsPanel } from "./GibsPanel";
 import { GIBS_LAYERS, gibsSample, gibsTiles, hasVisiblePixels, parseGibsDates, parseGibsEarliest } from "./gibs";
 import { mountGibsColor, mountGibsLayer } from "./gibsMap";
-import { useGibs } from "./useGibs";
+import { GIBS_COLOR_LOOKBACK_DAYS, previousDay, useGibs } from "./useGibs";
 
 // Fragmentos de ejemplo con la estructura del GetCapabilities verificado en HU-211; sin red en CI.
 const XML = `<Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:ows="http://www.opengis.net/ows/1.1"><Contents>${Object.entries(
@@ -19,6 +20,65 @@ const XML = `<Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:ows="ht
 function Panel() {
   return <GibsPanel gibs={useGibs()} />;
 }
+
+// El panel con el hook a mano, para avisar «sin imagen» como lo hace el mapa (`mountGibsColor`).
+const hook: { current?: ReturnType<typeof useGibs> } = {};
+function Harness() {
+  const gibs = useGibs();
+  useEffect(() => {
+    hook.current = gibs;
+  });
+  return <GibsPanel gibs={gibs} />;
+}
+async function openColor() {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => XML }));
+  render(<Harness />);
+  fireEvent.click(screen.getByText("Capas de la NASA"));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Imagen satelital" }));
+  await screen.findByText("Fecha de la imagen: 2026-11-15");
+}
+const EMPTY =
+  "No hay imagen para el centro de esta zona en la fecha elegida. Mostramos el mapa base. Pruebe una fecha anterior o mueva el mapa.";
+
+describe("HU-211 · sin imagen en la fecha más reciente", () => {
+  it("el día anterior se cuenta en UTC, también al cambiar de mes y de año", () => {
+    expect(previousDay("2026-11-16")).toBe("2026-11-15");
+    expect(previousDay("2026-03-01")).toBe("2026-02-28");
+    expect(previousDay("2027-01-01")).toBe("2026-12-31");
+  });
+
+  it("con la fecha por defecto, una vista sin imagen prueba el día anterior y lo dice", async () => {
+    await openColor();
+    act(() => hook.current!.onStatus("color", "empty"));
+    expect(screen.getByText("Fecha de la imagen: 2026-11-14")).toBeInTheDocument();
+    expect(screen.getByText(/No hay imagen de la NASA del 2026-11-15/)).toBeInTheDocument();
+    expect(screen.queryByText(EMPTY)).not.toBeInTheDocument();
+    expect(screen.getByText("Cargando imágenes de la NASA…")).toBeInTheDocument();
+  });
+
+  it(`se detiene a los ${GIBS_COLOR_LOOKBACK_DAYS} días y entonces dice que no hay imagen`, async () => {
+    await openColor();
+    for (let i = 0; i <= GIBS_COLOR_LOOKBACK_DAYS; i++) act(() => hook.current!.onStatus("color", "empty"));
+    expect(screen.getByText("Fecha de la imagen: 2026-11-10")).toBeInTheDocument();
+    expect(screen.getByText(EMPTY)).toBeInTheDocument();
+  });
+
+  it("una fecha que elige la persona no se cambia en silencio", async () => {
+    await openColor();
+    fireEvent.change(screen.getByLabelText("Fecha · Imagen satelital"), { target: { value: "2026-11-13" } });
+    act(() => hook.current!.onStatus("color", "empty"));
+    expect(screen.getByText("Fecha de la imagen: 2026-11-13")).toBeInTheDocument();
+    expect(screen.getByText(EMPTY)).toBeInTheDocument();
+    expect(screen.queryByText(/No hay imagen de la NASA del/)).not.toBeInTheDocument();
+  });
+
+  it("el verdor (NDVI) no cambia de fecha: es un compuesto de 8 días", async () => {
+    await openColor();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Verdor (NDVI)" }));
+    act(() => hook.current!.onStatus("ndvi", "empty"));
+    expect(screen.getByText("Compuesto móvil de 8 días · fecha GIBS: 2026-11-14")).toBeInTheDocument();
+  });
+});
 
 afterEach(() => {
   cleanup();
