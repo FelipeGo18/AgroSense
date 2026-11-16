@@ -1268,23 +1268,38 @@ def read_published(published: Path) -> tuple[dict[str, Any], dict[str, pl.DataFr
     return manifest, tables
 
 
-def merge_catalog_sources(
-    region: dict[str, Any], tables: dict[str, pl.DataFrame], catalog_sources: pl.DataFrame, rules_sources: pl.DataFrame
-) -> pl.DataFrame:
-    """`sources` de `--solo catalogo`: las filas publicadas que no son del catálogo ni de las reglas, más las filas nuevas de
-    los dos (R8). Una fila publicada no es del catálogo si la cita otra tabla, la escribe un adaptador o es la del gradiente
-    térmico de `region.yaml`: una fuente que el catálogo ya no trae y nadie más cita desaparece. Una sola fila por `source_id`."""
-    own = set(ADAPTERS)
-    if (lapse := region.get("temperature_lapse_rate")) is not None:
-        own.add(lapse["source"]["source_id"])
+def cited_by_catalog(tables: dict[str, pl.DataFrame]) -> set[str]:
+    """Los `source_id` que citan `crops`, `crop_stages` y `rotation_rules` publicadas (todas sus columnas `*source*`, sean
+    texto o lista): las fuentes que el catálogo y las reglas usaban."""
+    cited: set[str] = set()
+    for name in ("crops", "crop_stages", "rotation_rules"):
+        table = tables.get(name)
+        if table is None:
+            continue
+        for column in table.columns:
+            if "source" in column:
+                cited |= set(table[column].explode().drop_nulls().to_list())
+    return cited
+
+
+def merge_catalog_sources(tables: dict[str, pl.DataFrame], catalog_sources: pl.DataFrame, rules_sources: pl.DataFrame) -> pl.DataFrame:
+    """`sources` de `--solo catalogo`: las filas publicadas se conservan, salvo las que eran del catálogo, y se suman las
+    filas nuevas del catálogo y de las reglas (R8). Una fila publicada «era del catálogo» si la citaban `crops`,
+    `crop_stages` o `rotation_rules` publicadas y no la cita ninguna otra tabla; si el catálogo nuevo ya no la trae, se
+    borra. Todo lo demás se conserva: la de un adaptador, la de `region.yaml` (gradiente, aguaceros), la que cita otra
+    tabla y cualquiera de origen desconocido. Lo peor que pasa es que una fuente vieja del catálogo que ninguna ficha citaba
+    se quede; nunca se pierde una fila que no se sabe de quién es. Una sola fila por `source_id`."""
+    others: set[str] = set()
     for name, table in tables.items():
         if name in CATALOG_TABLES:
             continue
         for column in ("source_id", "source_ids"):
             if column in table.columns:
-                own |= set(table[column].explode().drop_nulls().to_list())
+                others |= set(table[column].explode().drop_nulls().to_list())
+    new_ids = set(catalog_sources["source_id"].to_list()) | set(rules_sources["source_id"].to_list())
+    dropped = (cited_by_catalog(tables) - others) - new_ids
+    kept = tables["sources"].filter(~pl.col("source_id").is_in(dropped) & ~pl.col("source_id").is_in(new_ids))
     new = pl.concat([catalog_sources, rules_sources], how="diagonal_relaxed")
-    kept = tables["sources"].filter(pl.col("source_id").is_in(own) & ~pl.col("source_id").is_in(new["source_id"].to_list()))
     return pl.concat([kept, new], how="diagonal_relaxed")
 
 
@@ -1350,7 +1365,7 @@ def publish_one(source: str, *, published: Path = PUBLISHED) -> dict[str, Any]:
         "crops": crops_table,
         "crop_stages": stages_table,
         "rotation_rules": rules_table,
-        "sources": sources_table(merge_catalog_sources(region, tables, catalog_sources, rules_sources)),
+        "sources": sources_table(merge_catalog_sources(tables, catalog_sources, rules_sources)),
     }
     # El conjunto completo: lo reconstruido y, de lo publicado, lo demás.
     full = {**tables, **built}

@@ -75,6 +75,12 @@ def fuente_nueva(catalogo):
     catalogo["sources"].append(copia)
 
 
+def citada_por_una_ficha(catalogo):
+    """Una fuente nueva que cita la ficha de la papa (en `tmean_min_c`): sale en `crops.source_ids`."""
+    fuente_nueva(catalogo)
+    next(c for c in catalogo["crops"] if c["crop_id"] == "papa")["tmean_min_c"]["s"] = "ejemplo_fuente_nueva"
+
+
 def escribir_manifiesto(folder, manifest):
     (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 
@@ -222,10 +228,12 @@ def test_las_fuentes_que_no_son_del_catalogo_quedan_iguales_y_ninguna_se_repite(
 
 
 def test_una_fuente_que_se_quita_del_catalogo_desaparece_de_sources(tmp_path, caches, monkeypatch):  # noqa: F811
+    """Era del catálogo: una ficha la citaba. Al quitarla (con su cita) y nadie más citarla, sale de `sources`."""
     real = crops_catalog.load
-    cambiar_catalogo(monkeypatch, fuente_nueva)
+    cambiar_catalogo(monkeypatch, citada_por_una_ficha)
     folder = rebuild(tmp_path, caches)
     assert "ejemplo_fuente_nueva" in fuentes_por_id(folder)
+    assert "ejemplo_fuente_nueva" in set(pl.read_parquet(folder / "crops.parquet")["source_ids"].explode().drop_nulls())
     antes = fuentes_por_id(folder)
 
     monkeypatch.setattr(build.crops_catalog, "load", real)  # vuelve el catálogo real, sin la fuente
@@ -554,14 +562,42 @@ def publicar_con_otra_nota(publicado, monkeypatch):
     return fuentes_por_id(publicado)
 
 
-def test_la_fila_de_un_adaptador_que_nadie_cita_se_conserva_y_una_huerfana_se_borra(publicado, monkeypatch):
-    con_fuentes(publicado, "eva", "ejemplo_huerfana")  # `eva` es un adaptador; ninguna tabla cita ninguna de las dos
+def test_la_fila_de_un_adaptador_y_la_de_origen_desconocido_que_nadie_cita_se_conservan(publicado, monkeypatch):
+    # `eva` es un adaptador; la otra no es de ninguno, no es del catálogo y ninguna tabla la cita. Ninguna se pierde.
+    con_fuentes(publicado, "eva", "ejemplo_de_origen_desconocido")
     antes = fuentes_por_id(publicado)
 
     despues = publicar_con_otra_nota(publicado, monkeypatch)
 
     assert despues["eva"] == antes["eva"]
-    assert "ejemplo_huerfana" not in despues
+    assert despues["ejemplo_de_origen_desconocido"] == antes["ejemplo_de_origen_desconocido"]
+
+
+def test_una_fuente_vieja_del_catalogo_que_ninguna_ficha_citaba_se_queda(tmp_path, caches, monkeypatch):  # noqa: F811
+    """El límite de la regla: sin cita en `crops`, `crop_stages` ni `rotation_rules`, nada publicado dice que era del
+    catálogo, así que se conserva (lo peor es que una fuente de más se quede; R8 no se rompe)."""
+    real = crops_catalog.load
+    cambiar_catalogo(monkeypatch, fuente_nueva)
+    folder = rebuild(tmp_path, caches)
+    monkeypatch.setattr(build.crops_catalog, "load", real)
+    monkeypatch.setattr(build, "load_region", lambda: {**REGION, "dataset_version": VERSION_NUEVA})
+
+    build.publish_one("catalogo", published=folder)
+
+    assert "ejemplo_fuente_nueva" in fuentes_por_id(folder)
+
+
+def test_la_fila_del_aguacero_de_region_yaml_se_conserva_aunque_ninguna_tabla_la_cite(publicado, monkeypatch):
+    heavy = yaml.safe_load((Path(build.__file__).parent / "region.yaml").read_text(encoding="utf-8"))["heavy_rain"]["source"]
+    assert heavy["source_id"] == "etccdi_indices"
+    if heavy["source_id"] not in fuentes_por_id(publicado):
+        con_fuentes(publicado, heavy["source_id"])
+    antes = fuentes_por_id(publicado)[heavy["source_id"]]
+    assert heavy["source_id"] not in {s["source_id"] for s in crops_catalog.load()["sources"]}
+
+    despues = publicar_con_otra_nota(publicado, monkeypatch)
+
+    assert despues[heavy["source_id"]] == antes
 
 
 def test_la_fila_del_gradiente_termico_de_region_yaml_se_conserva(publicado, monkeypatch):
@@ -589,3 +625,25 @@ def test_una_fuente_que_el_catalogo_ya_no_trae_pero_otra_tabla_cita_se_conserva(
 
     assert fuentes_por_id(folder)["ejemplo_fuente_nueva"] == antes
     build.verify(folder, VERSION_NUEVA)
+
+
+def test_solo_catalogo_con_la_region_real_y_su_aguacero_da_lo_mismo_que_la_construccion_completa(tmp_path, caches, monkeypatch):  # noqa: F811
+    """Con `heavy_rain` y las fuentes de `pipeline/region.yaml` (los de la región real, no los de ejemplo). La construcción
+    completa de las pruebas no tiene caché de clima y no publica la fila del aguacero (solo entra si se calcularon aguaceros),
+    así que a lo publicado se le suma esa fila y se compara contra la completa más esa fila: `--solo` no la pierde."""
+    real = yaml.safe_load((Path(build.__file__).parent / "region.yaml").read_text(encoding="utf-8"))
+    region = {**REGION, "heavy_rain": real["heavy_rain"], "temperature_lapse_rate": real["temperature_lapse_rate"]}
+    monkeypatch.setattr(build, "load_region", lambda: region)
+    solo = rebuild(tmp_path / "solo", caches)
+    con_fuentes(solo, "etccdi_indices")
+    fila = fuentes_por_id(solo)["etccdi_indices"]
+    cambiar_catalogo(monkeypatch, con_nota(primera_fuente_del_catalogo(), "Ejemplo: nota nueva."))
+    monkeypatch.setattr(build, "load_region", lambda: {**region, "dataset_version": VERSION_NUEVA})
+    completo = rebuild(tmp_path / "completo", caches)
+
+    build.publish_one("catalogo", published=solo)
+
+    tablas = lambda folder: {k: v for k, v in sha_de_tablas(folder).items() if k != "sources.parquet"}  # noqa: E731
+    assert tablas(solo) == tablas(completo)
+    esperadas = {**fuentes_por_id(completo), "etccdi_indices": fila}
+    assert fuentes_por_id(solo) == esperadas
