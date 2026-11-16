@@ -65,7 +65,19 @@ jobs:
           # La revisión que sirve hoy (no la última creada: tras volver atrás, la última es la que falló).
           previous="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json | jq -r '[.status.traffic[] | select(.percent == 100) | .revisionName][0] // empty')"
           echo "previous=$previous" >> "$GITHUB_OUTPUT"
+          # La última revisión creada antes de desplegar: la de este despliegue tiene que ser otra. No se le pone nombre
+          # (`--revision-suffix`): Terraform ignora el nombre de la revisión y en su próximo `apply` volvería a mandarlo.
+          before="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.latestCreatedRevisionName)')"
           gcloud run services update "$SERVICE" --image "$IMAGE" --region "$REGION" --quiet
+          revision="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.latestReadyRevisionName)')"
+          # Al repetir la corrida del mismo commit después de volver atrás, la plantilla ya tenía esta imagen y Cloud Run
+          # no crea otra revisión: la última ya es la de este commit. La plantilla guarda la etiqueta tal cual.
+          template="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(spec.template.spec.containers[0].image)')"
+          if [ "$revision" = "$before" ] && [ "$template" != "$IMAGE" ]; then
+            echo "::error::No quedó lista una revisión con la imagen de este commit: la última sigue siendo $before"
+            exit 1
+          fi
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
           # Si un despliegue anterior volvió atrás, el tráfico quedó fijo en esa revisión: se devuelve a la nueva.
           gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest --quiet
           echo "url=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"
@@ -73,14 +85,16 @@ jobs:
       - name: Comprobar la dirección pública
         env:
           URL: ${{ steps.deploy.outputs.url }}
+          REVISION: ${{ steps.deploy.outputs.revision }}
         run: |
-          # La que sirve es la revisión de este commit: la última lista usa esta imagen y tiene todo el tráfico.
+          # La que sirve es la revisión de este despliegue: sigue siendo la última lista y tiene todo el tráfico. Se compara
+          # por nombre y no por la imagen: Cloud Run guarda el digest del manifiesto de su plataforma, que no es el que
+          # muestra `docker push` (GitHub sube un índice con varias entradas).
           described="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json)"
           latest="$(jq -r '.status.latestReadyRevisionName' <<<"$described")"
           serving="$(jq -r '[.status.traffic[] | select(.percent == 100) | .revisionName][0] // empty' <<<"$described")"
-          latest_image="$(gcloud run revisions describe "$latest" --region "$REGION" --format='value(spec.containers[0].image)')"
-          if [ "$latest_image" != "$IMAGE" ] || [ "$serving" != "$latest" ]; then
-            echo "::error::La revisión que sirve ($serving) no es la de este commit ($latest, con $latest_image)"
+          if [ "$latest" != "$REVISION" ] || [ "$serving" != "$REVISION" ]; then
+            echo "::error::Debía servir $REVISION; la última lista es $latest y la que tiene el tráfico, $serving"
             exit 1
           fi
           for _ in 1 2 3 4 5; do
