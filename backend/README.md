@@ -414,6 +414,75 @@ Solo el dueño puede hacerlo (*Settings* del repositorio):
 3. Opcional: exigir la revisión de los dueños del código (`.github/CODEOWNERS`): los cambios de migraciones son cambios
    de contrato y los revisan Haider o Felipe.
 
+## Producción en Google Cloud (HU-023, HU-234, HU-235)
+
+La infraestructura está en `infra/` (Terraform), en el proyecto `agrosense-prod-2026`, región `us-east1`, en la capa
+gratuita:
+
+- **Cloud Run** `agrosense`: la imagen `produccion` del `Dockerfile` (la API y el build de la web en el mismo origen,
+  `AGROSENSE_WEB_DIR`). Escala a 0 y llega hasta 2 instancias; `min_instances = 1` solo durante el juzgamiento (sale del
+  crédito).
+  - **La web** se sirve como pide `web/README.md`: las páginas dibujadas en el build, `app.html` para las demás rutas, un
+    404 para un archivo que no existe (un trozo viejo después de un despliegue), caché larga para `assets/`, el HTML
+    siempre revisado, todo comprimido con gzip y con su propia Content-Security-Policy (`backend/api/main.py`). Lo que
+    empieza por `/api/` responde igual que sin la web.
+  - **Detrás del frente de Google:** `FORWARDED_ALLOW_IPS=*` para ver `https`, y `AGROSENSE_BEHIND_PROXY=true` para que
+    la IP de los límites de intentos sea la última de `X-Forwarded-For`, la que agrega Google (las anteriores las escribe
+    quien llama). Los límites viven en la memoria de cada instancia: con dos instancias, cada una cuenta los suyos.
+  - **`WEB_ORIGINS`** siempre lleva la dirección de Cloud Run (y el dominio propio con HU-236, `web_origins`): sin ella
+    valdría `http://localhost:5173`.
+  - **Precios:** en producción no corre el servicio `market` (HU-222); `/precios` muestra los del dataset publicado.
+- **La base:** PostgreSQL 17 en una VM e2-micro (`agrosense-db`), sin puerto público: solo Cloud Run llega al 5432, por la
+  red privada y con SSL. Cloud SQL no tiene capa gratuita. Los datos viven en el disco de arranque de la VM, así que la
+  VM tiene `deletion_protection` y `prevent_destroy`: ni Terraform ni la consola la borran sin quitarlos a propósito.
+- **Las copias** van al bucket privado `agrosense-prod-2026-copias`, fuera de la VM, y se borran a los 7 días:
+  - `antes-de-migrar/`: la de antes de cada migración. El job la sube (`AGROSENSE_BACKUP_BUCKET`) y, si no puede, no
+    migra.
+  - `diarias/`: la de cada día a las 3:30 (UTC de la VM), con `pg_dump` en la VM (`/usr/local/bin/agrosense-backup`, que
+    también deja 7 días en `/var/backups/agrosense`).
+  - La VM y el job solo pueden **subir** copias, no leerlas ni borrarlas. Para restaurar, un responsable la baja con su
+    cuenta (`gcloud storage cp gs://agrosense-prod-2026-copias/<copia> .`), la pasa a la VM (`gcloud compute scp <copia>
+    agrosense-db:/tmp --zone us-east1-b --tunnel-through-iap`) y la carga allí con `pg_restore`.
+- **Secretos:** la cadena de conexión está en Secret Manager (`agrosense-database-url`); la clave la genera Terraform y
+  queda en su estado, que está en el bucket privado `agrosense-prod-2026-tfstate` (`infra/backend.tf`), nunca en git.
+- **Migraciones:** el job `agrosense-migrate` (`python -m backend.db.migrate`, con la copia antes) corre antes de cada
+  despliegue; el servicio no migra al arrancar (`AGROSENSE_AUTO_MIGRATE=false`).
+
+**Desplegar.** Al fusionar en `produccion`, `.github/workflows/deploy-produccion.yml` construye la imagen, la sube a
+Artifact Registry, migra (con la copia), despliega y comprueba que sirve la revisión de ese commit y que responden
+`/api/v1/version`, `/` y `/api/v1/health` con las cuentas disponibles; si algo falla, vuelve a la revisión anterior y
+termina en rojo. Se identifica con Workload Identity Federation (sin llaves), solo desde la rama `produccion` de este
+repositorio (por nombre y por su identificador numérico). En cada PR que cambie el `Dockerfile`, la web o el diseño, el
+CI construye la misma imagen (job `produccion` de `ci.yml`).
+
+**Lo que configura el dueño del repositorio** (*Settings*):
+
+1. El entorno `produccion`, con la aprobación de Felipe o Haider antes de desplegar, y sus variables
+   `GCP_WIF_PROVIDER` y `GCP_DEPLOY_SA` (las salidas de `terraform output`).
+2. La regla de la rama `produccion`: los mismos checks obligatorios que `desarrollo` (`hu`, `python`, `web`, `Revisar
+   migraciones`).
+
+**Cambiar la infraestructura:** `cd infra && terraform plan && terraform apply`, con `gcloud auth application-default
+login` en el proyecto y la cuenta de facturación en `infra/terraform.tfvars` (copia de `terraform.tfvars.example`, fuera
+de git). **Volver atrás a mano:** `gcloud run services update-traffic agrosense --region us-east1
+--to-revisions <revisión>=100` (Terraform no toca el tráfico). **Entrar a la VM:** `gcloud compute ssh agrosense-db
+--zone us-east1-b --tunnel-through-iap`.
+
+**El estado de Terraform, la primera vez** (quien tiene hoy el estado local, una sola vez):
+
+```bash
+gcloud storage buckets create gs://agrosense-prod-2026-tfstate --project agrosense-prod-2026 --location us-east1 --uniform-bucket-level-access --public-access-prevention
+gcloud storage buckets update gs://agrosense-prod-2026-tfstate --versioning
+cd infra && terraform init -migrate-state
+```
+
+Después, `terraform plan` crea el bucket de copias y sus permisos, protege la VM y cambia las variables del servicio y del
+job. El script de la VM (`infra/db-startup.sh`) corre en cada arranque: para que la copia diaria suba al bucket sin
+reiniciar, se corre una vez en la VM con `sudo google_metadata_script_runner startup`.
+
+**Falta (HU-235):** los logs para Cloud Logging (`severity`, `message` y el trace en `common/logging.py`): hasta entonces
+Cloud Logging marca cada línea como `DEFAULT`.
+
 ## Carpetas
 
 ```
