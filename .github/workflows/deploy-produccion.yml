@@ -69,12 +69,29 @@ jobs:
           # (`--revision-suffix`): Terraform ignora el nombre de la revisión y en su próximo `apply` volvería a mandarlo.
           before="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.latestCreatedRevisionName)')"
           gcloud run services update "$SERVICE" --image "$IMAGE" --region "$REGION" --quiet
-          revision="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.latestReadyRevisionName)')"
+          # Cuando el tráfico quedó fijo en otra revisión (después de volver atrás), `update` termina antes de que el
+          # servicio actualice su estado: leído enseguida, todavía nombra la revisión vieja (corrida 43778389154). Se
+          # espera hasta 5 minutos a que el servicio aplique el cambio y a que la última creada sea también la última
+          # lista.
+          for _ in $(seq 60); do
+            described="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json)"
+            if jq -e '.status.observedGeneration == .metadata.generation
+              and .status.latestReadyRevisionName == .status.latestCreatedRevisionName' <<<"$described" > /dev/null; then
+              break
+            fi
+            sleep 5
+          done
+          revision="$(jq -r '.status.latestCreatedRevisionName' <<<"$described")"
+          ready="$(jq -r '.status.latestReadyRevisionName' <<<"$described")"
+          if [ "$ready" != "$revision" ]; then
+            echo "::error::La revisión nueva ($revision) no quedó lista; la última lista es $ready"
+            exit 1
+          fi
           # Al repetir la corrida del mismo commit después de volver atrás, la plantilla ya tenía esta imagen y Cloud Run
           # no crea otra revisión: la última ya es la de este commit. La plantilla guarda la etiqueta tal cual.
-          template="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(spec.template.spec.containers[0].image)')"
+          template="$(jq -r '.spec.template.spec.containers[0].image' <<<"$described")"
           if [ "$revision" = "$before" ] && [ "$template" != "$IMAGE" ]; then
-            echo "::error::No quedó lista una revisión con la imagen de este commit: la última sigue siendo $before"
+            echo "::error::No se creó una revisión con la imagen de este commit: la última sigue siendo $before"
             exit 1
           fi
           echo "revision=$revision" >> "$GITHUB_OUTPUT"
