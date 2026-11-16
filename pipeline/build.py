@@ -1412,6 +1412,17 @@ def replace_atomically(published: Path, new_tables: dict[str, pl.DataFrame], man
         backup.unlink(missing_ok=True)
 
 
+def _version_is_greater(new: str, published: str) -> bool:
+    """`new` es mayor que `published`, por partes numéricas (`2026.11.29` > `2026.11.28`). Si alguna no tiene partes numéricas
+    y no se pueden comparar, solo es «no mayor» cuando son iguales."""
+    if new == published:
+        return False
+    a, b = re.findall(r"\d+", new), re.findall(r"\d+", published)
+    if not a or not b:
+        return True
+    return [int(x) for x in a] > [int(x) for x in b]
+
+
 def publish_one(source: str, *, published: Path = PUBLISHED, cache: Path | None = None) -> dict[str, Any]:
     """`pipeline.build --solo <fuente>` (HU-238, parte 1): reconstruye las tablas de una fuente y deja las demás como están
     en `published`. Hoy: `catalogo`, `ndvi`, `oferta` y `precios`. Devuelve el manifiesto de lo publicado (el nuevo, o el de
@@ -1420,8 +1431,9 @@ def publish_one(source: str, *, published: Path = PUBLISHED, cache: Path | None 
     Arma las tablas con las mismas funciones que `build` (`catalog_tables`, `ndvi_from_cache`, `supply_from_cache`,
     `sipsa_from_cache`) y corre las mismas validaciones sobre el conjunto completo (`validate_dataset`, el esquema de cada tabla
     y `check_signal_sources`). Compara los datos de lo armado con lo publicado (mismo esquema tipado y mismas filas en el mismo
-    orden, no los bytes: otro escritor de Parquet no es un cambio): sin cambios no escribe nada; con cambios y la misma
-    `dataset_version`, falla; con cambios y una versión nueva, reescribe solo las tablas que cambiaron y el manifiesto (R4)."""
+    orden, no los bytes: otro escritor de Parquet no es un cambio): sin cambios no escribe nada; con cambios y una
+    `dataset_version` que no es mayor que la publicada, falla; con cambios y una
+    versión mayor, reescribe solo las tablas que cambiaron y el manifiesto (R4)."""
     if source in FUTURE_SOLO_SOURCES:
         raise ValidationError(f"`--solo {source}`: no implementado en este PR; por ahora: {', '.join(SOLO_SOURCES)}.")
     if source not in SOLO_SOURCES:
@@ -1519,10 +1531,10 @@ def publish_one(source: str, *, published: Path = PUBLISHED, cache: Path | None 
         log.info("dataset_unchanged", source=source, detail=f"`--solo {source}`: nada cambió en {published}; no se escribe nada")
         return manifest
     version = region["dataset_version"]
-    if version == manifest["dataset_version"]:
+    if not _version_is_greater(version, manifest["dataset_version"]):
         raise ValidationError(
-            f"`--solo {source}` cambia {', '.join(sorted(changed))} pero `dataset_version` sigue siendo {version}: suba "
-            "`dataset_version` en pipeline/region.yaml (R4)."
+            f"`--solo {source}` cambia {', '.join(sorted(changed))} pero `dataset_version` de pipeline/region.yaml es {version} "
+            f"y lo publicado es {manifest['dataset_version']}: tiene que ser mayor. Suba `dataset_version` o traiga `desarrollo` (R4)."
         )
     typed = {name: schema.typed(name, table) for name, table in built.items()}
     if source == "catalogo":

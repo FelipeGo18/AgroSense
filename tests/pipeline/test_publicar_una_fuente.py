@@ -294,6 +294,20 @@ def test_misma_version_con_cambios_falla_y_no_escribe_nada(publicado, monkeypatc
     assert sha_de_todo(publicado) == antes
 
 
+def test_version_menor_con_cambios_falla_y_no_escribe_nada(publicado, monkeypatch):
+    """Una rama atrasada no publica su versión vieja encima de la nueva (R4)."""
+    datos = manifiesto(publicado)
+    datos["dataset_version"] = "2026.11.29"  # lo publicado ya es más nuevo que la versión de `region.yaml`
+    (publicado / "manifest.json").write_text(json.dumps(datos), encoding="utf-8")
+    antes = sha_de_todo(publicado)
+    cambiar_catalogo(monkeypatch, con_nota(primera_fuente_del_catalogo(), "Ejemplo: nota nueva."), version="2026.11.28")
+
+    with pytest.raises(build.ValidationError, match=r"2026\.11\.28.*2026\.11\.29"):
+        build.publish_one("catalogo", published=publicado)
+
+    assert sha_de_todo(publicado) == antes
+
+
 def fechas_de(folder):
     return {path.name: path.stat().st_mtime_ns for path in sorted(folder.iterdir())}
 
