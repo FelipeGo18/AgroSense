@@ -35,6 +35,10 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# HU-121: un caso que espera otra HU lleva `xfail(strict=True)`; con `strict` pasa a fallar cuando esa HU lo hace pasar, y `-rx`
+# lista los pendientes con su HU en el resumen.
+xfail_strict = true
+addopts = "-rx"
 
 [tool.ruff]
 line-length = 140

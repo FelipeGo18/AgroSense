@@ -79,7 +79,7 @@ Lo que sostiene esas notas:
 - **Cada página carga solo lo suyo** (todas las rutas son `lazy`) y los paisajes van como imagen, no dentro del JavaScript.
 - **El movimiento se carga aparte** (HU-158): GSAP, ScrollTrigger y Lenis (unos 48 kB comprimidos) están en su propio trozo (`src/lib/motion.ts`). En modo ligero no se descargan; con movimiento se piden junto con la aplicación. `npm run test:motion` lo comprueba sobre el build.
 
-**Qué debe hacer el alojamiento:** servir `dist/` comprimido (gzip o brotli) y con caché larga para `/assets`; entregar `index.html` para `/`, y `entrar/index.html` y `politica-de-datos/index.html` para sus rutas; y para cualquier otra ruta de la aplicación, **`app.html`** (el cascarón vacío), no `index.html`. Si entrega el HTML de otra ruta no se rompe nada (la aplicación lo nota y dibuja de cero), pero se pierde la ventaja.
+**Qué debe hacer el alojamiento:** servir `dist/` comprimido (gzip o brotli) y con caché larga para `/assets`; entregar `index.html` para `/`, y `entrar/index.html` y `politica-de-datos/index.html` para sus rutas; y para cualquier otra ruta de la aplicación, **`app.html`** (el cascarón vacío), no `index.html`. Si entrega el HTML de otra ruta no se rompe nada (la aplicación lo nota y dibuja de cero), pero se pierde la ventaja. En producción lo hace la API, que sirve la web en el mismo origen (`install_web` en `backend/api/main.py`, HU-023), con su Content-Security-Policy: un recurso nuevo de otro origen (como las teselas del mapa de OpenFreeMap) se agrega ahí, o el navegador lo bloquea.
 
 ## Variables de entorno
 
@@ -166,6 +166,26 @@ Las reglas largas están en `.claude/skills/vercel-react-best-practices` y `.cla
 10. **Nunca solo color.** Un estado lleva silueta, ícono y texto; «sin datos» no se pinta como riesgo (R1).
 11. **Sin lógica de decisión en el cliente.** El semáforo y el orden vienen de la API.
 12. **Cada pieza con su prueba** de lo que promete (Vitest y Testing Library, por rol y por texto).
+
+## Capas NASA del mapa (HU-211)
+
+El panel «Capas de la NASA» de `LotMap` funciona al crear/editar el contorno, en el detalle y en Mi finca.
+Ambas capas empiezan apagadas. Al activar una se consulta `GetCapabilities` (máximo 15 s) y se usa la fecha
+publicada de cada producto, nunca una fecha supuesta. El NDVI de GIBS es un compuesto móvil de 8 días,
+distinto de las series MOD13Q1 del motor. No se envía el polígono a NASA: el navegador pide teselas públicas.
+Una capa con error o sin respuesta en 20 s se retira y ofrece reintentar; OpenStreetMap y Terra Draw siguen funcionando.
+La imagen de color real se comprueba en el centro del mapa antes de mostrarla y al terminar de moverlo:
+si los píxeles consultados son negros, se conserva el mapa base y se avisa que no hay imagen útil para esa zona y fecha.
+El selector de fecha permite buscar otro día de forma explícita; reintentar conserva la fecha elegida.
+Al ampliar más allá del nivel 9 se amplían los píxeles existentes, sin suavizarlos para simular detalle.
+Pruebas: `src/components/map/gibs.test.tsx` y regresión en `src/pages/farm/farm.test.tsx`, dentro de Docker:
+
+```bash
+docker compose run --rm --no-deps test sh -c 'cd web && npm test -- src/components/map/gibs.test.tsx src/pages/farm/farm.test.tsx'
+```
+
+Procedencia compartida con el pipeline: `catalog/gibs.json`; se publica solo con la reconstrucción normal
+(`pipeline.build`), que es el único camino de publicación (R4).
 
 ## Pruebas de scroll
 

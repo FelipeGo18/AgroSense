@@ -187,7 +187,12 @@ def _close_cookie(response: Response, settings: Settings) -> None:
 
 def _client_ip(request: Request) -> str:
     """La IP de quien llama. Solo se usa en memoria, como llave de los límites, y nunca se guarda ni se escribe (R9).
-    Detrás de un proxy, Uvicorn la toma de `X-Forwarded-For` solo si el proxy está en `FORWARDED_ALLOW_IPS`."""
+    Detrás del frente de Google (`AGROSENSE_BEHIND_PROXY`), la última de `X-Forwarded-For`: la que agrega Google. Las
+    anteriores las pone quien llama, así que no sirven de llave (HU-023)."""
+    if get_settings().behind_proxy:
+        forwarded = [host.strip() for host in request.headers.get("x-forwarded-for", "").split(",") if host.strip()]
+        if forwarded:
+            return forwarded[-1]
     return request.client.host if request.client else "sin-ip"
 
 

@@ -15,9 +15,10 @@ uv run python -m pipeline.build --traer-cache # antes de publicar, trae la cach�
 Para que todos construyan el dataset desde la misma caché, cada carpeta de `data/raw/` se guarda como un archivo en la
 *release* `cache-datos` del repositorio, y `pipeline/raw_cache.json` (en git) dice cuál usa cada fuente.
 
-**Todavía no hay caché compartida** (15 nov 2026): `raw_cache.json` y la *release* los crea la primera subida, que
-hace quien tenga la caché de cada fuente (HU-237). Mientras tanto, `traer` sin carpetas no baja nada, y
-`pipeline.build --traer-cache` construye con la caché local de quien lo corre.
+**La caché compartida ya está** (primera subida el 15 de noviembre de 2026, PR #187): las 8 carpetas de `FOLDERS`
+(dane, eva, imerg, modis_ndvi, nasa_power, nasadem, sipsa y soilgrids) están en la *release* `cache-datos`, y con
+ellas `pipeline.build` da el dataset publicado. `traer` no pide token. Quien baje fuentes nuevas las vuelve a subir
+con `subir` y lleva el `raw_cache.json` nuevo en su PR.
 
 ```bash
 uv run python -m pipeline.raw_cache estado            # qué carpetas de data/raw/ están al día con raw_cache.json
@@ -68,7 +69,7 @@ uv run python -m pipeline.raw_cache subir imerg       # empaqueta data/raw/imerg
 | `municipalities` (con la altitud y la pendiente de NASADEM y la altura de su celda de NASA POWER) | DIVIPOLA del DANE en datos.gov.co, CC BY-SA 4.0 (`pipeline/sources/dane.py`), NASADEM y NASA POWER | HU-044, HU-206, HU-041 |
 | `climate_day` | NASA POWER, API diaria por punto (`pipeline/sources/nasa_power.py`), corregida por la altitud de NASADEM. Es un reanálisis | HU-041 |
 | `climate_month` | NASA POWER: la lluvia de cada mes completo de la celda del municipio, su normal 1991–2020 y su año seco, la ET0 por Penman-Monteith de FAO-56 con su normal (HU-143) y la humedad del suelo de un modelo, de 0 a 1 (HU-205). Es un reanálisis y en el altiplano da más lluvia que el IDEAM | HU-042 |
-| `climate_risk_month` y `climate_frost_month` | Desde `climate_day` (`pipeline/climate_risk.py`): por mes, el porcentaje de años con helada (mínima ≤ 2 °C, el criterio del ZARC), los días de helada y la máxima que se supera uno de cada diez días, en 1991–2020; y los días de helada de cada mes de cada año, para la señal de heladas | HU-045 |
+| `climate_risk_month` y `climate_frost_month` | Desde `climate_day` (`pipeline/climate_risk.py`): por mes, el porcentaje de años con helada (mínima ≤ 2 °C, el criterio del ZARC), los días de helada y la máxima que se supera uno de cada diez días, en 1991–2020; y los días de helada de cada mes de cada año, para la señal de heladas. Desde HU-046, los días de aguacero de cada mes (lluvia de POWER ≥ 20 mm, R20mm de ETCCDI, `heavy_rain` en `region.yaml`); las ventanas secas y la gota siguen nulas | HU-045, HU-046 |
 | `climate_change_month` | «Qué cambió» (`pipeline/climate_change.py`): por municipio, periodo y mes, las heladas, la máxima p90 y la lluvia normal de dos periodos de NASA POWER, y la lluvia normal de dos periodos de GPM IMERG, en filas aparte. Los periodos están en `region.yaml` (`change_periods`) y el manifiesto los lista | HU-216 |
 | `precip_month` | GPM IMERG mensual, corrida final V07 (`pipeline/sources/imerg.py`): la lluvia de cada mes por municipio, promedio de sus celdas de 0,1° ponderado por área, con su normal 2001–2024 y su año seco. Pide cuenta de NASA Earthdata (`AGROSENSE_EARTHDATA_TOKEN`); sin la caché se publica lo demás y el log dice `source_missing` | HU-207 |
 | `ndvi_municipality` y `ndvi_municipality_normal` | MODIS NDVI de Terra, MOD13Q1 V061 (`pipeline/sources/modis_ndvi.py`): la mediana del NDVI de los píxeles sin nubes de cada municipio, cada 16 días desde 2023, y su promedio 2023–2025. Es de todo el municipio, sin máscara de cultivos (R10). Pide cuenta de NASA Earthdata; sin la caché se publica lo demás | HU-208 |

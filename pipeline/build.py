@@ -47,6 +47,8 @@ from pipeline.settings import get_settings
 from pipeline.sources import dane, dane_mgn, eva, imerg, modis_ndvi, nasa_power, nasadem, sipsa, sipsa_boletin, soilgrids
 
 REGION_FILE = Path(__file__).with_name("region.yaml")
+# HU-211: la fuente de las capas de NASA GIBS que consume la web, relativa al módulo y no a la carpeta desde donde se corre.
+GIBS_FILE = Path(__file__).resolve().parents[1] / "catalog" / "gibs.json"
 CROPS_FILE = Path(__file__).with_name("sipsa_crops.yaml")
 EVA_CROPS_FILE = Path(__file__).with_name("eva_crops.yaml")
 PUBLISHED = Path("data/published")
@@ -419,6 +421,20 @@ def validate_supply(supply: pl.DataFrame, municipalities: pl.DataFrame, sources:
         raise ValidationError(f"`supply_semester`: la participación de un departamento no suma 100: {share.head(3).to_dicts()}")
 
 
+def validate_heavy_rain(risk: pl.DataFrame, sources: pl.DataFrame, threshold_source: str | None) -> None:
+    """Los aguaceros de `climate_risk_month` (HU-046): si hay alguno, el umbral de `region.yaml` cita una fuente que está
+    en `sources` (R8), y los días de aguacero de un mes caben en el mes (de 0 a 31)."""
+    if risk.is_empty() or risk["heavy_rain_days_mean"].is_null().all():
+        return
+    if threshold_source is None or threshold_source not in set(sources["source_id"].to_list()):
+        raise ValidationError(
+            f"El umbral de aguacero de pipeline/region.yaml (`heavy_rain.source`: {threshold_source!r}) no está en `sources` (R8)."
+        )
+    bad = risk.filter(~pl.col("heavy_rain_days_mean").is_between(0, 31))
+    if not bad.is_empty():
+        raise ValidationError(f"`climate_risk_month` con días de aguacero imposibles: {bad.head(3).to_dicts()}")
+
+
 def validate_grid(grid: pl.DataFrame, municipalities: pl.DataFrame, sources: pl.DataFrame) -> None:
     """`grid_cells` solo trae celdas de municipios publicados (R7), un suelo posible en las celdas que lo tienen (las
     mismas comprobaciones de `soil_municipality`: el suelo del lote, HU-182, lee las celdas) y fuentes que existen (R8)."""
@@ -523,6 +539,7 @@ def publish(
         validate_change(change, municipalities, sources, change_periods)
     if has_frost:
         validate_frost(frost[0], frost[1], municipalities, sources, climate_risk.frost_source(region))
+        validate_heavy_rain(frost[0], sources, (climate_risk.heavy_rain_source(region) or {}).get("source_id"))
     has_grid = grid is not None and not grid.is_empty()
     if has_grid:
         validate_grid(grid, municipalities, sources)
@@ -834,9 +851,10 @@ def supply_from_cache(
 
 def climate_from_cache(
     region: dict[str, Any], municipalities: pl.DataFrame, cache: Path
-) -> tuple[pl.DataFrame, pl.DataFrame | None, pl.DataFrame | None, list[dict[str, Any]]]:
+) -> tuple[pl.DataFrame, pl.DataFrame | None, pl.DataFrame | None, pl.DataFrame | None, list[dict[str, Any]]]:
     """El clima de NASA POWER (HU-041, HU-042): los municipios con la altura de su celda, `climate_day`,
-    `climate_month` y sus fuentes.
+    `climate_month`, la lluvia diaria de cada municipio (no se publica: con ella salen los aguaceros, HU-046) y sus
+    fuentes.
 
     Sin la caché de POWER devuelve los municipios como estaban, sin clima y sin fuentes nuevas: lo demás se publica igual.
     """
@@ -844,7 +862,7 @@ def climate_from_cache(
         series, meta = nasa_power.read_cache(nasa_power.cells(municipalities), cache)
     except FileNotFoundError as error:
         log.warning("source_missing", source=nasa_power.SOURCE_ID, detail=f"Se publica sin el clima de NASA POWER: {error}")
-        return municipalities, None, None, []
+        return municipalities, None, None, None, []
     municipalities = nasa_power.with_cell_elevation(municipalities, meta["elevations"])
     lapse = region.get("temperature_lapse_rate")
     climate = nasa_power.climate_day(series, municipalities, lapse)
@@ -868,7 +886,7 @@ def climate_from_cache(
         )
     if lapse is None:
         log.warning("climate_not_corrected", table="climate_day", detail="region.yaml no trae temperature_lapse_rate")
-    return municipalities, climate, month, sources
+    return municipalities, climate, month, nasa_power.rain_day(series, municipalities), sources
 
 
 def precip_from_cache(region: dict[str, Any], boundaries: pl.DataFrame, cache: Path) -> tuple[pl.DataFrame | None, list[dict[str, Any]]]:
@@ -930,8 +948,12 @@ def ndvi_from_cache(
     return (table, normal), [modis_ndvi.source(table, meta, config)]
 
 
-def frost_tables(region: dict[str, Any], climate: pl.DataFrame | None) -> tuple[pl.DataFrame, pl.DataFrame] | None:
-    """Las heladas y la máxima por mes (HU-045): `climate_risk_month` y `climate_frost_month`, desde `climate_day`.
+def frost_tables(
+    region: dict[str, Any], climate: pl.DataFrame | None, rain: pl.DataFrame | None = None
+) -> tuple[pl.DataFrame, pl.DataFrame] | None:
+    """Las heladas y la máxima por mes (HU-045): `climate_risk_month` y `climate_frost_month`, desde `climate_day`; y
+    los aguaceros (HU-046) desde la lluvia diaria, con el umbral de `region.yaml` (`heavy_rain`). Sin el umbral, los
+    aguaceros quedan nulos y el log lo dice.
 
     Sin `climate_day` (falta la caché de POWER o la altitud), sin el umbral de helada o sin el periodo normal en
     `region.yaml`, no se publican: no se inventan (R1, R8), y el log lo dice.
@@ -942,14 +964,21 @@ def frost_tables(region: dict[str, Any], climate: pl.DataFrame | None) -> tuple[
     if threshold is None or normal is None:
         log.warning("frost_config_missing", table="climate_risk_month", detail="region.yaml no trae frost o climate_normal: no hay heladas")
         return None
-    risk = climate_risk.climate_risk_month(climate, threshold, normal)
+    heavy_mm = climate_risk.heavy_rain_threshold(region)
+    if heavy_mm is None:
+        log.warning("heavy_rain_config_missing", table="climate_risk_month", detail="region.yaml no trae heavy_rain: no hay aguaceros")
+    risk = climate_risk.climate_risk_month(climate, threshold, normal, rain, heavy_mm)
     by_year = climate_risk.climate_frost_month(climate, threshold)
     partial = risk.filter(pl.col("quality") == "partial").height
+    heavy = risk["heavy_rain_days_mean"].is_not_null().sum()
     log.info(
         "frost_computed",
         rows=risk.height,
-        detail=f"Heladas (mínima ≤ {threshold:g} °C) y máxima p90: {risk.height} filas de climate_risk_month ({partial} partial) y "
-        f"{by_year.height} de climate_frost_month",
+        detail=f"Heladas (mínima ≤ {threshold:g} °C), máxima p90 y aguaceros (≥ {heavy_mm:g} mm, {heavy} filas con dato): "
+        f"{risk.height} filas de climate_risk_month ({partial} partial) y {by_year.height} de climate_frost_month"
+        if heavy_mm is not None
+        else f"Heladas (mínima ≤ {threshold:g} °C) y máxima p90: {risk.height} filas de climate_risk_month ({partial} partial) "
+        f"y {by_year.height} de climate_frost_month",
     )
     return risk, by_year
 
@@ -1021,10 +1050,14 @@ def build(
     # Primero la altitud: el clima se corrige con ella (HU-044).
     municipalities, grid, terrain_sources = terrain_from_cache(municipalities, boundaries, dem_cache)
     grid, soil, soil_sources = soil_from_cache(grid, boundaries, soil_cache)
-    municipalities, climate, climate_month, climate_sources = climate_from_cache(region, municipalities, power_cache)
+    municipalities, climate, climate_month, rain_day, climate_sources = climate_from_cache(region, municipalities, power_cache)
     precip_month, rain_sources = precip_from_cache(region, boundaries, rain_cache)
     ndvi, ndvi_sources = ndvi_from_cache(region, boundaries, ndvi_cache)
-    frost = frost_tables(region, climate)
+    frost = frost_tables(region, climate, rain_day)
+    # La fuente del umbral de aguacero (HU-046) entra a `sources` solo si se calcularon aguaceros (R8).
+    heavy_source = climate_risk.heavy_rain_source(region)
+    if frost is not None and heavy_source is not None and frost[0]["heavy_rain_days_mean"].is_not_null().any():
+        climate_sources.append(heavy_source)
     # «Qué cambió» (HU-216): los indicadores de cada periodo de region.yaml, cada uno de una sola fuente.
     change = climate_change.climate_change_month(region, climate, climate_month, precip_month)
     # La temperatura media anual (HU-044), con el periodo normal de `region.yaml`: la usa el filtro de aptitud.
@@ -1051,7 +1084,9 @@ def build(
         known_families=set(crops_table["family"].drop_nulls().to_list()),
         expected_version=catalog["version"],
     )
-    own = [dane.source(meta), dane_mgn.source(mgn_meta)]
+    # HU-211: fuente de las capas públicas que consume la web; no calcula ninguna señal.
+    gibs = json.loads(GIBS_FILE.read_text(encoding="utf-8"))
+    own = [dane.source(meta), dane_mgn.source(mgn_meta), gibs]
     prices = crop_products = None
     counts: Counter[str] = Counter()
     try:
