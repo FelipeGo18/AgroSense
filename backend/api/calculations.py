@@ -10,6 +10,7 @@ Cuando llegue cada HU del motor, la ruta deja de responder 501 y devuelve su mod
 No guardan los datos de la finca ni quién consultó (R9): solo leen el dataset y, con `lot_id`, el lote.
 """
 
+import re
 import uuid
 from collections.abc import Mapping
 from dataclasses import asdict
@@ -66,13 +67,14 @@ from backend.engine.changes import (
     Period,
     PeriodPair,
 )
+from backend.engine.market_signal import MarketSignalResult
 from backend.engine.signal_score import signal_scores
 from backend.engine.stages import crop_window, monthly_sowing_windows
 from backend.engine.suitability import NOT_SUITABLE
 from backend.engine.traffic_light import DEFAULT, FARMER
 from backend.engine.water_balance import root_zone
 from backend.engine.water_plan import PlanCrop, water_plan
-from backend.engine.window_order import WindowSignals, best_windows, order_windows
+from backend.engine.window_order import WindowSignals, best_windows, order_windows, price_order_limitation
 from common import signal_sources as source_config
 from common.dates import add_months
 from common.region import region_today
@@ -109,14 +111,36 @@ def _check_sowing_date(sowing_date: date) -> None:
         )
 
 
+# El código oficial de la unidad territorial tiene 5 dígitos (DIVIPOLA en la región piloto).
+_PLACE_CODE = re.compile(r"^\d{5}$")
+# HU-094, aprobado por Felipe el 15 de noviembre de 2026: un código bien escrito que no está en la región del dataset es
+# «sin cobertura», no un error de quien consulta. La región sale del manifiesto, no de este texto (R7).
+OUTSIDE_REGION_MESSAGE = "AgroSense todavía no tiene datos de ese municipio: por ahora cubre {region}."
+
+
 def _check_place(dataset: Dataset, municipality_id: str) -> None:
-    if municipality_id not in dataset.municipalities:
+    if municipality_id in dataset.municipalities:
+        return
+    # En los cuerpos, `MunicipalityId` ya exige 5 dígitos; en los parámetros de consulta (`/changes`, `/trends`) ese
+    # patrón no se aplica, así que un código mal escrito llega aquí y sigue siendo `invalid_input` (revisión del #177).
+    if not _PLACE_CODE.fullmatch(municipality_id):
         raise ApiError(
             422,
             "invalid_input",
-            "Ese municipio no está entre los de la región de AgroSense.",
-            log=f"Cálculo rechazado: municipio fuera del catálogo del dataset {dataset.version}",
+            "Ese código de municipio no es válido.",
+            log="Cálculo rechazado: código de municipio con forma inválida",
         )
+    raise ApiError(
+        422,
+        "outside_region",
+        OUTSIDE_REGION_MESSAGE.format(region=_region_words(dataset)),
+        log=f"Cálculo rechazado: municipio fuera de la región del dataset {dataset.version}",
+    )
+
+
+def _region_words(dataset: Dataset) -> str:
+    """La región del manifiesto sin el país: «Boyacá y Cundinamarca, Colombia» → «Boyacá y Cundinamarca»."""
+    return str(dataset.region.get("name") or "la región piloto").split(",")[0].strip()
 
 
 def _check_crops(dataset: Dataset, crop_ids: list[str], only_crops: bool = False) -> None:
@@ -177,14 +201,13 @@ def _best_windows(
     """Hasta tres ventanas de los próximos doce meses, desde el mes en curso en la región, sin las de alto riesgo
     (HU-192). Cada una se califica con `window_signals`, el mismo cálculo de la ventana consultada (con el mismo riego
     y el mismo suelo: la textura del agua y la señal de suelo, que no cambia con la fecha)."""
-    windows = [
-        WindowSignals(
-            window.sowing_date,
-            window.harvest_estimate,
-            signal_scores(window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class, soil)),
-        )
-        for window in monthly_sowing_windows(dataset.stages.get(crop_id, []), region_today())
-    ]
+    windows = []
+    for window in monthly_sowing_windows(dataset.stages.get(crop_id, []), region_today()):
+        signals = window_signals(dataset, zone, crop_id, crop, crop_name, window, thresholds, irrigated, texture_class, soil)
+        # La historia del precio del mes de cosecha ordena dentro de la decena con peso 4 o 5 en `market` (HU-240).
+        market = signals.get("market")
+        harvest_price = market.price_history if isinstance(market, MarketSignalResult) else None
+        windows.append(WindowSignals(window.sowing_date, window.harvest_estimate, signal_scores(signals), harvest_price))
     return [WindowSummary.model_validate(ranked, from_attributes=True) for ranked in best_windows(order_windows(windows, weights))]
 
 
@@ -242,6 +265,12 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
             result.soil,
         )
 
+    core = dict(result.core)
+    # Con peso 4 o 5 en `market` el precio ordena las mejores ventanas (HU-240): la respuesta dice por qué (R5).
+    limitation = None if best is None else price_order_limitation(result.diagnosis.best_windows_weights or {})
+    if limitation is not None:
+        core["limitations"] = [*core["limitations"], limitation]
+
     return DiagnosisResponse(
         # El eco dice el riego que se usó, que es el que la web guarda con la temporada (`diagnosis_irrigated`).
         request=DiagnosisRequestEcho(
@@ -251,7 +280,7 @@ def diagnostics(body: DiagnosisRequest, request: Request, dataset: Dataset = Dep
             irrigated=query.irrigated,
             lot_id=body.lot_id,
         ),
-        **dict(result.core),
+        **core,
         best_windows=best,
     )
 

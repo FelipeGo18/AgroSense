@@ -5,15 +5,20 @@ Cuatro criterios de 0 a 100, cada uno con su regla:
 
 - `water`: el promedio de la calificación de la señal `water` de los ciclos con diagnóstico;
 - `soil`: los cinco criterios de salud del suelo (HU-212, `soil_score`);
-- `income`: el promedio, ciclo por ciclo, de la calificación de `supply` y de `market` que tengan dato; un abono verde o
-  un descanso no deja cosecha y vale 0. Es el único lugar donde la oferta entra a las estrategias (decisión 12);
+- `income` (HU-241, decisión 17): el promedio, ciclo por ciclo, del porcentaje de años en que el precio del mes de su
+  cosecha estuvo por encima del promedio de su año en su central de referencia, 100 × `years_above` / `years` (la misma
+  historia de `signals.market.price_history` del ciclo, HU-073). Es una frecuencia, como la de las heladas: no usa
+  ningún corte ni dice cuánto se va a ganar. Un abono verde o un descanso no deja cosecha y vale 0 **siempre**, aunque
+  ningún cultivo tenga historia: que no deja cosecha no depende de los precios (decidido por Felipe el 15 nov 2026). Un
+  cultivo sin historia no cuenta y se dice; solo una estrategia de cultivos sin ninguna historia (haba → maíz → haba)
+  no califica, se compara con los otros criterios y lo dice (`NO_CRITERION["income"]`). La oferta no entra;
 - `risk`: el factor que más limita entre todos los ciclos, el menor `limiting_score` (ley del mínimo). El de cada ciclo
   es la señal más baja entre las que cuentan y califican con los pesos de quien consulta (`limiting(rated_signals(...))`,
   la misma primitiva del orden de ventanas, HU-192), también si su luz es `not_evaluable` por falta del agua: que falte
   un dato nunca mejora el riesgo (R1). Solo un ciclo sin ninguna señal que cuente y califique queda fuera, y se dice
   (aprobado por Haider el 15 de noviembre de 2026, PR #146).
 
-Un ciclo sin el dato no cuenta y, en `water` y `risk`, se dice; un criterio sin ningún ciclo con dato no califica, no
+Un ciclo sin el dato no cuenta y se dice; un criterio sin ningún ciclo con dato no califica, no
 entra al total y va a las limitaciones (R1). `total_score` es el promedio de los criterios que califican ponderado por
 las prioridades de la rotación (un entero de 0 a 5 por criterio); con todas esas prioridades en 0 no hay total.
 
@@ -38,7 +43,8 @@ LIMIT = 10
 NO_CRITERION = {
     "water": "Ningún ciclo tiene calificación de agua: el criterio de agua no califica y no entra al total",
     "soil": "Ningún criterio de salud del suelo tiene dato: el criterio de suelo no califica y no entra al total",
-    "income": "Ningún cultivo tiene dato de oferta ni de mercado: el criterio de ingreso no califica y no entra al total",
+    # Decidido por Felipe el 15 nov 2026: aceptarlo y decirlo (la haba y el maíz no tienen producto en SIPSA).
+    "income": "Sus cultivos no tienen historia de precio: el ingreso no cuenta en su total",
     "risk": "Ningún ciclo tiene un factor limitante calificado: el criterio de riesgo no califica y no entra al total",
 }
 NO_TOTAL = "Todas las prioridades de los criterios que califican están en 0: la estrategia no tiene total y va al final"
@@ -51,10 +57,14 @@ def _missing_cycle(cycle: int, what: str) -> str:
 @dataclass(frozen=True)
 class CycleScores:
     """Lo que el orden lee de un ciclo: su `kind` (`crop`, `cover` o `fallow`) y las calificaciones de sus señales, del
-    mismo diagnóstico de `/diagnostics` (HU-213). `signals` es nulo sin diagnóstico (un descanso o un cultivo no apto)."""
+    mismo diagnóstico de `/diagnostics` (HU-213). `signals` es nulo sin diagnóstico (un descanso o un cultivo no apto).
+    `harvest_price` es el porcentaje de años en que el mes de su cosecha tuvo mejor precio que el resto de su año (de 0 a
+    100, `harvest_years_share` de `signals.market.price_history`, HU-241); nulo sin esa historia (R1). En un abono verde o
+    un descanso no se lee: valen 0."""
 
     kind: str
     signals: Mapping[str, SignalScore] | None
+    harvest_price: float | None = None
 
 
 @dataclass(frozen=True)
@@ -107,7 +117,7 @@ def criteria(
     water: list[int] = []
     risk: list[int] = []
     income: list[float] = []
-    crop_with_income = False
+    price_notes: list[str] = []
     for number, cycle in enumerate(cycles, start=1):
         if cycle.signals is None and cycle.kind != FALLOW:
             # Un cultivo o abono verde no apto no tiene señales: no cuenta en `water` ni en `risk` y se dice (R1).
@@ -124,21 +134,24 @@ def criteria(
             else:
                 risk.append(lowest[1])
         if cycle.kind == CROP:
-            market = [s for s in (_score((cycle.signals or {}).get(n)) for n in ("supply", "market")) if s is not None]
-            if market:
-                income.append(sum(market) / len(market))
-                crop_with_income = True
+            if cycle.harvest_price is not None:
+                income.append(cycle.harvest_price)
             else:
-                limitations.append(_missing_cycle(number, "calificación de oferta ni de mercado"))
+                price_notes.append(_missing_cycle(number, "historia del precio del mes de su cosecha"))
         elif cycle.kind in (COVER, FALLOW):
-            # Un abono verde o un descanso no deja cosecha: vale 0 en el ingreso.
+            # Un abono verde o un descanso no deja cosecha: vale 0 en el ingreso, también si ningún cultivo tiene historia
+            # (que no deja cosecha no depende de los precios; decidido por Felipe el 15 nov 2026).
             income.append(0)
     result = {
         "water": _mean(water),
         "soil": soil_score(soil_health),
-        "income": _mean(income) if crop_with_income else None,
+        "income": _mean(income),
         "risk": min(risk) if risk else None,
     }
+    # Sin ningún ciclo con ingreso, basta la limitación general: no se repite una por ciclo (decidido por Felipe el
+    # 15 nov 2026). Con ingreso, se dice qué cultivo no cuenta.
+    if result["income"] is not None:
+        limitations.extend(price_notes)
     limitations.extend(NO_CRITERION[name] for name in CRITERIA if result[name] is None)
     return result, tuple(dict.fromkeys(limitations))
 

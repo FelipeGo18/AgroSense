@@ -22,8 +22,8 @@ export function Preview({ animated }: { animated: boolean }) {
         <div className="mt-10">
           <Card bodyClassName="gap-8 xl:flex-row xl:items-start">
             <div data-reveal="left" className="flex flex-col items-start gap-4 xl:flex-1">
-              <ExampleLabel>cifras de muestra</ExampleLabel>
-              <TrafficLightBadge light="yellow" />
+              <ExampleLabel>un caso de la zona</ExampleLabel>
+              <TrafficLightBadge light={PREVIEW.light} />
               <h3 className="text-[clamp(1.75rem,2.5vw,2.125rem)]">{PREVIEW.action}</h3>
               <p className="max-w-[30rem]">{PREVIEW.reason}</p>
               <ButtonLink to={PATHS.consult} className="w-full sm:w-[340px]">

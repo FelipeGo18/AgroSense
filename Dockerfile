@@ -2,7 +2,7 @@
 #
 #   docker compose run --rm app uv run pytest         # pruebas, contra el PostgreSQL de Compose
 #   docker compose up app                             # aplica las migraciones y deja la API en http://localhost:8000
-FROM python:3.12-slim
+FROM python:3.12-slim AS app
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.0 /uv /uvx /bin/
 
@@ -66,3 +66,25 @@ EXPOSE 8000
 # Si la base no responde, o la copia o una migración fallan, queda escrito en el log y las cuentas se apagan (503);
 # lo que no usa la base de datos sigue funcionando.
 CMD ["sh", "-c", "python -m backend.db.migrate --al-arrancar; exec uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 --no-access-log"]
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Producción (HU-023): la misma imagen con el build de la web, que sirve la API en el mismo origen (AGROSENSE_WEB_DIR).
+#   docker build --target produccion -t agrosense:produccion .
+# La web se construye aparte, en Node: las pruebas y Docker Compose usan la imagen `app` y no la esperan.
+FROM node:22-slim AS web
+WORKDIR /repo
+COPY web/package.json web/package-lock.json ./web/
+RUN npm --prefix web ci --no-audit --no-fund
+# Los tokens de diseño viven en design/, fuera de web/ (HU-152).
+COPY design ./design
+# La procedencia de las capas de NASA GIBS (HU-211): `web/src/components/map/gibs.ts` la importa de catalog/.
+COPY catalog/gibs.json ./catalog/gibs.json
+COPY web ./web
+RUN npm --prefix web run build
+
+FROM app AS produccion
+COPY --from=web --chown=agrosense /repo/web/dist /app/web
+ENV AGROSENSE_WEB_DIR=/app/web
+
+# La imagen por defecto (`docker build .`, Docker Compose) sigue siendo la de la API sola.
+FROM app

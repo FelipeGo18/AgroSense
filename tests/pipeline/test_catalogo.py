@@ -1,6 +1,7 @@
 """El catálogo agronómico: fichas con fuente por valor y sus validaciones (EP-06: HU-061, HU-199, HU-063; R8)."""
 
 import copy
+import json
 
 import polars as pl
 import pytest
@@ -268,7 +269,9 @@ def test_las_fuentes_publicadas_son_las_del_catalogo():
                 cited |= set(table[name].explode().drop_nulls().to_list())
     # Las que cita `pipeline/region.yaml` (por ejemplo, el gradiente térmico) tampoco son del catálogo.
     region = str(pipeline_build.load_region())
-    stale = sorted(source_id for source_id in set(published) - set(expected) - cited if source_id not in region)
+    # Ni la de las capas de NASA GIBS que consume la web (`catalog/gibs.json`, HU-211): `pipeline.build` la publica aparte.
+    gibs = json.loads(pipeline_build.GIBS_FILE.read_text(encoding="utf-8"))["source_id"]
+    stale = sorted(source_id for source_id in set(published) - set(expected) - cited - {gibs} if source_id not in region)
     assert not stale, f"data/published/sources.parquet trae fuentes que el catálogo ya no tiene y nadie cita: {stale}. {fix}"
     differences = [
         f"{source_id}.{column}: catálogo={expected[source_id][column]!r}, publicado={published[source_id][column]!r}"

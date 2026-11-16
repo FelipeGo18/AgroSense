@@ -8,8 +8,8 @@ import polars as pl
 
 from backend.api.market_signal import market_in
 from backend.api.soil_signals import zone_soil_ph
+from backend.api.supply_signal import supply_in
 from backend.api.window_diagnosis import crop_name
-from backend.api.window_signals import pending_signal
 from backend.config.changes import get_change_parameters
 from backend.config.thresholds import get_thresholds
 from backend.config.weights import get_default_weights
@@ -52,7 +52,8 @@ def historical_changes(
         name = crop_name(crop)
         for window in monthly_sowing_windows(stages, date(periods.before.start_year, 1, 1)):
             market = market_in(dataset, municipality, crop_id, name, window.harvest_estimate.month)
-            fixed[window.sowing_date.month] = {"supply": pending_signal("supply"), "market": market}
+            supply = supply_in(dataset, municipality_id, crop_id, crop, window.sowing_date)
+            fixed[window.sowing_date.month] = {"supply": supply, "market": market}
 
     def rows(table: pl.DataFrame | None) -> list[dict[str, Any]]:
         return [] if table is None else table.filter(pl.col("municipality_id") == municipality_id).to_dicts()

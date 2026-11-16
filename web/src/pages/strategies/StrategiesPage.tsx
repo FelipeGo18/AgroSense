@@ -149,7 +149,7 @@ export function StrategiesPage() {
   const zeroPriorities = allZero(priorities) || signalPriorities.allZero;
   const request: RotationRequest | null =
     sentValid && signalPriorities.ready && !zeroPriorities
-      ? toRequest(sent, priorities, signalPriorities.value, sent.lotId ? lotFacts : undefined)
+      ? toRequest(sent, priorities, signalPriorities.request, sent.lotId ? lotFacts : undefined)
       : null;
   const rotations = useRotations(request);
   const soil = useMunicipalitySoil(showResult && rotations.data?.soil_basis === "municipality" ? request?.municipality_id : null);
@@ -270,6 +270,7 @@ export function StrategiesPage() {
             ) : (
               <StrategyResults
                 rotations={rotations}
+                soilContext={{ municipalityId: request.municipality_id, lotId: request.lot_id }}
                 weights={priorities}
                 cycles={sent.cycles}
                 names={names}

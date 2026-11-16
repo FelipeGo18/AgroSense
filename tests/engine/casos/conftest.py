@@ -7,6 +7,7 @@ de su `manifest.json`, sea cual sea (R4); en los de estrategias todavía no van 
 """
 
 import json
+from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -62,21 +63,26 @@ def _republicar(folder, *, rules=None, extra_sources=None, **tablas) -> None:
     )
 
 
-@pytest.fixture
-def datos(dataset_con_clima):
-    """El dataset de ejemplo con clima (aptitud posible) y con las `rotation_rules` reales del catálogo (HU-062), armadas
-    con el código del pipeline como en `pipeline/build.py`."""
+def reglas_del_catalogo():
+    """Las `rotation_rules` reales del catálogo (HU-062) y sus fuentes, armadas con el código del pipeline como en
+    `pipeline/build.py`."""
     from pipeline import catalog as crops_catalog
     from pipeline import rotation_rules
 
     catalog = crops_catalog.load()
     crops, _, _ = crops_catalog.build(catalog)
-    reglas, fuentes_reglas = rotation_rules.build(
+    return rotation_rules.build(
         rotation_rules.load(),
         crop_sources=catalog.get("sources") or [],
         known_families=set(crops["family"].drop_nulls().to_list()),
         expected_version=catalog["version"],
     )
+
+
+@pytest.fixture
+def datos(dataset_con_clima):
+    """El dataset de ejemplo con clima (aptitud posible) y con las `rotation_rules` reales del catálogo (HU-062)."""
+    reglas, fuentes_reglas = reglas_del_catalogo()
     _republicar(dataset_con_clima, rules=reglas, extra_sources=fuentes_reglas)
     return dataset_con_clima
 
@@ -139,6 +145,58 @@ def datos_con_heladas(datos):
     en `frost_tables`. Los demás municipios quedan sin heladas (R1). `tmean_annual_c` sigue siendo la de ejemplo (12,8 °C):
     no se rederiva de este clima. Falta: la oferta (`supply_semester`), que `publish()` todavía no escribe."""
     return _publicar_heladas(datos, con_helada=lambda año: año % AÑOS_SIN_HELADA != 0, frecuencia=80.0)
+
+
+# Contorno del lote de ejemplo (dos celdas de la rejilla de `datos_con_suelo`).
+CONTORNO_LOTE = {
+    "type": "Polygon",
+    "coordinates": [[[-73.487, 5.4905], [-73.483, 5.4905], [-73.483, 5.492], [-73.487, 5.492], [-73.487, 5.4905]]],
+}
+
+
+@pytest.fixture
+def datos_con_suelo(datos):
+    """`datos` con suelo de EJEMPLO (R5): el del municipio de Samacá (pH 6,0, carbono orgánico bajo: 20 g/kg, bajo los 29 de
+    `materia_organica_ciclos`) y el de las dos celdas de la rejilla bajo `CONTORNO_LOTE`, con otro pH (6,3 de mediana) para que se
+    note de cuál de los dos sale. La pendiente es de 2 % (sin erosión). Cifras inventadas, como en `tests/test_endpoint_rotaciones.py`."""
+    from backend.dataset import SOIL_COLUMNS
+    from common.grid import cell_id
+
+    filas = [
+        {
+            "cell_id": cell_id(5.49125, lon),
+            "altitude_m": 2700.0,
+            "slope_pct": 2.0,
+            **dict.fromkeys(SOIL_COLUMNS, 10.0),
+            "ph": ph,
+            "ph_p05": ph - 0.2,
+            "ph_p95": ph + 0.2,
+            "soc_g_kg": 20.0,
+            "soc_p05": 15.0,
+            "soc_p95": 25.0,
+            "texture_class": "franco",
+            "quality": "ok",
+            "source_ids": ["soilgrids"],
+        }
+        for lon, ph in [(-73.48375, 6.2), (-73.48625, 6.4)]
+    ]
+    pl.DataFrame(filas).write_parquet(datos / "grid_cells.parquet")
+    municipio = {
+        "municipality_id": EJEMPLO_FRIO,
+        **dict.fromkeys(SOIL_COLUMNS, 10.0),
+        "ph": 6.0,
+        "ph_p05": 5.7,
+        "ph_p95": 6.3,
+        "soc_g_kg": 20.0,
+        "soc_p05": 15.0,
+        "soc_p95": 25.0,
+        "texture_class": "franco",
+        "cells": 30,
+        "quality": "ok",
+        "source_id": "soilgrids",
+    }
+    pl.DataFrame([municipio]).write_parquet(datos / "soil_municipality.parquet")
+    return datos
 
 
 @pytest.fixture
@@ -216,6 +274,32 @@ def cliente(dataset_con_clima) -> TestClient:
     return TestClient(app)
 
 
+def _oferta_de_ejemplo(cultivos: pl.DataFrame, cambio_pct: float) -> pl.DataFrame:
+    """`supply_semester` de EJEMPLO (R5): 2025 A y B, 50 ha sembradas y el cambio de área dado, para Samacá y cada cultivo."""
+    filas = [
+        {
+            "municipality_id": EJEMPLO_FRIO,
+            "crop_id": cultivo,
+            "year": 2025,
+            "semester": semestre,
+            "source_id": "eva",
+            "planted_ha": 50.0,
+            "harvested_ha": None,
+            "production_t": None,
+            "yield_t_ha": None,
+            "planted_change_pct": cambio_pct,
+            "dept_share_pct": None,
+            "preliminary": False,
+            "quality": "ok",
+        }
+        for cultivo in cultivos.filter(pl.col("kind") == "crop")["crop_id"].to_list()
+        for semestre in ("A", "B")
+    ]
+    from pipeline import schema
+
+    return pl.DataFrame(filas, schema={col: spec.dtype for col, spec in schema.TABLES["supply_semester"].columns.items()})
+
+
 def publicar_ejemplo(
     carpeta: Path,
     *,
@@ -223,6 +307,9 @@ def publicar_ejemplo(
     lluvia_mm: float | dict[int, float] = 60.0,
     helada_anios: int | dict[int, int | range] | None = None,
     ph: float | None = None,
+    reglas: bool = False,
+    precios: dict[str, int] | None = None,
+    oferta_cambio_pct: float | None = None,
 ) -> None:
     """Publica con `publish()` un dataset de EJEMPLO (R5) para el diagnóstico de papa en Samacá y Villa de Leyva.
     - Lluvia (EJEMPLO, de 2015 a 2024; igual en todos los meses, o con un `dict` `{mes: mm}` donde los meses que faltan valen 60):
@@ -235,6 +322,12 @@ def publicar_ejemplo(
       `climate_risk_month` ni `climate_frost_month` (R1). La frecuencia es
       `helada_anios / 30`: 3 años es 10 % (favorable), 9 es 30 % (moderada) y 24 es 80 % (crítica). La máxima es de 18 C.
     - `ph`: el pH de `soil_municipality` en Samacá (franco, la lluvia y el agua no cambian). Sin él no hay suelo (R1).
+    - `reglas`: publica también las `rotation_rules` del catálogo (hacen falta para `/rotations`).
+    - `precios`: `{cultivo: años por encima}` de EJEMPLO (R5). Publica `market_month` de la central `9` (la de Boyacá en
+      `department_markets`) con 5 años (2021 a 2025), `years_above` = el valor y `years_below` = 5 - el valor, igual en los doce
+      meses, para que el valor esperado no dependa del mes de la cosecha. Un cultivo que no está no tiene historia (R1).
+    - `oferta_cambio_pct`: publica `supply_semester` de EJEMPLO (2025, A y B, 50 ha, ese cambio de área) para Samacá y todos los
+      cultivos. Sin él no hay oferta (R1).
     Villa de Leyva tiene 12,8 C como Samacá (en `tests/conftest.py` queda a 6 C, sin cultivo apto).
     """
     from pipeline import catalog as crops_catalog
@@ -261,7 +354,12 @@ def publicar_ejemplo(
     )
     catalogo = crops_catalog.load()
     cultivos, etapas, fuentes_catalogo = crops_catalog.build(catalogo)
-    reales = tabla(PUBLICADO, "sources").filter(pl.col("source_id").is_in(["imerg", "soilgrids"]))
+    ids = ["imerg", "soilgrids", *(["dane_sipsa"] if precios is not None else []), *(["eva"] if oferta_cambio_pct is not None else [])]
+    reales = tabla(PUBLICADO, "sources").filter(pl.col("source_id").is_in(ids))
+    reglas_tabla = fuentes_reglas = None
+    if reglas:
+        reglas_tabla, fuentes_reglas = reglas_del_catalogo()
+        reales = pl.concat([reales, fuentes_reglas], how="diagonal_relaxed")
 
     dias = [date(1991, 1, 1) + timedelta(days=i) for i in range((date(2020, 12, 31) - date(1991, 1, 1)).days + 1)]
 
@@ -292,6 +390,7 @@ def publicar_ejemplo(
         **SAMPLE_REGION,
         "frost": {"threshold_c": 2.0, "source_id": "mapa_zarc_2025"},
         "climate_normal": {"first_year": 1991, "last_year": 2020, "min_years": 24, "min_day_share": 0.9, "dry_quantile": 0.2},
+        "region": {**SAMPLE_REGION["region"], "department_markets": {"15": "9"}, "markets": {"9": "Tunja (ejemplo)"}},
     }
     normal = climate_normals.Normal.from_region(region)
     fuente_power = pl.DataFrame([nasa_power.source(clima, {"downloaded_at": "2026-11-14T00:00:00+00:00", "elevations": {}})])
@@ -422,7 +521,47 @@ def publicar_ejemplo(
         precip_month=imerg if imerg_en else None,
         frost=frost,
         soil=suelo,
+        rules=reglas_tabla,
+        supply=_oferta_de_ejemplo(cultivos, oferta_cambio_pct) if oferta_cambio_pct is not None else None,
     )
+    if precios is not None:
+        # `publish()` solo escribe `market_month` desde los precios diarios de SIPSA: aquí se arma la tabla de EJEMPLO ya hecha.
+        # Se escribe después de `publish()`, así que el `manifest.json` de este ejemplo no la nombra y el dataset no pasaría
+        # `verify()`: sirve para las pruebas del motor y la API, no como dataset publicado.
+        from pipeline import schema
+
+        filas = [
+            {
+                "crop_id": cultivo,
+                "market_id": "9",
+                "month": mes,
+                "product_id": f"{cultivo}-ejemplo",
+                "price_cop_kg": 1000,
+                "price_year": 2025,
+                "volume_t": None,
+                "seasonal_index": 1.0,
+                "years": 5,
+                "years_above": arriba,
+                "years_below": 5 - arriba,
+                "first_year": 2021,
+                "last_year": 2025,
+                "quality": "ok",
+                "source_id": "dane_sipsa",
+            }
+            for cultivo, arriba in sorted(precios.items())
+            for mes in range(1, 13)
+        ]
+        columnas = {col: spec.dtype for col, spec in schema.TABLES["market_month"].columns.items()}
+        pl.DataFrame(filas, schema=columnas).write_parquet(carpeta / "market_month.parquet")
+
+
+def _parchar_fuentes_de_oferta(monkeypatch) -> None:
+    """`tests/conftest.py` parchea la región de ejemplo en `climate_signals`, pero la oferta lee `get_signal_sources` de su propio
+    módulo: se parcha igual para que `pruebas` tenga sus fuentes por señal (HU-072)."""
+    from backend.api import supply_signal
+    from common import signal_sources
+
+    monkeypatch.setattr(supply_signal, "get_signal_sources", signal_sources.get_signal_sources)
 
 
 @pytest.fixture
@@ -433,9 +572,34 @@ def armar_ejemplo(tmp_path, monkeypatch):
     def armar(**datos) -> TestClient:
         carpeta = tmp_path / "published"
         publicar_ejemplo(carpeta, **datos)
+        if datos.get("oferta_cambio_pct") is not None:
+            _parchar_fuentes_de_oferta(monkeypatch)
         monkeypatch.setenv("AGROSENSE_DATA_DIR", str(carpeta))
         get_settings.cache_clear()
         return TestClient(app)
+
+    return armar
+
+
+@pytest.fixture
+def armar_ejemplos(tmp_path, monkeypatch):
+    """Como `armar_ejemplo`, pero con varios datasets de EJEMPLO a la vez, cada uno en su carpeta: `armar_ejemplos(sin={...},
+    con={...})` publica uno por nombre (los argumentos son los de `publicar_ejemplo`) y devuelve `usar(nombre)`, que apunta la API
+    a ese y devuelve el cliente. Para comparar la misma consulta sobre datos distintos (R4)."""
+    _parchar_fuentes_de_oferta(monkeypatch)
+    carpetas = {}
+
+    def armar(**datasets: dict) -> Callable[[str], TestClient]:
+        for nombre, datos in datasets.items():
+            carpetas[nombre] = tmp_path / nombre
+            publicar_ejemplo(carpetas[nombre], **datos)
+
+        def usar(nombre: str) -> TestClient:
+            monkeypatch.setenv("AGROSENSE_DATA_DIR", str(carpetas[nombre]))
+            get_settings.cache_clear()
+            return TestClient(app)
+
+        return usar
 
     return armar
 
