@@ -1396,6 +1396,7 @@
   "map.gibs.resolution": "MODIS Terra · nominal resolution 250 m. Zooming in adds no detail.",
   "map.gibs.date.color": "Image date: {{date}}",
   "map.gibs.date.ndvi": "8-day rolling composite · GIBS date: {{date}}",
+  "map.gibs.date.colorFallback": "There is no NASA image from {{latest}} for the center of this area (it is not processed yet or the satellite did not pass over it): we show the most recent one that has it. You can choose another date.",
   "map.gibs.chooseLayer": "Turn on a layer to see its available date.",
   "map.gibs.dateLabel": "Date · {{layer}}",
   "map.gibs.status.loading": "Loading NASA imagery…",

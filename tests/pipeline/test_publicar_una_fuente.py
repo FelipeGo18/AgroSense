@@ -23,8 +23,8 @@ from pipeline import build, schema
 from pipeline import catalog as crops_catalog
 from tests.pipeline.test_reconstruir import REGION, caches, rebuild  # noqa: F401  (`caches` es un fixture)
 
-FUENTES = ("catalogo",)  # lo válido hoy
-FUENTES_FUTURAS = ("municipios", "relieve", "suelo", "clima", "lluvia", "ndvi", "oferta", "precios")
+FUENTES = ("catalogo", "ndvi", "oferta", "precios")  # lo válido hoy
+FUENTES_FUTURAS = ("municipios", "relieve", "suelo", "clima", "lluvia")
 ERRORES_DE_CATALOGO = (build.ValidationError, crops_catalog.CatalogError)
 VERSION_NUEVA = "0.0.1-pruebas"
 REGLAS_NUEVAS = "9.9.9-pruebas"
@@ -289,6 +289,20 @@ def test_misma_version_con_cambios_falla_y_no_escribe_nada(publicado, monkeypatc
     cambiar_catalogo(monkeypatch, con_nota(primera_fuente_del_catalogo(), "Ejemplo: nota nueva."))  # misma versión
 
     with pytest.raises(build.ValidationError, match="dataset_version"):
+        build.publish_one("catalogo", published=publicado)
+
+    assert sha_de_todo(publicado) == antes
+
+
+def test_version_menor_con_cambios_falla_y_no_escribe_nada(publicado, monkeypatch):
+    """Una rama atrasada no publica su versión vieja encima de la nueva (R4)."""
+    datos = manifiesto(publicado)
+    datos["dataset_version"] = "2026.11.29"  # lo publicado ya es más nuevo que la versión de `region.yaml`
+    (publicado / "manifest.json").write_text(json.dumps(datos), encoding="utf-8")
+    antes = sha_de_todo(publicado)
+    cambiar_catalogo(monkeypatch, con_nota(primera_fuente_del_catalogo(), "Ejemplo: nota nueva."), version="2026.11.28")
+
+    with pytest.raises(build.ValidationError, match=r"2026\.11\.28.*2026\.11\.29"):
         build.publish_one("catalogo", published=publicado)
 
     assert sha_de_todo(publicado) == antes

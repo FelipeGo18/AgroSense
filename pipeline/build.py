@@ -4,7 +4,7 @@
     uv run python -m pipeline.build --descargar  # antes, baja otra vez las fuentes a la caché
     uv run python -m pipeline.build --traer-cache  # antes, trae la caché compartida (HU-237)
     uv run python -m pipeline.build --verificar  # solo revisa que data/published coincida con su manifiesto (HU-123)
-    uv run python -m pipeline.build --solo catalogo  # solo el catálogo y sus reglas; las demás tablas quedan como están (HU-238)
+    uv run python -m pipeline.build --solo catalogo|ndvi|oferta|precios  # solo esa fuente; las demás tablas quedan como están (HU-238)
 
 Por ahora publica `municipalities` (DIVIPOLA del DANE, HU-044, con la altura de su celda de NASA POWER),
 `municipality_boundaries` (MGN del DANE, HU-044), el catálogo (`crops` y `crop_stages`, HU-061), `rotation_rules` (las
@@ -583,6 +583,90 @@ def manifest_region_blocks(region: dict[str, Any], change: pl.DataFrame | None) 
     }
 
 
+def supply_entry(supply: pl.DataFrame) -> dict[str, Any]:
+    """La entrada de `supply_semester` en el manifiesto (la usan `publish` y `--solo oferta`)."""
+    ordered = supply.sort("year", "semester")
+    first, last = ordered.row(0, named=True), ordered.row(-1, named=True)
+    preliminary = sorted(set(supply.filter(pl.col("preliminary"))["year"].to_list()))
+    coverage = (
+        f"{supply['municipality_id'].n_unique()} municipios; {', '.join(sorted(set(supply['crop_id'].to_list())))}; "
+        f"siembras de {first['year']}{first['semester']} a {last['year']}{last['semester']}; "
+        f"preliminares {', '.join(map(str, preliminary)) or 'ninguno'}; "
+        f"{supply.filter(pl.col('quality') == 'partial').height} partial"
+    )
+    return {"rows": supply.height, "coverage": coverage}
+
+
+def ndvi_entries(ndvi: tuple[pl.DataFrame, pl.DataFrame], region: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Las entradas de `ndvi_municipality` y `ndvi_municipality_normal` en el manifiesto (`publish` y `--solo ndvi`)."""
+    by_period, normal_ndvi = ndvi
+    partial = by_period.filter(pl.col("quality") == "partial").height
+    years = f"de {by_period['year'].min()} a {by_period['year'].max()}"
+    coverage = (
+        f"{by_period['municipality_id'].n_unique()} municipios, mediana de los píxeles sin nubes cada 16 días, {years}; {partial} partial"
+    )
+    entries = {"ndvi_municipality": {"rows": by_period.height, "coverage": coverage}}
+    config = modis_ndvi.config_from_region(region)
+    period = f" de {config.first_year}-{config.last_year}" if config is not None else ""
+    partial = normal_ndvi.filter(pl.col("quality") == "partial").height
+    coverage = f"{normal_ndvi['municipality_id'].n_unique()} municipios, verdor promedio{period} por periodo; {partial} partial"
+    entries["ndvi_municipality_normal"] = {"rows": normal_ndvi.height, "coverage": coverage}
+    return entries
+
+
+def price_entries(
+    prices: pl.DataFrame, latest: pl.DataFrame, season: pl.DataFrame, month: pl.DataFrame | None
+) -> dict[str, dict[str, Any]]:
+    """Las entradas de las tablas de precios y `market_month` en el manifiesto (`publish` y `--solo precios`)."""
+    entries = {
+        "market_price_day": {
+            "rows": prices.height,
+            "coverage": f"{' · '.join(sorted(set(prices['market'].to_list())))}; del {prices['date'].min()} al {prices['date'].max()}",
+        },
+        "market_price_latest": {
+            "rows": latest.height,
+            "coverage": "El último precio de cada producto en cada central, con el de hace una semana y el cambio",
+        },
+        "market_price_season": {
+            "rows": season.height,
+            "coverage": f"Productos con al menos {sipsa.MIN_YEARS} años completos de precios",
+        },
+    }
+    if month is not None:
+        crops_with_rows = ", ".join(sorted(set(month["crop_id"].to_list()))) or "ningún cultivo"
+        entries["market_month"] = {
+            "rows": month.height,
+            "coverage": f"{crops_with_rows}: índice estacional y precio de cada mes del último año completo, por central",
+        }
+    return entries
+
+
+def sipsa_from_cache(markets: dict[str, str], cache: Path, own: list[dict[str, Any]]) -> pl.DataFrame | None:
+    """Los precios de SIPSA desde la caché (HU-221), con su línea en la terminal y su fuente sumada a `own`. Sin caché
+    devuelve nada: `build` publica lo demás sin precios (R1); `--solo precios` lo trata como error."""
+    counts: Counter[str] = Counter()
+    try:
+        prices, downloaded_at = sipsa.read_cache(markets, cache, counts)
+    except FileNotFoundError as error:
+        # Sin la caché de SIPSA (unos 300 MB) se publica lo demás, sin las tablas de precios: no se inventan (R1), y el
+        # manifiesto dice qué trae. Así reconstruir los municipios no obliga a bajar los precios.
+        log.warning("source_missing", source=sipsa.SOURCE_ID, detail=f"Se publica sin los precios de SIPSA: {error}")
+        return None
+    rejected = counts["other_market"] + counts["no_average"]
+    log.info(
+        "source_read",
+        source=sipsa.SOURCE_ID,
+        rows_read=counts["read"],
+        rows_kept=prices.height,
+        rows_rejected=rejected,
+        reasons={"other_market": counts["other_market"], "no_average": counts["no_average"]},
+        detail=f"SIPSA: {counts['read']} filas leídas, {prices.height} de las centrales de la región y {rejected} "
+        f"descartadas: {counts['other_market']} de otras centrales y {counts['no_average']} sin precio medio ese día (R1)",
+    )
+    own.append(sipsa.source(prices, downloaded_at))
+    return prices
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -727,49 +811,11 @@ def publish(
         coverage = f"{soil.height} municipios, mediana de sus celdas de 0 a 30 cm; {partial} partial"
         manifest["tables"]["soil_municipality"] = {"rows": soil.height, "coverage": coverage}
     if has_supply:
-        ordered = supply.sort("year", "semester")
-        first, last = ordered.row(0, named=True), ordered.row(-1, named=True)
-        preliminary = sorted(set(supply.filter(pl.col("preliminary"))["year"].to_list()))
-        coverage = (
-            f"{supply['municipality_id'].n_unique()} municipios; {', '.join(sorted(set(supply['crop_id'].to_list())))}; "
-            f"siembras de {first['year']}{first['semester']} a {last['year']}{last['semester']}; "
-            f"preliminares {', '.join(map(str, preliminary)) or 'ninguno'}; "
-            f"{supply.filter(pl.col('quality') == 'partial').height} partial"
-        )
-        manifest["tables"]["supply_semester"] = {"rows": supply.height, "coverage": coverage}
+        manifest["tables"]["supply_semester"] = supply_entry(supply)
     if has_ndvi:
-        by_period, normal_ndvi = ndvi
-        partial = by_period.filter(pl.col("quality") == "partial").height
-        years = f"de {by_period['year'].min()} a {by_period['year'].max()}"
-        coverage = (
-            f"{by_period['municipality_id'].n_unique()} municipios, mediana de los píxeles sin nubes cada 16 días, {years}; "
-            f"{partial} partial"
-        )
-        manifest["tables"]["ndvi_municipality"] = {"rows": by_period.height, "coverage": coverage}
-        config = modis_ndvi.config_from_region(region)
-        period = f" de {config.first_year}-{config.last_year}" if config is not None else ""
-        partial = normal_ndvi.filter(pl.col("quality") == "partial").height
-        coverage = f"{normal_ndvi['municipality_id'].n_unique()} municipios, verdor promedio{period} por periodo; {partial} partial"
-        manifest["tables"]["ndvi_municipality_normal"] = {"rows": normal_ndvi.height, "coverage": coverage}
+        manifest["tables"] |= ndvi_entries(ndvi, region)
     if prices is not None:
-        manifest["tables"]["market_price_day"] = {
-            "rows": prices.height,
-            "coverage": f"{' · '.join(sorted(set(prices['market'].to_list())))}; del {prices['date'].min()} al {prices['date'].max()}",
-        }
-        manifest["tables"]["market_price_latest"] = {
-            "rows": latest.height,
-            "coverage": "El último precio de cada producto en cada central, con el de hace una semana y el cambio",
-        }
-        manifest["tables"]["market_price_season"] = {
-            "rows": season.height,
-            "coverage": f"Productos con al menos {sipsa.MIN_YEARS} años completos de precios",
-        }
-    if month is not None:
-        crops_with_rows = ", ".join(sorted(set(month["crop_id"].to_list()))) or "ningún cultivo"
-        manifest["tables"]["market_month"] = {
-            "rows": month.height,
-            "coverage": f"{crops_with_rows}: índice estacional y precio de cada mes del último año completo, por central",
-        }
+        manifest["tables"] |= price_entries(prices, latest, season, month)
     # Siempre con LF: en Windows `write_text` escribe CRLF, y el archivo cambiaría según quién publica (R4).
     text = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
     (folder / "manifest.json").write_text(text, encoding="utf-8", newline="\n")
@@ -1164,28 +1210,8 @@ def build(
     # HU-211: fuente de las capas públicas que consume la web; no calcula ninguna señal.
     gibs = json.loads(GIBS_FILE.read_text(encoding="utf-8"))
     own = [dane.source(meta), dane_mgn.source(mgn_meta), gibs]
-    prices = crop_products = None
-    counts: Counter[str] = Counter()
-    try:
-        prices, downloaded_at = sipsa.read_cache(region["region"]["markets"], market_cache, counts)
-    except FileNotFoundError as error:
-        # Sin la caché de SIPSA (unos 300 MB) se publica lo demás, sin las tablas de precios: no se inventan (R1), y el
-        # manifiesto dice qué trae. Así reconstruir los municipios no obliga a bajar los precios.
-        log.warning("source_missing", source=sipsa.SOURCE_ID, detail=f"Se publica sin los precios de SIPSA: {error}")
-    else:
-        rejected = counts["other_market"] + counts["no_average"]
-        log.info(
-            "source_read",
-            source=sipsa.SOURCE_ID,
-            rows_read=counts["read"],
-            rows_kept=prices.height,
-            rows_rejected=rejected,
-            reasons={"other_market": counts["other_market"], "no_average": counts["no_average"]},
-            detail=f"SIPSA: {counts['read']} filas leídas, {prices.height} de las centrales de la región y {rejected} "
-            f"descartadas: {counts['other_market']} de otras centrales y {counts['no_average']} sin precio medio ese día (R1)",
-        )
-        own.append(sipsa.source(prices, downloaded_at))
-        crop_products = load_crops()
+    prices = sipsa_from_cache(region["region"]["markets"], market_cache, own)
+    crop_products = load_crops() if prices is not None else None
     supply = supply_from_cache(departments, municipalities, set(crops_table["crop_id"].to_list()), supply_cache, own)
     sources = pl.concat(
         [
@@ -1248,9 +1274,16 @@ def check_signal_sources(region_id: str, published: set[str]) -> None:
     )
 
 
-SOLO_SOURCES = ("catalogo",)
+SOLO_SOURCES = ("catalogo", "ndvi", "oferta", "precios")
 # Las que vendrán en las otras partes de HU-238 (la lista completa está en su spec); todavía no se ofrecen en `--solo`.
-FUTURE_SOLO_SOURCES = ("municipios", "relieve", "suelo", "clima", "lluvia", "ndvi", "oferta", "precios")
+FUTURE_SOLO_SOURCES = ("municipios", "relieve", "suelo", "clima", "lluvia")
+# Las que `--solo` lee de `data/raw/`: su carpeta de la caché compartida (`pipeline/raw_cache.py`), la caché de su adaptador y
+# las filas de `sources` que escribe ese adaptador. Ninguna comparte tablas con otra fuente.
+SOLO_RAW = {
+    "ndvi": ("modis_ndvi", lambda: modis_ndvi.CACHE, modis_ndvi.SOURCE_IDS),
+    "oferta": ("eva", lambda: eva.CACHE, eva.SOURCE_IDS),
+    "precios": ("sipsa", lambda: sipsa.CACHE, sipsa.SOURCE_IDS),
+}
 # Las tablas que reconstruye `--solo catalogo` (HU-238); `sources` solo en las filas del catálogo y de las reglas.
 CATALOG_TABLES = ("crops", "crop_stages", "rotation_rules", "sources")
 
@@ -1322,6 +1355,24 @@ def merge_catalog_sources(tables: dict[str, pl.DataFrame], catalog_sources: pl.D
     return pl.concat([kept, new], how="diagonal_relaxed")
 
 
+def replace_source_rows(published: pl.DataFrame, new_rows: pl.DataFrame, source_ids: tuple[str, ...]) -> pl.DataFrame:
+    """`sources` de `--solo <fuente con adaptador>`: se reemplazan las filas de los `source_id` de su adaptador por las nuevas y
+    todo lo demás se conserva, también lo de origen desconocido (R8). Una sola fila por `source_id`."""
+    kept = published.filter(~pl.col("source_id").is_in(list(source_ids)) & ~pl.col("source_id").is_in(new_rows["source_id"].to_list()))
+    return pl.concat([kept, new_rows], how="diagonal_relaxed")
+
+
+def require_cache(source: str, folder: str, cache: Path) -> None:
+    """`--solo` nunca baja nada: sin la carpeta de la caché (o vacía) falla y dice cómo traerla. No se publica nada a medias ni
+    se borra la tabla publicada (R1)."""
+    if not cache.is_dir() or not any(cache.iterdir()):
+        raise ValidationError(
+            f"`--solo {source}` necesita la caché de la fuente en {cache} (carpeta `{folder}` de data/raw/) y no está: tráigala "
+            f"con `uv run python -m pipeline.raw_cache traer {folder}` o haga una construcción completa con "
+            "`uv run python -m pipeline.build --descargar`. No se publicó nada y lo publicado sigue como estaba."
+        )
+
+
 def replace_atomically(published: Path, new_tables: dict[str, pl.DataFrame], manifest: dict[str, Any]) -> None:
     """Escribe cada archivo primero a un temporal; con todos escritos, copia a `.bak` lo que va a reemplazar y reemplaza (las
     tablas primero, el manifiesto el último). Garantiza: si Python falla antes o durante el reemplazo, se restauran los
@@ -1361,17 +1412,30 @@ def replace_atomically(published: Path, new_tables: dict[str, pl.DataFrame], man
         backup.unlink(missing_ok=True)
 
 
-def publish_one(source: str, *, published: Path = PUBLISHED) -> dict[str, Any]:
-    """`pipeline.build --solo <fuente>` (HU-238, parte 1): reconstruye las tablas de una fuente y deja las demás como están
-    en `published`. Por ahora solo `catalogo`. Devuelve el manifiesto de lo publicado (el nuevo, o el de antes si nada cambió).
+def _version_is_greater(new: str, published: str) -> bool:
+    """`new` es mayor que `published`, por partes numéricas (`2026.11.29` > `2026.11.28`). Si alguna no tiene partes numéricas
+    y no se pueden comparar, solo es «no mayor» cuando son iguales."""
+    if new == published:
+        return False
+    a, b = re.findall(r"\d+", new), re.findall(r"\d+", published)
+    if not a or not b:
+        return True
+    return [int(x) for x in a] > [int(x) for x in b]
 
-    Arma las tablas con las mismas funciones que `build` (`catalog_tables`) y corre las mismas validaciones sobre el
-    conjunto completo (`validate_dataset`, el esquema de cada tabla y `check_signal_sources`). Compara los datos de lo
-    armado con lo publicado (mismo esquema tipado y mismas filas en el mismo orden, no los bytes: otro escritor de Parquet
-    no es un cambio): sin cambios no escribe nada; con cambios y la misma `dataset_version`, falla; con cambios y
-    una versión nueva, reescribe solo las tablas que cambiaron y el manifiesto (R4)."""
+
+def publish_one(source: str, *, published: Path = PUBLISHED, cache: Path | None = None) -> dict[str, Any]:
+    """`pipeline.build --solo <fuente>` (HU-238, parte 1): reconstruye las tablas de una fuente y deja las demás como están
+    en `published`. Hoy: `catalogo`, `ndvi`, `oferta` y `precios`. Devuelve el manifiesto de lo publicado (el nuevo, o el de
+    antes si nada cambió). `cache` es la carpeta de `data/raw/` de la fuente (por defecto, la de su adaptador); nunca descarga.
+
+    Arma las tablas con las mismas funciones que `build` (`catalog_tables`, `ndvi_from_cache`, `supply_from_cache`,
+    `sipsa_from_cache`) y corre las mismas validaciones sobre el conjunto completo (`validate_dataset`, el esquema de cada tabla
+    y `check_signal_sources`). Compara los datos de lo armado con lo publicado (mismo esquema tipado y mismas filas en el mismo
+    orden, no los bytes: otro escritor de Parquet no es un cambio): sin cambios no escribe nada; con cambios y una
+    `dataset_version` que no es mayor que la publicada, falla; con cambios y una
+    versión mayor, reescribe solo las tablas que cambiaron y el manifiesto (R4)."""
     if source in FUTURE_SOLO_SOURCES:
-        raise ValidationError(f"`--solo {source}`: no implementado en este PR; por ahora solo `catalogo`.")
+        raise ValidationError(f"`--solo {source}`: no implementado en este PR; por ahora: {', '.join(SOLO_SOURCES)}.")
     if source not in SOLO_SOURCES:
         raise ValidationError(f"`--solo {source}` no existe; lo válido hoy es: {', '.join(SOLO_SOURCES)}.")
     manifest, tables = read_published(published)
@@ -1386,30 +1450,68 @@ def publish_one(source: str, *, published: Path = PUBLISHED) -> dict[str, Any]:
             "de la región puede cambiar tablas que no son del catálogo (por ejemplo, `market_month`): haga una construcción "
             "completa con `uv run python -m pipeline.build` (R4)."
         )
-    try:
-        catalog, crops_table, stages_table, catalog_sources, rules_table, rules_sources = catalog_tables()
-    except (crops_catalog.CatalogError, rotation_rules.RotationRulesError) as error:
-        raise ValidationError(str(error)) from error
-    built = {
-        "crops": crops_table,
-        "crop_stages": stages_table,
-        "rotation_rules": rules_table,
-        "sources": sources_table(merge_catalog_sources(tables, catalog_sources, rules_sources)),
-    }
+    built: dict[str, pl.DataFrame] = {}
+    entries: dict[str, dict[str, Any]] = {}
+    rules_version = manifest.get("rules_version")
+    if source == "catalogo":
+        try:
+            catalog, crops_table, stages_table, catalog_sources, rules_table, rules_sources = catalog_tables()
+        except (crops_catalog.CatalogError, rotation_rules.RotationRulesError) as error:
+            raise ValidationError(str(error)) from error
+        rules_version = catalog["version"]
+        crops = (rules_version, crops_table, stages_table)
+        built = {"crops": crops_table, "crop_stages": stages_table, "rotation_rules": rules_table}
+        new_sources = merge_catalog_sources(tables, catalog_sources, rules_sources)
+    else:
+        folder, default_cache, source_ids = SOLO_RAW[source]
+        cache = cache or default_cache()
+        require_cache(source, folder, cache)
+        crops = (rules_version, tables["crops"], tables["crop_stages"])
+        own: list[dict[str, Any]] = []
+        if source == "ndvi":
+            if (boundaries := tables.get("municipality_boundaries")) is None:
+                raise ValidationError("`--solo ndvi` necesita `municipality_boundaries` publicada: haga una construcción completa.")
+            ndvi, ndvi_sources = ndvi_from_cache(region, boundaries, cache)
+            if ndvi is None:
+                raise ValidationError(
+                    f"`--solo ndvi` no pudo leer la caché de MODIS en {cache} (vea el aviso de arriba). No se publicó nada."
+                )
+            built = {"ndvi_municipality": ndvi[0], "ndvi_municipality_normal": ndvi[1]}
+            own = ndvi_sources
+        elif source == "oferta":
+            supply = supply_from_cache(
+                region["region"]["departments"], tables["municipalities"], set(tables["crops"]["crop_id"].to_list()), cache, own
+            )
+            if supply is None:
+                raise ValidationError(
+                    f"`--solo oferta` no pudo leer la caché de EVA en {cache} (vea el aviso de arriba). No se publicó nada."
+                )
+            built = {"supply_semester": supply}
+        else:
+            prices = sipsa_from_cache(region["region"]["markets"], cache, own)
+            if prices is None:
+                raise ValidationError(f"`--solo precios` no pudo leer la caché de SIPSA en {cache}: no se publica sin precios (R1).")
+            built = {"market_price_day": prices}
+        new_sources = replace_source_rows(tables["sources"], pl.DataFrame(own), source_ids)
+    built["sources"] = sources_table(new_sources)
     # El conjunto completo: lo reconstruido y, de lo publicado, lo demás.
     full = {**tables, **built}
     prices = full.get("market_price_day")
     crop_products = load_crops() if prices is not None else None
     ndvi = (full["ndvi_municipality"], full["ndvi_municipality_normal"]) if "ndvi_municipality" in full else None
     frost = (full["climate_risk_month"], full["climate_frost_month"]) if "climate_risk_month" in full else None
-    validate_dataset(
+    season, month, latest = validate_dataset(
         region, full["municipalities"], full["sources"], full.get("municipality_boundaries"),
-        (catalog["version"], crops_table, stages_table), prices, crop_products, full.get("climate_day"), full.get("grid_cells"),
+        crops, prices, crop_products, full.get("climate_day"), full.get("grid_cells"),
         full.get("climate_month"), full.get("precip_month"), frost, full.get("climate_change_month"), full.get("soil_municipality"),
         full.get("supply_semester"), ndvi,
     )  # fmt: skip
-    if (month := full.get("market_month")) is not None and (
-        unknown := set(month["crop_id"].to_list()) - set(crops_table["crop_id"].to_list())
+    if source == "precios":
+        # Lo que deriva de los precios, con la misma función que `publish`: `market_month` usa los `crops` publicados.
+        built |= {"market_price_latest": latest, "market_price_season": season, "market_month": month}
+        full = {**tables, **built}
+    if (month_table := full.get("market_month")) is not None and (
+        unknown := set(month_table["crop_id"].to_list()) - set(crops[1]["crop_id"].to_list())
     ):
         raise ValidationError(f"`market_month` trae cultivos que no están en el catálogo: {sorted(unknown)}")
     for name, table in full.items():
@@ -1422,25 +1524,38 @@ def publish_one(source: str, *, published: Path = PUBLISHED) -> dict[str, Any]:
     changed: dict[str, pl.DataFrame] = {}
     for name, table in built.items():
         table = schema.typed(name, table)
-        before = tables[name]
-        if before.schema != table.schema or not table.equals(before):
+        before = tables.get(name)
+        if before is None or before.schema != table.schema or not table.equals(before):
             changed[name] = table
     if not changed:
         log.info("dataset_unchanged", source=source, detail=f"`--solo {source}`: nada cambió en {published}; no se escribe nada")
         return manifest
     version = region["dataset_version"]
-    if version == manifest["dataset_version"]:
+    if not _version_is_greater(version, manifest["dataset_version"]):
         raise ValidationError(
-            f"`--solo {source}` cambia {', '.join(sorted(changed))} pero `dataset_version` sigue siendo {version}: suba "
-            "`dataset_version` en pipeline/region.yaml (R4)."
+            f"`--solo {source}` cambia {', '.join(sorted(changed))} pero `dataset_version` de pipeline/region.yaml es {version} "
+            f"y lo publicado es {manifest['dataset_version']}: tiene que ser mayor. Suba `dataset_version` o traiga `desarrollo` (R4)."
         )
+    typed = {name: schema.typed(name, table) for name, table in built.items()}
+    if source == "catalogo":
+        entries = {name: catalog_entry(name, typed[name]) for name in CATALOG_TABLES}
+    else:
+        entries = {"sources": catalog_entry("sources", typed["sources"])}
+        if source == "ndvi":
+            entries |= ndvi_entries((typed["ndvi_municipality"], typed["ndvi_municipality_normal"]), region)
+        elif source == "oferta":
+            entries["supply_semester"] = supply_entry(typed["supply_semester"])
+        else:
+            entries |= price_entries(
+                typed["market_price_day"], typed["market_price_latest"], typed["market_price_season"], typed["market_month"]
+            )
     updated = {
         **manifest,
         "dataset_version": version,
-        "rules_version": catalog["version"],
+        "rules_version": rules_version,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         **blocks,
-        "tables": {**manifest["tables"], **{name: catalog_entry(name, table) for name, table in changed.items()}},
+        "tables": {**manifest["tables"], **{name: entries[name] for name in changed}},
     }
     replace_atomically(published, changed, updated)
     for name, table in changed.items():
@@ -1457,7 +1572,7 @@ def main() -> None:
     parser.add_argument(
         "--solo",
         choices=SOLO_SOURCES,
-        help="Publica una sola fuente y deja las demás tablas como están en data/published (HU-238). Por ahora solo `catalogo`. "
+        help="Publica una sola fuente y deja las demás tablas como están en data/published (HU-238). Hoy: catalogo, ndvi, oferta, precios. "
         "No se combina con --descargar, --traer-cache ni --verificar.",
     )
     parser.add_argument("--verificar", action="store_true", help="No publica: solo revisa que data/published coincida con su manifiesto.")

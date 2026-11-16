@@ -7,7 +7,7 @@ Descarga las fuentes a una caché, las valida y publica el dataset que lee la AP
 uv run python -m pipeline.build --descargar   # baja las fuentes a data/raw/ y publica
 uv run python -m pipeline.build               # publica otra vez desde la caché, sin red
 uv run python -m pipeline.build --verificar   # solo revisa que data/published coincida con su manifiesto
-uv run python -m pipeline.build --solo catalogo # (por ahora la única fuente) solo el catálogo y sus reglas; las demás tablas quedan como están (HU-238); no se combina con --descargar, --traer-cache ni --verificar
+uv run python -m pipeline.build --solo catalogo # (también ndvi, oferta y precios) solo esa fuente, desde su caché local de data/raw/, sin red; las demás tablas quedan como están (HU-238); no se combina con --descargar, --traer-cache ni --verificar. Sin la carpeta de la caché falla y dice cómo traerla (`raw_cache traer <carpeta>`)
 uv run python -m pipeline.build --traer-cache # antes de publicar, trae la caché compartida (HU-237)
 ```
 
