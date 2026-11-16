@@ -10,9 +10,13 @@ export const PANEL_WIDTH = 440;
 
 /**
  * Una pantalla de la finca con mapa (Figma: «Dibuje su lote», «Mis lotes», «Editar lote»). En escritorio el mapa
- * ocupa todo el fondo y el panel va a la izquierda, con su propio scroll si no cabe. En el celular el mapa va arriba
- * y el panel debajo, en el flujo de la página. El panel entra con la animación de las páginas (`useEntrance`), que en
- * modo ligero no se mueve.
+ * ocupa la primera pantalla completa y el panel va a la izquierda, con su propio scroll si no cabe. En el celular el
+ * mapa va arriba y el panel debajo, en el flujo de la página. El panel entra con la animación de las páginas
+ * (`useEntrance`), que en modo ligero no se mueve.
+ *
+ * Abajo va el pie de página. Sus colinas se dibujan por encima del pie (96 px en el celular, 130 en escritorio): la
+ * página les deja ese espacio, como `FormScene`, para que nunca tapen el mapa ni el final del panel. Por eso el mapa no
+ * es fijo: se queda en la primera pantalla y el pie aparece debajo al bajar, sin pasarle por encima.
  */
 export function MapScene({
   map,
@@ -34,8 +38,8 @@ export function MapScene({
   return (
     <>
       <TopBar />
-      <main className="relative min-h-svh bg-paleta-niebla">
-        <div className="relative h-[55svh] min-h-[300px] md:fixed md:inset-0 md:h-auto">{map}</div>
+      <main className="relative min-h-svh bg-paleta-niebla pb-36 md:min-h-[calc(100svh+10rem)] md:pb-0">
+        <div className="relative h-[55svh] min-h-[300px] md:absolute md:inset-x-0 md:top-0 md:h-svh">{map}</div>
         <div
           ref={panel}
           data-lenis-prevent
