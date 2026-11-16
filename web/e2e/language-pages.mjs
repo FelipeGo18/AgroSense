@@ -250,6 +250,15 @@ try {
             await page.getByRole("heading", { name: "Tubers, roots and plantains" }).waitFor();
             if (path.includes("producto=")) await page.getByRole("heading", { name: "Black potato", exact: true }).waitFor();
           }
+          // El panel de NASA GIBS (HU-211) del mapa del lote: solo aparece si el navegador dibuja el mapa (WebGL).
+          if (path === "/mi-finca/lotes/a1") {
+            const gibs = page.getByText(language === "en" ? "NASA layers" : "Capas de la NASA", { exact: true });
+            if (await gibs.count()) {
+              await gibs.first().click();
+              const panel = await gibs.first().locator("xpath=..").innerText();
+              if (language === "en") assert.doesNotMatch(panel, /Imagen satelital|Reintentar|Fecha de la imagen|no es una vista en vivo/);
+            }
+          }
           if (path === "/mi-cuenta/escribirnos") {
             await page.getByLabel(language === "en" ? "Your message" : "Su mensaje", { exact: true }).waitFor();
             assert.match(text, language === "en" ? /Answered/ : /Respondido/);
