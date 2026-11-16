@@ -1396,6 +1396,7 @@
   "map.gibs.resolution": "MODIS Terra · resolución nominal 250 m. Acercar no añade detalle.",
   "map.gibs.date.color": "Fecha de la imagen: {{date}}",
   "map.gibs.date.ndvi": "Compuesto móvil de 8 días · fecha GIBS: {{date}}",
+  "map.gibs.date.colorFallback": "No hay imagen de la NASA del {{latest}} para el centro de esta zona (aún no está procesada o el satélite no pasó por aquí): mostramos la más reciente que sí la tiene. Puede elegir otra fecha.",
   "map.gibs.chooseLayer": "Active una capa para consultar su fecha disponible.",
   "map.gibs.dateLabel": "Fecha · {{layer}}",
   "map.gibs.status.loading": "Cargando imágenes de la NASA…",

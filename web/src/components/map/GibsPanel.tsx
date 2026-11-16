@@ -23,6 +23,9 @@ export function GibsPanel({ gibs }: { gibs: ReturnType<typeof useGibs> }) {
             <p className="text-xs break-words">{t(`map.gibs.product.${key}`)}</p>
             <p>{t("map.gibs.resolution")}</p>
             <p>{gibs.dates ? t(`map.gibs.date.${key}`, { date: gibs.dates[key] }) : t("map.gibs.chooseLayer")}</p>
+            {key === "color" && gibs.colorFallback && gibs.latestDates && (
+              <p>{t("map.gibs.date.colorFallback", { latest: gibs.latestDates.color })}</p>
+            )}
             {gibs.dates && (
               <label className="mt-2 block">
                 {t("map.gibs.dateLabel", { layer: layerName(key) })}
