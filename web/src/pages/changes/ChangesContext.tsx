@@ -1,4 +1,7 @@
-import { useSearchParams } from "react-router";
+import { cropName as cropLabel } from "@/features/farm/seasons";
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
+import { useSearchParams } from "@/components/layout/LanguageLink";
 import { Combobox } from "@/components/ui/Combobox";
 import { SelectField } from "@/components/ui/SelectField";
 import { useMunicipalities } from "@/features/farm/lots";
@@ -37,51 +40,57 @@ export function useChangesContext() {
 }
 
 export function ChangesContext({ context }: { context: ReturnType<typeof useChangesContext> }) {
+  useTranslation();
   const { municipality, municipalities, crops, ready, error, change } = context;
-  if (error) return <p role="alert">No pudimos cargar los municipios y los cultivos: {error.message}</p>;
+  if (error)
+    return (
+      <p role="alert">
+        {t("pages.changes.ChangesContext.weCouldNotLoadMunicipalitiesAndCrops")} {error.message}
+      </p>
+    );
   return (
-    <div className="flex min-w-0 flex-col gap-5" aria-label="Contexto de la comparación histórica">
+    <div className="flex min-w-0 flex-col gap-5" aria-label={t("pages.changes.ChangesContext.historicalComparisonInputs")}>
       <Combobox
-        label="Municipio"
-        placeholder="Busque su municipio"
+        label={t("pages.farm.AddLotPage.municipality")}
+        placeholder={t("pages.changes.ChangesContext.findYourMunicipality")}
         loading={municipalities.isPending}
         options={(municipalities.data ?? []).map((item) => ({ id: item.municipality_id, label: item.name, hint: item.department }))}
         value={municipality ? { id: municipality.municipality_id, label: municipality.name, hint: municipality.department } : null}
         onChange={(option) => change("municipio", option.id)}
-        error={ready && context.municipalityId && !municipality ? "Elija un municipio del catálogo." : undefined}
+        error={
+          ready && context.municipalityId && !municipality ? t("pages.changes.ChangesContext.chooseAMunicipalityFromTheCatalog") : undefined
+        }
       />
       <SelectField
-        label="Cultivo"
+        label={t("pages.farm.SeasonFormPage.crop")}
         value={context.cropId}
         disabled={crops.isPending}
         onChange={(event) => change("cultivo", event.target.value)}
         options={[
-          { value: "", label: "Elija un cultivo" },
-          ...(crops.data ?? []).filter((item) => item.kind === "crop").map((item) => ({ value: item.crop_id, label: item.name_es })),
+          { value: "", label: t("pages.changes.LotChangesLink.chooseACrop") },
+          ...(crops.data ?? []).filter((item) => item.kind === "crop").map((item) => ({ value: item.crop_id, label: cropLabel(item) })),
         ]}
-        error={ready && context.cropId && !context.crop ? "Elija un cultivo del catálogo." : undefined}
+        error={ready && context.cropId && !context.crop ? t("pages.changes.ChangesContext.chooseACropFromTheCatalog") : undefined}
       />
       <SelectField
-        label="¿Tiene riego?"
+        label={t("pages.changes.ChangesContext.doYouHaveIrrigation")}
         value={context.irrigationValid ? context.irrigation : ""}
         onChange={(event) => change("riego", event.target.value)}
         options={[
-          { value: "", label: "Elija una opción" },
-          { value: "si", label: "Sí" },
-          { value: "no", label: "No" },
-          { value: "nose", label: "No sé" },
+          { value: "", label: t("pages.changes.ChangesContext.chooseAnOption") },
+          { value: "si", label: t("features.diagnosis.consult.yes") },
+          { value: "no", label: t("features.diagnosis.consult.no") },
+          { value: "nose", label: t("features.diagnosis.consult.iDontKnow") },
         ]}
-        error={context.irrigationValid ? undefined : "Elija una opción de riego."}
-        hint="Si no sabe, se compara sin riego y se indica en las limitaciones."
+        error={context.irrigationValid ? undefined : t("pages.changes.ChangesContext.chooseAnIrrigationOption")}
+        hint={t("pages.changes.ChangesContext.ifUnsureTheComparisonAssumesNoIrrigation")}
       />
       {context.valid && (
         <p className="font-bold">
-          {context.crop?.name_es} · {municipality?.name}, {municipality?.department}
+          {cropLabel(context.crop)} · {municipality?.name}, {municipality?.department}
         </p>
       )}
-      <p className="text-sm text-texto-secundario">
-        Los datos describen el municipio, también cuando llega desde un lote. No son mediciones de su terreno.
-      </p>
+      <p className="text-sm text-texto-secundario">{t("pages.changes.ChangesContext.theDataDescribesTheMunicipalityIncludingWhen")}</p>
     </div>
   );
 }

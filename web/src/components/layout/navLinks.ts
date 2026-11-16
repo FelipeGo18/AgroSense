@@ -6,18 +6,18 @@ import { PATHS } from "@/app/paths";
  * y en el pie de página.
  */
 export const NAV: { to: string; label: string; wide?: true }[] = [
-  { to: PATHS.consult, label: "Consultar" },
-  { to: PATHS.farm, label: "Mi finca" },
-  { to: PATHS.prices, label: "Precios", wide: true },
-  { to: PATHS.howItWorks, label: "Cómo funciona" },
+  { to: PATHS.consult, label: "nav.consult" },
+  { to: PATHS.farm, label: "nav.farm" },
+  { to: PATHS.prices, label: "nav.prices", wide: true },
+  { to: PATHS.howItWorks, label: "nav.how" },
 ];
 
 export const MEMBER = [
-  { to: PATHS.account, label: "Mi cuenta" },
-  { to: PATHS.activity, label: "Mi actividad" },
+  { to: PATHS.account, label: "nav.account" },
+  { to: PATHS.activity, label: "nav.activity" },
 ];
 
 export const GUEST = [
-  { to: PATHS.login, label: "Entrar" },
-  { to: PATHS.signup, label: "Crear cuenta" },
+  { to: PATHS.login, label: "nav.login" },
+  { to: PATHS.signup, label: "nav.signup" },
 ];

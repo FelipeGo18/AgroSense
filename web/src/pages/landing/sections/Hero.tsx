@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { isFirstLoad } from "@/lib/firstLoad";
 import { useCallback, useRef } from "react";
 import { PATHS } from "@/app/paths";
@@ -29,6 +30,7 @@ function earthFrame(w: number, h: number, p: number, copyBottom: number): EarthF
  * con la región piloto al frente y la cámara se acerca; después sigue el resto de la página.
  */
 export function Hero({ animated }: { animated: boolean }) {
+  const { t } = useTranslation();
   const root = useRef<HTMLElement>(null);
   const copy = useRef<HTMLDivElement>(null);
   const progress = useRef(0);
@@ -89,15 +91,14 @@ export function Hero({ animated }: { animated: boolean }) {
               data-hero-in
               className="mt-5 max-w-[37rem] text-[clamp(1.25rem,2.1vw,1.875rem)] leading-[1.4] [text-shadow:0_2px_0_rgb(11_18_38/0.6)]"
             >
-              ¿Qué sembrar y en qué orden? Le mostramos estrategias de rotación con datos de la NASA y reglas que se pueden explicar. Usted
-              decide.
+              {t("landing.hero")}
             </p>
             <div data-hero-in className="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:gap-6">
               <ButtonLink to={PATHS.consult} className="sm:w-[300px]">
-                Consultar sin cuenta
+                {t("landing.consult")}
               </ButtonLink>
               <ButtonLink to={PATHS.login} variant="secondary" className="sm:w-[180px]">
-                Entrar
+                {t("nav.login")}
               </ButtonLink>
             </div>
           </div>
@@ -116,10 +117,10 @@ export function Hero({ animated }: { animated: boolean }) {
           }}
           className="absolute bottom-9 left-5 w-44 py-2 text-left text-sm font-bold [text-shadow:0_2px_0_rgb(11_18_38/0.7)] focus-visible:outline-white md:bottom-6 md:left-[34%] md:flex md:min-h-11 md:w-auto md:-translate-x-1/2 md:items-center md:justify-center md:px-3 md:text-center md:whitespace-nowrap lg:left-[39%]"
         >
-          Baje para empezar el recorrido <span aria-hidden="true">↓</span>
+          {t("landing.scroll")} <span aria-hidden="true">↓</span>
         </a>
         <p className="absolute inset-x-0 bottom-2 text-center text-[12px] text-[#C9D6E0] md:inset-x-auto md:right-8 md:bottom-3 md:text-xs">
-          {GLOBE_CREDIT}
+          {t(GLOBE_CREDIT)}
         </p>
       </div>
     </section>

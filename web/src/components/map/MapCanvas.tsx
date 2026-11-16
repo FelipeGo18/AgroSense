@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -8,6 +9,8 @@ import { useEffect, useRef, useState } from "react";
 import { TerraDraw, TerraDrawPolygonMode, TerraDrawSelectMode, ValidateNotSelfIntersecting } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { bbox, center, type Boundary, type LotPolygon } from "@/features/farm/geo";
+import { mountGibsColor, mountGibsLayer } from "./gibsMap";
+import type { useGibs } from "./useGibs";
 
 /** Mapa base de OpenStreetMap servido por OpenFreeMap (specs/04-stack.md). Sin clave ni cuenta. */
 export const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
@@ -44,6 +47,7 @@ export interface MapControls {
 }
 
 export interface MapCanvasProps {
+  gibs?: Pick<ReturnType<typeof useGibs>, "selected" | "dates" | "attempt" | "onStatus">;
   animated: boolean;
   boundary: Boundary | null;
   /** Lo que se encuadra al abrir: el lote, o si no hay, el municipio. */
@@ -68,7 +72,19 @@ type GeoJSONData = Parameters<GeoJSONSource["setData"]>[0];
  * Es la única pieza que conoce MapLibre; se carga aparte (React.lazy) para que las páginas sin mapa no la descarguen.
  * En modo ligero el mapa no anima: encuadra, acerca y aleja sin movimiento.
  */
-export default function MapCanvas({ animated, boundary, focus, lots = [], onLotClick, editing, padding, onReady, onFail }: MapCanvasProps) {
+export default function MapCanvas({
+  gibs,
+  animated,
+  boundary,
+  focus,
+  lots = [],
+  onLotClick,
+  editing,
+  padding,
+  onReady,
+  onFail,
+}: MapCanvasProps) {
+  const { t, i18n } = useTranslation();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const draw = useRef<TerraDraw | null>(null);
@@ -95,6 +111,10 @@ export default function MapCanvas({ animated, boundary, focus, lots = [], onLotC
         center: [-74, 4.6],
         zoom: 6,
         attributionControl: false,
+        locale: {
+          "Map.Title": t("map.accessible"),
+          "AttributionControl.ToggleAttribution": t("map.attribution.toggle"),
+        },
         fadeDuration: animated ? 300 : 0,
         dragRotate: false,
         pitchWithRotate: false,
@@ -157,6 +177,32 @@ export default function MapCanvas({ animated, boundary, focus, lots = [], onLotC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cambiar de idioma conserva el dibujo y la cámara, y actualiza los rótulos de MapLibre.
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance) return;
+    instance.getCanvas().setAttribute("aria-label", t("map.accessible"));
+    const attribution = instance.getContainer().querySelector<HTMLButtonElement>(".maplibregl-ctrl-attrib-button");
+    if (attribution) {
+      attribution.title = t("map.attribution.toggle");
+      attribution.setAttribute("aria-label", t("map.attribution.toggle"));
+    }
+  }, [t, i18n.resolvedLanguage, ready]);
+
+  // Dos efectos independientes: apagar NDVI no descarga de nuevo la imagen de color real.
+  const colorOn = gibs?.selected.color;
+  const ndviOn = gibs?.selected.ndvi;
+  const colorDate = gibs?.dates?.color;
+  const ndviDate = gibs?.dates?.ndvi;
+  const attempt = gibs?.attempt;
+  const onStatus = gibs?.onStatus;
+  useEffect(() => {
+    if (ready && map.current && colorOn && colorDate && onStatus) return mountGibsColor(map.current, colorDate, onStatus);
+  }, [ready, colorOn, colorDate, attempt, onStatus]);
+  useEffect(() => {
+    if (ready && map.current && ndviOn && ndviDate && onStatus) return mountGibsLayer(map.current, "ndvi", ndviDate, onStatus);
+  }, [ready, ndviOn, ndviDate, attempt, onStatus]);
+
   // ---------- El límite del municipio y el encuadre ----------
   useEffect(() => {
     const instance = map.current;
@@ -197,6 +243,7 @@ export default function MapCanvas({ animated, boundary, focus, lots = [], onLotC
       label.type = "button";
       label.className = "map-label";
       label.textContent = lot.name;
+      label.setAttribute("aria-label", lot.name);
       label.addEventListener("click", () => latest.current.onLotClick?.(lot.id));
       return new maplibregl.Marker({ element: label }).setLngLat(center(lot.geometry)).addTo(instance);
     });
@@ -298,6 +345,7 @@ export default function MapCanvas({ animated, boundary, focus, lots = [], onLotC
     const label = document.createElement("span");
     label.className = `map-area ${outside ? "map-area-outside" : ""}`;
     label.textContent = areaLabel;
+    label.setAttribute("aria-label", areaLabel);
     areaMarker.current = new maplibregl.Marker({ element: label }).setLngLat(center(geometry)).addTo(instance);
   }, [ready, geometryKey, areaLabel, outside]);
 

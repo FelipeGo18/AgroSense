@@ -1,3 +1,4 @@
+import { t, locale } from "@/lib/i18n";
 /**
  * El texto de la política de tratamiento de datos (HU-163, R9). Dice, con más detalle, lo mismo que el consentimiento
  * de «Crear cuenta». Misma redacción que el diseño: design/pantallas/politica.py.
@@ -13,93 +14,82 @@
 /** Mientras sea verdadero, la página avisa que el texto todavía no pasó por revisión legal. */
 export const LEGAL_REVIEW_PENDING = true;
 
-export const POLICY_SINCE = "11 de octubre de 2026";
+export const POLICY_SINCE = () =>
+  new Intl.DateTimeFormat(locale(), { dateStyle: "long", timeZone: "UTC" }).format(new Date("2026-10-11T12:00:00Z"));
 
 /** Qué dice una frase: algo que se guarda, algo que nunca se guarda o una explicación. */
 export type Mark = "kept" | "never" | "note";
 
-export const SECTIONS: { title: string; items: { mark: Mark; text: string }[] }[] = [
+export const SECTIONS = (): { title: string; items: { mark: Mark; text: string }[] }[] => [
   {
-    title: "Qué guardamos cuando tiene cuenta",
+    title: t("pages.policy.content.whatWeStoreWhenYouHaveAn"),
     items: [
-      { mark: "kept", text: "Su usuario, el nombre con que quiere que lo llamemos y sus prioridades." },
-      { mark: "kept", text: "Sus lotes: el nombre, el contorno que dibujó en el mapa, su área y si tienen riego." },
-      { mark: "kept", text: "Sus siembras y cosechas, con el diagnóstico que vio al sembrar." },
-      { mark: "kept", text: "Sus sesiones abiertas, para que pueda entrar desde varios dispositivos." },
-      { mark: "kept", text: "La actividad de su cuenta durante 180 días: qué se hizo y cuándo, no lo que escribió." },
-      { mark: "kept", text: "Los reportes que nos escriba." },
+      { mark: "kept", text: t("pages.policy.content.yourUsernamePreferredNameAndPriorities") },
+      { mark: "kept", text: t("pages.policy.content.yourPlotsNameBoundaryDrawnOnThe") },
+      { mark: "kept", text: t("pages.policy.content.yourPlantingsAndHarvestsWithTheDiagnosis") },
+      { mark: "kept", text: t("pages.policy.content.yourActiveSessionsSoYouCanSign") },
+      { mark: "kept", text: t("pages.policy.content.yourAccountActivityFor180DaysWhat") },
+      { mark: "kept", text: t("pages.policy.content.theReportsYouSubmit") },
     ],
   },
   {
-    title: "Qué no guardamos",
+    title: t("pages.policy.content.whatWeDoNotStore"),
     items: [
-      { mark: "never", text: "Correo, celular, documento ni dirección. No los pedimos." },
-      { mark: "never", text: "Su contraseña: se guarda una huella que no se puede leer. Por eso no se puede recuperar." },
-      { mark: "never", text: "Lo que consulta sin cuenta: se envía solo para calcular y no queda guardado." },
-      { mark: "never", text: "Quién hizo cada consulta. Solo se cuenta cuántas hubo por día, municipio y cultivo." },
+      { mark: "never", text: t("pages.policy.content.emailAddressPhoneNumberIdDocumentOr") },
+      { mark: "never", text: t("pages.policy.content.yourPasswordOnlyAnUnreadableHashIs") },
+      { mark: "never", text: t("pages.policy.content.requestsMadeWithoutAnAccountDataIs") },
+      { mark: "never", text: t("pages.policy.content.whoMadeEachCalculationRequestOnlyTotals") },
     ],
   },
   {
-    title: "Para qué los usamos",
+    title: t("pages.policy.content.whatWeUseItFor"),
     items: [
-      { mark: "note", text: "Para mostrarle su finca y para que las estrategias de rotación usen su historial real." },
+      { mark: "note", text: t("pages.policy.content.toDisplayYourFarmAndUseYour") },
       {
         mark: "note",
-        text: "Lo que siembra se suma, sin su nombre, a los totales de su municipio. Esos totales solo se muestran cuando hay al menos 5 cuentas.",
+        text: t("pages.policy.content.yourPlantingsContributeAnonymouslyToMunicipalityTotals"),
       },
-      { mark: "note", text: "No se usan para nada más." },
+      { mark: "note", text: t("pages.policy.content.itIsNotUsedForAnyOther") },
     ],
   },
   {
-    title: "Quién puede verlos",
+    title: t("pages.policy.content.whoCanSeeIt"),
     items: [
-      { mark: "note", text: "Usted, con su usuario y su contraseña." },
-      { mark: "note", text: "Se guardan en una base de datos en la nube y viajan cifrados entre AgroSense y esa base." },
+      { mark: "note", text: t("pages.policy.content.youUsingYourUsernameAndPassword") },
+      { mark: "note", text: t("pages.policy.content.itIsStoredInACloudDatabase") },
       {
         mark: "note",
-        text: "Soporte puede ver sus lotes para ayudarle. Cada vez que lo hace queda escrito en «Mi actividad», donde usted lo puede ver.",
-      },
-    ],
-  },
-  {
-    title: "Cómo escribirnos",
-    items: [
-      {
-        mark: "note",
-        text: "Para preguntar qué datos suyos guardamos, pedir que los corrijamos o reportar un problema, escríbanos desde «Mi cuenta», en «Escribir al responsable». Ahí ve cómo va su mensaje.",
-      },
-      {
-        mark: "note",
-        text: "Le respondemos ahí mismo, en máximo 10 días hábiles si es una consulta y 15 si es un reclamo (Ley 1581 de 2012).",
-      },
-      { mark: "note", text: "Si nunca tuvo cuenta, no guardamos nada suyo: no hay datos suyos que pedir." },
-      {
-        mark: "note",
-        text: "El responsable de sus datos es el equipo RealE4Life. Un correo de contacto para quien no puede entrar a su cuenta o ya la borró está por definirse con la revisión legal.",
+        text: t("pages.policy.content.supportCanViewYourPlotsToHelp"),
       },
     ],
   },
   {
-    title: "Cuánto tiempo y cómo borrarlos",
+    title: t("pages.policy.content.howToWriteToUs"),
     items: [
+      { mark: "note", text: t("pages.policy.content.toAskWriteFromMyAccount") },
+      { mark: "note", text: t("pages.policy.content.weAnswerWithinDeadlines") },
+      { mark: "note", text: t("pages.policy.content.noAccountNothingKept") },
+      { mark: "note", text: t("pages.policy.content.controllerAndPendingEmail") },
+    ],
+  },
+  {
+    title: t("pages.policy.content.howLongItIsKeptAndHow"),
+    items: [
+      { mark: "note", text: t("pages.policy.content.dataIsKeptWhileYouHaveAn") },
+      { mark: "note", text: t("pages.policy.content.inMyAccountYouCanViewWhat") },
       {
         mark: "note",
-        text: "Se guardan mientras tenga la cuenta, también sus mensajes y nuestras respuestas. La actividad se borra sola a los 180 días.",
-      },
-      { mark: "note", text: "En «Mi cuenta» puede ver lo que guardamos, cambiar su nombre y su usuario, y borrar su cuenta." },
-      {
-        mark: "note",
-        text: "Borrar la cuenta lo borra todo: usuario, sesiones, lotes, siembras, reportes y actividad. No se puede deshacer.",
+        text: t("pages.policy.content.deletingTheAccountDeletesEverythingUsernameSessions"),
       },
     ],
   },
   {
-    title: "En su navegador",
+    title: t("pages.policy.content.inYourBrowser"),
     items: [
-      { mark: "note", text: "Una sola cookie, la de su sesión. No hay cookies de publicidad ni de seguimiento." },
+      { mark: "note", text: t("pages.policy.content.oneCookieForYourSessionNoAdvertising") },
       {
         mark: "note",
-        text: "El modo ligero, el sonido y, sin cuenta, sus prioridades se recuerdan en este dispositivo y no salen de él.",
+        text: t("pages.policy.content.lightModeSoundAndWithoutAnAccount"),
       },
     ],
   },

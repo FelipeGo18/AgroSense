@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef } from "react";
 import globeUrl from "@/assets/globe.json?url";
 import { lerpLon, lightFactor, parseHex, rotateInto, rotation, seeded, shade, type GlobeData, type Rgb } from "@/lib/globe";
@@ -198,6 +199,7 @@ function drawGlobe(ctx: CanvasRenderingContext2D, globe: Prepared, { cx, cy, r }
  * Se puede girar arrastrándola con el ratón o con el dedo; al soltarla sigue girando sola.
  */
 export function Earth({ progress, frame = centered, still = false, className = "" }: EarthProps) {
+  useTranslation();
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

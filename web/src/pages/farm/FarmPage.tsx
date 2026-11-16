@@ -1,6 +1,8 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useState, type ReactNode } from "react";
 import { ApiError } from "@/api/client";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "@/components/layout/LanguageLink";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
 import { MapScene, PANEL_WIDTH } from "@/components/layout/MapScene";
@@ -30,18 +32,23 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
  * Los borrados hace menos de 30 días se ven aparte, en «Borrados hace poco», con «Restaurar» (HU-204).
  */
 export function FarmPage() {
+  useTranslation();
   return <RequireSession>{() => <Farm />}</RequireSession>;
 }
 
 /** «Papa y arveja en curso», con los nombres del catálogo. */
 function cropsText(ids: string[], names: Map<string, string>) {
-  if (ids.length === 0) return "Sin siembra en curso";
+  if (ids.length === 0) return t("pages.farm.FarmPage.noPlantingInProgress");
   const named = [...new Set(ids)].map((id) => names.get(id) ?? id);
-  const list = named.length === 1 ? named[0] : `${named.slice(0, -1).join(", ")} y ${named.at(-1)!.toLowerCase()}`;
-  return `${list} en curso`;
+  const list =
+    named.length === 1
+      ? named[0]
+      : t("features.strategies.entry.and", { v0: named.slice(0, -1).join(", "), v1: named.at(-1)!.toLowerCase() });
+  return t("pages.farm.FarmPage.inProgress", { v0: list });
 }
 
 function Farm() {
+  useTranslation();
   const navigate = useNavigate();
   const lots = useLots();
   const municipalities = useMunicipalities();
@@ -56,12 +63,12 @@ function Farm() {
   const elsewhere = drawn.filter((lot) => lot.municipality_id !== zone);
   const boundary = useBoundary(zone);
   const towns = [...new Set(undrawn.map((lot) => places.get(lot.municipality_id)?.name ?? null))];
-  const town = towns.length === 1 && towns[0] ? towns[0] : "su municipio";
+  const town = towns.length === 1 && towns[0] ? towns[0] : t("pages.farm.FarmPage.yourMunicipality");
 
   const header = (
     <header>
-      <Eyebrow>Mi finca</Eyebrow>
-      <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Sus lotes</h1>
+      <Eyebrow>{t("nav.farm")}</Eyebrow>
+      <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">{t("pages.farm.FarmPage.yourPlots")}</h1>
     </header>
   );
 
@@ -69,22 +76,22 @@ function Farm() {
   if (lots.isPending || lots.isError || all.length === 0) {
     return (
       <FormScene scene="region" mood="idle">
-        <title>Mi finca · AgroSense</title>
+        <title>{t("pages.farm.FarmPage.myFarmAgrosense")}</title>
         {header}
         {lots.isPending ? (
-          <p role="status">Cargando sus lotes…</p>
+          <p role="status">{t("pages.farm.FarmPage.loadingYourPlots")}</p>
         ) : lots.isError ? (
           <>
-            <Alert>No pudimos cargar sus lotes. Intente de nuevo en un momento.</Alert>
+            <Alert>{t("pages.farm.FarmPage.weCouldNotLoadYourPlotsTry")}</Alert>
             <Button variant="secondary" className="self-start" onClick={() => void lots.refetch()}>
-              Volver a intentar
+              {t("pages.account.PrioritiesCard.tryAgain")}
             </Button>
           </>
         ) : (
           <>
-            <h2 className="text-[20px]">Todavía no tiene lotes</h2>
-            <p>Agregue su primer lote: con él AgroSense le muestra estrategias de rotación y el diagnóstico de cada siembra.</p>
-            <ButtonLink to={PATHS.addLot}>Agregar lote</ButtonLink>
+            <h2 className="text-[20px]">{t("pages.farm.FarmPage.youDoNotHaveAnyPlotsYet")}</h2>
+            <p>{t("pages.farm.FarmPage.addYourFirstPlotAgrosenseWillShow")}</p>
+            <ButtonLink to={PATHS.addLot}>{t("pages.farm.FarmPage.addPlot")}</ButtonLink>
             {lots.isSuccess && <DeletedLots />}
           </>
         )}
@@ -104,12 +111,12 @@ function Farm() {
         />
       }
     >
-      <title>Mi finca · AgroSense</title>
+      <title>{t("pages.farm.FarmPage.myFarmAgrosense")}</title>
       {header}
       {here.length > 0 && (
         <section aria-labelledby="en-el-mapa" className="flex flex-col gap-2">
           <h2 id="en-el-mapa" className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
-            En el mapa
+            {t("pages.farm.FarmPage.onTheMap")}
           </h2>
           <ul className="flex flex-col gap-2">
             {here.map((lot) => (
@@ -123,7 +130,7 @@ function Farm() {
       {elsewhere.length > 0 && (
         <section aria-labelledby="otro-municipio" className="flex flex-col gap-2">
           <h2 id="otro-municipio" className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
-            En otro municipio
+            {t("farm.otherMunicipality")}
           </h2>
           <ul className="flex flex-col gap-2">
             {elsewhere.map((lot) => (
@@ -132,13 +139,13 @@ function Farm() {
               </li>
             ))}
           </ul>
-          <p className="text-[14px] text-texto-secundario">Ábralo para verlo en su mapa.</p>
+          <p className="text-[14px] text-texto-secundario">{t("farm.openMap")}</p>
         </section>
       )}
       {undrawn.length > 0 && (
         <section aria-labelledby="sin-dibujar" className="flex flex-col gap-2">
           <h2 id="sin-dibujar" className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
-            Sin dibujar · No están en el mapa
+            {t("pages.farm.FarmPage.notDrawnNotOnTheMap")}
           </h2>
           <ul className="flex flex-col gap-2">
             {undrawn.map((lot) => (
@@ -147,11 +154,14 @@ function Farm() {
               </li>
             ))}
           </ul>
-          <p className="text-[14px] text-texto-secundario">Usan el suelo y la altitud de {town}, no los suyos.</p>
+          <p className="text-[14px] text-texto-secundario">
+            {t("pages.farm.FarmPage.theyUseSoilAndAltitudeDataFrom")} {town}
+            {t("pages.farm.FarmPage.ratherThanYourOwnMeasurements")}
+          </p>
         </section>
       )}
       <ButtonLink to={PATHS.addLot} className="mt-1">
-        Agregar lote
+        {t("pages.farm.FarmPage.addPlot")}
       </ButtonLink>
       <DeletedLots />
     </MapScene>
@@ -160,17 +170,18 @@ function Farm() {
 
 /** Los lotes borrados hace menos de 30 días (HU-204): cada uno dice hasta cuándo se puede restaurar. */
 function DeletedLots() {
+  useTranslation();
   const deleted = useDeletedLots();
   const [restored, setRestored] = useState<string | null>(null);
   if (!deleted.data?.length && !restored) return null;
   return (
     <section aria-labelledby="borrados" className="flex flex-col gap-2 border-t-2 border-superficie-borde pt-4">
       <h2 id="borrados" className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
-        Borrados hace poco
+        {t("farm.deleted.title")}
       </h2>
       {restored && (
         <p role="status" className="border-l-8 border-oscuro-oliva bg-paleta-niebla px-4 py-2 font-bold">
-          {restored} volvió a Mi finca.
+          {t("farm.restore.success", { name: restored })}
         </p>
       )}
       {deleted.data && deleted.data.length > 0 && (
@@ -187,6 +198,7 @@ function DeletedLots() {
 }
 
 function DeletedLotRow({ lot, onRestored }: { lot: LotListItem; onRestored: () => void }) {
+  useTranslation();
   const restore = useRestoreLot(lot.lot_id);
   return (
     <div className="flex flex-col gap-1">
@@ -198,7 +210,7 @@ function DeletedLotRow({ lot, onRestored }: { lot: LotListItem; onRestored: () =
           </span>
           {lot.restorable_until && (
             <span className="text-[14px] text-texto-secundario">
-              Borrado · se puede restaurar hasta el {formatLocalDate(lot.restorable_until)}
+              {t("farm.restore.until", { date: formatLocalDate(lot.restorable_until) })}
             </span>
           )}
         </span>
@@ -206,14 +218,16 @@ function DeletedLotRow({ lot, onRestored }: { lot: LotListItem; onRestored: () =
           variant="secondary"
           className="w-full sm:w-auto"
           loading={restore.isPending}
-          loadingText="Restaurando…"
-          aria-label={`Restaurar ${lot.name}`}
+          loadingText={t("farm.restore.loading")}
+          aria-label={t("farm.restore.label", { name: lot.name })}
           onClick={() => restore.mutate(undefined, { onSuccess: onRestored })}
         >
-          Restaurar
+          {t("farm.restore.action")}
         </Button>
       </div>
-      {restore.error && <Alert>{restore.error instanceof ApiError ? restore.error.message : "Algo falló. Intente de nuevo."}</Alert>}
+      {restore.error && (
+        <Alert>{restore.error instanceof ApiError ? restore.error.message : t("pages.auth.LoginPage.somethingWentWrongTryAgain")}</Alert>
+      )}
     </div>
   );
 }
@@ -244,6 +258,7 @@ function envelope(polygons: LotPolygon[]): LotPolygon | null {
 
 /** El contorno del lote, en pequeño, para la miniatura de la fila. */
 function Shape({ polygon }: { polygon: LotPolygon }) {
+  useTranslation();
   const [w, s, e, n] = bbox(polygon);
   const size = Math.max(e - w, n - s) || 1;
   const points = polygon.coordinates[0].map(([x, y]) => `${4 + ((x - w) / size) * 32},${36 - ((y - s) / size) * 32}`).join(" ");
@@ -255,6 +270,7 @@ function Shape({ polygon }: { polygon: LotPolygon }) {
 }
 
 function Thumb({ children }: { children: ReactNode }) {
+  useTranslation();
   return (
     <span aria-hidden="true" className="relative grid size-[60px] shrink-0 place-items-center">
       <Plate c={8} fill="#F2F5F7" stroke="var(--color-superficie-borde)" strokeWidth={1.5} />
@@ -264,6 +280,7 @@ function Thumb({ children }: { children: ReactNode }) {
 }
 
 function DrawnRow({ lot, place }: { lot: LotListItem; place: string | undefined }) {
+  useTranslation();
   const names = cropNames(useCrops().data);
   return (
     <Link to={PATHS.lot(lot.lot_id)} className="relative flex min-h-11 items-center gap-4 px-3 py-3 hover:brightness-[0.98]">
@@ -287,6 +304,7 @@ function DrawnRow({ lot, place }: { lot: LotListItem; place: string | undefined 
 
 /** Un lote sin dibujar: borde punteado y su contorno sin trazar. Tocarlo abre el lote; «Dibujar en el mapa», el dibujo. */
 function UndrawnRow({ lot, place }: { lot: LotListItem; place: string | undefined }) {
+  useTranslation();
   const names = cropNames(useCrops().data);
   return (
     <div className="relative flex items-start gap-4 px-3 py-3">
@@ -313,10 +331,10 @@ function UndrawnRow({ lot, place }: { lot: LotListItem; place: string | undefine
             {cropsText(lot.current_crop_ids, names)}
             {place ? ` · ${place}` : ""}
           </span>
-          <span className="text-[13px] text-texto-secundario">Área escrita a mano</span>
+          <span className="text-[13px] text-texto-secundario">{t("pages.farm.FarmPage.manuallyEnteredArea")}</span>
         </Link>
         <Link to={PATHS.drawLot(lot.lot_id)} className={`${LINK} min-h-11 self-start py-2 text-[15px]`}>
-          Dibujar en el mapa
+          {t("pages.farm.FarmPage.drawOnTheMap")}
         </Link>
       </span>
     </div>

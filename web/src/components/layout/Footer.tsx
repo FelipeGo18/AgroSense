@@ -1,5 +1,6 @@
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+import { Link } from "@/components/layout/LanguageLink";
 import { SOCIAL_LINKS } from "@/app/config";
 import { PATHS } from "@/app/paths";
 import { Logo } from "@/components/ui/Logo";
@@ -10,22 +11,22 @@ const TEAM = "RealE4Life";
 
 const COLUMNS = [
   {
-    title: "Explorar",
+    title: "footer.explore",
     links: [
-      { to: PATHS.consult, label: "Consultar" },
-      { to: PATHS.diagnosis, label: "Diagnóstico de una siembra" },
-      { to: PATHS.farm, label: "Mi finca" },
-      { to: PATHS.prices, label: "Precios" },
-      { to: PATHS.howItWorks, label: "Cómo funciona" },
-      { to: PATHS.journeyTour, label: "Del satélite a su finca" },
+      { to: PATHS.consult, label: "nav.consult" },
+      { to: PATHS.diagnosis, label: "footer.diagnosis" },
+      { to: PATHS.farm, label: "nav.farm" },
+      { to: PATHS.prices, label: "nav.prices" },
+      { to: PATHS.howItWorks, label: "nav.how" },
+      { to: PATHS.journeyTour, label: "footer.journeyTour" },
     ],
   },
   {
-    title: "Datos y cuenta",
+    title: "footer.data",
     // «Reportar un problema» es P1 (HU-170): no se dibuja hasta que exista.
     links: [
-      { to: `${PATHS.howItWorks}#fuentes`, label: "Fuentes y versión de los datos" },
-      { to: PATHS.dataPolicy, label: "Política de tratamiento de datos" },
+      { to: `${PATHS.howItWorks}#fuentes`, label: "footer.sources" },
+      { to: PATHS.dataPolicy, label: "footer.policy" },
     ],
   },
 ];
@@ -103,6 +104,7 @@ const LINK = "font-bold underline decoration-paleta-trigo decoration-2 underline
  * `aside` es un lugar junto a la marca, por ejemplo para la mascota que guía la página.
  */
 export function Footer({ aside }: { aside?: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <footer className="relative z-10 bg-pie-tierra text-pie-tinta">
       <svg
@@ -125,18 +127,18 @@ export function Footer({ aside }: { aside?: ReactNode }) {
           <div className="flex max-w-sm items-end gap-3">
             <div>
               <Logo />
-              <p className="mt-4 text-sm text-pie-suave">Datos de la NASA y reglas que se pueden leer, para sembrar mejor.</p>
+              <p className="mt-4 text-sm text-pie-suave">{t("footer.tagline")}</p>
             </div>
             {aside}
           </div>
           {COLUMNS.map((column) => (
-            <nav key={column.title} aria-label={column.title}>
-              <h2 className="font-texto text-[13px] font-bold tracking-wide text-pie-suave uppercase">{column.title}</h2>
+            <nav key={t(column.title)} aria-label={t(column.title)}>
+              <h2 className="font-texto text-[13px] font-bold tracking-wide text-pie-suave uppercase">{t(column.title)}</h2>
               <ul className="mt-3 flex flex-col gap-2 text-sm">
                 {column.links.map((link) => (
                   <li key={link.to}>
                     <Link to={link.to} className={LINK}>
-                      {link.label}
+                      {t(link.label)}
                     </Link>
                   </li>
                 ))}
@@ -145,7 +147,7 @@ export function Footer({ aside }: { aside?: ReactNode }) {
           ))}
           {SOCIAL_LINKS.length > 0 && (
             <div>
-              <h2 className="font-texto text-[13px] font-bold tracking-wide text-pie-suave uppercase">Síganos</h2>
+              <h2 className="font-texto text-[13px] font-bold tracking-wide text-pie-suave uppercase">{t("footer.follow")}</h2>
               <ul className="mt-3 flex gap-3">
                 {SOCIAL_LINKS.map((social) => (
                   <li key={social.label}>
@@ -153,7 +155,7 @@ export function Footer({ aside }: { aside?: ReactNode }) {
                       href={social.href}
                       target="_blank"
                       rel="noreferrer"
-                      aria-label={`${social.label} del equipo (se abre en otra pestaña)`}
+                      aria-label={t("footer.social", { name: social.label })}
                       className="flex size-11 items-center justify-center bg-white shadow-[0_4px_0_rgb(0_0_0/0.35)] focus-visible:outline-white"
                       style={{ color: BRAND_ICONS[social.brand].color }}
                     >
@@ -168,8 +170,8 @@ export function Footer({ aside }: { aside?: ReactNode }) {
           )}
         </div>
         <div className="flex flex-col gap-2 border-t border-pie-suave/35 pt-6 text-xs text-pie-suave md:flex-row md:justify-between">
-          <p>© 2026 {TEAM}. Todos los derechos reservados.</p>
-          <p>Hecho para el NASA Space Apps Challenge 2026</p>
+          <p>{t("footer.copyright", { team: TEAM })}</p>
+          <p>{t("footer.event")}</p>
         </div>
       </div>
     </footer>

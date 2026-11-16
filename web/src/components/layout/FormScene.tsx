@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, type ReactNode } from "react";
 import region from "../../../../design/paisaje/svg/a3-region.svg?url";
 import vereda from "../../../../design/paisaje/svg/a6-vereda.svg?url";
@@ -39,6 +40,7 @@ export interface FormSceneProps {
  * del día (`SceneAmbient`).
  */
 export function FormScene({ children, scene = "vereda", mood, signs = [], wide = false, rejected }: FormSceneProps) {
+  useTranslation();
   const stage = useEntrance<HTMLElement>({ bold: true });
   const animated = !useReducedMotion();
   const { act, poke } = useMascotReactions(stage, rejected);
@@ -88,6 +90,7 @@ export function FormScene({ children, scene = "vereda", mood, signs = [], wide =
 
 /** Letrero clavado, como los del kit. */
 function Sign({ children }: { children: ReactNode }) {
+  useTranslation();
   return (
     <div data-enter="pop" data-sway className="flex flex-col items-center">
       <span className="border-[3px] border-oscuro-trigo bg-paleta-trigo px-5 py-2 font-bold [clip-path:polygon(10px_0,calc(100%-10px)_0,100%_10px,100%_calc(100%-10px),calc(100%-10px)_100%,10px_100%,0_calc(100%-10px),0_10px)]">

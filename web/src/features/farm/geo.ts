@@ -1,3 +1,4 @@
+import { locale } from "@/lib/i18n";
 /**
  * Cuentas de geografía del lote en el navegador: el área del dibujo mientras se dibuja y si se sale del municipio.
  * Son para avisar al instante; la API vuelve a validar y calcula el área que se guarda (backend/api/lot_geometry.py).
@@ -75,5 +76,5 @@ export function center(geometry: LotPolygon): Position {
   return [(w + e) / 2, (s + n) / 2];
 }
 
-const M2 = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
-export const formatM2 = (value: number) => `${M2.format(value)} m²`;
+const M2 = () => new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 });
+export const formatM2 = (value: number) => `${M2().format(value)} m²`;

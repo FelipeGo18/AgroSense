@@ -1,3 +1,5 @@
+import { locale, t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import type { components } from "@/api/schema";
 import { SOIL_ESTIMATE } from "@/features/diagnosis/signals";
 
@@ -5,7 +7,7 @@ type MunicipalitySoil = components["schemas"]["MunicipalitySoil"];
 export type SoilProperties = Pick<MunicipalitySoil, "ph" | "soc_g_kg" | "texture_class" | "quality">;
 type SoilRange = components["schemas"]["SoilRange"];
 
-const NUMBER = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
+const NUMBER = () => new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 });
 
 /**
  * Niveles del carbono orgánico, en g/kg: los de la tabla 3 de Castro Franco (`cevipapa_taller_2005`, p. 35, «Niveles
@@ -36,16 +38,22 @@ const WATER_BY_TEXTURE: Record<string, "poca" | "algo" | "bien"> = {
   "arcillo limoso": "bien",
   arcilloso: "bien",
 };
-const WATER_TEXT = { poca: "Guarda poca agua", algo: "Guarda algo de agua", bien: "Guarda bien el agua" } as const;
+const WATER_TEXT = () =>
+  ({
+    poca: t("components.soil.SoilFacts.lowWaterRetention"),
+    algo: t("components.soil.SoilFacts.someWaterRetention"),
+    bien: t("components.soil.SoilFacts.goodWaterRetention"),
+  }) as const;
 
 /** «rango probable de 4,7 a 172 g/kg» (p05–p95), o nada si el mapa no trae el rango (R10). */
 export function rangeText(range: SoilRange, unit = ""): string | null {
   if (range.p05 === null || range.p95 === null) return null;
   const suffix = unit ? ` ${unit}` : "";
-  return `rango probable de ${NUMBER.format(range.p05)} a ${NUMBER.format(range.p95)}${suffix}`;
+  return t("components.soil.SoilFacts.likelyRangeFromTo", { v0: NUMBER().format(range.p05), v1: NUMBER().format(range.p95), v2: suffix });
 }
 
-const valueText = (range: SoilRange, unit = "") => (range.value === null ? null : `${NUMBER.format(range.value)}${unit ? ` ${unit}` : ""}`);
+const valueText = (range: SoilRange, unit = "") =>
+  range.value === null ? null : `${NUMBER().format(range.value)}${unit ? ` ${unit}` : ""}`;
 
 export interface SoilFact {
   label: string;
@@ -62,26 +70,33 @@ export function soilFacts(soil: SoilProperties): SoilFact[] {
   const water = soil.texture_class ? WATER_BY_TEXTURE[soil.texture_class] : undefined;
   return [
     {
-      label: "Carbono orgánico",
+      label: t("components.soil.SoilFacts.organicCarbon"),
       value: valueText(soil.soc_g_kg, "g/kg"),
-      level: soc === null ? null : soc < SOC_LOW_G_KG ? "Bajo" : soc > SOC_HIGH_G_KG ? "Alto" : "Medio",
+      level:
+        soc === null
+          ? null
+          : soc < SOC_LOW_G_KG
+            ? t("components.soil.SoilFacts.low")
+            : soc > SOC_HIGH_G_KG
+              ? t("components.soil.SoilFacts.high")
+              : t("components.soil.SoilFacts.medium"),
       range: rangeText(soil.soc_g_kg, "g/kg"),
-      meaning: `La materia orgánica del suelo. Por debajo de ${SOC_LOW_G_KG} g/kg es baja, y convienen los abonos verdes, el descanso y los cultivos que dejan residuos.`,
+      meaning: t("components.soil.SoilFacts.soilOrganicMatterBelowGkgItIs", { v0: SOC_LOW_G_KG }),
     },
     {
-      label: "Textura",
-      value: soil.texture_class,
-      level: water ? WATER_TEXT[water] : null,
+      label: t("components.soil.SoilFacts.texture"),
+      value: soil.texture_class ? t(`soil.texture.${soil.texture_class}`, { defaultValue: soil.texture_class }) : null,
+      level: water ? WATER_TEXT()[water] : null,
       range: null,
-      meaning: "Cuánta arena, limo y arcilla tiene. Cambia cuánta agua guarda el suelo entre lluvias, y por eso entra en la señal de agua.",
+      meaning: t("components.soil.SoilFacts.theProportionsOfSandSiltAndClay"),
     },
     {
       // Sin nivel: las clases de pH (ácido, neutro, alcalino) necesitan su fuente registrada en `sources` (R8).
-      label: "pH",
+      label: t("components.soil.SoilFacts.ph"),
       value: valueText(soil.ph),
       level: null,
       range: rangeText(soil.ph),
-      meaning: "Qué tan ácido es el suelo. Cada cultivo aguanta un rango de pH; fuera de él crece mal.",
+      meaning: t("components.soil.SoilFacts.howAcidicTheSoilIsEachCrop"),
     },
   ];
 }
@@ -93,6 +108,7 @@ export function soilFacts(soil: SoilProperties): SoilFact[] {
  * y la salud del suelo de las estrategias, con el origen que publicó la API.
  */
 export function SoilFacts({ soil, place }: { soil: SoilProperties; place: string }) {
+  useTranslation();
   return (
     <div className="flex flex-col gap-3">
       <dl className="flex flex-col divide-y-2 divide-paleta-niebla">
@@ -100,7 +116,7 @@ export function SoilFacts({ soil, place }: { soil: SoilProperties; place: string
           <div key={fact.label} className="flex min-w-0 flex-col gap-1 py-3 first:pt-0">
             <dt className="text-[14px] font-bold text-texto-secundario">{fact.label}</dt>
             <dd className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <span className="text-[18px] font-bold">{fact.value ?? "Sin dato"}</span>
+              <span className="text-[18px] font-bold">{fact.value ?? t("features.diagnosis.signals.noData")}</span>
               {fact.level && (
                 <span className="rounded-sm bg-oliva-claro px-2 py-0.5 text-[14px] font-bold text-oscuro-oliva">{fact.level}</span>
               )}
@@ -109,7 +125,7 @@ export function SoilFacts({ soil, place }: { soil: SoilProperties; place: string
             <dd>
               <details className="text-[14px]">
                 <summary className="inline-flex min-h-11 cursor-pointer items-center font-bold text-oscuro-oliva underline decoration-2 underline-offset-4">
-                  ¿Qué es esto?
+                  {t("components.soil.SoilFacts.whatIsThis")}
                 </summary>
                 <p className="text-texto-secundario">{fact.meaning}</p>
               </details>
@@ -118,10 +134,11 @@ export function SoilFacts({ soil, place }: { soil: SoilProperties; place: string
         ))}
       </dl>
       <p className="border-l-4 border-paleta-calabaza bg-superficie-panel-suave px-3 py-2 text-[14px]">
-        Es el suelo de {place}, no una medición de su lote. {SOIL_ESTIMATE}
+        {t("components.soil.SoilFacts.thisIsSoilDataFor")} {place}
+        {t("components.soil.SoilFacts.notAMeasurementOfYourPlot")} {SOIL_ESTIMATE()}
       </p>
       {soil.quality === "partial" && (
-        <p className="text-[14px] text-texto-secundario">Parte de la zona no tiene dato en el mapa: la estimación es menos segura.</p>
+        <p className="text-[14px] text-texto-secundario">{t("components.soil.SoilFacts.partOfTheAreaHasNoMap")}</p>
       )}
     </div>
   );

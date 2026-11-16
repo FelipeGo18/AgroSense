@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useRef, type CSSProperties } from "react";
 import { useDayPhase } from "@/hooks/useDayPhase";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -40,6 +41,7 @@ const FIREFLIES = [
  * rótulo y su fuente) y nada de esto entra a un cálculo (decisión 7).
  */
 export function SceneAmbient({ contained = false }: { contained?: boolean }) {
+  useTranslation();
   const place = contained ? "absolute inset-0" : "fixed inset-0 -z-10";
   const layer = useRef<HTMLDivElement>(null);
   const animated = !useReducedMotion();

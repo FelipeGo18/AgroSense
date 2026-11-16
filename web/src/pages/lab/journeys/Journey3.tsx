@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -21,27 +22,29 @@ interface Place {
 
 /** Del páramo a la finca, de lado: el camino que hace el agua. */
 const PLACES: Place[] = [
-  { scene: "c1", title: "Páramo", text: "Aquí nace el agua: frailejones, niebla y lagunas.", mood: "idle" },
-  { scene: "c2", title: "Ladera", text: "La quebrada baja por el bosque hacia el valle.", mood: "flying" },
-  { scene: "a5", title: "Mosaico de parcelas", text: "El agua llega a los cultivos. Cada parcela, una decisión.", mood: "guide" },
-  { scene: "c4", title: "El pueblo", text: "Su municipio: aquí se cruzan el clima, la oferta y el mercado.", mood: "guide" },
-  { scene: "a6", title: "Su finca", text: "Y aquí su lote. AgroSense le dice si es buen semestre para sembrar.", mood: "celebrate" },
+  { scene: "c1", title: "lab.range.highlands.title", text: "lab.range.highlands.body", mood: "idle" },
+  { scene: "c2", title: "lab.range.slope.title", text: "lab.range.slope.body", mood: "flying" },
+  { scene: "a5", title: "lab.range.plots.title", text: "lab.range.plots.body", mood: "guide" },
+  { scene: "c4", title: "lab.range.town.title", text: "lab.range.town.body", mood: "guide" },
+  { scene: "a6", title: "lab.range.farm.title", text: "lab.range.farm.body", mood: "celebrate" },
 ];
 
 function PlaceCard({ place, index }: { place: Place; index: number }) {
+  const { t } = useTranslation();
   return (
     <Card>
       <p className="text-sm font-bold tracking-wide text-texto-secundario uppercase">
-        {index + 1} de {PLACES.length}
+        {t("lab.range.position", { current: index + 1, total: PLACES.length })}
       </p>
-      <h2 className="text-2xl">{place.title}</h2>
-      <p>{place.text}</p>
+      <h2 className="text-2xl">{t(place.title)}</h2>
+      <p>{t(place.text)}</p>
       {index === PLACES.length - 1 && <ExampleLabel />}
     </Card>
   );
 }
 
 export function Journey3() {
+  const { t } = useTranslation();
   const root = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const lenis = useSmoothScroll(!reduced);
@@ -79,12 +82,13 @@ export function Journey3() {
   if (reduced) {
     return (
       <>
+        <title>{t("lab.index.range.title")} · AgroSense</title>
         <JourneyNav current="/recorrido/3" />
         <main>
           {PLACES.map((p, i) => (
             <section
               key={p.scene}
-              aria-label={p.title}
+              aria-label={t(p.title)}
               className="relative flex min-h-screen items-start overflow-hidden px-[4vw] pt-[14vh]"
             >
               <Scene id={p.scene} />
@@ -101,12 +105,13 @@ export function Journey3() {
 
   return (
     <>
+      <title>{t("lab.index.range.title")} · AgroSense</title>
       <JourneyNav current="/recorrido/3" />
       <main ref={root} style={{ height: `${PLACES.length * 120}vh` }}>
         <div className="sticky top-0 h-screen overflow-hidden bg-paleta-cielo">
           <div className="travesia-track flex h-full will-change-transform" style={{ width: `${PLACES.length * 100}vw` }}>
             {PLACES.map((p, i) => (
-              <section key={p.scene} aria-label={p.title} className="relative h-full w-screen shrink-0 overflow-hidden">
+              <section key={p.scene} aria-label={t(p.title)} className="relative h-full w-screen shrink-0 overflow-hidden">
                 <Scene id={p.scene} />
                 <div className="absolute top-[14vh] left-[4vw] z-20">
                   <PlaceCard place={p} index={i} />

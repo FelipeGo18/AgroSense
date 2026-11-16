@@ -1,12 +1,14 @@
+import { useTranslation } from "react-i18next";
 import { useScroll } from "@/components/layout/SmoothScroll";
 import { STOPS, type StopId } from "./content";
 
 /** Las paradas del recorrido, al borde de la pantalla: dice en cuál va y lleva a cualquiera. Solo en pantallas anchas. */
 export function SectionNav({ active }: { active: StopId }) {
+  const { t } = useTranslation();
   const { scrollTo } = useScroll();
   const current = STOPS.findIndex((stop) => stop.id === active);
   return (
-    <nav aria-label="Paradas del recorrido" className="fixed top-1/2 right-5 z-30 hidden -translate-y-1/2 lg:block">
+    <nav aria-label={t("landing.stops")} className="fixed top-1/2 right-5 z-30 hidden -translate-y-1/2 lg:block">
       <ol className="flex flex-col gap-1">
         {STOPS.map((stop, i) => (
           <li key={stop.id}>
@@ -26,7 +28,7 @@ export function SectionNav({ active }: { active: StopId }) {
                 }`}
               />
               <span className="pointer-events-none absolute right-9 rounded-sm bg-paleta-noche px-2 py-1 text-xs whitespace-nowrap text-texto-sobre-oscuro opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100">
-                {stop.label}
+                {t(stop.label)}
               </span>
             </a>
           </li>
