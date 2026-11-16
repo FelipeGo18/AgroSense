@@ -212,6 +212,7 @@ export function WaterChart({
         {t("pages.diagnosis.WaterChart.thisIsTheAreasHistoryNotA")}
         {note ? ` ${note}` : ""}
       </p>
+      <p className="text-[14px] text-texto-secundario">{t("pages.diagnosis.WaterChart.lightUsesDryYear")}</p>
       <details className="text-[14px]">
         <summary className="inline-flex min-h-11 cursor-pointer items-center font-bold text-oscuro-oliva underline decoration-2 underline-offset-4">
           {t("pages.diagnosis.WaterChart.viewTheDataInATable")}

@@ -35,17 +35,19 @@ PRIVATE_PREFIXES = ("/api/v1/auth/", "/api/v1/me", "/api/v1/lots", "/api/v1/seas
 # La política de las respuestas JSON de la API: no cargan nada ni se muestran dentro de otra página.
 API_CSP = "default-src 'none'; frame-ancestors 'none'"
 # La de la web (HU-023): su JavaScript, sus estilos y sus imágenes salen del mismo origen. Fuera de él solo el mapa
-# (las teselas, las fuentes y los íconos de OpenFreeMap, `web/src/components/map/MapCanvas.tsx`). `'unsafe-inline'`
-# solo en los estilos: React y MapLibre ponen estilos en línea; ningún script va en línea. MapLibre arma imágenes y
-# trabajadores con `blob:`.
+# (las teselas, las fuentes y los íconos de OpenFreeMap, `web/src/components/map/MapCanvas.tsx`) y las capas de la
+# NASA GIBS del mapa del lote (HU-211: el catálogo WMTS, las teselas y la leyenda del NDVI, `web/src/app/config.ts`).
+# `'unsafe-inline'` solo en los estilos: React y MapLibre ponen estilos en línea; ningún script va en línea. MapLibre
+# arma imágenes y trabajadores con `blob:`.
 MAP_ORIGIN = "https://tiles.openfreemap.org"
+GIBS_ORIGIN = "https://gibs.earthdata.nasa.gov"
 WEB_CSP = (
     "default-src 'self'; "
     "script-src 'self'; "
     "style-src 'self' 'unsafe-inline'; "
-    f"img-src 'self' data: blob: {MAP_ORIGIN}; "
+    f"img-src 'self' data: blob: {MAP_ORIGIN} {GIBS_ORIGIN}; "
     "font-src 'self' data:; "
-    f"connect-src 'self' {MAP_ORIGIN}; "
+    f"connect-src 'self' {MAP_ORIGIN} {GIBS_ORIGIN}; "
     "worker-src 'self' blob:; "
     "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 )

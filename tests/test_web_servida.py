@@ -106,6 +106,16 @@ def test_politicas_de_seguridad(web, plain):
     assert "script-src 'self';" in WEB_CSP and "'unsafe-inline'" not in WEB_CSP.split("script-src")[1].split(";")[0]
 
 
+def test_la_politica_deja_cargar_las_capas_de_gibs():
+    """HU-211: el mapa del lote pide el catálogo WMTS y las teselas de GIBS con `fetch` (MapLibre) y la leyenda del NDVI
+    como imagen. Sin el origen en `connect-src` e `img-src`, el navegador las bloquea y la capa sale «no disponible»."""
+    directives = dict(part.strip().split(" ", 1) for part in WEB_CSP.split(";") if part.strip())
+    assert "https://gibs.earthdata.nasa.gov" in directives["connect-src"].split()
+    assert "https://gibs.earthdata.nasa.gov" in directives["img-src"].split()
+    # Ningún comodín: solo se abre ese origen.
+    assert "*" not in directives["connect-src"] and "*" not in directives["img-src"]
+
+
 @pytest.mark.parametrize(
     ("method", "path"),
     [
