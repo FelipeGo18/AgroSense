@@ -15,9 +15,9 @@ from backend.dataset import load
 
 PUBLISHED = Path(__file__).resolve().parents[1] / "data" / "published"
 CONTRACT_SOURCE_FIELDS = {"source_id", "name", "institution", "url", "coverage", "license"}
-# Los productos de la NASA que ya tienen adaptador y entran al núcleo (decisión 12). MODIS NDVI desde HU-208; SMAP y GIBS
-# se suman con su HU (HU-210 y HU-211), que publica su entrada en `sources`.
-NASA_IN_USE = ("nasa_power", "nasadem", "imerg", "modis_ndvi")
+# Los productos de la NASA que ya tienen adaptador y entran al núcleo (decisión 12). MODIS NDVI desde HU-208; GIBS desde
+# HU-211 (publicada en la 2026.11.28, desde `catalog/gibs.json`); SMAP se suma con HU-210.
+NASA_IN_USE = ("nasa_power", "nasadem", "imerg", "modis_ndvi", "nasa_gibs")
 
 
 def test_version_con_dataset_responde_lo_que_pide_el_contrato(dataset):
@@ -70,3 +70,11 @@ def test_version_publica_las_fuentes_de_la_nasa_del_dataset_de_la_demo(published
     ids = {s["source_id"] for s in body["sources"]}
     assert set(NASA_IN_USE) <= ids
     assert body["dataset_version"] == published.version
+
+
+def test_hu211_la_entrada_de_gibs_que_publica_pipeline_build_dice_lo_que_pide_el_contrato():
+    from pipeline.build import GIBS_FILE
+
+    entry = json.loads(GIBS_FILE.read_text(encoding="utf-8"))
+    assert entry["source_id"] == "nasa_gibs"
+    assert {key for key, value in entry.items() if value} >= CONTRACT_SOURCE_FIELDS
