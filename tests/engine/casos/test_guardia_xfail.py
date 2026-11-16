@@ -12,7 +12,14 @@ ARCHIVOS = sorted((RAIZ / "tests" / "engine" / "casos").glob("*.py")) + [RAIZ / 
 def marcas_prohibidas(codigo: str, nombre: str = "<codigo>") -> list[str]:
     """Los problemas de `codigo` (texto de un módulo): `skip`, `skipif`, y `xfail` sin `strict=True` o sin `reason` «espera HU-…»."""
     problemas = []
-    for nodo in ast.walk(ast.parse(codigo)):
+    arbol = ast.parse(codigo)
+    llamados = {id(n.func) for n in ast.walk(arbol) if isinstance(n, ast.Call)}  # los `func` de una llamada se revisan en la llamada
+    for nodo in ast.walk(arbol):
+        # `xfail` sin llamada: `@pytest.mark.xfail`, `pytestmark = pytest.mark.xfail`, `pytest.param(..., marks=pytest.mark.xfail)`.
+        if isinstance(nodo, ast.Attribute) and nodo.attr == "xfail" and id(nodo) not in llamados:
+            problemas.append(f"{nombre}:{nodo.lineno}: `xfail` sin llamada: no puede llevar `strict=True` ni `reason`")
+        if isinstance(nodo, ast.Name) and nodo.id == "xfail" and id(nodo) not in llamados:
+            problemas.append(f"{nombre}:{nodo.lineno}: `xfail` sin llamada: no puede llevar `strict=True` ni `reason`")
         # `pytest.skip(...)`, `pytest.mark.skip`, `pytest.mark.skipif(...)`, `@mark.xfail(...)`, `pytest.xfail(...)`, `pytest.importorskip`.
         if isinstance(nodo, ast.Attribute) and nodo.attr in ("skip", "skipif", "importorskip"):
             problemas.append(f"{nombre}:{nodo.lineno}: `{nodo.attr}` no se usa en los casos de referencia")
@@ -46,7 +53,7 @@ def test_los_xfail_de_las_cuentas_esperan_hu_167_y_son_estrictos():
     # Los dos casos pendientes de hoy (progreso de las temporadas, P1): se cuentan para que quitar uno no pase sin que se vea.
     codigo = (RAIZ / "tests" / "accounts" / "test_casos_referencia.py").read_text(encoding="utf-8")
     marcas = [n for n in ast.walk(ast.parse(codigo)) if isinstance(n, ast.Call) and getattr(n.func, "attr", None) == "xfail"]
-    assert [m.keywords[1].value.value for m in marcas if len(m.keywords) == 2] == ["espera HU-167 (P1)"] * 2
+    assert [{k.arg: k.value for k in m.keywords}["reason"].value for m in marcas if len(m.keywords) == 2] == ["espera HU-167 (P1)"] * 2
     assert marcas_prohibidas(codigo) == []
 
 
@@ -59,6 +66,10 @@ def test_la_guardia_detecta_cada_marca_prohibida():
         "import pytest\n@pytest.mark.xfail(strict=False, reason='espera HU-1')\ndef test_a(): ...",
         "import pytest\n@pytest.mark.xfail(strict=True, reason='pendiente')\ndef test_a(): ...",
         "import pytest\n@pytest.mark.xfail(strict=True)\ndef test_a(): ...",
+        "import pytest\n@pytest.mark.xfail\ndef test_a(): ...",
+        "import pytest\npytestmark = pytest.mark.xfail",
+        "import pytest\n@pytest.mark.parametrize('x', [pytest.param(1, marks=pytest.mark.xfail)])\ndef test_a(x): ...",
+        "from pytest import xfail\n@xfail\ndef test_a(): ...",
     ]
     for codigo in malos:
         assert marcas_prohibidas(codigo), codigo

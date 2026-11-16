@@ -526,6 +526,8 @@ def publicar_ejemplo(
     )
     if precios is not None:
         # `publish()` solo escribe `market_month` desde los precios diarios de SIPSA: aquí se arma la tabla de EJEMPLO ya hecha.
+        # Se escribe después de `publish()`, así que el `manifest.json` de este ejemplo no la nombra y el dataset no pasaría
+        # `verify()`: sirve para las pruebas del motor y la API, no como dataset publicado.
         from pipeline import schema
 
         filas = [
@@ -553,6 +555,15 @@ def publicar_ejemplo(
         pl.DataFrame(filas, schema=columnas).write_parquet(carpeta / "market_month.parquet")
 
 
+def _parchar_fuentes_de_oferta(monkeypatch) -> None:
+    """`tests/conftest.py` parchea la región de ejemplo en `climate_signals`, pero la oferta lee `get_signal_sources` de su propio
+    módulo: se parcha igual para que `pruebas` tenga sus fuentes por señal (HU-072)."""
+    from backend.api import supply_signal
+    from common import signal_sources
+
+    monkeypatch.setattr(supply_signal, "get_signal_sources", signal_sources.get_signal_sources)
+
+
 @pytest.fixture
 def armar_ejemplo(tmp_path, monkeypatch):
     """Una función que publica un dataset de EJEMPLO con lo que se pida (`publicar_ejemplo`) y devuelve la API sobre él.
@@ -562,12 +573,7 @@ def armar_ejemplo(tmp_path, monkeypatch):
         carpeta = tmp_path / "published"
         publicar_ejemplo(carpeta, **datos)
         if datos.get("oferta_cambio_pct") is not None:
-            # `tests/conftest.py` parchea la región de ejemplo en `climate_signals`, pero la oferta lee `get_signal_sources`
-            # de su propio módulo: se parcha igual para que `pruebas` tenga sus fuentes por señal (HU-072).
-            from backend.api import supply_signal
-            from common import signal_sources
-
-            monkeypatch.setattr(supply_signal, "get_signal_sources", signal_sources.get_signal_sources)
+            _parchar_fuentes_de_oferta(monkeypatch)
         monkeypatch.setenv("AGROSENSE_DATA_DIR", str(carpeta))
         get_settings.cache_clear()
         return TestClient(app)
@@ -580,12 +586,7 @@ def armar_ejemplos(tmp_path, monkeypatch):
     """Como `armar_ejemplo`, pero con varios datasets de EJEMPLO a la vez, cada uno en su carpeta: `armar_ejemplos(sin={...},
     con={...})` publica uno por nombre (los argumentos son los de `publicar_ejemplo`) y devuelve `usar(nombre)`, que apunta la API
     a ese y devuelve el cliente. Para comparar la misma consulta sobre datos distintos (R4)."""
-    from backend.api import supply_signal
-    from common import signal_sources
-
-    # `tests/conftest.py` parchea la región de ejemplo en `climate_signals`, pero la oferta lee `get_signal_sources` de su propio
-    # módulo: se parcha igual para que `pruebas` tenga sus fuentes por señal (HU-072).
-    monkeypatch.setattr(supply_signal, "get_signal_sources", signal_sources.get_signal_sources)
+    _parchar_fuentes_de_oferta(monkeypatch)
     carpetas = {}
 
     def armar(**datasets: dict) -> Callable[[str], TestClient]:

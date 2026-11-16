@@ -15,7 +15,7 @@ from common.region import region_today
 from tests.engine.casos.conftest import EJEMPLO_FRIO, diagnostico, rotacion
 
 # Heladas de ejemplo por mes (años de 30, como en `test_diagnostico.py`): críticas de junio a agosto, moderadas en abril, mayo y
-# septiembre y ninguna en el resto. Sembrar la papa en julio da `red` con `other_window`; en noviembre, `green` con `sow`.
+# septiembre y ninguna en el resto. Sembrar la papa en julio da `red` con `other_window`; en octubre, `green` con `sow`.
 HELADAS = {4: 9, 5: 9, 6: 24, 7: 24, 8: 24, 9: 9}
 BASE = {"imerg_en": (EJEMPLO_FRIO,), "lluvia_mm": 200.0, "helada_anios": HELADAS, "ph": 5.5, "reglas": True}
 # Con historia de precio: los cultivos con producto en SIPSA. La haba y el maíz no tienen (como en el dataset publicado).
@@ -147,7 +147,8 @@ def test_ejemplo_el_ingreso_sale_de_los_anos_con_mejor_precio_del_mes_de_la_cose
     # Se evalúa como rotación actual (se arma y se evalúa igual que las sugeridas, con `rank` nulo): así la secuencia es la pedida
     # y no depende de cuáles caben entre las 10 primeras.
     estrategia = rotacion(api, cycles=3, current_crop_ids=actual, sowing_date=fecha_de_siembra(11))["current_strategy"]
-    assert len(estrategia["crop_ids"]) == 3
+    # La rotación actual se repite desde su primer cultivo hasta completar los 3 ciclos.
+    assert estrategia["crop_ids"] == [actual[i % len(actual)] for i in range(3)]
     assert estrategia["scores"]["income"] == esperado, cuenta
     assert NO_CRITERION["income"] not in estrategia["limitations"]
     # El ingreso es historia de precios: no un pronóstico de lo que se va a ganar.
