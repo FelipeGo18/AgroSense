@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 
 /**
@@ -31,26 +33,26 @@ const INK = "#1D1D1B";
 const CREAM = "#FFF6E0";
 const RED = "#E76F51";
 
-const SEEDS: Record<MascotSeed, { d: string; fill: string; light: string; label: string }> = {
+const SEEDS = (): Record<MascotSeed, { d: string; fill: string; light: string; label: string }> => ({
   sprouted: {
     d: "M158 58 C196 62 216 98 212 132 C208 168 184 188 156 188 C126 188 104 166 102 134 C100 98 122 60 158 58Z",
     fill: "#C8873A",
     light: "#E3AE68",
-    label: "semilla germinada",
+    label: t("components.mascot.Mascot.sproutedSeed"),
   },
   bean: {
     d: "M126 76 C156 50 208 70 212 118 C216 162 184 190 150 186 C114 182 96 154 108 130 C114 118 130 120 130 108 C130 96 114 94 126 76Z",
     fill: "#A8463A",
     light: "#CC6B58",
-    label: "frijol",
+    label: t("components.mascot.Mascot.bean"),
   },
   maize: {
     d: "M124 64 C140 54 178 54 194 64 C214 78 212 120 200 152 C190 178 172 190 158 190 C144 190 126 178 116 152 C104 120 104 78 124 64Z",
     fill: "#F2C230",
     light: "#FBE08A",
-    label: "grano de maíz",
+    label: t("components.mascot.Mascot.maizeGrain"),
   },
-};
+});
 
 type Arm = "down" | "up" | "point" | "tuck" | "back" | "cover" | "cheek";
 type Eyes = "pie" | "happy" | "hollow" | "closed";
@@ -71,13 +73,20 @@ interface Pose {
   zzz?: boolean;
 }
 
-const POSES: Record<MascotMood, Pose> = {
-  idle: { label: "en reposo", eyes: "pie", mouth: "smile", arms: ["down", "down"] },
-  guide: { label: "señalando", eyes: "pie", look: 4, mouth: "open", arms: ["down", "point"], waves: 2 },
-  celebrate: { label: "celebrando", eyes: "happy", mouth: "big", arms: ["up", "up"], transform: "translate(0 -8)", sparkles: true },
+const POSES = (): Record<MascotMood, Pose> => ({
+  idle: { label: t("components.mascot.Mascot.atRest"), eyes: "pie", mouth: "smile", arms: ["down", "down"] },
+  guide: { label: t("components.mascot.Mascot.pointing"), eyes: "pie", look: 4, mouth: "open", arms: ["down", "point"], waves: 2 },
+  celebrate: {
+    label: t("components.mascot.Mascot.celebrating"),
+    eyes: "happy",
+    mouth: "big",
+    arms: ["up", "up"],
+    transform: "translate(0 -8)",
+    sparkles: true,
+  },
   // Sin datos: se encoge entre niebla con los ojos vacíos. No está triste ni preocupada (R1).
   no_data: {
-    label: "sin datos",
+    label: t("components.mascot.Mascot.noData"),
     eyes: "hollow",
     mouth: "flat",
     arms: ["tuck", "tuck"],
@@ -86,7 +95,7 @@ const POSES: Record<MascotMood, Pose> = {
     mist: true,
   },
   flying: {
-    label: "volando",
+    label: t("components.mascot.Mascot.flying"),
     eyes: "pie",
     look: 5,
     mouth: "open",
@@ -96,20 +105,21 @@ const POSES: Record<MascotMood, Pose> = {
     speed: true,
   },
   // Mira el campo donde la persona escribe; las pupilas las mueve quien la anima.
-  watch: { label: "atenta", eyes: "pie", mouth: "smile", arms: ["down", "down"] },
+  watch: { label: t("components.mascot.Mascot.attentive"), eyes: "pie", mouth: "smile", arms: ["down", "down"] },
   // No mira la contraseña: se tapa los ojos con las dos manos.
-  shy: { label: "tapándose los ojos", eyes: "closed", mouth: "smile", arms: ["cover", "cover"] },
+  shy: { label: t("components.mascot.Mascot.coveringItsEyes"), eyes: "closed", mouth: "smile", arms: ["cover", "cover"] },
   // La contraseña está a la vista: baja una mano y espía con un ojo.
-  peek: { label: "espiando", eyes: "pie", mouth: "small", arms: ["cover", "cheek"] },
+  peek: { label: t("components.mascot.Mascot.peeking"), eyes: "pie", mouth: "small", arms: ["cover", "cheek"] },
   // Dice que no. Es un gesto, no un regaño: el texto del aviso es el que explica.
-  deny: { label: "negando", eyes: "pie", mouth: "flat", arms: ["down", "down"] },
-  yawn: { label: "bostezando", eyes: "closed", mouth: "yawn", arms: ["up", "down"] },
-  asleep: { label: "dormida", eyes: "closed", mouth: "small", arms: ["down", "down"], droop: true, zzz: true },
-};
+  deny: { label: t("components.mascot.Mascot.shakingItsHead"), eyes: "pie", mouth: "flat", arms: ["down", "down"] },
+  yawn: { label: t("components.mascot.Mascot.yawning"), eyes: "closed", mouth: "yawn", arms: ["up", "down"] },
+  asleep: { label: t("components.mascot.Mascot.asleep"), eyes: "closed", mouth: "small", arms: ["down", "down"], droop: true, zzz: true },
+});
 
 const stroke = { fill: "none", stroke: INK, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
 function Roots({ droop }: { droop: boolean }) {
+  useTranslation();
   const ends = droop
     ? [
         [70, 214],
@@ -136,6 +146,7 @@ function Roots({ droop }: { droop: boolean }) {
 }
 
 function Sprout({ waves }: { waves: number }) {
+  useTranslation();
   return (
     <g className="mascot-sprout">
       <path d="M158 62 C160 48 158 40 154 30" {...stroke} strokeWidth={5} />
@@ -160,6 +171,7 @@ function Sprout({ waves }: { waves: number }) {
 }
 
 function ArmShape({ kind, side }: { kind: Arm; side: -1 | 1 }) {
+  useTranslation();
   const sx = 158 + side * 50;
   const arms = {
     down: { d: `M${sx} 138 C${sx + side * 26} 148 ${sx + side * 32} 166 ${sx + side * 28} 184`, hand: [sx + side * 28, 188] },
@@ -189,6 +201,7 @@ function ArmShape({ kind, side }: { kind: Arm; side: -1 | 1 }) {
 }
 
 function EyesShape({ kind, look }: { kind: Eyes; look: number }) {
+  useTranslation();
   return (
     <g className="mascot-eyes">
       {[140, 182].map((x) =>
@@ -210,6 +223,7 @@ function EyesShape({ kind, look }: { kind: Eyes; look: number }) {
 }
 
 function MouthShape({ kind }: { kind: Mouth }) {
+  useTranslation();
   const shapes: Record<Mouth, ReactNode> = {
     smile: <path d="M146 150 Q160 164 176 150" {...stroke} strokeWidth={4} />,
     open: <path d="M138 148 Q160 172 184 148Z" {...stroke} fill={CREAM} strokeWidth={4} />,
@@ -242,8 +256,9 @@ export interface MascotProps {
 }
 
 export function Mascot({ mood = "idle", seed = "sprouted", size = 240, lively = false, decorative = false, className = "" }: MascotProps) {
-  const pose = POSES[mood];
-  const s = SEEDS[seed];
+  useTranslation();
+  const pose = POSES()[mood];
+  const s = SEEDS()[seed];
   return (
     <svg
       viewBox="0 0 300 250"
@@ -252,7 +267,9 @@ export function Mascot({ mood = "idle", seed = "sprouted", size = 240, lively = 
       className={`mascot shrink-0 ${lively ? "mascot-lively" : ""} ${className}`}
       data-mood={mood}
       data-seed={seed}
-      {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": `Mascota de AgroSense, ${s.label}, ${pose.label}` })}
+      {...(decorative
+        ? { "aria-hidden": true }
+        : { role: "img", "aria-label": t("components.mascot.Mascot.agrosenseMascot", { v0: s.label, v1: pose.label }) })}
     >
       <g transform={pose.transform}>
         <Roots droop={pose.droop ?? false} />

@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { Plate, Stake } from "./Plate";
 import { StatusIcon, TONE_STYLE, type Tone } from "./StatusMark";
 
@@ -11,17 +13,17 @@ export interface Signal {
 
 export type SignalKind = "climate" | "supply" | "market";
 
-const KIND_TITLE: Record<SignalKind, string> = {
-  climate: "Clima",
-  supply: "Oferta · área sembrada",
-  market: "Mercado",
-};
+const KIND_TITLE = (): Record<SignalKind, string> => ({
+  climate: t("landing.source.climate"),
+  supply: t("components.ui.SignalCard.supplyPlantedArea"),
+  market: t("landing.signal.market"),
+});
 
-const LEVEL: Record<NonNullable<Signal["level"]>, { tone: Tone; label: string }> = {
-  favorable: { tone: "green", label: "Favorable" },
-  moderate: { tone: "yellow", label: "Moderado" },
-  unfavorable: { tone: "red", label: "Desfavorable" },
-};
+const LEVEL = (): Record<NonNullable<Signal["level"]>, { tone: Tone; label: string }> => ({
+  favorable: { tone: "green", label: t("status.green") },
+  moderate: { tone: "yellow", label: t("status.yellow") },
+  unfavorable: { tone: "red", label: t("status.red") },
+});
 
 /**
  * R1: disponibilidad y nivel son campos distintos; sin datos nunca se pinta como riesgo. Con dato y sin nivel
@@ -29,15 +31,16 @@ const LEVEL: Record<NonNullable<Signal["level"]>, { tone: Tone; label: string }>
  * riesgo, ni favorable, ni «No aplica».
  */
 export function signalTone(signal: Pick<Signal, "status" | "level">): { tone: Tone; label: string } {
-  if (signal.status === "insufficient_data") return { tone: "insufficient_data", label: "Datos insuficientes" };
-  if (signal.status === "not_applicable") return { tone: "not_applicable", label: "No aplica" };
+  if (signal.status === "insufficient_data") return { tone: "insufficient_data", label: t("components.ui.SignalCard.insufficientData") };
+  if (signal.status === "not_applicable") return { tone: "not_applicable", label: t("status.not_applicable") };
   const level = signal.level ?? null;
-  if (level === null || !(level in LEVEL)) return { tone: "unrated", label: "Sin calificar" };
-  return LEVEL[level];
+  if (level === null || !(level in LEVEL())) return { tone: "unrated", label: t("status.unrated") };
+  return LEVEL()[level];
 }
 
 /** Íconos low-poly del tipo de señal: nube con gota, brote en el surco y costal. */
 function KindIcon({ kind }: { kind: SignalKind }) {
+  useTranslation();
   return (
     <svg aria-hidden="true" viewBox="0 0 44 46" className="absolute top-5 right-6 size-11">
       {kind === "climate" && (
@@ -78,6 +81,7 @@ function KindIcon({ kind }: { kind: SignalKind }) {
 
 /** Bruma de «datos insuficientes»: nubes facetadas de niebla al pie del letrero. */
 function Mist() {
+  useTranslation();
   return (
     <svg
       aria-hidden="true"
@@ -94,13 +98,16 @@ function Mist() {
 }
 
 export interface SignalCardProps {
+  /** Las razones reales de la API siguen en español; el kit puede mostrar ejemplos locales traducidos. */
+  reasonLanguage?: "es" | "en";
   kind: SignalKind;
   signal?: Signal;
   loading?: boolean;
 }
 
 /** Tarjeta de señal: un letrero de campo sobre dos estacas, con un banderín de estado. */
-export function SignalCard({ kind, signal, loading = false }: SignalCardProps) {
+export function SignalCard({ kind, signal, loading = false, reasonLanguage = "es" }: SignalCardProps) {
+  useTranslation();
   const headingId = `signal-${kind}`;
   const pending = loading || !signal;
   const insufficient = !pending && signal.status === "insufficient_data";
@@ -116,11 +123,11 @@ export function SignalCard({ kind, signal, loading = false }: SignalCardProps) {
         {insufficient && <Mist />}
         <KindIcon kind={kind} />
         <h3 id={headingId} className="relative pr-14 text-lg">
-          {KIND_TITLE[kind]}
+          {KIND_TITLE()[kind]}
         </h3>
         {pending ? (
           <div role="status" className="relative flex flex-col gap-3">
-            <span className="sr-only">Cargando señal</span>
+            <span className="sr-only">{t("components.ui.SignalCard.loadingSignal")}</span>
             <span aria-hidden="true" className="relative block h-[52px] w-48 max-w-full animate-pulse motion-reduce:animate-none">
               <Plate fill="var(--color-superficie-panel-suave)" />
             </span>
@@ -128,7 +135,7 @@ export function SignalCard({ kind, signal, loading = false }: SignalCardProps) {
             <span aria-hidden="true" className="block h-4 w-3/4 animate-pulse bg-superficie-panel-suave motion-reduce:animate-none" />
           </div>
         ) : (
-          <SignalBody signal={signal} />
+          <SignalBody signal={signal} reasonLanguage={reasonLanguage} />
         )}
       </article>
       <div aria-hidden="true" className="-mt-1.5 flex justify-between px-[60px]">
@@ -139,7 +146,8 @@ export function SignalCard({ kind, signal, loading = false }: SignalCardProps) {
   );
 }
 
-function SignalBody({ signal }: { signal: Signal }) {
+function SignalBody({ signal, reasonLanguage }: { signal: Signal; reasonLanguage: "es" | "en" }) {
+  useTranslation();
   const { tone, label } = signalTone(signal);
   const style = TONE_STYLE[tone];
   return (
@@ -157,7 +165,9 @@ function SignalBody({ signal }: { signal: Signal }) {
       {signal.reasons.length > 0 && (
         <ul className="relative list-disc pl-5 text-texto-principal">
           {signal.reasons.map((reason) => (
-            <li key={reason}>{reason}</li>
+            <li lang={reasonLanguage} key={reason}>
+              {reason}
+            </li>
           ))}
         </ul>
       )}

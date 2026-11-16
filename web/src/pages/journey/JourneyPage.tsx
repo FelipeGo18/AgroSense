@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import a1 from "../../../../design/paisaje/svg/a1-orbita.svg?url";
 import a3 from "../../../../design/paisaje/svg/a3-region.svg?url";
@@ -21,7 +22,9 @@ const JourneyCanvas = lazy(() => import("./JourneyCanvas"));
  * Con movimiento, una escena 3D low-poly (`JourneyCanvas`) sigue el scroll con la cámara. En modo ligero no hay
  * cámara ni 3D: cada nivel muestra su ilustración 2D quieta del guion (`design/paisaje/`), con los mismos textos.
  */
-const LEVELS: {
+const levels = (
+  t: ReturnType<typeof useTranslation>["t"],
+): {
   id: string;
   label: string;
   title: string;
@@ -29,40 +32,40 @@ const LEVELS: {
   say: string;
   mood: MascotMood;
   scene: string;
-}[] = [
+}[] => [
   {
     id: "orbita",
-    label: "Satélite",
-    title: "Desde la órbita",
-    text: "Los satélites de la NASA miden la lluvia (GPM IMERG) y midieron la altura del terreno (NASADEM). La temperatura y las heladas salen de NASA POWER, un reanálisis que combina un modelo con observaciones.",
-    say: "Desde aquí arriba empieza todo.",
+    label: t("journey.orbit.label"),
+    title: t("journey.orbit.title"),
+    text: t("journey.orbit.body"),
+    say: t("journey.orbit.say"),
     mood: "flying",
     scene: a1,
   },
   {
     id: "region",
-    label: "Región",
-    title: "Boyacá y Cundinamarca",
-    text: "AgroSense toma esos datos para la región piloto, municipio por municipio: décadas de historia del clima y el mapa de suelo de cada zona.",
-    say: "Bajamos al altiplano.",
+    label: t("journey.region.label"),
+    title: t("journey.region.title"),
+    text: t("journey.region.body"),
+    say: t("journey.region.say"),
     mood: "guide",
     scene: a3,
   },
   {
     id: "municipio",
-    label: "Municipio",
-    title: "Su municipio",
-    text: "Para su municipio se ve cuántas veces heló, cuánta agua faltó y cuánto calor hizo en cada mes. Es historia de la zona, no un pronóstico.",
-    say: "Aquí está su zona.",
+    label: t("journey.municipality.label"),
+    title: t("journey.municipality.title"),
+    text: t("journey.municipality.body"),
+    say: t("journey.municipality.say"),
     mood: "guide",
     scene: a5,
   },
   {
     id: "finca",
-    label: "Finca",
-    title: "Su finca",
-    text: "Con eso, AgroSense le muestra estrategias de rotación para su lote y revisa cada siembra con un semáforo. La decisión siempre es suya.",
-    say: "Y llegamos a su lote.",
+    label: t("journey.farm.label"),
+    title: t("journey.farm.title"),
+    text: t("journey.farm.body"),
+    say: t("journey.farm.say"),
     mood: "celebrate",
     scene: a7,
   },
@@ -91,6 +94,9 @@ class Fallback3D extends Component<{ onFail: () => void; children: ReactNode }, 
 }
 
 export function JourneyPage() {
+  const { t } = useTranslation();
+  const LEVELS = levels(t);
+  const levelCount = LEVELS.length;
   const animated = useAnimated();
   const [failed, setFailed] = useState(false);
   // La escena 3D solo con movimiento y si no falló; si no, las ilustraciones 2D quietas.
@@ -111,7 +117,7 @@ export function JourneyPage() {
         if (center <= middle) value = i;
         else if (i > 0 && box.top < middle) value = i - 1 + (middle - box.top) / (box.height / 2 + 1e-6);
       });
-      progress.current = Math.min(LEVELS.length - 1, Math.max(0, value));
+      progress.current = Math.min(levelCount - 1, Math.max(0, value));
       setActive(Math.round(progress.current));
     };
     update();
@@ -121,7 +127,7 @@ export function JourneyPage() {
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, []);
+  }, [levelCount]);
 
   const go = (i: number) => {
     sections.current[i]?.scrollIntoView({ behavior: threeD ? "smooth" : "auto", block: "center" });
@@ -130,7 +136,7 @@ export function JourneyPage() {
 
   return (
     <div className="relative min-h-svh bg-[#0B1226]">
-      <title>Del satélite a su finca · AgroSense</title>
+      <title>{t("journey.title")} · AgroSense</title>
       <TopBar />
       {threeD && (
         <div className="fixed inset-0">
@@ -143,7 +149,7 @@ export function JourneyPage() {
       )}
       <main className="relative">
         <nav
-          aria-label="Niveles del recorrido"
+          aria-label={t("journey.navigation")}
           className="relative z-20 container-page flex flex-wrap gap-2 pt-[104px] md:sticky md:top-[100px] md:pt-[120px]"
         >
           {LEVELS.map((level, i) => (
@@ -174,7 +180,7 @@ export function JourneyPage() {
             <div className="relative container-page flex w-full flex-col items-start gap-4 py-16 md:flex-row md:items-center">
               <Card className="w-full max-w-[520px]">
                 <p className="text-[14px] font-bold tracking-wide text-texto-secundario uppercase">
-                  Nivel {i + 1} de {LEVELS.length} · {level.label}
+                  {t("journey.level", { current: i + 1, total: LEVELS.length })} · {level.label}
                 </p>
                 <h2 id={`${level.id}-titulo`} tabIndex={-1} className="text-[clamp(1.5rem,3vw,2.25rem)] outline-none">
                   {level.title}
@@ -186,13 +192,13 @@ export function JourneyPage() {
                     onClick={() => go(i + 1)}
                     className="min-h-11 self-start font-bold text-oscuro-oliva underline decoration-2 underline-offset-4"
                   >
-                    Bajar a: {LEVELS[i + 1].label} ↓
+                    {t("journey.next", { level: LEVELS[i + 1].label })} ↓
                   </button>
                 ) : (
                   <div className="flex flex-wrap gap-3">
-                    <ButtonLink to={PATHS.consult}>Consultar sin cuenta</ButtonLink>
+                    <ButtonLink to={PATHS.consult}>{t("journey.consult")}</ButtonLink>
                     <ButtonLink to={PATHS.howItWorks} variant="secondary">
-                      ¿Cómo funciona?
+                      {t("journey.how")}
                     </ButtonLink>
                   </div>
                 )}
@@ -205,9 +211,7 @@ export function JourneyPage() {
             </div>
           </section>
         ))}
-        <p className="relative container-page pb-10 text-[13px] text-[#C9D6E0]">
-          Ilustración: el relieve y la finca son dibujos, no el terreno real. Los datos de cada nivel son los que usa AgroSense.
-        </p>
+        <p className="relative container-page pb-10 text-[13px] text-[#C9D6E0]">{t("journey.illustration")}</p>
       </main>
       <Footer />
     </div>

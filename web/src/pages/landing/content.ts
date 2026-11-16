@@ -6,10 +6,10 @@ import type { TONE_LABEL } from "@/components/ui/StatusTag";
 
 /** Paradas del recorrido, en orden: cada una es una sección y un lugar para la mascota. */
 export const STOPS = [
-  { id: "inicio", label: "Inicio" },
-  { id: "preguntas", label: "Cuatro preguntas" },
-  { id: "ejemplo", label: "Un ejemplo" },
-  { id: "fuentes", label: "Los datos" },
+  { id: "inicio", label: "landing.stop.home" },
+  { id: "preguntas", label: "landing.stop.questions" },
+  { id: "ejemplo", label: "landing.stop.example" },
+  { id: "fuentes", label: "landing.stop.sources" },
 ] as const;
 
 export type StopId = (typeof STOPS)[number]["id"];
@@ -18,48 +18,48 @@ export const STOP_IDS: readonly StopId[] = STOPS.map((stop) => stop.id);
 /** Lo que dice la mascota al llegar a cada parada y a dónde invita a seguir. */
 export const GUIDE: Record<Exclude<StopId, "inicio">, { say: string; mood: MascotMood; next: StopId | null; nextLabel: string }> = {
   preguntas: {
-    say: "Estas son las cuatro preguntas que le ayudo a responder.",
+    say: "landing.guide.questions",
     mood: "guide",
     next: "ejemplo",
-    nextLabel: "Ver un ejemplo",
+    nextLabel: "landing.guide.exampleLink",
   },
   ejemplo: {
-    say: "Así reviso cada ciclo: primero qué conviene hacer y después por qué.",
+    say: "landing.guide.example",
     mood: "guide",
     next: "fuentes",
-    nextLabel: "Ver de dónde salen los datos",
+    nextLabel: "landing.guide.sourcesLink",
   },
   fuentes: {
-    say: "Todo sale de datos abiertos. La decisión siempre es suya.",
+    say: "landing.guide.sources",
     mood: "celebrate",
     next: null,
-    nextLabel: "Volver arriba",
+    nextLabel: "landing.guide.top",
   },
 };
 
 /** Las cuatro preguntas del flujo del MVP (decisión 12): estrategias, cada ciclo, agua del plan y qué cambió. */
 export const QUESTIONS: { title: string; text: string; icon: "priority" | "light" | "water" | "frost"; seed: MascotSeed }[] = [
   {
-    title: "¿Qué siembro y en qué orden?",
-    text: "Estrategias de rotación de hasta 3 ciclos, comparadas por agua, suelo, ingreso y riesgo según lo que a usted le importa.",
+    title: "landing.question.rotation",
+    text: "landing.question.rotationText",
     icon: "priority",
     seed: "sprouted",
   },
   {
-    title: "¿Conviene cada siembra?",
-    text: "Un semáforo por ciclo con seis señales: agua, heladas, calor, suelo, oferta y mercado.",
+    title: "landing.question.planting",
+    text: "landing.question.plantingText",
     icon: "light",
     seed: "bean",
   },
   {
-    title: "¿Cuánta agua va a necesitar?",
-    text: "Mes a mes, el agua que faltaría en cada ciclo, en rangos. Es una estimación con el clima de la zona.",
+    title: "landing.question.water",
+    text: "landing.question.waterText",
     icon: "water",
     seed: "maize",
   },
   {
-    title: "¿Qué cambió en su zona?",
-    text: "Heladas, lluvia y calor de dos periodos de la historia, lado a lado. No es un pronóstico.",
+    title: "landing.question.changes",
+    text: "landing.question.changesText",
     icon: "frost",
     seed: "sprouted",
   },
@@ -70,22 +70,20 @@ export const QUESTIONS: { title: string; text: string; icon: "priority" | "light
  * se rotula así (R5). Las cifras son las que respondió el motor con el dataset 2026.11.25 para esa consulta, sin riego y
  * con el criterio de AgroSense; no se inventa ninguna. La oferta (HU-072) y el mercado salen sin calificar (decisión 17).
  */
-type PreviewSignal = { key: SignalKey; name: string; tone: keyof typeof TONE_LABEL; detail: string };
+type PreviewSignal = { key: SignalKey; name: string; tone: keyof ReturnType<typeof TONE_LABEL>; detail: string };
 
 export const PREVIEW = {
-  summary:
-    "Papa en Güicán de la Sierra (Boyacá), sembrando el 7 de diciembre de 2026, sin riego. Primero lo que conviene hacer; después, por qué.",
+  summary: "landing.preview.summary",
   light: "red" as const,
-  action: "Mejor otra fecha",
-  reason:
-    "Sembrando en diciembre, heló durante el cultivo (de diciembre a mayo) 53 de cada 100 años, de 1991 a 2020: es un riesgo grave que ninguna otra señal compensa. Y en un año seco la lluvia cubre el 57 % de lo que necesita la papa.",
+  action: "landing.preview.action",
+  reason: "landing.preview.reason",
   signals: [
-    { key: "water", name: "Agua", tone: "red", detail: "33/100 · en un año seco cubre el 57 %" },
-    { key: "frost", name: "Heladas", tone: "red", detail: "31/100 · heló 53 de cada 100 años, de 1991 a 2020 · riesgo grave" },
-    { key: "heat", name: "Calor", tone: "green", detail: "100/100 · máxima de 19,4 °C; aguanta hasta 30 °C" },
-    { key: "soil", name: "Suelo", tone: "green", detail: "100/100 · pH 5,8 (estimado)" },
-    { key: "supply", name: "Oferta", tone: "unrated", detail: "2025 B (preliminar): 25 ha, 34 % más que los tres semestres B anteriores" },
-    { key: "market", name: "Mercado", tone: "unrated", detail: "No cambia la luz" },
+    { key: "water", name: "landing.signal.water", tone: "red", detail: "landing.detail.water" },
+    { key: "frost", name: "landing.signal.frost", tone: "red", detail: "landing.detail.frost" },
+    { key: "heat", name: "landing.signal.heat", tone: "green", detail: "landing.detail.heat" },
+    { key: "soil", name: "landing.signal.soil", tone: "green", detail: "landing.detail.soil" },
+    { key: "supply", name: "landing.signal.supply", tone: "unrated", detail: "landing.detail.supply" },
+    { key: "market", name: "landing.signal.market", tone: "unrated", detail: "landing.detail.market" },
   ] as PreviewSignal[],
 };
 
@@ -94,21 +92,21 @@ export const PREVIEW = {
  * (`catalog/sources.yaml`); NASA POWER es un reanálisis y se dice así (R8).
  */
 export const SOURCES = [
-  { kind: "Lluvia", name: "GPM IMERG · NASA", text: "La lluvia de su municipio vista por satélite, desde 2000." },
+  { kind: "landing.source.rain", name: "GPM IMERG · NASA", text: "landing.source.imerg" },
   {
-    kind: "Clima",
+    kind: "landing.source.climate",
     name: "NASA POWER",
-    text: "Temperatura, heladas, calor y evaporación. Es un reanálisis (un modelo con observaciones), no una foto del satélite.",
+    text: "landing.source.power",
   },
-  { kind: "Altitud", name: "NASADEM · NASA", text: "La altura y la pendiente de su municipio o de su lote, a 30 m." },
-  { kind: "Suelo", name: "SoilGrids · ISRIC", text: "pH, carbono orgánico y textura, estimados en celdas de 250 m." },
+  { kind: "landing.source.altitude", name: "NASADEM · NASA", text: "landing.source.nasadem" },
+  { kind: "landing.signal.soil", name: "SoilGrids · ISRIC", text: "landing.source.soil" },
   {
-    kind: "Oferta",
+    kind: "landing.signal.supply",
     name: "EVA",
-    full: "Evaluaciones Agropecuarias",
-    text: "Cuánto se sembró de cada cultivo, por municipio, junto a otras fuentes.",
+    full: "landing.source.evaName",
+    text: "landing.source.eva",
   },
-  { kind: "Mercado", name: "SIPSA · DANE", text: "Precios mayoristas de Corabastos y Tunja." },
+  { kind: "landing.signal.market", name: "SIPSA · DANE", text: "landing.source.sipsa" },
 ];
 
-export const GLOBE_CREDIT = "Contornos: Natural Earth · Color: NASA Blue Marble";
+export const GLOBE_CREDIT = "landing.globe.credit";

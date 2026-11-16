@@ -1,3 +1,4 @@
+import { t, locale } from "@/lib/i18n";
 import { PATHS } from "@/app/paths";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
@@ -57,14 +58,14 @@ export const EMPTY_STRATEGY: StrategyForm = {
   seasonIds: [],
 };
 
-export const STRATEGY_ERRORS: Record<StrategyField, string> = {
-  municipality: "Elija su municipio de la lista.",
-  area: "Escriba el área en hectáreas, mayor que cero (por ejemplo, 2,5).",
-  previous: "Diga qué había antes: elija «Nada» o el último cultivo, y no deje huecos entre los cultivos.",
-  month: "Elija el mes en que sembraría el primer ciclo.",
-  irrigation: "Diga si tiene riego. Si no sabe, elija «No sé».",
-  current: "Elija al menos dos cultivos, en el orden en que los siembra, o «No tengo una rotación fija».",
-};
+export const STRATEGY_ERRORS = (): Record<StrategyField, string> => ({
+  municipality: t("features.diagnosis.consult.chooseYourMunicipalityFromTheList"),
+  area: t("features.strategies.entry.enterAnAreaInHectaresGreaterThan"),
+  previous: t("features.strategies.entry.tellUsWhatGrewHereBeforeChoose"),
+  month: t("features.strategies.entry.chooseThePlantingMonthForTheFirst"),
+  irrigation: t("features.diagnosis.consult.tellUsWhetherYouHaveIrrigationIf"),
+  current: t("features.strategies.entry.chooseAtLeastTwoCropsInPlanting"),
+});
 
 const AREA_KEY = "agrosense.area";
 
@@ -146,20 +147,20 @@ export interface StrategyContext {
 
 export function validate(form: StrategyForm, { municipalityIds, cropIds, months, lot }: StrategyContext): StrategyErrors {
   const errors: StrategyErrors = {};
-  if (!lot && !municipalityIds.has(form.municipalityId)) errors.municipality = STRATEGY_ERRORS.municipality;
-  if (!lot && parseArea(form.areaText) === null) errors.area = STRATEGY_ERRORS.area;
+  if (!lot && !municipalityIds.has(form.municipalityId)) errors.municipality = STRATEGY_ERRORS().municipality;
+  if (!lot && parseArea(form.areaText) === null) errors.area = STRATEGY_ERRORS().area;
   if (!lot) {
     const prev = filled(form.previous);
     const bad =
       form.previousMode === "" ||
       (form.previousMode === "crops" && (prev.length === 0 || !noGaps(form.previous) || prev.some((id) => !cropIds.has(id))));
-    if (bad) errors.previous = STRATEGY_ERRORS.previous;
+    if (bad) errors.previous = STRATEGY_ERRORS().previous;
   }
-  if (!months.includes(form.month)) errors.month = STRATEGY_ERRORS.month;
-  if (!lot && !form.irrigation) errors.irrigation = STRATEGY_ERRORS.irrigation;
+  if (!months.includes(form.month)) errors.month = STRATEGY_ERRORS().month;
+  if (!lot && !form.irrigation) errors.irrigation = STRATEGY_ERRORS().irrigation;
   if (form.currentMode === "crops") {
     const current = filled(form.current);
-    if (current.length < 2 || !noGaps(form.current) || current.some((id) => !cropIds.has(id))) errors.current = STRATEGY_ERRORS.current;
+    if (current.length < 2 || !noGaps(form.current) || current.some((id) => !cropIds.has(id))) errors.current = STRATEGY_ERRORS().current;
   }
   return errors;
 }
@@ -271,32 +272,33 @@ export function useRotations(request: RotationRequest | null) {
   });
 }
 
-const FIELD_WORDS: Record<string, string> = {
-  municipality_id: "el municipio",
-  sowing_date: "el mes de siembra",
-  previous_crop_ids: "lo que había antes",
-  current_crop_ids: "la rotación que viene haciendo",
-  cycles: "los ciclos",
-  priorities: "sus prioridades de la rotación",
-  signal_priorities: "sus prioridades de las señales",
-  irrigated: "el riego",
-  lot_id: "el lote",
-};
+const FIELD_WORDS = (): Record<string, string> => ({
+  municipality_id: t("features.strategies.entry.theMunicipality"),
+  sowing_date: t("features.strategies.entry.thePlantingMonth"),
+  previous_crop_ids: t("features.strategies.entry.whatGrewHereBefore"),
+  current_crop_ids: t("features.strategies.entry.yourCurrentRotation"),
+  cycles: t("features.strategies.entry.theCycles"),
+  priorities: t("features.strategies.entry.yourRotationPriorities"),
+  signal_priorities: t("features.strategies.entry.yourSignalPriorities"),
+  irrigated: t("features.strategies.entry.irrigation"),
+  lot_id: t("features.strategies.entry.thePlot"),
+});
 
 /**
  * Un 422 en palabras sencillas (HU-214): la API dice «Revise: priorities, cycles»; aquí, «Revise: sus prioridades de la
  * rotación y los ciclos». Lo que no se reconoce se deja como viene.
  */
 export function explain422(message: string): string {
+  if (locale() === "en-US") return message;
   const match = message.match(/Revise:\s*(.+?)\.?$/);
   if (!match) return message;
   const words = match[1]
     .split(",")
     .map((field) => field.trim().split(".")[0])
     .filter((field, i, all) => field && all.indexOf(field) === i)
-    .map((field) => FIELD_WORDS[field] ?? field);
-  const joined = words.length > 1 ? `${words.slice(0, -1).join(", ")} y ${words.at(-1)}` : words[0];
-  return `Hay un dato que no sirve para consultar. Revise ${joined}.`;
+    .map((field) => FIELD_WORDS()[field] ?? field);
+  const joined = words.length > 1 ? t("features.strategies.entry.and", { v0: words.slice(0, -1).join(", "), v1: words.at(-1) }) : words[0];
+  return t("features.strategies.entry.someInformationIsInvalidCheck", { v0: joined });
 }
 
 /**

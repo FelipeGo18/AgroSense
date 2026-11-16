@@ -1,15 +1,17 @@
+import { useTranslation } from "react-i18next";
 import { Plate } from "@/components/ui/Plate";
 import { useSound } from "@/hooks/useSound";
 
 /** Prende y apaga el sonido de la interfaz. Arranca apagado; el altavoz tachado dice que está en silencio. */
 export function SoundToggle({ className = "" }: { className?: string }) {
+  const { t } = useTranslation();
   const [enabled, setEnabled] = useSound();
   return (
     <button
       type="button"
       aria-pressed={enabled}
-      aria-label="Sonido"
-      title={enabled ? "Quitar el sonido" : "Poner el sonido"}
+      aria-label={t("sound.label")}
+      title={enabled ? t("sound.off") : t("sound.on")}
       onClick={() => setEnabled(!enabled)}
       className={`relative flex size-11 shrink-0 items-center justify-center outline-none ${className}`}
     >

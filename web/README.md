@@ -11,6 +11,63 @@ npm run build        # empaqueta y además dibuja el HTML de las páginas públi
 npm run perf         # auditoría de rendimiento sobre el build; falla si algo baja de su presupuesto
 ```
 
+## Idiomas (HU-233)
+
+La configuración vive en `src/lib/i18n.ts`, con `i18next` y `react-i18next`. Los textos están en
+`src/locales/es.json` y `en.json`: diccionarios planos con las mismas claves, agrupadas por prefijos
+(`nav.*`, `footer.*`, `landing.*`). Español es el predeterminado; `?lang=en` tiene prioridad sobre la preferencia
+de `localStorage`. El selector está en la barra de escritorio y en el menú del celular.
+
+Para seguir traduciendo una pantalla, agregue la misma clave en ambos diccionarios y use
+`const { t } = useTranslation()` y `t("prefijo.clave")`. Las variables se escriben como `{{name}}` en el diccionario
+y se pasan con `t("prefijo.clave", { name })`. Las fechas y los números se formatean con `Intl` según
+`i18n.resolvedLanguage`. Los enlaces de `components/layout/LanguageLink.tsx` y `ButtonLink` conservan el idioma,
+los parámetros y los fragmentos. No traduzca valores del contrato ni las razones o errores que manda la API.
+
+Las pantallas de cuenta, finca y formularios, consulta, estrategias y ciclos, diagnóstico, cambios históricos, precios,
+Cómo funciona, política de datos y estados usan los diccionarios, además de la portada y la navegación.
+Los helpers sin React usan `t` y `locale()` de `src/lib/i18n.ts`; sus componentes se suscriben con `useTranslation()`.
+En código nuevo de React use `const { t } = useTranslation()`: el `t` global se reserva para funciones fuera de React
+y no suscribe al componente a los cambios de idioma. Nunca traduzca constantes al cargar un módulo;
+obtenga las etiquetas dentro de una función al usarlas (por ejemplo, `SIGNAL_NAME()`). Para claves nuevas prefiera
+el propósito del texto, como `how.step1.body`, en lugar de copiar la frase en inglés.
+Las listas de etiquetas y los formatos se obtienen al usarlos (por ejemplo, `SIGNAL_NAME()`), para actualizarse al cambiar
+de idioma. Los nombres visibles de cultivos se resuelven con `cropName()`, conservando `crop_id` y el catálogo original.
+Las razones, limitaciones y errores recibidos de la API se conservan en español, con el aviso de `ApiLanguageNotice`.
+
+El HTML prerenderizado permanece en español: al abrir en inglés, `main.tsx`
+lo dibuja de nuevo con el idioma elegido, conservando los campos que se hubieran escrito y evitando diferencias de hidratación.
+Pruebas de idiomas en `src/lib/i18n.test.tsx`; la revisión adaptable incluye `/?lang=en`.
+`npm run test:i18n` revisa la portada, la persistencia, el menú móvil y la barra con sesión en Chrome.
+Acepta `BASE` para probar también el build servido con `npm run preview`.
+`npm run test:i18n:pages` recorre las pantallas públicas y con sesión usando datos de ejemplo locales, en los dos idiomas,
+cuatro tamaños y los dos modos de movimiento. No crea cuentas ni usa la base de datos. Permite filtrar con
+`TEST_LANGUAGE`, `WIDTHS` y `ROUTES`. Para la revisión adaptable completa en inglés, use
+`TEST_LANGUAGE=en npm run test:responsive` (en PowerShell, `$env:TEST_LANGUAGE='en'`).
+
+Cada página o texto que entre después debe incluir sus traducciones en el mismo PR. Agregue las rutas nuevas
+a `e2e/language-pages.mjs`, con respuestas locales si requieren sesión, y compruebe los dos idiomas.
+Esta revisión incluye Mensajes y el recorrido «Del satélite a su finca». Los mensajes escritos por usuarios y las
+respuestas del responsable conservan su texto original; solo se traducen los rótulos, estados y fechas de la interfaz.
+
+También se traducen el laboratorio (`/pruebas`, `/kit` y `/recorrido/1` a `/recorrido/3`) y sus ejemplos locales.
+`src/lib/i18n-audit.test.ts` recorre los archivos de interfaz y detecta textos fijos en JSX, atributos accesibles,
+constantes de etiquetas, objetos y plantillas, además de llamadas a claves inexistentes. Incluye regresiones con
+`LAYER_NAME`, `STATUS_TEXT` y «Fecha de la imagen». Las excepciones de nombres propios y valores de protocolo son explícitas;
+la comparación del error de fecha se comprueba contra el código del backend. La auditoría no sustituye la revisión
+de los datos recibidos de la API: Precios usa
+`marketProductName`, `marketGroupName` y `matchesMarketProduct` para mostrar nombres traducidos y buscar en ambos idiomas,
+conservando los identificadores y las citas del DANE. Los 36 productos del catálogo publicado tienen traducción;
+si el catálogo incorpora otro producto, agregue su clave `market.products.<product_id>` en ambos diccionarios.
+Un producto desconocido conserva su nombre original, sin inventar una traducción. La revisión de páginas incluye
+30 casos de navegación: 480 combinaciones de idioma, ancho y movimiento.
+
+ESLint impide importar `Link`, `NavLink`, `Navigate`, `useNavigate` y `useSearchParams` directamente de `react-router`
+en la aplicación: use `components/layout/LanguageLink`. Solo su implementación y el selector necesitan el router original.
+El responsive abre también el detalle del suelo y sus explicaciones en inglés. Para incluir las rutas privadas,
+use `SESSION` y `LOT` de una cuenta de la base local; las respuestas simuladas de cálculo no reemplazan la revisión
+manual con `VITE_SIMULATION` desactivado, la API y PostgreSQL reales.
+
 ## Rendimiento
 
 **Se mide con `npm run perf`, nunca sobre `npm run dev`.** El servidor de desarrollo entrega el código sin empaquetar y da notas muy bajas que no dicen nada del producto. `npm run perf` hace el build, lo sirve comprimido y corre Lighthouse tres veces por caso (Inicio y Entrar, en escritorio y en móvil, con y sin movimiento); cuenta la mediana y termina con error si un caso baja de su presupuesto (`e2e/perf.mjs`). El «móvil» es un teléfono de gama media con 4G lento, simulado: antes del evento hay que probar también en un teléfono de verdad.

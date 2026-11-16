@@ -1,5 +1,8 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
+import { Link, useNavigate } from "@/components/layout/LanguageLink";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { Alert } from "@/components/ui/Alert";
@@ -18,6 +21,7 @@ import { LotBar, type Part } from "./SeasonParts";
  * terreno queda libre. «Guardar cosecha y registrar la siembra» lleva a la siembra con esta cosecha ya marcada.
  */
 export function HarvestPage() {
+  useTranslation();
   const { lotId = "", seasonId = "" } = useParams();
   const lot = useLot(lotId);
   const seasons = useSeasons(lotId);
@@ -31,17 +35,17 @@ export function HarvestPage() {
           <Shell lotId={lotId} lotName={lot.data?.name}>
             <Alert>
               {lot.error instanceof ApiError && lot.error.status === 404
-                ? "Ese lote no existe o no es suyo."
+                ? t("pages.farm.LotPage.thatPlotDoesNotExistOrIs")
                 : missing
                   ? season
-                    ? "Esa siembra ya tiene la cosecha registrada."
-                    : "Esa siembra no existe o no es suya."
-                  : "No pudimos cargar los datos. Intente de nuevo en un momento."}
+                    ? t("pages.farm.HarvestPage.thisPlantingAlreadyHasAHarvestRecorded")
+                    : t("pages.farm.SeasonFormPage.thatPlantingDoesNotExistOrIs")
+                  : t("pages.farm.SeasonFormPage.weCouldNotLoadTheDataTry")}
             </Alert>
           </Shell>
         ) : lot.isPending || seasons.isPending || crops.isPending || !season ? (
           <Shell lotId={lotId} lotName={lot.data?.name}>
-            <p role="status">Cargando…</p>
+            <p role="status">{t("pages.account.AccountShell.loading")}</p>
           </Shell>
         ) : (
           <HarvestForm lot={lot.data} season={season} names={cropNames(crops.data)} />
@@ -52,6 +56,7 @@ export function HarvestPage() {
 }
 
 function HarvestForm({ lot, season, names }: { lot: LotDetail; season: Season; names: Map<string, string> }) {
+  useTranslation();
   const navigate = useNavigate();
   const update = useUpdateSeason(lot.lot_id, season.season_id);
   const [date, setDate] = useState(todayIso() < season.sowing_date ? season.sowing_date : todayIso());
@@ -59,11 +64,11 @@ function HarvestForm({ lot, season, names }: { lot: LotDetail; season: Season; n
   const name = names.get(season.crop_id) ?? season.crop_id;
 
   const error = !date
-    ? "Escriba la fecha de cosecha."
+    ? t("pages.farm.HarvestPage.enterTheHarvestDate")
     : date < season.sowing_date
-      ? "La cosecha no puede ser antes de la siembra."
+      ? t("pages.farm.HarvestPage.harvestCannotBeBeforePlanting")
       : date > todayIso()
-        ? "La fecha de cosecha no puede ser posterior a hoy."
+        ? t("pages.farm.HarvestPage.theHarvestDateCannotBeInThe")
         : undefined;
   const save = (thenSow: boolean) => (event?: FormEvent) => {
     event?.preventDefault();
@@ -74,7 +79,7 @@ function HarvestForm({ lot, season, names }: { lot: LotDetail; season: Season; n
       {
         onSuccess: () =>
           void navigate(thenSow ? PATHS.sow(lot.lot_id, season.season_id) : PATHS.lot(lot.lot_id), {
-            state: { notice: `Cosecha de ${name.toLowerCase()} registrada. Ese terreno quedó libre.` },
+            state: { notice: t("pages.farm.HarvestPage.harvestOfRecordedThatLandIsNow", { v0: name.toLowerCase() }) },
           }),
       },
     );
@@ -84,7 +89,7 @@ function HarvestForm({ lot, season, names }: { lot: LotDetail; season: Season; n
   const others = lot.current_seasons.filter((s) => s.season_id !== season.season_id);
   const parts: Part[] = others.map((s) => ({ key: s.season_id, label: names.get(s.crop_id) ?? s.crop_id, ha: s.area_ha }));
   const free = lot.area_ha - parts.reduce((total, part) => total + part.ha, 0);
-  if (free > 0.0001) parts.push({ key: "libre", label: "Libre", ha: free, free: true });
+  if (free > 0.0001) parts.push({ key: "libre", label: t("pages.farm.SeasonFormPage.available"), ha: free, free: true });
 
   return (
     <Shell
@@ -92,27 +97,30 @@ function HarvestForm({ lot, season, names }: { lot: LotDetail; season: Season; n
       lotName={lot.name}
       aside={
         <Card bodyClassName="gap-3">
-          <Eyebrow>Cómo queda el lote</Eyebrow>
-          <h2 className="text-[22px]">Después de cosechar</h2>
+          <Eyebrow>{t("pages.farm.SeasonFormPage.theResultingPlot")}</Eyebrow>
+          <h2 className="text-[22px]">{t("pages.farm.HarvestPage.afterHarvesting")}</h2>
           <LotBar parts={parts} total={lot.area_ha} />
           <p className="text-[15px] text-texto-secundario">
-            {formatHa(season.area_ha)} de {name.toLowerCase()} quedan libres para la siembra que sigue.
+            {formatHa(season.area_ha)} {t("pages.farm.HarvestPage.of")} {name.toLowerCase()}{" "}
+            {t("pages.farm.HarvestPage.isAvailableForTheNextPlanting")}
           </p>
         </Card>
       }
     >
-      <title>{`Registrar cosecha · ${lot.name} · AgroSense`}</title>
+      <title>{t("pages.farm.HarvestPage.recordHarvestAgrosense", { v0: lot.name })}</title>
       <header>
-        <Eyebrow>Mi finca</Eyebrow>
-        <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Registrar la cosecha</h1>
+        <Eyebrow>{t("nav.farm")}</Eyebrow>
+        <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">{t("pages.farm.HarvestPage.recordTheHarvest")}</h1>
         <p className="text-texto-secundario">
-          {name} · {formatHa(season.area_ha)} · sembrada el {formatDate(season.sowing_date)}
+          {name} · {formatHa(season.area_ha)} {t("pages.farm.HarvestPage.plantedOn")} {formatDate(season.sowing_date)}
         </p>
       </header>
-      {update.isError && <Alert>{update.error instanceof ApiError ? update.error.message : "No se pudo guardar. Intente de nuevo."}</Alert>}
+      {update.isError && (
+        <Alert>{update.error instanceof ApiError ? update.error.message : t("pages.account.PrioritiesCard.couldNotSaveTryAgain")}</Alert>
+      )}
       <form onSubmit={save(false)} noValidate className="flex flex-col gap-5">
         <TextField
-          label="¿Cuándo cosechó?"
+          label={t("pages.farm.HarvestPage.whenDidYouHarvest")}
           name="harvest_date"
           type="date"
           min={season.sowing_date}
@@ -121,19 +129,19 @@ function HarvestForm({ lot, season, names }: { lot: LotDetail; season: Season; n
           onChange={(event) => setDate(event.target.value)}
           hint={
             season.harvest_estimate
-              ? `La cosecha estimada era el ${formatDate(season.harvest_estimate)} (por la duración de las etapas del cultivo).`
+              ? t("pages.farm.HarvestPage.theEstimatedHarvestDateWasBasedOn", { v0: formatDate(season.harvest_estimate) })
               : undefined
           }
           error={tried ? error : undefined}
         />
-        <Button type="button" loading={update.isPending} loadingText="Guardando…" onClick={() => save(true)()}>
-          Guardar cosecha y registrar la siembra
+        <Button type="button" loading={update.isPending} loadingText={t("pages.account.AccountPage.saving")} onClick={() => save(true)()}>
+          {t("pages.farm.HarvestPage.saveHarvestAndRecordPlanting")}
         </Button>
         <Button type="submit" variant="secondary" disabled={update.isPending}>
-          Guardar solo la cosecha
+          {t("pages.farm.HarvestPage.saveOnlyTheHarvest")}
         </Button>
         <Link to={PATHS.lot(lot.lot_id)} className={`${LINK} min-h-11 self-end py-2`}>
-          Cancelar
+          {t("pages.account.AccountPage.cancel")}
         </Link>
       </form>
     </Shell>

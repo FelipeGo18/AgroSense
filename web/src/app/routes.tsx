@@ -1,5 +1,7 @@
+import { t, i18n, isLanguage, rememberLanguage } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, ScrollRestoration, createBrowserRouter, useLocation, type RouteObject } from "react-router";
 import { SimulationStrip } from "@/components/layout/SimulationStrip";
 import { motionReady } from "@/lib/motion";
@@ -7,9 +9,17 @@ import { SIMULATION } from "./config";
 import { PATHS } from "./paths";
 
 function Root() {
+  useTranslation();
   // Un cliente por aplicación montada: guarda en memoria lo que responde la API (por ejemplo, quién tiene la sesión).
   const [client] = useState(() => new QueryClient());
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    const requested = new URLSearchParams(search).get("lang");
+    if (isLanguage(requested) && requested !== i18n.resolvedLanguage) {
+      void i18n.changeLanguage(requested);
+      rememberLanguage(requested);
+    }
+  }, [search]);
   const [start] = useState(pathname);
   const [moved, setMoved] = useState(false);
   if (!moved && pathname !== start) setMoved(true);
@@ -26,9 +36,10 @@ function Root() {
 }
 
 function Loading() {
+  useTranslation();
   return (
     <p role="status" className="p-8">
-      Cargando…
+      {t("pages.account.AccountShell.loading")}
     </p>
   );
 }

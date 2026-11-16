@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
+import { useNavigate } from "@/components/layout/LanguageLink";
 import { ApiError, api, type Schemas } from "@/api/client";
 import { PATHS } from "@/app/paths";
 

@@ -1,5 +1,8 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { Link, type LinkProps } from "react-router";
+import type { LinkProps } from "react-router";
+import { Link } from "@/components/layout/LanguageLink";
 import { Plate } from "./Plate";
 import { Spinner } from "./Spinner";
 
@@ -26,6 +29,7 @@ const BLOCK =
 
 /** La cara del bloque con su canto y su contenido: la comparten el botón y el enlace con forma de botón. */
 function Block({ variant, children }: { variant: Variant; children: ReactNode }) {
+  useTranslation();
   const v = VARIANTS[variant];
   return (
     <>
@@ -41,13 +45,14 @@ function Block({ variant, children }: { variant: Variant; children: ReactNode })
 export function Button({
   variant = "primary",
   loading = false,
-  loadingText = "Cargando…",
+  loadingText = t("pages.account.AccountShell.loading"),
   disabled,
   className = "",
   children,
   type = "button",
   ...rest
 }: ButtonProps) {
+  useTranslation();
   // Deshabilitado es un bloque plano, sin canto. En carga conserva su color: sigue siendo la acción en curso.
   const flat = disabled && !loading;
   return (
@@ -81,6 +86,7 @@ export interface ButtonLinkProps extends LinkProps {
 
 /** El mismo bloque cuando la acción es ir a otra página: es un enlace, no un botón. */
 export function ButtonLink({ variant = "primary", className = "", children, ...rest }: ButtonLinkProps) {
+  useTranslation();
   return (
     <Link className={`${BLOCK} ${VARIANTS[variant].ink} ${className}`} {...rest}>
       <Block variant={variant}>{children}</Block>

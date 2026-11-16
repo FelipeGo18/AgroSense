@@ -1,5 +1,7 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useId, useRef, useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate } from "@/components/layout/LanguageLink";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
@@ -18,7 +20,7 @@ const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offse
 
 /** Las mismas reglas del contrato (specs/02-contratos.md). La API las vuelve a revisar: aquí solo se avisa antes. */
 const USERNAME = /^[a-z0-9._]{3,30}$/;
-const USERNAME_RULE = "De 3 a 30: minúsculas sin tilde, números, punto o guion bajo.";
+const USERNAME_RULE = () => t("pages.auth.SignupPage.3To30CharactersLowercaseUnaccentedLetters");
 const PASSWORD_MIN = 8;
 
 /**
@@ -28,6 +30,7 @@ const PASSWORD_MIN = 8;
  * consentimiento); en las angostas, en dos pasos (primero los datos, después el consentimiento).
  */
 export function SignupPage() {
+  useTranslation();
   const navigate = useNavigate();
   const consentId = useId();
   const { user } = useSession();
@@ -65,9 +68,12 @@ export function SignupPage() {
   if (user && (register.isIdle || register.isError)) return <Navigate to={PATHS.farm} replace />;
 
   const errors = {
-    displayName: displayName.trim() ? undefined : "Escriba cómo quiere que lo llamemos.",
-    username: USERNAME.test(username) ? undefined : USERNAME_RULE,
-    password: password.length >= PASSWORD_MIN ? undefined : `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`,
+    displayName: displayName.trim() ? undefined : t("pages.auth.SignupPage.enterTheNameYouWouldLikeUs"),
+    username: USERNAME.test(username) ? undefined : USERNAME_RULE(),
+    password:
+      password.length >= PASSWORD_MIN
+        ? undefined
+        : t("pages.auth.SignupPage.thePasswordMustContainAtLeastCharacters", { v0: PASSWORD_MIN }),
   };
   const dataValid = Object.values(errors).every((error) => error === undefined);
   const failed = register.error;
@@ -100,22 +106,37 @@ export function SignupPage() {
   };
 
   return (
-    <FormScene mood="celebrate" signs={["Sus lotes, guardados", "Su historial de siembras"]} wide rejected={failed}>
-      <title>Crear cuenta · AgroSense</title>
+    <FormScene
+      mood="celebrate"
+      signs={[t("pages.auth.SignupPage.yourPlotsSaved"), t("pages.auth.SignupPage.yourPlantingHistory")]}
+      wide
+      rejected={failed}
+    >
+      <title>{t("pages.auth.SignupPage.createAccountAgrosense")}</title>
       <header>
         <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">
-          Crear cuenta{narrow && <span> · paso {step} de 2</span>}
+          {t("nav.signup")}
+          {narrow && (
+            <span>
+              {" "}
+              {t("pages.auth.SignupPage.step")} {step} {t("pages.auth.SignupPage.of2")}
+            </span>
+          )}
         </p>
         {/* En el segundo paso de las pantallas angostas el título es el rótulo de arriba: así cabe el consentimiento entero. */}
-        <h1 className={`text-[clamp(1.75rem,2.6vw,2.25rem)] ${narrow && step === 2 ? "sr-only" : ""}`}>Guarde su finca</h1>
+        <h1 className={`text-[clamp(1.75rem,2.6vw,2.25rem)] ${narrow && step === 2 ? "sr-only" : ""}`}>
+          {t("pages.auth.SignupPage.saveYourFarm")}
+        </h1>
         {/* En pantallas angostas cada línea cuenta: la frase de apoyo solo va donde sobra alto. */}
-        {!narrow && <p>Solo un nombre, un usuario y una contraseña.</p>}
+        {!narrow && <p>{t("pages.auth.SignupPage.justANameAUsernameAndA")}</p>}
       </header>
       {failed && !taken && (
         <Alert>
-          <p>{failed instanceof ApiError ? failed.message : "Algo falló. Intente de nuevo."}</p>
+          <p>{failed instanceof ApiError ? failed.message : t("pages.auth.LoginPage.somethingWentWrongTryAgain")}</p>
           {failed instanceof ApiError && failed.status >= 500 && failed.requestId && (
-            <p className="font-normal">Código para soporte: {failed.requestId}</p>
+            <p className="font-normal">
+              {t("pages.auth.LoginPage.supportCode")} {failed.requestId}
+            </p>
           )}
         </Alert>
       )}
@@ -123,7 +144,7 @@ export function SignupPage() {
         {showData && (
           <div className="flex flex-col gap-2.5">
             <TextField
-              label="¿Cómo quiere que lo llamemos?"
+              label={t("pages.auth.SignupPage.whatShouldWeCallYou")}
               name="display_name"
               autoComplete="nickname"
               maxLength={40}
@@ -133,7 +154,7 @@ export function SignupPage() {
               error={tried ? errors.displayName : undefined}
             />
             <TextField
-              label="Usuario"
+              label={t("login.username")}
               name="username"
               autoComplete="username"
               autoCapitalize="none"
@@ -143,11 +164,11 @@ export function SignupPage() {
               value={username}
               // El usuario va siempre en minúsculas: se convierte al escribir para que no haya sorpresas al entrar.
               onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/\s/g, ""))}
-              hint={narrow ? undefined : "Con este usuario va a entrar."}
-              error={taken ? "Ese nombre de usuario ya está en uso. Pruebe con otro." : tried ? errors.username : undefined}
+              hint={narrow ? undefined : t("pages.auth.SignupPage.youWillUseThisUsernameToSign")}
+              error={taken ? t("pages.auth.SignupPage.thatUsernameIsAlreadyTakenTryAnother") : tried ? errors.username : undefined}
             />
             <TextField
-              label="Contraseña"
+              label={t("login.password")}
               name="password"
               type="password"
               autoComplete="new-password"
@@ -155,19 +176,19 @@ export function SignupPage() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              hint="Al menos 8 caracteres. No se puede recuperar."
+              hint={t("pages.auth.SignupPage.atLeast8CharactersPasswordRecoveryIs")}
               error={tried ? errors.password : undefined}
             />
             {narrow && (
               <Button type="submit" className="mt-1">
-                Continuar
+                {t("pages.auth.SignupPage.continue")}
               </Button>
             )}
             {!narrow && (
               <p>
-                ¿Ya tiene cuenta?{" "}
+                {t("pages.auth.SignupPage.alreadyHaveAnAccount")}{" "}
                 <Link to={PATHS.login} className={LINK}>
-                  Entrar
+                  {t("login.submit")}
                 </Link>
               </p>
             )}
@@ -188,37 +209,37 @@ export function SignupPage() {
                   className="mt-0.5 size-7 shrink-0 accent-accion-primaria"
                 />
                 <div id={`${consentId}-text`} className="flex flex-col gap-1.5 text-xs leading-snug md:text-[15px]">
-                  <label htmlFor={consentId}>
-                    Acepto que AgroSense guarde mi usuario, mi nombre y mis prioridades, mis lotes con su ubicación en el mapa, si tienen
-                    riego y lo que siembro, para mostrarme mi finca.
-                  </label>
-                  <p>Soporte puede ver mis lotes para ayudarme, y se registra la actividad de mi cuenta durante 180 días.</p>
-                  <p>Lo que siembro se suma, sin mi nombre, a los totales de mi municipio, solo si hay al menos 5 cuentas.</p>
-                  <p>No se guarda correo, celular, documento ni dirección. Puedo borrar todo cuando quiera.</p>
+                  <label htmlFor={consentId}>{t("pages.auth.SignupPage.iAgreeThatAgrosenseMayStoreMy")}</label>
+                  <p>{t("pages.auth.SignupPage.supportCanViewMyPlotsToHelp")}</p>
+                  <p>{t("pages.auth.SignupPage.myPlantingsContributeAnonymouslyToMunicipalityTotals")}</p>
+                  <p>{t("pages.auth.SignupPage.noEmailAddressPhoneNumberIdDocument")}</p>
                   <Link to={PATHS.dataPolicy} className={`${LINK} inline-flex min-h-11 items-center self-start`}>
-                    Leer la política de {narrow ? "" : "tratamiento de "}datos
+                    {t(narrow ? "auth.readPolicyShort" : "auth.readPolicy")}
                   </Link>
                 </div>
               </div>
-              {triedConsent && !consent && <p className="text-[15px] font-bold text-oscuro-rojo">Para crear la cuenta hay que aceptar.</p>}
+              {triedConsent && !consent && (
+                <p className="text-[15px] font-bold text-oscuro-rojo">{t("pages.auth.SignupPage.youMustAgreeBeforeCreatingAnAccount")}</p>
+              )}
             </div>
-            <Button type="submit" loading={register.isPending} loadingText="Creando su cuenta…">
-              Crear cuenta
+            <Button type="submit" loading={register.isPending} loadingText={t("pages.auth.SignupPage.creatingYourAccount")}>
+              {t("nav.signup")}
             </Button>
           </div>
         )}
       </form>
       {narrow && step === 1 && (
         <p>
-          ¿Ya tiene cuenta?{" "}
+          {t("pages.auth.SignupPage.alreadyHaveAnAccount")}{" "}
           <Link to={PATHS.login} className={LINK}>
-            Entrar
+            {t("login.submit")}
           </Link>
         </p>
       )}
       {narrow && step === 2 && (
         <button type="button" onClick={() => setStep(1)} className={`${LINK} min-h-11 self-start`}>
-          <span aria-hidden="true">← </span>Volver a mis datos
+          <span aria-hidden="true">← </span>
+          {t("pages.auth.SignupPage.backToMyDetails")}
         </button>
       )}
     </FormScene>

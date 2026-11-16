@@ -1,9 +1,13 @@
 import "@testing-library/jest-dom/vitest";
-import { configure } from "@testing-library/react";
+import { i18n } from "@/lib/i18n";
+import { act, configure } from "@testing-library/react";
 
 // Cada página se carga aparte: la primera prueba de un archivo la trae por primera vez y eso puede pasar de un segundo.
 configure({ asyncUtilTimeout: 5000 });
 import { afterEach } from "vitest";
+afterEach(async () => {
+  if (i18n.resolvedLanguage !== "es") await act(() => i18n.changeLanguage("es"));
+});
 import { resetLightMode } from "@/lib/lightMode";
 import { loadMotion } from "@/lib/motion";
 

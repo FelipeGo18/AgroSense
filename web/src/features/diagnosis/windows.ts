@@ -1,3 +1,4 @@
+import { locale, t } from "@/lib/i18n";
 import type { Schemas } from "@/api/client";
 import { PATHS } from "@/app/paths";
 
@@ -42,7 +43,7 @@ export function otherCropLink(request: DiagnosisRequestEcho): string {
 export const asksOtherWindow = (overall: { action: string }, byDefault: { action: string }) =>
   overall.action === "other_window" || byDefault.action === "other_window";
 
-const NUMBER = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
+const NUMBER = () => new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 });
 
 /** «Temperatura media anual de 26,3 °C a 300 m de altitud, la del municipio»: el dato con que se decidió la aptitud. */
 export function suitabilityFacts(suitability: Suitability): string | null {
@@ -50,7 +51,12 @@ export function suitabilityFacts(suitability: Suitability): string | null {
   const altitude =
     suitability.altitude_m === null || suitability.altitude_m === undefined
       ? ""
-      : ` a ${new Intl.NumberFormat("es-CO").format(Math.round(suitability.altitude_m))} m de altitud`;
-  const basis = suitability.basis === "lot" ? "la de su lote" : "la del municipio";
-  return `Temperatura media anual de ${NUMBER.format(suitability.tmean_annual_c)} °C${altitude}, ${basis}.`;
+      : t("features.diagnosis.windows.atMAltitude", { v0: new Intl.NumberFormat(locale()).format(Math.round(suitability.altitude_m)) });
+  const basis =
+    suitability.basis === "lot" ? t("features.diagnosis.windows.forYourPlot") : t("features.diagnosis.windows.forTheMunicipality");
+  return t("features.diagnosis.windows.meanAnnualTemperatureOfC", {
+    v0: NUMBER().format(suitability.tmean_annual_c),
+    v1: altitude,
+    v2: basis,
+  });
 }

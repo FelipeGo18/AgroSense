@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
 import { Button } from "./Button";
@@ -30,6 +31,7 @@ export function ConfirmDialog({
   busy = false,
   busyLabel,
 }: ConfirmDialogProps) {
+  useTranslation();
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
       <Dialog.Portal>

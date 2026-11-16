@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { SoilFacts, type SoilProperties } from "@/components/soil/SoilFacts";
 import { useMunicipalitySoil } from "@/features/diagnosis/signals";
 import { useLot } from "@/features/farm/lots";
@@ -20,31 +21,32 @@ export function lotSoilProperties(soil: Record<string, unknown>): SoilProperties
 
 /** Sin suelo del polígono no se sustituye por el municipal (R1). Las consultas comparten la caché. */
 export function SoilDetails({ municipalityId, lotId, open = false }: SoilContext & { open?: boolean }) {
+  const { t } = useTranslation();
   const lot = useLot(lotId ?? "");
   const municipal = useMunicipalitySoil(lotId ? null : municipalityId);
   const query = lotId ? lot : municipal;
   const raw = lot.data?.soil;
   const soil = lotId ? (raw ? lotSoilProperties(raw) : undefined) : municipal.data;
-  const place = lotId && raw?.basis === "lot" ? "su lote dibujado" : "su municipio";
+  const place = lotId && raw?.basis === "lot" ? t("soil.details.plot") : t("soil.details.municipality");
   return (
     <details open={open} className="relative min-w-0 text-[15px]">
       <summary className="flex min-h-11 cursor-pointer items-center font-bold text-oscuro-oliva underline decoration-2 underline-offset-4">
-        Ver el suelo usado y qué significa
+        {t("soil.details.open")}
       </summary>
       <div className="flex min-w-0 flex-col gap-3 pt-2">
         {query.isPending ? (
-          <p role="status">Cargando los datos del suelo…</p>
+          <p role="status">{t("soil.details.loading")}</p>
         ) : query.isError ? (
           <>
-            <p role="alert">No se pudieron cargar los datos del suelo.</p>
+            <p role="alert">{t("soil.details.error")}</p>
             <button type="button" className="min-h-11 self-start font-bold underline" onClick={() => void query.refetch()}>
-              Reintentar
+              {t("common.retry")}
             </button>
           </>
         ) : soil ? (
           <SoilFacts soil={soil} place={place} />
         ) : (
-          <p>Sin datos del suelo de {lotId ? "su lote" : "su municipio"}. Para conocer el suelo de su lote, haga un análisis de suelo.</p>
+          <p>{t("soil.details.missing", { place: lotId ? t("soil.details.plotShort") : t("soil.details.municipality") })}</p>
         )}
       </div>
     </details>

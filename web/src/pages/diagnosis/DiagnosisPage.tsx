@@ -1,5 +1,9 @@
-import { useMemo, useRef, useState, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router";
+import { ApiLanguageNotice } from "@/components/ui/ApiLanguageNotice";
+import { cropName as cropLabel } from "@/features/farm/seasons";
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
+import { useRef, useState, type FormEvent } from "react";
+import { Link, useSearchParams } from "@/components/layout/LanguageLink";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
@@ -51,11 +55,11 @@ import { changesLink } from "@/features/changes/changes";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
 
-const IRRIGATION_HINT =
-  "Con riego, la falta de lluvia no se cuenta como riesgo. Si no sabe, se evalúa como sin riego y el resultado lo dice.";
+const IRRIGATION_HINT = () => t("pages.diagnosis.DiagnosisPage.withIrrigationRainfallShortagesDoNotCount");
 
 // Mensaje de backend/api/calculations.py, _check_sowing_date.
 // Mantener sincronizado: la API usa invalid_input para varias validaciones.
+// i18n-audit.test.ts comprueba la coincidencia con _check_sowing_date sin cambiar el contrato.
 const SOWING_DATE_OUT_OF_RANGE_MESSAGE = "La fecha de siembra debe estar entre este mes y los próximos doce.";
 /**
  * Diagnóstico de una fecha de siembra, la «consulta suelta» (HU-091; `specs/05-frontend.md`, parte C). El agricultor
@@ -65,6 +69,7 @@ const SOWING_DATE_OUT_OF_RANGE_MESSAGE = "La fecha de siembra debe estar entre e
  * llega con HU-092. Es una página quieta: se ve igual en modo ligero.
  */
 export function DiagnosisPage() {
+  useTranslation();
   const [params, setParams] = useSearchParams();
   const { user, loading: sessionLoading } = useSession();
   const municipalities = useMunicipalities();
@@ -73,7 +78,7 @@ export function DiagnosisPage() {
   const lots = useLots(Boolean(user));
   const myLots = user ? (lots.data ?? []) : [];
 
-  const months = useMemo(() => sowingMonths(), []);
+  const months = sowingMonths();
   const formRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState<ConsultForm>(() => fromParams(params));
   // Validación inmediata: el error de un campo aparece apenas se usa (al elegir, o al salir del buscador sin escoger).
@@ -82,7 +87,7 @@ export function DiagnosisPage() {
   const [touched, setTouched] = useState<ReadonlySet<ConsultField>>(() => new Set());
   // Si la dirección cambia desde afuera (una de las mejores fechas, «Elegir otro cultivo», volver atrás), el formulario
   // muestra esa consulta. Al enviar también cambia, con lo mismo que ya tiene el formulario.
-  const search = params.toString();
+  const search = new URLSearchParams([...params].filter(([key]) => key !== "lang")).toString();
   const [shownSearch, setShownSearch] = useState(search);
   if (search !== shownSearch) {
     setShownSearch(search);
@@ -126,7 +131,7 @@ export function DiagnosisPage() {
       ? toRequest(sent, sentLot, priorities.request)
       : null;
   const diagnosis = useDiagnosis(request);
-  const cropName = crops.data?.find((c) => c.crop_id === sent.cropId)?.name_es;
+  const cropName = cropLabel(crops.data?.find((c) => c.crop_id === sent.cropId));
   const place = sentLot ? sentLot.name : places.get(sent.municipalityId)?.name;
   const summaryParts = [cropName, sent.month ? monthName(sent.month) : null, place].filter(Boolean);
   const querySummary = summaryParts.length > 0 ? summaryParts.join(" · ") : undefined;
@@ -164,20 +169,18 @@ export function DiagnosisPage() {
   const notSuitable = diagnosis.data?.suitability.level === "not_suitable";
   return (
     <div className="relative isolate min-h-svh bg-paleta-niebla">
-      <title>Diagnóstico de una siembra · AgroSense</title>
+      <title>{t("pages.diagnosis.DiagnosisPage.plantingDiagnosisAgrosense")}</title>
       <SceneBackdrop scene={notSuitable ? "vereda" : "municipio"} variant={request ? "band" : "full"} />
       <TopBar />
       {/* El espacio de abajo es para los cerros del pie de página. */}
       <main className="container-page pt-[112px] pb-40 md:pt-[128px] md:pb-48">
         {/* Sobre el paisaje, el encabezado va en un panel claro para que se lea (en el diseño va dentro de la tarjeta). */}
         <header className="flex max-w-[880px] min-w-0 flex-col gap-3 rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
-          <Eyebrow>Diagnóstico de una siembra</Eyebrow>
-          <h1 className="text-[clamp(1.75rem,4vw,3rem)]">¿Conviene sembrar en esa fecha?</h1>
-          <p>
-            Elija dónde, qué y cuándo quiere sembrar. Le decimos cómo le ha ido a ese cultivo en esa época del año en su zona. Es la
-            historia de su zona, no un pronóstico.
-          </p>
+          <Eyebrow>{t("footer.diagnosis")}</Eyebrow>
+          <h1 className="text-[clamp(1.75rem,4vw,3rem)]">{t("pages.diagnosis.DiagnosisPage.isThisASuitablePlantingDate")}</h1>
+          <p>{t("pages.diagnosis.DiagnosisPage.chooseWhereWhatAndWhenToPlant")}</p>
         </header>
+        <ApiLanguageNotice />
 
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <Card bodyClassName="gap-6">
@@ -189,21 +192,21 @@ export function DiagnosisPage() {
                 noValidate
                 onSubmit={submit}
                 className="flex min-w-0 flex-col gap-6"
-                aria-label="Consulta del diagnóstico"
+                aria-label={t("pages.diagnosis.DiagnosisPage.diagnosisInputs")}
               >
                 {myLots.length > 0 && (
                   <SelectField
-                    label="¿Para cuál terreno?"
+                    label={t("pages.strategies.StrategiesPage.whichLand")}
                     value={form.lotId}
                     onChange={(e) => change({ lotId: e.target.value })}
                     options={[
-                      { value: "", label: "Otro municipio, sin un lote" },
+                      { value: "", label: t("pages.strategies.StrategiesPage.anotherMunicipalityWithoutAPlot") },
                       ...myLots.map((l) => ({
                         value: l.lot_id,
                         label: `${l.name} · ${placeName(places.get(l.municipality_id), l.municipality_id)}`,
                       })),
                     ]}
-                    hint="Con uno de sus lotes, el municipio y el riego salen del lote."
+                    hint={t("pages.diagnosis.DiagnosisPage.withOneOfYourPlotsTheMunicipality")}
                   />
                 )}
 
@@ -211,8 +214,8 @@ export function DiagnosisPage() {
                   <LotFacts lot={lot} place={placeName(places.get(lot.municipality_id), lot.municipality_id)} />
                 ) : (
                   <Combobox
-                    label="Municipio"
-                    placeholder="Escriba el nombre de su municipio"
+                    label={t("pages.farm.AddLotPage.municipality")}
+                    placeholder={t("pages.strategies.StrategiesPage.enterYourMunicipalityName")}
                     loading={municipalities.isPending}
                     options={(municipalities.data ?? []).map((m) => ({ id: m.municipality_id, label: m.name, hint: m.department }))}
                     value={optionFor(form.municipalityId, places)}
@@ -226,7 +229,7 @@ export function DiagnosisPage() {
                 )}
 
                 <SelectField
-                  label="Cultivo"
+                  label={t("pages.farm.SeasonFormPage.crop")}
                   value={form.cropId}
                   disabled={crops.isPending}
                   onChange={(e) => {
@@ -234,35 +237,40 @@ export function DiagnosisPage() {
                     touch("crop");
                   }}
                   options={[
-                    { value: "", label: crops.isPending ? "Cargando cultivos…" : "Elija un cultivo" },
-                    ...(crops.data ?? []).filter((c) => c.kind === "crop").map((c) => ({ value: c.crop_id, label: c.name_es })),
+                    {
+                      value: "",
+                      label: crops.isPending
+                        ? t("pages.changes.LotChangesLink.loadingCrops")
+                        : t("pages.changes.LotChangesLink.chooseACrop"),
+                    },
+                    ...(crops.data ?? []).filter((c) => c.kind === "crop").map((c) => ({ value: c.crop_id, label: cropLabel(c) })),
                   ]}
                   error={errors.crop}
                 />
 
                 <SelectField
                   name="sowing_month"
-                  label="¿Cuándo quiere sembrar?"
+                  label={t("pages.diagnosis.DiagnosisPage.whenDoYouWantToPlant")}
                   value={form.month}
                   onChange={(e) => {
                     change({ month: e.target.value });
                     touch("month");
                   }}
-                  options={[{ value: "", label: "Elija un mes" }, ...months]}
-                  hint="Este mes o uno de los once siguientes. Evaluamos desde el día 1 de ese mes hasta la cosecha estimada."
+                  options={[{ value: "", label: t("pages.strategies.StrategiesPage.chooseAMonth") }, ...months]}
+                  hint={t("pages.diagnosis.DiagnosisPage.thisMonthOrOneOfTheNext")}
                   error={errors.month}
                 />
 
                 {!lot && (
                   <ChoiceGroup<Irrigation | "">
-                    legend="¿Tiene riego?"
-                    choices={IRRIGATION_CHOICES}
+                    legend={t("pages.changes.ChangesContext.doYouHaveIrrigation")}
+                    choices={IRRIGATION_CHOICES()}
                     value={form.irrigation}
                     onChange={(irrigation) => {
                       change({ irrigation });
                       touch("irrigation");
                     }}
-                    hint={IRRIGATION_HINT}
+                    hint={IRRIGATION_HINT()}
                     error={errors.irrigation}
                   />
                 )}
@@ -270,7 +278,7 @@ export function DiagnosisPage() {
                 <PrioritiesPanel priorities={priorities} />
 
                 <Button type="submit" disabled={!catalogsReady} className="w-full sm:w-auto sm:self-start">
-                  Ver el diagnóstico
+                  {t("pages.diagnosis.DiagnosisPage.viewDiagnosis")}
                 </Button>
               </form>
             )}
@@ -297,7 +305,7 @@ export function DiagnosisPage() {
             variant="secondary"
             className="mt-6 w-full sm:w-auto"
           >
-            Ver qué cambió en su zona
+            {t("pages.changes.LotChangesLink.seeWhatHasChangedInYourArea")}
           </ButtonLink>
         )}
         {request && diagnosis.isSuccess && <Details data={diagnosis.data} />}
@@ -314,22 +322,26 @@ function optionFor(id: string, places: Map<string, { name: string; department: s
 
 /** Sin catálogo no hay consulta. Un 503 trae su motivo (por ejemplo, el dataset no está publicado); lo demás es la red. */
 function catalogErrorText(error: Error | null): string {
-  if (error instanceof ApiError && error.status !== 0) return `No pudimos cargar los municipios y los cultivos: ${error.message}`;
-  return "No pudimos cargar los municipios y los cultivos. Revise su conexión y recargue la página.";
+  if (error instanceof ApiError && error.status !== 0)
+    return t("pages.diagnosis.DiagnosisPage.weCouldNotLoadMunicipalitiesAndCrops", { v0: error.message });
+  return t("pages.strategies.StrategiesPage.weCouldNotLoadMunicipalitiesAndCrops");
 }
 
 /** Con un lote: su municipio y su riego, que no se preguntan. El riego se cambia en el lote. */
 function LotFacts({ lot, place }: { lot: LotListItem; place: string }) {
+  useTranslation();
   return (
     <div className="flex flex-col gap-1 border-2 border-oscuro-cielo/60 bg-[#E6F0F5] px-4 py-3 text-[15px] leading-snug">
       <p>
-        <span className="font-bold">Municipio:</span> {place}, el de su lote.
+        <span className="font-bold">{t("pages.strategies.StrategiesPage.municipality")}</span> {place}
+        {t("pages.strategies.StrategiesPage.fromYourPlot")}
       </p>
       <p>
-        <span className="font-bold">{irrigationText(lot.irrigated)}</span>, según su lote.{" "}
-        {lot.irrigated === null && "Se evalúa como sin riego y el resultado lo dice. "}
+        <span className="font-bold">{irrigationText(lot.irrigated)}</span>
+        {t("pages.strategies.StrategiesPage.accordingToYourPlot")}{" "}
+        {lot.irrigated === null && t("pages.diagnosis.DiagnosisPage.assessedWithoutIrrigationAndStatedInThe")}
         <Link to={PATHS.editLot(lot.lot_id)} className={LINK}>
-          Cambiarlo en el lote
+          {t("pages.strategies.StrategiesPage.changeItInThePlot")}
         </Link>
       </p>
     </div>
@@ -363,25 +375,28 @@ function Result({
   onReturnToForm,
   onChangeSowingMonth,
 }: Readonly<ResultProps>) {
+  useTranslation();
   if (!request) {
     return (
       <section aria-labelledby="resultado" className="flex min-w-0 flex-col gap-3 rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
         <h2 id="resultado" className="text-[clamp(1.25rem,3vw,1.75rem)]">
-          Resultado
+          {t("pages.diagnosis.DiagnosisPage.result")}
         </h2>
         {zeroPriorities ? (
-          <Alert>Todas sus prioridades están en 0. Suba al menos una en «Sus prioridades · Ajustar» para ver el diagnóstico.</Alert>
+          <Alert>{t("pages.diagnosis.DiagnosisPage.allPrioritiesAreSetTo0Increase")}</Alert>
         ) : lotMissing ? (
           <Alert>
-            Ese lote no está entre los suyos o no ha entrado con su cuenta.{" "}
+            {t("pages.strategies.StrategiesPage.thatPlotIsNotYoursOrYou")}{" "}
             <Link to={PATHS.login} className={LINK}>
-              Entrar
+              {t("login.submit")}
             </Link>{" "}
-            o elija un municipio.
+            {t("pages.strategies.StrategiesPage.orChooseAMunicipality")}
           </Alert>
         ) : (
           <p className="text-texto-secundario">
-            {waitingLot ? "Cargando su lote…" : "Elija municipio, cultivo, cuándo sembrar y si tiene riego, y toque «Ver el diagnóstico»."}
+            {waitingLot
+              ? t("pages.strategies.StrategiesPage.loadingYourPlot")
+              : t("pages.diagnosis.DiagnosisPage.chooseAMunicipalityCropPlantingMonthAnd")}
           </p>
         )}
       </section>
@@ -394,7 +409,7 @@ function Result({
       className="flex min-w-0 flex-col gap-4 rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm"
     >
       <h2 id="resultado" className="text-[clamp(1.25rem,3vw,1.75rem)]">
-        Resultado para {monthName(sentMonth)}
+        {t("pages.diagnosis.DiagnosisPage.resultFor")} {monthName(sentMonth)}
       </h2>
       {diagnosis.isPending ? (
         <DiagnosisSkeleton querySummary={querySummary} />
@@ -438,14 +453,15 @@ function DiagnosisError({
   onReturnToForm,
   onChangeSowingMonth,
 }: Readonly<DiagnosisErrorProps>) {
+  useTranslation();
   // 1. Sin conexión: falla la red o modo offline (status 0)
   if (error instanceof ApiError && (error.status === 0 || error.code === "offline")) {
     return (
       <StateCard
-        title="Sin conexión"
-        description="Revise la señal. Lo que ya consultó sigue en pantalla; para calcular otra fecha hace falta internet."
+        title={t("pages.diagnosis.DiagnosisPage.offline")}
+        description={t("pages.diagnosis.DiagnosisPage.checkYourConnectionExistingResultsRemainVisible")}
         mood="idle"
-        actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+        actions={[{ label: t("pages.diagnosis.DiagnosisPage.tryAgain"), variant: "primary", onClick: onRetry }]}
       />
     );
   }
@@ -453,20 +469,20 @@ function DiagnosisError({
   if (error instanceof ApiError && error.status === 404) {
     const actions: StateCardAction[] = [];
     if (hasOtherLots) {
-      actions.push({ label: "Elegir otro lote", variant: "primary", onClick: onChooseAnotherLot });
+      actions.push({ label: t("pages.diagnosis.DiagnosisPage.chooseAnotherPlot"), variant: "primary", onClick: onChooseAnotherLot });
     }
     actions.push({
-      label: "Consultar sin lote",
+      label: t("pages.diagnosis.DiagnosisPage.continueWithoutAPlot"),
       variant: hasOtherLots ? "secondary" : "primary",
       onClick: onConsultWithoutLot,
     });
     return (
       <StateCard
-        title="Ese lote no existe o no es suyo"
+        title={t("pages.diagnosis.DiagnosisPage.thatPlotDoesNotExistOrIs")}
         description={
           hasOtherLots
-            ? "Elija otro de sus lotes o continúe la consulta por municipio."
-            : "Puede continuar la consulta por municipio, sin usar este lote."
+            ? t("pages.diagnosis.DiagnosisPage.chooseAnotherPlotOrContinueByMunicipality")
+            : t("pages.diagnosis.DiagnosisPage.youCanContinueByMunicipalityWithoutUsing")
         }
         mood="guide"
         actions={actions}
@@ -482,10 +498,10 @@ function DiagnosisError({
   ) {
     return (
       <StateCard
-        title="Esa fecha no se puede consultar"
-        description="Elija un mes de los próximos doce: una fecha que ya pasó o más lejana no tiene ventana que evaluar."
+        title={t("pages.diagnosis.DiagnosisPage.thatDateCannotBeAssessed")}
+        description={t("pages.diagnosis.DiagnosisPage.chooseAMonthWithinTheNextTwelve")}
         mood="guide"
-        actions={[{ label: "Cambiar la fecha", variant: "primary", onClick: onChangeSowingMonth }]}
+        actions={[{ label: t("pages.strategies.StrategyResults.changeTheDate"), variant: "primary", onClick: onChangeSowingMonth }]}
       />
     );
   }
@@ -493,28 +509,28 @@ function DiagnosisError({
   if (error instanceof ApiError && error.status === 422 && error.code === "outside_region") {
     return (
       <StateCard
-        title="Sin datos de este municipio"
+        title={t("changes.error.coverage.title")}
         description={error.message}
         mood="no_data"
-        actions={[{ label: "Elegir otro municipio", variant: "secondary", onClick: onReturnToForm }]}
+        actions={[{ label: t("changes.error.coverage.action"), variant: "secondary", onClick: onReturnToForm }]}
       />
     );
   }
   if (error instanceof ApiError && error.status === 422) {
     return (
       <StateCard
-        title="Revise lo que eligió"
+        title={t("pages.diagnosis.DiagnosisPage.reviewYourChoices")}
         description={error.message}
         mood="guide"
-        actions={[{ label: "Volver al formulario", variant: "secondary", onClick: onReturnToForm }]}
+        actions={[{ label: t("pages.diagnosis.DiagnosisPage.backToTheForm"), variant: "secondary", onClick: onReturnToForm }]}
       />
     );
   }
   if (error instanceof ApiError && error.status === 501) {
     return (
       <StateCard
-        title="Este cálculo todavía no está disponible"
-        description="El cálculo del diagnóstico aún no está construido."
+        title={t("pages.diagnosis.DiagnosisPage.thisCalculationIsNotAvailableYet")}
+        description={t("pages.diagnosis.DiagnosisPage.theDiagnosisCalculationHasNotBeenImplemented")}
         mood="idle"
       />
     );
@@ -522,10 +538,10 @@ function DiagnosisError({
   if (error instanceof ApiError && error.status === 503 && error.code === "dataset_unavailable") {
     return (
       <StateCard
-        title="Los datos no están disponibles en este momento"
-        description="Intente más tarde."
+        title={t("pages.diagnosis.DiagnosisPage.dataIsNotAvailableRightNow")}
+        description={t("pages.diagnosis.DiagnosisPage.tryAgainLater")}
         mood="no_data"
-        actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+        actions={[{ label: t("pages.diagnosis.DiagnosisPage.tryAgain"), variant: "primary", onClick: onRetry }]}
       />
     );
   }
@@ -533,11 +549,11 @@ function DiagnosisError({
   const code = error instanceof ApiError && error.requestId ? error.requestId : null;
   return (
     <StateCard
-      title="Algo falló de nuestro lado"
-      description="No pudimos calcular su diagnóstico. No es su culpa: lo que eligió sigue aquí. Vuelva a intentar en un momento."
+      title={t("pages.diagnosis.DiagnosisPage.somethingWentWrongOnOurSide")}
+      description={t("pages.diagnosis.DiagnosisPage.weCouldNotCalculateYourDiagnosisYour")}
       mood="idle"
       code={code}
-      actions={[{ label: "Reintentar", variant: "primary", onClick: onRetry }]}
+      actions={[{ label: t("pages.diagnosis.DiagnosisPage.tryAgain"), variant: "primary", onClick: onRetry }]}
     />
   );
 }
@@ -547,15 +563,16 @@ function DiagnosisError({
  * línea que dice por qué difieren. Con «rotar» en cualquiera de las dos, el camino a las estrategias.
  */
 function Summary({ data }: { data: DiagnosisResponse }) {
+  useTranslation();
   const rotate = data.overall.action === "rotate" || data.overall_default.action === "rotate";
-  const example = data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>;
+  const example = data.versions.dataset === "ejemplo" && <ExampleLabel>{t("pages.strategies.CycleView.simulatedResponse")}</ExampleLabel>;
   // Un cultivo que no se da en la zona tiene su propio letrero, sin semáforo, señales ni ventanas (HU-194).
   if (data.suitability.level === "not_suitable") {
     return (
       <Card bodyClassName="gap-4">
         {example}
         <NotSuitable data={data} />
-        <p className="text-[15px] text-texto-secundario">Es información para decidir. La decisión es suya.</p>
+        <p className="text-[15px] text-texto-secundario">{t("pages.strategies.CycleView.informationToHelpYouDecideTheDecision")}</p>
       </Card>
     );
   }
@@ -565,7 +582,8 @@ function Summary({ data }: { data: DiagnosisResponse }) {
       <DiagnosisLights overall={data.overall} overallDefault={data.overall_default} weights={data.weights} />
       {data.window && (
         <p>
-          Siembra el {formatDate(data.window.sowing_start)} · cosecha estimada el {formatDate(data.window.harvest_estimate)}.{" "}
+          {t("pages.strategies.CycleView.plantingOn")} {formatDate(data.window.sowing_start)}{" "}
+          {t("pages.diagnosis.DiagnosisPage.estimatedHarvestOn")} {formatDate(data.window.harvest_estimate)}.{" "}
           <span className="text-texto-secundario">{harvestNote(data.window.harvest_basis)}</span>
         </p>
       )}
@@ -573,10 +591,10 @@ function Summary({ data }: { data: DiagnosisResponse }) {
       {asksOtherWindow(data.overall, data.overall_default) && <BestWindows data={data} strategiesShown={rotate} />}
       {rotate && (
         <ButtonLink to={strategiesLink(data.request)} variant="secondary" className="w-full sm:w-auto sm:self-start">
-          Ver estrategias de rotación
+          {t("pages.farm.LotPage.viewRotationStrategies")}
         </ButtonLink>
       )}
-      <p className="text-[15px] text-texto-secundario">Es información para decidir. La decisión es suya.</p>
+      <p className="text-[15px] text-texto-secundario">{t("pages.strategies.CycleView.informationToHelpYouDecideTheDecision")}</p>
     </Card>
   );
 }
@@ -586,23 +604,21 @@ function Summary({ data }: { data: DiagnosisResponse }) {
  * consulta y del resumen. Con un cultivo que no es apto no hay señales (`signals` nulo): solo las limitaciones.
  */
 function Details({ data }: { data: DiagnosisResponse }) {
+  useTranslation();
   const version = useVersion();
   const crops = useCrops();
   // La lluvia de la ventana año por año, para la gráfica de la señal de agua (HU-093).
   const trends = useTrends(data.signals?.water ? data.request.municipality_id : null, data.request.crop_id, data.request.sowing_date);
-  const cropName = crops.data?.find((c) => c.crop_id === data.request.crop_id)?.name_es ?? data.request.crop_id;
+  const cropName = cropLabel(crops.data?.find((c) => c.crop_id === data.request.crop_id)) ?? data.request.crop_id;
   const hasSignals = orderedSignals(data.signals).length > 0;
   return (
     <div className="mt-10 flex min-w-0 flex-col gap-8">
       {hasSignals && (
         <section aria-labelledby="senales" className="flex min-w-0 flex-col gap-4">
           <h2 id="senales" className="text-[clamp(1.25rem,3vw,1.75rem)]">
-            Las señales de esta ventana
+            {t("pages.diagnosis.DiagnosisPage.signalsForThisWindow")}
           </h2>
-          <p className="max-w-[880px]">
-            Cada señal se mide contra lo que este cultivo necesita o aguanta, con una calificación de 0 a 100. Ninguna se promedia con otra
-            para decidir la luz: una señal desfavorable no la compensan las demás.
-          </p>
+          <p className="max-w-[880px]">{t("pages.diagnosis.DiagnosisPage.eachSignalIsScoredFrom0To")}</p>
           <SignalList
             signals={data.signals}
             limiting={data.overall.limiting_signal}
@@ -627,11 +643,13 @@ function Details({ data }: { data: DiagnosisResponse }) {
       {data.limitations.length > 0 && (
         <section aria-labelledby="limitaciones" className="flex max-w-[880px] min-w-0 flex-col gap-3">
           <h2 id="limitaciones" className="text-[clamp(1.25rem,3vw,1.75rem)]">
-            Limitaciones de este resultado
+            {t("pages.diagnosis.DiagnosisPage.limitationsOfThisResult")}
           </h2>
           <ul className="flex list-disc flex-col gap-1 pl-5">
             {data.limitations.map((limitation) => (
-              <li key={limitation}>{limitation}</li>
+              <li lang="es" key={limitation}>
+                {limitation}
+              </li>
             ))}
           </ul>
         </section>

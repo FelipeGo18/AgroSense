@@ -1,3 +1,6 @@
+import { t } from "@/lib/i18n";
+import { Link } from "@/components/layout/LanguageLink";
+import { useTranslation } from "react-i18next";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Combobox, type Option } from "@/components/ui/Combobox";
@@ -19,33 +22,33 @@ const MUNICIPALITIES: Option[] = [
   { id: "15861", label: "Ventaquemada", hint: "Boyacá" },
 ];
 
-const SIGNALS: Record<string, Signal> = {
+const SIGNALS = (): Record<string, Signal> => ({
   favorable: {
     status: "available",
     level: "favorable",
     indicators: ["precip_anomaly_pct"],
-    reasons: ["Lluvia del semestre dentro del rango favorable"],
+    reasons: [t("lab.kit.signal.rain")],
   },
   unfavorable: {
     status: "available",
     level: "unfavorable",
     indicators: ["frost_freq_pct"],
-    reasons: ["Heló en 6 de los últimos 10 años en los meses sensibles de la ventana"],
+    reasons: [t("lab.kit.signal.frost")],
   },
   // La oferta y el mercado con dato se muestran sin calificar (decisión 17): `available` sin nivel.
   unrated: {
     status: "available",
     level: null,
     indicators: ["planted_change_pct"],
-    reasons: ["Área sembrada 35 % mayor que el promedio de los tres semestres B anteriores"],
+    reasons: [t("lab.kit.signal.supply")],
   },
   insufficient: {
     status: "insufficient_data",
     level: null,
     indicators: [],
-    reasons: ["Sin datos de mercado para la zona"],
+    reasons: [t("lab.kit.signal.market")],
   },
-};
+});
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -57,18 +60,18 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-const MOODS: { id: MascotMood; label: string }[] = [
-  { id: "idle", label: "Reposo" },
-  { id: "guide", label: "Guía" },
-  { id: "celebrate", label: "Celebra" },
-  { id: "no_data", label: "Sin datos" },
-  { id: "flying", label: "En vuelo" },
+const MOODS = (): { id: MascotMood; label: string }[] => [
+  { id: "idle", label: t("lab.kit.mood.idle") },
+  { id: "guide", label: t("lab.kit.mood.guide") },
+  { id: "celebrate", label: t("lab.kit.mood.celebrate") },
+  { id: "no_data", label: t("lab.kit.mood.noData") },
+  { id: "flying", label: t("lab.kit.mood.flying") },
 ];
 
-const SEEDS: { id: MascotSeed; label: string }[] = [
-  { id: "sprouted", label: "Semilla germinada" },
-  { id: "bean", label: "Frijol" },
-  { id: "maize", label: "Maíz" },
+const SEEDS = (): { id: MascotSeed; label: string }[] => [
+  { id: "sprouted", label: t("lab.kit.seed.sprouted") },
+  { id: "bean", label: t("lab.kit.seed.bean") },
+  { id: "maize", label: t("lab.kit.seed.maize") },
 ];
 
 function Choice<T extends string>({
@@ -95,6 +98,8 @@ function Choice<T extends string>({
 }
 
 export function KitPage() {
+  const { t, i18n } = useTranslation();
+  const reasonLanguage = i18n.resolvedLanguage === "en" ? "en" : "es";
   const [municipality, setMunicipality] = useState<Option | null>(null);
   const [priorities, setPriorities] = useState<Priorities>({ water: 3, soil: 5, income: 2, risk: 4 });
   const [saving, setSaving] = useState(false);
@@ -103,89 +108,82 @@ export function KitPage() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-8">
+      <title>{t("lab.kit.title")}</title>
       <header className="flex flex-wrap items-center gap-6">
         <Mascot mood="idle" size={150} decorative className="mascot-float" />
-        <div className="flex min-w-72 flex-1 flex-col gap-3">
-          <h1 className="text-3xl">Kit de componentes · AgroSense</h1>
-          <p className="text-texto-principal">
-            HU-153 y HU-171 · Estilo diorama low-poly y la mascota Semilla Sputnik. Pruebe todo con el teclado (Tab, flechas, Enter,
-            Escape).
-          </p>
-          <ExampleLabel>los municipios, señales y prioridades de esta página son de muestra</ExampleLabel>
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-1">
+          <h1 className="text-3xl">{t("lab.kit.title")}</h1>
+          <p className="text-texto-principal">{t("lab.kit.intro")}</p>
+          <ExampleLabel>{t("lab.kit.example")}</ExampleLabel>
           <p>
-            Recorridos de prueba:{" "}
-            <a className="font-bold underline" href="/recorrido/1">
-              1 · Del satélite al lote
-            </a>
+            {t("lab.kit.journeys")}{" "}
+            <Link className="font-bold underline" to="/recorrido/1">
+              {t("lab.nav.orbit")}
+            </Link>
             {" · "}
-            <a className="font-bold underline" href="/recorrido/2">
-              2 · El año del cultivo
-            </a>
+            <Link className="font-bold underline" to="/recorrido/2">
+              {t("lab.nav.year")}
+            </Link>
             {" · "}
-            <a className="font-bold underline" href="/recorrido/3">
-              3 · Travesía por la cordillera
-            </a>
+            <Link className="font-bold underline" to="/recorrido/3">
+              {t("lab.nav.range")}
+            </Link>
           </p>
         </div>
       </header>
 
-      <Section title="Mascota · Semilla Sputnik">
+      <Section title={t("lab.kit.mascot")}>
         <div className="flex flex-wrap items-center gap-8">
-          <div className="flex flex-col items-center gap-3 bg-[#F4E9D0] p-4">
-            <Mascot mood={mood} seed={seed} size={300} />
+          <div className="flex w-full max-w-[332px] flex-col items-center gap-3 bg-[#F4E9D0] p-4">
+            <Mascot mood={mood} seed={seed} size={300} className="h-auto max-w-full" />
           </div>
-          <div className="flex min-w-72 flex-1 flex-col gap-5">
-            <Choice legend="Pose" options={MOODS} value={mood} onChange={setMood} />
-            <Choice
-              legend="Semilla (cambia según el contexto; la cara y el brote son la identidad)"
-              options={SEEDS}
-              value={seed}
-              onChange={setSeed}
-            />
-            <div className="flex items-end gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-5">
+            <Choice legend={t("lab.kit.pose")} options={MOODS()} value={mood} onChange={setMood} />
+            <Choice legend={t("lab.kit.seed")} options={SEEDS()} value={seed} onChange={setSeed} />
+            <div className="flex flex-wrap items-end gap-4">
               <Mascot mood={mood} seed={seed} size={96} decorative />
               <Mascot mood={mood} seed={seed} size={64} decorative />
               <Mascot mood={mood} seed={seed} size={48} decorative />
-              <span className="text-sm text-texto-secundario">96, 64 y 48 px</span>
+              <span className="text-sm text-texto-secundario">{t("lab.kit.sizes")}</span>
             </div>
           </div>
         </div>
       </Section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Section title="Botón">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Section title={t("lab.kit.button")}>
           <div className="flex flex-wrap gap-4">
             <Button
               loading={saving}
-              loadingText="Calculando…"
+              loadingText={t("lab.kit.calculating")}
               onClick={() => {
                 setSaving(true);
                 setTimeout(() => setSaving(false), 1500);
               }}
             >
-              Ver diagnóstico
+              {t("lab.diagnosis")}
             </Button>
-            <Button variant="secondary">Cambiar cultivo</Button>
+            <Button variant="secondary">{t("lab.kit.changeCrop")}</Button>
           </div>
           <div className="flex flex-wrap gap-4">
-            <Button disabled>Deshabilitado</Button>
-            <Button loading>Cargando</Button>
+            <Button disabled>{t("lab.kit.disabled")}</Button>
+            <Button loading>{t("lab.kit.loading")}</Button>
           </div>
         </Section>
 
-        <Section title="Selector con autocompletado">
+        <Section title={t("lab.kit.combobox")}>
           <Combobox
-            label="Municipio"
-            placeholder="Escriba su municipio"
+            label={t("lab.municipality")}
+            placeholder={t("lab.municipality.placeholder")}
             options={MUNICIPALITIES}
             value={municipality}
             onChange={setMunicipality}
           />
-          <Combobox label="Cultivo (cargando)" options={[]} value={null} onChange={() => {}} loading />
-          <Combobox label="Semestre (deshabilitado)" options={[]} value={null} onChange={() => {}} disabled />
+          <Combobox label={t("lab.kit.loadingCrop")} options={[]} value={null} onChange={() => {}} loading />
+          <Combobox label={t("lab.kit.disabledSemester")} options={[]} value={null} onChange={() => {}} disabled />
         </Section>
 
-        <Section title="Insignia de semáforo">
+        <Section title={t("lab.kit.trafficLight")}>
           <div className="flex flex-col items-start gap-3">
             <TrafficLightBadge light="green" />
             <TrafficLightBadge light="yellow" />
@@ -195,24 +193,24 @@ export function KitPage() {
           </div>
         </Section>
 
-        <Section title="Control de prioridad">
+        <Section title={t("lab.kit.priority")}>
           <PriorityControl value={priorities} onChange={setPriorities} />
           <Button variant="secondary" onClick={() => setPriorities({ water: 0, soil: 0, income: 0, risk: 0 })}>
-            Poner todo en 0
+            {t("lab.kit.zero")}
           </Button>
         </Section>
       </div>
 
-      <h2 className="text-xl">Tarjetas de señal</h2>
+      <h2 className="text-xl">{t("lab.kit.signals")}</h2>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <SignalCard kind="climate" signal={SIGNALS.favorable} />
-        <SignalCard kind="climate" signal={SIGNALS.unfavorable} />
-        <SignalCard kind="supply" signal={SIGNALS.unrated} />
-        <SignalCard kind="market" signal={SIGNALS.insufficient} />
+        <SignalCard kind="climate" signal={SIGNALS().favorable} reasonLanguage={reasonLanguage} />
+        <SignalCard kind="climate" signal={SIGNALS().unfavorable} reasonLanguage={reasonLanguage} />
+        <SignalCard kind="supply" signal={SIGNALS().unrated} reasonLanguage={reasonLanguage} />
+        <SignalCard kind="market" signal={SIGNALS().insufficient} reasonLanguage={reasonLanguage} />
         <SignalCard kind="climate" loading />
       </div>
 
-      <Section title="Rótulos">
+      <Section title={t("lab.kit.labels")}>
         <div className="flex flex-col items-start gap-3">
           <ExampleLabel />
           <EstimateLabel />
