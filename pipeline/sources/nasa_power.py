@@ -286,6 +286,24 @@ def climate_day(series: pl.DataFrame, municipalities: pl.DataFrame, lapse_rate: 
     )
 
 
+def rain_day(series: pl.DataFrame, municipalities: pl.DataFrame) -> pl.DataFrame:
+    """La lluvia diaria de cada municipio: la de su celda, sin corregir (como en `climate_month`). Un día sin lluvia (el
+    relleno de POWER o los meses de `RAIN_GAPS`) queda nulo, nunca 0 (R1). No se publica: con ella salen los aguaceros
+    de `climate_risk_month` (HU-046)."""
+    places = municipalities.drop_nulls(["lat", "lon"])
+    places = places.select(
+        "municipality_id",
+        pl.Series("cell", [cell_of(lat, lon) for lat, lon in places.select("lat", "lon").iter_rows()], dtype=pl.String),
+    )
+    if series.is_empty() or places.is_empty():
+        return pl.DataFrame(schema={"municipality_id": pl.String, "date": pl.Date, "precip_mm": pl.Float64})
+    return (
+        places.join(series.select("cell", "date", "precip_mm"), on="cell")
+        .select("municipality_id", "date", "precip_mm")
+        .sort("municipality_id", "date")
+    )
+
+
 def cell_months(series: pl.DataFrame, end: date, normal: Normal) -> pl.DataFrame:
     """La lluvia de cada celda en cada mes completo hasta `end`, con su calidad, su normal y su año seco (HU-042,
     HU-143), con el periodo normal y los cortes de `region.yaml` (`climate_normal`).
