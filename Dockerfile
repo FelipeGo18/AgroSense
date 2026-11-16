@@ -77,6 +77,8 @@ COPY web/package.json web/package-lock.json ./web/
 RUN npm --prefix web ci --no-audit --no-fund
 # Los tokens de diseño viven en design/, fuera de web/ (HU-152).
 COPY design ./design
+# La procedencia de las capas de NASA GIBS (HU-211): `web/src/components/map/gibs.ts` la importa de catalog/.
+COPY catalog/gibs.json ./catalog/gibs.json
 COPY web ./web
 RUN npm --prefix web run build
 
