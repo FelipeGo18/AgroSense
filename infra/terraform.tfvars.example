@@ -1,0 +1,9 @@
+# Cópielo como `terraform.tfvars` (fuera de git) y ponga los valores de verdad.
+# La cuenta de facturación: `gcloud billing projects describe agrosense-prod-2026 --format='value(billingAccountName)'`.
+billing_account = "000000-000000-000000"
+
+# 1 durante el juzgamiento (HU-023); 0 después, para no gastar el crédito.
+# min_instances = 1
+
+# El dominio propio cuando exista (HU-236), separado por coma si hay varios.
+# web_origins = "https://agrosense.example"

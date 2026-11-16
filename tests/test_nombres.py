@@ -72,3 +72,23 @@ def test_los_commits_de_antes_del_cambio_pueden_tener_la_hu_al_final():
     assert check_names.commit_ok("docs: cierra HU de cuentas (HU-160, HU-161)", ANTES)
     # Pero tienen que decir la HU igual.
     assert not check_names.commit_ok("feat: lluvia mensual de IMERG", ANTES)
+
+
+def test_el_paso_de_desarrollo_a_produccion_no_se_revisa(monkeypatch):
+    # Trae todos los commits de `desarrollo`, que ya se revisaron al entrar ahí: ni siquiera se leen.
+    monkeypatch.setattr(check_names, "pr_commits", lambda base: pytest.fail("no debía leer los commits"))
+    assert check_names.main(["check_names.py", "desarrollo", "produccion"]) == 0
+
+
+@pytest.mark.parametrize(
+    ("rama", "destino"),
+    [
+        ("desarrollo", "desarrollo"),
+        ("produccion", "desarrollo"),  # al revés no es el paso a producción
+        # Una rama de trabajo bien nombrada hacia producción: sus commits se revisan igual.
+        ("fix/hu-022-arreglo-rapido", "produccion"),
+    ],
+)
+def test_lo_demas_se_sigue_revisando(monkeypatch, rama, destino):
+    monkeypatch.setattr(check_names, "pr_commits", lambda base: [("abc1234", AHORA, "Update README.md")])
+    assert check_names.main(["check_names.py", rama, destino]) == 1
