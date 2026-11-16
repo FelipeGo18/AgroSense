@@ -18,6 +18,7 @@ from typing import Any
 import polars as pl
 
 SOURCE_ID = "dane_divipola"
+SOURCE_IDS = (SOURCE_ID,)  # todas las fuentes que este adaptador escribe en `sources`
 DATASET = "gdxc-w37w"
 ROWS_URL = f"https://www.datos.gov.co/resource/{DATASET}.json?$limit=5000"
 META_URL = f"https://www.datos.gov.co/api/views/{DATASET}.json"

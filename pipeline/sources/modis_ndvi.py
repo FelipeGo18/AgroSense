@@ -48,6 +48,7 @@ from pipeline.sources.fetch import DownloadError, fetch
 log = get_logger("agrosense.pipeline.modis_ndvi")
 
 SOURCE_ID = "modis_ndvi"
+SOURCE_IDS = (SOURCE_ID,)  # todas las fuentes que este adaptador escribe en `sources`
 COLLECTION_ID = "C1748066515-LPCLOUD"
 VERSION = "061"
 PRODUCT = "MODIS/Terra Vegetation Indices 16-Day L3 Global 250m SIN Grid V061 (MOD13Q1)"
