@@ -22,7 +22,7 @@ Lo que sostiene esas notas:
 - **Cada página carga solo lo suyo** (todas las rutas son `lazy`) y los paisajes van como imagen, no dentro del JavaScript.
 - **El movimiento se carga aparte** (HU-158): GSAP, ScrollTrigger y Lenis (unos 48 kB comprimidos) están en su propio trozo (`src/lib/motion.ts`). En modo ligero no se descargan; con movimiento se piden junto con la aplicación. `npm run test:motion` lo comprueba sobre el build.
 
-**Qué debe hacer el alojamiento:** servir `dist/` comprimido (gzip o brotli) y con caché larga para `/assets`; entregar `index.html` para `/`, y `entrar/index.html` y `politica-de-datos/index.html` para sus rutas; y para cualquier otra ruta de la aplicación, **`app.html`** (el cascarón vacío), no `index.html`. Si entrega el HTML de otra ruta no se rompe nada (la aplicación lo nota y dibuja de cero), pero se pierde la ventaja.
+**Qué debe hacer el alojamiento:** servir `dist/` comprimido (gzip o brotli) y con caché larga para `/assets`; entregar `index.html` para `/`, y `entrar/index.html` y `politica-de-datos/index.html` para sus rutas; y para cualquier otra ruta de la aplicación, **`app.html`** (el cascarón vacío), no `index.html`. Si entrega el HTML de otra ruta no se rompe nada (la aplicación lo nota y dibuja de cero), pero se pierde la ventaja. En producción lo hace la API, que sirve la web en el mismo origen (`install_web` en `backend/api/main.py`, HU-023), con su Content-Security-Policy: un recurso nuevo de otro origen (como las teselas del mapa de OpenFreeMap) se agrega ahí, o el navegador lo bloquea.
 
 ## Variables de entorno
 
