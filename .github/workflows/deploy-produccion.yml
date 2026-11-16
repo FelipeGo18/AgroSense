@@ -69,10 +69,13 @@ jobs:
           # (`--revision-suffix`): Terraform ignora el nombre de la revisión y en su próximo `apply` volvería a mandarlo.
           before="$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.latestCreatedRevisionName)')"
           gcloud run services update "$SERVICE" --image "$IMAGE" --region "$REGION" --quiet
-          # Cuando el tráfico quedó fijo en otra revisión (después de volver atrás), `update` termina antes de que el
-          # servicio actualice su estado: leído enseguida, todavía nombra la revisión vieja (corrida 43778389154). Se
-          # espera hasta 5 minutos a que el servicio aplique el cambio y a que la última creada sea también la última
-          # lista.
+          # El tráfico va a la revisión nueva antes de leer nada. Si un despliegue anterior volvió atrás, el tráfico quedó
+          # fijo en esa revisión, y entonces `update` termina sin esperar a que la nueva arranque: su estado todavía
+          # nombra la vieja (corrida 43778389154), y la nueva no queda lista mientras no le llegue tráfico (corrida
+          # 43779100283, 6 minutos esperando). `update-traffic` sí espera a que arranque y falla si no puede; entonces
+          # se vuelve a la revisión anterior.
+          gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest --quiet
+          # Y se espera a que el servicio termine de aplicar el cambio: que la última creada sea también la última lista.
           for _ in $(seq 60); do
             described="$(gcloud run services describe "$SERVICE" --region "$REGION" --format=json)"
             if jq -e '.status.observedGeneration == .metadata.generation
@@ -95,8 +98,6 @@ jobs:
             exit 1
           fi
           echo "revision=$revision" >> "$GITHUB_OUTPUT"
-          # Si un despliegue anterior volvió atrás, el tráfico quedó fijo en esa revisión: se devuelve a la nueva.
-          gcloud run services update-traffic "$SERVICE" --region "$REGION" --to-latest --quiet
           echo "url=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')" >> "$GITHUB_OUTPUT"
 
       - name: Comprobar la dirección pública
