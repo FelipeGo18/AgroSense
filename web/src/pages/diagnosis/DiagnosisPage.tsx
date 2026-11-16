@@ -59,6 +59,7 @@ const IRRIGATION_HINT = () => t("pages.diagnosis.DiagnosisPage.withIrrigationRai
 
 // Mensaje de backend/api/calculations.py, _check_sowing_date.
 // Mantener sincronizado: la API usa invalid_input para varias validaciones.
+// i18n-audit.test.ts comprueba la coincidencia con _check_sowing_date sin cambiar el contrato.
 const SOWING_DATE_OUT_OF_RANGE_MESSAGE = "La fecha de siembra debe estar entre este mes y los próximos doce.";
 /**
  * Diagnóstico de una fecha de siembra, la «consulta suelta» (HU-091; `specs/05-frontend.md`, parte C). El agricultor

@@ -58,6 +58,7 @@ it("actualiza los meses del eje, la tabla y el resumen sin desmontar la gráfica
   await act(() => i18n.changeLanguage("en"));
   expect(screen.getByText("1 · since January")).toBeInTheDocument();
   const chart = screen.getByRole("img");
+  expect(chart).toHaveAccessibleName(/greenness of the area/);
   expect(chart.querySelectorAll("text")[3].textContent).toBe("J");
   await userEvent.click(chart.querySelector('rect[fill="transparent"]')!);
   expect(screen.getByText(/Period 1.*January/)).toBeInTheDocument();

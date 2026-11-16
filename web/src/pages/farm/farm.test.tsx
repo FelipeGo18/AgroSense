@@ -487,6 +487,7 @@ describe("El lote (HU-164)", () => {
     open(PATHS.lot("a1"));
     expect(await screen.findByRole("button", { name: "Su finca", pressed: true })).toBeInTheDocument();
     expect(await screen.findByRole("img", { name: /Ilustración de su lote: Libre/ })).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
     expect(screen.getByText("Ilustración de su lote, no una imagen de él.")).toBeInTheDocument();
   });
 

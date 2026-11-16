@@ -767,7 +767,7 @@
   "pages.strategies.CycleWater.enoughRainfall": "Enough rainfall",
   "pages.strategies.CycleWater.soilMoistureInTheArea": "Soil moisture in the area",
   "pages.strategies.CycleWater.normalConditionsInThoseMonthsAccordingTo": "Normal conditions in those months, according to each source. Area data, not plot measurements; used for comparison without changing the water calculation.",
-  "pages.strategies.GreenChart.normalVegetationGreennessOverTheYearFrom": "Normal vegetation greenness over the year, from 0 to 1, with this cycle's window shaded",
+  "pages.strategies.GreenChart.normalVegetationGreennessOverTheYearFrom": "Normal vegetation greenness of the area over the year, from 0 to 1, with this cycle's window shaded",
   "pages.strategies.GreenChart.hoverOverOrTapTheChartTo": "Hover over or tap the chart to see each period's value. The shaded band marks this cycle's window.",
   "pages.strategies.GreenChart.16dayPeriod": "16-day period",
   "pages.strategies.GreenChart.normalGreennessNdvi": "Normal greenness (NDVI)",

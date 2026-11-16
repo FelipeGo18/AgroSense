@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { TopBar } from "@/components/layout/TopBar";
+import { Footer } from "@/components/layout/Footer";
 import { Card } from "@/components/ui/Card";
 import { useEntrance } from "@/hooks/useEntrance";
 
@@ -59,6 +60,7 @@ export function MapScene({
           </button>
         )}
       </main>
+      <Footer />
     </>
   );
 }

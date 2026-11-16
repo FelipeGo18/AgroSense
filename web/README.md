@@ -51,13 +51,22 @@ Esta revisión incluye Mensajes y el recorrido «Del satélite a su finca». Los
 respuestas del responsable conservan su texto original; solo se traducen los rótulos, estados y fechas de la interfaz.
 
 También se traducen el laboratorio (`/pruebas`, `/kit` y `/recorrido/1` a `/recorrido/3`) y sus ejemplos locales.
-`src/lib/i18n-audit.test.ts` recorre todos los archivos de interfaz y detecta textos fijos en JSX, atributos accesibles
-sin diccionario y llamadas a claves inexistentes. Los datos recibidos de la API se revisan aparte: Precios usa
+`src/lib/i18n-audit.test.ts` recorre los archivos de interfaz y detecta textos fijos en JSX, atributos accesibles,
+constantes de etiquetas, objetos y plantillas, además de llamadas a claves inexistentes. Incluye regresiones con
+`LAYER_NAME`, `STATUS_TEXT` y «Fecha de la imagen». Las excepciones de nombres propios y valores de protocolo son explícitas;
+la comparación del error de fecha se comprueba contra el código del backend. La auditoría no sustituye la revisión
+de los datos recibidos de la API: Precios usa
 `marketProductName`, `marketGroupName` y `matchesMarketProduct` para mostrar nombres traducidos y buscar en ambos idiomas,
 conservando los identificadores y las citas del DANE. Los 36 productos del catálogo publicado tienen traducción;
 si el catálogo incorpora otro producto, agregue su clave `market.products.<product_id>` en ambos diccionarios.
 Un producto desconocido conserva su nombre original, sin inventar una traducción. La revisión de páginas incluye
 30 casos de navegación: 480 combinaciones de idioma, ancho y movimiento.
+
+ESLint impide importar `Link`, `NavLink`, `Navigate`, `useNavigate` y `useSearchParams` directamente de `react-router`
+en la aplicación: use `components/layout/LanguageLink`. Solo su implementación y el selector necesitan el router original.
+El responsive abre también el detalle del suelo y sus explicaciones en inglés. Para incluir las rutas privadas,
+use `SESSION` y `LOT` de una cuenta de la base local; las respuestas simuladas de cálculo no reemplazan la revisión
+manual con `VITE_SIMULATION` desactivado, la API y PostgreSQL reales.
 
 ## Rendimiento
 

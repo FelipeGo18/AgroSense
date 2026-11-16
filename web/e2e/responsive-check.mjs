@@ -255,13 +255,15 @@ async function check(context, route, width, light) {
         .waitFor({ state: "visible", timeout: 10000 });
     }
     // HU-185: revisar también el contenido desplegado, incluidos los rangos y las explicaciones del suelo.
-    await page.getByText("Ver el suelo usado y qué significa", { exact: true }).evaluateAll((summaries) => {
-      for (const summary of summaries) {
-        const details = summary.closest("details");
-        details.open = true;
-        for (const explanation of details.querySelectorAll("details")) explanation.open = true;
-      }
-    });
+    await page
+      .getByText(english ? "See the soil data used and what they mean" : "Ver el suelo usado y qué significa", { exact: true })
+      .evaluateAll((summaries) => {
+        for (const summary of summaries) {
+          const details = summary.closest("details");
+          details.open = true;
+          for (const explanation of details.querySelectorAll("details")) explanation.open = true;
+        }
+      });
     await page.waitForTimeout(1200);
     return [...(await page.evaluate(inspect, { light, minTarget: minTargetFor(width) })), ...errors.map((e) => `error de la página: ${e}`)];
   } finally {

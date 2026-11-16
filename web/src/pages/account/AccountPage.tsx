@@ -145,7 +145,7 @@ function DataCard({ user }: { user: Profile }) {
       <Card>
         <div className="flex items-center justify-between gap-4">
           <Title>{t("pages.account.AccountPage.yourDetails")}</Title>
-          <button type="button" onClick={open} className={`${LINK} min-h-11`}>
+          <button type="button" onClick={open} className={`${LINK} min-h-11 min-w-11`}>
             {t("pages.account.AccountPage.edit")}
             <span className="sr-only"> {t("pages.account.AccountPage.myNameAndUsername")}</span>
           </button>
