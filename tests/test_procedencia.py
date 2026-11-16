@@ -73,8 +73,6 @@ def test_version_publica_las_fuentes_de_la_nasa_del_dataset_de_la_demo(published
 
 
 def test_hu211_la_entrada_de_gibs_que_publica_pipeline_build_dice_lo_que_pide_el_contrato():
-    import json
-
     from pipeline.build import GIBS_FILE
 
     entry = json.loads(GIBS_FILE.read_text(encoding="utf-8"))

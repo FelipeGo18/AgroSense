@@ -197,6 +197,21 @@ describe("HU-211 · integración MapLibre", () => {
     dispose();
   });
 
+  it("si la capa falla al montarse, queda en error sin excepción y quita sus oyentes (revisión del #186)", async () => {
+    const { map, layers } = fakeMap();
+    map.addLayer.mockImplementation(() => {
+      throw new Error("estilo sin cargar");
+    });
+    const status = vi.fn();
+    const dispose = mountGibsColor(map as unknown as MapLibreMap, "2026-11-15", status, vi.fn().mockResolvedValue(true));
+    await waitFor(() => expect(status).toHaveBeenLastCalledWith("color", "error"));
+    expect(layers.has("gibs-color")).toBe(false);
+    const removed = map.off.mock.calls.map(([name]) => name);
+    expect(removed).toContain("error");
+    expect(removed).toContain("sourcedata");
+    dispose();
+  });
+
   it("descarta una comprobación tardía al apagar la capa", async () => {
     const { map, layers } = fakeMap();
     let resolve!: (value: boolean) => void;
