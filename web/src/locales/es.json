@@ -745,6 +745,7 @@
   "pages.diagnosis.WaterChart.yearsWithInsufficientRainfall": "Años en que la lluvia no alcanzó:",
   "pages.diagnosis.WaterChart.years": "Años",
   "pages.diagnosis.WaterChart.thisIsTheAreasHistoryNotA": ". Es la historia de la zona, no un pronóstico.",
+  "pages.diagnosis.WaterChart.lightUsesDryYear": "La luz del agua no sale de estas barras. Las barras son toda la lluvia de cada año; la luz usa un año seco (en cada mes, la lluvia que se supera en 4 de cada 5 años) y solo la parte de la lluvia que aprovecha el cultivo. Por eso puede salir en rojo aunque casi todos los años la lluvia total alcance.",
   "pages.diagnosis.WaterChart.viewTheDataInATable": "Ver los datos en una tabla",
   "pages.diagnosis.WaterChart.year": "Año",
   "pages.diagnosis.WaterChart.needs": "Necesita",
