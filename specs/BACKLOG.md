@@ -19,7 +19,7 @@
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-177 | Logs de la terminal | P0 | S | hecha | API, migraciones y pipeline (8 nov); los endpoints de cálculo escriben sus versiones del dataset y de las reglas, nunca la consulta (14 nov) |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-023 | La app desplegada en Google Cloud Run | P0 | M | pendiente | Cambiada el 14 nov: Cloud Run con el crédito del evento. Haider y David |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-229 | Migraciones revisadas y aplicadas con GitHub Actions | P0 | M | hecha | Revisión, comentario con el SQL y bloqueo probados en un PR (14 nov); las pruebas ya no tienen fija la última migración. Aplicadas en la nube, con su copia cifrada, las migraciones `1.4` (#134) y `1.5` (#130) el 15 nov |
-| [EP-02](epicas/EP-02-base-desplegada.md) | HU-234 | La base de datos de producción | P0 | S | pendiente | Nueva (14 nov): Cloud SQL, separada de la del equipo. Haider y David |
+| [EP-02](epicas/EP-02-base-desplegada.md) | HU-234 | La base de datos de producción | P0 | S | pendiente | Nueva (14 nov), separada de la del equipo. 15 nov: PostgreSQL 17 en una VM e2-micro en vez de Cloud SQL, que no tiene capa gratuita (propuesta de David, pendiente de Felipe). Haider y David |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-235 | Desplegar al fusionar en `produccion` | P0 | M | pendiente | Nueva (14 nov): workflow con migraciones y Cloud Run, y logs para Cloud Logging (`severity`, `message` y trace). Haider y David |
 | [EP-02](epicas/EP-02-base-desplegada.md) | HU-236 | El dominio con HTTPS | P0 | S | pendiente | Nueva (14 nov): dominio gratis de GoDaddy Registry (Porkbun). Haider y David |
 | [EP-03](epicas/EP-03-oferta-eva.md) | HU-031 | Datos de EVA normalizados por DIVIPOLA | P0 | M | hecha | |
@@ -39,7 +39,7 @@
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-045 | Heladas y temperatura máxima por mes | P0 | M | hecha | `climate_risk_month` y `climate_frost_month` con la mínima ≤ 2 °C (ZARC); la helada cae en enero, pero POWER cuenta muchas menos de las que mide el IDEAM |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-193 | Riesgo climático por semana | P1 | M | pendiente | Pasó a P1 el 11 de octubre de 2026: recorte del MVP |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-043 | Verdor por lote con HLS (30 m) | P1 | L | pendiente | Antes «Humedad del suelo y NDVI» |
-| [EP-04](epicas/EP-04-clima-nasa.md) | HU-046 | Aguaceros, ventanas secas y gota por mes | P1 | M | pendiente | |
+| [EP-04](epicas/EP-04-clima-nasa.md) | HU-046 | Aguaceros, ventanas secas y gota por mes | P1 | M | en curso | Aguaceros en `climate_risk_month` (lluvia de POWER ≥ 20 mm, R20mm de ETCCDI; 15 nov). Ventanas secas sin definición con fuente (se quitó «3 días de menos de 5 mm» del contrato) y gota a la espera de POWER por hora (SimCast), después de la entrega: nulas. La tabla semanal, con HU-193 |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-188 | Riesgos que cubre un seguro, por municipio | P1 | S | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-189 | Lluvia en años de El Niño y La Niña | P1 | M | pendiente | |
 | [EP-04](epicas/EP-04-clima-nasa.md) | HU-225 | Tendencia del agua almacenada con GRACE-FO | P1 | M | pendiente | Nueva (8 nov, decisión 14) |

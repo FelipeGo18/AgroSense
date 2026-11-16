@@ -12,10 +12,15 @@ La única excepción es una base recién creada, que no tiene nada que copiar.
 
 import argparse
 import contextlib
+import json
 import os
 import shutil
 import subprocess  # noqa: S404 - se llama a pg_dump con argumentos fijos, sin pasar por un intérprete de órdenes
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -108,6 +113,38 @@ def backup(url: URL, current: str, target: str, folder: Path = BACKUPS) -> Path:
     return output
 
 
+# Producción (HU-235): el job de Cloud Run que migra no tiene disco que dure, así que la copia sube a Cloud Storage.
+# La credencial es la de la cuenta de servicio del job, que da el servidor de metadatos de Google: nada se guarda.
+METADATA_TOKEN_URL = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"  # noqa: S105 - una dirección, no una clave
+UPLOAD_URL = "https://storage.googleapis.com/upload/storage/v1/b/{bucket}/o?uploadType=media&name={name}"
+UPLOAD_PREFIX = "antes-de-migrar/"
+
+
+def upload(file: Path, bucket: str, opener: Callable = urllib.request.urlopen) -> str:
+    """Sube la copia a `gs://<bucket>/antes-de-migrar/` y devuelve su dirección. Si no puede, lanza `BackupError` y no se
+    migra: una copia que solo vivió en el disco del contenedor no es una copia. El mensaje nunca trae la credencial."""
+    name = UPLOAD_PREFIX + file.name
+    try:
+        token_request = urllib.request.Request(METADATA_TOKEN_URL, headers={"Metadata-Flavor": "Google"})
+        with opener(token_request, timeout=10) as response:
+            token = json.load(response)["access_token"]
+        upload_request = urllib.request.Request(  # noqa: S310 - siempre la dirección https fija de Cloud Storage
+            UPLOAD_URL.format(bucket=urllib.parse.quote(bucket, safe=""), name=urllib.parse.quote(name, safe="")),
+            data=file.read_bytes(),
+            method="POST",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/octet-stream"},
+        )
+        with opener(upload_request, timeout=300) as response:
+            size = int(json.load(response)["size"])
+    except urllib.error.HTTPError as error:
+        raise BackupError(f"No se pudo subir la copia a gs://{bucket}: Cloud Storage respondió {error.code}") from None
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise BackupError(f"No se pudo subir la copia a gs://{bucket}: {type(error).__name__}") from None
+    if size != file.stat().st_size:
+        raise BackupError(f"La copia en gs://{bucket} no quedó completa: no se migra")
+    return f"gs://{bucket}/{name}"
+
+
 def prune(folder: Path = BACKUPS, keep: int = KEEP) -> list[Path]:
     """Borra las copias más viejas y deja las `keep` más recientes."""
     old = sorted(folder.glob("*.dump"), key=lambda file: file.stat().st_mtime, reverse=True)[keep:]
@@ -138,6 +175,11 @@ def migrate(config: Config, url: URL, target: str = "head", down: bool = False, 
     if current is not None:
         saved = backup(url, current, _label(scripts, current, target) if down else str(goal), folder)
         prune(folder)
+        # En producción, además, fuera del contenedor (AGROSENSE_BACKUP_BUCKET). Sin subirla, no se migra.
+        bucket = get_settings().backup_bucket
+        if bucket:
+            stored = upload(saved, bucket)
+            get_logger("agrosense.migrate").info("backup_uploaded", detail=f"La copia de antes de migrar quedó en {stored}")
     # Marca para `migrations/env.py`: esta corrida sí pasó por la copia de seguridad.
     config.attributes["backup_checked"] = True
     (command.downgrade if down else command.upgrade)(config, target)

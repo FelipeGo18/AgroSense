@@ -2,11 +2,14 @@
 .venv
 **/__pycache__
 **/node_modules
-web
-design
+# web/ y design/ entran al contexto solo para la etapa `produccion` (HU-023); la imagen `app` no los copia.
+web/dist
+web/e2e/results
+design/globo/fuente
 # Lo crudo no entra en la imagen; el dataset publicado (data/published) sí: es lo que lee la API.
 data/raw
-.env
-.env.*
+# Ningún .env entra, tampoco el de la web: Vite metería sus VITE_* en el build de producción.
+**/.env
+**/.env.*
 .claude
 backups

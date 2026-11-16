@@ -6,6 +6,9 @@
 - Commit: `tipo(HU-xxx): descripción`, con una o varias HU (`tipo(HU-207, HU-208): …`) o `tipo(sin HU): …`.
 - `tipo`: feat, fix, docs, perf, test o chore (en la rama, `feature` en vez de `feat`).
 
+El PR de `desarrollo` a `produccion` (el paso a producción, HU-235) no se revisa: no es una rama de trabajo y trae
+todos los commits de `desarrollo`, que ya pasaron esta revisión al entrar ahí uno por uno.
+
 Los commits de merge no se revisan. Los hechos antes del 12 de noviembre de 2026 pueden usar el formato anterior,
 `tipo: descripción (HU-xxx)`, que también dice la HU. Solo usa la biblioteca estándar: corre en GitHub Actions sin
 instalar nada. Termina con error y dice qué corregir si algo no cumple.
@@ -25,6 +28,8 @@ COMMIT = re.compile(rf"^({'|'.join(COMMIT_TYPES)})\(({HU}(, {HU})*|sin HU)\): \S
 # El formato anterior, que ya decía la HU al final. Vale para los commits de antes del cambio de regla.
 LEGACY_COMMIT = re.compile(rf"^({'|'.join(COMMIT_TYPES)}): .*\({HU}(, {HU})*\)\.?$")
 NEW_RULE_SINCE = date(2026, 11, 12)
+# El paso a producción: de esta rama a esta otra, y en ese orden.
+PROMOTION = ("desarrollo", "produccion")
 
 BRANCH_HELP = "La rama debe ser `tipo/hu-xxx-descripcion-corta` (por ejemplo `fix/hu-076-hoy-en-la-region`), o `tipo/sin-hu-…`"
 COMMIT_HELP = "El commit debe empezar con `tipo(HU-xxx): descripción` (por ejemplo `fix(HU-076): …`), o `tipo(sin HU): …`"
@@ -61,6 +66,9 @@ def main(argv: list[str]) -> int:
         print("Uso: python scripts/check_names.py <rama> <rama de destino>")
         return 2
     branch, base = argv[1], argv[2]
+    if (branch, base) == PROMOTION:
+        print("Paso de desarrollo a produccion: sus commits ya se revisaron al entrar a desarrollo.")
+        return 0
     problems = []
     if not branch_ok(branch):
         problems.append(f"Rama «{branch}». {BRANCH_HELP}.")

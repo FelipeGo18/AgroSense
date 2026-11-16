@@ -4,6 +4,8 @@
 #   hu      la rama y los commits dicen su HU, y qué partes del repo cambiaron;
 #   python  Ruff, formato y pytest, en la imagen de Dockerfile.test contra la PostgreSQL de Compose;
 #   web     typecheck, lint, formato, Vitest y build.
+# Y uno más, `produccion`, que construye la imagen de producción (la API con el build de la web, HU-023) cuando cambia
+# lo que entra en ella: así un Dockerfile roto se ve en el PR y no el día que se despliega.
 # `python` y `web` corren en paralelo, y solo si su parte cambió: un job que no hace falta queda «skipped», y GitHub lo
 # cuenta como aprobado. Los pasos son los de `scripts/test.sh`, los mismos que en local (`docker compose run --rm test`).
 # La imagen y las dependencias de la web se guardan en la caché de GitHub entre corridas: mientras no cambien
@@ -35,6 +37,7 @@ jobs:
     outputs:
       python: ${{ steps.cambios.outputs.python }}
       web: ${{ steps.cambios.outputs.web }}
+      produccion: ${{ steps.cambios.outputs.produccion }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,6 +72,12 @@ jobs:
               - 'web/**'
               - 'design/**'
               - 'scripts/test.sh'
+              - '.github/workflows/ci.yml'
+            produccion:
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'web/**'
+              - 'design/**'
               - '.github/workflows/ci.yml'
 
   python:
@@ -115,3 +124,21 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Typecheck, lint, formato, Vitest y build
         run: bash scripts/test.sh web
+
+  produccion:
+    needs: hu
+    if: needs.hu.outputs.produccion == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # El mismo `docker build --target produccion` del despliegue (deploy-produccion.yml), sin subir nada.
+      - name: Imagen de producción (API + web)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: produccion
+          push: false
+          cache-from: type=gha,scope=produccion
+          cache-to: type=gha,scope=produccion,mode=max
