@@ -23,8 +23,8 @@ from pipeline import build, schema
 from pipeline import catalog as crops_catalog
 from tests.pipeline.test_reconstruir import REGION, caches, rebuild  # noqa: F401  (`caches` es un fixture)
 
-FUENTES = ("catalogo",)  # lo válido hoy
-FUENTES_FUTURAS = ("municipios", "relieve", "suelo", "clima", "lluvia", "ndvi", "oferta", "precios")
+FUENTES = ("catalogo", "ndvi", "oferta", "precios")  # lo válido hoy
+FUENTES_FUTURAS = ("municipios", "relieve", "suelo", "clima", "lluvia")
 ERRORES_DE_CATALOGO = (build.ValidationError, crops_catalog.CatalogError)
 VERSION_NUEVA = "0.0.1-pruebas"
 REGLAS_NUEVAS = "9.9.9-pruebas"
