@@ -567,6 +567,20 @@ def validate_dataset(
     return season, month, latest
 
 
+def manifest_region_blocks(region: dict[str, Any], change: pl.DataFrame | None) -> dict[str, Any]:
+    """Los bloques `region` y `periods` del manifiesto: los arma `publish` y los compara `publish_one` (R4)."""
+    has_change = change is not None and not change.is_empty()
+    return {
+        "region": {**region["region"], **lapse_rate_entry(region), **climate_normal_entry(region)},
+        # Los periodos de «Qué cambió» (HU-216): solo los de las fuentes que se publicaron.
+        "periods": [
+            p.manifest()
+            for p in climate_change.periods_from_region(region)
+            if has_change and p.source_id in set(change["source_id"].to_list())
+        ],
+    }
+
+
 def publish(
     region: dict[str, Any],
     municipalities: pl.DataFrame,
@@ -657,9 +671,7 @@ def publish(
         # La versión del catálogo agronómico (fichas y, cuando existan, reglas de rotación). Sin catálogo, nula.
         "rules_version": crops[0] if crops is not None else None,
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "region": {**region["region"], **lapse_rate_entry(region), **climate_normal_entry(region)},
-        # Los periodos de «Qué cambió» (HU-216): solo los de las fuentes que se publicaron.
-        "periods": [p.manifest() for p in change_periods if has_change and p.source_id in set(change["source_id"].to_list())],
+        **manifest_region_blocks(region, change if has_change else None),
         "tables": {
             "municipalities": {"rows": municipalities.height, "coverage": region["region"]["name"]},
             "sources": catalog_entry("sources", tables["sources"]),
@@ -1268,6 +1280,11 @@ def read_published(published: Path) -> tuple[dict[str, Any], dict[str, pl.DataFr
     return manifest, tables
 
 
+def source_columns(table: pl.DataFrame) -> list[str]:
+    """Las columnas de una tabla que citan fuentes (toda columna con «source» en el nombre, de texto o de lista)."""
+    return [column for column in table.columns if "source" in column]
+
+
 def cited_by_catalog(tables: dict[str, pl.DataFrame]) -> set[str]:
     """Los `source_id` que citan `crops`, `crop_stages` y `rotation_rules` publicadas (todas sus columnas `*source*`, sean
     texto o lista): las fuentes que el catálogo y las reglas usaban."""
@@ -1276,9 +1293,8 @@ def cited_by_catalog(tables: dict[str, pl.DataFrame]) -> set[str]:
         table = tables.get(name)
         if table is None:
             continue
-        for column in table.columns:
-            if "source" in column:
-                cited |= set(table[column].explode().drop_nulls().to_list())
+        for column in source_columns(table):
+            cited |= set(table[column].explode().drop_nulls().to_list())
     return cited
 
 
@@ -1293,9 +1309,8 @@ def merge_catalog_sources(tables: dict[str, pl.DataFrame], catalog_sources: pl.D
     for name, table in tables.items():
         if name in CATALOG_TABLES:
             continue
-        for column in ("source_id", "source_ids"):
-            if column in table.columns:
-                others |= set(table[column].explode().drop_nulls().to_list())
+        for column in source_columns(table):
+            others |= set(table[column].explode().drop_nulls().to_list())
     new_ids = set(catalog_sources["source_id"].to_list()) | set(rules_sources["source_id"].to_list())
     dropped = (cited_by_catalog(tables) - others) - new_ids
     kept = tables["sources"].filter(~pl.col("source_id").is_in(dropped) & ~pl.col("source_id").is_in(new_ids))
@@ -1357,6 +1372,16 @@ def publish_one(source: str, *, published: Path = PUBLISHED) -> dict[str, Any]:
         raise ValidationError(f"`--solo {source}` no existe; lo válido hoy es: {', '.join(SOLO_SOURCES)}.")
     manifest, tables = read_published(published)
     region = load_region()
+    # `region` y `periods` salen del `region.yaml` actual, con el mismo código que `publish`. Si difieren de lo publicado, la
+    # región cambió y puede haber cambiado tablas que no son del catálogo: se pide una construcción completa (R4).
+    blocks = manifest_region_blocks(region, full_change if (full_change := tables.get("climate_change_month")) is not None else None)
+    stale = [name for name, block in blocks.items() if block != manifest.get(name)]
+    if stale:
+        raise ValidationError(
+            f"`--solo {source}`: `{'` y `'.join(stale)}` de pipeline/region.yaml no son los del manifiesto publicado. Un cambio "
+            "de la región puede cambiar tablas que no son del catálogo (por ejemplo, `market_month`): haga una construcción "
+            "completa con `uv run python -m pipeline.build` (R4)."
+        )
     try:
         catalog, crops_table, stages_table, catalog_sources, rules_table, rules_sources = catalog_tables()
     except (crops_catalog.CatalogError, rotation_rules.RotationRulesError) as error:
@@ -1410,6 +1435,7 @@ def publish_one(source: str, *, published: Path = PUBLISHED) -> dict[str, Any]:
         "dataset_version": version,
         "rules_version": catalog["version"],
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        **blocks,
         "tables": {**manifest["tables"], **{name: catalog_entry(name, table) for name, table in changed.items()}},
     }
     replace_atomically(published, changed, updated)

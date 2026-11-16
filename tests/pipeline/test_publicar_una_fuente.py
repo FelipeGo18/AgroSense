@@ -647,3 +647,33 @@ def test_solo_catalogo_con_la_region_real_y_su_aguacero_da_lo_mismo_que_la_const
     assert tablas(solo) == tablas(completo)
     esperadas = {**fuentes_por_id(completo), "etccdi_indices": fila}
     assert fuentes_por_id(solo) == esperadas
+
+
+def region_con(**cambios):
+    """El `region.yaml` de las pruebas con otro bloque `region` y otra versión."""
+    return {**REGION, "dataset_version": VERSION_NUEVA, "region": {**REGION["region"], **cambios}}
+
+
+def test_con_el_region_yaml_cambiado_y_el_catalogo_cambiado_falla_y_no_escribe(publicado, monkeypatch):
+    """Revisión de Haider del #185: no se publica la versión nueva con la región vieja en el manifiesto (R4)."""
+    antes = sha_de_todo(publicado)
+    cambiar_catalogo(monkeypatch, con_nota(primera_fuente_del_catalogo(), "Ejemplo: nota nueva."))
+    cambio = {k: v for k, v in REGION["region"].items() if k != "name"} | {"name": "Otra región"}
+    monkeypatch.setattr(build, "load_region", lambda: region_con(**cambio))
+
+    with pytest.raises(build.ValidationError, match="construcción completa") as error:
+        build.publish_one("catalogo", published=publicado)
+
+    assert "`region`" in str(error.value)
+    assert sha_de_todo(publicado) == antes
+
+
+def test_con_solo_el_region_yaml_cambiado_tambien_falla_y_no_escribe(publicado, monkeypatch):
+    """Sin tocar el catálogo no es `dataset_unchanged`: la región cambió y puede haber cambiado otras tablas."""
+    antes = sha_de_todo(publicado)
+    monkeypatch.setattr(build, "load_region", lambda: region_con(name="Otra región"))
+
+    with pytest.raises(build.ValidationError, match="construcción completa"):
+        build.publish_one("catalogo", published=publicado)
+
+    assert sha_de_todo(publicado) == antes
