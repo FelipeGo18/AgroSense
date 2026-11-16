@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Plate } from "./Plate";
 
 export interface PreferenceSwitchProps {
@@ -17,6 +18,7 @@ const KNOB = "polygon(5px 0,calc(100% - 5px) 0,100% 5px,100% calc(100% - 5px),ca
  * posición de la perilla, nunca solo con el color.
  */
 export function PreferenceSwitch({ label, hint, checked, onChange, onDark = false }: PreferenceSwitchProps) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -39,7 +41,7 @@ export function PreferenceSwitch({ label, hint, checked, onChange, onDark = fals
             className={`absolute top-[3px] size-[22px] ${checked ? "left-[31px] bg-texto-sobre-oscuro" : "left-[4px] bg-paleta-noche"}`}
           />
         </span>
-        <span className="text-xs font-bold">{checked ? "Activado" : "Desactivado"}</span>
+        <span className="text-xs font-bold">{t(checked ? "common.on" : "common.off")}</span>
       </span>
     </button>
   );

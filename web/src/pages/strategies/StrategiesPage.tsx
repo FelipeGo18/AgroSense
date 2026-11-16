@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router";
+import { cropName as cropLabel } from "@/features/farm/seasons";
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useSearchParams } from "@/components/layout/LanguageLink";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
 import { SceneBackdrop } from "@/components/layout/SceneBackdrop";
@@ -51,13 +54,21 @@ import { CycleView } from "./CycleView";
 import { StrategyResults } from "./StrategyResults";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
-const SLOT_LABELS = ["Lo último que sembró", "Lo de antes", "Lo de antes de eso"];
-const CURRENT_LABELS = ["Primero siembra", "Después", "Después (si son tres)"];
-const IRRIGATION_WORDS: Record<Irrigation, string> = {
-  si: "con riego",
-  no: "sin riego",
-  nose: "sin saber si tiene riego (se evalúa sin riego)",
-};
+const SLOT_LABELS = () => [
+  t("pages.strategies.StrategiesPage.lastCropPlanted"),
+  t("pages.strategies.StrategiesPage.beforeThat"),
+  t("pages.strategies.StrategiesPage.beforeThatAgain"),
+];
+const CURRENT_LABELS = () => [
+  t("pages.strategies.StrategiesPage.firstPlanting"),
+  t("pages.strategies.StrategiesPage.next"),
+  t("pages.strategies.StrategiesPage.nextIfThree"),
+];
+const IRRIGATION_WORDS = (): Record<Irrigation, string> => ({
+  si: t("pages.strategies.StrategiesPage.withIrrigation"),
+  no: t("pages.strategies.StrategiesPage.withoutIrrigation"),
+  nose: t("pages.strategies.StrategiesPage.irrigationStatusUnknownAssessedWithoutIrrigation"),
+});
 
 /**
  * Estrategias de rotación, la entrada principal del MVP (decisión 12): «Consultar» lleva aquí.
@@ -72,6 +83,7 @@ const IRRIGATION_WORDS: Record<Irrigation, string> = {
  * Es una página quieta: nada se anima.
  */
 export function StrategiesPage() {
+  useTranslation();
   const [params, setParams] = useSearchParams();
   const { user, loading: sessionLoading } = useSession();
   const municipalities = useMunicipalities();
@@ -79,7 +91,7 @@ export function StrategiesPage() {
   const version = useVersion();
   const lots = useLots(Boolean(user));
   const myLots = user ? (lots.data ?? []) : [];
-  const months = useMemo(() => sowingMonths(), []);
+  const months = sowingMonths();
   const signalPriorities = useSignalPriorities();
   const [priorities, setPriorities] = useState<RotationWeights>(START_PRIORITIES);
 
@@ -89,7 +101,7 @@ export function StrategiesPage() {
   const [touched, setTouched] = useState<ReadonlySet<StrategyField>>(() => new Set());
   const touch = (field: StrategyField) => setTouched((current) => (current.has(field) ? current : new Set(current).add(field)));
   // Si la dirección cambia desde afuera (por ejemplo, volver atrás), la página la muestra.
-  const search = params.toString();
+  const search = new URLSearchParams([...params].filter(([key]) => key !== "lang")).toString();
   const [shownSearch, setShownSearch] = useState(search);
   if (search !== shownSearch) {
     setShownSearch(search);
@@ -205,12 +217,12 @@ export function StrategiesPage() {
 
   const cropOptions = (empty: string) => [
     { value: "", label: empty },
-    ...(crops.data ?? []).map((crop) => ({ value: crop.crop_id, label: crop.name_es })),
+    ...(crops.data ?? []).map((crop) => ({ value: crop.crop_id, label: cropLabel(crop) })),
   ];
 
   return (
     <div className="relative isolate min-h-svh bg-paleta-niebla">
-      <title>Estrategias de rotación · AgroSense</title>
+      <title>{t("pages.strategies.StrategiesPage.rotationStrategiesAgrosense")}</title>
       {/* El paisaje del municipio (estrategias.py, ciclo.py): de fondo completo en la entrada, en franja con el resultado. */}
       <SceneBackdrop scene="municipio" variant={showResult ? "band" : "full"} />
       <TopBar />
@@ -237,7 +249,7 @@ export function StrategiesPage() {
                 <EntrySummary
                   place={sent.lotId && lot.data ? lot.data.municipality_id : sent.municipalityId}
                   places={places}
-                  title={`Estrategias para los próximos ${sent.cycles} ciclos`}
+                  title={t("pages.strategies.StrategiesPage.strategiesForTheNextCycles", { v0: sent.cycles })}
                   rows={summaryRows(
                     sent,
                     names,
@@ -250,9 +262,11 @@ export function StrategiesPage() {
                 />
                 <section aria-labelledby="prioridades" className="flex min-w-0 flex-col gap-2">
                   <h2 id="prioridades" className="text-[clamp(1.15rem,2.5vw,1.4rem)]">
-                    ¿Qué busca en la rotación?
+                    {t("pages.strategies.StrategiesPage.whatMattersInYourRotation")}
                   </h2>
-                  <p className="text-[15px] text-texto-secundario">Toque las semillas: el orden cambia al instante.</p>
+                  <p className="text-[15px] text-texto-secundario">
+                    {t("pages.strategies.StrategiesPage.tapTheSeedsTheRankingUpdatesImmediately")}
+                  </p>
                   <div className="-mx-6 px-2 sm:mx-0 sm:px-0">
                     <PriorityControl value={priorities} onChange={setPriorities} />
                   </div>
@@ -261,11 +275,11 @@ export function StrategiesPage() {
             </Card>
             {zeroPriorities ? (
               <div className="mt-8">
-                <Alert>Todas sus prioridades están en 0. Suba al menos una para comparar estrategias.</Alert>
+                <Alert>{t("pages.strategies.StrategiesPage.allPrioritiesAreSetTo0Increase")}</Alert>
               </div>
             ) : request === null ? (
               <p role="status" className="mt-8">
-                Comparando estrategias…
+                {t("pages.strategies.StrategyResults.comparingStrategies")}
               </p>
             ) : (
               <StrategyResults
@@ -284,23 +298,20 @@ export function StrategiesPage() {
             )}
             {!user && !sessionLoading && (
               <Card bodyClassName="gap-3">
-                <h2 className="text-[clamp(1.15rem,2.5vw,1.4rem)]">¿Quiere guardar este lote?</h2>
-                <p>
-                  Cree su cuenta y lo que acaba de consultar se convierte en su primer lote, listo para registrar siembras y ver su
-                  historial.
-                </p>
+                <h2 className="text-[clamp(1.15rem,2.5vw,1.4rem)]">{t("pages.strategies.StrategiesPage.wantToSaveThisPlot")}</h2>
+                <p>{t("pages.strategies.StrategiesPage.createAnAccountToTurnThisConsultation")}</p>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                   <ButtonLink to={PATHS.signup} onClick={() => writeGuestConsult(sent)}>
-                    Crear cuenta
+                    {t("nav.signup")}
                   </ButtonLink>
                   <span>
-                    ¿Ya tiene cuenta?{" "}
+                    {t("pages.auth.SignupPage.alreadyHaveAnAccount")}{" "}
                     <Link
                       to={PATHS.login}
                       onClick={() => writeGuestConsult(sent)}
                       className={`${LINK} inline-flex min-h-11 min-w-11 items-center justify-center`}
                     >
-                      Entrar
+                      {t("login.submit")}
                     </Link>
                   </span>
                 </div>
@@ -311,96 +322,104 @@ export function StrategiesPage() {
           <div className="flex max-w-[760px] min-w-0 flex-col gap-8">
             {/* Sobre el paisaje, el encabezado va en un panel claro para que se lea (en el diseño va dentro de la tarjeta). */}
             <header className="flex min-w-0 flex-col gap-3 rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
-              <Eyebrow>Estrategias de rotación</Eyebrow>
+              <Eyebrow>{t("pages.strategies.StrategiesPage.rotationStrategies")}</Eyebrow>
               <h1 ref={formTitle} tabIndex={-1} className="text-[clamp(1.75rem,4vw,3rem)] outline-none">
-                ¿Qué sembrar en los próximos ciclos?
+                {t("pages.strategies.StrategiesPage.whatShouldYouPlantOverTheNext")}
               </h1>
+              <p>{t("pages.strategies.StrategiesPage.exploreTwoOrThreecycleStrategiesThatMeet")}</p>
               <p>
-                Le mostramos estrategias de dos o tres ciclos que cumplen las reglas de rotación y se dan en su zona, comparadas por agua,
-                suelo, ingreso y riesgo según lo que a usted le importa. Es la historia de su zona, no un pronóstico.
-              </p>
-              <p>
-                Un <strong>ciclo</strong> es una siembra completa: de la siembra a la cosecha de un cultivo, o el tiempo de un abono verde o
-                de un descanso. Cada ciclo empieza cuando termina el anterior.
+                {t("pages.strategies.StrategiesPage.a")} <strong>{t("pages.strategies.StrategiesPage.cycle")}</strong>{" "}
+                {t("pages.strategies.StrategiesPage.isACompletePlantingFromSowingTo")}
               </p>
             </header>
 
             {lotMissing && (
               <Alert>
-                Ese lote no está entre los suyos o no ha entrado con su cuenta.{" "}
+                {t("pages.strategies.StrategiesPage.thatPlotIsNotYoursOrYou")}{" "}
                 <Link to={PATHS.login} className={LINK}>
-                  Entrar
+                  {t("login.submit")}
                 </Link>{" "}
-                o elija un municipio.
+                {t("pages.strategies.StrategiesPage.orChooseAMunicipality")}
               </Alert>
             )}
 
             {resolving ? (
               <p role="status" className="rounded-lg bg-superficie-panel/95 px-5 py-4 shadow-sm">
-                Cargando su consulta…
+                {t("pages.strategies.StrategiesPage.loadingYourConsultation")}
               </p>
             ) : (
               <Card bodyClassName="gap-6">
                 {municipalities.isError || crops.isError ? (
-                  <Alert>No pudimos cargar los municipios y los cultivos. Revise su conexión y recargue la página.</Alert>
+                  <Alert>{t("pages.strategies.StrategiesPage.weCouldNotLoadMunicipalitiesAndCrops")}</Alert>
                 ) : (
-                  <form noValidate onSubmit={submit} className="flex min-w-0 flex-col gap-6" aria-label="Entrada a las estrategias">
+                  <form
+                    noValidate
+                    onSubmit={submit}
+                    className="flex min-w-0 flex-col gap-6"
+                    aria-label={t("pages.strategies.StrategiesPage.strategyInputs")}
+                  >
                     {myLots.length > 0 && (
                       <SelectField
-                        label="¿Para cuál terreno?"
+                        label={t("pages.strategies.StrategiesPage.whichLand")}
                         value={form.lotId}
                         onChange={(e) => change({ lotId: e.target.value, seasonIds: [] })}
                         options={[
-                          { value: "", label: "Otro municipio, sin un lote" },
+                          { value: "", label: t("pages.strategies.StrategiesPage.anotherMunicipalityWithoutAPlot") },
                           ...myLots.map((l) => ({
                             value: l.lot_id,
                             label: `${l.name} · ${placeName(places.get(l.municipality_id), l.municipality_id)}`,
                           })),
                         ]}
-                        hint="Con uno de sus lotes, el municipio, el riego y lo que había antes salen del lote."
+                        hint={t("pages.strategies.StrategiesPage.withOneOfYourPlotsTheMunicipality")}
                       />
                     )}
 
                     {form.lotId ? (
                       lot.isError ? (
-                        <Alert>No pudimos cargar ese lote. Puede que no sea suyo o que no haya entrado con su cuenta.</Alert>
+                        <Alert>{t("pages.strategies.StrategiesPage.weCouldNotLoadThatPlotIt")}</Alert>
                       ) : !lot.data || !seasons.data ? (
                         <p role="status" className="text-texto-secundario">
-                          Cargando su lote…
+                          {t("pages.strategies.StrategiesPage.loadingYourPlot")}
                         </p>
                       ) : (
                         <>
                           <div className="flex flex-col gap-1 border-2 border-oscuro-cielo/60 bg-[#E6F0F5] px-4 py-3 text-[15px] leading-snug">
                             <p>
-                              <span className="font-bold">Municipio:</span>{" "}
-                              {placeName(places.get(lot.data.municipality_id), lot.data.municipality_id)}, el de su lote.
+                              <span className="font-bold">{t("pages.strategies.StrategiesPage.municipality")}</span>{" "}
+                              {placeName(places.get(lot.data.municipality_id), lot.data.municipality_id)}
+                              {t("pages.strategies.StrategiesPage.fromYourPlot")}
                             </p>
                             <p>
-                              <span className="font-bold">{irrigationText(lot.data.irrigated)}</span>, según su lote.{" "}
+                              <span className="font-bold">{irrigationText(lot.data.irrigated)}</span>
+                              {t("pages.strategies.StrategiesPage.accordingToYourPlot")}{" "}
                               <Link to={PATHS.editLot(lot.data.lot_id)} className={LINK}>
-                                Cambiarlo en el lote
+                                {t("pages.strategies.StrategiesPage.changeItInThePlot")}
                               </Link>
                             </p>
                             <p>
-                              <span className="font-bold">Área:</span>{" "}
+                              <span className="font-bold">{t("pages.strategies.StrategiesPage.area")}</span>{" "}
                               {lotArea > 0
-                                ? `${formatHa(lotArea)}${chosen.length ? ", la de lo que cosechó" : ", la libre del lote"}.`
-                                : "hoy no queda terreno libre en el lote. Elija abajo lo que ya cosechó, si va a sembrar ahí."}
+                                ? `${formatHa(lotArea)}${chosen.length ? t("pages.strategies.StrategiesPage.fromTheHarvestedArea") : t("pages.strategies.StrategiesPage.availableInThePlot")}.`
+                                : t("pages.strategies.StrategiesPage.noLandIsAvailableInThePlot")}
                             </p>
                           </div>
                           <PreviousChoice
                             options={harvested.map((s) => ({
                               id: s.season_id,
                               title: names.get(s.crop_id) ?? s.crop_id,
-                              note: `${formatHa(s.area_ha)} · cosechada el ${formatShortDate(s.harvest_date!)}`,
+                              note: t("pages.strategies.StrategiesPage.harvestedOn", {
+                                v0: formatHa(s.area_ha),
+                                v1: formatShortDate(s.harvest_date!),
+                              }),
                             }))}
                             value={form.seasonIds}
                             onChange={chooseSeasons}
                           />
                           {form.seasonIds.length === 0 && form.previousMode === "crops" && form.previous[0] && (
                             <p className="text-[15px] text-texto-secundario">
-                              Viene del diagnóstico: tomamos {(names.get(form.previous[0]) ?? form.previous[0]).toLowerCase()} como lo que
-                              había antes en el terreno.
+                              {t("pages.strategies.StrategiesPage.fromTheDiagnosisWeUse")}{" "}
+                              {(names.get(form.previous[0]) ?? form.previous[0]).toLowerCase()}{" "}
+                              {t("pages.strategies.StrategiesPage.asThePreviousCropOnThisLand")}
                             </p>
                           )}
                         </>
@@ -408,8 +427,8 @@ export function StrategiesPage() {
                     ) : (
                       <>
                         <Combobox
-                          label="Municipio"
-                          placeholder="Escriba el nombre de su municipio"
+                          label={t("pages.farm.AddLotPage.municipality")}
+                          placeholder={t("pages.strategies.StrategiesPage.enterYourMunicipalityName")}
                           loading={municipalities.isPending}
                           options={(municipalities.data ?? []).map((m) => ({ id: m.municipality_id, label: m.name, hint: m.department }))}
                           value={optionFor(form.municipalityId, places)}
@@ -421,21 +440,21 @@ export function StrategiesPage() {
                           error={errors.municipality}
                         />
                         <TextField
-                          label="Área del terreno, en hectáreas"
+                          label={t("pages.strategies.StrategiesPage.landAreaInHectares")}
                           inputMode="decimal"
                           value={form.areaText}
                           onChange={(e) => change({ areaText: e.target.value })}
                           onBlur={() => touch("area")}
-                          hint="Solo se usa para calcular el agua que necesitaría cada ciclo. No se guarda."
+                          hint={t("pages.strategies.StrategiesPage.usedOnlyToCalculateEachCyclesWater")}
                           error={errors.area}
                         />
                         <Slots
-                          legend="¿Qué había antes en el terreno?"
-                          noneLabel="Nada: es la primera siembra aquí"
-                          someLabel="Uno o más cultivos"
+                          legend={t("strategies.previousQuestion")}
+                          noneLabel={t("pages.farm.SeasonParts.nothingThisIsTheFirstPlantingHere")}
+                          someLabel={t("strategies.someCrops")}
                           mode={form.previousMode}
                           values={form.previous}
-                          labels={SLOT_LABELS}
+                          labels={SLOT_LABELS()}
                           options={cropOptions("—")}
                           error={errors.previous}
                           onMode={(previousMode) => {
@@ -451,51 +470,51 @@ export function StrategiesPage() {
                     )}
 
                     <SelectField
-                      label="¿Cuándo sembraría el primer ciclo?"
+                      label={t("pages.strategies.StrategiesPage.whenWouldYouPlantTheFirstCycle")}
                       value={form.month}
                       onChange={(e) => {
                         change({ month: e.target.value });
                         touch("month");
                       }}
-                      options={[{ value: "", label: "Elija un mes" }, ...months]}
-                      hint="Este mes o uno de los once siguientes. Los ciclos que siguen se siembran al cosechar el anterior."
+                      options={[{ value: "", label: t("pages.strategies.StrategiesPage.chooseAMonth") }, ...months]}
+                      hint={t("pages.strategies.StrategiesPage.thisMonthOrOneOfTheNext")}
                       error={errors.month}
                     />
 
                     {!form.lotId && (
                       <ChoiceGroup<Irrigation | "">
-                        legend="¿Tiene riego?"
-                        choices={IRRIGATION_CHOICES}
+                        legend={t("pages.changes.ChangesContext.doYouHaveIrrigation")}
+                        choices={IRRIGATION_CHOICES()}
                         value={form.irrigation}
                         onChange={(irrigation) => {
                           change({ irrigation });
                           touch("irrigation");
                         }}
-                        hint="Con riego, la falta de lluvia no se cuenta como riesgo. Si no sabe, se evalúa como sin riego."
+                        hint={t("pages.strategies.StrategiesPage.withIrrigationRainfallShortagesDoNotCount")}
                         error={errors.irrigation}
                       />
                     )}
 
                     <ChoiceGroup<2 | 3>
-                      legend="¿Cuántos ciclos quiere planear?"
-                      hint="Según el cultivo, cada ciclo dura de 3 a 6 meses. Por ejemplo, papa, luego avena con vicia, luego arveja: 3 ciclos, cerca de 14 meses."
+                      legend={t("strategies.cyclesQuestion")}
+                      hint={t("pages.strategies.StrategiesPage.eachCycleLasts3To6Months")}
                       choices={[
-                        { value: 2, label: "2 ciclos" },
-                        { value: 3, label: "3 ciclos" },
+                        { value: 2, label: t("pages.strategies.StrategiesPage.2Cycles") },
+                        { value: 3, label: t("pages.strategies.StrategiesPage.3Cycles") },
                       ]}
                       value={form.cycles}
                       onChange={(cycles) => change({ cycles })}
                     />
 
                     <Slots
-                      legend="¿Qué viene sembrando en este terreno?"
-                      noneLabel="No tengo una rotación fija"
-                      someLabel="Sí, en este orden"
+                      legend={t("strategies.currentQuestion")}
+                      noneLabel={t("strategies.noRotation")}
+                      someLabel={t("strategies.orderedCrops")}
                       mode={form.currentMode}
                       values={form.current}
-                      labels={CURRENT_LABELS}
+                      labels={CURRENT_LABELS()}
                       options={cropOptions("—")}
-                      hint="Opcional. Si la dice, la comparamos con las estrategias: es su punto de partida."
+                      hint={t("pages.strategies.StrategiesPage.optionalWeCompareYourCurrentRotationWith")}
                       error={errors.current}
                       onMode={(currentMode) => {
                         change({ currentMode });
@@ -509,7 +528,7 @@ export function StrategiesPage() {
 
                     <details className="-mx-6 flex min-w-0 flex-col border-2 border-superficie-borde bg-superficie-panel-suave px-2 py-2 sm:mx-0 sm:px-4">
                       <summary className="flex min-h-11 cursor-pointer items-center font-bold">
-                        ¿Qué busca en la rotación? · Ajustar
+                        {t("pages.strategies.StrategiesPage.rotationPrioritiesAdjust")}
                       </summary>
                       <div className="pt-2 pb-3">
                         <PriorityControl value={priorities} onChange={setPriorities} />
@@ -518,7 +537,7 @@ export function StrategiesPage() {
 
                     <div className="flex flex-wrap gap-3">
                       <Button type="submit" disabled={!catalogsReady} className="w-full sm:w-auto">
-                        Ver estrategias
+                        {t("pages.strategies.StrategiesPage.viewStrategies")}
                       </Button>
                       {editing && sentValid && (
                         <Button
@@ -530,7 +549,7 @@ export function StrategiesPage() {
                             setForm(fromParams(params));
                           }}
                         >
-                          Volver sin cambiar
+                          {t("pages.strategies.StrategiesPage.goBackWithoutChanges")}
                         </Button>
                       )}
                     </div>
@@ -561,18 +580,22 @@ function summaryRows(
   const previous = lot ? (lotPrevious ?? []) : sent.previousMode === "none" ? [] : sent.previous.filter(Boolean);
   // `previous` va de la más reciente a la más antigua; en palabras se dice en el orden en que se sembró (papa → arveja).
   const before = previous.length
-    ? `antes: ${sequence([...previous].reverse(), names).toLowerCase()}`
-    : "antes: nada, es la primera siembra";
+    ? t("pages.strategies.StrategiesPage.previously", { v0: sequence([...previous].reverse(), names).toLowerCase() })
+    : t("pages.strategies.StrategiesPage.previouslyNothingThisIsTheFirstPlanting");
   const area = parseArea(sent.areaText);
   const land = lot
     ? `${lot.name} · ${formatHa(lot.area)} · ${before}`
-    : `${area === null ? "Sin área" : formatHa(area)} · ${before} · sin cuenta`;
-  const current = sent.currentMode === "crops" ? sequence(sent.current.filter(Boolean), names) : "No tiene una rotación fija";
-  const water = lot ? irrigationText(lot.irrigated).toLowerCase() : sent.irrigation ? IRRIGATION_WORDS[sent.irrigation] : "";
+    : t("pages.strategies.StrategiesPage.withoutAnAccount", {
+        v0: area === null ? t("pages.strategies.StrategiesPage.noArea") : formatHa(area),
+        v1: before,
+      });
+  const current =
+    sent.currentMode === "crops" ? sequence(sent.current.filter(Boolean), names) : t("pages.strategies.StrategiesPage.noFixedRotation");
+  const water = lot ? irrigationText(lot.irrigated).toLowerCase() : sent.irrigation ? IRRIGATION_WORDS()[sent.irrigation] : "";
   return [
-    { label: "Terreno y lo que había antes", value: land },
-    { label: "Lo que viene sembrando", value: current },
-    { label: "Primer ciclo y riego", value: `${monthName(sent.month)} · ${water}` },
+    { label: t("pages.strategies.StrategiesPage.landAndPreviousCrops"), value: land },
+    { label: t("pages.strategies.StrategiesPage.yourCurrentRotation"), value: current },
+    { label: t("pages.strategies.StrategiesPage.firstCycleAndIrrigation"), value: `${monthName(sent.month)} · ${water}` },
   ];
 }
 
@@ -597,12 +620,15 @@ function EntrySummary({
   soil: Parameters<typeof phRange>[0];
   onEdit: () => void;
 }) {
+  useTranslation();
   const town = places.get(place);
   const where = town ? `${town.name}, ${town.department}` : place;
   const soilValues = [phRange(soil), socRange(soil)].filter(Boolean).join(" · ");
   return (
     <section aria-labelledby="consulta" className="flex min-w-0 flex-col gap-3">
-      <Eyebrow>Estrategias · {where}</Eyebrow>
+      <Eyebrow>
+        {t("pages.strategies.StrategiesPage.strategies")} {where}
+      </Eyebrow>
       <h1 id="consulta" className="text-[clamp(1.5rem,3.5vw,2.25rem)] leading-tight">
         {title}
       </h1>
@@ -616,23 +642,34 @@ function EntrySummary({
               <p className="text-[14px] text-texto-secundario">{row.label}</p>
               <p className="font-bold break-words">{row.value}</p>
             </div>
-            <button type="button" onClick={onEdit} className={`${LINK} min-h-11`} aria-label={`Cambiar: ${row.label.toLowerCase()}`}>
-              Cambiar
+            <button
+              type="button"
+              onClick={onEdit}
+              className={`${LINK} min-h-11`}
+              aria-label={t("pages.strategies.StrategiesPage.change2", { v0: row.label.toLowerCase() })}
+            >
+              {t("pages.strategies.StrategiesPage.change")}
             </button>
           </li>
         ))}
         {soilBasis && (
           <li className="flex min-w-0 flex-col bg-superficie-panel-suave px-4 py-2.5">
             <p className="text-[14px] text-texto-secundario">
-              {soilBasis === "lot" ? "Suelo estimado de su lote · 250 m" : `Suelo estimado de ${town?.name ?? "su municipio"} · 250 m`}
+              {soilBasis === "lot"
+                ? t("pages.strategies.StrategiesPage.estimatedSoilForYourPlot250M")
+                : t("pages.strategies.StrategiesPage.estimatedSoilFor250M", {
+                    v0: town?.name ?? t("pages.farm.FarmPage.yourMunicipality"),
+                  })}
             </p>
             <p className="font-bold break-words">
-              {soilBasis === "lot" ? "El que usó el cálculo para su lote" : soilValues || "Sin rango publicado"}
+              {soilBasis === "lot"
+                ? t("pages.strategies.StrategiesPage.usedInTheCalculationForYourPlot")
+                : soilValues || t("pages.strategies.StrategiesPage.noPublishedRange")}
             </p>
           </li>
         )}
       </ul>
-      {soilBasis && <p className="text-[15px] text-texto-secundario">{SOIL_ESTIMATE}</p>}
+      {soilBasis && <p className="text-[15px] text-texto-secundario">{SOIL_ESTIMATE()}</p>}
     </section>
   );
 }
@@ -668,6 +705,7 @@ function Slots({
   onMode: (mode: Mode) => void;
   onSlot: (index: number, value: string) => void;
 }) {
+  useTranslation();
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <ChoiceGroup<Mode>

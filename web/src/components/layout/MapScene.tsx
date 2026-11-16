@@ -1,5 +1,7 @@
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { TopBar } from "@/components/layout/TopBar";
+import { Footer } from "@/components/layout/Footer";
 import { Card } from "@/components/ui/Card";
 import { useEntrance } from "@/hooks/useEntrance";
 
@@ -25,6 +27,7 @@ export function MapScene({
   panelOpen?: boolean;
   onTogglePanel?: () => void;
 }) {
+  const { t } = useTranslation();
   const panel = useEntrance<HTMLDivElement>();
   const toggle =
     "hidden min-h-11 items-center gap-2 rounded-md bg-superficie-panel px-4 font-bold text-oscuro-oliva shadow-md md:inline-flex";
@@ -44,7 +47,7 @@ export function MapScene({
             <Card bodyClassName="gap-3 md:px-1">
               {onTogglePanel && (
                 <button type="button" onClick={onTogglePanel} className={`${toggle} self-end shadow-none`} aria-expanded={panelOpen}>
-                  <span aria-hidden="true">‹</span> Ocultar el panel
+                  <span aria-hidden="true">‹</span> {t("lot.panel.hide")}
                 </button>
               )}
               {children}
@@ -53,10 +56,11 @@ export function MapScene({
         </div>
         {onTogglePanel && !panelOpen && (
           <button type="button" onClick={onTogglePanel} aria-expanded={false} className={`${toggle} absolute top-[104px] left-8 z-10`}>
-            Mostrar el lote <span aria-hidden="true">›</span>
+            {t("lot.panel.show")} <span aria-hidden="true">›</span>
           </button>
         )}
       </main>
+      <Footer />
     </>
   );
 }

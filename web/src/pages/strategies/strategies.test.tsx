@@ -442,6 +442,10 @@ describe("Entrada a las estrategias sin cuenta (HU-214)", () => {
     });
     open();
     const user = userEvent.setup();
+    // La primera pantalla del archivo carga su ruta y componentes de forma diferida.
+    await act(async () => {
+      await vi.dynamicImportSettled();
+    });
     // Esta es la primera navegación del archivo: esperar la carga diferida antes de consultar el DOM.
     await act(async () => {
       await vi.dynamicImportSettled();

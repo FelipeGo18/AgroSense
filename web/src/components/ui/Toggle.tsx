@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useId } from "react";
 
 export interface ToggleProps {
@@ -11,6 +12,7 @@ export interface ToggleProps {
 
 /** Interruptor del kit: una semilla que corre por un riel biselado. Dice su estado con forma y posición, no solo con color. */
 export function Toggle({ label, note, checked, onChange, disabled = false }: ToggleProps) {
+  useTranslation();
   const id = useId();
   return (
     <div className="flex items-center justify-between gap-4">

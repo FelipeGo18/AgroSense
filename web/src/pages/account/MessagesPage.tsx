@@ -1,5 +1,7 @@
 import { useId, useState, type FormEvent } from "react";
-import { Link } from "react-router";
+import { Link } from "@/components/layout/LanguageLink";
+import { useTranslation } from "react-i18next";
+import { locale, t } from "@/lib/i18n";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
@@ -10,11 +12,16 @@ import { MESSAGE_MAX, useOpenTicket, useTickets, type Ticket } from "@/features/
 import { useLots } from "@/features/farm/lots";
 import { LINK, RequireSession } from "./AccountShell";
 
-const STATUS: Record<string, string> = { open: "Recibido", in_progress: "En revisión", closed: "Respondido" };
-const DATE = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
+const STATUS = (): Record<string, string> => ({
+  open: t("account.messages.status.open"),
+  in_progress: t("account.messages.status.inProgress"),
+  closed: t("account.messages.status.closed"),
+});
+const date = (value: string) =>
+  new Intl.DateTimeFormat(locale(), { day: "numeric", month: "long", year: "numeric" }).format(new Date(value));
 
 function message(error: Error) {
-  if (!(error instanceof ApiError)) return "No pudimos enviar su mensaje. Intente de nuevo.";
+  if (!(error instanceof ApiError)) return t("account.messages.sendError");
   return error.message;
 }
 
@@ -28,6 +35,7 @@ export function MessagesPage() {
 }
 
 function Messages() {
+  const { t } = useTranslation();
   const open = useOpenTicket();
   const tickets = useTickets();
   const lots = useLots();
@@ -36,7 +44,7 @@ function Messages() {
   const [lotId, setLotId] = useState("");
   const [tried, setTried] = useState(false);
   const [sent, setSent] = useState(false);
-  const error = text.trim() ? undefined : "Escriba su mensaje.";
+  const error = text.trim() ? undefined : t("account.messages.required");
   const names = new Map((lots.data ?? []).map((lot) => [lot.lot_id, lot.name]));
 
   const submit = (event: FormEvent) => {
@@ -59,26 +67,23 @@ function Messages() {
 
   return (
     <FormScene scene="region" mood="idle" rejected={open.error}>
-      <title>Escribir al responsable · AgroSense</title>
+      <title>{t("account.messages.title")} · AgroSense</title>
       <header>
-        <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">Mi cuenta</p>
-        <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Escribir al responsable</h1>
-        <p>Para preguntar qué datos suyos guardamos, pedir que los corrijamos o reportar un problema.</p>
-        <p className="text-[15px] text-texto-secundario">
-          Le respondemos aquí mismo, en «Mis mensajes», en máximo 10 días hábiles si es una consulta y 15 si es un reclamo (Ley 1581 de
-          2012).
-        </p>
+        <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">{t("nav.account")}</p>
+        <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">{t("account.messages.title")}</h1>
+        <p>{t("account.messages.intro")}</p>
+        <p className="text-[15px] text-texto-secundario">{t("account.messages.responseTime")}</p>
       </header>
       {open.error && <Alert>{message(open.error)}</Alert>}
       {sent && (
         <p role="status" className="font-bold">
-          Recibimos su mensaje. Abajo puede ver cómo va.
+          {t("account.messages.sent")}
         </p>
       )}
       <form onSubmit={submit} noValidate className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <label htmlFor={textId} className="font-bold">
-            Su mensaje
+            {t("account.messages.bodyLabel")}
           </label>
           <textarea
             id={textId}
@@ -94,36 +99,36 @@ function Messages() {
             }`}
           />
           <p id={`${textId}-note`} className={`text-[14px] ${tried && error ? "text-oscuro-rojo" : "text-texto-secundario"}`}>
-            {tried && error ? error : `Hasta ${MESSAGE_MAX} caracteres. No escriba su contraseña.`}
+            {tried && error ? error : t("account.messages.limit", { max: MESSAGE_MAX })}
           </p>
         </div>
         {(lots.data?.length ?? 0) > 0 && (
           <SelectField
-            label="¿Es sobre un lote?"
+            label={t("account.messages.lotLabel")}
             name="lot_id"
             value={lotId}
             onChange={(event) => setLotId(event.target.value)}
             options={[
-              { value: "", label: "No, sobre mi cuenta" },
+              { value: "", label: t("account.messages.accountOption") },
               ...(lots.data ?? []).map((lot) => ({ value: lot.lot_id, label: lot.name })),
             ]}
           />
         )}
-        <Button type="submit" className="mt-1" loading={open.isPending} loadingText="Enviando…">
-          Enviar mensaje
+        <Button type="submit" className="mt-1" loading={open.isPending} loadingText={t("account.messages.sending")}>
+          {t("account.messages.send")}
         </Button>
       </form>
 
       <section aria-labelledby="mis-mensajes" className="flex flex-col gap-2">
         <h2 id="mis-mensajes" className="text-[20px]">
-          Mis mensajes
+          {t("account.messages.history")}
         </h2>
         {tickets.isPending ? (
-          <p role="status">Cargando sus mensajes…</p>
+          <p role="status">{t("account.messages.loading")}</p>
         ) : tickets.isError ? (
-          <Alert>No pudimos cargar sus mensajes. Intente de nuevo en un momento.</Alert>
+          <Alert>{t("account.messages.loadError")}</Alert>
         ) : tickets.data.length === 0 ? (
-          <p className="text-texto-secundario">Todavía no nos ha escrito.</p>
+          <p className="text-texto-secundario">{t("account.messages.empty")}</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {tickets.data.map((ticket) => (
@@ -133,23 +138,27 @@ function Messages() {
         )}
       </section>
       <Link to={PATHS.account} className={`${LINK} min-h-11 self-start py-2`}>
-        Volver a Mi cuenta
+        {t("account.messages.back")}
       </Link>
     </FormScene>
   );
 }
 
 function TicketRow({ ticket, lot }: { ticket: Ticket; lot?: string }) {
+  const { t } = useTranslation();
   return (
     <li className="flex flex-col gap-1 border-l-4 border-paleta-calabaza pl-3">
       <p className="text-[14px] text-texto-secundario">
-        {DATE.format(new Date(ticket.created_at))} · {STATUS[ticket.status] ?? ticket.status}
+        {date(ticket.created_at)} · {STATUS()[ticket.status] ?? ticket.status}
         {lot ? ` · ${lot}` : ""}
       </p>
       <p className="break-words whitespace-pre-line">{ticket.message}</p>
       {ticket.reply && (
         <div className="mt-1 rounded-sm bg-paleta-niebla px-3 py-2">
-          <p className="text-[14px] font-bold">Respuesta{ticket.replied_at ? ` · ${DATE.format(new Date(ticket.replied_at))}` : ""}</p>
+          <p className="text-[14px] font-bold">
+            {t("account.messages.reply")}
+            {ticket.replied_at ? ` · ${date(ticket.replied_at)}` : ""}
+          </p>
           <p className="break-words whitespace-pre-line">{ticket.reply}</p>
         </div>
       )}

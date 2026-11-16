@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import municipio from "../../../../design/paisaje/svg/a5-municipio.svg?url";
 import region from "../../../../design/paisaje/svg/a3-region.svg?url";
 import vereda from "../../../../design/paisaje/svg/a6-vereda.svg?url";
@@ -24,6 +25,7 @@ export interface SceneBackdropProps {
  * La página que lo usa pone `relative isolate` en su caja: así el paisaje queda sobre su fondo y debajo del contenido.
  */
 export function SceneBackdrop({ scene, variant }: SceneBackdropProps) {
+  useTranslation();
   if (variant === "full") {
     return (
       <>

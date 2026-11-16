@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useId, useState, type InputHTMLAttributes } from "react";
 import { Plate } from "./Plate";
 
@@ -12,6 +14,7 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
 
 /** Campo de texto del kit: etiqueta encima y un campo hundido con borde biselado. */
 export function TextField({ label, hint, error, type = "text", className = "", ...rest }: TextFieldProps) {
+  useTranslation();
   const id = useId();
   const [focused, setFocused] = useState(false);
   const [shown, setShown] = useState(false);
@@ -45,8 +48,8 @@ export function TextField({ label, hint, error, type = "text", className = "", .
             onClick={() => setShown(!shown)}
             className="relative mr-3 min-h-11 px-2 text-sm font-bold text-oscuro-oliva"
           >
-            {shown ? "Ocultar" : "Mostrar"}
-            <span className="sr-only"> la contraseña</span>
+            {shown ? t("pages.strategies.StrategyResults.hide") : t("components.ui.TextField.show")}
+            <span className="sr-only"> {t("components.ui.TextField.thePassword")}</span>
           </button>
         )}
       </div>

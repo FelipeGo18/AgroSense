@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { Plate } from "./Plate";
 
@@ -11,6 +12,7 @@ export function Card({
   className?: string;
   bodyClassName?: string;
 }) {
+  useTranslation();
   return (
     <div className={`relative px-6 pt-5 pb-8 ${className}`}>
       <Plate c={16} fill="var(--color-superficie-panel)" depth={8} bottom={8} side="var(--color-superficie-borde)" />

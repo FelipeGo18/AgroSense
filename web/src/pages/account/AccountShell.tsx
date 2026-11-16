@@ -1,5 +1,7 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useState, type ReactNode } from "react";
-import { Navigate } from "react-router";
+import { Navigate } from "@/components/layout/LanguageLink";
 import { PATHS } from "@/app/paths";
 import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
@@ -10,6 +12,7 @@ import { useSession, type Profile } from "@/features/auth/session";
  * entró se espera, y quien no tiene sesión va a «Entrar».
  */
 export function RequireSession({ children }: { children: (user: Profile) => ReactNode }) {
+  useTranslation();
   const { user, loading } = useSession();
   // Si en esta página hubo sesión y ya no la hay, es que la persona salió: va al inicio. Si nunca la hubo, llegó sin entrar: va a «Entrar».
   const [hadSession, setHadSession] = useState(false);
@@ -17,7 +20,7 @@ export function RequireSession({ children }: { children: (user: Profile) => Reac
   if (loading) {
     return (
       <p role="status" className="p-8">
-        Cargando…
+        {t("pages.account.AccountShell.loading")}
       </p>
     );
   }
@@ -27,6 +30,7 @@ export function RequireSession({ children }: { children: (user: Profile) => Reac
 
 /** Marco de las páginas largas de la cuenta (Mi cuenta, Mi actividad): barra, contenido y pie sobre fondo claro. */
 export function AccountShell({ children }: { children: (user: Profile) => ReactNode }) {
+  useTranslation();
   return (
     <div className="min-h-svh bg-paleta-niebla">
       <TopBar />

@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { ApiError } from "@/api/client";
 import { Alert } from "@/components/ui/Alert";
@@ -19,22 +21,23 @@ const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offse
  * con su dibujo que la página no necesita mientras nadie los mira.
  */
 export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof useSignalPriorities> }) {
+  useTranslation();
   const { value, defaults, ready, isOwn } = priorities;
   const [open, setOpen] = useState(false);
-  const title = isOwn ? "Sus prioridades · Ajustar" : "Criterio de AgroSense · Ajustar";
+  const title = isOwn
+    ? t("pages.diagnosis.PrioritiesPanel.yourPrioritiesAdjust")
+    : t("pages.diagnosis.PrioritiesPanel.agrosensePrioritiesAdjust");
 
   if (!ready) {
     return (
       <p role="status" className="text-[15px] text-texto-secundario">
-        Cargando el criterio de AgroSense…
+        {t("pages.account.PrioritiesCard.loadingAgrosensePriorities")}
       </p>
     );
   }
   if (!value || !defaults) {
     return (
-      <p className="text-[15px] text-texto-secundario">
-        No pudimos cargar el criterio de AgroSense: la consulta usa los pesos por defecto de la API y por ahora no se pueden ajustar.
-      </p>
+      <p className="text-[15px] text-texto-secundario">{t("pages.diagnosis.PrioritiesPanel.weCouldNotLoadAgrosensePrioritiesThis")}</p>
     );
   }
 
@@ -47,14 +50,12 @@ export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof 
       <summary className="flex min-h-11 cursor-pointer items-center font-bold">{title}</summary>
       {open && (
         <div className="flex min-w-0 flex-col gap-4 pt-2 pb-3">
-          <p className="text-[15px] leading-snug">
-            Cuánto le importa cada señal. Cambia la luz y el orden de las fechas, pero no esconde un riesgo grave.
-          </p>
-          <p className="text-[15px] leading-snug text-texto-secundario">{PRIORITIES_HINT}</p>
+          <p className="text-[15px] leading-snug">{t("pages.diagnosis.PrioritiesPanel.howMuchEachSignalMattersChangesThe")}</p>
+          <p className="text-[15px] leading-snug text-texto-secundario">{PRIORITIES_HINT()}</p>
           {/* Las seis casillas miden 44 px (el mínimo táctil): 264 px. A 320 px solo caben si el panel ocupa todo el ancho
               de la tarjeta, por eso en el celular el panel no tiene el margen de la tarjeta (-mx-6). */}
           <div className="flex flex-col gap-4">
-            {PRIORITY_CONTROLS.map((signal) => (
+            {PRIORITY_CONTROLS().map((signal) => (
               <SeedRow
                 key={signal.key}
                 label={signal.label}
@@ -66,28 +67,35 @@ export function PrioritiesPanel({ priorities }: { priorities: ReturnType<typeof 
               />
             ))}
           </div>
-          <p className="text-[15px] leading-snug text-texto-secundario">{UNRATED_PRIORITIES_NOTE}</p>
+          <p className="text-[15px] leading-snug text-texto-secundario">{UNRATED_PRIORITIES_NOTE()}</p>
           {priorities.allZero && (
             <p role="alert" className="font-bold text-oscuro-rojo">
-              <span aria-hidden="true">▲ </span>Suba al menos una prioridad: con todas en 0 no hay nada que pesar y no se consulta.
+              <span aria-hidden="true">▲ </span>
+              {t("pages.diagnosis.PrioritiesPanel.increaseAtLeastOnePriorityAllzeroPriorities")}
             </p>
           )}
           {priorities.error && (
             <Alert>
               {priorities.error instanceof ApiError
                 ? priorities.error.message
-                : "No se pudieron guardar sus prioridades. Intente de nuevo."}
+                : t("pages.diagnosis.PrioritiesPanel.yourPrioritiesCouldNotBeSavedTry")}
             </Alert>
           )}
           <p className="text-[15px] text-texto-secundario">
-            {priorities.savesInProfile ? "Se guardan en su perfil, como en «Mi cuenta»." : "Se recuerdan en este dispositivo, sin cuenta."}
+            {priorities.savesInProfile
+              ? t("pages.diagnosis.PrioritiesPanel.savedToYourProfileAsInMy")
+              : t("pages.diagnosis.PrioritiesPanel.rememberedOnThisDeviceWithoutAnAccount")}
           </p>
           <p className="border-t-2 border-superficie-borde pt-3 text-[15px] text-texto-secundario">
-            Criterio de AgroSense: {PRIORITY_CONTROLS.map((signal) => `${signal.label.toLowerCase()} ${defaults[signal.key]}`).join(" · ")}.
+            {t("pages.account.PrioritiesCard.agrosensePriorities")}{" "}
+            {PRIORITY_CONTROLS()
+              .map((signal) => `${signal.label.toLowerCase()} ${defaults[signal.key]}`)
+              .join(" · ")}
+            .
           </p>
           {(isOwn || priorities.allZero) && (
             <button type="button" onClick={priorities.reset} className={`${LINK} min-h-11 self-start`}>
-              Volver al criterio de AgroSense
+              {t("pages.account.PrioritiesCard.resetToAgrosensePriorities")}
             </button>
           )}
         </div>

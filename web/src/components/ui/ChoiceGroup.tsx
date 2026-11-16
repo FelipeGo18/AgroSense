@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useId } from "react";
 import { Plate } from "./Plate";
 
@@ -30,6 +31,7 @@ export function ChoiceGroup<T extends string | number | boolean | null>({
   hint,
   error,
 }: ChoiceGroupProps<T>) {
+  useTranslation();
   const name = useId();
   const described = [error && `${name}-error`, hint && `${name}-hint`].filter(Boolean).join(" ");
   return (

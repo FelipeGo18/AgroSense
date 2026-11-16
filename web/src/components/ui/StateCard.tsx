@@ -1,7 +1,10 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { Plate } from "./Plate";
 import { Button } from "./Button";
 import { Mascot, type MascotMood } from "@/components/mascot/Mascot";
+import { ApiLanguageNotice } from "./ApiLanguageNotice";
 
 export interface StateCardAction {
   label: string;
@@ -36,6 +39,7 @@ export function StateCard({
   actions = [],
   className = "",
 }: Readonly<StateCardProps>) {
+  useTranslation();
   const getActionVariant = (action: StateCardAction, index: number) => {
     return action.variant ?? (index === 0 ? "primary" : "secondary");
   };
@@ -61,12 +65,13 @@ export function StateCard({
         </div>
         {/* Explicación en texto claro */}
         <div className="max-w-[520px] text-[15px] leading-relaxed text-texto-secundario">{description}</div>
+        <ApiLanguageNotice />
         {/* Código de soporte técnico si existió un error del servidor */}
         {code && (
           <div className="relative mt-1 inline-flex items-center self-start px-3.5 py-1.5 text-[14px] font-bold text-texto-principal">
             <Plate c={6} fill="var(--color-paleta-niebla)" />
             <span className="relative">
-              Código para soporte: <span className="font-mono">{code}</span>
+              {t("pages.auth.LoginPage.supportCode")} <span className="font-mono">{code}</span>
             </span>
           </div>
         )}

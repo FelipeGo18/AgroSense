@@ -1,6 +1,8 @@
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "./LanguageSelector";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { CSSProperties, RefObject } from "react";
-import { NavLink } from "react-router";
+import { NavLink } from "./LanguageLink";
 import { useLogout, useSession } from "@/features/auth/session";
 import { PreferenceSwitch } from "@/components/ui/PreferenceSwitch";
 import { useSound } from "@/hooks/useSound";
@@ -9,16 +11,9 @@ import { GUEST, MEMBER, NAV } from "./navLinks";
 
 /** El sonido, como interruptor del menú: en pantallas muy angostas su botón no cabe en la barra. */
 function SoundSwitch() {
+  const { t } = useTranslation();
   const [enabled, setEnabled] = useSound();
-  return (
-    <PreferenceSwitch
-      label="Sonido"
-      hint="Efectos suaves al pasar de sección. Empieza apagado y la web se entiende igual sin él."
-      checked={enabled}
-      onChange={setEnabled}
-      onDark
-    />
-  );
+  return <PreferenceSwitch label={t("sound.label")} hint={t("sound.hint")} checked={enabled} onChange={setEnabled} onDark />;
 }
 
 /**
@@ -34,6 +29,7 @@ export function MobileMenuPanel({
   onOpenChange: (open: boolean) => void;
   returnFocus: RefObject<HTMLButtonElement | null>;
 }) {
+  const { t } = useTranslation();
   const { user } = useSession();
   const logout = useLogout();
   return (
@@ -50,14 +46,14 @@ export function MobileMenuPanel({
           className="menu-curtain fixed inset-0 z-50 flex flex-col overflow-y-auto bg-paleta-noche px-7 pt-6 pb-10 text-texto-sobre-oscuro outline-none lg:hidden"
         >
           <div className="flex items-center justify-between">
-            <Dialog.Title className="font-titulos text-base font-titulo tracking-wide uppercase">Menú</Dialog.Title>
-            <Dialog.Close aria-label="Cerrar el menú" className="flex size-11 items-center justify-center focus-visible:outline-white">
+            <Dialog.Title className="font-titulos text-base font-titulo tracking-wide uppercase">{t("nav.menu")}</Dialog.Title>
+            <Dialog.Close aria-label={t("nav.close")} className="flex size-11 items-center justify-center focus-visible:outline-white">
               <svg aria-hidden="true" viewBox="0 0 30 30" className="size-7">
                 <path d="M4 4l22 22M26 4L4 26" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
               </svg>
             </Dialog.Close>
           </div>
-          <nav aria-label="Principal" className="mt-6 flex flex-col">
+          <nav aria-label={t("nav.primary")} className="mt-6 flex flex-col">
             {[...NAV, ...(user ? MEMBER : GUEST)].map((item, i) => (
               <NavLink
                 key={item.to}
@@ -67,17 +63,18 @@ export function MobileMenuPanel({
                 onClick={() => onOpenChange(false)}
                 className="menu-item py-3 font-titulos text-[26px] font-titulo focus-visible:outline-white aria-[current=page]:text-paleta-trigo"
               >
-                {item.label}
+                {t(item.label)}
               </NavLink>
             ))}
           </nav>
-          <section aria-label="Preferencias" className="mt-6 flex flex-col border-t border-white/25 pt-3">
+          <section aria-label={t("nav.preferences")} className="mt-6 flex flex-col border-t border-white/25 pt-3">
+            <LanguageSelector className="my-3 self-start" />
             <LightModeSwitch onDark />
             <SoundSwitch />
           </section>
           {user ? (
             <div className="mt-6 flex flex-col items-start gap-3 border-t border-white/25 pt-6">
-              <p className="text-sm text-paleta-niebla">Entró como {user.username}</p>
+              <p className="text-sm text-paleta-niebla">{t("nav.signedIn", { name: user.username })}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -86,11 +83,11 @@ export function MobileMenuPanel({
                 }}
                 className="min-h-11 font-bold text-paleta-trigo underline decoration-2 underline-offset-4 focus-visible:outline-white"
               >
-                Cerrar sesión
+                {t("nav.logout")}
               </button>
             </div>
           ) : (
-            <p className="mt-6 border-t border-white/25 pt-6 text-sm text-paleta-niebla">Sin cuenta, lo que consulta no se guarda.</p>
+            <p className="mt-6 border-t border-white/25 pt-6 text-sm text-paleta-niebla">{t("nav.guest")}</p>
           )}
         </Dialog.Content>
       </Dialog.Portal>

@@ -1,5 +1,8 @@
-import { Link } from "react-router";
 import type { SoilContext } from "@/components/soil/SoilDetails";
+import { ApiLanguageNotice } from "@/components/ui/ApiLanguageNotice";
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
+import { Link } from "@/components/layout/LanguageLink";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { Alert } from "@/components/ui/Alert";
@@ -19,8 +22,8 @@ import type { Version } from "@/features/version";
 import { StrategyCard } from "./StrategyCard";
 
 const LINK = "font-bold text-oscuro-oliva underline decoration-2 underline-offset-4";
-const NOT_FORECAST = "Compara estrategias según reglas con fuente. No predice cuánto va a mejorar su suelo.";
-const YOUR_CALL = "Es información para decidir. La decisión es suya.";
+const NOT_FORECAST = () => t("pages.strategies.StrategyResults.comparesStrategiesUsingSourcedRulesDoesNot");
+const YOUR_CALL = () => t("pages.strategies.CycleView.informationToHelpYouDecideTheDecision");
 
 export interface StrategyResultsProps {
   soilContext?: SoilContext;
@@ -58,10 +61,11 @@ export function StrategyResults({
   onTwoCycles,
   cycleLink,
 }: StrategyResultsProps) {
+  useTranslation();
   if (rotations.isPending) {
     return (
       <p role="status" className="mt-8">
-        Comparando estrategias…
+        {t("pages.strategies.StrategyResults.comparingStrategies")}
       </p>
     );
   }
@@ -70,7 +74,7 @@ export function StrategyResults({
       <div className="mt-8 flex flex-col items-start gap-4">
         <Alert>{errorText(rotations.error)}</Alert>
         <Button variant="secondary" onClick={onEdit}>
-          Cambiar los datos
+          {t("pages.strategies.StrategyResults.changeTheInputs")}
         </Button>
       </div>
     );
@@ -81,12 +85,13 @@ export function StrategyResults({
   return (
     <div aria-busy={rotations.isPlaceholderData || undefined} className="mt-8 flex min-w-0 flex-col gap-10">
       <div className="flex flex-col gap-3">
-        <Banner tone="estimate">{NOT_FORECAST}</Banner>
+        <Banner tone="estimate">{NOT_FORECAST()}</Banner>
+        <ApiLanguageNotice />
         <div className="flex flex-wrap items-center gap-3">
-          {data.versions.dataset === "ejemplo" && <ExampleLabel>respuesta simulada</ExampleLabel>}
+          {data.versions.dataset === "ejemplo" && <ExampleLabel>{t("pages.strategies.CycleView.simulatedResponse")}</ExampleLabel>}
           {rotations.isPlaceholderData && (
             <p role="status" className="font-bold text-texto-secundario">
-              Actualizando con sus prioridades…
+              {t("pages.strategies.StrategyResults.updatingWithYourPriorities")}
             </p>
           )}
         </div>
@@ -94,22 +99,19 @@ export function StrategyResults({
 
       {data.current_strategy ? (
         <section aria-labelledby="hoy" className="flex min-w-0 flex-col gap-4">
-          <SectionTitle id="hoy" title="Lo que usted siembra hoy">
-            Su rotación de siempre, evaluada con los mismos criterios. Cada estrategia de abajo dice cuánto gana o pierde frente a ella.
+          <SectionTitle id="hoy" title={t("pages.strategies.StrategyResults.whatYouCurrentlyPlant")}>
+            {t("pages.strategies.StrategyResults.yourUsualRotationAssessedUsingTheSame")}
           </SectionTitle>
           <StrategyCard strategy={data.current_strategy} {...cardProps} cycleLink={(n) => cycleLink(data.current_strategy!, n)} />
         </section>
       ) : (
         !empty && (
           <section aria-labelledby="hoy" className="flex min-w-0 flex-col gap-4">
-            <SectionTitle id="hoy" title="Lo que usted siembra hoy" />
+            <SectionTitle id="hoy" title={t("pages.strategies.StrategyResults.whatYouCurrentlyPlant")} />
             <div className="flex flex-col items-start gap-3 border-2 border-dashed border-superficie-borde bg-superficie-panel px-5 py-4">
-              <p>
-                No nos dijo qué viene sembrando en este terreno, así que no hay con qué comparar. Si lo escribe, cada estrategia dice cuánto
-                gana o pierde frente a lo de hoy.
-              </p>
+              <p>{t("pages.strategies.StrategyResults.youHaveNotToldUsWhatYou")}</p>
               <Button variant="secondary" onClick={onWriteCurrent}>
-                Escribir lo que siembro
+                {t("pages.strategies.StrategyResults.enterWhatIPlant")}
               </Button>
             </div>
           </section>
@@ -122,27 +124,27 @@ export function StrategyResults({
           className="flex flex-col items-start gap-4 border-2 border-dashed border-oscuro-cielo/60 bg-superficie-panel px-5 py-5"
         >
           <h2 id="ninguna" className="text-[clamp(1.25rem,3vw,1.75rem)]">
-            Ninguna estrategia cumple las reglas con estos datos
+            {t("pages.strategies.StrategyResults.noStrategyMeetsTheRulesWithThese")}
           </h2>
           <p className="max-w-[760px]">
-            No es que su terreno sea malo: abajo está por qué se descartó cada una. Pruebe con otra fecha de siembra
-            {cycles === 3 ? " o con dos ciclos en vez de tres" : ""}.
+            {t("pages.strategies.StrategyResults.thisDoesNotMeanYourLandIs")}
+            {cycles === 3 ? t("pages.strategies.StrategyResults.orTwoCyclesInsteadOfThree") : ""}.
           </p>
           <div className="flex w-full flex-wrap gap-3">
             <Button onClick={onEdit} className="w-full sm:w-auto">
-              Cambiar la fecha
+              {t("pages.strategies.StrategyResults.changeTheDate")}
             </Button>
             {cycles === 3 && (
               <Button variant="secondary" onClick={onTwoCycles} className="w-full sm:w-auto">
-                Probar con 2 ciclos
+                {t("pages.strategies.StrategyResults.try2Cycles")}
               </Button>
             )}
           </div>
         </section>
       ) : (
         <section aria-labelledby="ordenadas" className="flex min-w-0 flex-col gap-4">
-          <SectionTitle id="ordenadas" title="Estrategias ordenadas por lo que le importa">
-            Solo las que cumplen las reglas de rotación. Puntaje de 0 a 100 por criterio, ponderado por sus prioridades.
+          <SectionTitle id="ordenadas" title={t("pages.strategies.StrategyResults.strategiesRankedByYourPriorities")}>
+            {t("pages.strategies.StrategyResults.onlyStrategiesMeetingRotationRulesEachCriterion")}
           </SectionTitle>
           <ol className="grid grid-cols-1 gap-8 xl:grid-cols-2">
             {data.strategies.map((strategy) => (
@@ -159,24 +161,27 @@ export function StrategyResults({
       {data.limitations.length > 0 && (
         <section aria-labelledby="limitaciones" className="flex flex-col gap-2">
           <h2 id="limitaciones" className="text-[clamp(1.1rem,2.5vw,1.35rem)]">
-            Limitaciones
+            {t("pages.strategies.StrategyCard.limitations")}
           </h2>
           <ul className="flex list-disc flex-col gap-1 pl-5">
             {data.limitations.map((limitation) => (
-              <li key={limitation}>{limitation}</li>
+              <li lang="es" key={limitation}>
+                {limitation}
+              </li>
             ))}
           </ul>
         </section>
       )}
 
       <div className="flex flex-col gap-3">
-        <Banner tone="decision">{YOUR_CALL}</Banner>
+        <Banner tone="decision">{YOUR_CALL()}</Banner>
         <div className="flex flex-wrap items-center justify-between gap-3 text-[15px] text-texto-secundario">
           <p>
-            Datos {data.versions.dataset ?? "sin versión"} · Reglas {data.versions.rules ?? "sin versión"}
+            {t("pages.strategies.CycleView.data")} {data.versions.dataset ?? t("pages.strategies.CycleView.noVersion")}{" "}
+            {t("pages.strategies.CycleView.rules")} {data.versions.rules ?? t("pages.strategies.CycleView.noVersion")}
           </p>
           <Link to={PATHS.howItWorks} className={`${LINK} inline-flex min-h-11 items-center`}>
-            ¿Cómo se arma este orden?
+            {t("pages.strategies.StrategyResults.howIsThisRankingCalculated")}
           </Link>
         </div>
       </div>
@@ -185,6 +190,7 @@ export function StrategyResults({
 }
 
 function SectionTitle({ id, title, children }: { id: string; title: string; children?: string }) {
+  useTranslation();
   return (
     <div className="flex flex-col gap-1">
       <h2 id={id} className="text-[clamp(1.25rem,3vw,1.75rem)]">
@@ -196,6 +202,7 @@ function SectionTitle({ id, title, children }: { id: string; title: string; chil
 }
 
 function Banner({ tone, children }: { tone: "estimate" | "decision"; children: string }) {
+  useTranslation();
   const style = tone === "estimate" ? "border-oscuro-cielo bg-[#E6F0F5]" : "border-oscuro-oliva bg-[#EEF2E4]";
   return <p className={`border-2 px-4 py-3 font-bold ${style}`}>{children}</p>;
 }
@@ -215,6 +222,7 @@ function Excluded({
   version: Version | undefined;
   open: boolean;
 }) {
+  useTranslation();
   const total = excludedTotal(data.excluded_counts);
   if (total === 0 && data.excluded.length === 0) return null;
   const count = Math.max(total, data.excluded.length);
@@ -223,16 +231,17 @@ function Excluded({
       <summary className="flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <span className="font-bold">
           {count === 1
-            ? "1 estrategia descartada, con su regla o motivo"
-            : `${count} estrategias descartadas, cada una con su regla o motivo`}
+            ? t("pages.strategies.StrategyResults.1StrategyExcludedWithItsRuleOr")
+            : t("pages.strategies.StrategyResults.strategiesExcludedEachWithItsRuleOr", { v0: count })}
         </span>
-        <span className={`${LINK} group-open:hidden`}>Ver por qué</span>
-        <span className={`${LINK} hidden group-open:inline`}>Ocultar</span>
+        <span className={`${LINK} group-open:hidden`}>{t("pages.strategies.StrategyResults.seeWhy")}</span>
+        <span className={`${LINK} hidden group-open:inline`}>{t("pages.strategies.StrategyResults.hide")}</span>
       </summary>
       <div className="flex flex-col gap-3 pt-3 pb-2">
         {data.excluded.length < count && (
           <p className="text-[15px] text-texto-secundario">
-            Aquí van las primeras {data.excluded.length}. En total se descartaron {excludedBreakdown(data.excluded_counts)}.
+            {t("pages.strategies.StrategyResults.showingTheFirst")} {data.excluded.length}
+            {t("pages.strategies.StrategyResults.totalExcluded")} {excludedBreakdown(data.excluded_counts)}.
           </p>
         )}
         <ul className="flex flex-col">
@@ -246,6 +255,7 @@ function Excluded({
 }
 
 function ExcludedItem({ item, names, version }: { item: Exclusion; names: Map<string, string>; version: Version | undefined }) {
+  useTranslation();
   const source = sourcesText(item.source_ids, version);
   return (
     <li className="flex min-w-0 gap-3 border-t-2 border-superficie-borde py-3">
@@ -256,8 +266,14 @@ function ExcludedItem({ item, names, version }: { item: Exclusion; names: Map<st
       <div className="flex min-w-0 flex-col gap-0.5 leading-snug">
         <p className="font-bold break-words">{sequence(item.crop_ids, names)}</p>
         <p className="text-[15px] font-bold">{exclusionTitle(item)}</p>
-        <p className="text-[15px]">{item.reason}</p>
-        {source && <p className="text-[14px] text-texto-secundario">Fuente: {source}</p>}
+        <p lang="es" className="text-[15px]">
+          {item.reason}
+        </p>
+        {source && (
+          <p className="text-[14px] text-texto-secundario">
+            {t("pages.strategies.StrategyCard.source")} {source}
+          </p>
+        )}
       </div>
     </li>
   );
@@ -266,6 +282,6 @@ function ExcludedItem({ item, names, version }: { item: Exclusion; names: Map<st
 function errorText(error: Error): string {
   if (error instanceof ApiError && error.status === 422) return explain422(error.message);
   if (error instanceof ApiError && error.status === 501)
-    return "El cálculo de las estrategias todavía no está listo en el servidor. Intente más tarde.";
+    return t("pages.strategies.StrategyResults.theStrategyCalculationIsNotAvailableOn");
   return error.message;
 }

@@ -1,3 +1,4 @@
+import { t, locale } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 import type { RotationResponse } from "./entry";
@@ -13,7 +14,7 @@ export type SoilMoisture = Schemas["SoilMoisture"];
  * cultivos, u «hoy» para la rotación actual) y `ciclo` (1 a 3). Así se puede volver atrás, compartir y recargar, y el resultado no
  * se vuelve a calcular: es la misma consulta, que ya está en la memoria de la visita.
  */
-export const TODAY = "hoy";
+export const TODAY = () => t("features.strategies.cycle.today");
 
 export function cycleParams(params: URLSearchParams, strategyKey: string, cycle: number): URLSearchParams {
   const next = new URLSearchParams(params);
@@ -34,7 +35,7 @@ export function withoutCycle(params: URLSearchParams): URLSearchParams {
  * cultivos (`avena_vicia-arveja-papa`), que es única en la respuesta. No el puesto: con otras prioridades el orden cambia
  * y el puesto 1 sería otra estrategia.
  */
-export const strategyKey = (strategy: Strategy) => (strategy.kind === "current" ? TODAY : strategy.crop_ids.join("-"));
+export const strategyKey = (strategy: Strategy) => (strategy.kind === "current" ? TODAY() : strategy.crop_ids.join("-"));
 
 export interface OpenCycle {
   strategy: Strategy;
@@ -44,7 +45,7 @@ export interface OpenCycle {
 /** El ciclo que pide la dirección, si existe en la respuesta. Si no (otra consulta, otro orden), nulo: se vuelve a la lista. */
 export function findCycle(data: RotationResponse | undefined, key: string | null, n: string | null): OpenCycle | null {
   if (!data || !key || !n) return null;
-  const strategy = key === TODAY ? data.current_strategy : data.strategies.find((s) => s.crop_ids.join("-") === key);
+  const strategy = key === TODAY() ? data.current_strategy : data.strategies.find((s) => s.crop_ids.join("-") === key);
   const cycle = strategy?.cycles.find((c) => String(c.cycle) === n);
   return strategy && cycle ? { strategy, cycle } : null;
 }
@@ -74,15 +75,19 @@ export function useWaterPlan(request: WaterPlanRequest | null) {
 
 /** Sin riego (o sin saberlo) la falta de lluvia es sed; con riego, el agua que habría que poner (`specs/05-frontend.md`). */
 export const shortfallWords = (irrigated: boolean | null | undefined) =>
-  irrigated === true ? "riego que haría falta" : "el cultivo pasaría sed";
+  irrigated === true
+    ? t("features.strategies.cycle.irrigationThatWouldBeNeeded")
+    : t("features.strategies.cycle.theCropWouldExperienceWaterStress");
 
-const NUMBER = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
+const NUMBER = () => new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 });
 
 /** «8 a 20 mm» o «20 mm». Sin rango, nulo (R1). Un rango, nunca un número solo, porque es una estimación (R10). */
 export function formatRange(range: number[] | null | undefined, unit: string): string | null {
   if (!range || range.length < 2) return null;
   const [low, high] = range;
-  return low === high ? `${NUMBER.format(low)} ${unit}` : `${NUMBER.format(low)} a ${NUMBER.format(high)} ${unit}`;
+  return low === high
+    ? `${NUMBER().format(low)} ${unit}`
+    : t("features.strategies.cycle.to", { v0: NUMBER().format(low), v1: NUMBER().format(high), v2: unit });
 }
 
 /** Un mes sin déficit trae `[0, 0]`: la lluvia alcanza. */

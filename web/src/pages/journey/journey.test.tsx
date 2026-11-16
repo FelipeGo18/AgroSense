@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PATHS } from "@/app/paths";
 import { routes } from "@/app/routes";
 import { setLightMode } from "@/lib/lightMode";
+import { i18n } from "@/lib/i18n";
+import { act } from "@testing-library/react";
 
 // Con movimiento o sin él, según la prueba (en jsdom el motor de animaciones no está y la página sería siempre ligera).
 const motion = vi.hoisted(() => ({ animated: false }));
@@ -23,6 +25,20 @@ vi.mock("./JourneyCanvas", () => ({
 const open = () => render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [PATHS.journeyTour] })} />);
 
 describe("Del satélite a su finca (HU-155)", () => {
+  it("cambia los cuatro niveles y sus enlaces al inglés sin recargar (HU-233)", async () => {
+    setLightMode(true);
+    open();
+    await screen.findByRole("heading", { level: 2, name: "Desde la órbita" });
+    await act(() => i18n.changeLanguage("en"));
+    for (const name of ["From orbit", "Boyacá and Cundinamarca", "Your municipality", "Your farm"]) {
+      expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument();
+    }
+    expect(screen.getByRole("navigation", { name: "Journey levels" })).toBeInTheDocument();
+    expect(screen.getByText(/not a forecast/)).toBeInTheDocument();
+    expect(screen.getByText(/a reanalysis combining/)).toBeInTheDocument();
+    expect(screen.getByText(/the terrain and farm are drawings/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Continue without an account" })).toHaveAttribute("href", `${PATHS.consult}?lang=en`);
+  });
   beforeEach(() => {
     vi.stubGlobal("fetch", async () => new Response(null, { status: 401 }));
     // jsdom no tiene `scrollIntoView`.

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Mascot } from "@/components/mascot/Mascot";
 import { Card } from "@/components/ui/Card";
 import { SignalIcon } from "@/components/ui/SignalIcon";
@@ -44,26 +45,27 @@ function QuestionIcon({ icon }: { icon: (typeof QUESTIONS)[number]["icon"] }) {
 
 /** Primera parada: las cuatro preguntas que responde AgroSense. */
 export function Questions({ animated }: { animated: boolean }) {
+  const { t } = useTranslation();
   const scope = useReveal<HTMLElement>(animated, "rise");
   return (
     <section id="preguntas" ref={scope} aria-labelledby="preguntas-titulo" className="relative z-10 bg-paleta-niebla">
       {/* Sin recorrido la portada no se queda quieta: las nubes taparían su parte de abajo. */}
       {animated && <CloudEdge className="text-paleta-niebla" />}
       <div className="container-page pt-28 pb-20">
-        <SectionHeader stop="preguntas" title="Cuatro preguntas, cuatro respuestas claras">
-          Para su lote o, sin cuenta, para su municipio.
+        <SectionHeader stop="preguntas" title={t("landing.questionsTitle")}>
+          {t("landing.questionsIntro")}
         </SectionHeader>
         <ol className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
           {QUESTIONS.map((question, i) => (
-            <li key={question.title} data-reveal className="flex">
+            <li key={t(question.title)} data-reveal className="flex">
               <Card className="flex min-h-[280px] grow flex-col" bodyClassName="grow">
                 <h3 className="flex items-baseline gap-3 text-[clamp(1.25rem,1.7vw,1.5rem)]">
                   <span aria-hidden="true" className="text-[34px] leading-none text-paleta-calabaza">
                     {i + 1}
                   </span>
-                  {question.title}
+                  {t(question.title)}
                 </h3>
-                <p className="text-sm">{question.text}</p>
+                <p className="text-sm">{t(question.text)}</p>
                 <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2 pt-4">
                   <QuestionIcon icon={question.icon} />
                   <Mascot mood="idle" seed={question.seed} size={104} decorative className="ml-auto" />

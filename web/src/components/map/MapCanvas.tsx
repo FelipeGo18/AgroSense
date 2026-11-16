@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -83,6 +84,7 @@ export default function MapCanvas({
   onReady,
   onFail,
 }: MapCanvasProps) {
+  const { t, i18n } = useTranslation();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const draw = useRef<TerraDraw | null>(null);
@@ -109,6 +111,10 @@ export default function MapCanvas({
         center: [-74, 4.6],
         zoom: 6,
         attributionControl: false,
+        locale: {
+          "Map.Title": t("map.accessible"),
+          "AttributionControl.ToggleAttribution": t("map.attribution.toggle"),
+        },
         fadeDuration: animated ? 300 : 0,
         dragRotate: false,
         pitchWithRotate: false,
@@ -171,6 +177,18 @@ export default function MapCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Cambiar de idioma conserva el dibujo y la cámara, y actualiza los rótulos de MapLibre.
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance) return;
+    instance.getCanvas().setAttribute("aria-label", t("map.accessible"));
+    const attribution = instance.getContainer().querySelector<HTMLButtonElement>(".maplibregl-ctrl-attrib-button");
+    if (attribution) {
+      attribution.title = t("map.attribution.toggle");
+      attribution.setAttribute("aria-label", t("map.attribution.toggle"));
+    }
+  }, [t, i18n.resolvedLanguage, ready]);
+
   // Dos efectos independientes: apagar NDVI no descarga de nuevo la imagen de color real.
   const colorOn = gibs?.selected.color;
   const ndviOn = gibs?.selected.ndvi;
@@ -225,6 +243,7 @@ export default function MapCanvas({
       label.type = "button";
       label.className = "map-label";
       label.textContent = lot.name;
+      label.setAttribute("aria-label", lot.name);
       label.addEventListener("click", () => latest.current.onLotClick?.(lot.id));
       return new maplibregl.Marker({ element: label }).setLngLat(center(lot.geometry)).addTo(instance);
     });
@@ -326,6 +345,7 @@ export default function MapCanvas({
     const label = document.createElement("span");
     label.className = `map-area ${outside ? "map-area-outside" : ""}`;
     label.textContent = areaLabel;
+    label.setAttribute("aria-label", areaLabel);
     areaMarker.current = new maplibregl.Marker({ element: label }).setLngLat(center(geometry)).addTo(instance);
   }, [ready, geometryKey, areaLabel, outside]);
 

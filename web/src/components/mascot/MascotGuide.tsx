@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { createContext, use, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Mascot, type MascotMood } from "./Mascot";
 import { gsap, motionLoaded } from "@/lib/motion";
@@ -32,6 +33,7 @@ export interface MascotGuideProps {
 }
 
 export function MascotGuide({ active, flying, children }: MascotGuideProps) {
+  useTranslation();
   const [slots] = useState(() => new Map<string, Slot>());
   const guide = useMemo(() => ({ slots, active, flying }), [slots, active, flying]);
   return <GuideContext value={guide}>{children}</GuideContext>;
@@ -47,6 +49,7 @@ export interface MascotSlotProps {
 
 /** Lugar reservado para la mascota dentro de una sección. Ocupa su espacio aunque la mascota aún no haya llegado. */
 export function MascotSlot({ id, mood = "idle", className = "" }: MascotSlotProps) {
+  useTranslation();
   const guide = use(GuideContext);
   const el = useRef<HTMLDivElement>(null);
   const slots = guide?.slots;
@@ -74,6 +77,7 @@ const EASE_MS = 150;
 
 /** La mascota que vuela. Va una sola vez, dentro de `MascotGuide`. */
 export function MascotFlyer() {
+  useTranslation();
   const guide = use(GuideContext);
   const el = useRef<HTMLDivElement>(null);
   const [pose, setPose] = useState<{ mood: MascotMood; docked: boolean }>({ mood: "idle", docked: false });
