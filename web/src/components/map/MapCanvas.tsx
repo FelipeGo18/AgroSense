@@ -8,6 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { TerraDraw, TerraDrawPolygonMode, TerraDrawSelectMode, ValidateNotSelfIntersecting } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { bbox, center, type Boundary, type LotPolygon } from "@/features/farm/geo";
+import { mountGibsColor, mountGibsLayer } from "./gibsMap";
+import type { useGibs } from "./useGibs";
 
 /** Mapa base de OpenStreetMap servido por OpenFreeMap (specs/04-stack.md). Sin clave ni cuenta. */
 export const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
@@ -44,6 +46,7 @@ export interface MapControls {
 }
 
 export interface MapCanvasProps {
+  gibs?: Pick<ReturnType<typeof useGibs>, "selected" | "dates" | "attempt" | "onStatus">;
   animated: boolean;
   boundary: Boundary | null;
   /** Lo que se encuadra al abrir: el lote, o si no hay, el municipio. */
@@ -68,7 +71,18 @@ type GeoJSONData = Parameters<GeoJSONSource["setData"]>[0];
  * Es la única pieza que conoce MapLibre; se carga aparte (React.lazy) para que las páginas sin mapa no la descarguen.
  * En modo ligero el mapa no anima: encuadra, acerca y aleja sin movimiento.
  */
-export default function MapCanvas({ animated, boundary, focus, lots = [], onLotClick, editing, padding, onReady, onFail }: MapCanvasProps) {
+export default function MapCanvas({
+  gibs,
+  animated,
+  boundary,
+  focus,
+  lots = [],
+  onLotClick,
+  editing,
+  padding,
+  onReady,
+  onFail,
+}: MapCanvasProps) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const draw = useRef<TerraDraw | null>(null);
@@ -156,6 +170,20 @@ export default function MapCanvas({ animated, boundary, focus, lots = [], onLotC
     // El mapa se crea una vez; lo que cambia después se aplica en los efectos de abajo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Dos efectos independientes: apagar NDVI no descarga de nuevo la imagen de color real.
+  const colorOn = gibs?.selected.color;
+  const ndviOn = gibs?.selected.ndvi;
+  const colorDate = gibs?.dates?.color;
+  const ndviDate = gibs?.dates?.ndvi;
+  const attempt = gibs?.attempt;
+  const onStatus = gibs?.onStatus;
+  useEffect(() => {
+    if (ready && map.current && colorOn && colorDate && onStatus) return mountGibsColor(map.current, colorDate, onStatus);
+  }, [ready, colorOn, colorDate, attempt, onStatus]);
+  useEffect(() => {
+    if (ready && map.current && ndviOn && ndviDate && onStatus) return mountGibsLayer(map.current, "ndvi", ndviDate, onStatus);
+  }, [ready, ndviOn, ndviDate, attempt, onStatus]);
 
   // ---------- El límite del municipio y el encuadre ----------
   useEffect(() => {
