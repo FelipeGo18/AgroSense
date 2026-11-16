@@ -38,7 +38,8 @@ const properNames = new Set([
   "YouTube",
 ]);
 const uiField = /^(?:name|label|title|text|hint|message|note|description|caption|placeholder|loadingText|legend|alt)$/i;
-const uiConstant = /(?:^|_)(?:NAME|NAMES|LABEL|LABELS|TITLE|TITLES|TEXT|TEXTS|HINT|HINTS|MESSAGE|MESSAGES|NOTE|NOTES|CAPTION|CAPTIONS|PLACEHOLDER)(?:_|$)/;
+const uiConstant =
+  /(?:^|_)(?:NAME|NAMES|LABEL|LABELS|TITLE|TITLES|TEXT|TEXTS|HINT|HINTS|MESSAGE|MESSAGES|NOTE|NOTES|CAPTION|CAPTIONS|PLACEHOLDER)(?:_|$)/;
 
 function audit(text: string, path: string) {
   const missing: string[] = [];
@@ -120,7 +121,7 @@ it.each([
   'const LAYER_NAME = { ndvi: "Verdor" };',
   'const STATUS_TEXT = { loading: "Cargando la imagen" };',
   'const STATUS_TEXT = { idle: "listo" };',
-  'const caption = `Fecha de la imagen: ${date}`;',
+  "const caption = `Fecha de la imagen: ${date}`;",
 ])("detecta texto fuera de JSX: %s", (source) => expect(audit(source, "Panel.tsx")).not.toEqual([]));
 
 it("acepta constantes que guardan claves y plantillas que traducen su texto", () => {
