@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useRef, type ReactNode } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { RAIN_EVENT } from "@/components/layout/SceneAmbient";
@@ -21,6 +22,7 @@ import { gsap } from "@/lib/motion";
  * campo, con la pestaña en segundo plano, con «reducir movimiento» ni con el modo ligero.
  */
 export function SceneLife({ children, className = "relative" }: { children: ReactNode; className?: string }) {
+  useTranslation();
   const stage = useRef<HTMLDivElement>(null);
   const animated = !useReducedMotion();
 

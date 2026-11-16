@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useId } from "react";
 import { Plate } from "@/components/ui/Plate";
 
@@ -22,6 +23,7 @@ export function ZoneChoice({
   value: string;
   onChange: (value: string) => void;
 }) {
+  useTranslation();
   const name = useId();
   return (
     <fieldset className="flex min-w-0 flex-col gap-2">

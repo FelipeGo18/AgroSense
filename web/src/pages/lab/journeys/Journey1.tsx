@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -68,10 +69,18 @@ const CLOUD = "#FFFFFF";
 const FOG = "#EEF4F7";
 
 const STOPS: Stop[] = [
-  { scene: "a1", title: "Órbita", ui: true, mood: "guide", mascot: { left: 66, top: 26, scale: 1 }, focus: "49% 80%", exit: "zoom" },
+  {
+    scene: "a1",
+    title: "lab.orbit.stop.orbit",
+    ui: true,
+    mood: "guide",
+    mascot: { left: 66, top: 26, scale: 1 },
+    focus: "49% 80%",
+    exit: "zoom",
+  },
   {
     scene: "a1b",
-    title: "Sobre el altiplano",
+    title: "lab.orbit.stop.highlands",
     ui: false,
     mood: "flying",
     mascot: { left: 62, top: 22, scale: 0.96 },
@@ -80,36 +89,76 @@ const STOPS: Stop[] = [
   },
   {
     scene: "a2",
-    title: "Atmósfera",
+    title: "lab.orbit.stop.atmosphere",
     ui: false,
     mood: "flying",
     mascot: { left: 46, top: 34, scale: 0.92 },
     focus: "50% 100%",
     exit: CLOUD,
   },
-  { scene: "a3", title: "Región", ui: true, mood: "guide", mascot: { left: 68, top: 20, scale: 0.84 }, focus: "50% 82%", exit: "zoom" },
+  {
+    scene: "a3",
+    title: "lab.orbit.stop.region",
+    ui: true,
+    mood: "guide",
+    mascot: { left: 68, top: 20, scale: 0.84 },
+    focus: "50% 82%",
+    exit: "zoom",
+  },
   {
     scene: "a3b",
-    title: "Entre los cerros",
+    title: "lab.orbit.stop.hills",
     ui: false,
     mood: "flying",
     mascot: { left: 60, top: 24, scale: 0.82 },
     focus: "50% 80%",
     exit: FOG,
   },
-  { scene: "a4", title: "Valle", ui: false, mood: "flying", mascot: { left: 50, top: 24, scale: 0.8 }, focus: "50% 72%", exit: "zoom" },
-  { scene: "a5", title: "Municipio", ui: true, mood: "guide", mascot: { left: 58, top: 30, scale: 0.74 }, focus: "42% 68%", exit: "zoom" },
+  {
+    scene: "a4",
+    title: "lab.orbit.stop.valley",
+    ui: false,
+    mood: "flying",
+    mascot: { left: 50, top: 24, scale: 0.8 },
+    focus: "50% 72%",
+    exit: "zoom",
+  },
+  {
+    scene: "a5",
+    title: "lab.municipality",
+    ui: true,
+    mood: "guide",
+    mascot: { left: 58, top: 30, scale: 0.74 },
+    focus: "42% 68%",
+    exit: "zoom",
+  },
   {
     scene: "a5b",
-    title: "Las parcelas",
+    title: "lab.orbit.stop.plots",
     ui: false,
     mood: "flying",
     mascot: { left: 54, top: 30, scale: 0.74 },
     focus: "44% 72%",
     exit: "zoom",
   },
-  { scene: "a6", title: "Vereda", ui: false, mood: "guide", mascot: { left: 40, top: 34, scale: 0.74 }, focus: "44% 86%", exit: "zoom" },
-  { scene: "a7", title: "Lote", ui: true, mood: "idle", mascot: { left: 68, top: 46, scale: 0.8 }, focus: "50% 60%", exit: "zoom" },
+  {
+    scene: "a6",
+    title: "lab.orbit.stop.rural",
+    ui: false,
+    mood: "guide",
+    mascot: { left: 40, top: 34, scale: 0.74 },
+    focus: "44% 86%",
+    exit: "zoom",
+  },
+  {
+    scene: "a7",
+    title: "lab.orbit.stop.plot",
+    ui: true,
+    mood: "idle",
+    mascot: { left: 68, top: 46, scale: 0.8 },
+    focus: "50% 60%",
+    exit: "zoom",
+  },
 ];
 
 // Duraciones en unidades de la línea de tiempo. Solo las paradas con interfaz se quedan;
@@ -136,6 +185,7 @@ function StopContent({
   /** Lleva a la siguiente parada con contenido. */
   onNext: () => void;
 }) {
+  const { t } = useTranslation();
   const place = municipality?.label ?? "Samacá";
   switch (STOPS[index].scene) {
     case "a1":
@@ -144,12 +194,10 @@ function StopContent({
           <h1 tabIndex={-1} className="text-[clamp(3rem,9vw,5.5rem)] leading-none outline-none">
             AgroSense
           </h1>
-          <p className="text-lg sm:text-2xl">
-            ¿Es buen semestre para sembrar? Se lo decimos con datos del satélite y reglas que se pueden explicar.
-          </p>
+          <p className="text-lg sm:text-2xl">{t("lab.orbit.intro")}</p>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={onNext}>Consultar sin cuenta</Button>
-            <Button variant="secondary">Entrar</Button>
+            <Button onClick={onNext}>{t("lab.orbit.consult")}</Button>
+            <Button variant="secondary">{t("lab.orbit.login")}</Button>
           </div>
         </div>
       );
@@ -157,11 +205,11 @@ function StopContent({
       return (
         <Card>
           <h2 tabIndex={-1} className="text-2xl outline-none">
-            ¿Dónde está su finca?
+            {t("lab.orbit.location")}
           </h2>
           <Combobox
-            label="Municipio"
-            placeholder="Escriba su municipio"
+            label={t("lab.municipality")}
+            placeholder={t("lab.municipality.placeholder")}
             options={MUNICIPALITIES}
             value={municipality}
             onChange={onMunicipality}
@@ -174,20 +222,21 @@ function StopContent({
           <h2 tabIndex={-1} className="text-2xl outline-none">
             {place}, Boyacá
           </h2>
-          <p className="text-texto-secundario">Elija cultivo y semestre</p>
-          <Button variant="secondary">Papa · semestre B</Button>
-          <Button onClick={onNext}>Ver diagnóstico</Button>
+          <p className="text-texto-secundario">{t("lab.orbit.cropSemester")}</p>
+          <Button variant="secondary">{t("lab.orbit.potatoSemester")}</Button>
+          <Button onClick={onNext}>{t("lab.diagnosis")}</Button>
         </Card>
       );
     case "a7":
       return (
         <Card>
           <h2 tabIndex={-1} className="text-xl outline-none">
-            Papa en {place} · semestre B
+            {t("lab.orbit.resultTitle", { place })}
           </h2>
           <TrafficLightBadge light="yellow" className="self-start" />
           <p>
-            <strong>Sugerencia: esperar otro semestre.</strong> El clima acompaña, pero hay más área sembrada que en años anteriores.
+            <strong>{t("lab.orbit.suggestion")}</strong>
+            {t("lab.orbit.explanation")}
           </p>
           <ExampleLabel />
         </Card>
@@ -224,6 +273,7 @@ function Wipe() {
 }
 
 export function Journey1() {
+  const { t } = useTranslation();
   const root = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const narrow = useNarrow();
@@ -328,13 +378,14 @@ export function Journey1() {
     // Sin viaje: cada parada con interfaz aparece ya colocada, una debajo de otra.
     return (
       <>
+        <title>{t("lab.index.orbit.title")} · AgroSense</title>
         <JourneyNav current="/recorrido/1" />
         <main>
           {STOPS.map((s, i) =>
             s.ui ? (
               <section
                 key={s.scene}
-                aria-label={s.title}
+                aria-label={t(s.title)}
                 className="relative flex min-h-screen items-start overflow-hidden px-[4vw] pt-[14vh]"
               >
                 <Scene id={s.scene} />
@@ -361,6 +412,7 @@ export function Journey1() {
   const currentUi = STOPS.reduce((found, s, i) => (s.ui && i <= stop ? i : found), 0);
   return (
     <>
+      <title>{t("lab.index.orbit.title")} · AgroSense</title>
       <JourneyNav current="/recorrido/1" />
       <main ref={root} style={{ height: `${TOTAL * 105 + 100}vh` }}>
         <div className="sticky top-0 h-screen overflow-hidden bg-paleta-noche">
@@ -387,17 +439,17 @@ export function Journey1() {
           >
             <Mascot mood={moving ? "flying" : STOPS[stop].mood} size={330} decorative className="mascot-float h-auto w-full" />
           </div>
-          <ol aria-label="Paradas del recorrido" className="absolute right-4 bottom-1/2 z-20 flex translate-y-1/2 flex-col gap-3">
+          <ol aria-label={t("lab.orbit.stops")} className="absolute right-4 bottom-1/2 z-20 flex translate-y-1/2 flex-col gap-3">
             {/* Solo las paradas con interfaz: las escenas de relleno no son un lugar donde detenerse. */}
             {STOPS.map((s, i) =>
               s.ui ? (
                 <li
                   key={s.scene}
                   aria-current={i === currentUi ? "step" : undefined}
-                  title={s.title}
+                  title={t(s.title)}
                   className={`size-3 rotate-45 border-2 border-white ${i === currentUi ? "bg-paleta-calabaza" : i < currentUi ? "bg-white" : "bg-transparent"}`}
                 >
-                  <span className="sr-only">{s.title}</span>
+                  <span className="sr-only">{t(s.title)}</span>
                 </li>
               ) : null,
             )}

@@ -1,4 +1,6 @@
-import { Link } from "react-router";
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
+import { Link } from "@/components/layout/LanguageLink";
 import { PATHS } from "@/app/paths";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +18,7 @@ const OUTCOME_STYLE: Record<Outcome, { ink: string; fill: string; stroke: string
 
 /** El resultado de un evento con forma y texto, nunca solo color: visto bueno, equis o signo de admiración. */
 function OutcomeMark({ outcome }: { outcome: Outcome }) {
+  useTranslation();
   const { fill, stroke } = OUTCOME_STYLE[outcome];
   return (
     <svg aria-hidden="true" viewBox="0 0 22 22" className="size-[22px] shrink-0">
@@ -33,9 +36,10 @@ function OutcomeMark({ outcome }: { outcome: Outcome }) {
 }
 
 function Event({ item }: { item: ActivityItem }) {
+  useTranslation();
   const outcome = item.outcome as Outcome;
   const { what, detail } = describe(item);
-  const support = who(item) === "Soporte";
+  const support = who(item) === t("pages.account.activity.support");
   return (
     <li className="flex gap-4 border-b border-superficie-borde py-3">
       <span className="mt-0.5">
@@ -50,7 +54,7 @@ function Event({ item }: { item: ActivityItem }) {
           <span className={support ? "font-bold text-oscuro-cielo" : "text-texto-secundario"}>
             {who(item)} · <time dateTime={item.occurred_at}>{when(item.occurred_at)}</time>
           </span>
-          <span className={`font-bold ${OUTCOME_STYLE[outcome].ink}`}>{OUTCOME_LABEL[outcome]}</span>
+          <span className={`font-bold ${OUTCOME_STYLE[outcome].ink}`}>{OUTCOME_LABEL()[outcome]}</span>
         </div>
       </div>
     </li>
@@ -59,10 +63,12 @@ function Event({ item }: { item: ActivityItem }) {
 
 /** Mi actividad (HU-178). Diseño: design/pantallas/actividad.py. */
 export function ActivityPage() {
+  useTranslation();
   return <AccountShell>{() => <Activity />}</AccountShell>;
 }
 
 function Activity() {
+  useTranslation();
   const activity = useActivity();
   const items = activity.data?.pages.flatMap((page) => page.items) ?? [];
   const page = useEntrance<HTMLDivElement>();
@@ -70,28 +76,27 @@ function Activity() {
   return (
     <div ref={page} className="mx-auto max-w-[1008px] px-3 pt-[104px] md:px-6">
       <div data-enter>
-        <title>Mi actividad · AgroSense</title>
+        <title>{t("pages.account.ActivityPage.myActivityAgrosense")}</title>
         <Card bodyClassName="gap-3 md:px-4 md:pt-2">
           <Link to={PATHS.account} className={`${LINK} inline-flex min-h-11 items-center self-start text-[15px]`}>
-            <span aria-hidden="true">‹ </span>Mi cuenta
+            <span aria-hidden="true">‹ </span>
+            {t("nav.account")}
           </Link>
-          <h1 className="text-[clamp(1.875rem,3vw,2.375rem)]">Mi actividad</h1>
-          <p className="text-[15px] text-texto-secundario">
-            Lo que se hizo con su cuenta y sus lotes, también lo que hizo soporte. Se guarda 180 días y no muestra lo que escribió.
-          </p>
-          <ul aria-label="Qué significa cada marca" className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
-            {(Object.keys(OUTCOME_LABEL) as Outcome[]).map((outcome) => (
+          <h1 className="text-[clamp(1.875rem,3vw,2.375rem)]">{t("nav.activity")}</h1>
+          <p className="text-[15px] text-texto-secundario">{t("pages.account.ActivityPage.activityOnYourAccountAndPlotsIncluding")}</p>
+          <ul aria-label={t("pages.account.ActivityPage.whatEachSymbolMeans")} className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+            {(Object.keys(OUTCOME_LABEL()) as Outcome[]).map((outcome) => (
               <li key={outcome} className="flex items-center gap-2">
                 <OutcomeMark outcome={outcome} />
-                {OUTCOME_LABEL[outcome]}
+                {OUTCOME_LABEL()[outcome]}
               </li>
             ))}
           </ul>
-          {activity.isPending && <p role="status">Cargando su actividad…</p>}
-          {activity.isError && <Alert>No pudimos cargar su actividad. Intente de nuevo en un momento.</Alert>}
-          {activity.isSuccess && items.length === 0 && <p>Todavía no hay actividad en su cuenta.</p>}
+          {activity.isPending && <p role="status">{t("pages.account.ActivityPage.loadingYourActivity")}</p>}
+          {activity.isError && <Alert>{t("pages.account.ActivityPage.weCouldNotLoadYourActivityTry")}</Alert>}
+          {activity.isSuccess && items.length === 0 && <p>{t("pages.account.ActivityPage.thereIsNoActivityOnYourAccount")}</p>}
           {items.length > 0 && (
-            <ol ref={rows} aria-label="Actividad, de lo más reciente a lo más antiguo">
+            <ol ref={rows} aria-label={t("pages.account.ActivityPage.activityNewestFirst")}>
               {items.map((item) => (
                 <Event key={item.event_id} item={item} />
               ))}
@@ -102,17 +107,19 @@ function Activity() {
               variant="secondary"
               className="self-start sm:w-[280px]"
               loading={activity.isFetchingNextPage}
-              loadingText="Cargando…"
+              loadingText={t("pages.account.AccountShell.loading")}
               onClick={() => void activity.fetchNextPage()}
             >
-              Ver más antiguos
+              {t("pages.account.ActivityPage.viewOlderActivity")}
             </Button>
           )}
-          <p className="text-[13px] text-texto-secundario">Lo anterior al {keptSince()} ya se borró.</p>
+          <p className="text-[13px] text-texto-secundario">
+            {t("pages.account.ActivityPage.anythingBefore")} {keptSince()} {t("pages.account.ActivityPage.hasAlreadyBeenDeleted")}
+          </p>
           <p className="text-[15px]">
-            ¿Ve algo que no hizo?{" "}
+            {t("pages.account.ActivityPage.seeSomethingYouDidNotDo")}{" "}
             <Link to={PATHS.password} className={LINK}>
-              Cambie su contraseña
+              {t("pages.account.ActivityPage.changeYourPassword")}
             </Link>
           </p>
         </Card>

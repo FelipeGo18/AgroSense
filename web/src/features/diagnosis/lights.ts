@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import type { Schemas } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { LIGHT_PRIORITY_SIGNALS, type SignalWeights } from "@/features/diagnosis/priorities";
@@ -26,14 +27,14 @@ export function countsAlways(key: string, signal: Signal, weights: Partial<Recor
 /** «No cuenta para la luz con sus prioridades»: la señal se sigue viendo, pero con su peso no cambia la luz. */
 export const notCounted = (signal: Signal) => signal.counts === false;
 
-const WITH_ARTICLE: Record<string, string> = {
-  water: "el agua",
-  frost: "las heladas",
-  heat: "el calor",
-  soil: "el suelo",
-  supply: "la oferta",
-  market: "el mercado",
-};
+const WITH_ARTICLE = (): Record<string, string> => ({
+  water: t("features.diagnosis.lights.water"),
+  frost: t("features.diagnosis.lights.frost"),
+  heat: t("features.diagnosis.lights.heat"),
+  soil: t("features.diagnosis.lights.soil"),
+  supply: t("features.diagnosis.lights.supply"),
+  market: t("features.diagnosis.lights.market"),
+});
 
 /**
  * La línea que dice por qué difieren las luces (`specs/05-frontend.md`, «Dos luces»): qué pesos puso la persona
@@ -41,14 +42,16 @@ const WITH_ARTICLE: Record<string, string> = {
  * pesos de AgroSense no se compara: se dice solo que usa los suyos.
  */
 export function whyDifferent(weights: Partial<SignalWeights> | null | undefined, defaults: SignalWeights | null | undefined): string {
-  if (!weights || !defaults) return "Las luces difieren porque usted usa sus propias prioridades.";
-  // La oferta y el mercado no cambian la luz (decisión 17): un peso suyo distinto nunca explica por qué difieren.
-  const changes = LIGHT_PRIORITY_SIGNALS.filter(({ key }) => weights[key] !== undefined && weights[key] !== defaults[key]).map(
-    ({ key }) => `${WITH_ARTICLE[key] ?? SIGNAL_NAME[key]} en ${weights[key]} (AgroSense: ${defaults[key]})`,
-  );
-  if (changes.length === 0) return "Las luces difieren porque usted usa sus propias prioridades.";
-  const list = changes.length === 1 ? changes[0] : `${changes.slice(0, -1).join(", ")} y ${changes.at(-1)}`;
-  return `Usted puso ${list}.`;
+  if (!weights || !defaults) return t("features.diagnosis.lights.theLightsDifferBecauseYouAreUsing");
+  const changes = LIGHT_PRIORITY_SIGNALS()
+    .filter(({ key }) => weights[key] !== undefined && weights[key] !== defaults[key])
+    .map(({ key }) =>
+      t("features.diagnosis.lights.atAgrosense", { v0: WITH_ARTICLE()[key] ?? SIGNAL_NAME()[key], v1: weights[key], v2: defaults[key] }),
+    );
+  if (changes.length === 0) return t("features.diagnosis.lights.theLightsDifferBecauseYouAreUsing");
+  const list =
+    changes.length === 1 ? changes[0] : t("features.strategies.entry.and", { v0: changes.slice(0, -1).join(", "), v1: changes.at(-1) });
+  return t("features.diagnosis.lights.youSet", { v0: list });
 }
 
 const IRRIGATION_PARAM = (irrigated: boolean | null) => (irrigated === true ? "si" : irrigated === false ? "no" : "nose");

@@ -1,3 +1,4 @@
+import { t, locale } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { api, type Schemas } from "@/api/client";
 import { REGION_TIME_ZONE } from "@/app/config";
@@ -30,22 +31,22 @@ export type ConsultErrors = Partial<Record<ConsultField, string>>;
 
 export const EMPTY_FORM: ConsultForm = { municipalityId: "", cropId: "", month: "", irrigation: "", lotId: "" };
 
-export const IRRIGATION_CHOICES: { value: Irrigation; label: string }[] = [
-  { value: "si", label: "Sí" },
-  { value: "no", label: "No" },
-  { value: "nose", label: "No sé" },
+export const IRRIGATION_CHOICES = (): { value: Irrigation; label: string }[] => [
+  { value: "si", label: t("features.diagnosis.consult.yes") },
+  { value: "no", label: t("features.diagnosis.consult.no") },
+  { value: "nose", label: t("features.diagnosis.consult.iDontKnow") },
 ];
 
 const IRRIGATED: Record<Irrigation, boolean | null> = { si: true, no: false, nose: null };
 
-export const ERRORS: Record<ConsultField, string> = {
-  municipality: "Elija su municipio de la lista.",
-  crop: "Elija un cultivo de la lista.",
-  month: "Elija el mes en que quiere sembrar.",
-  irrigation: "Diga si tiene riego. Si no sabe, elija «No sé».",
-};
+export const ERRORS = (): Record<ConsultField, string> => ({
+  municipality: t("features.diagnosis.consult.chooseYourMunicipalityFromTheList"),
+  crop: t("features.diagnosis.consult.chooseACropFromTheList"),
+  month: t("features.diagnosis.consult.chooseTheMonthYouWantToPlant"),
+  irrigation: t("features.diagnosis.consult.tellUsWhetherYouHaveIrrigationIf"),
+});
 
-const MONTH = new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric", timeZone: "UTC" });
+const MONTH = () => new Intl.DateTimeFormat(locale(), { month: "long", year: "numeric", timeZone: "UTC" });
 // El año y el mes de un instante en la hora de la región, no en la del navegador.
 const REGION_MONTH = new Intl.DateTimeFormat("en-US", { timeZone: REGION_TIME_ZONE, year: "numeric", month: "numeric" });
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -68,7 +69,7 @@ export function sowingMonths(now: Date = new Date()): { value: string; label: st
     const date = new Date(Date.UTC(year, month + i, 1));
     const value = `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}`;
     // Solo el mes: «septiembre de 2027» cabe en el selector a 320 px. Que el primero es el mes en curso lo dice la ayuda.
-    return { value, label: MONTH.format(date) };
+    return { value, label: MONTH().format(date) };
   });
 }
 
@@ -76,7 +77,7 @@ export function sowingMonths(now: Date = new Date()): { value: string; label: st
 export const sowingDate = (month: string) => `${month}-01`;
 
 /** «diciembre de 2026», para decir el mes elegido. */
-export const monthName = (month: string) => MONTH.format(new Date(`${month}-01T00:00:00Z`));
+export const monthName = (month: string) => MONTH().format(new Date(`${month}-01T00:00:00Z`));
 
 export function fromParams(params: URLSearchParams): ConsultForm {
   const irrigation = params.get("riego") ?? "";
@@ -113,10 +114,10 @@ export interface Catalogs {
 /** Solo opciones del catálogo (W1): un código que no está en la lista no es un valor. Para el diagnóstico, solo `kind = crop`. */
 export function validate(form: ConsultForm, { municipalities, crops, months, lot }: Catalogs): ConsultErrors {
   const errors: ConsultErrors = {};
-  if (!lot && !municipalities.some((m) => m.municipality_id === form.municipalityId)) errors.municipality = ERRORS.municipality;
-  if (!crops.some((c) => c.crop_id === form.cropId && c.kind === "crop")) errors.crop = ERRORS.crop;
-  if (!months.includes(form.month)) errors.month = ERRORS.month;
-  if (!lot && !form.irrigation) errors.irrigation = ERRORS.irrigation;
+  if (!lot && !municipalities.some((m) => m.municipality_id === form.municipalityId)) errors.municipality = ERRORS().municipality;
+  if (!crops.some((c) => c.crop_id === form.cropId && c.kind === "crop")) errors.crop = ERRORS().crop;
+  if (!months.includes(form.month)) errors.month = ERRORS().month;
+  if (!lot && !form.irrigation) errors.irrigation = ERRORS().irrigation;
   return errors;
 }
 

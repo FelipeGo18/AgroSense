@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useScroll } from "@/components/layout/SmoothScroll";
 import { MascotSlot } from "@/components/mascot/MascotGuide";
 import { Plate } from "@/components/ui/Plate";
@@ -8,6 +9,7 @@ import { GUIDE, type StopId } from "./content";
  * El texto va en HTML: la mascota es decoración y nunca es la única forma de decirlo.
  */
 export function GuideNote({ stop, className = "" }: { stop: Exclude<StopId, "inicio">; className?: string }) {
+  const { t } = useTranslation();
   const { scrollTo } = useScroll();
   const { say, mood, next, nextLabel } = GUIDE[stop];
   const target = next ?? "inicio";
@@ -16,7 +18,7 @@ export function GuideNote({ stop, className = "" }: { stop: Exclude<StopId, "ini
       <MascotSlot id={stop} mood={mood} className="w-[92px] md:w-[132px]" />
       <div className="relative mb-3 max-w-[19rem] px-4 pt-3 pb-4 text-sm">
         <Plate c={12} fill="var(--color-superficie-panel)" stroke="var(--color-paleta-noche)" strokeWidth={2.5} />
-        <p className="relative">{say}</p>
+        <p className="relative">{t(say)}</p>
         <a
           href={`#${target}`}
           onClick={(event) => {
@@ -25,7 +27,7 @@ export function GuideNote({ stop, className = "" }: { stop: Exclude<StopId, "ini
           }}
           className="relative mt-1 inline-flex min-h-11 items-center font-bold text-oscuro-oliva underline decoration-2 underline-offset-4"
         >
-          {nextLabel} <span aria-hidden="true">{next ? "↓" : "↑"}</span>
+          {t(nextLabel)} <span aria-hidden="true">{next ? "↓" : "↑"}</span>
         </a>
       </div>
     </div>

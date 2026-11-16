@@ -1,5 +1,7 @@
+import { useTranslation } from "react-i18next";
 /** Indicador de carga: hexágono facetado que gira. Decorativo; el texto que lo acompaña anuncia el estado. */
 export function Spinner({ className = "" }: { className?: string }) {
+  useTranslation();
   return (
     <svg
       aria-hidden="true"

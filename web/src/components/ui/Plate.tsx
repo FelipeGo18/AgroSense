@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useLayoutEffect, useRef, useState } from "react";
 
 /**
@@ -135,6 +136,7 @@ export function Plate({
   bottom = 0,
   ring = false,
 }: PlateProps) {
+  useTranslation();
   const [ref, { w, h }] = useParentSize<SVGSVGElement>();
   const faceH = h - top - bottom;
   const inset = stroke ? strokeWidth / 2 : 0;
@@ -179,6 +181,7 @@ export function Plate({
 
 /** Estaca de madera que clava un letrero en la parcela. */
 export function Stake({ ghost = false, className = "" }: { ghost?: boolean; className?: string }) {
+  useTranslation();
   return (
     <svg aria-hidden="true" width="16" height="34" viewBox="0 0 16 34" className={`shrink-0 ${className}`}>
       {ghost ? (

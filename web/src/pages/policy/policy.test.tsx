@@ -20,7 +20,7 @@ describe("Política de tratamiento de datos (HU-163)", () => {
     open();
     expect(await screen.findByRole("heading", { level: 1, name: "Política de tratamiento de datos" })).toBeInTheDocument();
     expect(screen.getByText(/Versión 3 · vigente desde/)).toBeInTheDocument();
-    for (const section of SECTIONS) expect(screen.getByRole("heading", { level: 2, name: section.title })).toBeInTheDocument();
+    for (const section of SECTIONS()) expect(screen.getByRole("heading", { level: 2, name: section.title })).toBeInTheDocument();
     // Lo que nunca se guarda se dice con texto, no solo con la marca.
     const never = screen.getByRole("heading", { level: 2, name: "Qué no guardamos" }).closest("section")!;
     expect(within(never).getByText(/Correo, celular, documento ni dirección/)).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe("Política de tratamiento de datos (HU-163)", () => {
     try {
       open();
       expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
-      expect(within(screen.getByRole("main")).getAllByRole("heading", { level: 2 })).toHaveLength(SECTIONS.length);
+      expect(within(screen.getByRole("main")).getAllByRole("heading", { level: 2 })).toHaveLength(SECTIONS().length);
     } finally {
       setLightMode(false);
     }

@@ -13,7 +13,6 @@ Apache 2.0 (`LICENSE`, en la raíz del repositorio; aprobado por Felipe el 10 de
 - **Las fuentes sin licencia explícita** («Sin dato; se cita», «por confirmar» o «derechos reservados»): de esas publicaciones AgroSense solo toma cifras y hechos (temperaturas de daño, días por etapa, rangos de cultivo), con su cita. Los hechos no tienen derechos de autor, y no se reproduce el texto ni las figuras de ninguna.
 - **Las fichas de la UPRA** permiten la «reproducción parcial sin fines comerciales con cita»: AgroSense solo toma sus rangos de temperatura media, con la cita, y no es comercial.
 - **Lo que sale de DIVIPOLA del DANE** (CC BY-SA 4.0), como la tabla `municipalities`, se publica con esa misma licencia.
-- **Lo que sale de EVA de la UPRA** (CC BY-SA 4.0, «compartir igual»), la tabla `supply_semester`, se publica con esa misma licencia (HU-031, HU-004).
 
 ## Datos y fuentes (tabla `sources` del dataset publicado)
 
@@ -25,6 +24,7 @@ Cada dato y cada regla agronómica apunta a una de estas fuentes (R8).
 | `agrosense_diseno` · Catálogo visual de AgroSense (design/finca/cultivos.py) | Equipo RealE4Life | Del proyecto |
 | `alharbi_2021_faba` · Alharbi et al. (2021): Evaluation of Frost Damage and Pod Set in Faba Bean (Vicia faba L.) under Field Conditions. Plants 10(9):1925 | MDPI, Plants; doi:10.3390/plants10091925 | Acceso abierto (CC BY 4.0 por confirmar) |
 | `barrales_2002` · Barrales Domínguez et al. (2002): Relaciones térmicas en el sistema suelo-planta-atmósfera durante la incidencia de una helada. Revista Fitotecnia Mexicana 25(3):289-297 | Sociedad Mexicana de Fitogenética; Universidad Autónoma Chapingo | Acceso abierto (Redalyc); licencia por confirmar |
+| `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Artículo de acceso abierto con derechos de autor reservados (revista Avances en Recursos Hidráulicos, Universidad Nacional): se usan dos cifras con su cita |
 | `cenicafe_lapse_rate` · Regionalización de la temperatura del aire en Colombia (Chaves Córdoba y Jaramillo Robledo, 1999), tabla 3 | Centro Nacional de Investigaciones de Café (Cenicafé) | Artículo de acceso abierto con derechos de autor reservados (revista Avances en Recursos Hidráulicos, Universidad Nacional): se usan dos cifras con su cita |
 | `cevipapa_taller_2005` · Memorias del I Taller Nacional sobre suelos, fisiología y nutrición vegetal en el cultivo de la papa (capítulos de Hugo E. Castro Franco y de Gilberto A. Murcia Contreras) | CEVIPAPA y Consejo Nacional de la Papa, con el MADR; capítulo de Murcia: Corpoica; copia en el repositorio de Agrosavia | Sin licencia declarada; uso con cita |
 | `ciren_1989_chacras` · CIREN-CORFO: Requerimientos de clima y suelo. Chacras y hortalizas, publicación n.º 85 (1989) | Centro de Información de Recursos Naturales (CIREN), Chile | Sin dato; se cita |
@@ -146,7 +146,7 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | pytest | 9.1.1 | MIT |
 | ruff | 0.17.0 | MIT |
 
-## Librerías de la web que van en la aplicación (82, de `web/package-lock.json`)
+## Librerías de la web que van en la aplicación (86, de `web/package-lock.json`)
 
 | Paquete | Versión | Licencia |
 |---|---|---|
@@ -199,6 +199,8 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | get-nonce | 1.0.1 | MIT |
 | gl-matrix | 3.4.4 | MIT |
 | gsap | 3.15.0 | Standard 'no charge' license: https://gsap.com/standard-license. |
+| html-parse-stringify | 4.0.1 | MIT |
+| i18next | 27.1.1 | MIT |
 | ieee754 | 1.2.1 | BSD-3-Clause |
 | its-fine | 2.1.1 | MIT |
 | json-stringify-pretty-compact | 4.0.0 | MIT |
@@ -213,6 +215,7 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | quickselect | 3.0.0 | ISC |
 | react | 19.3.0 | MIT |
 | react-dom | 19.3.0 | MIT |
+| react-i18next | 18.0.1 | MIT |
 | react-remove-scroll | 2.7.2 | MIT |
 | react-remove-scroll-bar | 2.3.8 | MIT |
 | react-router | 8.4.0 | MIT |
@@ -227,20 +230,21 @@ Solo se usan para probar y revisar el código (pytest, Ruff y el cliente de prue
 | three | 0.186.1 | MIT |
 | tinyqueue | 3.0.0 | ISC |
 | tslib | 2.8.1 | 0BSD |
+| typescript | 6.0.3 | Apache-2.0 |
 | use-callback-ref | 1.3.3 | MIT |
 | use-sidecar | 1.1.3 | MIT |
 | use-sync-external-store | 1.7.0 | MIT |
 | world-atlas | 2.0.2 | ISC |
 | zustand | 5.1.0 | MIT |
 
-## Herramientas de desarrollo de la web (519 paquetes; no van en la aplicación)
+## Herramientas de desarrollo de la web (518 paquetes; no van en la aplicación)
 
 Solo se usan para construir y probar la web (Vite, TypeScript, Vitest, ESLint, Playwright…). Por licencia:
 
 | Licencia | Paquetes |
 |---|---|
 | MIT | 357 |
-| Apache-2.0 | 77 |
+| Apache-2.0 | 76 |
 | ISC | 29 |
 | MPL-2.0 | 25 |
 | BSD-2-Clause | 13 |

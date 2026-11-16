@@ -1,3 +1,5 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useId, type ReactNode } from "react";
 import { Plate } from "@/components/ui/Plate";
 import { formatHa } from "@/features/farm/lots";
@@ -18,6 +20,7 @@ export interface Part {
  * que ocupa cada siembra y lo libre. Las partes son de área, no de forma: no se dibujan en el mapa (HU-165).
  */
 export function LotBar({ parts, total }: { parts: Part[]; total: number }) {
+  useTranslation();
   const shown = parts.filter((part) => part.ha > 0.0001);
   return (
     <figure className="flex flex-col gap-2">
@@ -62,12 +65,13 @@ export function PreviousChoice({
   value: string[];
   onChange: (value: string[]) => void;
 }) {
+  useTranslation();
   const name = useId();
   const toggle = (id: string) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   return (
     <fieldset className="flex min-w-0 flex-col gap-2">
-      <legend className="mb-1 text-[18px] font-bold">¿Qué había antes en este terreno?</legend>
-      <p className="-mt-1 mb-1 text-[15px] text-texto-secundario">Marque una o varias. Si junta terrenos, márquelos todos.</p>
+      <legend className="mb-1 text-[18px] font-bold">{t("pages.farm.SeasonParts.whatGrewOnThisLandBefore")}</legend>
+      <p className="-mt-1 mb-1 text-[15px] text-texto-secundario">{t("pages.farm.SeasonParts.selectOneOrMoreIfCombiningAreas")}</p>
       {options.map((option) => (
         <Box
           key={option.id}
@@ -82,8 +86,8 @@ export function PreviousChoice({
         name={name}
         checked={value.length === 0}
         onChange={() => onChange([])}
-        title="Nada: es la primera siembra aquí"
-        note="Tierra del lote que no había sembrado"
+        title={t("pages.farm.SeasonParts.nothingThisIsTheFirstPlantingHere")}
+        note={t("farm.availableLand")}
       />
     </fieldset>
   );
@@ -102,6 +106,7 @@ function Box({
   title: string;
   note: ReactNode;
 }) {
+  useTranslation();
   return (
     <label className="relative flex min-h-16 cursor-pointer items-center gap-4 px-4 py-3">
       <Plate
