@@ -1,5 +1,7 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "@/components/layout/LanguageLink";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
 import { FormScene } from "@/components/layout/FormScene";
@@ -13,13 +15,14 @@ const PASSWORD_MIN = 8;
 
 /** Lo que se le dice a la persona según lo que respondió la API. */
 function message(error: Error) {
-  if (!(error instanceof ApiError)) return "Algo falló. Intente de nuevo.";
-  if (error.status === 403) return "La contraseña actual no es correcta. Su sesión sigue abierta.";
+  if (!(error instanceof ApiError)) return t("pages.auth.LoginPage.somethingWentWrongTryAgain");
+  if (error.status === 403) return t("pages.account.PasswordPage.theCurrentPasswordIsIncorrectYourSession");
   return error.message;
 }
 
 /** Cambiar la contraseña (HU-160). Diseño: design/pantallas/cuenta.py, `change_password`. */
 export function PasswordPage() {
+  useTranslation();
   const navigate = useNavigate();
   const change = useChangePassword();
   const [current, setCurrent] = useState("");
@@ -28,14 +31,14 @@ export function PasswordPage() {
   const [tried, setTried] = useState(false);
 
   const errors = {
-    current: current ? undefined : "Escriba su contraseña actual.",
+    current: current ? undefined : t("pages.account.PasswordPage.enterYourCurrentPassword"),
     next:
       next.length < PASSWORD_MIN
-        ? `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`
+        ? t("pages.auth.SignupPage.thePasswordMustContainAtLeastCharacters", { v0: PASSWORD_MIN })
         : next === current
-          ? "La contraseña nueva debe ser distinta de la actual."
+          ? t("pages.account.PasswordPage.theNewPasswordMustDifferFromThe")
           : undefined,
-    repeat: repeat === next ? undefined : "Las dos contraseñas nuevas no son iguales.",
+    repeat: repeat === next ? undefined : t("pages.account.PasswordPage.theNewPasswordsDoNotMatch"),
   };
   const valid = Object.values(errors).every((error) => error === undefined);
 
@@ -45,7 +48,10 @@ export function PasswordPage() {
     if (!valid) return;
     change.mutate(
       { current_password: current, new_password: next },
-      { onSuccess: () => navigate(PATHS.account, { state: { notice: "Su contraseña quedó cambiada. Las demás sesiones se cerraron." } }) },
+      {
+        onSuccess: () =>
+          navigate(PATHS.account, { state: { notice: t("pages.account.PasswordPage.yourPasswordHasBeenChangedOtherSessions") } }),
+      },
     );
   };
 
@@ -53,17 +59,17 @@ export function PasswordPage() {
     <RequireSession>
       {() => (
         <FormScene scene="region" mood="idle" rejected={change.error}>
-          <title>Cambiar contraseña · AgroSense</title>
+          <title>{t("pages.account.PasswordPage.changePasswordAgrosense")}</title>
           <header>
-            <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">Mi cuenta</p>
-            <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">Cambiar contraseña</h1>
+            <p className="text-[15px] font-bold tracking-wide text-texto-secundario uppercase">{t("nav.account")}</p>
+            <h1 className="text-[clamp(1.75rem,2.6vw,2.25rem)]">{t("pages.account.AccountPage.changePassword")}</h1>
             {/* En pantallas angostas cada línea cuenta: la frase de apoyo solo va donde sobra alto. */}
-            {!change.error && <p className="hidden md:block">Se cierra su sesión en los demás dispositivos.</p>}
+            {!change.error && <p className="hidden md:block">{t("pages.account.PasswordPage.yourSessionsOnOtherDevicesWillBe")}</p>}
           </header>
           {change.error && <Alert>{message(change.error)}</Alert>}
           <form onSubmit={submit} noValidate className="flex flex-col gap-3">
             <TextField
-              label="Contraseña actual"
+              label={t("pages.account.PasswordPage.currentPassword")}
               name="current_password"
               type="password"
               autoComplete="current-password"
@@ -73,18 +79,18 @@ export function PasswordPage() {
               error={tried ? errors.current : undefined}
             />
             <TextField
-              label="Contraseña nueva"
+              label={t("pages.account.PasswordPage.newPassword")}
               name="new_password"
               type="password"
               autoComplete="new-password"
               maxLength={128}
               value={next}
               onChange={(event) => setNext(event.target.value)}
-              hint="Al menos 8 caracteres. No se puede recuperar."
+              hint={t("pages.auth.SignupPage.atLeast8CharactersPasswordRecoveryIs")}
               error={tried ? errors.next : undefined}
             />
             <TextField
-              label="Repita la contraseña nueva"
+              label={t("pages.account.PasswordPage.repeatTheNewPassword")}
               name="repeat_password"
               type="password"
               autoComplete="new-password"
@@ -93,12 +99,12 @@ export function PasswordPage() {
               onChange={(event) => setRepeat(event.target.value)}
               error={tried ? errors.repeat : undefined}
             />
-            <Button type="submit" className="mt-1" loading={change.isPending} loadingText="Guardando…">
-              Guardar contraseña
+            <Button type="submit" className="mt-1" loading={change.isPending} loadingText={t("pages.account.AccountPage.saving")}>
+              {t("pages.account.PasswordPage.savePassword")}
             </Button>
           </form>
           <Link to={PATHS.account} className={`${LINK} min-h-11 self-start py-2`}>
-            Volver a Mi cuenta
+            {t("pages.account.PasswordPage.backToMyAccount")}
           </Link>
         </FormScene>
       )}

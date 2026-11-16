@@ -1,3 +1,4 @@
+import { t } from "@/lib/i18n";
 import type { components } from "./schema";
 
 /** Tipos del contrato, generados del OpenAPI de la API (`npm run api:types`). No se escriben a mano. */
@@ -19,7 +20,7 @@ export class ApiError extends Error {
   }
 }
 
-const OFFLINE = "No pudimos conectarnos. Revise su conexión e intente de nuevo.";
+const OFFLINE = () => t("api.client.weCouldNotConnectCheckYourConnection");
 
 /**
  * Llama a la API. La web y la API comparten origen, así que la cookie de sesión viaja sola: aquí nunca se lee
@@ -35,11 +36,11 @@ export async function api<T>(path: string, options: { method?: string; body?: un
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch {
-    throw new ApiError(0, "offline", OFFLINE, "");
+    throw new ApiError(0, "offline", OFFLINE(), "");
   }
   if (response.ok) return (response.status === 204 ? undefined : await response.json()) as T;
   const requestId = response.headers.get("X-Request-ID") ?? "";
   const payload: unknown = await response.json().catch(() => null);
   const error = (payload as { error?: { code?: string; message?: string } } | null)?.error;
-  throw new ApiError(response.status, error?.code ?? "error", error?.message ?? OFFLINE, requestId);
+  throw new ApiError(response.status, error?.code ?? "error", error?.message ?? OFFLINE(), requestId);
 }

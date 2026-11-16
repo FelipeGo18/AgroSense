@@ -1,6 +1,8 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { SoilDetails, type SoilContext } from "@/components/soil/SoilDetails";
-import { Link } from "react-router";
+import { Link } from "@/components/layout/LanguageLink";
 import { Card } from "@/components/ui/Card";
 import { Plate } from "@/components/ui/Plate";
 import { StatusIcon, TONE_STYLE, type Tone } from "@/components/ui/StatusMark";
@@ -42,32 +44,42 @@ export interface StrategyCardProps {
  * que siembra hoy», sin puesto y con sus problemas a la vista (decisión 14).
  */
 export function StrategyCard({ strategy, names, kinds, weights, version, cycleLink, soilContext }: StrategyCardProps) {
+  useTranslation();
   const current = strategy.kind === "current";
   const title = sequence(strategy.crop_ids, names);
   const total = delta(strategy.vs_current?.total);
   return (
-    <article aria-label={current ? `Lo que siembra hoy: ${title}` : `Estrategia ${strategy.rank}: ${title}`} className="min-w-0">
+    <article
+      aria-label={
+        current
+          ? t("pages.strategies.StrategyCard.whatYouPlantToday", { v0: title })
+          : t("pages.strategies.StrategyCard.strategy", { v0: strategy.rank, v1: title })
+      }
+      className="min-w-0"
+    >
       <Card bodyClassName="gap-5">
         <header className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div className="flex min-w-0 items-start gap-3">
             <RankBadge current={current} rank={strategy.rank} />
             <div className="flex min-w-0 flex-col gap-0.5">
               <h3 className="text-[clamp(1.1rem,2.5vw,1.35rem)] leading-tight break-words">
-                {current ? `Lo que siembra hoy: ${title}` : title}
+                {current ? t("pages.strategies.StrategyCard.whatYouPlantToday", { v0: title }) : title}
               </h3>
-              {current && <p className="text-[15px] text-texto-secundario">Se evalúa igual que las demás y no entra al orden.</p>}
+              {current && (
+                <p className="text-[15px] text-texto-secundario">{t("pages.strategies.StrategyCard.assessedInTheSameWayAsThe")}</p>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-end">
             {strategy.total_score === null || strategy.total_score === undefined ? (
-              <p className="text-[15px] font-bold text-texto-secundario">Sin puntaje total</p>
+              <p className="text-[15px] font-bold text-texto-secundario">{t("pages.strategies.StrategyCard.noTotalScore")}</p>
             ) : (
               <p className="leading-none">
                 <span className="font-titulos text-[2rem] font-semibold">{Math.round(strategy.total_score)}</span>{" "}
-                <span className="text-[15px] text-texto-secundario">de 100</span>
+                <span className="text-[15px] text-texto-secundario">{t("pages.diagnosis.SignalList.outOf100")}</span>
               </p>
             )}
-            {total && <DeltaText delta={total} suffix="en total" />}
+            {total && <DeltaText delta={total} suffix={t("strategies.total")} />}
             {totalBasisNote(strategy) && (
               <p className="max-w-[16rem] text-right text-[14px] text-texto-secundario">{totalBasisNote(strategy)}</p>
             )}
@@ -81,7 +93,9 @@ export function StrategyCard({ strategy, names, kinds, weights, version, cycleLi
         {strategy.reasons.length > 0 && (
           <ul className="flex list-disc flex-col gap-1 pl-5 text-[15px]">
             {strategy.reasons.map((reason) => (
-              <li key={reason}>{reason}</li>
+              <li lang="es" key={reason}>
+                {reason}
+              </li>
             ))}
           </ul>
         )}
@@ -92,10 +106,12 @@ export function StrategyCard({ strategy, names, kinds, weights, version, cycleLi
 
         {strategy.limitations.length > 0 && (
           <div className="flex flex-col gap-1 text-[15px] text-texto-secundario">
-            <p className="font-bold">Limitaciones</p>
+            <p className="font-bold">{t("pages.strategies.StrategyCard.limitations")}</p>
             <ul className="flex list-disc flex-col gap-1 pl-5">
               {strategy.limitations.map((limitation) => (
-                <li key={limitation}>{limitation}</li>
+                <li lang="es" key={limitation}>
+                  {limitation}
+                </li>
               ))}
             </ul>
           </div>
@@ -107,16 +123,21 @@ export function StrategyCard({ strategy, names, kinds, weights, version, cycleLi
 
 /** El puesto en un rombo, o «HOY» en la rotación actual, que no entra al orden. */
 function RankBadge({ current, rank }: { current: boolean; rank: number | null }) {
+  useTranslation();
   if (current) {
     return (
       <span className="relative inline-flex h-9 shrink-0 items-center px-2.5 text-sm font-bold text-white">
         <Plate c={6} fill="var(--color-oscuro-cielo)" />
-        <span className="relative">HOY</span>
+        <span className="relative">{t("pages.strategies.StrategyCard.today")}</span>
       </span>
     );
   }
   return (
-    <span className="relative inline-flex size-11 shrink-0 items-center justify-center font-bold" role="img" aria-label={`Puesto ${rank}`}>
+    <span
+      className="relative inline-flex size-11 shrink-0 items-center justify-center font-bold"
+      role="img"
+      aria-label={t("pages.strategies.StrategyCard.rank", { v0: rank })}
+    >
       <svg aria-hidden="true" viewBox="0 0 44 44" className="absolute inset-0 size-full">
         <polygon
           points="22,2 42,22 22,42 2,22"
@@ -134,6 +155,7 @@ function RankBadge({ current, rank }: { current: boolean; rank: number | null })
 
 /** Gana (triángulo arriba), pierde (triángulo abajo) o igual (raya), con su texto: nunca solo color ni solo signo. */
 function DeltaText({ delta: d, suffix }: { delta: Delta; suffix?: string }) {
+  useTranslation();
   const color = d.shape === "up" ? "text-oscuro-oliva" : d.shape === "down" ? "text-oscuro-rojo" : "text-texto-secundario";
   return (
     <span className={`inline-flex items-center gap-1.5 text-[14px] font-bold ${color}`}>
@@ -159,6 +181,7 @@ function Cycles({
   kinds: Map<string, string>;
   cycleLink: (cycle: number) => string;
 }) {
+  useTranslation();
   const bases = new Set(cycles.filter((c) => cycleKind(c.crop_id, kinds) !== "fallow").map((c) => c.harvest_basis));
   return (
     <div className="flex flex-col gap-2">
@@ -174,9 +197,7 @@ function Cycles({
           />
         ))}
       </ol>
-      <p className="text-[14px] text-texto-secundario">
-        Toque un ciclo para ver su diagnóstico, el agua que necesitaría y cuándo suele estar verde el campo.
-      </p>
+      <p className="text-[14px] text-texto-secundario">{t("pages.strategies.StrategyCard.tapACycleToSeeItsDiagnosis")}</p>
       {[...bases].map((basis) => (
         <p key={basis} className="text-[14px] text-texto-secundario">
           {harvestNote(basis)}
@@ -200,45 +221,67 @@ function CycleBox({
   kind: "crop" | "cover" | "fallow";
   to: string;
 }) {
+  useTranslation();
   const fallow = kind === "fallow";
   return (
-    <li aria-label={`Ciclo ${cycle.cycle} de ${total}: ${name}`} className="flex min-w-0">
+    <li aria-label={t("pages.strategies.StrategyCard.cycleOf", { v0: cycle.cycle, v1: total, v2: name })} className="flex min-w-0">
       <Link
         to={to}
-        aria-label={`Ver el ciclo ${cycle.cycle} de ${total}: ${name}`}
+        aria-label={t("pages.strategies.StrategyCard.viewCycleOf", { v0: cycle.cycle, v1: total, v2: name })}
         className={`flex w-full min-w-0 flex-col gap-1.5 border-2 px-3 py-3 text-[15px] leading-snug hover:border-oscuro-oliva focus-visible:border-oscuro-oliva ${
           fallow ? "border-dashed border-superficie-borde bg-superficie-panel" : "border-superficie-borde bg-superficie-panel-suave"
         }`}
       >
-        <p className="text-[13px] font-bold tracking-wide text-texto-secundario uppercase">Ciclo {cycle.cycle}</p>
+        <p className="text-[13px] font-bold tracking-wide text-texto-secundario uppercase">
+          {t("pages.strategies.CycleView.cycle")} {cycle.cycle}
+        </p>
         <p className="font-titulos text-[1.1rem] leading-tight font-semibold break-words">{name}</p>
         {kind === "cover" && (
-          <p className="w-fit border-2 border-oscuro-oliva px-1.5 text-[13px] font-bold text-oscuro-oliva">Abono verde</p>
+          <p className="w-fit border-2 border-oscuro-oliva px-1.5 text-[13px] font-bold text-oscuro-oliva">
+            {t("pages.strategies.StrategyCard.greenManure")}
+          </p>
         )}
         {fallow ? (
           <>
-            <p>Desde el {formatShortDate(cycle.sowing_date)}</p>
-            <p>Hasta el {formatShortDate(cycle.harvest_estimate)}</p>
-            <p className="text-[14px] font-bold text-texto-secundario">Sin semáforo: no se siembra</p>
+            <p>
+              {t("pages.strategies.StrategyCard.from")} {formatShortDate(cycle.sowing_date)}
+            </p>
+            <p>
+              {t("pages.strategies.StrategyCard.until")} {formatShortDate(cycle.harvest_estimate)}
+            </p>
+            <p className="text-[14px] font-bold text-texto-secundario">
+              {t("pages.strategies.StrategyCard.noTrafficLightNothingIsPlanted")}
+            </p>
           </>
         ) : (
           <>
-            <p>Siembra {formatShortDate(cycle.sowing_date)}</p>
             <p>
-              {kind === "cover" ? "Se incorpora" : "Cosecha"} ~{formatShortDate(cycle.harvest_estimate)}
+              {t("pages.strategies.StrategyCard.planting")} {formatShortDate(cycle.sowing_date)}
             </p>
-            {cycle.light ? <LightTag light={cycle.light} /> : <p className="text-[14px] text-texto-secundario">Sin luz para este ciclo</p>}
+            <p>
+              {kind === "cover" ? t("pages.strategies.StrategyCard.incorporatedIntoTheSoil") : t("pages.strategies.StrategyCard.harvest")} ~
+              {formatShortDate(cycle.harvest_estimate)}
+            </p>
+            {cycle.light ? (
+              <LightTag light={cycle.light} />
+            ) : (
+              <p className="text-[14px] text-texto-secundario">{t("pages.strategies.StrategyCard.noLightForThisCycle")}</p>
+            )}
             {cycle.light_default && cycle.light_default !== cycle.light && (
               <p className="text-[14px]">
-                Con el criterio de AgroSense: <span className="font-bold">{LIGHT_LABEL[cycle.light_default].toLowerCase()}</span>
+                {t("pages.strategies.StrategyCard.withAgrosensePriorities")}{" "}
+                <span className="font-bold">{LIGHT_LABEL()[cycle.light_default].toLowerCase()}</span>
               </p>
             )}
             {cycle.limiting_signal && (
               <p className="text-[14px] font-bold text-texto-secundario">
-                Limita: {(SIGNAL_NAME[cycle.limiting_signal] ?? cycle.limiting_signal).toLowerCase()}
+                {t("pages.strategies.StrategyCard.limitingFactor")}{" "}
+                {(SIGNAL_NAME()[cycle.limiting_signal] ?? cycle.limiting_signal).toLowerCase()}
               </p>
             )}
-            {cycle.high_risk && <p className="text-[14px] font-bold text-oscuro-rojo">Alto riesgo de clima en este ciclo</p>}
+            {cycle.high_risk && (
+              <p className="text-[14px] font-bold text-oscuro-rojo">{t("pages.strategies.StrategyCard.highClimateRiskInThisCycle")}</p>
+            )}
           </>
         )}
       </Link>
@@ -248,6 +291,7 @@ function CycleBox({
 
 /** La luz de un ciclo con silueta, ícono y texto, en pequeño (W2). */
 function LightTag({ light }: { light: Light }) {
+  useTranslation();
   const style = TONE_STYLE[light];
   return (
     <span
@@ -257,7 +301,7 @@ function LightTag({ light }: { light: Light }) {
       <Plate {...style.plate} c={Math.min(style.plate.c ?? 8, 8)} strokeWidth={2} />
       <span className="relative flex items-center gap-2">
         <StatusIcon icon={style.icon} />
-        {LIGHT_LABEL[light]}
+        {LIGHT_LABEL()[light]}
       </span>
     </span>
   );
@@ -268,9 +312,10 @@ function LightTag({ light }: { light: Light }) {
  * frente a lo de hoy. Un criterio sin datos no tiene barra: una barra en cero diría «muy mal» (R1).
  */
 function Breakdown({ strategy, weights }: { strategy: Strategy; weights: RotationWeights }) {
+  useTranslation();
   return (
     <dl className="flex flex-col gap-2.5">
-      {CRITERIA.map(({ key, label }) => {
+      {CRITERIA().map(({ key, label }) => {
         const score = strategy.scores[key];
         const d = delta(strategy.vs_current?.[key]);
         return (
@@ -279,13 +324,15 @@ function Breakdown({ strategy, weights }: { strategy: Strategy; weights: Rotatio
               <dt className="font-bold">{label}</dt>
               <dd className="flex flex-wrap items-baseline gap-x-3 text-[15px]">
                 {score === null || score === undefined ? (
-                  <span className="text-texto-secundario">Sin datos: no entra al total</span>
+                  <span className="text-texto-secundario">{t("pages.strategies.StrategyCard.noDataExcludedFromTheTotal")}</span>
                 ) : (
                   <span>
-                    <span className="font-bold">{Math.round(score)}</span> de 100
+                    <span className="font-bold">{Math.round(score)}</span> {t("pages.diagnosis.SignalList.outOf100")}
                   </span>
                 )}
-                <span className="text-texto-secundario">peso {weights[key]}</span>
+                <span className="text-texto-secundario">
+                  {t("pages.strategies.StrategyCard.weight")} {weights[key]}
+                </span>
                 {d && <DeltaText delta={d} />}
               </dd>
             </div>
@@ -303,17 +350,18 @@ function Breakdown({ strategy, weights }: { strategy: Strategy; weights: Rotatio
 
 /** Por qué lo de hoy no cumple: la regla que viola, el cultivo no apto, el pH o el ciclo de alto riesgo, con su fuente. */
 function Issues({ issues, version }: { issues: Issue[]; version: Version | undefined }) {
+  useTranslation();
   return (
     <section
-      aria-label="Lo que no cumple"
+      aria-label={t("pages.strategies.StrategyCard.requirementsNotMet")}
       className="flex flex-col gap-2 border-l-4 border-oscuro-rojo bg-superficie-panel-suave px-4 py-3"
     >
-      <p className="font-bold">Lo que no cumple</p>
+      <p className="font-bold">{t("pages.strategies.StrategyCard.requirementsNotMet")}</p>
       <ul className="flex flex-col gap-2 text-[15px] leading-snug">
         {issues.map((issue, i) => (
           <li key={`${issue.cycle}-${issue.kind}-${i}`} className="flex flex-col gap-0.5">
             <span className="font-bold">{exclusionTitle(issue)}</span>
-            <span>{issue.reason}</span>
+            <span lang="es">{issue.reason}</span>
             <SourceLine ids={issue.source_ids} version={version} />
           </li>
         ))}
@@ -335,15 +383,16 @@ function SoilHealth({
   version: Version | undefined;
   soilContext?: SoilContext;
 }) {
+  useTranslation();
   return (
-    <section aria-label="Salud del suelo" className="flex flex-col gap-2">
+    <section aria-label={t("pages.strategies.StrategyCard.soilHealth")} className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <p className="font-bold">Salud del suelo</p>
-        <p className="text-[14px] font-bold text-oscuro-cielo">Comparación, no predicción</p>
+        <p className="font-bold">{t("pages.strategies.StrategyCard.soilHealth")}</p>
+        <p className="text-[14px] font-bold text-oscuro-cielo">{t("pages.strategies.StrategyCard.comparisonNotPrediction")}</p>
       </div>
       {soilContext && <SoilDetails {...soilContext} />}
       <ul className="flex flex-col">
-        {HEALTH_CRITERIA.map(({ key, label }) => {
+        {HEALTH_CRITERIA().map(({ key, label }) => {
           const criterion = health[key];
           const { tone, label: level } = healthTone(criterion);
           return (
@@ -364,7 +413,9 @@ function SoilHealth({
               </div>
               <div className="flex min-w-0 flex-col gap-0.5 text-[15px] leading-snug">
                 {(criterion?.reasons ?? []).map((reason) => (
-                  <p key={reason}>{reason}</p>
+                  <p lang="es" key={reason}>
+                    {reason}
+                  </p>
                 ))}
                 <SourceLine ids={criterion?.source_ids} version={version} />
               </div>
@@ -378,6 +429,7 @@ function SoilHealth({
 
 /** La forma del nivel en el color del borde de su estado: sobre fondo blanco, la tinta del letrero no se ve. */
 function LevelMark({ tone }: { tone: Tone }) {
+  useTranslation();
   return (
     <span className="mt-0.5 inline-flex" style={{ color: TONE_STYLE[tone].plate.stroke }}>
       <StatusIcon icon={TONE_STYLE[tone].icon} />
@@ -386,10 +438,16 @@ function LevelMark({ tone }: { tone: Tone }) {
 }
 
 function SourceLine({ ids, version }: { ids: string[] | null | undefined; version: Version | undefined }) {
+  useTranslation();
   const text = sourcesText(ids, version);
-  return text ? <Small>Fuente: {text}</Small> : null;
+  return text ? (
+    <Small>
+      {t("pages.strategies.StrategyCard.source")} {text}
+    </Small>
+  ) : null;
 }
 
 function Small({ children }: { children: ReactNode }) {
+  useTranslation();
   return <span className="text-[14px] text-texto-secundario">{children}</span>;
 }

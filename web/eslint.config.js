@@ -48,6 +48,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/components/layout/LanguageLink.tsx", "src/components/layout/LanguageSelector.tsx", "**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "react-router",
+              importNames: ["Link", "NavLink", "Navigate", "useNavigate", "useSearchParams"],
+              message: "Use `@/components/layout/LanguageLink` para conservar el idioma, los parámetros y el fragmento (HU-233).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["**/*.test.{ts,tsx}", "src/test-setup.ts"],
     languageOptions: { globals: { ...globals.vitest } },
   },

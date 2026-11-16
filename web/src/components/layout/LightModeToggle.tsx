@@ -1,10 +1,12 @@
+import { t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useEffect, useId, useRef, useState } from "react";
 import { Plate } from "@/components/ui/Plate";
 import { PreferenceSwitch } from "@/components/ui/PreferenceSwitch";
 import { useLightMode } from "@/hooks/useLightMode";
 
 /** Qué hace el modo ligero, en una frase: lo leen el aviso de la barra y el interruptor del menú. */
-export const LIGHT_MODE_WHAT = "Quita las animaciones y el scroll suave. La información es la misma.";
+export const LIGHT_MODE_WHAT = () => t("light.what");
 
 /** Cuánto se queda abierto el aviso después de tocar el botón (en la pantalla táctil no hay «pasar el cursor»). */
 const PIN_MS = 8000;
@@ -14,6 +16,7 @@ const PIN_MS = 8000;
  * y qué desactiva. Tocar el botón cambia el modo y deja el aviso abierto unos segundos; Escape lo cierra.
  */
 export function LightModeToggle({ className = "" }: { className?: string }) {
+  const { t } = useTranslation();
   const { light, pref, setLight } = useLightMode();
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
@@ -51,12 +54,12 @@ export function LightModeToggle({ className = "" }: { className?: string }) {
       <button
         type="button"
         aria-pressed={light}
-        aria-label="Modo ligero"
+        aria-label={t("light.label")}
         aria-describedby={visible ? panelId : undefined}
         onClick={() => {
           setLight(!light);
           setPinned(true);
-          setAnnouncement(`Modo ligero ${light ? "desactivado" : "activado"}`);
+          setAnnouncement(t("light.announcement", { state: t(light ? "common.offLower" : "common.onLower") }));
         }}
         onFocus={(event) => setFocus(event.currentTarget.matches(":focus-visible"))}
         onBlur={() => setFocus(false)}
@@ -76,7 +79,7 @@ export function LightModeToggle({ className = "" }: { className?: string }) {
           />
           <path d="M12 32 25 19" stroke={light ? "var(--color-accion-primaria)" : "currentColor"} strokeWidth="3" strokeLinecap="round" />
         </svg>
-        <span className="relative hidden text-sm font-bold xl:inline">Modo ligero</span>
+        <span className="relative hidden text-sm font-bold xl:inline">{t("light.label")}</span>
       </button>
       <span aria-live="polite" className="sr-only">
         {announcement}
@@ -90,12 +93,12 @@ export function LightModeToggle({ className = "" }: { className?: string }) {
           >
             <Plate c={12} fill="var(--color-superficie-panel)" depth={6} bottom={6} side="var(--color-superficie-borde)" />
             <div className="relative flex flex-col gap-1.5 text-sm leading-snug">
-              <p className="font-titulos text-base font-titulo">Modo ligero: {light ? "activado" : "desactivado"}</p>
-              <p>{LIGHT_MODE_WHAT}</p>
+              <p className="font-titulos text-base font-titulo">
+                {t("light.status", { state: t(light ? "common.onLower" : "common.offLower") })}
+              </p>
+              <p>{t("light.what")}</p>
               <p className="text-texto-secundario">
-                {light && pref === "auto"
-                  ? "Su equipo pide menos movimiento. Toque para cambiarlo."
-                  : `Toque para ${light ? "desactivarlo" : "activarlo"}.`}
+                {light && pref === "auto" ? t("light.auto") : t(light ? "light.turnOff" : "light.turnOn")}
               </p>
             </div>
           </div>
@@ -107,14 +110,7 @@ export function LightModeToggle({ className = "" }: { className?: string }) {
 
 /** El mismo interruptor, con su explicación a la vista, para el menú del celular. */
 export function LightModeSwitch({ onDark = false }: { onDark?: boolean }) {
+  const { t } = useTranslation();
   const { light, setLight } = useLightMode();
-  return (
-    <PreferenceSwitch
-      label="Modo ligero"
-      hint={`${LIGHT_MODE_WHAT} Rinde mejor en celulares básicos.`}
-      checked={light}
-      onChange={setLight}
-      onDark={onDark}
-    />
-  );
+  return <PreferenceSwitch label={t("light.label")} hint={t("light.mobile")} checked={light} onChange={setLight} onDark={onDark} />;
 }

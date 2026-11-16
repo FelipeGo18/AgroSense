@@ -1,5 +1,8 @@
+import { locale, t } from "@/lib/i18n";
+import { useTranslation } from "react-i18next";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
+import { Link } from "@/components/layout/LanguageLink";
 import region from "../../../../design/paisaje/svg/a3-region.svg?url";
 import { ApiError } from "@/api/client";
 import { PATHS } from "@/app/paths";
@@ -23,14 +26,16 @@ import { PrioritiesCard } from "./PrioritiesCard";
 import { gsap, motionLoaded } from "@/lib/motion";
 
 const USERNAME = /^[a-z0-9._]{3,30}$/;
-const DATE = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
-const date = (iso: string) => DATE.format(new Date(iso));
+const DATE = () => new Intl.DateTimeFormat(locale(), { day: "numeric", month: "long", year: "numeric" });
+const date = (iso: string) => DATE().format(new Date(iso));
 
 function Title({ children }: { children: string }) {
+  useTranslation();
   return <h2 className="text-[24px]">{children}</h2>;
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  useTranslation();
   return (
     <div className="border-b-2 border-superficie-panel-suave pb-2">
       <dt className="text-sm text-texto-secundario">{label}</dt>
@@ -41,6 +46,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 /** Nombre y usuario: se leen y se editan en la misma tarjeta (HU-160). */
 function DataCard({ user }: { user: Profile }) {
+  useTranslation();
   const update = useUpdateProfile();
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user.display_name);
@@ -48,8 +54,8 @@ function DataCard({ user }: { user: Profile }) {
   const [tried, setTried] = useState(false);
 
   const errors = {
-    displayName: displayName.trim() ? undefined : "Escriba cómo quiere que lo llamemos.",
-    username: USERNAME.test(username) ? undefined : "De 3 a 30: minúsculas sin tilde, números, punto o guion bajo.",
+    displayName: displayName.trim() ? undefined : t("pages.auth.SignupPage.enterTheNameYouWouldLikeUs"),
+    username: USERNAME.test(username) ? undefined : t("pages.auth.SignupPage.3To30CharactersLowercaseUnaccentedLetters"),
   };
   const taken = update.error instanceof ApiError && update.error.status === 409;
   const failed = update.error && !taken ? update.error : null;
@@ -97,11 +103,11 @@ function DataCard({ user }: { user: Profile }) {
     return (
       <div ref={frame} data-enter>
         <Card>
-          <Title>Sus datos</Title>
-          {failed && <Alert>{failed instanceof ApiError ? failed.message : "Algo falló. Intente de nuevo."}</Alert>}
+          <Title>{t("pages.account.AccountPage.yourDetails")}</Title>
+          {failed && <Alert>{failed instanceof ApiError ? failed.message : t("pages.auth.LoginPage.somethingWentWrongTryAgain")}</Alert>}
           <form onSubmit={submit} noValidate className="flex flex-col gap-3">
             <TextField
-              label="Nombre"
+              label={t("pages.account.AccountPage.name")}
               name="display_name"
               autoComplete="nickname"
               maxLength={40}
@@ -110,7 +116,7 @@ function DataCard({ user }: { user: Profile }) {
               error={tried ? errors.displayName : undefined}
             />
             <TextField
-              label="Usuario"
+              label={t("login.username")}
               name="username"
               autoComplete="username"
               autoCapitalize="none"
@@ -118,15 +124,15 @@ function DataCard({ user }: { user: Profile }) {
               maxLength={30}
               value={username}
               onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/\s/g, ""))}
-              hint="Con este usuario va a entrar. Cambiarlo no cierra su sesión."
-              error={taken ? "Ese usuario ya existe. Pruebe con otro." : tried ? errors.username : undefined}
+              hint={t("pages.account.AccountPage.youWillUseThisUsernameToSign")}
+              error={taken ? t("pages.account.AccountPage.thatUsernameAlreadyExistsTryAnother") : tried ? errors.username : undefined}
             />
             <div className="mt-1 grid gap-3 sm:grid-cols-2">
-              <Button type="submit" loading={update.isPending} loadingText="Guardando…">
-                Guardar
+              <Button type="submit" loading={update.isPending} loadingText={t("pages.account.AccountPage.saving")}>
+                {t("pages.account.AccountPage.save")}
               </Button>
               <Button variant="secondary" onClick={() => setEditing(false)} disabled={update.isPending}>
-                Cancelar
+                {t("pages.account.AccountPage.cancel")}
               </Button>
             </div>
           </form>
@@ -138,17 +144,18 @@ function DataCard({ user }: { user: Profile }) {
     <div ref={frame} data-enter>
       <Card>
         <div className="flex items-center justify-between gap-4">
-          <Title>Sus datos</Title>
-          <button type="button" onClick={open} className={`${LINK} min-h-11`}>
-            Editar<span className="sr-only"> mi nombre y mi usuario</span>
+          <Title>{t("pages.account.AccountPage.yourDetails")}</Title>
+          <button type="button" onClick={open} className={`${LINK} min-h-11 min-w-11`}>
+            {t("pages.account.AccountPage.edit")}
+            <span className="sr-only"> {t("pages.account.AccountPage.myNameAndUsername")}</span>
           </button>
         </div>
         <dl className="flex flex-col gap-3">
-          <Row label="Nombre" value={user.display_name} />
-          <Row label="Usuario" value={user.username} />
-          <Row label="Cuenta creada" value={date(user.created_at)} />
+          <Row label={t("pages.account.AccountPage.name")} value={user.display_name} />
+          <Row label={t("login.username")} value={user.username} />
+          <Row label={t("pages.account.AccountPage.accountCreated")} value={date(user.created_at)} />
         </dl>
-        <p className="text-[15px] text-texto-secundario">Puede cambiar su nombre y su usuario cuando quiera.</p>
+        <p className="text-[15px] text-texto-secundario">{t("pages.account.AccountPage.youCanChangeYourNameAndUsername")}</p>
       </Card>
     </div>
   );
@@ -156,21 +163,23 @@ function DataCard({ user }: { user: Profile }) {
 
 /** Qué se guarda y qué no, en palabras claras, con el consentimiento que aceptó (HU-163). */
 function StoredCard({ user }: { user: Profile }) {
+  useTranslation();
   return (
     <Card>
-      <Title>Lo que guardamos de usted</Title>
+      <Title>{t("pages.account.AccountPage.whatWeStoreAboutYou")}</Title>
       <ul className="flex flex-col gap-1">
-        <li>Su usuario, su nombre y sus prioridades.</li>
-        <li>Sus lotes, con su ubicación en el mapa y si tienen riego, y sus temporadas de siembra.</li>
-        <li>Sus sesiones abiertas y la actividad de su cuenta (180 días).</li>
-        <li>Sus siembras cuentan, sin su nombre, en los totales del municipio.</li>
-        <li>No guardamos correo, celular, documento ni dirección.</li>
+        <li>{t("pages.account.AccountPage.yourUsernameNameAndPriorities")}</li>
+        <li>{t("pages.account.AccountPage.yourPlotsIncludingMapLocationsAndIrrigation")}</li>
+        <li>{t("pages.account.AccountPage.yourActiveSessionsAndAccountActivity180")}</li>
+        <li>{t("pages.account.AccountPage.yourPlantingsContributeAnonymouslyToMunicipalityTotals")}</li>
+        <li>{t("pages.account.AccountPage.weDoNotStoreEmailAddressesPhone")}</li>
       </ul>
       <p>
-        Aceptó el tratamiento de datos (versión {user.consent_version}) el {date(user.consent_at)}.
+        {t("pages.account.AccountPage.youAgreedToDataProcessingVersion")} {user.consent_version}
+        {t("pages.account.AccountPage.on")} {date(user.consent_at)}.
       </p>
       <Link to={PATHS.dataPolicy} className={`${LINK} inline-flex min-h-11 items-center self-start`}>
-        Leer la política de tratamiento de datos
+        {t("pages.account.AccountPage.readTheDataPrivacyPolicy")}
       </Link>
     </Card>
   );
@@ -178,29 +187,38 @@ function StoredCard({ user }: { user: Profile }) {
 
 /** Preferencias que viven en este navegador, no en la cuenta. */
 function PreferencesCard() {
+  useTranslation();
   const [light, setLight] = useLightMode();
   const [sound, setSound] = useSound();
   return (
     <Card bodyClassName="gap-5">
-      <Title>Preferencias de este dispositivo</Title>
-      <Toggle label="Modo ligero" note="Sin animaciones, recorridos ni movimiento." checked={light} onChange={setLight} />
-      <Toggle label="Sonido" note="Música y efectos. Empieza apagado." checked={sound} onChange={setSound} />
+      <Title>{t("pages.account.AccountPage.preferencesForThisDevice")}</Title>
+      <Toggle label={t("light.label")} note={t("preferences.noMotion")} checked={light} onChange={setLight} />
+      <Toggle label={t("sound.label")} note={t("preferences.soundHint")} checked={sound} onChange={setSound} />
     </Card>
   );
 }
 
 function SessionCard({ user }: { user: Profile }) {
+  useTranslation();
   const logout = useLogout();
   return (
     <Card>
-      <Title>Sesión y contraseña</Title>
-      <p>Entró como {user.username}.</p>
+      <Title>{t("pages.account.AccountPage.sessionAndPassword")}</Title>
+      <p>
+        {t("pages.account.AccountPage.signedInAs")} {user.username}.
+      </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <ButtonLink to={PATHS.password} variant="secondary">
-          Cambiar contraseña
+          {t("pages.account.AccountPage.changePassword")}
         </ButtonLink>
-        <Button variant="secondary" loading={logout.isPending} loadingText="Cerrando…" onClick={() => logout.mutate()}>
-          Cerrar sesión
+        <Button
+          variant="secondary"
+          loading={logout.isPending}
+          loadingText={t("pages.account.AccountPage.signingOut")}
+          onClick={() => logout.mutate()}
+        >
+          {t("nav.logout")}
         </Button>
       </div>
     </Card>
@@ -209,12 +227,13 @@ function SessionCard({ user }: { user: Profile }) {
 
 /** Acceso a «Mi actividad» (HU-178): lo que se hizo con la cuenta, también lo que hizo soporte. */
 function ActivityCard() {
+  useTranslation();
   return (
     <Card>
-      <Title>Mi actividad</Title>
-      <p>Lo que se hizo con su cuenta y sus lotes, también lo que hizo soporte. Se guarda 180 días.</p>
+      <Title>{t("nav.activity")}</Title>
+      <p>{t("pages.account.AccountPage.activityOnYourAccountAndPlotsIncluding")}</p>
       <ButtonLink to={PATHS.activity} variant="secondary" className="self-start">
-        Ver mi actividad
+        {t("pages.account.AccountPage.viewMyActivity")}
       </ButtonLink>
     </Card>
   );
@@ -222,12 +241,13 @@ function ActivityCard() {
 
 /** Escribir al responsable de los datos (HU-163): preguntar, pedir una corrección o reportar un problema. */
 function MessagesCard() {
+  const { t } = useTranslation();
   return (
     <Card>
-      <Title>Escribir al responsable</Title>
-      <p>Pregunte qué datos suyos guardamos, pida que los corrijamos o cuéntenos un problema.</p>
+      <Title>{t("account.messages.title")}</Title>
+      <p>{t("account.messages.cardBody")}</p>
       <ButtonLink to={PATHS.messages} variant="secondary" className="self-start">
-        Escribir un mensaje
+        {t("account.messages.cardAction")}
       </ButtonLink>
     </Card>
   );
@@ -235,6 +255,7 @@ function MessagesCard() {
 
 /** Borrar la cuenta: dice qué se pierde y pide confirmar con la contraseña. No se puede deshacer (R9). */
 function DangerCard({ user }: { user: Profile }) {
+  useTranslation();
   const remove = useDeleteAccount();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -257,30 +278,28 @@ function DangerCard({ user }: { user: Profile }) {
   };
   return (
     <Card className="border-l-8 border-paleta-rojo">
-      <Title>Borrar mi cuenta</Title>
-      <p>
-        Se borran su usuario, sus sesiones, sus lotes, sus temporadas, sus reportes y el registro de su actividad. No se puede deshacer.
-      </p>
+      <Title>{t("pages.account.AccountPage.deleteMyAccount")}</Title>
+      <p>{t("pages.account.AccountPage.yourUsernameSessionsPlotsPlantingSeasonsReports")}</p>
       <Button variant="danger" className="self-start" onClick={() => setOpen(true)}>
-        Borrar mi cuenta
+        {t("pages.account.AccountPage.deleteMyAccount")}
       </Button>
       <ConfirmDialog
         open={open}
         onOpenChange={toggle}
-        title="¿Borrar su cuenta?"
-        cancelLabel="No, volver"
-        confirmLabel="Sí, borrar todo"
+        title={t("pages.account.AccountPage.deleteYourAccount")}
+        cancelLabel={t("pages.account.AccountPage.noGoBack")}
+        confirmLabel={t("pages.account.AccountPage.yesDeleteEverything")}
         busy={remove.isPending}
-        busyLabel="Borrando…"
+        busyLabel={t("common.deleting")}
         onConfirm={confirm}
       >
-        <p>Se va a borrar todo esto, para siempre:</p>
+        <p>{t("pages.account.AccountPage.allOfThisWillBePermanentlyDeleted")}</p>
         <ul className="flex flex-col gap-1.5">
           {[
-            `Su usuario «${user.username}» y su nombre.`,
-            "Sus sesiones en todos los dispositivos.",
-            "Sus lotes y sus temporadas de siembra.",
-            "Sus reportes y el registro de su actividad.",
+            t("pages.account.AccountPage.yourUsernameAndName", { v0: user.username }),
+            t("pages.account.AccountPage.yourSessionsOnAllDevices"),
+            t("pages.account.AccountPage.yourPlotsAndPlantingSeasons"),
+            t("pages.account.AccountPage.yourReportsAndActivityHistory"),
           ].map((item) => (
             <li key={item} className="flex gap-3">
               <span aria-hidden="true" className="mt-1.5 block size-3.5 shrink-0 bg-oscuro-rojo" />
@@ -288,9 +307,9 @@ function DangerCard({ user }: { user: Profile }) {
             </li>
           ))}
         </ul>
-        <p className="font-bold">No se puede deshacer.</p>
+        <p className="font-bold">{t("pages.account.AccountPage.thisCannotBeUndone")}</p>
         <TextField
-          label="Su contraseña, para confirmar"
+          label={t("pages.account.AccountPage.yourPasswordToConfirm")}
           type="password"
           autoComplete="current-password"
           value={password}
@@ -298,9 +317,11 @@ function DangerCard({ user }: { user: Profile }) {
             setPassword(event.target.value);
             setMissing(false);
           }}
-          error={missing ? "Escriba su contraseña para borrar la cuenta." : undefined}
+          error={missing ? t("pages.account.AccountPage.enterYourPasswordToDeleteTheAccount") : undefined}
         />
-        {remove.error && <Alert>{remove.error instanceof ApiError ? remove.error.message : "Algo falló. Intente de nuevo."}</Alert>}
+        {remove.error && (
+          <Alert>{remove.error instanceof ApiError ? remove.error.message : t("pages.auth.LoginPage.somethingWentWrongTryAgain")}</Alert>
+        )}
       </ConfirmDialog>
     </Card>
   );
@@ -308,12 +329,14 @@ function DangerCard({ user }: { user: Profile }) {
 
 /** Mi cuenta (HU-160, HU-163). Diseño: design/pantallas/cuenta.py, `profile`. */
 export function AccountPage() {
+  useTranslation();
   // Al volver de cambiar la contraseña se avisa que quedó guardada.
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
   return <AccountShell>{(user) => <Account user={user} notice={notice} />}</AccountShell>;
 }
 
 function Account({ user, notice }: { user: Profile; notice?: string }) {
+  useTranslation();
   const page = useEntrance<HTMLDivElement>();
   // La franja tiene la misma vida que el paisaje de los formularios: la hora del día, la mariposa, el viento y una
   // mascota que mira el campo que se edita, se ríe si la tocan y se duerme si nadie hace nada.
@@ -322,7 +345,7 @@ function Account({ user, notice }: { user: Profile; notice?: string }) {
   const night = useDayPhase() === "night";
   return (
     <div ref={stage}>
-      <title>Mi cuenta · AgroSense</title>
+      <title>{t("pages.account.AccountPage.myAccountAgrosense")}</title>
       <div className="relative h-[230px] overflow-hidden md:h-[280px]">
         <img src={region} alt="" aria-hidden="true" className="absolute inset-0 size-full object-cover" />
         <SceneAmbient contained />
@@ -333,7 +356,7 @@ function Account({ user, notice }: { user: Profile; notice?: string }) {
               night ? "text-texto-sobre-oscuro [text-shadow:0_2px_0_rgb(11_18_38/0.7)]" : "[text-shadow:0_2px_0_rgb(255_255_255/0.6)]"
             }`}
           >
-            Mi cuenta
+            {t("nav.account")}
           </h1>
           <div onPointerDown={poke}>
             <Mascot mood={act ?? "idle"} lively decorative className="block h-auto w-[120px] md:w-[200px]" />
